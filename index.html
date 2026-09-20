@@ -61,6 +61,25 @@ a{color:inherit}
 .tabs button[aria-selected="true"]:hover{background:var(--ink);color:var(--surface)}
 .tabs a{color:var(--muted);margin-left:2px}
 
+.bnav{display:none}
+
+/* ---------- ล็อกอิน (PIN) ---------- */
+.lock-screen{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+.lock-card{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:30px 26px;max-width:320px;width:100%;text-align:center;box-shadow:var(--shadow-2)}
+.lock-card h2{font-size:19px;margin:0 0 4px}
+.lock-card p{color:var(--muted);font-size:14px;margin:0 0 22px}
+.lock-card.shake{animation:lockShake .4s}
+@keyframes lockShake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-8px)}40%,60%{transform:translateX(8px)}}
+.lock-dots{display:flex;justify-content:center;gap:16px;margin:0 0 8px}
+.lock-dots .dot{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--muted);background:transparent;transition:background-color .15s,border-color .15s,transform .15s}
+.lock-dots .dot.filled{background:var(--sticker-line);border-color:var(--sticker-line);transform:scale(1.1)}
+.lock-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}
+.lock-pad button{aspect-ratio:1;border-radius:50%;border:1.5px solid var(--line);background:var(--field);color:var(--ink);font:700 22px 'Prompt',sans-serif;cursor:pointer;transition:background-color .1s,transform .1s}
+.lock-pad button:active{background:var(--sticker);transform:scale(.94)}
+.lock-pad .lock-back{font-size:18px;color:var(--muted);background:transparent;border-color:transparent}
+.lock-pad .lock-back:active{background:var(--field)}
+.lock-err{color:#c2261f;font-weight:600;font-size:13.5px;min-height:18px}
+
 /* ---------- page ---------- */
 .panel{display:none;padding-bottom:36px}
 .panel.active{display:block}
@@ -262,10 +281,22 @@ tr{break-inside:avoid}
   .r-meta{grid-template-columns:1fr}
   .dash-chart{gap:6px}
   .bar-val{display:none}
-  .top{flex-direction:column;align-items:stretch;gap:12px;padding:14px 0 12px}
-  .tabs{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;border-radius:12px;scrollbar-width:none;-webkit-overflow-scrolling:touch;width:100%}
-  .tabs::-webkit-scrollbar{display:none}
-  .tabs button,.tabs a{flex:none;padding:9px 14px;font-size:14.5px}
+  .top{padding:14px 0 10px}
+  .top .tabs{display:none}
+  .wrap{padding-bottom:calc(70px + env(safe-area-inset-bottom,0px))}
+  .bnav{
+    display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;
+    background:var(--surface);border-top:1px solid var(--line);
+    padding:6px 2px calc(6px + env(safe-area-inset-bottom,0px));
+    box-shadow:0 -8px 24px -14px rgba(16,32,58,.35);
+  }
+  .btab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    background:transparent;border:0;color:var(--muted);text-decoration:none;
+    font-size:10.5px;font-weight:600;padding:6px 2px;border-radius:10px;min-width:0}
+  .btab svg{width:21px;height:21px;flex:none}
+  .btab span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .btab.active{color:var(--sticker-line)}
+  .btab:active{background:var(--field)}
 }
 
 /* ---------- print ---------- */
@@ -289,6 +320,77 @@ tr{break-inside:avoid}
 </style>
 </head>
 <body>
+<div id="lockScreen" class="lock-screen no-print">
+  <div class="lock-card">
+    <span class="mark" style="margin:0 auto 14px">B</span>
+    <h2>ใส่รหัสผ่านเพื่อเข้าใช้งาน</h2>
+    <p>ระบบภายในร้านบอลสติ๊กเกอร์ พิษณุโลก</p>
+    <div class="lock-dots" id="lockDots" aria-hidden="true">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    </div>
+    <p class="lock-err" id="lockErr" hidden>รหัสผ่านไม่ถูกต้อง ลองใหม่อีกครั้ง</p>
+    <div class="lock-pad" id="lockPad">
+      <button type="button" data-k="1">1</button>
+      <button type="button" data-k="2">2</button>
+      <button type="button" data-k="3">3</button>
+      <button type="button" data-k="4">4</button>
+      <button type="button" data-k="5">5</button>
+      <button type="button" data-k="6">6</button>
+      <button type="button" data-k="7">7</button>
+      <button type="button" data-k="8">8</button>
+      <button type="button" data-k="9">9</button>
+      <span></span>
+      <button type="button" data-k="0">0</button>
+      <button type="button" class="lock-back" data-k="back" aria-label="ลบ">⌫</button>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var LOCK_PIN = '0088'; // เปลี่ยนรหัสผ่านได้ตรงนี้ (ตัวเลข 4 หลัก)
+  var screen = document.getElementById('lockScreen');
+  try {
+    if (sessionStorage.getItem('bs_unlocked') === '1') { screen.hidden = true; return; }
+  } catch (e) {}
+  var dots = document.getElementById('lockDots').querySelectorAll('.dot');
+  var err = document.getElementById('lockErr');
+  var entered = '';
+  function render() {
+    dots.forEach(function (d, i) { d.classList.toggle('filled', i < entered.length); });
+  }
+  function shake() {
+    var card = screen.querySelector('.lock-card');
+    card.classList.add('shake');
+    setTimeout(function () { card.classList.remove('shake'); }, 400);
+  }
+  function press(k) {
+    err.hidden = true;
+    if (k === 'back') { entered = entered.slice(0, -1); render(); return; }
+    if (entered.length >= LOCK_PIN.length) return;
+    entered += k;
+    render();
+    if (entered.length === LOCK_PIN.length) {
+      if (entered === LOCK_PIN) {
+        try { sessionStorage.setItem('bs_unlocked', '1'); } catch (e2) {}
+        setTimeout(function () { screen.hidden = true; }, 120);
+      } else {
+        err.hidden = false;
+        shake();
+        setTimeout(function () { entered = ''; render(); }, 350);
+      }
+    }
+  }
+  document.getElementById('lockPad').addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-k]');
+    if (btn) press(btn.dataset.k);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (screen.hidden) return;
+    if (/^[0-9]$/.test(e.key)) press(e.key);
+    else if (e.key === 'Backspace') press('back');
+  });
+})();
+</script>
 <div class="wrap">
 
   <header class="top no-print">
@@ -304,6 +406,29 @@ tr{break-inside:avoid}
       <a href="https://ball-sticker-tracking.nutty-hill-4377.chatgpt.site/" target="_blank" rel="noopener">ติดตามงานสติ๊กเกอร์ ↗</a>
     </nav>
   </header>
+
+  <nav class="bnav no-print" aria-label="เมนูหลัก (มือถือ)">
+    <button type="button" class="btab active" data-tab="calc" aria-controls="panel-calc">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"></rect><line x1="8" y1="7" x2="16" y2="7"></line><line x1="8" y1="11" x2="8" y2="11.01"></line><line x1="12" y1="11" x2="12" y2="11.01"></line><line x1="16" y1="11" x2="16" y2="11.01"></line><line x1="8" y1="15" x2="8" y2="15.01"></line><line x1="12" y1="15" x2="12" y2="15.01"></line><line x1="16" y1="15" x2="16" y2="15.01"></line></svg>
+      <span>คำนวณ</span>
+    </button>
+    <button type="button" class="btab" data-tab="confirm" aria-controls="panel-confirm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"></rect><path d="M9 3h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V3z" fill="currentColor" stroke="none"></path><path d="m9 13 2 2 4-4"></path></svg>
+      <span>คอนเฟิร์ม</span>
+    </button>
+    <button type="button" class="btab" data-tab="bill" aria-controls="panel-bill">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"></path><line x1="9" y1="8" x2="15" y2="8"></line><line x1="9" y1="12" x2="15" y2="12"></line></svg>
+      <span>ใบเสร็จ</span>
+    </button>
+    <button type="button" class="btab" data-tab="dash" aria-controls="panel-dash">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="20" x2="5" y2="12"></line><line x1="12" y1="20" x2="12" y2="6"></line><line x1="19" y1="20" x2="19" y2="15"></line></svg>
+      <span>แดชบอร์ด</span>
+    </button>
+    <a class="btab" href="https://ball-sticker-tracking.nutty-hill-4377.chatgpt.site/" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+      <span>ติดตามงาน</span>
+    </a>
+  </nav>
 
   <main>
     <!-- ================= คำนวณ ================= -->
@@ -1523,13 +1648,14 @@ function bahtText(value) {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
+    document.querySelectorAll('.btab[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
     if (name === 'bill') fitBill();
     if (name === 'confirm') fitJob();
     if (name === 'dash') renderDash();
     const activeTab = $('tab-' + name);
     if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
   }
-  document.querySelectorAll('.tabs button[data-tab]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  document.querySelectorAll('.tabs button[data-tab], .btab[data-tab]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 
   ['sw', 'sh', 'gap', 'margin', 'pw', 'ph'].forEach(id => $(id).addEventListener('input', renderCalc));
   $('paper').addEventListener('change', onPaperChange);
