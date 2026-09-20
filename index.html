@@ -54,7 +54,7 @@ a{color:inherit}
 .mark{width:44px;height:44px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font:700 22px 'Prompt',sans-serif;box-shadow:inset -6px -6px 0 rgba(16,35,63,.14),0 4px 10px -4px rgba(16,35,63,.35);flex:none}
 .brand b{display:block;font:700 18px/1.1 'Prompt',sans-serif}
 .brand small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
-.tabs{display:flex;flex-wrap:wrap;gap:4px;align-items:center;background:var(--field);border:1px solid var(--line);border-radius:999px;padding:4px}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;align-items:center;background:var(--field);border:1px solid var(--line);border-radius:999px;padding:4px;position:relative}
 .tabs button,.tabs a{border:1.5px solid transparent;background:transparent;border-radius:999px;padding:8px 16px;font-weight:600;cursor:pointer;text-decoration:none;color:var(--muted);white-space:nowrap;transition:background-color .15s,color .15s}
 .tabs button:hover,.tabs a:hover{background:var(--surface);color:var(--ink)}
 .tabs button[aria-selected="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink);box-shadow:var(--shadow-1)}
@@ -163,6 +163,21 @@ details.shop .fields{margin-top:12px}
 .history li .amt{font-weight:700;font-variant-numeric:tabular-nums}
 .empty{color:var(--muted);margin:0}
 
+/* ---------------- แดชบอร์ด ---------------- */
+.dash-filter{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.dash-filter .f{flex:1 1 200px}
+.dash-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:20px 0}
+.dash-tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow-1);display:flex;flex-direction:column;gap:6px;min-width:0}
+.dash-tile.accent{background:var(--hero-bg);border-color:var(--hero-bg);color:#fff}
+.dash-tile.accent .dash-tile-label{color:rgba(255,255,255,.78)}
+.dash-tile-label{font-size:13px;color:var(--muted);font-weight:600}
+.dash-tile-val{font:700 23px 'Prompt',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-chart{display:flex;align-items:flex-end;gap:12px;height:220px;padding-top:22px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.bar-val{font-size:12px;color:var(--muted);margin-bottom:4px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.bar{width:56%;min-width:16px;background:var(--sticker);border:1.5px solid var(--sticker-line);border-radius:6px 6px 0 0;transition:height .25s}
+.bar-label{margin-top:8px;font-size:12px;color:var(--muted);white-space:nowrap}
+
 /* ---------- printable sheets (always light) ---------- */
 .sheet{--ink:#10233f;--muted:#4a5a72;--line:#c9d2de;--sticker:#7fd3ef;--sticker-line:#0d6f92;--magenta:#d81f66;
   background:#fff;color:#10233f;font-size:14px;line-height:1.5;text-align:left}
@@ -235,6 +250,7 @@ tr{break-inside:avoid}
 /* ---------- responsive ---------- */
 @media (max-width:900px){
   .calc-grid,.bill-grid{grid-template-columns:minmax(0,1fr)}
+  .dash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:560px){
   .wrap{padding:0 14px}
@@ -244,6 +260,12 @@ tr{break-inside:avoid}
   .item output{grid-column:3}
   .item-head{display:none}
   .r-meta{grid-template-columns:1fr}
+  .dash-chart{gap:6px}
+  .bar-val{display:none}
+  .top{flex-direction:column;align-items:stretch;gap:12px;padding:14px 0 12px}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;border-radius:12px;scrollbar-width:none;-webkit-overflow-scrolling:touch;width:100%}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs button,.tabs a{flex:none;padding:9px 14px;font-size:14.5px}
 }
 
 /* ---------- print ---------- */
@@ -278,6 +300,7 @@ tr{break-inside:avoid}
       <button role="tab" id="tab-calc" data-tab="calc" aria-selected="true" aria-controls="panel-calc">คำนวณสติ๊กเกอร์</button>
       <button role="tab" id="tab-confirm" data-tab="confirm" aria-selected="false" aria-controls="panel-confirm">ใบคอนเฟิร์มงาน</button>
       <button role="tab" id="tab-bill" data-tab="bill" aria-selected="false" aria-controls="panel-bill">ใบเสร็จ / ใบกำกับภาษี</button>
+      <button role="tab" id="tab-dash" data-tab="dash" aria-selected="false" aria-controls="panel-dash">แดชบอร์ด</button>
       <a href="https://ball-sticker-tracking.nutty-hill-4377.chatgpt.site/" target="_blank" rel="noopener">ติดตามงานสติ๊กเกอร์ ↗</a>
     </nav>
   </header>
@@ -515,6 +538,49 @@ tr{break-inside:avoid}
         </div>
         <div id="history"></div>
       </section>
+    </section>
+
+    <!-- ================= แดชบอร์ด ================= -->
+    <section id="panel-dash" class="panel" role="tabpanel" aria-labelledby="tab-dash">
+      <div class="page-head">
+        <h1>สรุปยอดขาย.</h1>
+        <p>รวมยอดขายและภาษีขายจากบิล/ใบกำกับภาษีที่บันทึกไว้ในเครื่องนี้ (และในคลาวด์ ถ้าเชื่อมต่อไว้)</p>
+      </div>
+
+      <div class="card">
+        <div class="dash-filter">
+          <label class="f" style="max-width:220px">
+            <span>เลือกเดือนที่ต้องการดู</span>
+            <input class="txt" type="month" id="dashMonth">
+          </label>
+          <button class="btn small" id="dash-all" type="button">ดูทั้งหมด</button>
+        </div>
+      </div>
+
+      <div class="dash-grid">
+        <div class="dash-tile">
+          <span class="dash-tile-label">ยอดขาย (ก่อน VAT)</span>
+          <span class="dash-tile-val" id="dashSales">0.00 บาท</span>
+        </div>
+        <div class="dash-tile">
+          <span class="dash-tile-label">ภาษีขาย (VAT)</span>
+          <span class="dash-tile-val" id="dashVat">0.00 บาท</span>
+        </div>
+        <div class="dash-tile accent">
+          <span class="dash-tile-label">ยอดรวมทั้งสิ้น</span>
+          <span class="dash-tile-val" id="dashTotal">0.00 บาท</span>
+        </div>
+        <div class="dash-tile">
+          <span class="dash-tile-label">จำนวนบิล</span>
+          <span class="dash-tile-val" id="dashCount">0</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>ยอดขายย้อนหลัง 6 เดือน</h2>
+        <div class="dash-chart" id="dashChart"></div>
+        <p class="empty" id="dashEmpty" hidden>ยังไม่มีบิลที่บันทึกไว้ กด "บันทึกลงประวัติ" ในแท็บใบเสร็จ/ใบกำกับภาษีก่อน</p>
+      </div>
     </section>
   </main>
 
@@ -886,12 +952,66 @@ function bahtText(value) {
   function renderHistory() {
     const list = store.get('bs_bills', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
     const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้ ควรดาวน์โหลด PDF เก็บไว้ทุกครั้ง</p>');
-    if (!list.length) { $('history').innerHTML = notice + '<p class="empty">ยังไม่มีเอกสารที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; return; }
+    if (!list.length) { $('history').innerHTML = notice + '<p class="empty">ยังไม่มีเอกสารที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; renderDash(); return; }
     $('history').innerHTML = notice + '<ul>' + list.map(b =>
       '<li data-id="' + esc(b.id) + '"><div class="meta"><b>' + esc(b.no) + '</b><small>' + esc(thDate(b.date)) + ' · ' + esc(b.cName || 'ไม่ระบุชื่อลูกค้า') + '</small></div>' +
       '<span class="amt">' + money(b.total || 0) + ' บาท</span>' +
       '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
       '<button class="btn small del" data-act="del" type="button">ลบ</button></li>').join('') + '</ul>';
+    renderDash();
+  }
+
+  /* ---------------- แดชบอร์ด ---------------- */
+  function billCalc(b) {
+    const items = b.items || [];
+    const sub = round2(items.reduce((a, i) => a + num(i.qty) * num(i.price), 0));
+    const disc = Math.min(Math.max(0, num(b.discount)), sub);
+    const base = round2(sub - disc);
+    const mode = b.vatMode || 'add', rate = Math.max(0, num(b.vatRate));
+    let vat = 0, total = num(b.total) || base;
+    if (mode === 'add') { vat = round2(base * rate / 100); total = round2(base + vat); }
+    else if (mode === 'incl') { vat = round2(base * rate / (100 + rate)); }
+    return {sub, disc, base, vat, total};
+  }
+  const monthKey = iso => String(iso || '').slice(0, 7);
+  const thMonthShort = k => {
+    const parts = k.split('-'), y = +parts[0], m = +parts[1];
+    const names = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    return (names[m - 1] || '') + ' ' + String((y + 543) % 100).padStart(2, '0');
+  };
+
+  function renderDash() {
+    if (!$('dashChart')) return;
+    const list = store.get('bs_bills', []);
+    const sel = $('dashMonth').value;
+    const filtered = sel ? list.filter(b => monthKey(b.date) === sel) : list;
+    let sub = 0, disc = 0, vat = 0, total = 0;
+    filtered.forEach(b => { const c = billCalc(b); sub += c.sub; disc += c.disc; vat += c.vat; total += c.total; });
+    $('dashCount').textContent = String(filtered.length);
+    $('dashSales').textContent = money(sub - disc) + ' บาท';
+    $('dashVat').textContent = money(vat) + ' บาท';
+    $('dashTotal').textContent = money(total) + ' บาท';
+
+    const now = new Date();
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+    }
+    const byMonth = {};
+    list.forEach(b => {
+      const k = monthKey(b.date);
+      if (!byMonth[k]) byMonth[k] = 0;
+      const c = billCalc(b);
+      byMonth[k] += (c.sub - c.disc);
+    });
+    const maxVal = Math.max(1, ...months.map(m => byMonth[m] || 0));
+    $('dashChart').innerHTML = months.map(m => {
+      const v = byMonth[m] || 0;
+      const h = Math.max(Math.round((v / maxVal) * 100), v > 0 ? 3 : 0);
+      return '<div class="bar-col"><div class="bar-val">' + (v ? money(v) : '') + '</div><div class="bar" style="height:' + h + '%"></div><div class="bar-label">' + thMonthShort(m) + '</div></div>';
+    }).join('');
+    $('dashEmpty').hidden = list.length > 0;
   }
 
   function saveBill() {
@@ -1399,12 +1519,15 @@ function bahtText(value) {
 
   /* ---------------- events ---------------- */
   function showTab(name) {
-    ['calc', 'confirm', 'bill'].forEach(n => {
+    ['calc', 'confirm', 'bill', 'dash'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
     if (name === 'bill') fitBill();
     if (name === 'confirm') fitJob();
+    if (name === 'dash') renderDash();
+    const activeTab = $('tab-' + name);
+    if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
   }
   document.querySelectorAll('.tabs button[data-tab]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 
@@ -1559,6 +1682,8 @@ function bahtText(value) {
   newJob(); renderJobHistory();
   watchCloud('bills', 'bs_bills', renderHistory);
   watchCloud('jobs', 'bs_jobs', renderJobHistory);
+  $('dashMonth').addEventListener('change', renderDash);
+  $('dash-all').addEventListener('click', () => { $('dashMonth').value = ''; renderDash(); });
 })();
 </script>
 </body>
