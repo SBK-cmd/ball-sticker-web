@@ -1015,6 +1015,7 @@ tr{break-inside:avoid}
               <label class="f"><span>กำหนดส่งงาน (ถ้ามี)</span><input class="txt" id="jobDue" type="date"></label>
               <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="jName" type="text" autocomplete="off"></label>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="jPhone" type="tel" autocomplete="off"></label>
+              <label class="f"><span>ที่อยู่ลูกค้า (ถ้ามี)</span><textarea id="jAddr"></textarea></label>
             </div>
           </div>
 
@@ -1174,7 +1175,7 @@ tr{break-inside:avoid}
     <section id="panel-purchase" class="panel" role="tabpanel" aria-labelledby="tab-purchase">
       <div class="page-head">
         <h1>บันทึกภาษีซื้อ.</h1>
-        <p>ถ่ายภาพหรือแนบใบกำกับภาษีซื้อ (ค่าวัสดุ/ค่าใช้จ่ายที่ซื้อเข้าร้าน) พร้อมกรอกยอด VAT เพื่อใช้สรุปในแดชบอร์ด</p>
+        <p>ถ่ายภาพหรือแนบใบกำกับภาษีซื้อ (ค่าวัสดุ/ค่าใช้จ่ายที่ซื้อเข้าร้าน) พร้อมกรอกยอด VAT เพื่อใช้สรุปในแดชบอร์ด — ถ้าเป็นรายการซื้อที่ไม่มีใบกำกับภาษี/ไม่มี VAT ให้เว้นช่องยอดภาษีซื้อไว้ ระบบจะแยกไปเก็บเป็น “ค่าใช้จ่ายที่ไม่มี VAT” แทน</p>
       </div>
 
       <div class="bill-grid">
@@ -1319,10 +1320,23 @@ tr{break-inside:avoid}
           <h2 id="report-purch-h">รายงานภาษีซื้อ</h2>
           <span id="reportPurchRange">—</span>
         </div>
+        <p class="hint" style="margin:0 0 10px">เฉพาะรายการซื้อที่มีใบกำกับภาษีซื้อ (มี VAT) ใช้สำหรับยื่นภาษีเท่านั้น รายการซื้อที่ไม่มี VAT แยกไว้ด้านล่าง</p>
         <div class="a4-frame" id="reportPurchFrame"><article class="sheet bill" id="reportPurchDoc"></article></div>
         <div class="actions" style="margin-top:14px">
           <button class="btn primary" id="report-pdf-purch" type="button">ดาวน์โหลด / พิมพ์ PDF</button>
           <button class="btn" id="report-csv-purch" type="button">ส่งออก Excel (CSV)</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="report-nonvat-h" style="margin-top:20px">
+        <div class="viz-head">
+          <h2 id="report-nonvat-h">ค่าใช้จ่ายที่ไม่มี VAT</h2>
+          <span id="reportNonVatRange">—</span>
+        </div>
+        <p class="hint" style="margin:0 0 10px">รายการซื้อ/ค่าใช้จ่ายที่ไม่มีใบกำกับภาษี (ไม่มี VAT) เก็บไว้เพื่อดูภาพรวมต้นทุนเท่านั้น <b>ไม่ใช้ยื่นภาษีซื้อ</b></p>
+        <div id="reportNonVatTable"></div>
+        <div class="actions" style="margin-top:14px">
+          <button class="btn" id="report-csv-nonvat" type="button">ส่งออก Excel (CSV)</button>
         </div>
       </section>
     </section>
@@ -1910,7 +1924,8 @@ function bahtText(value) {
     return list.map(b => { const c = billCalc(b); return {date: b.date, no: b.no, name: b.cName, tax: b.cTax, base: c.base, vat: c.vat, total: c.total}; });
   }
   function reportPurchRows(sel) {
-    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel)
+    // รายงานภาษีซื้อ (ยื่นสรรพากร) นับเฉพาะรายการที่มีใบกำกับภาษีซื้อ/มี VAT จริง
+    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel).filter(p => num(p.vat) > 0)
       .slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
     return list.map(p => {
       const vat = num(p.vat), amt = num(p.amount);
@@ -1918,6 +1933,12 @@ function bahtText(value) {
       const total = amt > 0 ? amt : round2((base || 0) + vat);
       return {date: p.date, no: p.invoiceNo, name: p.vendor, tax: p.vendorTax, base, vat, total};
     });
+  }
+  function reportPurchNonVatRows(sel) {
+    // ค่าใช้จ่าย/รายการซื้อที่ไม่มี VAT (ไม่มีใบกำกับภาษีซื้อ) แยกไว้เพื่อดูต้นทุนเท่านั้น ไม่ใช้ยื่นภาษี
+    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel).filter(p => !(num(p.vat) > 0))
+      .slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    return list.map(p => ({date: p.date, no: p.invoiceNo, name: p.vendor, amount: num(p.amount), note: p.note}));
   }
   // พรีวิวรายงานภาษีซื้อ-ขาย ในรูปแบบเอกสารเหมือนใบกำกับภาษี (หัวกระดาษ/โลโก้ร้าน + ตารางตามแบบฟอร์มที่ใช้ยื่นสรรพากร)
   function renderReportDocHTML(kind) {
@@ -1961,6 +1982,20 @@ function bahtText(value) {
       }).join('');
     sel.value = months.indexOf(prev) >= 0 ? prev : '';
   }
+  function renderReportNonVat() {
+    const el = $('reportNonVatTable'); if (!el) return;
+    const sel = $('reportMonth').value;
+    const rows = reportPurchNonVatRows(sel);
+    const rangeEl = $('reportNonVatRange');
+    if (rangeEl) rangeEl.textContent = reportRangeLabel(sel);
+    const body = rows.length ? rows.map((r, n) =>
+      '<tr><td class="n">' + (n + 1) + '</td><td>' + esc(thDate(r.date)) + '</td><td>' + esc(r.no || '—') + '</td>' +
+      '<td>' + esc(r.name || '—') + '</td><td>' + esc(r.note || '—') + '</td><td class="r">' + money(r.amount) + '</td></tr>').join('')
+      : '<tr><td class="n">—</td><td colspan="5" style="color:#4a5a72">ยังไม่มีรายการซื้อที่ไม่มี VAT ในช่วงที่เลือก</td></tr>';
+    const total = round2(rows.reduce((a, r) => a + r.amount, 0));
+    el.innerHTML = '<div class="tbl-wrap"><table class="lines"><thead><tr><th class="n">ลำดับที่</th><th>วันที่ซื้อ</th><th>เลขที่เอกสาร</th><th>ร้านค้า/ผู้ขาย</th><th>รายละเอียด</th><th class="r">จำนวนเงิน</th></tr></thead><tbody>' + body + '</tbody>' +
+      '<tfoot><tr class="tot-row"><td colspan="5">รวมทั้งสิ้น (' + rows.length + ' รายการ)</td><td class="r">' + money(total) + '</td></tr></tfoot></table></div>';
+  }
   function renderReport() {
     if (!$('reportMonth')) return;
     populateReportMonthOptions();
@@ -1979,6 +2014,8 @@ function bahtText(value) {
 
     renderReportDocHTML('purchase');
     fitFrame('reportPurchFrame', 'reportPurchDoc');
+
+    renderReportNonVat();
   }
 
   function csvEsc(v) {
@@ -1987,6 +2024,18 @@ function bahtText(value) {
   }
   function exportReportCsv(kind) {
     const sel = $('reportMonth').value;
+    if (kind === 'purchaseNonVat') {
+      const rows = reportPurchNonVatRows(sel);
+      const head = ['ลำดับที่', 'วันที่ซื้อ', 'เลขที่เอกสาร', 'ร้านค้า/ผู้ขาย', 'รายละเอียด', 'จำนวนเงิน'];
+      const lines = [head.map(csvEsc).join(',')];
+      rows.forEach((r, i) => lines.push([i + 1, r.date || '', r.no || '', r.name || '', r.note || '', r.amount].map(csvEsc).join(',')));
+      lines.push(['', '', '', '', 'รวม', round2(rows.reduce((a, r) => a + r.amount, 0))].map(csvEsc).join(','));
+      const csv = '﻿' + lines.join('\r\n');
+      const blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
+      const name = 'ค่าใช้จ่ายไม่มีVAT-' + (sel || 'ทั้งหมด') + '.csv';
+      saveBlob(blob, name).then(res => toast(res === 'declined' ? 'ยังไม่ได้บันทึกไฟล์' : res === 'failed' ? 'บันทึกไฟล์ไม่ได้ ลองใหม่อีกครั้ง' : 'ส่งออกไฟล์ CSV แล้ว'));
+      return;
+    }
     const rows = kind === 'sales' ? reportSalesRows(sel) : reportPurchRows(sel);
     const head = kind === 'sales'
       ? ['ลำดับที่', 'บิลวันที่', 'เลขที่ใบกำกับ', 'ชื่อผู้ซื้อสินค้า/ผู้รับบริการ', 'มูลค่าสินค้า/บริการ', 'จำนวนเงินภาษี', 'รวมเงิน']
@@ -2338,7 +2387,7 @@ function bahtText(value) {
     $('purchHistory').innerHTML = notice + '<ul>' + list.map(p =>
       '<li data-id="' + esc(p.id) + '">' + (p.photo ? '<img class="thumb" src="' + p.photo + '" alt="">' : '') +
       '<div class="meta"><b>' + esc(p.vendor || 'ไม่ระบุร้านค้า') + '</b><small>' + esc(thDate(p.date)) + (p.createdBy ? ' · โดย ' + esc(p.createdBy) : '') + '</small></div>' +
-      '<span class="amt">VAT ' + money(num(p.vat)) + ' บาท</span>' +
+      (num(p.vat) > 0 ? '<span class="amt">VAT ' + money(num(p.vat)) + ' บาท</span>' : '<span class="amt" style="color:#4a5a72">ไม่มี VAT · ' + money(num(p.amount)) + ' บาท</span>') +
       '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
       '<button class="btn small del" data-act="del" type="button">ลบ</button></li>').join('') + '</ul>';
     renderDash();
@@ -2347,7 +2396,7 @@ function bahtText(value) {
   function savePurchase() {
     const list = store.get('bs_purchases', []);
     const data = collectPurchase();
-    if (!(num(data.vat) > 0)) { toast('ใส่ยอดภาษีซื้อ (VAT) ก่อนบันทึก'); $('purchVat').focus(); return; }
+    if (!(num(data.vat) > 0) && !(num(data.amount) > 0)) { toast('ใส่ยอดภาษีซื้อ (VAT) หรือยอดเงินรวมก่อนบันทึก'); $('purchVat').focus(); return; }
     if (!data.date) data.date = todayISO();
     const id = currentPurchaseId || ('p' + Date.now());
     const idx = list.findIndex(p => p.id === id);
@@ -2447,7 +2496,8 @@ function bahtText(value) {
       '<header class="sh-head"><div class="sh-brand">' + logoImg() + '<div><div class="sh-name">' + esc(shop.name) + '</div><div class="sh-lines">' + shopLines() + '</div></div></div>' +
       '<div class="sh-doc"><h2>ใบคอนเฟิร์มงาน</h2><div class="sh-lines">เลขที่ <b>' + esc($('jobNo').value) + '</b><br>วันที่สั่ง ' + esc(thDate($('jobDate').value)) +
       '<br>กำหนดส่ง ' + ($('jobDue').value ? esc(thDate($('jobDue').value)) : '—') + '</div></div></header>' +
-      '<section class="cust"><h3>ลูกค้า</h3><div><b>' + dash($('jName').value) + '</b></div><div>' + dash($('jPhone').value) + '</div></section>' +
+      '<section class="cust"><h3>ลูกค้า</h3><div><b>' + dash($('jName').value) + '</b></div><div>' + dash($('jPhone').value) + '</div>' +
+      ($('jAddr').value.trim() ? '<div>' + esc($('jAddr').value.trim()) + '</div>' : '') + '</section>' +
       '<div class="tbl-wrap"><table class="lines"><thead><tr><th class="n">ลำดับ</th><th>รายการงาน / สเปก</th><th class="r">จำนวน</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       ($('jobNote').value.trim() ? '<div class="note"><b>ข้อกำหนดการผลิต / หมายเหตุ</b><br>' + esc($('jobNote').value) + '</div>' : '') +
       (jobPhotos.length ? '<div class="note"><b>รูปอ้างอิงงาน</b><div class="job-photo-grid">' +
@@ -2472,12 +2522,12 @@ function bahtText(value) {
   }
 
   function collectJob() {
-    return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, jName: $('jName').value, jPhone: $('jPhone').value,
+    return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
       items: jobItems.map(i => ({name: i.name, qty: i.qty, note: i.note})), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus};
   }
   function applyJob(j) {
     $('jobNo').value = j.no || ''; $('jobDate').value = j.date || todayISO(); $('jobDue').value = j.due || '';
-    $('jName').value = j.jName || ''; $('jPhone').value = j.jPhone || '';
+    $('jName').value = j.jName || ''; $('jPhone').value = j.jPhone || ''; $('jAddr').value = j.jAddr || '';
     jobItems = (j.items && j.items.length) ? j.items.map(i => ({name: i.name || '', qty: i.qty, note: i.note || ''})) : [{name: '', qty: 1, note: ''}];
     $('jobNote').value = j.note || '';
     jobPhotos = (j.photos && j.photos.length) ? j.photos.slice() : [];
@@ -2778,6 +2828,9 @@ function bahtText(value) {
     T(x, 'ลูกค้า', M, y, {s: 3.3, w: 600, h: 1, c: MUTED}); y += 4.8;
     T(x, $('jName').value.trim() || '—', M, y, {s: 3.9, w: 700}); y += 4.7;
     T(x, $('jPhone').value.trim() || '—', M, y, {s: 3.7}); y += 4.7;
+    if ($('jAddr').value.trim()) {
+      wrapText(x, $('jAddr').value.trim(), CW - 60, {s: 3.6}).forEach(l => { T(x, l, M, y, {s: 3.6}); y += 4.6; });
+    }
     y += 3;
     // ตารางรายการงาน (ไม่มีราคา)
     const c0 = M, c1 = M + 14, cR = M + CW, cQ = cR - 24;
@@ -3193,7 +3246,7 @@ function bahtText(value) {
   $('vatMode').addEventListener('change', () => { syncVat(); renderBill(); });
   $('docCopy').addEventListener('change', renderBill);
 
-  ['jobNo', 'jobDate', 'jobDue', 'jName', 'jPhone', 'jobNote'].forEach(id => $(id).addEventListener('input', renderJob));
+  ['jobNo', 'jobDate', 'jobDue', 'jName', 'jPhone', 'jAddr', 'jobNote'].forEach(id => $(id).addEventListener('input', renderJob));
 
   $('jobItems').addEventListener('input', e => {
     const row = e.target.closest('.item'); if (!row) return;
@@ -3235,7 +3288,7 @@ function bahtText(value) {
   $('save-job').addEventListener('click', saveJob);
   $('new-job').addEventListener('click', () => { $('jobPhotoInput').value = ''; newJob(); toast('เปิดใบใหม่แล้ว'); });
   $('job-to-bill').addEventListener('click', () => {
-    $('cName').value = $('jName').value; $('cPhone').value = $('jPhone').value;
+    $('cName').value = $('jName').value; $('cPhone').value = $('jPhone').value; $('cAddr').value = $('jAddr').value;
     const shown = jobItems.filter(i => i.name.trim());
     items = shown.length ? shown.map(i => ({name: i.name, qty: i.qty, price: 0})) : [{name: '', qty: 1, price: 0}];
     if ($('jobNote').value.trim() && !$('note').value.trim()) $('note').value = $('jobNote').value;
@@ -3562,6 +3615,7 @@ function bahtText(value) {
   $('report-all').addEventListener('click', () => { $('reportMonth').value = ''; renderReport(); });
   $('report-csv-sales').addEventListener('click', () => exportReportCsv('sales'));
   $('report-csv-purch').addEventListener('click', () => exportReportCsv('purchase'));
+  $('report-csv-nonvat').addEventListener('click', () => exportReportCsv('purchaseNonVat'));
   $('report-pdf-sales').addEventListener('click', () => exportDoc('reportSales', $('report-pdf-sales'), {forPrint: true}));
   $('report-pdf-purch').addEventListener('click', () => exportDoc('reportPurch', $('report-pdf-purch'), {forPrint: true}));
   renderReport();
