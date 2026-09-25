@@ -1013,13 +1013,17 @@ tr{break-inside:avoid}
                 <label class="f"><span>วันที่สั่งงาน</span><input class="txt" id="jobDate" type="date"></label>
               </div>
               <label class="f"><span>กำหนดส่งงาน (ถ้ามี)</span><input class="txt" id="jobDue" type="date"></label>
-              <label class="f"><span>เลือกบัญชี</span>
-                <select class="txt" id="jobAccount">
-                  <option value="">— เลือกบัญชี —</option>
-                  <option value="กิติพงษ์">กิติพงษ์</option>
-                  <option value="วันทิม">วันทิม</option>
-                </select>
-              </label>
+              <div class="row2">
+                <label class="f"><span>เลือกบัญชี</span>
+                  <select class="txt" id="jobAccount">
+                    <option value="">— เลือกบัญชี —</option>
+                    <option value="กิติพงษ์">กิติพงษ์</option>
+                    <option value="วันทิม">วันทิม</option>
+                  </select>
+                </label>
+                <label class="f"><span>จำนวนเงิน (ตามสลิป)</span><div class="in"><input type="number" inputmode="decimal" step="any" min="0" id="jobSlipAmount" placeholder="0.00"></div></label>
+              </div>
+              <p class="hint" style="margin:-8px 0 0">บัญชีและจำนวนเงินในสลิปจะไม่แสดงในใบคอนเฟิร์มงาน (กันพนักงานเห็น) แต่จะโชว์ในลิสต์ประวัติใบงานเท่านั้น</p>
               <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="jName" type="text" autocomplete="off"></label>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="jPhone" type="tel" autocomplete="off"></label>
               <label class="f"><span>ที่อยู่ลูกค้า (ถ้ามี)</span><textarea id="jAddr"></textarea></label>
@@ -2502,8 +2506,7 @@ function bahtText(value) {
     $('jobSheet').innerHTML =
       '<header class="sh-head"><div class="sh-brand">' + logoImg() + '<div><div class="sh-name">' + esc(shop.name) + '</div><div class="sh-lines">' + shopLines() + '</div></div></div>' +
       '<div class="sh-doc"><h2>ใบคอนเฟิร์มงาน</h2><div class="sh-lines">เลขที่ <b>' + esc($('jobNo').value) + '</b><br>วันที่สั่ง ' + esc(thDate($('jobDate').value)) +
-      '<br>กำหนดส่ง ' + ($('jobDue').value ? esc(thDate($('jobDue').value)) : '—') +
-      ($('jobAccount').value.trim() ? '<br>บัญชี ' + esc($('jobAccount').value.trim()) : '') + '</div></div></header>' +
+      '<br>กำหนดส่ง ' + ($('jobDue').value ? esc(thDate($('jobDue').value)) : '—') + '</div></div></header>' +
       '<section class="cust"><h3>ลูกค้า</h3><div><b>' + dash($('jName').value) + '</b></div><div>' + dash($('jPhone').value) + '</div>' +
       ($('jAddr').value.trim() ? '<div>' + esc($('jAddr').value.trim()) + '</div>' : '') + '</section>' +
       '<div class="tbl-wrap"><table class="lines"><thead><tr><th class="n">ลำดับ</th><th>รายการงาน / สเปก</th><th class="r">จำนวน</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
@@ -2530,12 +2533,12 @@ function bahtText(value) {
   }
 
   function collectJob() {
-    return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, account: $('jobAccount').value, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
+    return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, account: $('jobAccount').value, slipAmount: $('jobSlipAmount').value, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
       items: jobItems.map(i => ({name: i.name, qty: i.qty, note: i.note})), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus};
   }
   function applyJob(j) {
     $('jobNo').value = j.no || ''; $('jobDate').value = j.date || todayISO(); $('jobDue').value = j.due || '';
-    $('jobAccount').value = j.account || '';
+    $('jobAccount').value = j.account || ''; $('jobSlipAmount').value = j.slipAmount || '';
     $('jName').value = j.jName || ''; $('jPhone').value = j.jPhone || ''; $('jAddr').value = j.jAddr || '';
     jobItems = (j.items && j.items.length) ? j.items.map(i => ({name: i.name || '', qty: i.qty, note: i.note || ''})) : [{name: '', qty: 1, note: ''}];
     $('jobNote').value = j.note || '';
@@ -2562,7 +2565,7 @@ function bahtText(value) {
     $('jobHistory').innerHTML = notice + '<ul>' + list.map(j => {
       const st = j.status || 'pending';
       return '<li data-id="' + esc(j.id) + '">' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '') +
-      '<div class="meta"><b>' + esc(j.no) + '</b><small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (j.account ? ' · บัญชี ' + esc(j.account) : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
+      '<div class="meta"><b>' + esc(j.no) + '</b><small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (j.account ? ' · บัญชี ' + esc(j.account) : '') + (num(j.slipAmount) > 0 ? ' · สลิป ' + money(num(j.slipAmount)) + ' บาท' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
       '<select class="job-status-select status-pill ' + st + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
       '</select>' +
@@ -2832,7 +2835,7 @@ function bahtText(value) {
     let y = drawHeader(x, 'ใบคอนเฟิร์มงาน', [
       'เลขที่ ' + $('jobNo').value, 'วันที่สั่ง ' + thDate($('jobDate').value),
       'กำหนดส่ง ' + ($('jobDue').value ? thDate($('jobDue').value) : '—')
-    ].concat($('jobAccount').value.trim() ? ['บัญชี ' + $('jobAccount').value.trim()] : []), null);
+    ], null);
     // ลูกค้า
     T(x, 'ลูกค้า', M, y, {s: 3.3, w: 600, h: 1, c: MUTED}); y += 4.8;
     T(x, $('jName').value.trim() || '—', M, y, {s: 3.9, w: 700}); y += 4.7;
@@ -3255,7 +3258,7 @@ function bahtText(value) {
   $('vatMode').addEventListener('change', () => { syncVat(); renderBill(); });
   $('docCopy').addEventListener('change', renderBill);
 
-  ['jobNo', 'jobDate', 'jobDue', 'jobAccount', 'jName', 'jPhone', 'jAddr', 'jobNote'].forEach(id => $(id).addEventListener(id === 'jobAccount' ? 'change' : 'input', renderJob));
+  ['jobNo', 'jobDate', 'jobDue', 'jobAccount', 'jobSlipAmount', 'jName', 'jPhone', 'jAddr', 'jobNote'].forEach(id => $(id).addEventListener(id === 'jobAccount' ? 'change' : 'input', renderJob));
 
   $('jobItems').addEventListener('input', e => {
     const row = e.target.closest('.item'); if (!row) return;
