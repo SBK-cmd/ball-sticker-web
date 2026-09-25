@@ -404,6 +404,14 @@ tr{break-inside:avoid}
 @media (max-width:560px){
   .wrap{padding:0 14px}
   .card{padding:16px}
+  /* หัวเว็บมือถือ: ตัดคำโปรยที่ทำให้ตัวอักษรล้น/ขึ้นหลายบรรทัด เหลือแค่โลโก้+ชื่อสั้นๆ แถวเดียว ให้ดูโล่งไม่งง */
+  .top{padding:12px 0 10px;gap:8px}
+  .brand{gap:8px}
+  .brand .mark{width:34px;height:34px;font-size:15px}
+  .brand b{font-size:15px}
+  .brand small{display:none}
+  .top-track span{display:none}
+  .top-track{padding:9px;gap:0}
   .item{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 36px}
   .item .txt{grid-column:1/-1}
   .item output{grid-column:3}
@@ -542,12 +550,15 @@ tr{break-inside:avoid}
     if (!usersDocRef) return;
     usersDocRef.set({ list: list, updatedAt: Date.now() }).catch(function (e) { console.error('sync users to cloud failed', e); });
   }
-  // ดึงรายชื่อบัญชีล่าสุดจากคลาวด์ครั้งเดียว — คืนค่า null ถ้าใช้คลาวด์ไม่ได้/หลุดเน็ต (ให้ผู้เรียกใช้ fallback เอง)
+  // ดึงรายชื่อบัญชีล่าสุดจากคลาวด์ครั้งเดียว — คืนค่า null ถ้าใช้คลาวด์ไม่ได้/หลุดเน็ต/ช้าเกินไป (ให้ผู้เรียกใช้ fallback เอง)
+  // มี timeout กันเน็ตค้าง (เช่นออฟไลน์แบบไม่มี DNS) ไม่ให้ผู้ใช้ต้องรอหน้า "กำลังตรวจสอบบัญชี..." ค้างตลอดไป
   function fetchCloudUsers() {
     if (!usersDocRef) return Promise.resolve(null);
-    return usersDocRef.get().then(function (doc) {
+    var timeout = new Promise(function (resolve) { setTimeout(function () { resolve(null); }, 7000); });
+    var fetchP = usersDocRef.get().then(function (doc) {
       return doc.exists ? (doc.data().list || []) : [];
     }).catch(function () { return null; });
+    return Promise.race([fetchP, timeout]);
   }
 
   async function hashPassword(password, salt) {
@@ -584,15 +595,8 @@ tr{break-inside:avoid}
   };
 
   var screen = document.getElementById('lockScreen');
-  var users = getUsers();
+  var users; // ตั้งค่าจริงหลังเช็กคลาวด์เสร็จ (ดู initLockScreen ด้านล่าง)
   var session = getSession();
-  if (session && users.some(function (u) { return u.id === session.id; })) {
-    screen.hidden = true;
-    // ล็อกอินอยู่แล้ว — เช็กคลาวด์เงียบๆ เบื้องหลัง เผื่อบัญชีถูกแก้ไข/ลบจากเครื่องอื่น จะได้อัปเดตแคชไว้ให้ทันสมัย
-    if (usersDocRef) { fetchCloudUsers().then(function (list) { if (list) saveUsersLocal(list); }); }
-    return;
-  }
-  if (session) clearSession(); // เซสชันไม่ตรงกับบัญชีที่มีอยู่ (เช่นถูกลบไปแล้ว) ให้ล้างทิ้ง
 
   var setupView = document.getElementById('lockSetupView');
   var loginView = document.getElementById('lockLoginView');
@@ -610,21 +614,36 @@ tr{break-inside:avoid}
     setTimeout(function () { card.classList.remove('shake'); }, 400);
   }
 
-  showView(users.length ? loginView : setupView);
+  // แสดงข้อความระหว่างรอเช็กคลาวด์ ก่อนตัดสินใจว่าจะขึ้นหน้าตั้งค่าบัญชีเจ้าของร้าน หรือหน้าเข้าสู่ระบบ
+  var loadingMsg = document.createElement('p');
+  loadingMsg.textContent = 'กำลังตรวจสอบบัญชี...';
+  loadingMsg.style.cssText = 'text-align:center;color:#7a7f8a;padding:24px 0';
+  card.appendChild(loadingMsg);
 
-  // มีคลาวด์: ดึงรายชื่อบัญชีล่าสุดมาเช็กเงียบๆ เบื้องหลัง — กันกรณีเปิดแอปเครื่องใหม่ที่ยังไม่มีแคช
-  // แต่มีคนตั้งค่า/สมัครบัญชีจากเครื่องอื่นไปแล้ว จะได้สลับจาก "ตั้งค่าบัญชีเจ้าของร้าน" ไปหน้า "เข้าสู่ระบบ" ให้ถูกต้อง
-  if (usersDocRef) {
-    fetchCloudUsers().then(function (cloudList) {
-      if (!cloudList) return; // คลาวด์ใช้ไม่ได้ตอนนี้ (ออฟไลน์ ฯลฯ) — ใช้แคชเครื่องนี้ต่อไป
-      var localNow = getUsersLocal();
-      if (JSON.stringify(cloudList) !== JSON.stringify(localNow)) {
+  // ---- ตัดสินใจว่าจะขึ้นหน้าไหน: รอผลจากคลาวด์ก่อนเสมอ (ถ้ามีคลาวด์ตั้งค่าไว้และต่อได้) ----
+  // สำคัญ: ต้องรอ ไม่ใช่เดาจากแคชเครื่องนี้ก่อนแล้วค่อยสลับทีหลัง เพราะเครื่องใหม่ที่ยังไม่มีแคช
+  // อาจโชว์หน้า "ตั้งค่าบัญชีเจ้าของร้าน" ผิดๆ และถ้าพลาดกดสร้างบัญชีไปก่อนคลาวด์ตอบ จะได้บัญชีซ้อนกัน
+  (async function initLockScreen() {
+    var effectiveUsers = getUsersLocal();
+    if (usersDocRef) {
+      var cloudList = await fetchCloudUsers();
+      if (cloudList) {
+        effectiveUsers = cloudList;
         saveUsersLocal(cloudList);
-        users = cloudList;
-        if (cloudList.length && !setupView.hidden) { showView(loginView); }
       }
-    });
-  }
+      // cloudList เป็น null แปลว่าใช้คลาวด์ไม่ได้ตอนนี้ (ออฟไลน์/บล็อกสคริปต์ ฯลฯ) — ใช้แคชเครื่องนี้ต่อไปตามที่ตั้งไว้แล้วข้างบน
+    }
+    users = effectiveUsers;
+    loadingMsg.remove();
+
+    if (session && users.some(function (u) { return u.id === session.id; })) {
+      screen.hidden = true;
+      return;
+    }
+    if (session) clearSession(); // เซสชันไม่ตรงกับบัญชีที่มีอยู่ (เช่นถูกลบไปแล้ว) ให้ล้างทิ้ง
+
+    showView(users.length ? loginView : setupView);
+  })();
 
   document.getElementById('lockSetupForm').addEventListener('submit', function (e) {
     e.preventDefault();
@@ -801,7 +820,7 @@ tr{break-inside:avoid}
     </button>
     <button type="button" class="btab" data-tab="confirm" aria-controls="panel-confirm">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"></rect><path d="M9 3h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V3z" fill="currentColor" stroke="none"></path><path d="m9 13 2 2 4-4"></path></svg>
-      <span>คอนเฟิร์ม</span>
+      <span>สั่งงาน</span>
     </button>
     <button type="button" class="btab" data-tab="bill" aria-controls="panel-bill">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"></path><line x1="9" y1="8" x2="15" y2="8"></line><line x1="9" y1="12" x2="15" y2="12"></line></svg>
