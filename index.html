@@ -264,8 +264,8 @@ details.shop .fields{margin-top:12px}
 .job-photo-item button{position:absolute;top:-8px;right:-8px;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);
   background:var(--surface);color:#c2261f;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-1)}
 .job-photo-item button:hover{background:#fdeeee}
-.sheet .job-photo-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
-.sheet .job-photo-grid img{width:120px;height:120px;object-fit:cover;border-radius:10px;border:1px solid #c9d2de}
+.sheet .job-photo-grid{display:flex;flex-wrap:wrap;gap:6mm;margin-top:8px;justify-content:center}
+.sheet .job-photo-grid img{object-fit:cover;border-radius:10px;border:1px solid #c9d2de;display:block}
 
 /* ---------------- สถานะงาน (ใบคอนเฟิร์มงาน) ---------------- */
 .job-status-row{display:flex;align-items:center;gap:8px;margin:-6px 0 14px}
@@ -2499,6 +2499,15 @@ function bahtText(value) {
     fitJob();
   }
 
+  // คำนวณขนาด/จำนวนคอลัมน์ของรูปอ้างอิงงานให้เหมาะกับจำนวนรูป (รูปน้อย = ใหญ่, รูปเยอะ = จัดกริดถี่ขึ้น)
+  // ใช้ร่วมกันทั้งตัวอย่าง HTML (มิลลิเมตร) และ PDF (มิลลิเมตรเช่นกัน ตรงกับสเกล S ของ canvas)
+  function photoGridLayout(n) {
+    const CWmm = 186, GAP = 6;
+    let cols = n <= 1 ? 1 : n <= 4 ? 2 : n <= 9 ? 3 : 4;
+    let size = (CWmm - (cols - 1) * GAP) / cols;
+    if (cols === 1) size = Math.min(size, 130);
+    return {cols, size, gap: GAP};
+  }
   function renderJobHTML() {
     const dash = v => v && String(v).trim() ? esc(v) : '—';
     const shown = jobItems.filter(i => i.name.trim());
@@ -2513,8 +2522,11 @@ function bahtText(value) {
       ($('jAddr').value.trim() ? '<div>' + esc($('jAddr').value.trim()) + '</div>' : '') + '</section>' +
       '<div class="tbl-wrap"><table class="lines"><thead><tr><th class="n">ลำดับ</th><th>รายการงาน / สเปก</th><th class="r">จำนวน</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       ($('jobNote').value.trim() ? '<div class="note"><b>ข้อกำหนดการผลิต / หมายเหตุ</b><br>' + esc($('jobNote').value) + '</div>' : '') +
-      (jobPhotos.length ? '<div class="note"><b>รูปอ้างอิงงาน</b><div class="job-photo-grid">' +
-        jobPhotos.map((src, i) => '<img src="' + src + '" alt="รูปอ้างอิงงาน ' + (i + 1) + '">').join('') + '</div></div>' : '') +
+      (jobPhotos.length ? (() => {
+        const gl = photoGridLayout(jobPhotos.length);
+        return '<div class="note"><b>รูปอ้างอิงงาน</b><div class="job-photo-grid">' +
+          jobPhotos.map((src, i) => '<img src="' + src + '" alt="รูปอ้างอิงงาน ' + (i + 1) + '" style="width:' + gl.size + 'mm;height:' + gl.size + 'mm">').join('') + '</div></div>';
+      })() : '') +
       '<div class="sign"><div>ลูกค้าตรวจสอบและยืนยันงาน ____________________</div><div>ผู้รับงาน ____________________</div></div>';
   }
 
@@ -2884,13 +2896,15 @@ function bahtText(value) {
       y += 2.4;
       if (y + 12 > PH - M - 30) { pg = mkPage(); x = pg.x; pages.push(pg.c); y = M; }
       T(x, 'รูปอ้างอิงงาน', M, y + 3.6, {s: 3.6, w: 700}); y += 8;
-      const TS = 56, GAP = 6, cols = 3;
+      const gl = photoGridLayout(jobPhotos.length);
+      const TS = gl.size, GAP = gl.gap, cols = gl.cols;
+      const rowW = cols * TS + (cols - 1) * GAP, startX = M + (CW - rowW) / 2;
       const imgs = await Promise.all(jobPhotos.map(src => loadImg(src).catch(() => null)));
       let col = 0;
       imgs.forEach(im => {
         if (!im) return;
         if (col === 0 && y + TS + 4 > PH - M - 30) { pg = mkPage(); x = pg.x; pages.push(pg.c); y = M; }
-        const px = M + col * (TS + GAP), py = y;
+        const px = startX + col * (TS + GAP), py = y;
         const iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height, side = Math.min(iw, ih);
         const sx = (iw - side) / 2, sy2 = (ih - side) / 2;
         x.save();
