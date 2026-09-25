@@ -441,6 +441,19 @@ tr{break-inside:avoid}
   .btab span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
   .btab.active{color:var(--sticker-line)}
   .btab:active{background:var(--field)}
+  /* ปุ่ม "สั่งงาน" กลางเมนูล่าง: ยกวงกลมสีเหลืองเด่นขึ้นเหนือแถบ ให้เป็นจุดสนใจหลักสำหรับสร้างงานใหม่ */
+  .btab-fab{justify-content:flex-start}
+  .btab-fab-circle{
+    width:46px;height:46px;border-radius:50%;background:var(--accent);color:var(--accent-ink);
+    display:grid;place-items:center;margin-top:-26px;
+    box-shadow:inset -4px -4px 0 rgba(16,35,63,.14),0 6px 14px -4px rgba(16,35,63,.45);
+    border:3px solid var(--surface);
+  }
+  .btab-fab-circle svg{width:22px;height:22px}
+  .btab-fab span:last-child{margin-top:1px;color:var(--ink)}
+  .btab-fab.active .btab-fab-circle{background:var(--ink);color:var(--surface)}
+  .btab-fab.active span:last-child{color:var(--sticker-line)}
+  .btab-fab:active .btab-fab-circle{transform:scale(.94)}
 }
 
 /* ---------- print ---------- */
@@ -818,8 +831,14 @@ tr{break-inside:avoid}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"></rect><line x1="8" y1="7" x2="16" y2="7"></line><line x1="8" y1="11" x2="8" y2="11.01"></line><line x1="12" y1="11" x2="12" y2="11.01"></line><line x1="16" y1="11" x2="16" y2="11.01"></line><line x1="8" y1="15" x2="8" y2="15.01"></line><line x1="12" y1="15" x2="12" y2="15.01"></line><line x1="16" y1="15" x2="16" y2="15.01"></line></svg>
       <span>คำนวณ</span>
     </button>
-    <button type="button" class="btab" data-tab="confirm" aria-controls="panel-confirm">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"></rect><path d="M9 3h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V3z" fill="currentColor" stroke="none"></path><path d="m9 13 2 2 4-4"></path></svg>
+    <button type="button" class="btab" data-tab="dash" aria-controls="panel-dash">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="20" x2="5" y2="12"></line><line x1="12" y1="20" x2="12" y2="6"></line><line x1="19" y1="20" x2="19" y2="15"></line></svg>
+      <span>แดชบอร์ด</span>
+    </button>
+    <button type="button" class="btab btab-fab" data-tab="confirm" aria-controls="panel-confirm">
+      <span class="btab-fab-circle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"></rect><path d="M9 3h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V3z" fill="currentColor" stroke="none"></path><path d="m9 13 2 2 4-4"></path></svg>
+      </span>
       <span>สั่งงาน</span>
     </button>
     <button type="button" class="btab" data-tab="bill" aria-controls="panel-bill">
@@ -3353,6 +3372,7 @@ function bahtText(value) {
     ['tab-bill', 'tab-purchase', 'tab-dash', 'tab-report'].forEach(id => { const el = $(id); if (el) el.hidden = true; });
     document.querySelectorAll('.tax-sheet-item[data-tab]').forEach(el => { el.hidden = true; });
     document.querySelectorAll('.btab[data-tab="bill"]').forEach(el => { el.hidden = true; });
+    document.querySelectorAll('.btab[data-tab="dash"]').forEach(el => { el.hidden = true; });
     if ($('taxTrigger')) { const grp = $('taxTrigger').closest('.tab-group'); if (grp) grp.hidden = true; }
     if ($('bnavTaxTrigger')) $('bnavTaxTrigger').hidden = true;
     if ($('shopSettings')) $('shopSettings').hidden = true;
