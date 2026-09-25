@@ -518,6 +518,38 @@ tr{break-inside:avoid}
 </div>
 <script>
 (function () {
+  // ---- คลาวด์ (Firebase) สำหรับซิงค์ "บัญชีผู้ใช้งาน" ข้ามเครื่อง/อุปกรณ์ ----
+  // สมัคร/ตั้งรหัสผ่านครั้งเดียว ใช้ได้ทุกเครื่องที่เปิดแอปนี้ — ถ้าใช้คลาวด์ไม่ได้ (ออฟไลน์/บล็อกสคริปต์)
+  // จะ fallback ไปใช้ข้อมูลในเครื่องนี้ (localStorage) แทนโดยอัตโนมัติ ไม่กระทบการทำงานเดิม
+  var firebaseConfig = {
+    apiKey: "AIzaSyDgIyeVed6xnG7A8YLRhbvZfxJOoHYpVco",
+    authDomain: "ball-sticker-d95c2.firebaseapp.com",
+    projectId: "ball-sticker-d95c2",
+    storageBucket: "ball-sticker-d95c2.firebasestorage.app",
+    messagingSenderId: "646578838963",
+    appId: "1:646578838963:web:36984908ecbfd79d183fc6",
+    measurementId: "G-D9CNDC6L08"
+  };
+  var authDb = null;
+  try {
+    if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
+      var fbApp = (firebase.apps && firebase.apps.length) ? firebase.apps[0] : firebase.initializeApp(firebaseConfig);
+      authDb = firebase.firestore(fbApp);
+    }
+  } catch (e) { authDb = null; }
+  var usersDocRef = authDb ? authDb.collection('bs_meta').doc('users') : null;
+  function pushUsersToCloud(list) {
+    if (!usersDocRef) return;
+    usersDocRef.set({ list: list, updatedAt: Date.now() }).catch(function (e) { console.error('sync users to cloud failed', e); });
+  }
+  // ดึงรายชื่อบัญชีล่าสุดจากคลาวด์ครั้งเดียว — คืนค่า null ถ้าใช้คลาวด์ไม่ได้/หลุดเน็ต (ให้ผู้เรียกใช้ fallback เอง)
+  function fetchCloudUsers() {
+    if (!usersDocRef) return Promise.resolve(null);
+    return usersDocRef.get().then(function (doc) {
+      return doc.exists ? (doc.data().list || []) : [];
+    }).catch(function () { return null; });
+  }
+
   async function hashPassword(password, salt) {
     var input = salt + ':' + password;
     if (window.crypto && window.crypto.subtle && window.crypto.subtle.digest) {
@@ -536,9 +568,12 @@ tr{break-inside:avoid}
     try { window.crypto.getRandomValues(arr); } catch (e) { for (var i = 0; i < arr.length; i++) arr[i] = Math.floor(Math.random() * 256); }
     return Array.prototype.map.call(arr, function (b) { return b.toString(16).padStart(2, '0'); }).join('');
   }
-  function getUsers() { try { return JSON.parse(localStorage.getItem('bs_users') || '[]'); } catch (e) { return []; } }
-  function saveUsers(list) { try { localStorage.setItem('bs_users', JSON.stringify(list)); return true; } catch (e) { return false; } }
-  // ใช้ localStorage (ไม่ใช่ sessionStorage) เพื่อให้ค้างสถานะล็อกอินไว้ ไม่ต้องเข้าสู่ระบบซ้ำทุกครั้งที่เปิดแอป
+  function getUsersLocal() { try { return JSON.parse(localStorage.getItem('bs_users') || '[]'); } catch (e) { return []; } }
+  function saveUsersLocal(list) { try { localStorage.setItem('bs_users', JSON.stringify(list)); return true; } catch (e) { return false; } }
+  // getUsers/saveUsers: อ่าน/เขียนแคชในเครื่องนี้ทันที (ที่อื่นในแอปเรียกใช้แบบ sync เหมือนเดิมได้) + อัปขึ้นคลาวด์เบื้องหลังให้ทุกเครื่องเห็นบัญชีเดียวกัน
+  function getUsers() { return getUsersLocal(); }
+  function saveUsers(list) { var ok = saveUsersLocal(list); pushUsersToCloud(list); return ok; }
+  // ใช้ localStorage (ไม่ใช่ sessionStorage) เพื่อให้ค้างสถานะล็อกอินไว้ ไม่ต้องเข้าสู่ระบบซ้ำทุกครั้งที่เปิดแอป (การล็อกอินยังแยกเป็นรายเครื่อง)
   function getSession() { try { return JSON.parse(localStorage.getItem('bs_session') || 'null'); } catch (e) { return null; } }
   function setSession(s) { try { localStorage.setItem('bs_session', JSON.stringify(s)); } catch (e) {} }
   function clearSession() { try { localStorage.removeItem('bs_session'); } catch (e) {} }
@@ -551,7 +586,12 @@ tr{break-inside:avoid}
   var screen = document.getElementById('lockScreen');
   var users = getUsers();
   var session = getSession();
-  if (session && users.some(function (u) { return u.id === session.id; })) { screen.hidden = true; return; }
+  if (session && users.some(function (u) { return u.id === session.id; })) {
+    screen.hidden = true;
+    // ล็อกอินอยู่แล้ว — เช็กคลาวด์เงียบๆ เบื้องหลัง เผื่อบัญชีถูกแก้ไข/ลบจากเครื่องอื่น จะได้อัปเดตแคชไว้ให้ทันสมัย
+    if (usersDocRef) { fetchCloudUsers().then(function (list) { if (list) saveUsersLocal(list); }); }
+    return;
+  }
   if (session) clearSession(); // เซสชันไม่ตรงกับบัญชีที่มีอยู่ (เช่นถูกลบไปแล้ว) ให้ล้างทิ้ง
 
   var setupView = document.getElementById('lockSetupView');
@@ -572,6 +612,20 @@ tr{break-inside:avoid}
 
   showView(users.length ? loginView : setupView);
 
+  // มีคลาวด์: ดึงรายชื่อบัญชีล่าสุดมาเช็กเงียบๆ เบื้องหลัง — กันกรณีเปิดแอปเครื่องใหม่ที่ยังไม่มีแคช
+  // แต่มีคนตั้งค่า/สมัครบัญชีจากเครื่องอื่นไปแล้ว จะได้สลับจาก "ตั้งค่าบัญชีเจ้าของร้าน" ไปหน้า "เข้าสู่ระบบ" ให้ถูกต้อง
+  if (usersDocRef) {
+    fetchCloudUsers().then(function (cloudList) {
+      if (!cloudList) return; // คลาวด์ใช้ไม่ได้ตอนนี้ (ออฟไลน์ ฯลฯ) — ใช้แคชเครื่องนี้ต่อไป
+      var localNow = getUsersLocal();
+      if (JSON.stringify(cloudList) !== JSON.stringify(localNow)) {
+        saveUsersLocal(cloudList);
+        users = cloudList;
+        if (cloudList.length && !setupView.hidden) { showView(loginView); }
+      }
+    });
+  }
+
   document.getElementById('lockSetupForm').addEventListener('submit', function (e) {
     e.preventDefault();
     var name = document.getElementById('setupName').value.trim();
@@ -582,12 +636,24 @@ tr{break-inside:avoid}
     if (!name || !uname || !pass) { err.textContent = 'กรอกข้อมูลให้ครบทุกช่อง'; err.hidden = false; shake(); return; }
     if (pass.length < 4) { err.textContent = 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร'; err.hidden = false; shake(); return; }
     if (pass !== pass2) { err.textContent = 'รหัสผ่านยืนยันไม่ตรงกัน'; err.hidden = false; shake(); return; }
-    var salt = randSalt();
-    hashPassword(pass, salt).then(function (hash) {
-      var user = {id: 'u' + Date.now(), name: name, username: uname, role: 'owner', salt: salt, hash: hash, createdAt: Date.now()};
-      saveUsers([user]);
-      setSession({id: user.id, name: user.name, username: user.username, role: user.role});
-      location.reload();
+    var setupBtn = e.target.querySelector('button[type="submit"]');
+    setupBtn.disabled = true;
+    // เช็กคลาวด์ก่อนสร้างบัญชีเจ้าของร้าน กันสร้างซ้อนกันถ้ามีคนตั้งค่าจากอีกเครื่องไปพร้อมกัน
+    fetchCloudUsers().then(function (cloudList) {
+      if (cloudList && cloudList.length) {
+        saveUsersLocal(cloudList);
+        users = cloudList;
+        setupBtn.disabled = false;
+        showView(loginView);
+        return;
+      }
+      var salt = randSalt();
+      hashPassword(pass, salt).then(function (hash) {
+        var user = {id: 'u' + Date.now(), name: name, username: uname, role: 'owner', salt: salt, hash: hash, createdAt: Date.now()};
+        saveUsers([user]);
+        setSession({id: user.id, name: user.name, username: user.username, role: user.role});
+        location.reload();
+      });
     });
   });
 
@@ -597,18 +663,35 @@ tr{break-inside:avoid}
     var pass = document.getElementById('loginPass').value;
     var err = document.getElementById('loginErr');
     err.hidden = true;
-    var list = getUsers();
-    var user = list.find(function (u) { return u.username.toLowerCase() === uname.toLowerCase(); });
-    if (!user) { err.hidden = false; shake(); return; }
-    hashPassword(pass, user.salt).then(function (hash) {
-      if (hash === user.hash) {
+    function findAndCheck(list) {
+      var user = list.find(function (u) { return u.username.toLowerCase() === uname.toLowerCase(); });
+      if (!user) return Promise.resolve(null);
+      return hashPassword(pass, user.salt).then(function (hash) { return hash === user.hash ? user : null; });
+    }
+    var localList = getUsers();
+    findAndCheck(localList).then(function (user) {
+      if (user) {
         setSession({id: user.id, name: user.name, username: user.username, role: user.role});
         location.reload();
-      } else {
-        err.hidden = false; shake();
-        document.getElementById('loginPass').value = '';
-        document.getElementById('loginPass').focus();
+        return;
       }
+      // ไม่เจอในแคชเครื่องนี้ หรือรหัสผ่านไม่ตรง — ถ้ามีคลาวด์ ลองดึงข้อมูลล่าสุดมาเช็กอีกที
+      // เผื่อเพิ่งสมัคร/แก้รหัสผ่านจากเครื่องอื่นมา แล้วเครื่องนี้ยังไม่เคยซิงค์
+      if (!usersDocRef) { err.hidden = false; shake(); document.getElementById('loginPass').value = ''; document.getElementById('loginPass').focus(); return; }
+      fetchCloudUsers().then(function (cloudList) {
+        if (!cloudList) return null;
+        saveUsersLocal(cloudList);
+        return findAndCheck(cloudList);
+      }).then(function (user2) {
+        if (user2) {
+          setSession({id: user2.id, name: user2.name, username: user2.username, role: user2.role});
+          location.reload();
+        } else {
+          err.hidden = false; shake();
+          document.getElementById('loginPass').value = '';
+          document.getElementById('loginPass').focus();
+        }
+      }).catch(function () { err.hidden = false; shake(); });
     });
   });
 
@@ -631,16 +714,21 @@ tr{break-inside:avoid}
     if (!name || !uname || !pass) { err.textContent = 'กรอกข้อมูลให้ครบทุกช่อง'; err.hidden = false; shake(); return; }
     if (pass.length < 4) { err.textContent = 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร'; err.hidden = false; shake(); return; }
     if (pass !== pass2) { err.textContent = 'รหัสผ่านยืนยันไม่ตรงกัน'; err.hidden = false; shake(); return; }
-    var list = getUsers();
-    if (list.some(function (u) { return u.username.toLowerCase() === uname.toLowerCase(); })) {
-      err.textContent = 'มีชื่อผู้ใช้นี้อยู่แล้ว ลองใช้ชื่ออื่น'; err.hidden = false; shake(); return;
-    }
-    var salt = randSalt();
-    hashPassword(pass, salt).then(function (hash) {
-      var user = {id: 'u' + Date.now(), name: name, username: uname, role: 'staff', salt: salt, hash: hash, createdAt: Date.now()};
-      saveUsers(list.concat([user]));
-      setSession({id: user.id, name: user.name, username: user.username, role: user.role});
-      location.reload();
+    var regBtn = e.target.querySelector('button[type="submit"]');
+    regBtn.disabled = true;
+    fetchCloudUsers().then(function (cloudList) {
+      var list = cloudList || getUsers();
+      if (cloudList) saveUsersLocal(cloudList);
+      if (list.some(function (u) { return u.username.toLowerCase() === uname.toLowerCase(); })) {
+        err.textContent = 'มีชื่อผู้ใช้นี้อยู่แล้ว ลองใช้ชื่ออื่น'; err.hidden = false; shake(); regBtn.disabled = false; return;
+      }
+      var salt = randSalt();
+      hashPassword(pass, salt).then(function (hash) {
+        var user = {id: 'u' + Date.now(), name: name, username: uname, role: 'staff', salt: salt, hash: hash, createdAt: Date.now()};
+        saveUsers(list.concat([user]));
+        setSession({id: user.id, name: user.name, username: user.username, role: user.role});
+        location.reload();
+      });
     });
   });
 
@@ -660,6 +748,7 @@ tr{break-inside:avoid}
     if (typed !== shopName) { document.getElementById('resetErr').hidden = false; shake(); return; }
     localStorage.removeItem('bs_users');
     clearSession();
+    if (usersDocRef) { usersDocRef.delete().catch(function () {}); }
     showView(setupView);
   });
 })();
@@ -1337,7 +1426,7 @@ function bahtText(value) {
   let cloudDb = null;
   try {
     if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
-      const fbApp = firebase.initializeApp(firebaseConfig);
+      const fbApp = (firebase.apps && firebase.apps.length) ? firebase.apps[0] : firebase.initializeApp(firebaseConfig);
       cloudDb = firebase.firestore(fbApp);
     }
   } catch (e) { cloudDb = null; }
