@@ -185,6 +185,8 @@ textarea{resize:vertical;min-height:72px}
 .btn:active{transform:translateY(0)}
 .btn.primary{background:var(--sticker);border-color:var(--sticker-line);color:var(--ink)}
 .btn.primary:hover{filter:brightness(.96);background:var(--sticker)}
+.btn.good{background:#2fa860;border-color:#1f7a45;color:#fff}
+.btn.good:hover{filter:brightness(.96);background:#2fa860}
 .btn.small{padding:6px 14px;font-size:14px;box-shadow:none}
 .btn.danger{border-color:var(--line);color:var(--muted);background:transparent;box-shadow:none}
 .btn.edit{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
@@ -1055,7 +1057,7 @@ tr{break-inside:avoid}
                 พิมพ์ใบคอนเฟิร์มงาน
               </button>
               <button class="btn" id="pdf-job" type="button">ดาวน์โหลด PDF</button>
-              <button class="btn" id="save-job" type="button">บันทึกลงประวัติ</button>
+              <button class="btn good" id="save-job" type="button">บันทึกลงประวัติ</button>
               <button class="btn" id="job-to-bill" type="button">ใช้ข้อมูลนี้ออกบิล →</button>
               <button class="btn danger" id="new-job" type="button">เปิดใบใหม่</button>
             </div>
@@ -1149,7 +1151,7 @@ tr{break-inside:avoid}
                 พิมพ์เอกสาร
               </button>
               <button class="btn" id="pdf-bill" type="button">ดาวน์โหลด PDF</button>
-              <button class="btn" id="save-bill" type="button">บันทึกลงประวัติ</button>
+              <button class="btn good" id="save-bill" type="button">บันทึกลงประวัติ</button>
               <button class="btn danger" id="new-bill" type="button">เปิดเอกสารใหม่</button>
               <button class="btn" id="stmt-import-btn" type="button">เปิดบิลจากสเตทเม้นธนาคาร</button>
             </div>
@@ -1220,7 +1222,7 @@ tr{break-inside:avoid}
               </label>
             </div>
             <div class="actions">
-              <button class="btn primary" id="save-purchase" type="button">บันทึกลงประวัติ</button>
+              <button class="btn good" id="save-purchase" type="button">บันทึกลงประวัติ</button>
               <button class="btn danger" id="new-purchase" type="button">เปิดรายการใหม่</button>
             </div>
           </div>
