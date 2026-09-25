@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ball Sticker — คำนวณสติ๊กเกอร์และใบกำกับภาษี</title>
+<script>
+// ตั้งโหมดมืด/สว่างจากค่าที่จำไว้ทันทีตั้งแต่ก่อนวาดหน้าจอ กันไฟกะพริบสลับธีมตอนโหลด
+(function(){try{var t=localStorage.getItem('bs_theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Firebase (ใช้ซิงก์ประวัติบิล/ใบคอนเฟิร์มงานข้ามเครื่องแบบเรียลไทม์ — ถ้าโหลดไม่ได้ เช่น ไม่มีอินเทอร์เน็ต
@@ -117,6 +121,12 @@ a{color:inherit}
 .user-chip-menu button:hover{background:var(--field)}
 .user-chip-menu #menuLogout{color:#c2261f}
 @media (max-width:900px){.user-chip-info{display:none}.user-chip-btn{padding:6px}}
+
+/* ---------- ปุ่มสลับโหมดมืด/สว่าง ---------- */
+.theme-toggle{flex:none;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;
+  border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;margin-left:8px}
+.theme-toggle:hover{background:var(--field)}
+.theme-toggle:active{transform:scale(.92)}
 .tax-sheet-item.active svg{color:var(--sticker-line)}
 
 .bnav{display:none}
@@ -813,6 +823,10 @@ tr{break-inside:avoid}
       </div>
       <a href="https://ball-sticker-tracking.nutty-hill-4377.chatgpt.site/" target="_blank" rel="noopener">ติดตามงานสติ๊กเกอร์ ↗</a>
     </nav>
+    <button type="button" class="theme-toggle no-print" id="themeToggleBtn" aria-label="สลับโหมดมืด/สว่าง">
+      <svg id="themeIconSun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+      <svg id="themeIconMoon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none" hidden><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </button>
     <div class="user-chip no-print" id="userChip">
       <button type="button" class="user-chip-btn" id="userChipBtn" aria-haspopup="true" aria-expanded="false">
         <span class="user-chip-avatar" id="userChipAvatar">B</span>
@@ -825,6 +839,38 @@ tr{break-inside:avoid}
       </div>
     </div>
   </header>
+  <script>
+  (function () {
+    var btn = document.getElementById('themeToggleBtn');
+    var sunIcon = document.getElementById('themeIconSun');
+    var moonIcon = document.getElementById('themeIconMoon');
+    var root = document.documentElement;
+    function isDarkNow() {
+      var t = root.getAttribute('data-theme');
+      if (t === 'dark') return true;
+      if (t === 'light') return false;
+      // ยังไม่เคยตั้งค่าเอง — ยึดตามโหมดของเครื่อง/เบราว์เซอร์
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    function setHidden(el, hide) {
+      // ใช้ setAttribute/removeAttribute ตรงๆ แทน el.hidden = bool เพราะ SVGElement บางเบราว์เซอร์
+      // ไม่ reflect พร็อพเพอร์ตี้ hidden ไปเป็น attribute ให้อัตโนมัติเหมือน HTMLElement ทั่วไป
+      if (hide) el.setAttribute('hidden', ''); else el.removeAttribute('hidden');
+    }
+    function updateIcon() {
+      var dark = isDarkNow();
+      setHidden(sunIcon, dark);   // โหมดมืดอยู่ -> ซ่อนพระอาทิตย์ โชว์พระจันทร์แทน
+      setHidden(moonIcon, !dark); // โหมดสว่างอยู่ -> ซ่อนพระจันทร์ โชว์พระอาทิตย์แทน
+    }
+    updateIcon();
+    btn.addEventListener('click', function () {
+      var next = isDarkNow() ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('bs_theme', next); } catch (e) {}
+      updateIcon();
+    });
+  })();
+  </script>
 
   <nav class="bnav no-print" aria-label="เมนูหลัก (มือถือ)">
     <button type="button" class="btab active" data-tab="calc" aria-controls="panel-calc">
