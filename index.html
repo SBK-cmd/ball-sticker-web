@@ -1543,23 +1543,116 @@ function bahtText(value) {
   } catch (e) { cloudDb = null; }
   let cloudStatus = cloudDb ? 'connecting' : 'off';   // off | connecting | on | error
 
+  /* ---------------- เก็บรูปถาวรข้ามเครื่องด้วย Firestore ล้วนๆ (ไม่ต้องใช้ Firebase Storage/แพ็กเกจ Blaze)
+     รูปแต่ละรูปถูกฝังในเอกสารของตัวเองที่คอลเลกชัน "photos" (เอกสารละ ~150-300KB เล็กกว่าลิมิต 1MB ของ Firestore มาก)
+     ส่วนเอกสารบิล/ใบงานหลักจะเก็บแค่ "รหัสอ้างอิงรูป" (ข้อความสั้นๆ) แทนตัวรูปจริง จึงไม่มีวันเกินลิมิตขนาดเอกสาร
+     เครื่องที่ถ่าย/แนบรูปจะเห็นรูปจริงทันที ส่วนเครื่องอื่นจะดึงรูปจริงมาโหลด (ครั้งเดียว) ตามรหัสอ้างอิงที่ซิงก์มา ---------------- */
+  const PHOTO_REF_PREFIX = 'fsphoto:';
+  async function uploadPhotoDataToFirestore(dataUrl, docId) {
+    if (!cloudDb) return null;
+    try {
+      await cloudDb.collection('photos').doc(docId).set({data: dataUrl, savedAt: Date.now()});
+      return PHOTO_REF_PREFIX + docId;
+    } catch (e) { console.error('save photo doc error', e); return null; }
+  }
+  async function fetchPhotoFromFirestore(ref) {
+    if (!cloudDb || typeof ref !== 'string' || ref.indexOf(PHOTO_REF_PREFIX) !== 0) return null;
+    try {
+      const snap = await cloudDb.collection('photos').doc(ref.slice(PHOTO_REF_PREFIX.length)).get();
+      return snap.exists ? (snap.data().data || null) : null;
+    } catch (e) { console.error('fetch photo doc error', e); return null; }
+  }
+  // เครื่องนี้เพิ่งดึงรูปจากคลาวด์มาแคชไว้ในเครื่องสำเร็จ — แจ้งให้หน้าจอที่เกี่ยวข้องรีเฟรช
+  function onPhotosResolved(key) {
+    if (key === 'bs_jobs' && typeof renderJobHistory === 'function') renderJobHistory();
+    if (key === 'bs_purchases' && typeof renderPurchHistory === 'function') renderPurchHistory();
+  }
+  // ถ้าเรคคอร์ดที่ได้จากคลาวด์มีแต่ "รหัสอ้างอิงรูป" (ยังไม่มีรูปจริงในเครื่องนี้) ให้ดึงรูปจริงมาโหลดแล้วแคชไว้ในเครื่อง ครั้งเดียวต่อรูป
+  function resolveCloudPhotoRefs(key, id, refs) {
+    if (!cloudDb || !refs || !refs.length) return;
+    (async () => {
+      const photos = (await Promise.all(refs.map(fetchPhotoFromFirestore))).filter(Boolean);
+      if (!photos.length) return;
+      const list = store.get(key, []);
+      const idx = list.findIndex(r => r.id === id);
+      if (idx < 0) return;
+      const field = key === 'bs_purchases' ? 'photo' : 'photos';
+      list[idx] = Object.assign({}, list[idx], field === 'photo' ? {photo: photos[0]} : {photos: photos});
+      store.set(key, list);
+      onPhotosResolved(key);
+    })();
+  }
+
   function watchCloud(col, key, onChange) {
     if (!cloudDb) return;
     cloudDb.collection(col).onSnapshot(snap => {
+      // ถ้ารูปเป็นแค่รหัสอ้างอิง (fsphoto:...) แต่เครื่องนี้เคยแคชรูปจริงไว้แล้ว ให้ใช้รูปจริงที่แคชไว้แทน
+      // ไม่งั้นเดี๋ยวรูปจะกลายเป็น "รหัสอ้างอิง" ที่แสดงเป็นรูปไม่ได้ทันที ต้องรอโหลดใหม่ทุกครั้งโดยไม่จำเป็น
+      const prevById = {};
+      (store.get(key, []) || []).forEach(r => { if (r && r.id) prevById[r.id] = r; });
       const list = [];
-      snap.forEach(d => list.push(Object.assign({id: d.id}, d.data())));
+      const toResolve = [];
+      snap.forEach(d => {
+        const rec = Object.assign({id: d.id}, d.data());
+        const prev = prevById[rec.id];
+        const isRefList = v => Array.isArray(v) && v.length && v.every(p => typeof p === 'string' && p.indexOf(PHOTO_REF_PREFIX) === 0);
+        const isRefSingle = v => typeof v === 'string' && v.indexOf(PHOTO_REF_PREFIX) === 0;
+        if (isRefList(rec.photos)) {
+          if (prev && Array.isArray(prev.photos) && prev.photos.length && prev.photos.every(p => typeof p === 'string' && p.indexOf('data:') === 0)) {
+            rec.photos = prev.photos; // มีรูปจริงแคชไว้ในเครื่องนี้แล้ว ใช้เลย
+          } else {
+            toResolve.push([key, rec.id, rec.photos]);
+            if (prev && prev.photos) rec.photos = prev.photos; // ใช้ของเดิมไปพลางๆ ระหว่างรอโหลด
+          }
+        }
+        if (isRefSingle(rec.photo)) {
+          if (prev && typeof prev.photo === 'string' && prev.photo.indexOf('data:') === 0) {
+            rec.photo = prev.photo;
+          } else {
+            toResolve.push([key, rec.id, [rec.photo]]);
+            if (prev && prev.photo) rec.photo = prev.photo;
+          }
+        }
+        list.push(rec);
+      });
       store.set(key, list);
       cloudStatus = 'on';
       onChange();
+      toResolve.forEach(args => resolveCloudPhotoRefs.apply(null, args));
     }, err => { console.error(col + ' sync error', err); cloudStatus = 'error'; onChange(); });
   }
   function cloudSave(col, rec) {
     if (!cloudDb) return;
-    cloudDb.collection(col).doc(String(rec.id)).set(rec).catch(e => console.error(col + ' save error', e));
+    // "photos"/"photo" ไม่ส่งตรงๆ ที่นี่ (ถ้าเป็นรูปจริง data: URI จะใหญ่เกินลิมิตเอกสารของ Firestore)
+    // ใช้ merge:true แล้วไม่ใส่ฟิลด์นี้ไปเลย เพื่อไม่ให้ไปเขียนทับรหัสอ้างอิงรูปที่เคยซิงก์ไว้ก่อนหน้า
+    // (รหัสอ้างอิงรูปจะถูกอัปเดตแยกต่างหากโดย syncRecordPhotosToCloud หลังอัปโหลดรูปเสร็จ)
+    const safeRec = Object.assign({}, rec);
+    delete safeRec.photos; delete safeRec.photo;
+    cloudDb.collection(col).doc(String(rec.id)).set(safeRec, {merge: true}).catch(e => console.error(col + ' save error', e));
   }
   function cloudDelete(col, id) {
     if (!cloudDb) return;
     cloudDb.collection(col).doc(String(id)).delete().catch(e => console.error(col + ' delete error', e));
+  }
+  // หลังบันทึกแล้ว อัปโหลดรูปที่ยังเป็น data: URI ขึ้น Firestore (คอลเลกชัน "photos") เบื้องหลัง ไม่บล็อกหน้าจอ
+  // แล้วบันทึก "รหัสอ้างอิงรูป" ลงเอกสารหลักแทน เพื่อให้รูปอยู่ถาวรและดูได้จากทุกเครื่องโดยไม่ต้องใช้ Firebase Storage
+  function syncRecordPhotosToCloud(key, cloudCol, id, field, renderFn) {
+    if (!cloudDb) return;
+    (async () => {
+      const list = store.get(key, []);
+      const rec = list.find(r => r.id === id);
+      if (!rec) return;
+      const arr = field === 'photos' ? (Array.isArray(rec.photos) ? rec.photos : []) : (rec.photo ? [rec.photo] : []);
+      const needUpload = arr.some(p => typeof p === 'string' && p.indexOf('data:') === 0);
+      if (!needUpload) return;
+      const refs = await Promise.all(arr.map((p, i) =>
+        (typeof p === 'string' && p.indexOf('data:') === 0) ? uploadPhotoDataToFirestore(p, id + '_' + i) : null));
+      const validRefs = refs.filter(Boolean);
+      if (!validRefs.length) return;
+      cloudDb.collection(cloudCol).doc(id).set(field === 'photos' ? {photos: validRefs} : {photo: validRefs[0]}, {merge: true})
+        .catch(e => console.error(cloudCol + ' save photo refs error', e));
+      if (renderFn) renderFn();
+    })();
   }
   function cloudNotice() {
     if (cloudStatus === 'on') return '<p class="notice" style="background:#e6f6ea;color:#1a6b3a">ซิงก์กับคลาวด์แล้ว ทุกเครื่องที่เปิดหน้านี้เห็นข้อมูลเดียวกัน</p>';
@@ -2076,8 +2169,8 @@ function bahtText(value) {
     const persisted = store.set('bs_bills', list);
     cloudSave('bills', rec);
     renderHistory(); renderEditState();
-    toast(persisted ? (wasEditing ? 'บันทึกทับเอกสาร ' : 'บันทึกเอกสาร ') + rec.no + ' แล้ว'
-                    : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์ไม่อนุญาตให้เก็บถาวร)');
+    toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับเอกสาร ' : 'บันทึกเอกสาร ') + rec.no + ' แล้ว'
+                    : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
   }
 
   /* ---------------- ภาษีซื้อ ---------------- */
@@ -2421,8 +2514,9 @@ function bahtText(value) {
     const persisted = store.set('bs_purchases', list);
     cloudSave('purchases', rec);
     renderPurchHistory(); renderPurchEditState();
-    toast(persisted ? (wasEditing ? 'บันทึกทับรายการแล้ว' : 'บันทึกรายการภาษีซื้อแล้ว')
-                    : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์ไม่อนุญาตให้เก็บถาวร)');
+    syncRecordPhotosToCloud('bs_purchases', 'purchases', rec.id, 'photo', renderPurchHistory);
+    toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับรายการแล้ว' : 'บันทึกรายการภาษีซื้อแล้ว')
+                    : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
   }
 
   /* ---------------- ใบคอนเฟิร์มงาน (ใบสั่งผลิตภายในร้าน ไม่มีราคา) ---------------- */
@@ -2602,8 +2696,9 @@ function bahtText(value) {
     const persisted = store.set('bs_jobs', list);
     cloudSave('jobs', rec);
     renderJobHistory(); renderJobEditState();
-    toast(persisted ? (wasEditing ? 'บันทึกทับใบ ' : 'บันทึกใบ ') + rec.no + ' แล้ว'
-                    : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์ไม่อนุญาตให้เก็บถาวร)');
+    syncRecordPhotosToCloud('bs_jobs', 'jobs', rec.id, 'photos', renderJobHistory);
+    toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับใบ ' : 'บันทึกใบ ') + rec.no + ' แล้ว'
+                    : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
   }
 
   /* ---------------- พิมพ์ ---------------- */
@@ -2626,7 +2721,7 @@ function bahtText(value) {
   const INK = '#10233f', MUTED = '#4a5a72', LINE = '#c9d2de', LIGHT = '#e3e9f0', HEAD = '#eef2f7';
   const FB = "'Sarabun','Noto Sans Thai',system-ui,sans-serif", FH = "'Prompt','Sarabun','Noto Sans Thai',sans-serif";
   let logoEl = null, wmEl = null, sigEl = null;
-  const loadImg = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('โหลดภาพไม่ได้')); im.src = src; });
+  const loadImg = src => new Promise((res, rej) => { const im = new Image(); if (/^https?:/.test(src)) im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = () => rej(new Error('โหลดภาพไม่ได้')); im.src = src; });
 
   async function prepAssets() {
     try {
