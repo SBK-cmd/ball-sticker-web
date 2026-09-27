@@ -1697,114 +1697,86 @@ function bahtText(value) {
   } catch (e) { cloudDb = null; }
   let cloudStatus = cloudDb ? 'connecting' : 'off';   // off | connecting | on | error
 
-  /* ---------------- เก็บรูปถาวรข้ามเครื่องด้วย Firestore ล้วนๆ (ไม่ต้องใช้ Firebase Storage/แพ็กเกจ Blaze)
-     รูปแต่ละรูปถูกฝังในเอกสารของตัวเองที่คอลเลกชัน "photos" (เอกสารละ ~150-300KB เล็กกว่าลิมิต 1MB ของ Firestore มาก)
-     ส่วนเอกสารบิล/ใบงานหลักจะเก็บแค่ "รหัสอ้างอิงรูป" (ข้อความสั้นๆ) แทนตัวรูปจริง จึงไม่มีวันเกินลิมิตขนาดเอกสาร
-     เครื่องที่ถ่าย/แนบรูปจะเห็นรูปจริงทันที ส่วนเครื่องอื่นจะดึงรูปจริงมาโหลด (ครั้งเดียว) ตามรหัสอ้างอิงที่ซิงก์มา ---------------- */
-  const PHOTO_REF_PREFIX = 'fsphoto:';
-  async function uploadPhotoDataToFirestore(dataUrl, docId) {
-    if (!cloudDb) return null;
+  /* ---------------- เก็บรูปถาวรข้ามเครื่องด้วย Cloudinary (พื้นที่ฟรี 25GB ไม่ต้องผูกบัตร)
+     รูปที่ถ่าย/แนบจะถูกแปลงเป็น data: URI ไว้ในเครื่องก่อน (เห็นรูปทันที ใช้งานได้แม้ยังไม่มีเน็ต)
+     แล้วอัปโหลดขึ้น Cloudinary เบื้องหลัง ได้ "ลิงก์รูปถาวร" กลับมาแทนที่ data: URI ทั้งในเครื่องและในฐานข้อมูลคลาวด์
+     เนื่องจากลิงก์เป็นข้อความสั้นๆ จึงไม่มีทางชนลิมิตขนาดเอกสาร 1MB ของ Firestore หรือโควตาการอ่าน/เขียนรายวันอีกต่อไป ---------------- */
+  const CLOUDINARY_CLOUD_NAME = 'm4n2ttwh';
+  const CLOUDINARY_UPLOAD_PRESET = 'nkbscpgs';
+  async function uploadPhotoToCloudinary(dataUrl) {
     try {
-      await cloudDb.collection('photos').doc(docId).set({data: dataUrl, savedAt: Date.now()});
-      return PHOTO_REF_PREFIX + docId;
-    } catch (e) { console.error('save photo doc error', e); return null; }
-  }
-  async function fetchPhotoFromFirestore(ref) {
-    if (!cloudDb || typeof ref !== 'string' || ref.indexOf(PHOTO_REF_PREFIX) !== 0) return null;
-    try {
-      const snap = await cloudDb.collection('photos').doc(ref.slice(PHOTO_REF_PREFIX.length)).get();
-      return snap.exists ? (snap.data().data || null) : null;
-    } catch (e) { console.error('fetch photo doc error', e); return null; }
-  }
-  // เครื่องนี้เพิ่งดึงรูปจากคลาวด์มาแคชไว้ในเครื่องสำเร็จ — แจ้งให้หน้าจอที่เกี่ยวข้องรีเฟรช
-  function onPhotosResolved(key) {
-    if (key === 'bs_jobs' && typeof renderJobHistory === 'function') renderJobHistory();
-    if (key === 'bs_purchases' && typeof renderPurchHistory === 'function') renderPurchHistory();
-  }
-  // ถ้าเรคคอร์ดที่ได้จากคลาวด์มีแต่ "รหัสอ้างอิงรูป" (ยังไม่มีรูปจริงในเครื่องนี้) ให้ดึงรูปจริงมาโหลดแล้วแคชไว้ในเครื่อง ครั้งเดียวต่อรูป
-  function resolveCloudPhotoRefs(key, id, refs) {
-    if (!cloudDb || !refs || !refs.length) return;
-    (async () => {
-      const photos = (await Promise.all(refs.map(fetchPhotoFromFirestore))).filter(Boolean);
-      if (!photos.length) return;
-      const list = store.get(key, []);
-      const idx = list.findIndex(r => r.id === id);
-      if (idx < 0) return;
-      const field = key === 'bs_purchases' ? 'photo' : 'photos';
-      list[idx] = Object.assign({}, list[idx], field === 'photo' ? {photo: photos[0]} : {photos: photos});
-      store.set(key, list);
-      onPhotosResolved(key);
-    })();
+      const blob = await (await fetch(dataUrl)).blob();
+      const fd = new FormData();
+      fd.append('file', blob);
+      fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      const res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/image/upload', {method: 'POST', body: fd});
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json.secure_url || null;
+    } catch (e) { console.error('cloudinary upload error', e); return null; }
   }
 
   function watchCloud(col, key, onChange) {
     if (!cloudDb) return;
     cloudDb.collection(col).onSnapshot(snap => {
-      // ถ้ารูปเป็นแค่รหัสอ้างอิง (fsphoto:...) แต่เครื่องนี้เคยแคชรูปจริงไว้แล้ว ให้ใช้รูปจริงที่แคชไว้แทน
-      // ไม่งั้นเดี๋ยวรูปจะกลายเป็น "รหัสอ้างอิง" ที่แสดงเป็นรูปไม่ได้ทันที ต้องรอโหลดใหม่ทุกครั้งโดยไม่จำเป็น
+      // ถ้าเอกสารจากคลาวด์ยังไม่มีรูป (เพราะกำลังอัปโหลดขึ้น Cloudinary อยู่เบื้องหลัง) แต่เครื่องนี้มีรูปอยู่แล้ว ให้ใช้รูปเดิมไปก่อน
+      // กันไม่ให้รูปกะพริบหายระหว่างรอสักครู่ที่รูปกำลังอัปโหลด
       const prevById = {};
       (store.get(key, []) || []).forEach(r => { if (r && r.id) prevById[r.id] = r; });
       const list = [];
-      const toResolve = [];
       snap.forEach(d => {
         const rec = Object.assign({id: d.id}, d.data());
         const prev = prevById[rec.id];
-        const isRefList = v => Array.isArray(v) && v.length && v.every(p => typeof p === 'string' && p.indexOf(PHOTO_REF_PREFIX) === 0);
-        const isRefSingle = v => typeof v === 'string' && v.indexOf(PHOTO_REF_PREFIX) === 0;
-        if (isRefList(rec.photos)) {
-          if (prev && Array.isArray(prev.photos) && prev.photos.length && prev.photos.every(p => typeof p === 'string' && p.indexOf('data:') === 0)) {
-            rec.photos = prev.photos; // มีรูปจริงแคชไว้ในเครื่องนี้แล้ว ใช้เลย
-          } else {
-            toResolve.push([key, rec.id, rec.photos]);
-            if (prev && prev.photos) rec.photos = prev.photos; // ใช้ของเดิมไปพลางๆ ระหว่างรอโหลด
-          }
-        }
-        if (isRefSingle(rec.photo)) {
-          if (prev && typeof prev.photo === 'string' && prev.photo.indexOf('data:') === 0) {
-            rec.photo = prev.photo;
-          } else {
-            toResolve.push([key, rec.id, [rec.photo]]);
-            if (prev && prev.photo) rec.photo = prev.photo;
-          }
+        if (prev) {
+          if ((rec.photos == null || (Array.isArray(rec.photos) && !rec.photos.length)) && prev.photos && prev.photos.length) rec.photos = prev.photos;
+          if (rec.photo == null && prev.photo) rec.photo = prev.photo;
         }
         list.push(rec);
       });
       store.set(key, list);
       cloudStatus = 'on';
       onChange();
-      toResolve.forEach(args => resolveCloudPhotoRefs.apply(null, args));
     }, err => { console.error(col + ' sync error', err); cloudStatus = 'error'; onChange(); });
   }
   function cloudSave(col, rec) {
     if (!cloudDb) return;
-    // "photos"/"photo" ไม่ส่งตรงๆ ที่นี่ (ถ้าเป็นรูปจริง data: URI จะใหญ่เกินลิมิตเอกสารของ Firestore)
-    // ใช้ merge:true แล้วไม่ใส่ฟิลด์นี้ไปเลย เพื่อไม่ให้ไปเขียนทับรหัสอ้างอิงรูปที่เคยซิงก์ไว้ก่อนหน้า
-    // (รหัสอ้างอิงรูปจะถูกอัปเดตแยกต่างหากโดย syncRecordPhotosToCloud หลังอัปโหลดรูปเสร็จ)
+    // ถ้า photos/photo ยังเป็น data: URI (รูปที่เพิ่งถ่าย ยังไม่ได้อัปโหลดขึ้น Cloudinary) ให้ตัดออกก่อนส่ง
+    // เพื่อไม่ให้ไฟล์รูปขนาดใหญ่ไปชนลิมิตเอกสารของ Firestore — ลิงก์รูปจะถูกเติมกลับเข้ามาทีหลังโดย syncRecordPhotosToCloud
+    // ถ้าเป็นลิงก์ Cloudinary อยู่แล้ว (ข้อความสั้นๆ) ส่งไปตามปกติได้เลย ไม่มีปัญหาเรื่องขนาด
     const safeRec = Object.assign({}, rec);
-    delete safeRec.photos; delete safeRec.photo;
+    const hasDataUri = v => Array.isArray(v) ? v.some(p => typeof p === 'string' && p.indexOf('data:') === 0) : (typeof v === 'string' && v.indexOf('data:') === 0);
+    if (hasDataUri(safeRec.photos)) delete safeRec.photos;
+    if (hasDataUri(safeRec.photo)) delete safeRec.photo;
     cloudDb.collection(col).doc(String(rec.id)).set(safeRec, {merge: true}).catch(e => console.error(col + ' save error', e));
   }
   function cloudDelete(col, id) {
     if (!cloudDb) return;
     cloudDb.collection(col).doc(String(id)).delete().catch(e => console.error(col + ' delete error', e));
   }
-  // หลังบันทึกแล้ว อัปโหลดรูปที่ยังเป็น data: URI ขึ้น Firestore (คอลเลกชัน "photos") เบื้องหลัง ไม่บล็อกหน้าจอ
-  // แล้วบันทึก "รหัสอ้างอิงรูป" ลงเอกสารหลักแทน เพื่อให้รูปอยู่ถาวรและดูได้จากทุกเครื่องโดยไม่ต้องใช้ Firebase Storage
+  // หลังบันทึกแล้ว อัปโหลดรูปที่ยังเป็น data: URI ขึ้น Cloudinary เบื้องหลัง ไม่บล็อกหน้าจอ
+  // แล้วแทนที่ด้วยลิงก์ https ถาวรทั้งในเครื่อง (เบาลง ไม่กิน localStorage) และในคลาวด์ (ดูได้ทุกเครื่อง)
   function syncRecordPhotosToCloud(key, cloudCol, id, field, renderFn) {
-    if (!cloudDb) return;
     (async () => {
       const list = store.get(key, []);
-      const rec = list.find(r => r.id === id);
-      if (!rec) return;
+      const idx = list.findIndex(r => r.id === id);
+      if (idx < 0) return;
+      const rec = list[idx];
       const arr = field === 'photos' ? (Array.isArray(rec.photos) ? rec.photos : []) : (rec.photo ? [rec.photo] : []);
       const needUpload = arr.some(p => typeof p === 'string' && p.indexOf('data:') === 0);
       if (!needUpload) return;
-      const refs = await Promise.all(arr.map((p, i) =>
-        (typeof p === 'string' && p.indexOf('data:') === 0) ? uploadPhotoDataToFirestore(p, id + '_' + i) : null));
-      const validRefs = refs.filter(Boolean);
-      if (!validRefs.length) return;
-      cloudDb.collection(cloudCol).doc(id).set(field === 'photos' ? {photos: validRefs} : {photo: validRefs[0]}, {merge: true})
-        .catch(e => console.error(cloudCol + ' save photo refs error', e));
+      const uploaded = await Promise.all(arr.map(p =>
+        (typeof p === 'string' && p.indexOf('data:') === 0) ? uploadPhotoToCloudinary(p) : Promise.resolve(p)));
+      const finalArr = uploaded.map((u, i) => u || arr[i]); // อัปโหลดไม่สำเร็จ (เช่นไม่มีเน็ต) ใช้ของเดิมไปก่อน จะลองใหม่ตอนบันทึกครั้งถัดไป
+      const freshList = store.get(key, []);
+      const freshIdx = freshList.findIndex(r => r.id === id);
+      if (freshIdx >= 0) {
+        freshList[freshIdx] = Object.assign({}, freshList[freshIdx], field === 'photos' ? {photos: finalArr} : {photo: finalArr[0]});
+        store.set(key, freshList);
+      }
+      if (cloudDb && uploaded.some(Boolean)) {
+        cloudDb.collection(cloudCol).doc(String(id)).set(field === 'photos' ? {photos: finalArr} : {photo: finalArr[0]}, {merge: true})
+          .catch(e => console.error(cloudCol + ' save photo url error', e));
+      }
       if (renderFn) renderFn();
     })();
   }
