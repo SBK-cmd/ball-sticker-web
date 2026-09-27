@@ -285,20 +285,59 @@ details.shop .fields{margin-top:12px}
 /* ---------------- แดชบอร์ด ---------------- */
 .dash-filter{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
 .dash-filter .f{flex:1 1 200px}
-.dash-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:20px 0}
-.dash-ov-tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow-1);display:flex;flex-direction:column;gap:6px;min-width:0;border-left:4px solid var(--sticker-line)}
-.dash-ov-label{font-size:12.5px;color:var(--muted);font-weight:600}
-.dash-ov-val{font:700 21px 'Prompt',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dash-ov-tile.accent2{background:var(--hero-bg);border-left-color:var(--sticker);color:#fff;background-image:radial-gradient(120% 140% at 100% 0%,rgba(127,211,239,.16),transparent 55%)}
-.dash-ov-tile.accent2 .dash-ov-label{color:rgba(255,255,255,.78)}
-.dash-recent{list-style:none;margin:0;padding:0}
-.dash-recent li{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:13px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
-.dash-recent li+li{margin-top:8px}
-.dash-recent .doc-type{flex:none;font-size:11.5px;font-weight:700;color:var(--muted);background:var(--field);border-radius:999px;padding:3px 10px}
-.dash-recent .meta{flex:1 1 180px;min-width:0}
-.dash-recent .meta b{display:block;font-size:14.5px}
-.dash-recent .meta small{color:var(--muted);font-size:12.5px}
-.dash-recent .amt{flex:none;font-weight:700;font-variant-numeric:tabular-nums}
+.dash-hero-row{display:grid;grid-template-columns:1fr 1.7fr;gap:14px;margin:20px 0}
+.dash-hero{position:relative;overflow:hidden;background:var(--hero-bg);color:#fff;border-radius:18px;padding:22px 24px;box-shadow:var(--shadow-1);background-image:radial-gradient(120% 140% at 100% 0%,rgba(127,211,239,.2),transparent 55%);display:flex;flex-direction:column;justify-content:center;gap:9px;min-height:148px}
+.dash-hero-emoji{position:absolute;right:16px;top:16px;font-size:32px;opacity:.9}
+.dash-hero-label{font-size:13px;color:rgba(255,255,255,.78);font-weight:600}
+.dash-hero-val{font:700 30px 'Prompt',sans-serif;font-variant-numeric:tabular-nums}
+.dash-hero-sub{align-self:flex-start;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.14)}
+.dash-hero-sub.up{color:#8CE7B0}
+.dash-hero-sub.down{color:#ff9fb3}
+.dash-stats{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 22px;box-shadow:var(--shadow-1);display:flex;flex-direction:column;gap:16px;min-width:0}
+.dash-stats-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.dash-stats-head h3{margin:0;font:700 15.5px 'Prompt',sans-serif}
+.dash-stats-head span{font-size:12px;color:var(--muted)}
+.dash-stats-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.dash-stat-item{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0}
+.dash-stat-ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:17px}
+.dash-stat-ic.teal{background:rgba(13,111,146,.12);color:var(--sticker-line)}
+.dash-stat-ic.blue{background:var(--blue-bg);color:var(--blue-ink)}
+.dash-stat-ic.amber{background:#fff3d9;color:#9a6b00}
+.dash-stat-ic.green{background:#e6f6ea;color:#1a6b3a}
+.dash-stat-item b{font:700 19px 'Prompt',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.dash-stat-item small{font-size:12px;color:var(--muted);font-weight:600}
+.dash-mid-row{display:grid;grid-template-columns:1fr 1fr 2fr 1fr;gap:14px;margin:20px 0;align-items:stretch}
+.dash-mini{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow-1);display:flex;flex-direction:column;gap:10px;min-width:0}
+.dash-mini-label{font-size:12.5px;color:var(--muted);font-weight:600}
+.dash-mini-val{font:700 21px 'Prompt',sans-serif;font-variant-numeric:tabular-nums}
+.dash-mini-spark{display:flex;align-items:flex-end;gap:4px;height:38px;margin-top:auto}
+.dash-mini-spark i{flex:1;background:var(--sticker);border:1px solid var(--sticker-line);border-radius:3px 3px 0 0;min-height:3px}
+.dash-mini-spark.profit i{background:var(--accent);border-color:var(--accent)}
+.dash-rev-card{min-width:0}
+.dash-legend{display:flex;gap:14px;font-size:12px;color:var(--muted);font-weight:600;flex:none}
+.dash-legend span{display:inline-flex;align-items:center;gap:6px}
+.dash-legend i{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
+.dash-legend .sale{color:var(--sticker-line)}
+.dash-donut{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow-1);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;text-align:center;min-width:0}
+.donut-ring{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--sticker-line) calc(var(--pct,0)*1%),var(--field) 0)}
+.donut-ring b{background:var(--surface);width:68px;height:68px;border-radius:50%;display:grid;place-items:center;font:700 16.5px 'Prompt',sans-serif}
+.dash-donut small{color:var(--muted);font-size:12px;line-height:1.5}
+.dash-table-wrap{overflow-x:auto}
+table.dash-tbl{width:100%;border-collapse:separate;border-spacing:0;min-width:560px}
+table.dash-tbl th{text-align:left;font-size:11.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:0 12px 10px;white-space:nowrap}
+table.dash-tbl th:first-child,table.dash-tbl td:first-child{padding-left:2px}
+table.dash-tbl td{padding:12px;border-top:1px solid var(--line);vertical-align:middle}
+table.dash-tbl tr:hover td{background:var(--field)}
+.dtype{display:inline-flex;align-items:center;gap:9px;min-width:0}
+.dtype-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:14px;flex:none}
+.dtype-ic.bill{background:rgba(13,111,146,.12);color:var(--sticker-line)}
+.dtype-ic.job{background:#fff3d9;color:#9a6b00}
+.dtype-ic.purch{background:var(--mat);color:var(--muted)}
+.dtype b{font-size:13px;font-weight:600;white-space:nowrap}
+td.dname{min-width:150px}
+td.dname b{display:block;font-size:14px}
+td.dname small{color:var(--muted);font-size:12px}
+td.damt{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
 .status-pill.purch{background:var(--mat);color:var(--muted)}
 .status-pill.billdone{background:#e6f6ea;color:#1a6b3a}
 .dash-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:20px 0}
@@ -427,10 +466,15 @@ tr{break-inside:avoid}
 /* ---------- responsive ---------- */
 @media (max-width:900px){
   .calc-grid,.bill-grid{grid-template-columns:minmax(0,1fr)}
-  .dash-grid,.dash-overview{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dash-hero-row{grid-template-columns:1fr}
+  .dash-mid-row{grid-template-columns:1fr 1fr}
+  .dash-mid-row .dash-rev-card{grid-column:1 / -1}
 }
 @media (max-width:560px){
   .wrap{padding:0 14px}
+  .dash-stats-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dash-mid-row{grid-template-columns:1fr}
   .card{padding:16px}
   /* หัวเว็บมือถือ: ตัดคำโปรยที่ทำให้ตัวอักษรล้น/ขึ้นหลายบรรทัด เหลือแค่โลโก้+ชื่อสั้นๆ แถวเดียว ให้ดูโล่งไม่งง */
   .top{padding:12px 0 10px;gap:8px}
@@ -1272,22 +1316,66 @@ tr{break-inside:avoid}
         <p class="hint" id="dashMonthHint" style="margin:8px 0 0"></p>
       </div>
 
-      <div class="dash-overview">
-        <div class="dash-ov-tile">
-          <span class="dash-ov-label">ยอดขายวันนี้</span>
-          <span class="dash-ov-val" id="dashTodaySales">0.00 บาท</span>
+      <div class="dash-hero-row">
+        <div class="dash-hero">
+          <span class="dash-hero-emoji" aria-hidden="true">🎉</span>
+          <span class="dash-hero-label">ยอดขายวันนี้</span>
+          <span class="dash-hero-val" id="dashTodaySales">0.00 บาท</span>
+          <span class="dash-hero-sub" id="dashTodayCompare">เทียบกับเมื่อวาน —</span>
         </div>
-        <div class="dash-ov-tile accent2">
-          <span class="dash-ov-label">ยอดขายเดือนนี้</span>
-          <span class="dash-ov-val" id="dashMonthSales">0.00 บาท</span>
+        <div class="dash-stats">
+          <div class="dash-stats-head">
+            <h3>ภาพรวมร้าน</h3>
+            <span id="dashUpdatedAt">ยังไม่มีข้อมูล</span>
+          </div>
+          <div class="dash-stats-row">
+            <div class="dash-stat-item">
+              <span class="dash-stat-ic teal" aria-hidden="true">📈</span>
+              <b id="dashMonthSales">0.00 บาท</b>
+              <small>ยอดขายเดือนนี้</small>
+            </div>
+            <div class="dash-stat-item">
+              <span class="dash-stat-ic blue" aria-hidden="true">👥</span>
+              <b id="dashCustCount">0 ราย</b>
+              <small>ลูกค้าทั้งหมด</small>
+            </div>
+            <div class="dash-stat-item">
+              <span class="dash-stat-ic amber" aria-hidden="true">📄</span>
+              <b id="dashDocCount">0 รายการ</b>
+              <small>เอกสารทั้งหมด</small>
+            </div>
+            <div class="dash-stat-item">
+              <span class="dash-stat-ic green" aria-hidden="true">💰</span>
+              <b id="dashNetVatMini">0.00 บาท</b>
+              <small id="dashNetVatMiniLabel">VAT สุทธิเดือนนี้</small>
+            </div>
+          </div>
         </div>
-        <div class="dash-ov-tile">
-          <span class="dash-ov-label">เอกสารทั้งหมด</span>
-          <span class="dash-ov-val" id="dashDocCount">0 รายการ</span>
+      </div>
+
+      <div class="dash-mid-row">
+        <div class="dash-mini">
+          <span class="dash-mini-label">เอกสาร 7 วันล่าสุด</span>
+          <span class="dash-mini-val" id="dashWeekDocs">0 รายการ</span>
+          <div class="dash-mini-spark" id="dashWeekSpark"></div>
         </div>
-        <div class="dash-ov-tile">
-          <span class="dash-ov-label">ลูกค้าทั้งหมด</span>
-          <span class="dash-ov-val" id="dashCustCount">0 ราย</span>
+        <div class="dash-mini">
+          <span class="dash-mini-label">กำไรเดือนนี้ (ประมาณ)</span>
+          <span class="dash-mini-val" id="dashProfit">0.00 บาท</span>
+          <div class="dash-mini-spark profit" id="dashProfitSpark"></div>
+        </div>
+        <section class="card dash-rev-card" aria-labelledby="dash-rev-h">
+          <div class="viz-head">
+            <h2 id="dash-rev-h">ยอดขายย้อนหลัง 6 เดือน</h2>
+            <span class="dash-legend"><span class="sale"><i></i>ยอดขาย</span></span>
+          </div>
+          <div class="dash-chart" id="dashChart"></div>
+          <p class="empty" id="dashEmpty" hidden>ยังไม่มีบิลที่บันทึกไว้ กด "บันทึกลงประวัติ" ในแท็บใบเสร็จ/ใบกำกับภาษีก่อน</p>
+        </section>
+        <div class="dash-donut">
+          <span class="dash-mini-label">อัตรากำไรเดือนนี้</span>
+          <div class="donut-ring" id="dashMarginRing" style="--pct:0"><b id="dashMarginPct">0%</b></div>
+          <small id="dashMarginNote">ยังไม่มีข้อมูลยอดขายเดือนนี้</small>
         </div>
       </div>
 
@@ -1324,12 +1412,6 @@ tr{break-inside:avoid}
           <span class="dash-tile-label" id="dashNetVatLabel">VAT สุทธิ (ต้องชำระ)</span>
           <span class="dash-tile-val" id="dashNetVat">0.00 บาท</span>
         </div>
-      </div>
-
-      <div class="card">
-        <h2>ยอดขายย้อนหลัง 6 เดือน</h2>
-        <div class="dash-chart" id="dashChart"></div>
-        <p class="empty" id="dashEmpty" hidden>ยังไม่มีบิลที่บันทึกไว้ กด "บันทึกลงประวัติ" ในแท็บใบเสร็จ/ใบกำกับภาษีก่อน</p>
       </div>
 
       <div class="card report-cta">
@@ -2040,13 +2122,65 @@ function bahtText(value) {
     const jobsAll = store.get('bs_jobs', []);
     const purchAll = store.get('bs_purchases', []);
     const todayKey = todayISO(), curMonthKey = monthKey(todayKey);
+    const yestKey = (() => { const d = new Date(todayKey + 'T00:00:00'); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); })();
     const todayTotal = list.filter(b => b.date === todayKey).reduce((a, b) => a + billCalc(b).total, 0);
+    const yestTotal = list.filter(b => b.date === yestKey).reduce((a, b) => a + billCalc(b).total, 0);
     const monthTotal = list.filter(b => monthKey(b.date) === curMonthKey).reduce((a, b) => a + billCalc(b).total, 0);
     $('dashTodaySales').textContent = money(round2(todayTotal)) + ' บาท';
     $('dashMonthSales').textContent = money(round2(monthTotal)) + ' บาท';
     $('dashDocCount').textContent = String(list.length + jobsAll.length + purchAll.length) + ' รายการ';
     const custSet = new Set(list.map(b => (b.cName || '').trim()).filter(Boolean));
     $('dashCustCount').textContent = String(custSet.size) + ' ราย';
+
+    // แถบเทียบยอดขายวันนี้กับเมื่อวาน
+    const cmpEl = $('dashTodayCompare');
+    if (cmpEl) {
+      cmpEl.classList.remove('up', 'down');
+      if (yestTotal <= 0 && todayTotal <= 0) { cmpEl.textContent = 'ยังไม่มียอดขายวันนี้'; }
+      else if (yestTotal <= 0) { cmpEl.classList.add('up'); cmpEl.textContent = '▲ ยังไม่มียอดขายเมื่อวานเทียบ'; }
+      else {
+        const pct = round2((todayTotal - yestTotal) / yestTotal * 100);
+        cmpEl.classList.add(pct >= 0 ? 'up' : 'down');
+        cmpEl.textContent = (pct >= 0 ? '▲ +' : '▼ ') + money(Math.abs(pct)) + '% จากเมื่อวาน';
+      }
+    }
+
+    // เวลาที่อัปเดตข้อมูลล่าสุด (จากเอกสารทุกประเภทที่บันทึกไว้)
+    const updEl = $('dashUpdatedAt');
+    if (updEl) {
+      const lastSavedAt = Math.max(0, ...list.map(b => b.savedAt || 0), ...jobsAll.map(j => j.savedAt || 0), ...purchAll.map(p => p.savedAt || 0));
+      if (!lastSavedAt) { updEl.textContent = 'ยังไม่มีข้อมูล'; }
+      else {
+        const mins = Math.max(0, Math.round((Date.now() - lastSavedAt) / 60000));
+        let txt;
+        if (mins < 1) txt = 'เพิ่งอัปเดต';
+        else if (mins < 60) txt = 'อัปเดต ' + mins + ' นาทีที่แล้ว';
+        else if (mins < 1440) txt = 'อัปเดต ' + Math.round(mins / 60) + ' ชม. ที่แล้ว';
+        else txt = 'อัปเดต ' + Math.round(mins / 1440) + ' วันที่แล้ว';
+        updEl.textContent = txt;
+      }
+    }
+
+    // VAT สุทธิของเดือนนี้ (ไม่ผูกกับตัวกรอง)
+    const monthVat = round2(list.filter(b => monthKey(b.date) === curMonthKey).reduce((a, b) => a + billCalc(b).vat, 0));
+    const monthPurchVat = round2(purchAll.filter(p => monthKey(p.date) === curMonthKey).reduce((a, p) => a + num(p.vat), 0));
+    const monthNetVat = round2(monthVat - monthPurchVat);
+    const netMiniEl = $('dashNetVatMini'), netMiniLabel = $('dashNetVatMiniLabel');
+    if (netMiniEl) {
+      netMiniEl.textContent = money(Math.abs(monthNetVat)) + ' บาท';
+      if (netMiniLabel) netMiniLabel.textContent = monthNetVat > 0 ? 'VAT ต้องชำระเดือนนี้' : monthNetVat < 0 ? 'VAT ขอคืนเดือนนี้' : 'VAT สุทธิเดือนนี้';
+    }
+
+    // เอกสารในช่วง 7 วันล่าสุด (แท่งเล็กสรุปจำนวนต่อวัน)
+    const weekDays = [];
+    for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); weekDays.push(d.toISOString().slice(0, 10)); }
+    const weekCounts = weekDays.map(k =>
+      list.filter(b => b.date === k).length + jobsAll.filter(j => j.date === k).length + purchAll.filter(p => p.date === k).length);
+    const weekTotal = weekCounts.reduce((a, v) => a + v, 0);
+    $('dashWeekDocs').textContent = weekTotal + ' รายการ';
+    const weekMax = Math.max(1, ...weekCounts);
+    $('dashWeekSpark').innerHTML = weekCounts.map(v => '<i style="height:' + Math.max(Math.round(v / weekMax * 100), v > 0 ? 8 : 2) + '%" title="' + v + ' รายการ"></i>').join('');
+
     renderDashRecentDocs();
 
     const now = new Date();
@@ -2062,6 +2196,12 @@ function bahtText(value) {
       const c = billCalc(b);
       byMonth[k] += (c.sub - c.disc);
     });
+    const byMonthCost = {};
+    purchAll.forEach(p => {
+      const k = monthKey(p.date);
+      if (!byMonthCost[k]) byMonthCost[k] = 0;
+      byMonthCost[k] += (num(p.amount) || num(p.vat) || 0);
+    });
     const maxVal = Math.max(1, ...months.map(m => byMonth[m] || 0));
     $('dashChart').innerHTML = months.map(m => {
       const v = byMonth[m] || 0;
@@ -2069,6 +2209,26 @@ function bahtText(value) {
       return '<div class="bar-col"><div class="bar-val">' + (v ? money(v) : '') + '</div><div class="bar" style="height:' + h + '%"></div><div class="bar-label">' + thMonthShort(m) + '</div></div>';
     }).join('');
     $('dashEmpty').hidden = list.length > 0;
+
+    // กราฟเล็กแนวโน้มกำไร 6 เดือนล่าสุด + กำไร/อัตรากำไรของเดือนนี้
+    const profitByMonth = months.map(m => round2((byMonth[m] || 0) - (byMonthCost[m] || 0)));
+    const profitMax = Math.max(1, ...profitByMonth.map(v => Math.abs(v)));
+    $('dashProfitSpark').innerHTML = profitByMonth.map(v => '<i style="height:' + Math.max(Math.round(Math.abs(v) / profitMax * 100), v !== 0 ? 8 : 2) + '%" title="' + money(v) + ' บาท"></i>').join('');
+    const curProfit = profitByMonth[profitByMonth.length - 1] || 0;
+    $('dashProfit').textContent = money(curProfit) + ' บาท';
+    const curSalesForMargin = byMonth[curMonthKey] || 0;
+    const marginEl = $('dashMarginRing'), marginPctEl = $('dashMarginPct'), marginNoteEl = $('dashMarginNote');
+    if (curSalesForMargin > 0) {
+      const marginPct = round2(curProfit / curSalesForMargin * 100);
+      const ringPct = Math.max(0, Math.min(100, marginPct));
+      marginEl.style.setProperty('--pct', String(ringPct));
+      marginPctEl.textContent = money(marginPct) + '%';
+      marginNoteEl.textContent = marginPct >= 0 ? 'กำไรเดือนนี้ประมาณ ' + money(curProfit) + ' บาท' : 'เดือนนี้ต้นทุนสูงกว่ายอดขาย';
+    } else {
+      marginEl.style.setProperty('--pct', '0');
+      marginPctEl.textContent = '—';
+      marginNoteEl.textContent = 'ยังไม่มีข้อมูลยอดขายเดือนนี้';
+    }
   }
 
   // รวมเอกสารล่าสุดจากทั้ง 3 ประเภท (บิล/ใบเสร็จ, ใบคอนเฟิร์มงาน, ภาษีซื้อ) เรียงตามเวลาที่บันทึกล่าสุด
@@ -2085,13 +2245,17 @@ function bahtText(value) {
     const top = rows.slice(0, 8);
     if (!top.length) { el.innerHTML = '<p class="empty">ยังไม่มีเอกสารที่บันทึกไว้ — เริ่มออกบิล ใบคอนเฟิร์มงาน หรือบันทึกภาษีซื้อได้เลย</p>'; return; }
     const typeLabel = {bill: 'บิล/ใบเสร็จ', job: 'ใบคอนเฟิร์มงาน', purch: 'ภาษีซื้อ'};
-    el.innerHTML = '<ul class="dash-recent">' + top.map(r =>
-      '<li>' +
-        '<span class="doc-type">' + esc(typeLabel[r.type]) + '</span>' +
-        '<div class="meta"><b>' + esc(r.no || '—') + ' · ' + esc(r.name) + '</b><small>' + esc(thDate(r.date)) + '</small></div>' +
-        (r.amount != null ? '<span class="amt">' + money(r.amount) + ' บาท</span>' : '') +
-        '<span class="status-pill ' + esc(r.statusClass) + '">' + esc(r.statusLabel) + '</span>' +
-      '</li>').join('') + '</ul>';
+    const typeIcon = {bill: '🧾', job: '🎯', purch: '🛒'};
+    el.innerHTML = '<div class="dash-table-wrap"><table class="dash-tbl"><thead><tr>' +
+      '<th>ประเภท</th><th>เลขที่ / ชื่อ</th><th>วันที่</th><th>ยอดเงิน</th><th>สถานะ</th>' +
+      '</tr></thead><tbody>' + top.map(r =>
+      '<tr>' +
+        '<td><span class="dtype"><span class="dtype-ic ' + esc(r.type) + '" aria-hidden="true">' + typeIcon[r.type] + '</span><b>' + esc(typeLabel[r.type]) + '</b></span></td>' +
+        '<td class="dname"><b>' + esc(r.no || '—') + '</b><small>' + esc(r.name) + '</small></td>' +
+        '<td>' + esc(thDate(r.date)) + '</td>' +
+        '<td class="damt">' + (r.amount != null ? money(r.amount) + ' บาท' : '—') + '</td>' +
+        '<td><span class="status-pill ' + esc(r.statusClass) + '">' + esc(r.statusLabel) + '</span></td>' +
+      '</tr>').join('') + '</tbody></table></div>';
   }
 
   /* ---------------- รายงานภาษีซื้อ-ขาย (สำหรับยื่นสรรพากร) ---------------- */
