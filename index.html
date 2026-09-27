@@ -285,6 +285,22 @@ details.shop .fields{margin-top:12px}
 /* ---------------- แดชบอร์ด ---------------- */
 .dash-filter{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
 .dash-filter .f{flex:1 1 200px}
+.dash-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:20px 0}
+.dash-ov-tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow-1);display:flex;flex-direction:column;gap:6px;min-width:0;border-left:4px solid var(--sticker-line)}
+.dash-ov-label{font-size:12.5px;color:var(--muted);font-weight:600}
+.dash-ov-val{font:700 21px 'Prompt',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-ov-tile.accent2{background:var(--hero-bg);border-left-color:var(--sticker);color:#fff;background-image:radial-gradient(120% 140% at 100% 0%,rgba(127,211,239,.16),transparent 55%)}
+.dash-ov-tile.accent2 .dash-ov-label{color:rgba(255,255,255,.78)}
+.dash-recent{list-style:none;margin:0;padding:0}
+.dash-recent li{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:13px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.dash-recent li+li{margin-top:8px}
+.dash-recent .doc-type{flex:none;font-size:11.5px;font-weight:700;color:var(--muted);background:var(--field);border-radius:999px;padding:3px 10px}
+.dash-recent .meta{flex:1 1 180px;min-width:0}
+.dash-recent .meta b{display:block;font-size:14.5px}
+.dash-recent .meta small{color:var(--muted);font-size:12.5px}
+.dash-recent .amt{flex:none;font-weight:700;font-variant-numeric:tabular-nums}
+.status-pill.purch{background:var(--mat);color:var(--muted)}
+.status-pill.billdone{background:#e6f6ea;color:#1a6b3a}
 .dash-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:20px 0}
 .dash-tile.warn-tile{background:var(--warn-bg);border-color:var(--warn-bg)}
 .dash-tile.warn-tile .dash-tile-label{color:var(--warn-ink);opacity:.85}
@@ -411,7 +427,7 @@ tr{break-inside:avoid}
 /* ---------- responsive ---------- */
 @media (max-width:900px){
   .calc-grid,.bill-grid{grid-template-columns:minmax(0,1fr)}
-  .dash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dash-grid,.dash-overview{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:560px){
   .wrap{padding:0 14px}
@@ -1256,6 +1272,33 @@ tr{break-inside:avoid}
         <p class="hint" id="dashMonthHint" style="margin:8px 0 0"></p>
       </div>
 
+      <div class="dash-overview">
+        <div class="dash-ov-tile">
+          <span class="dash-ov-label">ยอดขายวันนี้</span>
+          <span class="dash-ov-val" id="dashTodaySales">0.00 บาท</span>
+        </div>
+        <div class="dash-ov-tile accent2">
+          <span class="dash-ov-label">ยอดขายเดือนนี้</span>
+          <span class="dash-ov-val" id="dashMonthSales">0.00 บาท</span>
+        </div>
+        <div class="dash-ov-tile">
+          <span class="dash-ov-label">เอกสารทั้งหมด</span>
+          <span class="dash-ov-val" id="dashDocCount">0 รายการ</span>
+        </div>
+        <div class="dash-ov-tile">
+          <span class="dash-ov-label">ลูกค้าทั้งหมด</span>
+          <span class="dash-ov-val" id="dashCustCount">0 ราย</span>
+        </div>
+      </div>
+
+      <section class="card" aria-labelledby="dash-recent-h">
+        <div class="viz-head">
+          <h2 id="dash-recent-h">เอกสารล่าสุด</h2>
+          <span>รวมบิล/ใบเสร็จ, ใบคอนเฟิร์มงาน และภาษีซื้อ</span>
+        </div>
+        <div id="dashRecentDocs"></div>
+      </section>
+
       <div class="dash-grid">
         <div class="dash-tile">
           <span class="dash-tile-label">ยอดขาย (ก่อน VAT)</span>
@@ -1993,6 +2036,19 @@ function bahtText(value) {
     else { $('dashNetVatLabel').textContent = 'VAT สุทธิ'; }
     $('dashNetVat').textContent = money(Math.abs(netVat)) + ' บาท';
 
+    // การ์ดภาพรวมด้านบน (ยอดขายวันนี้/เดือนนี้, จำนวนเอกสารทั้งหมด, ลูกค้าทั้งหมด) — นับจากข้อมูลทั้งหมด ไม่ผูกกับตัวกรองเดือนด้านบน
+    const jobsAll = store.get('bs_jobs', []);
+    const purchAll = store.get('bs_purchases', []);
+    const todayKey = todayISO(), curMonthKey = monthKey(todayKey);
+    const todayTotal = list.filter(b => b.date === todayKey).reduce((a, b) => a + billCalc(b).total, 0);
+    const monthTotal = list.filter(b => monthKey(b.date) === curMonthKey).reduce((a, b) => a + billCalc(b).total, 0);
+    $('dashTodaySales').textContent = money(round2(todayTotal)) + ' บาท';
+    $('dashMonthSales').textContent = money(round2(monthTotal)) + ' บาท';
+    $('dashDocCount').textContent = String(list.length + jobsAll.length + purchAll.length) + ' รายการ';
+    const custSet = new Set(list.map(b => (b.cName || '').trim()).filter(Boolean));
+    $('dashCustCount').textContent = String(custSet.size) + ' ราย';
+    renderDashRecentDocs();
+
     const now = new Date();
     const months = [];
     for (let i = 5; i >= 0; i--) {
@@ -2013,6 +2069,29 @@ function bahtText(value) {
       return '<div class="bar-col"><div class="bar-val">' + (v ? money(v) : '') + '</div><div class="bar" style="height:' + h + '%"></div><div class="bar-label">' + thMonthShort(m) + '</div></div>';
     }).join('');
     $('dashEmpty').hidden = list.length > 0;
+  }
+
+  // รวมเอกสารล่าสุดจากทั้ง 3 ประเภท (บิล/ใบเสร็จ, ใบคอนเฟิร์มงาน, ภาษีซื้อ) เรียงตามเวลาที่บันทึกล่าสุด
+  function renderDashRecentDocs() {
+    const el = $('dashRecentDocs'); if (!el) return;
+    const bills = store.get('bs_bills', []);
+    const jobs = store.get('bs_jobs', []);
+    const purchases = store.get('bs_purchases', []);
+    const rows = [];
+    bills.forEach(b => { const c = billCalc(b); rows.push({type: 'bill', no: b.no, name: b.cName || 'ไม่ระบุชื่อลูกค้า', date: b.date, savedAt: b.savedAt || 0, amount: c.total, statusLabel: 'ออกบิลแล้ว', statusClass: 'billdone'}); });
+    jobs.forEach(j => { rows.push({type: 'job', no: j.no, name: j.jName || 'ไม่ระบุชื่อลูกค้า', date: j.date, savedAt: j.savedAt || 0, amount: null, statusLabel: JOB_STATUS_LABEL[j.status] || 'รอทำ', statusClass: j.status || 'pending'}); });
+    purchases.forEach(p => { const amt = num(p.amount) || num(p.vat) || null; rows.push({type: 'purch', no: p.invoiceNo || '—', name: p.vendor || 'ไม่ระบุร้านค้า', date: p.date, savedAt: p.savedAt || 0, amount: amt, statusLabel: 'บันทึกภาษีซื้อ', statusClass: 'purch'}); });
+    rows.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0) || String(b.date || '').localeCompare(String(a.date || '')));
+    const top = rows.slice(0, 8);
+    if (!top.length) { el.innerHTML = '<p class="empty">ยังไม่มีเอกสารที่บันทึกไว้ — เริ่มออกบิล ใบคอนเฟิร์มงาน หรือบันทึกภาษีซื้อได้เลย</p>'; return; }
+    const typeLabel = {bill: 'บิล/ใบเสร็จ', job: 'ใบคอนเฟิร์มงาน', purch: 'ภาษีซื้อ'};
+    el.innerHTML = '<ul class="dash-recent">' + top.map(r =>
+      '<li>' +
+        '<span class="doc-type">' + esc(typeLabel[r.type]) + '</span>' +
+        '<div class="meta"><b>' + esc(r.no || '—') + ' · ' + esc(r.name) + '</b><small>' + esc(thDate(r.date)) + '</small></div>' +
+        (r.amount != null ? '<span class="amt">' + money(r.amount) + ' บาท</span>' : '') +
+        '<span class="status-pill ' + esc(r.statusClass) + '">' + esc(r.statusLabel) + '</span>' +
+      '</li>').join('') + '</ul>';
   }
 
   /* ---------------- รายงานภาษีซื้อ-ขาย (สำหรับยื่นสรรพากร) ---------------- */
