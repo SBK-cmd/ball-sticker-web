@@ -6,7 +6,8 @@
 <title>Ball Sticker — คำนวณสติ๊กเกอร์และใบกำกับภาษี</title>
 <script>
 // ตั้งโหมดมืด/สว่างจากค่าที่จำไว้ทันทีตั้งแต่ก่อนวาดหน้าจอ กันไฟกะพริบสลับธีมตอนโหลด
-(function(){try{var t=localStorage.getItem('bs_theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();
+// ค่าเริ่มต้นของระบบตอนนี้คือโหมดมืด เว้นแต่ผู้ใช้เคยกดเลือกโหมดสว่างไว้เอง (จำไว้ใน localStorage)
+(function(){try{var t=localStorage.getItem('bs_theme');document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -121,6 +122,34 @@ a{color:inherit}
 .user-chip-menu button:hover{background:var(--field)}
 .user-chip-menu #menuLogout{color:#c2261f}
 @media (max-width:900px){.user-chip-info{display:none}.user-chip-btn{padding:6px}}
+
+/* ---------- เมนูข้าง (sidebar) สำหรับแท็บเล็ต/เดสก์ท็อป ---------- */
+@media (min-width:561px){
+  .wrap{padding-left:232px}
+  header.top{
+    position:fixed;top:0;left:0;bottom:0;width:220px;z-index:30;
+    flex-direction:column;align-items:stretch;flex-wrap:nowrap;
+    padding:22px 14px 18px;margin:0;gap:4px;
+    border-bottom:0;border-right:1px solid var(--line);
+    background:var(--surface);overflow-y:auto;
+  }
+  header.top .brand{padding:0 6px 20px;flex:none}
+  header.top .tabs{
+    flex:1 1 auto;flex-direction:column;align-items:stretch;gap:3px;
+    background:transparent;border:0;padding:0;border-radius:0;position:static;
+  }
+  header.top .tabs button,header.top .tabs a{justify-content:flex-start;text-align:left;border-radius:10px;padding:10px 12px;width:100%}
+  header.top .tabs a{margin-left:0;margin-top:10px;font-size:13.5px}
+  header.top .tab-group{display:flex;flex-direction:column;gap:2px;margin-top:10px}
+  header.top .tab-trigger,header.top .tab-group.has-active .tab-trigger,header.top .tab-group.open .tab-trigger{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)!important;background:transparent!important;border-color:transparent!important;padding:10px 12px 4px;cursor:default;pointer-events:none}
+  header.top .tab-trigger svg{display:none}
+  header.top .tab-dropdown{position:static!important;display:flex!important;flex-direction:column;box-shadow:none;border:0;padding:0;min-width:0;background:transparent;gap:2px}
+  header.top .theme-toggle{flex:none;margin:14px 0 0;align-self:flex-start}
+  header.top .user-chip{flex:none;margin:10px 0 0;width:100%}
+  header.top .user-chip-btn{width:100%;max-width:none}
+  header.top .user-chip-menu{left:0;right:auto}
+}
+@media (max-width:560px){.wrap{padding-left:0}}
 
 /* ---------- ปุ่มสลับโหมดมืด/สว่าง ---------- */
 .theme-toggle{flex:none;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;
