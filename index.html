@@ -357,6 +357,21 @@ table.dash-tbl th{text-align:left;font-size:11.5px;color:var(--muted);font-weigh
 table.dash-tbl th:first-child,table.dash-tbl td:first-child{padding-left:2px}
 table.dash-tbl td{padding:12px;border-top:1px solid var(--line);vertical-align:middle}
 table.dash-tbl tr:hover td{background:var(--field)}
+/* จอมือถือแคบ: ตารางกว้างเกิน (min-width:560px) จะล้นขอบการ์ดจนคอลัมน์ขวาโดนตัดหาย
+   เลยเปลี่ยนแต่ละแถวเป็นการ์ดเรียงต่อกันแทน (ไม่ต้องเลื่อนซ้าย-ขวา) */
+@media (max-width:640px){
+  .dash-table-wrap{overflow-x:visible}
+  table.dash-tbl{min-width:0}
+  table.dash-tbl thead{display:none}
+  table.dash-tbl,table.dash-tbl tbody,table.dash-tbl tr{display:block;width:100%}
+  table.dash-tbl tr{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:12px 2px;border-top:1px solid var(--line)}
+  table.dash-tbl td{display:block;padding:0;border:0}
+  table.dash-tbl td:nth-child(1){order:1}
+  table.dash-tbl td:nth-child(5){order:2;margin-left:auto}
+  table.dash-tbl td.dname{order:3;flex:1 1 100%;min-width:0}
+  table.dash-tbl td:nth-child(3){order:4;font-size:12.5px;color:var(--muted)}
+  table.dash-tbl td.damt{order:5;margin-left:auto}
+}
 .dtype{display:inline-flex;align-items:center;gap:9px;min-width:0}
 .dtype-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:14px;flex:none}
 .dtype-ic.bill{background:rgba(13,111,146,.12);color:var(--sticker-line)}
