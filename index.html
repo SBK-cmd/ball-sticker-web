@@ -171,6 +171,23 @@ a{color:inherit}
 }
 @media (max-width:560px){.wrap{padding-left:0}}
 
+/* ---------- จอกว้าง: ขยายพื้นที่ใช้งาน ลดพื้นที่ว่าง/การเลื่อนดู ---------- */
+@media (min-width:1300px){
+  .wrap{max-width:1440px}
+}
+@media (min-width:1700px){
+  .wrap{max-width:1640px}
+}
+@media (min-width:1300px){
+  .bill-grid{grid-template-columns:minmax(0,780px) minmax(360px,1fr);gap:24px}
+  .bill-grid .stack{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+  .bill-grid .stack > .card:nth-child(1){grid-column:1;grid-row:1}
+  .bill-grid .stack > .card:nth-child(2){grid-column:2;grid-row:1 / span 2}
+  .bill-grid .stack > .card:nth-child(3){grid-column:1;grid-row:2}
+  .bill-grid .preview-col{position:sticky;top:20px}
+}
+#panel-purchase .bill-grid{grid-template-columns:minmax(0,1fr)}
+
 /* ---------- ปุ่มสลับโหมดมืด/สว่าง ---------- */
 .theme-toggle{flex:none;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;
   border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;margin-left:8px}
@@ -334,27 +351,39 @@ details.shop .fields{margin-top:12px}
 /* ---------------- แดชบอร์ด ---------------- */
 .dash-filter{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
 .dash-filter .f{flex:1 1 200px}
-.dash-hero-row{display:grid;grid-template-columns:1fr 1.7fr;gap:14px;margin:20px 0}
-.dash-hero{position:relative;overflow:hidden;background:var(--hero-bg);color:#fff;border-radius:18px;padding:22px 24px;box-shadow:var(--shadow-1);background-image:radial-gradient(120% 140% at 100% 0%,rgba(127,211,239,.2),transparent 55%);display:flex;flex-direction:column;justify-content:center;gap:9px;min-height:148px}
-.dash-hero-emoji{position:absolute;right:16px;top:16px;font-size:32px;opacity:.9}
-.dash-hero-label{font-size:13px;color:rgba(255,255,255,.78);font-weight:600}
-.dash-hero-val{font:700 30px 'Prompt',sans-serif;font-variant-numeric:tabular-nums}
-.dash-hero-sub{align-self:flex-start;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.14)}
-.dash-hero-sub.up{color:#8CE7B0}
-.dash-hero-sub.down{color:#ff9fb3}
-.dash-stats{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 22px;box-shadow:var(--shadow-1);display:flex;flex-direction:column;gap:16px;min-width:0}
-.dash-stats-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
-.dash-stats-head h3{margin:0;font:700 15.5px 'Prompt',sans-serif}
-.dash-stats-head span{font-size:12px;color:var(--muted)}
-.dash-stats-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
-.dash-stat-item{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0}
-.dash-stat-ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:17px}
-.dash-stat-ic.teal{background:rgba(13,111,146,.12);color:var(--sticker-line)}
-.dash-stat-ic.blue{background:var(--blue-bg);color:var(--blue-ink)}
-.dash-stat-ic.amber{background:#fff3d9;color:#9a6b00}
-.dash-stat-ic.green{background:#e6f6ea;color:#1a6b3a}
-.dash-stat-item b{font:700 19px 'Prompt',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.dash-stat-item small{font-size:12px;color:var(--muted);font-weight:600}
+.dash-sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin:20px 0 12px}
+.dash-sec-head h3{margin:0;font:700 15.5px 'Prompt',sans-serif}
+.dash-sec-head span{font-size:12px;color:var(--muted)}
+.dash-stat-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+.dash-stat-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow-1);display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}
+.dash-stat-card.hero{position:relative;overflow:hidden;background:var(--hero-bg);border-color:transparent;color:#fff;background-image:radial-gradient(120% 140% at 100% 0%,rgba(127,211,239,.2),transparent 55%)}
+.dash-stat-card.hero .dsc-label{color:rgba(255,255,255,.78)}
+.dsc-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:18px}
+.dash-stat-card.hero .dsc-ic{background:rgba(255,255,255,.18);color:#fff}
+.dsc-ic.teal{background:rgba(13,111,146,.12);color:var(--sticker-line)}
+.dsc-ic.blue{background:var(--blue-bg);color:var(--blue-ink)}
+.dsc-ic.amber{background:#fff3d9;color:#9a6b00}
+.dsc-ic.green{background:#e6f6ea;color:#1a6b3a}
+.dsc-ic.purple{background:#f1e8fd;color:#6d3fa8}
+.dsc-label{font-size:12.5px;color:var(--muted);font-weight:600}
+.dsc-val{font:700 20px 'Prompt',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.dsc-trend{align-self:flex-start;font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.14)}
+.dsc-trend.up{color:#8CE7B0}
+.dsc-trend.down{color:#ff9fb3}
+.dash-cat-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:20px 0}
+.dash-cat-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow-1);display:flex;flex-direction:column;gap:14px;min-width:0}
+.dash-cat-head{display:flex;align-items:center;gap:10px}
+.dash-cat-head h3{margin:0;font:700 14.5px 'Prompt',sans-serif;flex:1;min-width:0}
+.dash-cat-ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:15px;flex:none}
+.dash-cat-ic.teal{background:rgba(13,111,146,.12);color:var(--sticker-line)}
+.dash-cat-ic.blue{background:var(--blue-bg);color:var(--blue-ink)}
+.dash-cat-ic.amber{background:#fff3d9;color:#9a6b00}
+.dash-cat-ic.green{background:#e6f6ea;color:#1a6b3a}
+.dash-cat-link{background:transparent;border:0;color:var(--sticker-line);font-size:12px;font-weight:700;cursor:pointer;padding:2px;white-space:nowrap}
+.dash-cat-link:hover{text-decoration:underline}
+.dash-cat-list{display:flex;flex-direction:column;gap:10px}
+.dash-cat-item{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.dash-cat-item b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .dash-mid-row{display:grid;grid-template-columns:1fr 1fr 2fr 1fr;gap:14px;margin:20px 0;align-items:stretch}
 .dash-mini{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow-1);display:flex;flex-direction:column;gap:10px;min-width:0}
 .dash-mini-label{font-size:12.5px;color:var(--muted);font-weight:600}
@@ -394,9 +423,9 @@ table.dash-tbl tr:hover td{background:var(--field)}
 }
 .dtype{display:inline-flex;align-items:center;gap:9px;min-width:0}
 .dtype-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:14px;flex:none}
-.dtype-ic.bill{background:rgba(13,111,146,.12);color:var(--sticker-line)}
-.dtype-ic.job{background:#fff3d9;color:#9a6b00}
-.dtype-ic.purch{background:var(--mat);color:var(--muted)}
+.dtype-ic.dt-bill{background:rgba(13,111,146,.12);color:var(--sticker-line)}
+.dtype-ic.dt-job{background:#fff3d9;color:#9a6b00}
+.dtype-ic.dt-purch{background:var(--mat);color:var(--muted)}
 .dtype b{font-size:13px;font-weight:600;white-space:nowrap}
 td.dname{min-width:150px}
 td.dname b{display:block;font-size:14px}
@@ -531,13 +560,15 @@ tr{break-inside:avoid}
 @media (max-width:900px){
   .calc-grid,.bill-grid{grid-template-columns:minmax(0,1fr)}
   .dash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .dash-hero-row{grid-template-columns:1fr}
+  .dash-stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .dash-cat-row{grid-template-columns:repeat(2,minmax(0,1fr))}
   .dash-mid-row{grid-template-columns:1fr 1fr}
   .dash-mid-row .dash-rev-card{grid-column:1 / -1}
 }
 @media (max-width:560px){
   .wrap{padding:0 14px}
-  .dash-stats-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dash-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dash-cat-row{grid-template-columns:1fr}
   .dash-mid-row{grid-template-columns:1fr}
   .card{padding:16px}
   /* หัวเว็บมือถือ: ตัดคำโปรยที่ทำให้ตัวอักษรล้น/ขึ้นหลายบรรทัด เหลือแค่โลโก้+ชื่อสั้นๆ แถวเดียว ให้ดูโล่งไม่งง */
@@ -1380,40 +1411,36 @@ tr{break-inside:avoid}
         <p class="hint" id="dashMonthHint" style="margin:8px 0 0"></p>
       </div>
 
-      <div class="dash-hero-row">
-        <div class="dash-hero">
-          <span class="dash-hero-emoji" aria-hidden="true">🎉</span>
-          <span class="dash-hero-label">ยอดขายวันนี้</span>
-          <span class="dash-hero-val" id="dashTodaySales">0.00 บาท</span>
-          <span class="dash-hero-sub" id="dashTodayCompare">เทียบกับเมื่อวาน —</span>
+      <div class="dash-sec-head">
+        <h3>ภาพรวมร้าน</h3>
+        <span id="dashUpdatedAt">ยังไม่มีข้อมูล</span>
+      </div>
+      <div class="dash-stat-grid">
+        <div class="dash-stat-card hero">
+          <span class="dsc-ic" aria-hidden="true">🎉</span>
+          <span class="dsc-label">ยอดขายวันนี้</span>
+          <span class="dsc-val" id="dashTodaySales">0.00 บาท</span>
+          <span class="dsc-trend" id="dashTodayCompare">เทียบกับเมื่อวาน —</span>
         </div>
-        <div class="dash-stats">
-          <div class="dash-stats-head">
-            <h3>ภาพรวมร้าน</h3>
-            <span id="dashUpdatedAt">ยังไม่มีข้อมูล</span>
-          </div>
-          <div class="dash-stats-row">
-            <div class="dash-stat-item">
-              <span class="dash-stat-ic teal" aria-hidden="true">📈</span>
-              <b id="dashMonthSales">0.00 บาท</b>
-              <small>ยอดขายเดือนนี้</small>
-            </div>
-            <div class="dash-stat-item">
-              <span class="dash-stat-ic blue" aria-hidden="true">👥</span>
-              <b id="dashCustCount">0 ราย</b>
-              <small>ลูกค้าทั้งหมด</small>
-            </div>
-            <div class="dash-stat-item">
-              <span class="dash-stat-ic amber" aria-hidden="true">📄</span>
-              <b id="dashDocCount">0 รายการ</b>
-              <small>เอกสารทั้งหมด</small>
-            </div>
-            <div class="dash-stat-item">
-              <span class="dash-stat-ic green" aria-hidden="true">💰</span>
-              <b id="dashNetVatMini">0.00 บาท</b>
-              <small id="dashNetVatMiniLabel">VAT สุทธิเดือนนี้</small>
-            </div>
-          </div>
+        <div class="dash-stat-card">
+          <span class="dsc-ic teal" aria-hidden="true">📈</span>
+          <span class="dsc-label">ยอดขายเดือนนี้</span>
+          <span class="dsc-val" id="dashMonthSales">0.00 บาท</span>
+        </div>
+        <div class="dash-stat-card">
+          <span class="dsc-ic blue" aria-hidden="true">👥</span>
+          <span class="dsc-label">ลูกค้าทั้งหมด</span>
+          <span class="dsc-val" id="dashCustCount">0 ราย</span>
+        </div>
+        <div class="dash-stat-card">
+          <span class="dsc-ic amber" aria-hidden="true">📄</span>
+          <span class="dsc-label">เอกสารทั้งหมด</span>
+          <span class="dsc-val" id="dashDocCount">0 รายการ</span>
+        </div>
+        <div class="dash-stat-card">
+          <span class="dsc-ic purple" aria-hidden="true">💰</span>
+          <span class="dsc-label" id="dashNetVatMiniLabel">VAT สุทธิเดือนนี้</span>
+          <span class="dsc-val" id="dashNetVatMini">0.00 บาท</span>
         </div>
       </div>
 
@@ -1450,6 +1477,59 @@ tr{break-inside:avoid}
         </div>
         <div id="dashRecentDocs"></div>
       </section>
+
+      <div class="dash-cat-row">
+        <div class="dash-cat-card">
+          <div class="dash-cat-head">
+            <span class="dash-cat-ic teal" aria-hidden="true">🧾</span>
+            <h3>เอกสารขาย</h3>
+            <button type="button" class="dash-cat-link" id="dashCatBillBtn">ดูทั้งหมด ›</button>
+          </div>
+          <div class="dash-cat-list">
+            <div class="dash-cat-item"><span>บิล/ใบเสร็จเดือนนี้</span><b id="catBillMonthCount">0 ใบ</b></div>
+            <div class="dash-cat-item"><span>ยอดขายเดือนนี้</span><b id="catBillMonthSales">0.00 บาท</b></div>
+            <div class="dash-cat-item"><span>บิลทั้งหมด</span><b id="catBillAllCount">0 ใบ</b></div>
+          </div>
+        </div>
+
+        <div class="dash-cat-card">
+          <div class="dash-cat-head">
+            <span class="dash-cat-ic amber" aria-hidden="true">🎯</span>
+            <h3>ใบคอนเฟิร์มงาน</h3>
+            <button type="button" class="dash-cat-link" id="dashCatJobBtn">ดูทั้งหมด ›</button>
+          </div>
+          <div class="dash-cat-list">
+            <div class="dash-cat-item"><span>● รอทำ</span><b id="catJobPending">0 งาน</b></div>
+            <div class="dash-cat-item"><span>● ผลิตแล้ว</span><b id="catJobPrinted">0 งาน</b></div>
+            <div class="dash-cat-item"><span>● จัดส่งแล้ว</span><b id="catJobShipped">0 งาน</b></div>
+          </div>
+        </div>
+
+        <div class="dash-cat-card">
+          <div class="dash-cat-head">
+            <span class="dash-cat-ic blue" aria-hidden="true">🛒</span>
+            <h3>ภาษีซื้อ</h3>
+            <button type="button" class="dash-cat-link" id="dashCatPurchBtn">ดูทั้งหมด ›</button>
+          </div>
+          <div class="dash-cat-list">
+            <div class="dash-cat-item"><span>รายการเดือนนี้</span><b id="catPurchMonthCount">0 รายการ</b></div>
+            <div class="dash-cat-item"><span>ภาษีซื้อเดือนนี้</span><b id="catPurchMonthVat">0.00 บาท</b></div>
+            <div class="dash-cat-item"><span>รายการทั้งหมด</span><b id="catPurchAllCount">0 รายการ</b></div>
+          </div>
+        </div>
+
+        <div class="dash-cat-card">
+          <div class="dash-cat-head">
+            <span class="dash-cat-ic green" aria-hidden="true">💰</span>
+            <h3>สรุปการเงินเดือนนี้</h3>
+            <button type="button" class="dash-cat-link" id="dashCatReportBtn">ดูรายงาน ›</button>
+          </div>
+          <div class="dash-cat-list">
+            <div class="dash-cat-item"><span>กำไรเดือนนี้ (ประมาณ)</span><b id="catProfit">0.00 บาท</b></div>
+            <div class="dash-cat-item"><span id="catNetVatLabel">VAT สุทธิเดือนนี้</span><b id="catNetVat">0.00 บาท</b></div>
+          </div>
+        </div>
+      </div>
 
       <div class="dash-grid">
         <div class="dash-tile">
@@ -2168,6 +2248,24 @@ function bahtText(value) {
     const custSet = new Set(list.map(b => (b.cName || '').trim()).filter(Boolean));
     $('dashCustCount').textContent = String(custSet.size) + ' ราย';
 
+    // การ์ดหมวดหมู่ด้านล่าง: เอกสารขาย / ใบคอนเฟิร์มงาน (แยกตามสถานะ) / ภาษีซื้อ
+    if ($('catBillMonthCount')) {
+      const billsThisMonth = list.filter(b => monthKey(b.date) === curMonthKey);
+      $('catBillMonthCount').textContent = billsThisMonth.length + ' ใบ';
+      $('catBillMonthSales').textContent = money(round2(billsThisMonth.reduce((a, b) => a + billCalc(b).total, 0))) + ' บาท';
+      $('catBillAllCount').textContent = list.length + ' ใบ';
+    }
+    if ($('catJobPending')) {
+      $('catJobPending').textContent = jobsAll.filter(j => (j.status || 'pending') === 'pending').length + ' งาน';
+      $('catJobPrinted').textContent = jobsAll.filter(j => j.status === 'printed').length + ' งาน';
+      $('catJobShipped').textContent = jobsAll.filter(j => j.status === 'shipped').length + ' งาน';
+    }
+    if ($('catPurchMonthCount')) {
+      const purchThisMonth = purchAll.filter(p => monthKey(p.date) === curMonthKey);
+      $('catPurchMonthCount').textContent = purchThisMonth.length + ' รายการ';
+      $('catPurchAllCount').textContent = purchAll.length + ' รายการ';
+    }
+
     // แถบเทียบยอดขายวันนี้กับเมื่อวาน
     const cmpEl = $('dashTodayCompare');
     if (cmpEl) {
@@ -2205,6 +2303,11 @@ function bahtText(value) {
     if (netMiniEl) {
       netMiniEl.textContent = money(Math.abs(monthNetVat)) + ' บาท';
       if (netMiniLabel) netMiniLabel.textContent = monthNetVat > 0 ? 'VAT ต้องชำระเดือนนี้' : monthNetVat < 0 ? 'VAT ขอคืนเดือนนี้' : 'VAT สุทธิเดือนนี้';
+    }
+    if ($('catPurchMonthVat')) $('catPurchMonthVat').textContent = money(monthPurchVat) + ' บาท';
+    if ($('catNetVat')) {
+      $('catNetVat').textContent = money(Math.abs(monthNetVat)) + ' บาท';
+      $('catNetVatLabel').textContent = monthNetVat > 0 ? 'VAT ต้องชำระเดือนนี้' : monthNetVat < 0 ? 'VAT ขอคืนเดือนนี้' : 'VAT สุทธิเดือนนี้';
     }
 
     // เอกสารในช่วง 7 วันล่าสุด (แท่งเล็กสรุปจำนวนต่อวัน)
@@ -2252,6 +2355,7 @@ function bahtText(value) {
     $('dashProfitSpark').innerHTML = profitByMonth.map(v => '<i style="height:' + Math.max(Math.round(Math.abs(v) / profitMax * 100), v !== 0 ? 8 : 2) + '%" title="' + money(v) + ' บาท"></i>').join('');
     const curProfit = profitByMonth[profitByMonth.length - 1] || 0;
     $('dashProfit').textContent = money(curProfit) + ' บาท';
+    if ($('catProfit')) $('catProfit').textContent = money(curProfit) + ' บาท';
     const curSalesForMargin = byMonth[curMonthKey] || 0;
     const marginEl = $('dashMarginRing'), marginPctEl = $('dashMarginPct'), marginNoteEl = $('dashMarginNote');
     if (curSalesForMargin > 0) {
@@ -2286,7 +2390,7 @@ function bahtText(value) {
       '<th>ประเภท</th><th>เลขที่ / ชื่อ</th><th>วันที่</th><th>ยอดเงิน</th><th>สถานะ</th>' +
       '</tr></thead><tbody>' + top.map(r =>
       '<tr>' +
-        '<td><span class="dtype"><span class="dtype-ic ' + esc(r.type) + '" aria-hidden="true">' + typeIcon[r.type] + '</span><b>' + esc(typeLabel[r.type]) + '</b></span></td>' +
+        '<td><span class="dtype"><span class="dtype-ic dt-' + esc(r.type) + '" aria-hidden="true">' + typeIcon[r.type] + '</span><b>' + esc(typeLabel[r.type]) + '</b></span></td>' +
         '<td class="dname"><b>' + esc(r.no || '—') + '</b><small>' + esc(r.name) + '</small></td>' +
         '<td>' + esc(thDate(r.date)) + '</td>' +
         '<td class="damt">' + (r.amount != null ? money(r.amount) + ' บาท' : '—') + '</td>' +
@@ -4013,6 +4117,10 @@ function bahtText(value) {
   $('dashMonth').addEventListener('change', renderDash);
   $('dash-all').addEventListener('click', () => { $('dashMonth').value = ''; renderDash(); });
   $('dash-go-report').addEventListener('click', () => { $('reportMonth').value = $('dashMonth').value; showTab('report'); });
+  if ($('dashCatBillBtn')) $('dashCatBillBtn').addEventListener('click', () => showTab('bill'));
+  if ($('dashCatJobBtn')) $('dashCatJobBtn').addEventListener('click', () => showTab('confirm'));
+  if ($('dashCatPurchBtn')) $('dashCatPurchBtn').addEventListener('click', () => showTab('purchase'));
+  if ($('dashCatReportBtn')) $('dashCatReportBtn').addEventListener('click', () => { $('reportMonth').value = $('dashMonth').value; showTab('report'); });
   $('reportMonth').addEventListener('change', renderReport);
   $('report-all').addEventListener('click', () => { $('reportMonth').value = ''; renderReport(); });
   $('report-csv-sales').addEventListener('click', () => exportReportCsv('sales'));
