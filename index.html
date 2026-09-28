@@ -4,10 +4,30 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ball Sticker — คำนวณสติ๊กเกอร์และใบกำกับภาษี</title>
+
+<!-- ---------- ทำให้ "เพิ่มลงหน้าจอโฮม" แล้วเปิดเหมือนแอป ใช้ได้ทั้ง iOS และ Android (PWA) ---------- -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#10233f">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<!-- iOS Safari ไม่อ่าน manifest.json เต็มรูปแบบ ต้องใส่ meta/ไอคอนชุดนี้เพิ่มเพื่อให้ "เพิ่มลงหน้าจอโฮม" ได้ผลลัพธ์แบบแอป -->
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ball Sticker">
+<meta name="mobile-web-app-capable" content="yes">
+
 <script>
 // ตั้งโหมดมืด/สว่างจากค่าที่จำไว้ทันทีตั้งแต่ก่อนวาดหน้าจอ กันไฟกะพริบสลับธีมตอนโหลด
 // ค่าเริ่มต้นของระบบตอนนี้คือโหมดมืด เว้นแต่ผู้ใช้เคยกดเลือกโหมดสว่างไว้เอง (จำไว้ใน localStorage)
 (function(){try{var t=localStorage.getItem('bs_theme');document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
+// ลงทะเบียน Service Worker (ทำให้ติดตั้งเป็นแอปได้ + เปิดได้แม้เน็ตหลุดชั่วคราว)
+// ทำแบบเงียบๆ เบื้องหลัง ถ้าเบราว์เซอร์ไม่รองรับหรือโหลดไม่ได้ก็ไม่กระทบการใช้งานอื่นเลย
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
