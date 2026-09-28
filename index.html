@@ -179,11 +179,12 @@ a{color:inherit}
   .wrap{max-width:1640px}
 }
 @media (min-width:1300px){
-  .bill-grid{grid-template-columns:minmax(0,780px) minmax(360px,1fr);gap:24px}
-  .bill-grid .stack{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+  .bill-grid.bill-grid{grid-template-columns:minmax(0,900px) minmax(360px,1fr);gap:24px}
+  .bill-grid .stack{grid-template-columns:minmax(300px,340px) minmax(420px,1fr);align-items:start}
   .bill-grid .stack > .card:nth-child(1){grid-column:1;grid-row:1}
   .bill-grid .stack > .card:nth-child(2){grid-column:2;grid-row:1 / span 2}
   .bill-grid .stack > .card:nth-child(3){grid-column:1;grid-row:2}
+  .bill-grid .stack > .card:only-child{grid-column:1 / -1}
   .bill-grid .preview-col{position:sticky;top:20px}
 }
 #panel-purchase .bill-grid{grid-template-columns:minmax(0,1fr)}
