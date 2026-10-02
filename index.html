@@ -386,6 +386,19 @@ details.shop .fields{margin-top:12px}
 .dash-cat-list{display:flex;flex-direction:column;gap:10px}
 .dash-cat-item{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
 .dash-cat-item b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.job-queue-list{display:flex;flex-direction:column;gap:8px}
+.job-queue-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;background:var(--mat);border:1px solid var(--line);cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
+.job-queue-item:hover{filter:brightness(.97)}
+.job-queue-item.overdue{background:var(--warn-bg);border-color:var(--warn-bg)}
+.job-queue-item.soon{background:var(--blue-bg);border-color:var(--blue-bg)}
+.job-queue-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.job-queue-main b{font-size:13.5px;color:var(--ink)}
+.job-queue-main small{font-size:12px;color:var(--muted)}
+.job-queue-item.overdue .job-queue-main small{color:var(--warn-ink)}
+.job-queue-item.soon .job-queue-main small{color:var(--blue-ink)}
+.job-queue-badge{flex:none;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;background:#fff;color:var(--ink)}
+.job-queue-item.overdue .job-queue-badge{background:var(--warn-ink);color:#fff}
+.job-queue-item.soon .job-queue-badge{background:var(--blue-ink);color:#fff}
 .dash-mid-row{display:grid;grid-template-columns:1fr 1fr 2fr 1fr;gap:14px;margin:20px 0;align-items:stretch}
 .dash-mini{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow-1);display:flex;flex-direction:column;gap:10px;min-width:0}
 .dash-mini-label{font-size:12.5px;color:var(--muted);font-weight:600}
@@ -1188,7 +1201,7 @@ tr{break-inside:avoid}
                 <label class="f"><span>จำนวนเงิน (ตามสลิป)</span><div class="in"><input type="number" inputmode="decimal" step="any" min="0" id="jobSlipAmount" placeholder="0.00"></div></label>
               </div>
               <p class="hint" style="margin:-8px 0 0">บัญชีและจำนวนเงินในสลิปจะไม่แสดงในใบคอนเฟิร์มงาน (กันพนักงานเห็น) แต่จะโชว์ในลิสต์ประวัติใบงานเท่านั้น</p>
-              <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="jName" type="text" autocomplete="off"></label>
+              <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="jName" type="text" autocomplete="off" list="customerNames"></label>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="jPhone" type="tel" autocomplete="off"></label>
               <label class="f"><span>ที่อยู่ลูกค้า (ถ้ามี)</span><textarea id="jAddr"></textarea></label>
             </div>
@@ -1264,7 +1277,7 @@ tr{break-inside:avoid}
               <label class="f"><span>ชุดเอกสาร</span>
                 <select id="docCopy"><option value="ต้นฉบับ">ต้นฉบับ</option><option value="สำเนา">สำเนา</option></select>
               </label>
-              <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="cName" type="text" autocomplete="off"></label>
+              <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="cName" type="text" autocomplete="off" list="customerNames"></label>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="cPhone" type="tel" autocomplete="off"></label>
               <label class="f"><span>เลขประจำตัวผู้เสียภาษีลูกค้า (ถ้ามี)</span><input class="txt" id="cTax" type="text" inputmode="numeric" autocomplete="off"></label>
               <label class="f"><span>ที่อยู่ลูกค้า</span><textarea id="cAddr"></textarea></label>
@@ -1363,7 +1376,7 @@ tr{break-inside:avoid}
             <h2>ข้อมูลใบราคาส่ง</h2>
             <p class="edit-state" id="wholesaleEditState"></p>
             <div class="fields">
-              <label class="f"><span>ชื่อลูกค้า / ผู้ซื้อ</span><input class="txt" id="whName" type="text" autocomplete="off"></label>
+              <label class="f"><span>ชื่อลูกค้า / ผู้ซื้อ</span><input class="txt" id="whName" type="text" autocomplete="off" list="customerNames"></label>
               <label class="f"><span>วันที่</span><input class="txt" id="whDate" type="date"></label>
               <label class="f"><span>เลขอ้างอิง / หมายเหตุอ้างอิง (ถ้ามี)</span><input class="txt" id="whRef" type="text" autocomplete="off" placeholder="กรอกเองได้ ไม่รันเลขอัตโนมัติ"></label>
             </div>
@@ -1517,6 +1530,14 @@ tr{break-inside:avoid}
           <span class="dsc-val" id="dashNetVatMini">0.00 บาท</span>
         </div>
       </div>
+
+      <section class="card no-print" id="dashJobQueueCard" aria-labelledby="dash-queue-h">
+        <div class="viz-head">
+          <h2 id="dash-queue-h">คิวงานที่ต้องส่ง</h2>
+          <span>งานที่ยังไม่จัดส่งและใกล้ถึงหรือเลยกำหนดส่งแล้ว (วันนี้ / พรุ่งนี้ / เลยกำหนด)</span>
+        </div>
+        <div id="dashJobQueue"></div>
+      </section>
 
       <div class="dash-mid-row">
         <div class="dash-mini">
@@ -1976,6 +1997,61 @@ function bahtText(value) {
     if (cloudStatus === 'error') return '<p class="notice">เชื่อมต่อคลาวด์ไม่ได้ตอนนี้ (เช่น ไม่มีอินเทอร์เน็ต) ใช้ข้อมูลในเครื่องนี้ไปก่อน จะซิงก์ให้เองเมื่อเชื่อมต่อได้</p>';
     return '';
   }
+
+  /* ---------------- ฐานข้อมูลลูกค้าประจำ (ใช้ autofill เบอร์โทร/ที่อยู่ ผ่าน <datalist> เวลาพิมพ์ชื่อซ้ำ) ----------------
+     เก็บเป็น bs_customers: [{name, phone, addr, lastUsed}] คีย์ด้วยชื่อ (ตัด space หัวท้าย) ซิงก์ขึ้นคลาวด์
+     คอลเลกชัน 'customers' แบบเดียวกับ bills/jobs/wholesale/purchases */
+  function customerCloudId(name) {
+    const s = String(name).trim();
+    let h = 0;
+    for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+    return 'c' + Math.abs(h).toString(36) + '_' + s.length;
+  }
+  function upsertCustomer(name, phone, addr) {
+    const n = String(name || '').trim();
+    if (!n) return;
+    const list = store.get('bs_customers', []);
+    const idx = list.findIndex(c => String(c.name || '').trim() === n);
+    const p = String(phone || '').trim(), a = String(addr || '').trim();
+    let rec;
+    if (idx >= 0) {
+      rec = Object.assign({}, list[idx], {name: n, lastUsed: Date.now()});
+      if (p) rec.phone = p;
+      if (a) rec.addr = a;
+      list[idx] = rec;
+    } else {
+      rec = {name: n, phone: p, addr: a, lastUsed: Date.now()};
+      list.push(rec);
+    }
+    store.set('bs_customers', list);
+    cloudSave('customers', Object.assign({id: customerCloudId(n)}, rec));
+    renderCustomerDatalist();
+  }
+  function renderCustomerDatalist() {
+    const dl = $('customerNames'); if (!dl) return;
+    const list = store.get('bs_customers', []).slice().sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0));
+    dl.innerHTML = list.map(c => '<option value="' + esc(c.name) + '">').join('');
+  }
+  function findCustomer(name) {
+    const n = String(name || '').trim(); if (!n) return null;
+    return store.get('bs_customers', []).find(c => String(c.name || '').trim() === n) || null;
+  }
+  function wireCustomerAutofill(nameId, phoneId, addrId, renderFn) {
+    const nameEl = $(nameId); if (!nameEl) return;
+    const fill = () => {
+      const c = findCustomer(nameEl.value);
+      if (!c) return;
+      let changed = false;
+      const phoneEl = $(phoneId), addrEl = $(addrId);
+      if (phoneEl && !phoneEl.value.trim() && c.phone) { phoneEl.value = c.phone; changed = true; }
+      if (addrEl && !addrEl.value.trim() && c.addr) { addrEl.value = c.addr; changed = true; }
+      if (changed && renderFn) renderFn();
+    };
+    nameEl.addEventListener('input', fill);
+    nameEl.addEventListener('change', fill);
+    nameEl.addEventListener('blur', fill);
+  }
+
   const logoImg = () => '<img class="sh-logo" alt="โลโก้ ' + esc(shop.name) + '" src="' + LOGO + '">';
   const todayISO = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
   const thDate = iso => { try { return new Date(iso + 'T00:00:00').toLocaleDateString('th-TH', {day: 'numeric', month: 'long', year: 'numeric'}); } catch (e) { return iso; } };
@@ -2341,6 +2417,7 @@ function bahtText(value) {
       $('catJobPrinted').textContent = jobsAll.filter(j => j.status === 'printed').length + ' งาน';
       $('catJobShipped').textContent = jobsAll.filter(j => j.status === 'shipped').length + ' งาน';
     }
+    renderJobQueue();
     if ($('catPurchMonthCount')) {
       const purchThisMonth = purchAll.filter(p => monthKey(p.date) === curMonthKey);
       $('catPurchMonthCount').textContent = purchThisMonth.length + ' รายการ';
@@ -2450,6 +2527,46 @@ function bahtText(value) {
       marginPctEl.textContent = '—';
       marginNoteEl.textContent = 'ยังไม่มีข้อมูลยอดขายเดือนนี้';
     }
+  }
+
+  // คิวงานที่ต้องส่ง: งานที่ยังไม่จัดส่ง (status !== 'shipped') ที่มีกำหนดส่งวันนี้/พรุ่งนี้/เลยกำหนดแล้ว
+  function renderJobQueue() {
+    const el = $('dashJobQueue'); if (!el) return;
+    const todayKey = todayISO();
+    const tmrDate = new Date(todayKey + 'T00:00:00'); tmrDate.setDate(tmrDate.getDate() + 1);
+    const tmrKey = tmrDate.toISOString().slice(0, 10);
+    const jobs = store.get('bs_jobs', [])
+      .filter(j => j.status !== 'shipped' && j.due && j.due <= tmrKey)
+      .sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : 0));
+    if (!jobs.length) {
+      el.innerHTML = '<p class="empty">ไม่มีงานที่ใกล้ถึงกำหนดส่ง</p>';
+      return;
+    }
+    el.innerHTML = '<div class="job-queue-list">' + jobs.map(j => {
+      const isOverdue = j.due < todayKey;
+      const isToday = j.due === todayKey;
+      let badge, cls;
+      if (isOverdue) {
+        const days = Math.round((new Date(todayKey + 'T00:00:00') - new Date(j.due + 'T00:00:00')) / 86400000);
+        badge = 'เลยกำหนด ' + days + ' วัน'; cls = 'overdue';
+      } else if (isToday) { badge = 'วันนี้'; cls = 'soon'; }
+      else { badge = 'พรุ่งนี้'; cls = 'soon'; }
+      return '<button type="button" class="job-queue-item ' + cls + '" data-id="' + esc(j.id) + '">' +
+        '<span class="job-queue-main"><b>' + esc(j.no) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + '</b>' +
+        '<small>กำหนดส่ง ' + esc(thDate(j.due)) + '</small></span>' +
+        '<span class="job-queue-badge">' + badge + '</span></button>';
+    }).join('') + '</div>';
+  }
+  const dashJobQueueEl = $('dashJobQueue');
+  if (dashJobQueueEl) {
+    dashJobQueueEl.addEventListener('click', e => {
+      const btn = e.target.closest('button[data-id]'); if (!btn) return;
+      const id = btn.dataset.id;
+      const list = store.get('bs_jobs', []);
+      const j = list.find(x => x.id === id); if (!j) return;
+      currentJobId = id; applyJob(j); renderJobEditState(); showTab('confirm');
+      window.scrollTo({top: 0, behavior: 'smooth'}); toast('เปิดใบ ' + j.no + ' แล้ว แก้ไขได้เลย');
+    });
   }
 
   // รวมเอกสารล่าสุดจากทั้ง 3 ประเภท (บิล/ใบเสร็จ, ใบคอนเฟิร์มงาน, ภาษีซื้อ) เรียงตามเวลาที่บันทึกล่าสุด
@@ -2632,6 +2749,7 @@ function bahtText(value) {
     currentId = rec.id;
     const persisted = store.set('bs_bills', list);
     cloudSave('bills', rec);
+    upsertCustomer(rec.cName, rec.cPhone, rec.cAddr);
     renderHistory(); renderEditState();
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับเอกสาร ' : 'บันทึกเอกสาร ') + rec.no + ' แล้ว'
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
@@ -3165,6 +3283,7 @@ function bahtText(value) {
     currentJobId = rec.id;
     const persisted = store.set('bs_jobs', list);
     cloudSave('jobs', rec);
+    upsertCustomer(rec.jName, rec.jPhone, rec.jAddr);
     renderJobHistory(); renderJobEditState();
     syncRecordPhotosToCloud('bs_jobs', 'jobs', rec.id, 'photos', renderJobHistory);
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับใบ ' : 'บันทึกใบ ') + rec.no + ' แล้ว'
@@ -3283,6 +3402,7 @@ function bahtText(value) {
     currentWholesaleId = rec.id;
     const persisted = store.set('bs_wholesale', list);
     cloudSave('wholesale', rec);
+    upsertCustomer(rec.buyerName, '', '');
     renderWholesaleHistory(); renderWholesaleEditState();
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับใบราคาส่งแล้ว' : 'บันทึกใบราคาส่งแล้ว')
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
@@ -4474,10 +4594,14 @@ function bahtText(value) {
   newJob(); renderJobHistory();
   newWholesale(); renderWholesaleHistory();
   newPurchase(); renderPurchHistory();
+  renderCustomerDatalist();
+  wireCustomerAutofill('cName', 'cPhone', 'cAddr', renderBill);
+  wireCustomerAutofill('jName', 'jPhone', 'jAddr', renderJob);
   watchCloud('bills', 'bs_bills', renderHistory);
   watchCloud('jobs', 'bs_jobs', renderJobHistory);
   watchCloud('wholesale', 'bs_wholesale', renderWholesaleHistory);
   watchCloud('purchases', 'bs_purchases', renderPurchHistory);
+  watchCloud('customers', 'bs_customers', renderCustomerDatalist);
   $('dashMonth').addEventListener('change', renderDash);
   $('dash-all').addEventListener('click', () => { $('dashMonth').value = ''; renderDash(); });
   $('dash-go-report').addEventListener('click', () => { $('reportMonth').value = $('dashMonth').value; showTab('report'); });
@@ -4495,5 +4619,6 @@ function bahtText(value) {
   renderReport();
 })();
 </script>
+<datalist id="customerNames"></datalist>
 </body>
 </html>
