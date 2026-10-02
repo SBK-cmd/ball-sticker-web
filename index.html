@@ -1220,9 +1220,10 @@ tr{break-inside:avoid}
               <button class="btn" id="pdf-job" type="button">ดาวน์โหลด PDF</button>
               <button class="btn good" id="save-job" type="button">บันทึกลงประวัติ</button>
               <button class="btn" id="job-to-bill" type="button">ใช้ข้อมูลนี้ออกบิล →</button>
+              <button class="btn" id="job-to-wholesale" type="button">ย้ายไปใบราคาส่ง →</button>
               <button class="btn danger" id="new-job" type="button">เปิดใบใหม่</button>
             </div>
-            <p class="actions-note">ใบนี้ไม่มีราคา ใช้ยืนยันรายละเอียดงานกับลูกค้าและแจ้งฝ่ายผลิตก่อน เมื่อพร้อมออกบิลจริง กด “ใช้ข้อมูลนี้ออกบิล” เพื่อคัดลอกชื่อลูกค้าและรายการไปที่แท็บบิลอัตโนมัติ</p>
+            <p class="actions-note">ใบนี้ไม่มีราคา ใช้ยืนยันรายละเอียดงานกับลูกค้าและแจ้งฝ่ายผลิตก่อน เมื่อพร้อมออกบิลจริง กด “ใช้ข้อมูลนี้ออกบิล” เพื่อคัดลอกชื่อลูกค้าและรายการไปที่แท็บบิล หรือกด “ย้ายไปใบราคาส่ง” เพื่อคัดลอกชื่อลูกค้าและรายการไปออกใบราคาส่งแทน</p>
           </div>
         </div>
 
@@ -4055,6 +4056,17 @@ function bahtText(value) {
     renderItems(); renderBill(); showTab('bill');
     window.scrollTo({top: 0, behavior: 'smooth'});
     toast('คัดลอกข้อมูลจากใบคอนเฟิร์มงานมาที่บิลแล้ว ใส่ราคาต่อชิ้นให้ครบก่อนพิมพ์');
+  });
+
+  $('job-to-wholesale').addEventListener('click', () => {
+    $('whName').value = $('jName').value;
+    $('whDate').value = todayISO();
+    const shown = jobItems.filter(i => i.name.trim());
+    wholesaleItems = shown.length ? shown.map(i => ({name: i.name, qty: i.qty, price: 0})) : [{name: '', qty: 1, price: 0}];
+    if ($('jobNote').value.trim() && !$('whNote').value.trim()) $('whNote').value = $('jobNote').value;
+    renderWholesaleItems(); renderWholesale(); showTab('wholesale');
+    window.scrollTo({top: 0, behavior: 'smooth'});
+    toast('คัดลอกข้อมูลจากใบคอนเฟิร์มงานมาที่ใบราคาส่งแล้ว ใส่ราคาส่งให้ครบก่อนพิมพ์');
   });
 
   $('jobHistory').addEventListener('click', e => {
