@@ -277,6 +277,7 @@ textarea{resize:vertical;min-height:72px}
 .r-meta dd{margin:0;font-weight:700;font-size:18px;font-variant-numeric:tabular-nums}
 .warn{background:var(--warn-bg);color:var(--warn-ink);border-radius:12px;padding:12px 16px;font-weight:600}
 .viz-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 16px;margin-bottom:12px}
+.hist-search{max-width:320px;margin-bottom:14px}
 .viz-head h2{margin:0}
 .viz-head span{color:var(--muted);font-size:14px}
 .mat{border-radius:12px;padding:14px;background:
@@ -1238,6 +1239,7 @@ tr{break-inside:avoid}
           <h2 id="jobhist-h">ประวัติใบคอนเฟิร์มงาน</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้</span>
         </div>
+        <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="jobHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
         <div id="jobHistory"></div>
       </section>
     </section>
@@ -1333,6 +1335,7 @@ tr{break-inside:avoid}
           <h2 id="hist-h">ประวัติเอกสาร</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้</span>
         </div>
+        <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="histSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
         <div class="dash-filter" style="margin-bottom:10px">
           <label class="f" style="max-width:240px">
             <span>ติ๊กเลือกทั้งเดือน</span>
@@ -1404,6 +1407,7 @@ tr{break-inside:avoid}
           <h2 id="wholesalehist-h">ประวัติใบราคาส่ง</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้ (แยกจากประวัติเอกสาร/ใบเสร็จ)</span>
         </div>
+        <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="whHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
         <div id="wholesaleHistory"></div>
       </section>
     </section>
@@ -1458,6 +1462,7 @@ tr{break-inside:avoid}
           <h2 id="purchhist-h">ประวัติภาษีซื้อ</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข และลบได้</span>
         </div>
+        <label class="f hist-search"><span>ค้นหาร้านค้า / ผู้ขาย</span><input class="txt" id="purchHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อร้านค้าเพื่อค้นหา..."></label>
         <div id="purchHistory"></div>
       </section>
     </section>
@@ -1837,6 +1842,7 @@ function bahtText(value) {
 (function () {
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const matchesSearch = (text, query) => !String(query || '').trim() || String(text || '').toLowerCase().includes(String(query).trim().toLowerCase());
   // บัญชีผู้ใช้งาน (login แยกบัญชี) — window.BSAuth มาจากสคริปต์ล็อกอินที่โหลดก่อนหน้านี้แล้ว
   const currentUser = window.BSAuth ? window.BSAuth.getSession() : null;
   const isOwner = !currentUser || currentUser.role === 'owner'; // ไม่มีระบบบัญชี (โหมดเก่า) ให้ถือว่าเป็นเจ้าของร้าน
@@ -2227,7 +2233,13 @@ function bahtText(value) {
       $('history').innerHTML = notice + '<p class="empty">ยังไม่มีเอกสารที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>';
       updateHistSelCount(); renderDash(); renderReport(); return;
     }
-    $('history').innerHTML = notice + '<ul>' + list.map(b =>
+    const q = $('histSearch') ? $('histSearch').value : '';
+    const shown = list.filter(b => matchesSearch(b.cName, q));
+    if (!shown.length) {
+      $('history').innerHTML = notice + '<p class="empty">ไม่พบเอกสารของลูกค้าชื่อ “' + esc(q) + '”</p>';
+      updateHistSelCount(); renderDash(); renderReport(); return;
+    }
+    $('history').innerHTML = notice + '<ul>' + shown.map(b =>
       '<li data-id="' + esc(b.id) + '"><input type="checkbox" class="hist-chk" data-id="' + esc(b.id) + '"' + (histSelected.has(b.id) ? ' checked' : '') + ' aria-label="เลือกเอกสาร ' + esc(b.no) + '">' +
       '<div class="meta"><b>' + esc(b.no) + '</b><small>' + esc(thDate(b.date)) + ' · ' + esc(b.cName || 'ไม่ระบุชื่อลูกค้า') + (b.createdBy ? ' · โดย ' + esc(b.createdBy) : '') + '</small></div>' +
       '<span class="amt">' + money(b.total || 0) + ' บาท</span>' +
@@ -2942,7 +2954,10 @@ function bahtText(value) {
     const list = store.get('bs_purchases', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
     const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้</p>');
     if (!list.length) { $('purchHistory').innerHTML = notice + '<p class="empty">ยังไม่มีรายการภาษีซื้อที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; renderDash(); renderReport(); return; }
-    $('purchHistory').innerHTML = notice + '<ul>' + list.map(p =>
+    const q = $('purchHistSearch') ? $('purchHistSearch').value : '';
+    const shown = list.filter(p => matchesSearch(p.vendor, q));
+    if (!shown.length) { $('purchHistory').innerHTML = notice + '<p class="empty">ไม่พบรายการของร้านค้าชื่อ “' + esc(q) + '”</p>'; renderDash(); renderReport(); return; }
+    $('purchHistory').innerHTML = notice + '<ul>' + shown.map(p =>
       '<li data-id="' + esc(p.id) + '">' + (p.photo ? '<img class="thumb" src="' + p.photo + '" alt="">' : '') +
       '<div class="meta"><b>' + esc(p.vendor || 'ไม่ระบุร้านค้า') + '</b><small>' + esc(thDate(p.date)) + (p.createdBy ? ' · โดย ' + esc(p.createdBy) : '') + '</small></div>' +
       (num(p.vat) > 0 ? '<span class="amt">VAT ' + money(num(p.vat)) + ' บาท</span>' : '<span class="amt" style="color:#4a5a72">ไม่มี VAT · ' + money(num(p.amount)) + ' บาท</span>') +
@@ -3122,7 +3137,10 @@ function bahtText(value) {
     const list = store.get('bs_jobs', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
     const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้ ควรดาวน์โหลด PDF เก็บไว้ทุกครั้ง</p>');
     if (!list.length) { $('jobHistory').innerHTML = notice + '<p class="empty">ยังไม่มีใบคอนเฟิร์มงานที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; return; }
-    $('jobHistory').innerHTML = notice + '<ul>' + list.map(j => {
+    const q = $('jobHistSearch') ? $('jobHistSearch').value : '';
+    const shown = list.filter(j => matchesSearch(j.jName, q));
+    if (!shown.length) { $('jobHistory').innerHTML = notice + '<p class="empty">ไม่พบใบคอนเฟิร์มงานของลูกค้าชื่อ “' + esc(q) + '”</p>'; return; }
+    $('jobHistory').innerHTML = notice + '<ul>' + shown.map(j => {
       const st = j.status || 'pending';
       return '<li data-id="' + esc(j.id) + '">' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '') +
       '<div class="meta"><b>' + esc(j.no) + '</b><small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (j.account ? ' · บัญชี ' + esc(j.account) : '') + (num(j.slipAmount) > 0 ? ' · สลิป ' + money(num(j.slipAmount)) + ' บาท' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
@@ -3241,7 +3259,10 @@ function bahtText(value) {
     const list = store.get('bs_wholesale', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
     const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้ ควรดาวน์โหลด PDF เก็บไว้ทุกครั้ง</p>');
     if (!list.length) { $('wholesaleHistory').innerHTML = notice + '<p class="empty">ยังไม่มีใบราคาส่งที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; return; }
-    $('wholesaleHistory').innerHTML = notice + '<ul>' + list.map(w => {
+    const q = $('whHistSearch') ? $('whHistSearch').value : '';
+    const shown = list.filter(w => matchesSearch(w.buyerName, q));
+    if (!shown.length) { $('wholesaleHistory').innerHTML = notice + '<p class="empty">ไม่พบใบราคาส่งของลูกค้าชื่อ “' + esc(q) + '”</p>'; return; }
+    $('wholesaleHistory').innerHTML = notice + '<ul>' + shown.map(w => {
       const t = wholesaleCalc(w);
       return '<li data-id="' + esc(w.id) + '"><div class="meta"><b>' + esc(w.buyerName || 'ไม่ระบุชื่อผู้ซื้อ') + '</b><small>' + esc(thDate(w.date)) + (w.ref ? ' · ' + esc(w.ref) : '') + (w.createdBy ? ' · โดย ' + esc(w.createdBy) : '') + '</small></div>' +
       '<span class="amt">' + money(t.total) + ' บาท</span>' +
@@ -4205,6 +4226,10 @@ function bahtText(value) {
     });
     updateHistSelCount();
   });
+  $('histSearch').addEventListener('input', renderHistory);
+  $('jobHistSearch').addEventListener('input', renderJobHistory);
+  $('whHistSearch').addEventListener('input', renderWholesaleHistory);
+  $('purchHistSearch').addEventListener('input', renderPurchHistory);
   $('histPrintMonth').addEventListener('change', () => {
     const sel = $('histPrintMonth').value;
     if (!sel) return;
