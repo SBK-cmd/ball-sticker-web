@@ -968,6 +968,7 @@ tr{break-inside:avoid}
       <button role="tab" id="tab-calc" data-tab="calc" aria-selected="true" aria-controls="panel-calc">คำนวณสติ๊กเกอร์</button>
       <button role="tab" id="tab-confirm" data-tab="confirm" aria-selected="false" aria-controls="panel-confirm">ใบคอนเฟิร์มงาน</button>
       <button role="tab" id="tab-bill" data-tab="bill" aria-selected="false" aria-controls="panel-bill">ใบเสร็จ / ใบกำกับภาษี</button>
+      <button role="tab" id="tab-wholesale" data-tab="wholesale" aria-selected="false" aria-controls="panel-wholesale">ใบราคาส่ง</button>
       <div class="tab-group">
         <button type="button" class="tab-trigger" id="taxTrigger" aria-haspopup="true" aria-expanded="false">
           ภาษี
@@ -1048,6 +1049,10 @@ tr{break-inside:avoid}
     <button type="button" class="btab" data-tab="bill" aria-controls="panel-bill">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"></path><line x1="9" y1="8" x2="15" y2="8"></line><line x1="9" y1="12" x2="15" y2="12"></line></svg>
       <span>ใบเสร็จ</span>
+    </button>
+    <button type="button" class="btab" data-tab="wholesale" aria-controls="panel-wholesale">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+      <span>ราคาส่ง</span>
     </button>
     <button type="button" class="btab" id="bnavTaxTrigger" aria-haspopup="true" aria-expanded="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7L6 7z"></path><path d="M9 7a3 3 0 0 1 6 0"></path></svg>
@@ -1337,6 +1342,67 @@ tr{break-inside:avoid}
         <p class="hint" id="histPrintHint" style="margin:-4px 0 10px">เลือกเดือนเพื่อติ๊กเอกสารทั้งเดือนให้อัตโนมัติ หรือติ๊กเลือกเอกสารเป็นรายใบด้านล่างเอง แล้วกด “พิมพ์ที่เลือก” เพื่อรวมเป็นไฟล์เดียว เรียงตามวันที่ ไว้พิมพ์หรือเก็บเข้าแฟ้มได้ในครั้งเดียว</p>
         <label class="hist-selall no-print"><input type="checkbox" id="histChkAll"> <span>เลือกทั้งหมดที่แสดงอยู่</span> <span id="histSelCount" class="hint" style="margin:0"></span></label>
         <div id="history"></div>
+      </section>
+    </section>
+
+    <!-- ================= ใบราคาส่ง ================= -->
+    <section id="panel-wholesale" class="panel" role="tabpanel" aria-labelledby="tab-wholesale">
+      <div class="page-head no-print">
+        <h1>ใบราคาส่ง.</h1>
+        <p>เอกสารราคาขายส่งแยกต่างหาก ไม่ใช่ใบเสร็จ/ใบกำกับภาษี ไม่มี VAT และไม่รันเลขที่เอกสาร ใช้ส่งราคาให้ลูกค้าขายส่งดูก่อนตกลงกัน</p>
+      </div>
+
+      <div class="bill-grid">
+        <div class="stack no-print">
+          <div class="card">
+            <h2>ข้อมูลใบราคาส่ง</h2>
+            <p class="edit-state" id="wholesaleEditState"></p>
+            <div class="fields">
+              <label class="f"><span>ชื่อลูกค้า / ผู้ซื้อ</span><input class="txt" id="whName" type="text" autocomplete="off"></label>
+              <label class="f"><span>วันที่</span><input class="txt" id="whDate" type="date"></label>
+              <label class="f"><span>เลขอ้างอิง / หมายเหตุอ้างอิง (ถ้ามี)</span><input class="txt" id="whRef" type="text" autocomplete="off" placeholder="กรอกเองได้ ไม่รันเลขอัตโนมัติ"></label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>รายการสินค้า (ราคาส่ง)</h2>
+            <div class="item-head" aria-hidden="true"><span>รายการ</span><span>จำนวน</span><span>ราคา/ชิ้น</span><span>รวม</span><span></span></div>
+            <div id="wholesaleItems"></div>
+            <button class="btn small" id="add-wholesaleitem" type="button">＋ เพิ่มรายการ</button>
+            <p class="hint">ใส่ชนิดสติ๊กเกอร์และขนาดในชื่อรายการได้เลย ราคาที่กรอกคือราคาขายส่งต่อชิ้น</p>
+          </div>
+
+          <div class="card">
+            <h2>ยอดเงินและหมายเหตุ</h2>
+            <div class="fields">
+              <label class="f"><span>ส่วนลด (บาท)</span><input class="txt" id="whDiscount" type="number" inputmode="decimal" step="any" min="0" value="0"></label>
+              <label class="f"><span>หมายเหตุ</span><textarea id="whNote" placeholder="เช่น เงื่อนไขการชำระเงิน วันรับสินค้า"></textarea></label>
+            </div>
+            <div class="actions">
+              <button class="btn primary" id="print-wholesale" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg>
+                พิมพ์ใบราคาส่ง
+              </button>
+              <button class="btn" id="pdf-wholesale" type="button">ดาวน์โหลด PDF</button>
+              <button class="btn good" id="save-wholesale" type="button">บันทึกลงประวัติ</button>
+              <button class="btn danger" id="new-wholesale" type="button">เปิดใบใหม่</button>
+            </div>
+            <p class="actions-note">ใบราคาส่งเป็นเอกสารแยกต่างหากจากใบเสร็จ/ใบกำกับภาษี ไม่มี VAT ไม่รวมกับยอดขายในแดชบอร์ดหรือรายงานภาษี และไม่รันเลขที่เอกสารอัตโนมัติ</p>
+          </div>
+        </div>
+
+        <div class="preview-col">
+          <h2 class="no-print">ตัวอย่างก่อนพิมพ์ (A4)</h2>
+          <div class="a4-frame" id="wholesaleA4frame"><article class="sheet bill" id="wholesaleSheet"></article></div>
+        </div>
+      </div>
+
+      <section class="card history no-print" style="margin-top:20px" aria-labelledby="wholesalehist-h">
+        <div class="viz-head">
+          <h2 id="wholesalehist-h">ประวัติใบราคาส่ง</h2>
+          <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้ (แยกจากประวัติเอกสาร/ใบเสร็จ)</span>
+        </div>
+        <div id="wholesaleHistory"></div>
       </section>
     </section>
 
@@ -3085,6 +3151,120 @@ function bahtText(value) {
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
   }
 
+  /* ---------------- ใบราคาส่ง (เอกสารราคาขายส่ง แยกต่างหากจากใบเสร็จ/ใบกำกับภาษีโดยสิ้นเชิง
+     ไม่มี VAT ไม่รันเลขที่เอกสารอัตโนมัติ และไม่รวมกับ bs_bills / แดชบอร์ด / รายงานภาษีใดๆ ทั้งสิ้น
+     เก็บข้อมูลแยกที่ localStorage key "bs_wholesale" และ Firestore collection "wholesale" ของตัวเอง) ---------------- */
+  let wholesaleItems = [{name: '', qty: 1, price: 0}];
+  let currentWholesaleId = null;
+  let whDelArmed = null, whDelTimer = null;
+
+  function renderWholesaleItems() {
+    $('wholesaleItems').innerHTML = wholesaleItems.map((it, i) =>
+      '<div class="item" data-i="' + i + '">' +
+      '<input class="txt i-name" type="text" placeholder="ชื่อรายการ" aria-label="ชื่อรายการ" value="' + esc(it.name) + '">' +
+      '<input class="num i-qty" type="number" inputmode="decimal" step="any" min="0" placeholder="จำนวน" aria-label="จำนวน" value="' + esc(it.qty) + '">' +
+      '<input class="num i-price" type="number" inputmode="decimal" step="any" min="0" placeholder="ราคา/ชิ้น" aria-label="ราคาต่อชิ้น" value="' + esc(it.price) + '">' +
+      '<output class="i-total" aria-label="รวม">' + money(num(it.qty) * num(it.price)) + '</output>' +
+      '<button class="del" type="button" aria-label="ลบรายการ">✕</button></div>').join('');
+  }
+
+  // คำนวณยอดจากฟอร์มที่กำลังกรอกอยู่ตอนนี้ (ไม่มี VAT — เป็นแค่ ยอดรวม - ส่วนลด)
+  function wholesaleTotals() {
+    const sub = round2(wholesaleItems.reduce((a, i) => a + num(i.qty) * num(i.price), 0));
+    const disc = Math.min(Math.max(0, num($('whDiscount').value)), sub);
+    const total = round2(sub - disc);
+    return {sub, disc, total};
+  }
+  // คำนวณยอดจากเรคคอร์ดที่บันทึกไว้แล้ว (ใช้แสดงในลิสต์ประวัติ) — แยกต่างหากจาก billCalc() โดยสิ้นเชิง ไม่เกี่ยวกับ bs_bills
+  function wholesaleCalc(w) {
+    const its = w.items || [];
+    const sub = round2(its.reduce((a, i) => a + num(i.qty) * num(i.price), 0));
+    const disc = Math.min(Math.max(0, num(w.discount)), sub);
+    return {sub, disc, total: round2(sub - disc)};
+  }
+
+  function renderWholesale() {
+    renderWholesaleHTML();
+    fitWholesale();
+  }
+
+  function renderWholesaleHTML() {
+    const t = wholesaleTotals();
+    const shown = wholesaleItems.filter(i => i.name.trim() || num(i.qty) * num(i.price) > 0);
+    const rows = shown.length ? shown.map((i, n) =>
+      '<tr><td class="n">' + (n + 1) + '</td><td>' + esc(i.name) + '</td><td class="r">' + esc(fmt(num(i.qty))) +
+      '</td><td class="r">' + money(num(i.price)) + '</td><td class="r">' + money(num(i.qty) * num(i.price)) + '</td></tr>').join('')
+      : '<tr><td class="n">—</td><td colspan="4" style="color:#4a5a72">ยังไม่มีรายการ</td></tr>';
+    const custParts = [];
+    if ($('whName').value.trim()) custParts.push('<div><b>' + esc($('whName').value.trim()) + '</b></div>');
+    $('wholesaleSheet').innerHTML =
+      '<header class="sh-head"><div class="sh-brand">' + logoImg() + '<div><div class="sh-name">' + esc(shop.name) + '</div><div class="sh-lines">' + shopLines() + '</div></div></div>' +
+      '<div class="sh-doc"><h2>ใบราคาส่ง</h2><div class="sh-lines">' + ($('whRef').value.trim() ? 'อ้างอิง <b>' + esc($('whRef').value.trim()) + '</b><br>' : '') + 'วันที่ ' + esc(thDate($('whDate').value)) + '</div></div></header>' +
+      '<section class="cust"><h3>ลูกค้า / ผู้ซื้อ</h3>' + custParts.join('') + '</section>' +
+      '<div class="tbl-wrap"><table class="lines"><thead><tr><th class="n">ลำดับ</th><th>รายการ</th><th class="r">จำนวน</th><th class="r">ราคา/ชิ้น</th><th class="r">รวม</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="totals-row"><div class="words"><b>' + bahtText(t.total) + '</b></div><div class="totals">' +
+      '<div class="tot"><span>ส่วนลด</span><span>' + money(t.disc) + '</span></div>' +
+      '<div class="tot strong"><span>รวมทั้งสิ้น</span><span>' + money(t.total) + '</span></div></div></div>' +
+      ($('whNote').value.trim() ? '<div class="note"><b>หมายเหตุ</b> ' + esc($('whNote').value) + '</div>' : '') +
+      '<div class="sign"><div class="sign-col"><div class="sign-line"></div><div class="sign-label">ผู้ออกใบราคาส่ง</div><div class="sign-date">วันที่ ' + esc(thDate($('whDate').value)) + '</div></div>' +
+      '<div class="sign-col"><div class="sign-line"></div><div class="sign-label">ผู้รับใบราคาส่ง</div><div class="sign-date">วันที่ ....../....../......</div></div></div>';
+  }
+
+  function fitWholesale() { fitFrame('wholesaleA4frame', 'wholesaleSheet'); }
+
+  function collectWholesale() {
+    return {ref: $('whRef').value, date: $('whDate').value, buyerName: $('whName').value,
+      items: wholesaleItems.map(i => ({name: i.name, qty: i.qty, price: i.price})),
+      discount: $('whDiscount').value, note: $('whNote').value};
+  }
+  function applyWholesale(w) {
+    $('whRef').value = w.ref || ''; $('whDate').value = w.date || todayISO();
+    $('whName').value = w.buyerName || '';
+    wholesaleItems = (w.items && w.items.length) ? w.items.map(i => ({name: i.name || '', qty: i.qty, price: i.price})) : [{name: '', qty: 1, price: 0}];
+    $('whDiscount').value = w.discount || 0; $('whNote').value = w.note || '';
+    renderWholesaleItems(); renderWholesale();
+  }
+  function renderWholesaleEditState() {
+    const el = $('wholesaleEditState');
+    if (currentWholesaleId) { el.textContent = 'กำลังแก้ไขใบราคาส่งที่บันทึกไว้ กด “บันทึกลงประวัติ” เพื่อบันทึกทับฉบับเดิม'; el.classList.add('editing'); }
+    else { el.textContent = 'ใบใหม่ ยังไม่ได้บันทึกลงประวัติ'; el.classList.remove('editing'); }
+  }
+  // ใบราคาส่งไม่รันเลขที่เอกสารอัตโนมัติ (ต่างจาก nextNo()/nextJobNo()) — เปิดใบใหม่แล้วปล่อยว่างให้กรอกเลขอ้างอิงเองถ้าต้องการ
+  function newWholesale() {
+    currentWholesaleId = null;
+    applyWholesale({date: todayISO()});
+    renderWholesaleEditState();
+  }
+  function renderWholesaleHistory() {
+    const list = store.get('bs_wholesale', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+    const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้ ควรดาวน์โหลด PDF เก็บไว้ทุกครั้ง</p>');
+    if (!list.length) { $('wholesaleHistory').innerHTML = notice + '<p class="empty">ยังไม่มีใบราคาส่งที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; return; }
+    $('wholesaleHistory').innerHTML = notice + '<ul>' + list.map(w => {
+      const t = wholesaleCalc(w);
+      return '<li data-id="' + esc(w.id) + '"><div class="meta"><b>' + esc(w.buyerName || 'ไม่ระบุชื่อผู้ซื้อ') + '</b><small>' + esc(thDate(w.date)) + (w.ref ? ' · ' + esc(w.ref) : '') + (w.createdBy ? ' · โดย ' + esc(w.createdBy) : '') + '</small></div>' +
+      '<span class="amt">' + money(t.total) + ' บาท</span>' +
+      '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
+      '<button class="btn small del" data-act="del" type="button">ลบ</button></li>';
+    }).join('') + '</ul>';
+  }
+  function saveWholesale() {
+    const list = store.get('bs_wholesale', []);
+    const data = collectWholesale();
+    if (!String(data.buyerName).trim()) { toast('ใส่ชื่อลูกค้า/ผู้ซื้อก่อนบันทึก'); $('whName').focus(); return; }
+    const id = currentWholesaleId || ('w' + Date.now());
+    const idx = list.findIndex(w => w.id === id);
+    const createdBy = idx >= 0 ? list[idx].createdBy : (currentUser ? currentUser.name : '');
+    const rec = Object.assign({id, savedAt: Date.now(), createdBy}, data);
+    if (idx >= 0) list[idx] = rec; else list.push(rec);
+    const wasEditing = idx >= 0;
+    currentWholesaleId = rec.id;
+    const persisted = store.set('bs_wholesale', list);
+    cloudSave('wholesale', rec);
+    renderWholesaleHistory(); renderWholesaleEditState();
+    toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับใบราคาส่งแล้ว' : 'บันทึกใบราคาส่งแล้ว')
+                    : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
+  }
+
   /* ---------------- พิมพ์ ---------------- */
   function doPrint(title) {
     const old = document.title;
@@ -3406,6 +3586,76 @@ function bahtText(value) {
     return pages;
   }
 
+  // ใบราคาส่ง (PDF) — ยืมโครงตารางรายการ+ราคาจากใบเสร็จ (drawBillPages) แต่ไม่มีแถว VAT ใดๆ เลย
+  async function drawWholesalePages() {
+    await prepAssets();
+    const t = wholesaleTotals(), pages = [];
+    let pg = mkPage(), x = pg.x; pages.push(pg.c);
+    const rightLines = [];
+    if ($('whRef').value.trim()) rightLines.push('อ้างอิง ' + $('whRef').value.trim());
+    rightLines.push('วันที่ ' + thDate($('whDate').value));
+    let y = drawHeader(x, 'ใบราคาส่ง', rightLines, null);
+    // ลูกค้า
+    T(x, 'ลูกค้า / ผู้ซื้อ', M, y, {s: 3.3, w: 600, h: 1, c: MUTED}); y += 4.8;
+    T(x, $('whName').value.trim() || '—', M, y, {s: 3.9, w: 700}); y += 7;
+    // ตารางรายการ (มีคอลัมน์ราคา เหมือนใบเสร็จ)
+    const c0 = M, c1 = M + 14, c2 = c1 + 92, c3 = c2 + 22, c4 = c3 + 28, cR = M + CW;
+    const head = () => {
+      RECT(x, M, y, CW, 8.4, HEAD); HL(x, M, cR, y, LINE, 0.25); HL(x, M, cR, y + 8.4, LINE, 0.25);
+      const b = y + 5.7, o = {s: 3.5, w: 700};
+      T(x, 'ลำดับ', c0 + 7, b, Object.assign({a: 'center'}, o)); T(x, 'รายการ', c1 + 3, b, o);
+      T(x, 'จำนวน', c3 - 3, b, Object.assign({a: 'right'}, o)); T(x, 'ราคา/ชิ้น', c4 - 3, b, Object.assign({a: 'right'}, o));
+      T(x, 'รวม', cR - 3, b, Object.assign({a: 'right'}, o));
+      y += 8.4;
+    };
+    head();
+    const shown = wholesaleItems.filter(i => i.name.trim() || num(i.qty) * num(i.price) > 0);
+    const rows = shown.length ? shown : [{name: 'ยังไม่มีรายการ', qty: '', price: '', empty: true}];
+    rows.forEach((it, n) => {
+      const lines = wrapText(x, it.name, 92 - 6, {s: 3.7});
+      const rh = 6.2 + Math.max(1, lines.length) * 4.8;
+      if (y + rh > PH - M - 6) { pg = mkPage(); x = pg.x; pages.push(pg.c); y = M; head(); }
+      const b = y + 3 + 3.6;
+      if (!it.empty) T(x, n + 1, c0 + 7, b, {s: 3.7, a: 'center'});
+      lines.forEach((l, k) => T(x, l, c1 + 3, b + k * 4.8, {s: 3.7, c: it.empty ? MUTED : INK}));
+      if (!it.empty) {
+        T(x, fmt(num(it.qty)), c3 - 3, b, {s: 3.7, a: 'right'});
+        T(x, money(num(it.price)), c4 - 3, b, {s: 3.7, a: 'right'});
+        T(x, money(num(it.qty) * num(it.price)), cR - 3, b, {s: 3.7, a: 'right'});
+      }
+      y += rh; HL(x, M, cR, y, LIGHT, 0.2);
+    });
+    // ยอดรวม — ไม่มี VAT เลย มีแค่ส่วนลดกับรวมทั้งสิ้น
+    const tot = [['ส่วนลด', t.disc]];
+    const noteLines = $('whNote').value.trim() ? wrapText(x, $('whNote').value.trim(), CW - 18, {s: 3.6}) : [];
+    const need = 9 + tot.length * 6.6 + 13 + 13 + (noteLines.length ? noteLines.length * 4.8 + 7 : 0) + 36;
+    if (y + need > PH - M) { pg = mkPage(); x = pg.x; pages.push(pg.c); y = M; }
+    y += 9;
+    const bx = PW - M - 86;
+    tot.forEach(r => {
+      T(x, r[0], bx, y + 3.8, {s: 3.7, c: MUTED}); T(x, money(r[1]), PW - M, y + 3.8, {s: 3.7, a: 'right'}); y += 6.6;
+    });
+    HL(x, bx, PW - M, y + 0.8, INK, 0.4); y += 2.6;
+    RECT(x, M, y - 1.5, bx - 6 - M, 11.5, HEAD);
+    T(x, bahtText(t.total), M + 4, y + 6.4, {s: 3.8, w: 700});
+    RECT(x, bx - 3, y - 1.5, (PW - M) - (bx - 3) + 3, 11.5, HEAD);
+    T(x, 'รวมทั้งสิ้น', bx, y + 6.4, {s: 4.4, w: 700, h: 1}); T(x, money(t.total), PW - M, y + 6.4, {s: 4.6, w: 700, h: 1, a: 'right'}); y += 10.5;
+    y += 5.5;
+    HL(x, M, PW - M, y, LINE, 0.2); y += 6.5;
+    if (noteLines.length) {
+      T(x, 'หมายเหตุ', M, y + 3.6, {s: 3.6, w: 700});
+      noteLines.forEach((l, k) => T(x, l, M + 18, y + 3.6 + k * 4.8, {s: 3.6}));
+    }
+    // ลายเซ็น (ท้ายหน้า)
+    const sigLineY = PH - M - 21, colW = 74;
+    [[M + colW / 2, 'ผู้ออกใบราคาส่ง', thDate($('whDate').value)], [PW - M - colW / 2, 'ผู้รับใบราคาส่ง', '....../....../......']].forEach(([cx, label, dateTxt]) => {
+      HL(x, cx - 27, cx + 27, sigLineY, INK, 0.25);
+      T(x, label, cx, sigLineY + 5.6, {s: 3.7, a: 'center'});
+      T(x, 'วันที่ ' + dateTxt, cx, sigLineY + 11.6, {s: 3.3, c: MUTED, a: 'center'});
+    });
+    return pages;
+  }
+
   function thDateShort(iso) {
     try {
       const d = new Date(iso + 'T00:00:00');
@@ -3587,6 +3837,7 @@ function bahtText(value) {
 
   async function buildDoc(kind) {
     const pages = kind === 'bill' ? await drawBillPages() : kind === 'confirm' ? await drawConfirmPages()
+      : kind === 'wholesale' ? await drawWholesalePages()
       : kind === 'reportSales' ? await drawReportPages('sales') : kind === 'reportPurch' ? await drawReportPages('purchase')
       : await drawCalcPages();
     const imgs = await Promise.all(pages.map(pageToPdfImage));
@@ -3595,6 +3846,7 @@ function bahtText(value) {
     const sel = $('reportMonth') ? $('reportMonth').value : '';
     if (kind === 'bill') name = 'ใบกำกับภาษี-' + ($('billNo').value || 'เอกสาร') + '.pdf';
     else if (kind === 'confirm') name = 'ใบคอนเฟิร์มงาน-' + ($('jobNo').value || 'เอกสาร') + '.pdf';
+    else if (kind === 'wholesale') name = 'ใบราคาส่ง-' + ($('whName').value || 'เอกสาร') + '.pdf';
     else if (kind === 'reportSales') name = 'รายงานภาษีขาย-' + (sel || 'ทั้งหมด') + '.pdf';
     else if (kind === 'reportPurch') name = 'รายงานภาษีซื้อ-' + (sel || 'ทั้งหมด') + '.pdf';
     else { const r = lastLayout || readLayout(); name = 'ผลคำนวณสติ๊กเกอร์-' + fmt(r.sw) + 'x' + fmt(r.sh) + 'cm.pdf'; }
@@ -3691,7 +3943,7 @@ function bahtText(value) {
 
   /* ---------------- events ---------------- */
   const TAX_TABS = ['purchase', 'dash', 'report'];
-  const OWNER_ONLY_TABS = ['bill', 'purchase', 'dash', 'report']; // สิทธิ์ "พนักงาน" เข้าได้แค่คำนวณสติ๊กเกอร์ + ใบคอนเฟิร์มงาน
+  const OWNER_ONLY_TABS = ['bill', 'wholesale', 'purchase', 'dash', 'report']; // สิทธิ์ "พนักงาน" เข้าได้แค่คำนวณสติ๊กเกอร์ + ใบคอนเฟิร์มงาน (ใบราคาส่งมีราคา เหมือนบิล จึงกันไว้เท่ากัน)
   function closeTaxMenus() {
     $('taxTrigger').setAttribute('aria-expanded', 'false');
     $('taxDropdown').hidden = true;
@@ -3702,7 +3954,7 @@ function bahtText(value) {
   }
   function showTab(name) {
     if (!isOwner && OWNER_ONLY_TABS.indexOf(name) >= 0) name = 'calc'; // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้หรือ URL
-    ['calc', 'confirm', 'bill', 'purchase', 'dash', 'report'].forEach(n => {
+    ['calc', 'confirm', 'bill', 'wholesale', 'purchase', 'dash', 'report'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
@@ -3714,6 +3966,7 @@ function bahtText(value) {
     closeTaxMenus();
     if (name === 'bill') fitBill();
     if (name === 'confirm') fitJob();
+    if (name === 'wholesale') fitWholesale();
     if (name === 'dash') renderDash();
     if (name === 'report') renderReport();
     const activeTab = isTax ? $('taxTrigger') : $('tab-' + name);
@@ -3830,6 +4083,60 @@ function bahtText(value) {
     updateJobStatus(sel.dataset.id, sel.value);
   });
 
+  /* ---------------- events: ใบราคาส่ง (แยกต่างหากจากบิล ไม่แตะ items/bs_bills/billCalc ใดๆ) ---------------- */
+  ['whDate', 'whName', 'whRef', 'whDiscount', 'whNote'].forEach(id => $(id).addEventListener('input', renderWholesale));
+
+  $('wholesaleItems').addEventListener('input', e => {
+    const row = e.target.closest('.item'); if (!row) return;
+    const it = wholesaleItems[+row.dataset.i];
+    if (e.target.classList.contains('i-name')) it.name = e.target.value;
+    if (e.target.classList.contains('i-qty')) it.qty = e.target.value;
+    if (e.target.classList.contains('i-price')) it.price = e.target.value;
+    row.querySelector('.i-total').textContent = money(num(it.qty) * num(it.price));
+    renderWholesale();
+  });
+  $('wholesaleItems').addEventListener('click', e => {
+    if (!e.target.classList.contains('del')) return;
+    const i = +e.target.closest('.item').dataset.i;
+    wholesaleItems.splice(i, 1);
+    if (!wholesaleItems.length) wholesaleItems.push({name: '', qty: 1, price: 0});
+    renderWholesaleItems(); renderWholesale();
+  });
+  $('add-wholesaleitem').addEventListener('click', () => {
+    wholesaleItems.push({name: '', qty: 1, price: 0}); renderWholesaleItems(); renderWholesale();
+    const last = $('wholesaleItems').querySelector('.item:last-child .i-name'); if (last) last.focus();
+  });
+
+  $('print-wholesale').addEventListener('click', () => {
+    if (inFrame() || isMobile()) exportDoc('wholesale', $('print-wholesale'), {forPrint: true});
+    else doPrint('ใบราคาส่ง ' + ($('whName').value || ''));
+  });
+  $('pdf-wholesale').addEventListener('click', () => exportDoc('wholesale', $('pdf-wholesale')));
+  $('save-wholesale').addEventListener('click', saveWholesale);
+  $('new-wholesale').addEventListener('click', () => { newWholesale(); toast('เปิดใบใหม่แล้ว'); });
+
+  $('wholesaleHistory').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-act]'); if (!btn) return;
+    const id = btn.closest('li').dataset.id;
+    const list = store.get('bs_wholesale', []);
+    if (btn.dataset.act === 'open') {
+      const w = list.find(x => x.id === id); if (!w) return;
+      currentWholesaleId = id; applyWholesale(w); renderWholesaleEditState(); showTab('wholesale');
+      window.scrollTo({top: 0, behavior: 'smooth'}); toast('เปิดใบราคาส่งแล้ว แก้ไขได้เลย');
+    } else if (btn.dataset.act === 'del') {
+      if (whDelArmed !== id) {
+        whDelArmed = id; btn.textContent = 'กดอีกครั้งเพื่อลบ'; btn.classList.add('confirm');
+        clearTimeout(whDelTimer); whDelTimer = setTimeout(() => { whDelArmed = null; renderWholesaleHistory(); }, 4000);
+        return;
+      }
+      clearTimeout(whDelTimer); whDelArmed = null;
+      store.set('bs_wholesale', list.filter(x => x.id !== id));
+      cloudDelete('wholesale', id);
+      if (currentWholesaleId === id) { currentWholesaleId = null; renderWholesaleEditState(); }
+      renderWholesaleHistory(); toast('ลบใบราคาส่งแล้ว');
+    }
+  });
+
   $('items').addEventListener('input', e => {
     const row = e.target.closest('.item'); if (!row) return;
     const it = items[+row.dataset.i];
@@ -3936,6 +4243,9 @@ function bahtText(value) {
   window.addEventListener('resize', fitJob);
   if (window.ResizeObserver) new ResizeObserver(fitJob).observe($('jobA4frame'));
   window.addEventListener('afterprint', fitJob);
+  window.addEventListener('resize', fitWholesale);
+  if (window.ResizeObserver) new ResizeObserver(fitWholesale).observe($('wholesaleA4frame'));
+  window.addEventListener('afterprint', fitWholesale);
   const fitReports = () => { fitFrame('reportSalesFrame', 'reportSalesDoc'); fitFrame('reportPurchFrame', 'reportPurchDoc'); };
   window.addEventListener('resize', fitReports);
   if (window.ResizeObserver) { new ResizeObserver(fitReports).observe($('reportSalesFrame')); new ResizeObserver(fitReports).observe($('reportPurchFrame')); }
@@ -3975,9 +4285,10 @@ function bahtText(value) {
   function applyRoleUI() {
     if (isOwner) return;
     // พนักงาน: เปิดได้แค่ "คำนวณสติ๊กเกอร์" กับ "ใบคอนเฟิร์มงาน" — ซ่อนแท็บ/เมนูอื่นทั้งหมด
-    ['tab-bill', 'tab-purchase', 'tab-dash', 'tab-report'].forEach(id => { const el = $(id); if (el) el.hidden = true; });
+    ['tab-bill', 'tab-wholesale', 'tab-purchase', 'tab-dash', 'tab-report'].forEach(id => { const el = $(id); if (el) el.hidden = true; });
     document.querySelectorAll('.tax-sheet-item[data-tab]').forEach(el => { el.hidden = true; });
     document.querySelectorAll('.btab[data-tab="bill"]').forEach(el => { el.hidden = true; });
+    document.querySelectorAll('.btab[data-tab="wholesale"]').forEach(el => { el.hidden = true; });
     document.querySelectorAll('.btab[data-tab="dash"]').forEach(el => { el.hidden = true; });
     if ($('taxTrigger')) { const grp = $('taxTrigger').closest('.tab-group'); if (grp) grp.hidden = true; }
     if ($('bnavTaxTrigger')) $('bnavTaxTrigger').hidden = true;
@@ -4111,9 +4422,11 @@ function bahtText(value) {
   onPaperChange();
   newBill(); renderHistory();
   newJob(); renderJobHistory();
+  newWholesale(); renderWholesaleHistory();
   newPurchase(); renderPurchHistory();
   watchCloud('bills', 'bs_bills', renderHistory);
   watchCloud('jobs', 'bs_jobs', renderJobHistory);
+  watchCloud('wholesale', 'bs_wholesale', renderWholesaleHistory);
   watchCloud('purchases', 'bs_purchases', renderPurchHistory);
   $('dashMonth').addEventListener('change', renderDash);
   $('dash-all').addEventListener('click', () => { $('dashMonth').value = ''; renderDash(); });
