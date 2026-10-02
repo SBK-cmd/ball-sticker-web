@@ -1314,10 +1314,11 @@ tr{break-inside:avoid}
               </button>
               <button class="btn" id="pdf-bill" type="button">ดาวน์โหลด PDF</button>
               <button class="btn good" id="save-bill" type="button">บันทึกลงประวัติ</button>
+              <button class="btn" id="bill-to-wholesale" type="button">ย้ายไปใบราคาส่ง →</button>
               <button class="btn danger" id="new-bill" type="button">เปิดเอกสารใหม่</button>
               <button class="btn" id="stmt-import-btn" type="button">เปิดบิลจากสเตทเม้นธนาคาร</button>
             </div>
-            <p class="actions-note">กด “พิมพ์เอกสาร” จะสร้างไฟล์แล้วเปิดในแท็บใหม่พร้อมขึ้นหน้าต่างแสดงตัวอย่าง ถ้าไม่มีหน้าต่างพิมพ์ขึ้นเอง ให้กด Ctrl+P (Mac: Cmd+P) ในแท็บที่เปิดขึ้น หรือกดปุ่ม “เปิดไฟล์ในแท็บใหม่” ในหน้าต่างแสดงตัวอย่าง การพิมพ์หรือดาวน์โหลดอย่างเดียวไม่บันทึกประวัติ ต้องกด “บันทึกลงประวัติ” ด้วย</p>
+            <p class="actions-note">กด “พิมพ์เอกสาร” จะสร้างไฟล์แล้วเปิดในแท็บใหม่พร้อมขึ้นหน้าต่างแสดงตัวอย่าง ถ้าไม่มีหน้าต่างพิมพ์ขึ้นเอง ให้กด Ctrl+P (Mac: Cmd+P) ในแท็บที่เปิดขึ้น หรือกดปุ่ม “เปิดไฟล์ในแท็บใหม่” ในหน้าต่างแสดงตัวอย่าง การพิมพ์หรือดาวน์โหลดอย่างเดียวไม่บันทึกประวัติ ต้องกด “บันทึกลงประวัติ” ด้วย กด “ย้ายไปใบราคาส่ง” เพื่อคัดลอกชื่อลูกค้าและรายการ (พร้อมราคา) ไปออกใบราคาส่งแยกต่างหาก</p>
           </div>
         </div>
 
@@ -4056,6 +4057,18 @@ function bahtText(value) {
     renderItems(); renderBill(); showTab('bill');
     window.scrollTo({top: 0, behavior: 'smooth'});
     toast('คัดลอกข้อมูลจากใบคอนเฟิร์มงานมาที่บิลแล้ว ใส่ราคาต่อชิ้นให้ครบก่อนพิมพ์');
+  });
+
+  $('bill-to-wholesale').addEventListener('click', () => {
+    $('whName').value = $('cName').value;
+    $('whDate').value = $('billDate').value || todayISO();
+    const shown = items.filter(i => i.name.trim());
+    wholesaleItems = shown.length ? shown.map(i => ({name: i.name, qty: i.qty, price: i.price})) : [{name: '', qty: 1, price: 0}];
+    $('whDiscount').value = num($('discount').value) || 0;
+    if ($('note').value.trim() && !$('whNote').value.trim()) $('whNote').value = $('note').value;
+    renderWholesaleItems(); renderWholesale(); showTab('wholesale');
+    window.scrollTo({top: 0, behavior: 'smooth'});
+    toast('คัดลอกข้อมูลจากเอกสารนี้มาที่ใบราคาส่งแล้ว');
   });
 
   $('job-to-wholesale').addEventListener('click', () => {
