@@ -1462,6 +1462,27 @@ tr{break-inside:avoid}
                 </div>
               </label>
             </div>
+            <details class="shop" id="aiSettings">
+              <summary>ตั้งค่า AI ช่วยสแกนใบกำกับภาษี (ไม่บังคับ)</summary>
+              <div class="fields">
+                <label class="f"><span>ใช้ AI ช่วยอ่านบิล</span>
+                  <select class="txt" id="aiProvider">
+                    <option value="none" selected>ไม่ใช้ AI (ใช้ OCR ธรรมดา)</option>
+                    <option value="openai">ChatGPT (OpenAI)</option>
+                    <option value="gemini">Gemini (Google)</option>
+                  </select>
+                </label>
+                <label class="f" id="aiKeyWrap" hidden><span>API Key</span>
+                  <div class="in">
+                    <input class="txt" id="aiApiKey" type="password" autocomplete="off" placeholder="วาง API Key ของคุณที่นี่">
+                    <button class="btn small" id="aiKeyToggle" type="button">แสดง</button>
+                  </div>
+                </label>
+                <label class="f" id="aiModelWrap" hidden><span>ชื่อโมเดล (ขั้นสูง ไม่บังคับ)</span><input class="txt" id="aiModel" type="text" placeholder="gpt-4o-mini"></label>
+                <p class="hint" id="aiHint" hidden>API Key จะถูกบันทึกไว้ในเบราว์เซอร์นี้เท่านั้น (localStorage) ไม่ถูกส่งไปที่ใดนอกจากเชื่อมต่อตรงไปยัง OpenAI หรือ Google โดยตรง และจะไม่ถูกซิงก์ขึ้นระบบสำรองข้อมูลบนคลาวด์ของร้าน — ขอ API Key ได้ที่ platform.openai.com (OpenAI) หรือ aistudio.google.com (Google AI Studio สำหรับ Gemini) การใช้งานมีค่าใช้จ่ายต่อครั้งตามอัตราของผู้ให้บริการแต่ละราย (จ่ายตรงกับผู้ให้บริการ ไม่เกี่ยวกับแอปนี้)</p>
+                <button class="btn small good" id="aiSettingsSave" type="button">บันทึกการตั้งค่า AI</button>
+              </div>
+            </details>
             <div class="actions">
               <button class="btn good" id="save-purchase" type="button">บันทึกลงประวัติ</button>
               <button class="btn danger" id="new-purchase" type="button">เปิดรายการใหม่</button>
@@ -2836,18 +2857,117 @@ function bahtText(value) {
 
     return out;
   }
+  /* ---------------- สแกนบิลด้วย AI (ChatGPT/Gemini) — ใช้ API Key ส่วนตัวของผู้ใช้ ---------------- */
+  const AI_RECEIPT_PROMPT = 'นี่คือภาพใบกำกับภาษี/ใบเสร็จรับเงินภาษาไทย อ่านและดึงข้อมูลต่อไปนี้ออกมาเป็น JSON เท่านั้น ห้ามมีข้อความอื่นนอกจาก JSON: {"date":"YYYY-MM-DD หรือค่าว่างถ้าไม่พบ","vendor":"ชื่อร้านค้า/ผู้ขาย","invoiceNo":"เลขที่ใบกำกับภาษี","vendorTax":"เลขประจำตัวผู้เสียภาษีผู้ขาย 13 หลัก","amount":"ยอดเงินรวมทั้งสิ้น ตัวเลขล้วนไม่มีคอมม่า","vat":"ยอดภาษีมูลค่าเพิ่ม(VAT) ตัวเลขล้วนไม่มีคอมม่า"} ถ้าหาข้อมูลช่องไหนไม่เจอให้ใส่ค่าว่าง "" ห้ามเดา';
+
+  function parseAiJsonText(text) {
+    const raw = String(text || '');
+    let obj = null;
+    try { obj = JSON.parse(raw); } catch (e1) {
+      const m = raw.match(/\{[\s\S]*\}/);
+      if (m) { try { obj = JSON.parse(m[0]); } catch (e2) { obj = null; } }
+    }
+    if (!obj || typeof obj !== 'object') throw new Error('อ่านผลลัพธ์จาก AI ไม่สำเร็จ');
+    const norm = {};
+    ['date', 'vendor', 'invoiceNo', 'vendorTax', 'amount', 'vat'].forEach(k => {
+      if (obj[k] === undefined || obj[k] === null) return;
+      norm[k] = typeof obj[k] === 'string' ? obj[k] : String(obj[k]);
+    });
+    return norm;
+  }
+
+  async function aiScanReceipt(dataUrl, provider, apiKey, modelOverride) {
+    try {
+      if (provider === 'openai') {
+        const model = (modelOverride || 'gpt-4o-mini');
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey},
+          body: JSON.stringify({
+            model,
+            messages: [{role: 'user', content: [
+              {type: 'text', text: AI_RECEIPT_PROMPT},
+              {type: 'image_url', image_url: {url: dataUrl}}
+            ]}],
+            max_tokens: 400,
+            response_format: {type: 'json_object'}
+          })
+        });
+        if (!res.ok) {
+          let msg = String(res.status);
+          try { const errBody = await res.json(); msg = (errBody && errBody.error && errBody.error.message) || msg; } catch (e) {}
+          throw new Error('OpenAI: ' + msg);
+        }
+        const data = await res.json();
+        const text = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        return parseAiJsonText(text);
+      }
+      if (provider === 'gemini') {
+        const model = (modelOverride || 'gemini-1.5-flash');
+        const base64 = String(dataUrl).split(',')[1] || '';
+        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(apiKey), {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            contents: [{parts: [
+              {text: AI_RECEIPT_PROMPT},
+              {inline_data: {mime_type: 'image/jpeg', data: base64}}
+            ]}],
+            generationConfig: {responseMimeType: 'application/json'}
+          })
+        });
+        if (!res.ok) {
+          let msg = String(res.status);
+          try { const errBody = await res.json(); msg = (errBody && errBody.error && errBody.error.message) || msg; } catch (e) {}
+          throw new Error('Gemini: ' + msg);
+        }
+        const data = await res.json();
+        const text = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+        return parseAiJsonText(text);
+      }
+      throw new Error('ไม่รู้จักผู้ให้บริการ AI นี้');
+    } catch (e) {
+      if (e instanceof Error) throw e;
+      throw new Error('เชื่อมต่อ AI ไม่สำเร็จ');
+    }
+  }
+
+  function updateOcrButtonLabel() {
+    const btn = $('ocrScanBtn');
+    if (!btn) return;
+    const provider = localStorage.getItem('bs_ai_provider') || 'none';
+    const apiKey = (localStorage.getItem('bs_ai_key') || '').trim();
+    btn.textContent = (provider !== 'none' && apiKey) ? 'สแกนด้วย AI และกรอกข้อมูลอัตโนมัติ' : 'สแกนและกรอกข้อมูลอัตโนมัติ';
+  }
+
   async function scanPurchasePhoto() {
     const source = purchaseOcrSource || purchasePhoto;
     if (!source) return;
-    if (typeof Tesseract === 'undefined') { toast('โหลดระบบสแกนบิลไม่สำเร็จ (ต้องใช้อินเทอร์เน็ต) กรอกข้อมูลด้วยตนเองได้เลย'); return; }
     if (ocrBusy) return;
     ocrBusy = true;
     const btn = $('ocrScanBtn'), html = btn.textContent;
-    btn.disabled = true; btn.textContent = 'กำลังสแกนบิล…';
+    btn.disabled = true;
+    const provider = localStorage.getItem('bs_ai_provider') || 'none';
+    const apiKey = (localStorage.getItem('bs_ai_key') || '').trim();
     try {
-      const worker = await getOcrWorker();
-      const {data: {text}} = await worker.recognize(source);
-      const fields = parseReceiptText(text);
+      let fields = null, usedAi = false;
+      if (provider !== 'none' && apiKey) {
+        btn.textContent = 'กำลังสแกนด้วย AI…';
+        try {
+          fields = await aiScanReceipt(source, provider, apiKey, (localStorage.getItem('bs_ai_model') || '').trim());
+          usedAi = true;
+        } catch (aiErr) {
+          console.error('AI scan failed, falling back to OCR', aiErr);
+          toast('สแกนด้วย AI ไม่สำเร็จ (' + (aiErr && aiErr.message ? aiErr.message : 'เชื่อมต่อไม่ได้') + ') กำลังลองสแกนด้วยระบบ OCR ธรรมดาแทน');
+        }
+      }
+      if (!fields) {
+        btn.textContent = 'กำลังสแกนบิล…';
+        if (typeof Tesseract === 'undefined') { toast('โหลดระบบสแกนบิลไม่สำเร็จ (ต้องใช้อินเทอร์เน็ต) กรอกข้อมูลด้วยตนเองได้เลย'); return; }
+        const worker = await getOcrWorker();
+        const {data: {text}} = await worker.recognize(source);
+        fields = parseReceiptText(text);
+      }
       const map = {date: 'purchDate', vendor: 'purchVendor', invoiceNo: 'purchInvoiceNo', vendorTax: 'purchVendorTax', amount: 'purchAmount', vat: 'purchVat'};
       let filled = 0;
       Object.keys(map).forEach(k => {
@@ -2856,11 +2976,11 @@ function bahtText(value) {
         const overwrite = k === 'date' ? true : !el.value.trim();
         if (fields[k] && overwrite) { el.value = fields[k]; filled++; }
       });
-      toast(filled > 0 ? 'สแกนเสร็จแล้ว กรอกให้ ' + filled + ' ช่อง — กรุณาตรวจสอบความถูกต้องก่อนบันทึก'
+      toast(filled > 0 ? (usedAi ? 'สแกนด้วย AI เสร็จแล้ว' : 'สแกนเสร็จแล้ว') + ' กรอกให้ ' + filled + ' ช่อง — กรุณาตรวจสอบความถูกต้องก่อนบันทึก'
                         : 'สแกนไม่พบข้อมูลที่มั่นใจพอ กรุณากรอกข้อมูลด้วยตนเอง');
     } catch (e) {
       console.error(e);
-      toast('สแกนอัตโนมัติไม่สำเร็จ (ใช้งานได้เต็มรูปแบบบนเว็บที่เผยแพร่จริงเท่านั้น) กรอกข้อมูลด้วยตนเองได้เลย');
+      toast('สแกนอัตโนมัติไม่สำเร็จ กรอกข้อมูลด้วยตนเองได้เลย');
     } finally {
       ocrBusy = false; btn.disabled = false; btn.textContent = html;
     }
@@ -4424,6 +4544,36 @@ function bahtText(value) {
   $('purchPhotoInput').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) readPurchasePhoto(f); });
   $('purchPhotoRemove').addEventListener('click', () => { purchasePhoto = null; purchaseOcrSource = null; $('purchPhotoInput').value = ''; renderPurchasePhoto(); });
   $('ocrScanBtn').addEventListener('click', scanPurchasePhoto);
+
+  /* ---------------- ตั้งค่า AI ช่วยสแกนใบกำกับภาษี (เก็บใน localStorage ของเบราว์เซอร์นี้เท่านั้น ไม่ซิงก์ขึ้นคลาวด์) ---------------- */
+  (function initAiSettings() {
+    const providerSel = $('aiProvider'), keyInput = $('aiApiKey'), modelInput = $('aiModel');
+    const keyWrap = $('aiKeyWrap'), modelWrap = $('aiModelWrap'), hint = $('aiHint'), toggleBtn = $('aiKeyToggle');
+    const modelPlaceholder = { openai: 'gpt-4o-mini', gemini: 'gemini-1.5-flash' };
+    function syncVisibility() {
+      const on = providerSel.value !== 'none';
+      keyWrap.hidden = !on; modelWrap.hidden = !on; hint.hidden = !on;
+      modelInput.placeholder = modelPlaceholder[providerSel.value] || '';
+    }
+    providerSel.value = localStorage.getItem('bs_ai_provider') || 'none';
+    keyInput.value = localStorage.getItem('bs_ai_key') || '';
+    modelInput.value = localStorage.getItem('bs_ai_model') || '';
+    syncVisibility();
+    providerSel.addEventListener('change', syncVisibility);
+    toggleBtn.addEventListener('click', () => {
+      const show = keyInput.type === 'password';
+      keyInput.type = show ? 'text' : 'password';
+      toggleBtn.textContent = show ? 'ซ่อน' : 'แสดง';
+    });
+    $('aiSettingsSave').addEventListener('click', () => {
+      localStorage.setItem('bs_ai_provider', providerSel.value);
+      localStorage.setItem('bs_ai_key', keyInput.value.trim());
+      localStorage.setItem('bs_ai_model', modelInput.value.trim());
+      updateOcrButtonLabel();
+      toast('บันทึกการตั้งค่า AI แล้ว');
+    });
+  })();
+  updateOcrButtonLabel();
   $('save-purchase').addEventListener('click', savePurchase);
   $('new-purchase').addEventListener('click', () => { $('purchPhotoInput').value = ''; newPurchase(); toast('เปิดรายการใหม่แล้ว'); });
   let purchDelArmed = null, purchDelTimer = null;
