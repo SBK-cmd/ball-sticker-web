@@ -981,7 +981,6 @@ tr{break-inside:avoid}
     <nav class="tabs" role="tablist" aria-label="เมนูหลัก">
       <button role="tab" id="tab-calc" data-tab="calc" aria-selected="true" aria-controls="panel-calc">คำนวณสติ๊กเกอร์</button>
       <button role="tab" id="tab-confirm" data-tab="confirm" aria-selected="false" aria-controls="panel-confirm">ใบคอนเฟิร์มงาน</button>
-      <button role="tab" id="tab-bill" data-tab="bill" aria-selected="false" aria-controls="panel-bill">ใบเสร็จ / ใบกำกับภาษี</button>
       <button role="tab" id="tab-wholesale" data-tab="wholesale" aria-selected="false" aria-controls="panel-wholesale">ใบราคาส่ง</button>
       <div class="tab-group">
         <button type="button" class="tab-trigger" id="taxTrigger" aria-haspopup="true" aria-expanded="false">
@@ -989,6 +988,7 @@ tr{break-inside:avoid}
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
         <div class="tab-dropdown" id="taxDropdown" role="menu" hidden>
+          <button role="tab" id="tab-bill" data-tab="bill" aria-selected="false" aria-controls="panel-bill">ใบเสร็จ / ใบกำกับภาษี</button>
           <button role="tab" id="tab-purchase" data-tab="purchase" aria-selected="false" aria-controls="panel-purchase">ภาษีซื้อ</button>
           <button role="tab" id="tab-dash" data-tab="dash" aria-selected="false" aria-controls="panel-dash">แดชบอร์ด</button>
           <button role="tab" id="tab-report" data-tab="report" aria-selected="false" aria-controls="panel-report">รายงานภาษี</button>
@@ -1060,10 +1060,6 @@ tr{break-inside:avoid}
       </span>
       <span>สั่งงาน</span>
     </button>
-    <button type="button" class="btab" data-tab="bill" aria-controls="panel-bill">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"></path><line x1="9" y1="8" x2="15" y2="8"></line><line x1="9" y1="12" x2="15" y2="12"></line></svg>
-      <span>ใบเสร็จ</span>
-    </button>
     <button type="button" class="btab" data-tab="wholesale" aria-controls="panel-wholesale">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
       <span>ราคาส่ง</span>
@@ -1077,6 +1073,10 @@ tr{break-inside:avoid}
   <div class="tax-sheet-backdrop no-print" id="taxSheetBackdrop" hidden></div>
   <div class="tax-sheet no-print" id="taxSheet" role="menu" aria-label="เมนูภาษี" hidden>
     <div class="tax-sheet-handle"></div>
+    <button type="button" class="tax-sheet-item" data-tab="bill">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"></path><line x1="9" y1="8" x2="15" y2="8"></line><line x1="9" y1="12" x2="15" y2="12"></line></svg>
+      <span>ใบเสร็จ / ใบกำกับภาษี</span>
+    </button>
     <button type="button" class="tax-sheet-item" data-tab="purchase">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7L6 7z"></path><path d="M9 7a3 3 0 0 1 6 0"></path></svg>
       <span>ภาษีซื้อ</span>
@@ -2858,7 +2858,17 @@ function bahtText(value) {
     return out;
   }
   /* ---------------- สแกนบิลด้วย AI (ChatGPT/Gemini) — ใช้ API Key ส่วนตัวของผู้ใช้ ---------------- */
-  const AI_RECEIPT_PROMPT = 'นี่คือภาพใบกำกับภาษี/ใบเสร็จรับเงินภาษาไทย อ่านและดึงข้อมูลต่อไปนี้ออกมาเป็น JSON เท่านั้น ห้ามมีข้อความอื่นนอกจาก JSON: {"date":"YYYY-MM-DD หรือค่าว่างถ้าไม่พบ","vendor":"ชื่อร้านค้า/ผู้ขาย","invoiceNo":"เลขที่ใบกำกับภาษี","vendorTax":"เลขประจำตัวผู้เสียภาษีผู้ขาย 13 หลัก","amount":"ยอดเงินรวมทั้งสิ้น ตัวเลขล้วนไม่มีคอมม่า","vat":"ยอดภาษีมูลค่าเพิ่ม(VAT) ตัวเลขล้วนไม่มีคอมม่า"} ถ้าหาข้อมูลช่องไหนไม่เจอให้ใส่ค่าว่าง "" ห้ามเดา';
+  function buildAiReceiptPrompt() {
+    const shopName = (($('sName') && $('sName').value) || '').trim();
+    const shopTax = (($('sTax') && $('sTax').value) || '').trim();
+    let excludeNote = '';
+    if (shopName || shopTax) {
+      excludeNote = ' ข้อควรระวังสำคัญ: ร้านของเราเองคือ "' + shopName + '"' + (shopTax ? ' เลขประจำตัวผู้เสียภาษี ' + shopTax : '') +
+        ' — นี่คือฝั่ง "ผู้ซื้อ" (Buyer) ที่มักพิมพ์อยู่ในเอกสารด้วย ห้ามนำชื่อหรือเลขผู้เสียภาษีนี้มาตอบเป็น vendor/vendorTax เด็ดขาด ให้ดึงเฉพาะข้อมูลฝั่ง "ผู้ขาย"/"ผู้ออกใบกำกับภาษี" (Seller) เท่านั้นมาใส่ใน vendor และ vendorTax ถ้าเอกสารมีสองชื่อ/สองเลขภาษี ให้เลือกฝั่งผู้ขายเสมอ ไม่ใช่ฝั่งเรา.';
+    }
+    return 'นี่คือภาพใบกำกับภาษี/ใบเสร็จรับเงินภาษาไทย อ่านและดึงข้อมูลต่อไปนี้ออกมาเป็น JSON เท่านั้น ห้ามมีข้อความอื่นนอกจาก JSON: {"date":"YYYY-MM-DD หรือค่าว่างถ้าไม่พบ","vendor":"ชื่อร้านค้า/ผู้ขาย","invoiceNo":"เลขที่ใบกำกับภาษี","vendorTax":"เลขประจำตัวผู้เสียภาษีผู้ขาย 13 หลัก","amount":"ยอดเงินรวมทั้งสิ้น ตัวเลขล้วนไม่มีคอมม่า","vat":"ยอดภาษีมูลค่าเพิ่ม(VAT) ตัวเลขล้วนไม่มีคอมม่า"} ถ้าหาข้อมูลช่องไหนไม่เจอให้ใส่ค่าว่าง "" ห้ามเดา.' + excludeNote +
+      ' ข้อควรระวังเรื่องวันที่: เอกสารไทยมักพิมพ์ปีเป็น พ.ศ. (พุทธศักราช) ซึ่งมากกว่า ค.ศ. (คริสต์ศักราช) อยู่ 543 ปี เช่นปี 2567-2570 คือปี พ.ศ. ถ้าตัวเลขปีในเอกสารมากกว่า 2400 ให้ถือว่าเป็น พ.ศ. และต้องแปลงเป็น ค.ศ. โดยลบ 543 ก่อนตอบกลับเสมอ เช่นถ้าเอกสารเขียนวันที่ "04/10/2569" (วัน/เดือน/ปี พ.ศ.) ให้ตอบ date เป็น "2026-10-04" (ปี ค.ศ. - 543 = 2026) ห้ามตอบปี พ.ศ. ดิบๆ กลับมาโดยไม่แปลงเด็ดขาด.';
+  }
 
   function parseAiJsonText(text) {
     const raw = String(text || '');
@@ -2877,6 +2887,7 @@ function bahtText(value) {
   }
 
   async function aiScanReceipt(dataUrl, provider, apiKey, modelOverride) {
+    const receiptPrompt = buildAiReceiptPrompt();
     try {
       if (provider === 'openai') {
         const model = (modelOverride || 'gpt-4o-mini');
@@ -2886,7 +2897,7 @@ function bahtText(value) {
           body: JSON.stringify({
             model,
             messages: [{role: 'user', content: [
-              {type: 'text', text: AI_RECEIPT_PROMPT},
+              {type: 'text', text: receiptPrompt},
               {type: 'image_url', image_url: {url: dataUrl}}
             ]}],
             max_tokens: 400,
@@ -2910,7 +2921,7 @@ function bahtText(value) {
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
             contents: [{parts: [
-              {text: AI_RECEIPT_PROMPT},
+              {text: receiptPrompt},
               {inline_data: {mime_type: 'image/jpeg', data: base64}}
             ]}],
             generationConfig: {responseMimeType: 'application/json'}
@@ -4205,7 +4216,7 @@ function bahtText(value) {
   };
 
   /* ---------------- events ---------------- */
-  const TAX_TABS = ['purchase', 'dash', 'report'];
+  const TAX_TABS = ['bill', 'purchase', 'dash', 'report'];
   const OWNER_ONLY_TABS = ['bill', 'wholesale', 'purchase', 'dash', 'report']; // สิทธิ์ "พนักงาน" เข้าได้แค่คำนวณสติ๊กเกอร์ + ใบคอนเฟิร์มงาน (ใบราคาส่งมีราคา เหมือนบิล จึงกันไว้เท่ากัน)
   function closeTaxMenus() {
     $('taxTrigger').setAttribute('aria-expanded', 'false');
