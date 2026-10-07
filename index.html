@@ -2359,10 +2359,16 @@ function bahtText(value) {
   function fitBill() { fitFrame('a4frame', 'bill'); }
 
   function nextNo() {
-    const d = ($('billDate').value || todayISO()).replace(/-/g, '').slice(2);
-    const prefix = 'BS' + d;
+    // รูปแบบเลขที่เอกสาร: BS + ปี พ.ศ. 2 หลักท้าย + เดือน 2 หลัก + เลขรันต่อเนื่อง 4 หลัก เช่น BS69090001
+    // (BS = Ball Sticker, 69 = พ.ศ. 2569, 09 = เดือนกันยายน, 0001 = เลขที่ลำดับในเดือนนั้น)
+    // ช่องนี้แก้ไขเองได้เสมอ ตัวเลขที่ระบบเติมให้เป็นแค่คำแนะนำเริ่มต้น
+    const dateVal = $('billDate').value || todayISO();
+    const parts = dateVal.split('-'); // [ค.ศ., เดือน, วัน]
+    const beYY = String((+parts[0] + 543) % 100).padStart(2, '0');
+    const mm = parts[1] || '01';
+    const prefix = 'BS' + beYY + mm;
     const n = store.get('bs_bills', []).filter(b => String(b.no).indexOf(prefix) === 0).length + 1;
-    return prefix + '-' + String(n).padStart(3, '0');
+    return prefix + String(n).padStart(4, '0');
   }
 
   function collect() {
