@@ -4942,6 +4942,20 @@ function bahtText(value) {
     if (e.target.checked) histSelected.add(id); else histSelected.delete(id);
     updateHistSelCount();
   });
+  $('reportSalesPicker').addEventListener('change', e => {
+    if (!e.target.classList.contains('report-pick-chk')) return;
+    const id = e.target.dataset.id;
+    const list = store.get('bs_bills', []);
+    const idx = list.findIndex(x => x.id === id);
+    if (idx < 0) return;
+    const nowExcluded = !e.target.checked;
+    list[idx] = Object.assign({}, list[idx], {excludeTax: nowExcluded});
+    store.set('bs_bills', list);
+    cloudSave('bills', list[idx]);
+    if (currentId === id) $('excludeTax').checked = nowExcluded;
+    renderHistory();
+    toast(nowExcluded ? 'ตัดบิลนี้ออกจากรายงานภาษีขายแล้ว (ยังเก็บไว้ในประวัติตามปกติ)' : 'นำบิลนี้กลับเข้ารายงานภาษีขายแล้ว');
+  });
   $('histChkAll').addEventListener('change', e => {
     const on = e.target.checked;
     document.querySelectorAll('#history .hist-chk').forEach(cb => {
