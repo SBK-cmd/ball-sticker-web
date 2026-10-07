@@ -1363,10 +1363,18 @@ tr{break-inside:avoid}
             <span>ติ๊กเลือกทั้งเดือน</span>
             <select class="txt" id="histPrintMonth"><option value="">— เลือกเดือน —</option></select>
           </label>
+          <label class="f" style="max-width:190px">
+            <span>พิมพ์เป็นชุด</span>
+            <select class="txt" id="histPrintCopy">
+              <option value="">ตามที่บันทึกไว้ (ของใครของมัน)</option>
+              <option value="ต้นฉบับ">ต้นฉบับทั้งหมด</option>
+              <option value="สำเนา">สำเนาทั้งหมด</option>
+            </select>
+          </label>
           <button class="btn primary small" id="hist-print-all" type="button">พิมพ์ที่เลือก</button>
           <button class="btn small" id="hist-pdf-all" type="button">ดาวน์โหลด PDF ที่เลือก</button>
         </div>
-        <p class="hint" id="histPrintHint" style="margin:-4px 0 10px">เลือกเดือนเพื่อติ๊กเอกสารทั้งเดือนให้อัตโนมัติ หรือติ๊กเลือกเอกสารเป็นรายใบด้านล่างเอง แล้วกด “พิมพ์ที่เลือก” เพื่อรวมเป็นไฟล์เดียว เรียงตามวันที่ ไว้พิมพ์หรือเก็บเข้าแฟ้มได้ในครั้งเดียว</p>
+        <p class="hint" id="histPrintHint" style="margin:-4px 0 10px">เลือกเดือนเพื่อติ๊กเอกสารทั้งเดือนให้อัตโนมัติ หรือติ๊กเลือกเอกสารเป็นรายใบด้านล่างเอง เลือก “พิมพ์เป็นชุด” ถ้าต้องการให้ทุกใบที่พิมพ์รวมกันออกมาเป็นต้นฉบับหรือสำเนาทั้งหมดเหมือนกัน (ไม่เปลี่ยนค่าที่บันทึกไว้ในแต่ละใบ) แล้วกด “พิมพ์ที่เลือก” เพื่อรวมเป็นไฟล์เดียว เรียงตามวันที่ ไว้พิมพ์หรือเก็บเข้าแฟ้มได้ในครั้งเดียว</p>
         <label class="hist-selall no-print"><input type="checkbox" id="histChkAll"> <span>เลือกทั้งหมดที่แสดงอยู่</span> <span id="histSelCount" class="hint" style="margin:0"></span></label>
         <div id="history"></div>
       </section>
@@ -4538,16 +4546,20 @@ function bahtText(value) {
     const savedId = currentId, savedForm = collect();
     try {
       let allPages = [];
+      // ถ้าเลือก "พิมพ์เป็นชุด" ไว้ (ต้นฉบับ/สำเนา) ให้บังคับใช้ป้ายนี้กับทุกใบที่พิมพ์รวมกัน
+      // โดยไม่แก้ค่าที่บันทึกไว้จริงของแต่ละใบ (คืนค่าฟอร์มกลับเป็นของเดิมหลังทำเสร็จเหมือนเดิม)
+      const copyOverride = $('histPrintCopy') ? $('histPrintCopy').value : '';
       for (let i = 0; i < list.length; i++) {
         btn.textContent = 'กำลังเตรียม ' + (i + 1) + '/' + list.length + '…';
         apply(list[i]);
+        if (copyOverride) $('docCopy').value = copyOverride;
         const pages = await drawBillPages();
         allPages = allPages.concat(pages);
       }
       const imgs = await Promise.all(allPages.map(pageToPdfImage));
       const blob = buildPdf(imgs);
       const monthSel = $('histPrintMonth') ? $('histPrintMonth').value : '';
-      const name = ('ใบกำกับภาษีที่เลือก-' + (monthSel || 'รวม') + '-' + list.length + 'ใบ.pdf').replace(/[\\/:*?"<>|]/g, '-');
+      const name = ('ใบกำกับภาษีที่เลือก-' + (monthSel || 'รวม') + (copyOverride ? '-' + copyOverride : '') + '-' + list.length + 'ใบ.pdf').replace(/[\\/:*?"<>|]/g, '-');
       lastPdf = {blob, name};
       if (pdfUrl) URL.revokeObjectURL(pdfUrl);
       pdfUrl = URL.createObjectURL(blob);
