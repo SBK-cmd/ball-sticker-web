@@ -3384,13 +3384,17 @@ function bahtText(value) {
     }
   }
 
-  // ออกเลขที่บิลให้เรียงตามวันที่ของแต่ละใบที่สร้างพร้อมกัน (นับต่อจากเลขที่เดิมที่มีอยู่แล้วในวันเดียวกัน)
+  // ออกเลขที่บิลให้เรียงตามวันที่ของแต่ละใบที่สร้างพร้อมกัน (นับต่อจากเลขที่เดิมที่มีอยู่แล้วในเดือนเดียวกัน)
+  // ใช้รูปแบบเดียวกับ nextNo(): BS + ปี พ.ศ. 2 หลัก + เดือน 2 หลัก + เลขรัน 4 หลัก
   function billNoForDateBatch(iso, counters) {
-    const d = (iso || todayISO()).replace(/-/g, '').slice(2);
-    const prefix = 'BS' + d;
+    const dateVal = iso || todayISO();
+    const parts = dateVal.split('-');
+    const beYY = String((+parts[0] + 543) % 100).padStart(2, '0');
+    const mm = parts[1] || '01';
+    const prefix = 'BS' + beYY + mm;
     if (!(prefix in counters)) counters[prefix] = store.get('bs_bills', []).filter(b => String(b.no).indexOf(prefix) === 0).length;
     counters[prefix]++;
-    return prefix + '-' + String(counters[prefix]).padStart(3, '0');
+    return prefix + String(counters[prefix]).padStart(4, '0');
   }
 
   // สร้างบิลขายทีเดียวหลายใบจากรายการเงินเข้าที่เลือกไว้ เรียงตามวันที่จากน้อยไปมาก
@@ -3424,6 +3428,14 @@ function bahtText(value) {
     created.forEach(rec => cloudSave('bills', rec));
     closeStmtOverlay();
     showTab('bill');
+    if (created.length) {
+      // เปิดใบล่าสุด (วันที่ล่าสุด) ขึ้นมาในฟอร์มแก้ไขทันที เพื่อให้วันที่ที่เห็นบนหน้าจอตรงกับวันที่ในสเตทเม้นจริง
+      // (ก่อนหน้านี้ฟอร์มจะยังค้างวันที่เดิม/วันนี้ไว้ ทั้งที่บิลถูกสร้างด้วยวันที่จากสเตทเม้นแล้ว)
+      const last = created[created.length - 1];
+      currentId = last.id;
+      apply(last);
+      renderEditState();
+    }
     renderHistory();
     toast('เปิดบิลจากสเตทเม้นแล้ว ' + created.length + ' ใบ เรียงตามวันที่ — ตรวจสอบและแก้ไขรายละเอียดแต่ละใบได้ที่ “ประวัติเอกสาร” ด้านล่าง');
   }
