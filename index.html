@@ -985,6 +985,7 @@ tr{break-inside:avoid}
       <button role="tab" id="tab-calc" data-tab="calc" aria-selected="true" aria-controls="panel-calc">คำนวณสติ๊กเกอร์</button>
       <button role="tab" id="tab-confirm" data-tab="confirm" aria-selected="false" aria-controls="panel-confirm">ใบคอนเฟิร์มงาน</button>
       <button role="tab" id="tab-wholesale" data-tab="wholesale" aria-selected="false" aria-controls="panel-wholesale">ใบราคาส่ง</button>
+      <button role="tab" id="tab-quote" data-tab="quote" aria-selected="false" aria-controls="panel-quote">ใบเสนอราคา</button>
       <div class="tab-group">
         <button type="button" class="tab-trigger" id="taxTrigger" aria-haspopup="true" aria-expanded="false">
           ภาษี
@@ -1066,6 +1067,10 @@ tr{break-inside:avoid}
     <button type="button" class="btab" data-tab="wholesale" aria-controls="panel-wholesale">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
       <span>ราคาส่ง</span>
+    </button>
+    <button type="button" class="btab" data-tab="quote" aria-controls="panel-quote">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="13" y2="17"></line></svg>
+      <span>เสนอราคา</span>
     </button>
     <button type="button" class="btab" id="bnavTaxTrigger" aria-haspopup="true" aria-expanded="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7L6 7z"></path><path d="M9 7a3 3 0 0 1 6 0"></path></svg>
@@ -1425,6 +1430,88 @@ tr{break-inside:avoid}
         </div>
         <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="whHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
         <div id="wholesaleHistory"></div>
+      </section>
+    </section>
+
+    <!-- ================= ใบเสนอราคา ================= -->
+    <section id="panel-quote" class="panel" role="tabpanel" aria-labelledby="tab-quote">
+      <div class="page-head no-print">
+        <h1>ใบเสนอราคา.</h1>
+        <p>เอกสารเสนอราคาให้ลูกค้าก่อนตกลงซื้อ แยกเอกสารจากใบเสร็จ/ใบกำกับภาษีโดยสิ้นเชิง มีเลขที่เอกสารและ VAT เหมือนบิล แต่ไม่รวมกับยอดขายในแดชบอร์ดหรือรายงานภาษี</p>
+      </div>
+
+      <div class="bill-grid">
+        <div class="stack no-print">
+          <div class="card">
+            <h2>ข้อมูลเอกสาร</h2>
+            <p class="edit-state" id="quoteEditState"></p>
+            <div class="fields">
+              <div class="row2">
+                <label class="f"><span>เลขที่เอกสาร</span><input class="txt" id="quoteNo" type="text" autocomplete="off"></label>
+                <label class="f"><span>วันที่</span><input class="txt" id="quoteDate" type="date"></label>
+              </div>
+              <label class="f"><span>ยืนราคาถึงวันที่</span><input class="txt" id="quoteValidUntil" type="date"></label>
+              <label class="f"><span>ชุดเอกสาร</span>
+                <select id="quoteDocCopy"><option value="ต้นฉบับ">ต้นฉบับ</option><option value="สำเนา">สำเนา</option></select>
+              </label>
+              <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="qName" type="text" autocomplete="off" list="customerNames"></label>
+              <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="qPhone" type="tel" autocomplete="off"></label>
+              <label class="f"><span>เลขประจำตัวผู้เสียภาษีลูกค้า (ถ้ามี)</span><input class="txt" id="qTax" type="text" inputmode="numeric" autocomplete="off"></label>
+              <label class="f"><span>ที่อยู่ลูกค้า</span><textarea id="qAddr"></textarea></label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>รายการสินค้า</h2>
+            <div class="item-head" aria-hidden="true"><span>รายการ</span><span>จำนวน</span><span>ราคา/ชิ้น</span><span>รวม</span><span></span></div>
+            <div id="quoteItems"></div>
+            <button class="btn small" id="add-item-quote" type="button">＋ เพิ่มรายการ</button>
+            <p class="hint">ใส่ชนิดสติ๊กเกอร์และขนาดในชื่อรายการได้เลย</p>
+          </div>
+
+          <div class="card">
+            <h2>ยอดเงินและหมายเหตุ</h2>
+            <div class="fields">
+              <label class="f"><span>ส่วนลด (บาท)</span><input class="txt" id="quoteDiscount" type="number" inputmode="decimal" step="any" min="0" value="0"></label>
+              <div class="row2">
+                <label class="f"><span>การคิด VAT</span>
+                  <select id="quoteVatMode">
+                    <option value="none">ไม่คิด VAT</option>
+                    <option value="add" selected>บวก VAT เพิ่มจากราคา</option>
+                    <option value="incl">ราคารวม VAT แล้ว</option>
+                  </select>
+                </label>
+                <label class="f" id="quoteVatRateWrap" hidden><span>อัตรา VAT (%)</span><input class="txt" id="quoteVatRate" type="number" inputmode="decimal" step="any" min="0" value="7"></label>
+              </div>
+              <label class="f"><span>หมายเหตุ</span><textarea id="quoteNote" placeholder="เช่น เงื่อนไขการชำระเงิน ระยะเวลาผลิต"></textarea></label>
+            </div>
+            <div class="actions">
+              <button class="btn primary" id="print-quote" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg>
+                พิมพ์เอกสาร
+              </button>
+              <button class="btn" id="pdf-quote" type="button">ดาวน์โหลด PDF</button>
+              <button class="btn good" id="save-quote" type="button">บันทึกลงประวัติ</button>
+              <button class="btn" id="quote-to-bill" type="button">แปลงเป็นใบเสร็จ/ใบกำกับภาษี →</button>
+              <button class="btn danger" id="new-quote" type="button">เปิดเอกสารใหม่</button>
+            </div>
+            <p class="actions-note">ใบเสนอราคาเป็นเอกสารแยกต่างหากจากใบเสร็จ/ใบกำกับภาษี ไม่รวมกับยอดขายในแดชบอร์ดหรือรายงานภาษี กด “แปลงเป็นใบเสร็จ/ใบกำกับภาษี” เมื่อลูกค้าตกลงราคาแล้ว เพื่อคัดลอกข้อมูลไปออกบิลจริง</p>
+          </div>
+        </div>
+
+        <div class="preview-col">
+          <h2 class="no-print">ตัวอย่างก่อนพิมพ์ (A4)</h2>
+          <div class="a4-frame" id="quoteFrame"><article class="sheet bill" id="quoteSheet"></article></div>
+        </div>
+      </div>
+
+      <section class="card history no-print" style="margin-top:20px" aria-labelledby="quotehist-h">
+        <div class="viz-head">
+          <h2 id="quotehist-h">ประวัติใบเสนอราคา</h2>
+          <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้ (แยกจากประวัติเอกสาร/ใบเสร็จ)</span>
+        </div>
+        <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="quoteHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
+        <div id="quoteHistory"></div>
       </section>
     </section>
 
@@ -2349,6 +2436,160 @@ function bahtText(value) {
     updateHistSelCount();
     renderDash();
     renderReport();
+  }
+
+  /* ---------------- ใบเสนอราคา (แยกต่างหากจากบิลโดยสิ้นเชิง ไม่แตะ items/bs_bills/billCalc/renderDash/renderReport ใดๆ
+     เก็บข้อมูลแยกที่ localStorage key "bs_quotes" และ Firestore collection "quotes" ของตัวเอง) ---------------- */
+  let quoteItems = [{name: '', qty: 1, price: 0}];
+  let currentQuoteId = null;
+  let quoteDelArmed = null, quoteDelTimer = null;
+
+  function renderQuoteItems() {
+    $('quoteItems').innerHTML = quoteItems.map((it, i) =>
+      '<div class="item" data-i="' + i + '">' +
+      '<input class="txt i-name" type="text" placeholder="ชื่อรายการ" aria-label="ชื่อรายการ" value="' + esc(it.name) + '">' +
+      '<input class="num i-qty" type="number" inputmode="decimal" step="any" min="0" placeholder="จำนวน" aria-label="จำนวน" value="' + esc(it.qty) + '">' +
+      '<input class="num i-price" type="number" inputmode="decimal" step="any" min="0" placeholder="ราคา/ชิ้น" aria-label="ราคาต่อชิ้น" value="' + esc(it.price) + '">' +
+      '<output class="i-total" aria-label="รวม">' + money(num(it.qty) * num(it.price)) + '</output>' +
+      '<button class="del" type="button" aria-label="ลบรายการ">✕</button></div>').join('');
+  }
+
+  function quoteTotals() {
+    const sub = round2(quoteItems.reduce((a, i) => a + num(i.qty) * num(i.price), 0));
+    const disc = Math.min(Math.max(0, num($('quoteDiscount').value)), sub);
+    const base = round2(sub - disc);
+    const mode = $('quoteVatMode').value, rate = Math.max(0, num($('quoteVatRate').value));
+    let vat = 0, before = base, total = base;
+    if (mode === 'add') { vat = round2(base * rate / 100); total = round2(base + vat); }
+    else if (mode === 'incl') { vat = round2(base * rate / (100 + rate)); before = round2(base - vat); }
+    const vd = (mode === 'incl' && rate > 0) ? (1 + rate / 100) : 1;
+    return {sub, disc, base, mode, rate, vat, before, total, vd};
+  }
+  // คำนวณยอดจากเรคคอร์ดที่บันทึกไว้แล้ว (ใช้แสดงในประวัติ) — แยกต่างหากจาก billCalc() โดยสิ้นเชิง ไม่เกี่ยวกับ bs_bills
+  function quoteCalc(qrec) {
+    const its = qrec.items || [];
+    const sub = round2(its.reduce((a, i) => a + num(i.qty) * num(i.price), 0));
+    const disc = Math.min(Math.max(0, num(qrec.discount)), sub);
+    const base = round2(sub - disc);
+    const mode = qrec.vatMode || 'add', rate = Math.max(0, num(qrec.vatRate));
+    let vat = 0, total = base;
+    if (mode === 'add') { vat = round2(base * rate / 100); total = round2(base + vat); }
+    else if (mode === 'incl') { vat = round2(base * rate / (100 + rate)); }
+    return {sub, disc, base, vat, total};
+  }
+
+  function renderQuote() {
+    renderQuoteHTML();
+    fitQuote();
+  }
+
+  function renderQuoteHTML() {
+    const t = quoteTotals();
+    const shown = quoteItems.filter(i => i.name.trim() || num(i.qty) * num(i.price) > 0);
+    const rows = shown.length ? shown.map((i, n) =>
+      '<tr><td class="n">' + (n + 1) + '</td><td>' + esc(i.name) + '</td><td class="r">' + esc(fmt(num(i.qty))) +
+      '</td><td class="r">' + money(num(i.price) / t.vd) + '</td><td class="r">' + money(num(i.qty) * num(i.price) / t.vd) + '</td></tr>').join('')
+      : '<tr><td class="n">—</td><td colspan="4" style="color:#4a5a72">ยังไม่มีรายการ</td></tr>';
+    let vatRows = '';
+    if (t.mode !== 'none')
+      vatRows = '<div class="tot"><span>ภาษีมูลค่าเพิ่ม (VAT) ' + esc(fmt(t.rate)) + '%</span><span>' + money(t.vat) + '</span></div>';
+    const custParts = [];
+    if ($('qName').value.trim()) custParts.push('<div><b>' + esc($('qName').value.trim()) + '</b></div>');
+    if ($('qPhone').value.trim()) custParts.push('<div>' + esc($('qPhone').value.trim()) + '</div>');
+    if ($('qAddr').value.trim()) custParts.push('<div>' + esc($('qAddr').value.trim()) + '</div>');
+    if ($('qTax').value.trim()) custParts.push('<div>เลขประจำตัวผู้เสียภาษี ' + esc($('qTax').value.trim()) + '</div>');
+    $('quoteSheet').innerHTML =
+      '<header class="sh-head"><div class="sh-brand">' + logoImg() + '<div><div class="sh-name">' + esc(shop.name) + '</div><div class="sh-lines">' + shopLines() + '</div></div></div>' +
+      '<div class="sh-doc"><h2>ใบเสนอราคา</h2><div class="sh-copy">' + esc($('quoteDocCopy').value) + '</div><div class="sh-lines">เลขที่ <b>' + esc($('quoteNo').value) + '</b><br>วันที่ ' + esc(thDate($('quoteDate').value)) +
+      ($('quoteValidUntil').value ? '<br>ยืนราคาถึงวันที่ ' + esc(thDate($('quoteValidUntil').value)) : '') + '</div></div></header>' +
+      '<section class="cust"><h3>ลูกค้า</h3>' + custParts.join('') + '</section>' +
+      '<div class="tbl-wrap"><table class="lines"><thead><tr><th class="n">ลำดับ</th><th>รายการ</th><th class="r">จำนวน</th><th class="r">ราคา/ชิ้น</th><th class="r">รวม</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="totals-row">' +
+      '<div class="words"><b>' + bahtText(t.total) + '</b></div>' +
+      '<div class="totals">' +
+      '<div class="tot"><span>ส่วนลด</span><span>' + money(t.disc / t.vd) + '</span></div>' + vatRows +
+      '<div class="tot strong"><span>รวมทั้งสิ้น</span><span>' + money(t.total) + '</span></div></div>' +
+      '</div>' +
+      ($('quoteNote').value.trim() ? '<div class="note"><b>หมายเหตุ</b> ' + esc($('quoteNote').value) + '</div>' : '') +
+      '<div class="sign"><div class="sign-col"><div class="sign-line"></div><div class="sign-label">ผู้เสนอราคา</div><div class="sign-date">วันที่ ' + esc(thDate($('quoteDate').value)) + '</div></div>' +
+      '<div class="sign-col"><div class="sign-line"></div><div class="sign-label">ผู้อนุมัติ/ลูกค้า</div><div class="sign-date">วันที่ ....../....../......</div></div></div>';
+  }
+
+  function fitQuote() { fitFrame('quoteFrame', 'quoteSheet'); }
+
+  function nextQuoteNo() {
+    const d = ($('quoteDate').value || todayISO()).replace(/-/g, '').slice(2);
+    const prefix = 'QT' + d;
+    const n = store.get('bs_quotes', []).filter(q => String(q.no).indexOf(prefix) === 0).length + 1;
+    return prefix + '-' + String(n).padStart(3, '0');
+  }
+
+  function collectQuote() {
+    return {no: $('quoteNo').value, date: $('quoteDate').value, validUntil: $('quoteValidUntil').value,
+      cName: $('qName').value, cPhone: $('qPhone').value, cAddr: $('qAddr').value, cTax: $('qTax').value,
+      docCopy: $('quoteDocCopy').value, items: quoteItems.map(i => ({name: i.name, qty: i.qty, price: i.price})),
+      discount: $('quoteDiscount').value, vatMode: $('quoteVatMode').value, vatRate: $('quoteVatRate').value, note: $('quoteNote').value};
+  }
+  function applyQuote(qrec) {
+    $('quoteNo').value = qrec.no || ''; $('quoteDate').value = qrec.date || todayISO();
+    $('quoteValidUntil').value = qrec.validUntil || '';
+    $('qName').value = qrec.cName || ''; $('qPhone').value = qrec.cPhone || ''; $('qAddr').value = qrec.cAddr || '';
+    $('qTax').value = qrec.cTax || ''; $('quoteDocCopy').value = qrec.docCopy || 'ต้นฉบับ';
+    quoteItems = (qrec.items && qrec.items.length) ? qrec.items.map(i => ({name: i.name || '', qty: i.qty, price: i.price})) : [{name: '', qty: 1, price: 0}];
+    $('quoteDiscount').value = qrec.discount || 0;
+    $('quoteVatMode').value = qrec.vatMode || 'add'; $('quoteVatRate').value = qrec.vatRate || 7; $('quoteNote').value = qrec.note || '';
+    syncQuoteVat(); renderQuoteItems(); renderQuote();
+  }
+  function syncQuoteVat() {
+    const on = $('quoteVatMode').value !== 'none';
+    $('quoteVatRateWrap').hidden = !on;
+  }
+  function renderQuoteEditState() {
+    const el = $('quoteEditState');
+    if (currentQuoteId) { el.textContent = 'กำลังแก้ไขใบเสนอราคาที่บันทึกไว้ กด “บันทึกลงประวัติ” เพื่อบันทึกทับฉบับเดิม'; el.classList.add('editing'); }
+    else { el.textContent = 'เอกสารใหม่ ยังไม่ได้บันทึกลงประวัติ'; el.classList.remove('editing'); }
+  }
+  function newQuote() {
+    currentQuoteId = null;
+    const today = todayISO();
+    const d = new Date(today + 'T00:00:00'); d.setDate(d.getDate() + 15);
+    applyQuote({date: today, validUntil: d.toISOString().slice(0, 10)});
+    $('quoteNo').value = nextQuoteNo();
+    renderQuote();
+    renderQuoteEditState();
+  }
+  function renderQuoteHistory() {
+    const list = store.get('bs_quotes', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+    const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้ ควรดาวน์โหลด PDF เก็บไว้ทุกครั้ง</p>');
+    if (!list.length) { $('quoteHistory').innerHTML = notice + '<p class="empty">ยังไม่มีใบเสนอราคาที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; return; }
+    const q = $('quoteHistSearch') ? $('quoteHistSearch').value : '';
+    const shown = list.filter(x => matchesSearch(x.cName, q));
+    if (!shown.length) { $('quoteHistory').innerHTML = notice + '<p class="empty">ไม่พบใบเสนอราคาของลูกค้าชื่อ “' + esc(q) + '”</p>'; return; }
+    $('quoteHistory').innerHTML = notice + '<ul>' + shown.map(x => {
+      const t = quoteCalc(x);
+      return '<li data-id="' + esc(x.id) + '"><div class="meta"><b>' + esc(x.no) + '</b><small>' + esc(thDate(x.date)) + ' · ' + esc(x.cName || 'ไม่ระบุชื่อลูกค้า') + (x.createdBy ? ' · โดย ' + esc(x.createdBy) : '') + '</small></div>' +
+      '<span class="amt">' + money(t.total) + ' บาท</span>' +
+      '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
+      '<button class="btn small del" data-act="del" type="button">ลบ</button></li>';
+    }).join('') + '</ul>';
+  }
+  function saveQuote() {
+    const list = store.get('bs_quotes', []);
+    const data = collectQuote(), t = quoteTotals();
+    if (!String(data.no).trim()) { toast('ใส่เลขที่เอกสารก่อนบันทึก'); $('quoteNo').focus(); return; }
+    const id = currentQuoteId || ('q' + Date.now());
+    const idx = list.findIndex(x => x.id === id);
+    const createdBy = idx >= 0 ? list[idx].createdBy : (currentUser ? currentUser.name : '');
+    const rec = Object.assign({id, savedAt: Date.now(), total: t.total, createdBy}, data);
+    if (idx >= 0) list[idx] = rec; else list.push(rec);
+    const wasEditing = idx >= 0;
+    currentQuoteId = rec.id;
+    const persisted = store.set('bs_quotes', list);
+    cloudSave('quotes', rec);
+    upsertCustomer(rec.cName, rec.cPhone, rec.cAddr);
+    renderQuoteHistory(); renderQuoteEditState();
+    toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับเอกสาร ' : 'บันทึกเอกสาร ') + rec.no + ' แล้ว'
+                    : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
   }
 
   /* ---------------- แดชบอร์ด ---------------- */
@@ -3937,6 +4178,86 @@ function bahtText(value) {
     return pages;
   }
 
+  // ใบเสนอราคา (PDF) — ยืมโครงตาราง/VAT จากใบเสร็จ (drawBillPages) แต่ไม่มีแถว "รับมัดจำ" และมีบรรทัด "ยืนราคาถึงวันที่" เพิ่มในหัวเอกสาร
+  async function drawQuotePages() {
+    await prepAssets();
+    const t = quoteTotals(), pages = [];
+    let pg = mkPage(), x = pg.x; pages.push(pg.c);
+    const rightLines = ['เลขที่ ' + $('quoteNo').value, 'วันที่ ' + thDate($('quoteDate').value)];
+    if ($('quoteValidUntil').value) rightLines.push('ยืนราคาถึงวันที่ ' + thDate($('quoteValidUntil').value));
+    let y = drawHeader(x, 'ใบเสนอราคา', rightLines, $('quoteDocCopy').value);
+    const cPad = 5.5;
+    const custRows = [];
+    if ($('qName').value.trim()) custRows.push({t: $('qName').value.trim(), s: 4, w: 700, gap: 6.2});
+    if ($('qPhone').value.trim()) custRows.push({t: $('qPhone').value.trim(), s: 3.6, w: 400, gap: 5.4});
+    if ($('qAddr').value.trim()) wrapText(x, $('qAddr').value.trim(), CW - cPad * 2, {s: 3.6}).forEach(l => custRows.push({t: l, s: 3.6, w: 400, gap: 5.4}));
+    if ($('qTax').value.trim()) custRows.push({t: 'เลขประจำตัวผู้เสียภาษี ' + $('qTax').value.trim(), s: 3.6, w: 400, gap: 5.4});
+    const custLabelH = 7.2;
+    const custBoxTop = y;
+    const custLastGap = custRows.length ? custRows[custRows.length - 1].gap : 0;
+    const custBoxH = cPad + custLabelH + custRows.reduce((a, r) => a + r.gap, 0) - custLastGap + 4.4 + cPad;
+    RECT(x, M, custBoxTop, CW, custBoxH, '#f8fafc');
+    x.strokeStyle = LINE; x.lineWidth = 0.3 * S; x.strokeRect(M * S, custBoxTop * S, CW * S, custBoxH * S);
+    let cy = custBoxTop + cPad;
+    T(x, 'ข้อมูลลูกค้า', M + cPad, cy + 2.6, {s: 3, w: 700, c: MUTED, h: 1}); cy += custLabelH;
+    custRows.forEach(r => { T(x, r.t, M + cPad, cy + 3, {s: r.s, w: r.w}); cy += r.gap; });
+    y = custBoxTop + custBoxH + 9;
+    const c0 = M, c1 = M + 14, c2 = c1 + 92, c3 = c2 + 22, c4 = c3 + 28, cR = M + CW;
+    const head = () => {
+      RECT(x, M, y, CW, 8.4, HEAD); HL(x, M, cR, y, LINE, 0.25); HL(x, M, cR, y + 8.4, LINE, 0.25);
+      const b = y + 5.7, o = {s: 3.5, w: 700};
+      T(x, 'ลำดับ', c0 + 7, b, Object.assign({a: 'center'}, o)); T(x, 'รายการ', c1 + 3, b, o);
+      T(x, 'จำนวน', c3 - 3, b, Object.assign({a: 'right'}, o)); T(x, 'ราคา/ชิ้น', c4 - 3, b, Object.assign({a: 'right'}, o));
+      T(x, 'รวม', cR - 3, b, Object.assign({a: 'right'}, o));
+      y += 8.4;
+    };
+    head();
+    const shown = quoteItems.filter(i => i.name.trim() || num(i.qty) * num(i.price) > 0);
+    const rows = shown.length ? shown : [{name: 'ยังไม่มีรายการ', qty: '', price: '', empty: true}];
+    rows.forEach((it, n) => {
+      const lines = wrapText(x, it.name, 92 - 6, {s: 3.7});
+      const rh = 6.2 + Math.max(1, lines.length) * 4.8;
+      if (y + rh > PH - M - 6) { pg = mkPage(); x = pg.x; pages.push(pg.c); y = M; head(); }
+      const b = y + 3 + 3.6;
+      if (!it.empty) T(x, n + 1, c0 + 7, b, {s: 3.7, a: 'center'});
+      lines.forEach((l, k) => T(x, l, c1 + 3, b + k * 4.8, {s: 3.7, c: it.empty ? MUTED : INK}));
+      if (!it.empty) {
+        T(x, fmt(num(it.qty)), c3 - 3, b, {s: 3.7, a: 'right'});
+        T(x, money(num(it.price) / t.vd), c4 - 3, b, {s: 3.7, a: 'right'});
+        T(x, money(num(it.qty) * num(it.price) / t.vd), cR - 3, b, {s: 3.7, a: 'right'});
+      }
+      y += rh; HL(x, M, cR, y, LIGHT, 0.2);
+    });
+    const tot = [['ส่วนลด', t.disc / t.vd]];
+    if (t.mode !== 'none') tot.push(['ภาษีมูลค่าเพิ่ม (VAT) ' + fmt(t.rate) + '%', t.vat]);
+    const noteLines = $('quoteNote').value.trim() ? wrapText(x, $('quoteNote').value.trim(), CW - 18, {s: 3.6}) : [];
+    const need = 9 + tot.length * 6.6 + 13 + 13 + (noteLines.length ? noteLines.length * 4.8 + 7 : 0) + 36;
+    if (y + need > PH - M) { pg = mkPage(); x = pg.x; pages.push(pg.c); y = M; }
+    y += 9;
+    const bx = PW - M - 86;
+    tot.forEach(r => {
+      T(x, r[0], bx, y + 3.8, {s: 3.7, c: MUTED}); T(x, money(r[1]), PW - M, y + 3.8, {s: 3.7, a: 'right'}); y += 6.6;
+    });
+    HL(x, bx, PW - M, y + 0.8, INK, 0.4); y += 2.6;
+    RECT(x, M, y - 1.5, bx - 6 - M, 11.5, HEAD);
+    T(x, bahtText(t.total), M + 4, y + 6.4, {s: 3.8, w: 700});
+    RECT(x, bx - 3, y - 1.5, (PW - M) - (bx - 3) + 3, 11.5, HEAD);
+    T(x, 'รวมทั้งสิ้น', bx, y + 6.4, {s: 4.4, w: 700, h: 1}); T(x, money(t.total), PW - M, y + 6.4, {s: 4.6, w: 700, h: 1, a: 'right'}); y += 10.5;
+    y += 5.5;
+    HL(x, M, PW - M, y, LINE, 0.2); y += 6.5;
+    if (noteLines.length) {
+      T(x, 'หมายเหตุ', M, y + 3.6, {s: 3.6, w: 700});
+      noteLines.forEach((l, k) => T(x, l, M + 18, y + 3.6 + k * 4.8, {s: 3.6}));
+    }
+    const sigLineY = PH - M - 21, colW = 74;
+    [[M + colW / 2, 'ผู้เสนอราคา', thDate($('quoteDate').value)], [PW - M - colW / 2, 'ผู้อนุมัติ/ลูกค้า', '....../....../......']].forEach(([cx, label, dateTxt]) => {
+      HL(x, cx - 27, cx + 27, sigLineY, INK, 0.25);
+      T(x, label, cx, sigLineY + 5.6, {s: 3.7, a: 'center'});
+      T(x, 'วันที่ ' + dateTxt, cx, sigLineY + 11.6, {s: 3.3, c: MUTED, a: 'center'});
+    });
+    return pages;
+  }
+
   function thDateShort(iso) {
     try {
       const d = new Date(iso + 'T00:00:00');
@@ -4119,6 +4440,7 @@ function bahtText(value) {
   async function buildDoc(kind) {
     const pages = kind === 'bill' ? await drawBillPages() : kind === 'confirm' ? await drawConfirmPages()
       : kind === 'wholesale' ? await drawWholesalePages()
+      : kind === 'quote' ? await drawQuotePages()
       : kind === 'reportSales' ? await drawReportPages('sales') : kind === 'reportPurch' ? await drawReportPages('purchase')
       : await drawCalcPages();
     const imgs = await Promise.all(pages.map(pageToPdfImage));
@@ -4128,6 +4450,7 @@ function bahtText(value) {
     if (kind === 'bill') name = 'ใบกำกับภาษี-' + ($('billNo').value || 'เอกสาร') + '.pdf';
     else if (kind === 'confirm') name = 'ใบคอนเฟิร์มงาน-' + ($('jobNo').value || 'เอกสาร') + '.pdf';
     else if (kind === 'wholesale') name = 'ใบราคาส่ง-' + ($('whName').value || 'เอกสาร') + '.pdf';
+    else if (kind === 'quote') name = 'ใบเสนอราคา-' + ($('quoteNo').value || 'เอกสาร') + '.pdf';
     else if (kind === 'reportSales') name = 'รายงานภาษีขาย-' + (sel || 'ทั้งหมด') + '.pdf';
     else if (kind === 'reportPurch') name = 'รายงานภาษีซื้อ-' + (sel || 'ทั้งหมด') + '.pdf';
     else { const r = lastLayout || readLayout(); name = 'ผลคำนวณสติ๊กเกอร์-' + fmt(r.sw) + 'x' + fmt(r.sh) + 'cm.pdf'; }
@@ -4224,7 +4547,7 @@ function bahtText(value) {
 
   /* ---------------- events ---------------- */
   const TAX_TABS = ['bill', 'purchase', 'dash', 'report'];
-  const OWNER_ONLY_TABS = ['bill', 'wholesale', 'purchase', 'dash', 'report']; // สิทธิ์ "พนักงาน" เข้าได้แค่คำนวณสติ๊กเกอร์ + ใบคอนเฟิร์มงาน (ใบราคาส่งมีราคา เหมือนบิล จึงกันไว้เท่ากัน)
+  const OWNER_ONLY_TABS = ['bill', 'wholesale', 'quote', 'purchase', 'dash', 'report']; // สิทธิ์ "พนักงาน" เข้าได้แค่คำนวณสติ๊กเกอร์ + ใบคอนเฟิร์มงาน (ใบราคาส่ง/ใบเสนอราคามีราคา เหมือนบิล จึงกันไว้เท่ากัน)
   function closeTaxMenus() {
     $('taxTrigger').setAttribute('aria-expanded', 'false');
     $('taxDropdown').hidden = true;
@@ -4235,7 +4558,7 @@ function bahtText(value) {
   }
   function showTab(name) {
     if (!isOwner && OWNER_ONLY_TABS.indexOf(name) >= 0) name = 'calc'; // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้หรือ URL
-    ['calc', 'confirm', 'bill', 'wholesale', 'purchase', 'dash', 'report'].forEach(n => {
+    ['calc', 'confirm', 'bill', 'wholesale', 'quote', 'purchase', 'dash', 'report'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
@@ -4248,6 +4571,7 @@ function bahtText(value) {
     if (name === 'bill') fitBill();
     if (name === 'confirm') fitJob();
     if (name === 'wholesale') fitWholesale();
+    if (name === 'quote') fitQuote();
     if (name === 'dash') renderDash();
     if (name === 'report') renderReport();
     const activeTab = isTax ? $('taxTrigger') : $('tab-' + name);
@@ -4286,6 +4610,11 @@ function bahtText(value) {
     .forEach(id => $(id).addEventListener('input', renderBill));
   $('vatMode').addEventListener('change', () => { syncVat(); renderBill(); });
   $('docCopy').addEventListener('change', renderBill);
+
+  ['quoteNo', 'quoteDate', 'quoteValidUntil', 'qName', 'qPhone', 'qTax', 'qAddr', 'quoteDiscount', 'quoteVatRate', 'quoteNote']
+    .forEach(id => $(id).addEventListener('input', renderQuote));
+  $('quoteVatMode').addEventListener('change', () => { syncQuoteVat(); renderQuote(); });
+  $('quoteDocCopy').addEventListener('change', renderQuote);
 
   ['jobNo', 'jobDate', 'jobDue', 'jobAccount', 'jobSlipAmount', 'jName', 'jPhone', 'jAddr', 'jobNote'].forEach(id => $(id).addEventListener(id === 'jobAccount' ? 'change' : 'input', renderJob));
 
@@ -4348,6 +4677,19 @@ function bahtText(value) {
     renderWholesaleItems(); renderWholesale(); showTab('wholesale');
     window.scrollTo({top: 0, behavior: 'smooth'});
     toast('คัดลอกข้อมูลจากเอกสารนี้มาที่ใบราคาส่งแล้ว');
+  });
+
+  $('quote-to-bill').addEventListener('click', () => {
+    $('cName').value = $('qName').value; $('cPhone').value = $('qPhone').value;
+    $('cAddr').value = $('qAddr').value; $('cTax').value = $('qTax').value;
+    const shown = quoteItems.filter(i => i.name.trim());
+    items = shown.length ? shown.map(i => ({name: i.name, qty: i.qty, price: i.price})) : [{name: '', qty: 1, price: 0}];
+    $('discount').value = num($('quoteDiscount').value) || 0;
+    $('vatMode').value = $('quoteVatMode').value || 'add'; $('vatRate').value = $('quoteVatRate').value || 7;
+    if ($('quoteNote').value.trim() && !$('note').value.trim()) $('note').value = $('quoteNote').value;
+    syncVat(); renderItems(); renderBill(); showTab('bill');
+    window.scrollTo({top: 0, behavior: 'smooth'});
+    toast('คัดลอกข้อมูลจากใบเสนอราคามาที่ใบเสร็จ/ใบกำกับภาษีแล้ว');
   });
 
   $('job-to-wholesale').addEventListener('click', () => {
@@ -4447,6 +4789,59 @@ function bahtText(value) {
       renderWholesaleHistory(); toast('ลบใบราคาส่งแล้ว');
     }
   });
+
+  /* ---------------- events: ใบเสนอราคา (แยกต่างหากจากบิล ไม่แตะ items/bs_bills/billCalc ใดๆ) ---------------- */
+  $('quoteItems').addEventListener('input', e => {
+    const row = e.target.closest('.item'); if (!row) return;
+    const it = quoteItems[+row.dataset.i];
+    if (e.target.classList.contains('i-name')) it.name = e.target.value;
+    if (e.target.classList.contains('i-qty')) it.qty = e.target.value;
+    if (e.target.classList.contains('i-price')) it.price = e.target.value;
+    row.querySelector('.i-total').textContent = money(num(it.qty) * num(it.price));
+    renderQuote();
+  });
+  $('quoteItems').addEventListener('click', e => {
+    if (!e.target.classList.contains('del')) return;
+    const i = +e.target.closest('.item').dataset.i;
+    quoteItems.splice(i, 1);
+    if (!quoteItems.length) quoteItems.push({name: '', qty: 1, price: 0});
+    renderQuoteItems(); renderQuote();
+  });
+  $('add-item-quote').addEventListener('click', () => {
+    quoteItems.push({name: '', qty: 1, price: 0}); renderQuoteItems(); renderQuote();
+    const last = $('quoteItems').querySelector('.item:last-child .i-name'); if (last) last.focus();
+  });
+
+  $('print-quote').addEventListener('click', () => {
+    if (inFrame() || isMobile()) exportDoc('quote', $('print-quote'), {forPrint: true});
+    else doPrint('ใบเสนอราคา ' + ($('quoteNo').value || ''));
+  });
+  $('pdf-quote').addEventListener('click', () => exportDoc('quote', $('pdf-quote')));
+  $('save-quote').addEventListener('click', saveQuote);
+  $('new-quote').addEventListener('click', () => { newQuote(); toast('เปิดเอกสารใหม่แล้ว'); });
+
+  $('quoteHistory').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-act]'); if (!btn) return;
+    const id = btn.closest('li').dataset.id;
+    const list = store.get('bs_quotes', []);
+    if (btn.dataset.act === 'open') {
+      const qrec = list.find(x => x.id === id); if (!qrec) return;
+      currentQuoteId = id; applyQuote(qrec); renderQuoteEditState(); showTab('quote');
+      window.scrollTo({top: 0, behavior: 'smooth'}); toast('เปิดเอกสาร ' + qrec.no + ' แล้ว แก้ไขได้เลย');
+    } else if (btn.dataset.act === 'del') {
+      if (quoteDelArmed !== id) {
+        quoteDelArmed = id; btn.textContent = 'กดอีกครั้งเพื่อลบ'; btn.classList.add('confirm');
+        clearTimeout(quoteDelTimer); quoteDelTimer = setTimeout(() => { quoteDelArmed = null; renderQuoteHistory(); }, 4000);
+        return;
+      }
+      clearTimeout(quoteDelTimer); quoteDelArmed = null;
+      store.set('bs_quotes', list.filter(x => x.id !== id));
+      cloudDelete('quotes', id);
+      if (currentQuoteId === id) { currentQuoteId = null; renderQuoteEditState(); }
+      renderQuoteHistory(); toast('ลบเอกสารแล้ว');
+    }
+  });
+  $('quoteHistSearch').addEventListener('input', renderQuoteHistory);
 
   $('items').addEventListener('input', e => {
     const row = e.target.closest('.item'); if (!row) return;
@@ -4568,6 +4963,9 @@ function bahtText(value) {
   window.addEventListener('resize', fitWholesale);
   if (window.ResizeObserver) new ResizeObserver(fitWholesale).observe($('wholesaleA4frame'));
   window.addEventListener('afterprint', fitWholesale);
+  window.addEventListener('resize', fitQuote);
+  if (window.ResizeObserver) new ResizeObserver(fitQuote).observe($('quoteFrame'));
+  window.addEventListener('afterprint', fitQuote);
   const fitReports = () => { fitFrame('reportSalesFrame', 'reportSalesDoc'); fitFrame('reportPurchFrame', 'reportPurchDoc'); };
   window.addEventListener('resize', fitReports);
   if (window.ResizeObserver) { new ResizeObserver(fitReports).observe($('reportSalesFrame')); new ResizeObserver(fitReports).observe($('reportPurchFrame')); }
@@ -4775,13 +5173,16 @@ function bahtText(value) {
   newBill(); renderHistory();
   newJob(); renderJobHistory();
   newWholesale(); renderWholesaleHistory();
+  newQuote(); renderQuoteHistory();
   newPurchase(); renderPurchHistory();
   renderCustomerDatalist();
   wireCustomerAutofill('cName', 'cPhone', 'cAddr', renderBill);
   wireCustomerAutofill('jName', 'jPhone', 'jAddr', renderJob);
+  wireCustomerAutofill('qName', 'qPhone', 'qAddr', renderQuote);
   watchCloud('bills', 'bs_bills', renderHistory);
   watchCloud('jobs', 'bs_jobs', renderJobHistory);
   watchCloud('wholesale', 'bs_wholesale', renderWholesaleHistory);
+  watchCloud('quotes', 'bs_quotes', renderQuoteHistory);
   watchCloud('purchases', 'bs_purchases', renderPurchHistory);
   watchCloud('customers', 'bs_customers', renderCustomerDatalist);
   $('dashMonth').addEventListener('change', renderDash);
