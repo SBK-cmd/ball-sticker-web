@@ -522,8 +522,9 @@ table.lines tfoot .r{text-align:right;font-variant-numeric:tabular-nums;white-sp
 .stmt-tbl-wrap{margin:12px 0 4px}
 .stmt-tbl-wrap table{min-width:640px}
 .stmt-tbl-wrap th,.stmt-tbl-wrap td{white-space:nowrap}
-.stmt-tbl-wrap td.stmt-name-cell{white-space:normal}
+.stmt-tbl-wrap td.stmt-name-cell,.stmt-tbl-wrap td.stmt-no-cell{white-space:normal}
 .stmt-name{width:100%;min-width:160px;padding:6px 8px;border:1px solid #c9d2de;border-radius:8px;font:inherit;color:#10233f;background:#fff}
+.stmt-no{width:100%;min-width:130px;padding:6px 8px;border:1px solid #c9d2de;border-radius:8px;font:inherit;color:#10233f;background:#fff}
 .stmt-chk{width:17px;height:17px}
 .sh-head{display:flex;gap:16px;justify-content:space-between;align-items:flex-start;padding-bottom:14px;margin-bottom:16px;border-bottom:2px solid #10233f}
 .sh-brand{display:flex;gap:12px;align-items:flex-start;min-width:0}
@@ -3289,8 +3290,10 @@ function bahtText(value) {
 
   function parseThaiDateLoose(dd, mm, yy) {
     dd = +dd; mm = +mm; yy = +yy;
-    if (yy < 100) yy += 2500;      // ปี พ.ศ. แบบ 2 หลัก เช่น 69 -> 2569
-    if (yy > 2400) yy -= 543;      // แปลง พ.ศ. เป็น ค.ศ.
+    // สเตทเม้นธนาคาร (เช่น กสิกรไทย) แสดงปีแบบ ค.ศ. 2 หลัก เช่น "26" หมายถึง ค.ศ. 2026 — ไม่ใช่ พ.ศ.
+    // (เดิมโค้ดเข้าใจผิดว่าเป็น พ.ศ. 2 หลักแล้วแปลงซ้ำ ทำให้ปีที่เก็บ/แสดงผิดไปมาก)
+    if (yy < 100) yy += 2000;        // ปี ค.ศ. แบบ 2 หลักตามที่สเตทเม้นแสดง เช่น 26 -> ค.ศ. 2026
+    else if (yy > 2400) yy -= 543;   // เผื่อบางไฟล์แสดงปีเต็มแบบ พ.ศ. (4 หลัก) ให้แปลงเป็น ค.ศ.
     if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31 && yy > 1900 && yy < 2100)
       return yy + '-' + String(mm).padStart(2, '0') + '-' + String(dd).padStart(2, '0');
     return '';
@@ -3339,15 +3342,19 @@ function bahtText(value) {
     $('stmtCount').textContent = inRows.length
       ? 'พบรายการเงินเข้า ' + inRows.length + ' รายการ (อ่านได้ทั้งหมด ' + stmtRows.length + ' รายการจากไฟล์นี้) — เลือกรายการที่ต้องการแล้วกด “เปิดบิลที่เลือกทั้งหมด”'
       : 'ไม่พบรายการเงินเข้าที่มั่นใจพอในสเตทเม้นนี้ (อ่านข้อความได้ ' + stmtRows.length + ' รายการ) กรุณาตรวจสอบไฟล์หรือกรอกบิลด้วยตนเอง';
+    // เลขที่บิลที่เสนอให้ล่วงหน้า (ไล่ตามลำดับที่แสดงในตาราง) — ผู้ใช้แก้ไขเองทีละรายการได้ก่อนกดเปิดบิลจริง
+    const previewCounters = {};
     $('stmtTable').innerHTML = !inRows.length ? '' :
       '<thead><tr><th><input type="checkbox" class="stmt-chk" id="stmtChkAll" checked aria-label="เลือกทั้งหมด"></th>' +
-      '<th>วันที่</th><th>ชื่อลูกค้า (แก้ไขได้)</th><th class="r">จำนวนเงิน</th></tr></thead><tbody>' +
-      inRows.map(r =>
-        '<tr><td><input type="checkbox" class="stmt-chk" data-idx="' + r.idx + '" checked aria-label="เลือกรายการนี้"></td>' +
+      '<th>วันที่</th><th>เลขที่ใบกำกับ (แก้ไขได้)</th><th>ชื่อลูกค้า (แก้ไขได้)</th><th class="r">จำนวนเงิน</th></tr></thead><tbody>' +
+      inRows.map(r => {
+        const suggestedNo = billNoForDateBatch(r.date, previewCounters);
+        return '<tr><td><input type="checkbox" class="stmt-chk" data-idx="' + r.idx + '" checked aria-label="เลือกรายการนี้"></td>' +
         '<td>' + esc(thDate(r.date)) + '</td>' +
+        '<td class="stmt-no-cell"><input class="stmt-no" type="text" data-idx="' + r.idx + '" value="' + esc(suggestedNo) + '" placeholder="เลขที่ใบกำกับ"></td>' +
         '<td class="stmt-name-cell"><input class="stmt-name" type="text" data-idx="' + r.idx + '" value="' + esc(STMT_DEFAULT_NAME) + '" placeholder="ชื่อลูกค้า"></td>' +
-        '<td class="r">' + money(r.amount) + '</td></tr>'
-      ).join('') + '</tbody>';
+        '<td class="r">' + money(r.amount) + '</td></tr>';
+      }).join('') + '</tbody>';
   }
 
   async function parseStatement() {
@@ -3405,17 +3412,19 @@ function bahtText(value) {
     const rows = idxs.map(idx => {
       const r = stmtRows[idx];
       const nameEl = document.querySelector('#stmtTable .stmt-name[data-idx="' + idx + '"]');
-      return {date: r.date, amount: r.amount, cName: nameEl ? nameEl.value.trim() : ''};
+      const noEl = document.querySelector('#stmtTable .stmt-no[data-idx="' + idx + '"]');
+      return {date: r.date, amount: r.amount, cName: nameEl ? nameEl.value.trim() : '', no: noEl ? noEl.value.trim() : ''};
     }).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
 
     const list = store.get('bs_bills', []);
     const counters = {};
     const created = [];
     rows.forEach((row, i) => {
+      // ใช้เลขที่ใบกำกับตามที่แสดง/แก้ไขไว้ในตารางตัวอย่างก่อนหน้า ถ้าผู้ใช้ลบว่างไว้ค่อยรันเลขให้อัตโนมัติ
       const rec = {
         id: 'b' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 8),
         savedAt: Date.now() + i,
-        no: billNoForDateBatch(row.date, counters), date: row.date,
+        no: row.no || billNoForDateBatch(row.date, counters), date: row.date,
         cName: row.cName, cPhone: '', cAddr: '', cTax: '', docCopy: 'ต้นฉบับ',
         items: [{name: STMT_ITEM_NAME, qty: 1, price: row.amount}],
         discount: 0, deposit: 0, vatMode: 'incl', vatRate: 7, note: '',
