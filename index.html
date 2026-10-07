@@ -1808,6 +1808,8 @@ tr{break-inside:avoid}
           <h2 id="report-sales-h">รายงานภาษีขาย</h2>
           <span id="reportSalesRange">—</span>
         </div>
+        <p class="hint" id="reportSalesPickHint" style="margin:0 0 10px">ติ๊กออกรายการที่ไม่ต้องการให้นับในรายงานภาษีขายชุดนี้ได้เลย (บิลจะยังอยู่ในประวัติเอกสารตามปกติ แค่ไม่ถูกนับในรายงาน/PDF/CSV ชุดนี้)</p>
+        <div id="reportSalesPicker" class="no-print history" style="margin-bottom:16px"></div>
         <div class="a4-frame" id="reportSalesFrame"><article class="sheet bill" id="reportSalesDoc"></article></div>
         <div class="actions" style="margin-top:14px">
           <button class="btn primary" id="report-pdf-sales" type="button">ดาวน์โหลด / พิมพ์ PDF</button>
@@ -2915,6 +2917,21 @@ function bahtText(value) {
       .slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
     return list.map(p => ({date: p.date, no: p.invoiceNo, name: p.vendor, amount: num(p.amount), note: p.note}));
   }
+  // ช่องติ๊กเลือก/ตัดรายการบิลออกจากรายงานภาษีขาย โดยตรงในหน้ารายงาน (ไม่ต้องย้อนไปหน้าประวัติเอกสาร)
+  // ใช้ฟิลด์ excludeTax เดียวกับที่บันทึกในตัวบิลเอง แค่ย้ายจุดควบคุมมาไว้หน้ารายงานตามที่ขอ
+  function renderReportSalesPicker() {
+    const el = $('reportSalesPicker'); if (!el) return;
+    const sel = $('reportMonth') ? $('reportMonth').value : '';
+    const list = store.get('bs_bills', []).filter(b => !sel || monthKey(b.date) === sel)
+      .slice().sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.no).localeCompare(String(b.no)));
+    if (!list.length) { el.innerHTML = ''; return; }
+    el.innerHTML = '<ul>' + list.map(b =>
+      '<li data-id="' + esc(b.id) + '"><input type="checkbox" class="report-pick-chk hist-chk" data-id="' + esc(b.id) + '"' + (b.excludeTax ? '' : ' checked') + ' aria-label="นับบิล ' + esc(b.no) + ' ในรายงานนี้">' +
+      '<div class="meta"><b>' + esc(b.no) + '</b><small>' + esc(thDate(b.date)) + ' · ' + esc(b.cName || 'ไม่ระบุชื่อลูกค้า') + '</small></div>' +
+      '<span class="amt">' + money(b.total || 0) + ' บาท</span>' +
+      (b.excludeTax ? '<span class="status-pill taxoff">ไม่รวมภาษี</span>' : '') +
+      '</li>').join('') + '</ul>';
+  }
   // พรีวิวรายงานภาษีซื้อ-ขาย ในรูปแบบเอกสารเหมือนใบกำกับภาษี (หัวกระดาษ/โลโก้ร้าน + ตารางตามแบบฟอร์มที่ใช้ยื่นสรรพากร)
   function renderReportDocHTML(kind) {
     const isS = kind === 'sales';
@@ -2984,6 +3001,7 @@ function bahtText(value) {
         : 'ยังไม่มีรายการขาย/ซื้อที่บันทึกไว้';
     }
 
+    renderReportSalesPicker();
     renderReportDocHTML('sales');
     fitFrame('reportSalesFrame', 'reportSalesDoc');
 
