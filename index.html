@@ -451,6 +451,7 @@ td.dname small{color:var(--muted);font-size:12px}
 td.damt{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
 .status-pill.purch{background:var(--mat);color:var(--muted)}
 .status-pill.billdone{background:#e6f6ea;color:#1a6b3a}
+.status-pill.taxoff{background:var(--mat);color:var(--muted);cursor:default}
 .dash-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:20px 0}
 .dash-tile.warn-tile{background:var(--warn-bg);border-color:var(--warn-bg)}
 .dash-tile.warn-tile .dash-tile-label{color:var(--warn-ink);opacity:.85}
@@ -1330,6 +1331,7 @@ tr{break-inside:avoid}
               </div>
               <p class="hint" id="vatHint" style="margin:0">คำนวณ VAT หลังหักส่วนลด</p>
               <label class="f"><span>หมายเหตุ</span><textarea id="note" placeholder="เช่น เงื่อนไขการชำระเงิน วันรับงาน"></textarea></label>
+              <label class="hist-selall" style="margin:4px 0 0"><input type="checkbox" id="excludeTax"> <span>ไม่นับบิลนี้ในรายงานภาษีขาย (เก็บบิลไว้ตามปกติ แค่ไม่รวมยอด/ไม่แสดงในรายงานภาษีขาย)</span></label>
             </div>
             <div class="actions">
               <button class="btn primary" id="print-bill" type="button">
@@ -2383,7 +2385,8 @@ function bahtText(value) {
   function collect() {
     return {no: $('billNo').value, date: $('billDate').value, cName: $('cName').value, cPhone: $('cPhone').value,
       cAddr: $('cAddr').value, cTax: $('cTax').value, docCopy: $('docCopy').value, items: items.map(i => ({name: i.name, qty: i.qty, price: i.price})),
-      discount: $('discount').value, deposit: $('deposit').value, vatMode: $('vatMode').value, vatRate: $('vatRate').value, note: $('note').value};
+      discount: $('discount').value, deposit: $('deposit').value, vatMode: $('vatMode').value, vatRate: $('vatRate').value, note: $('note').value,
+      excludeTax: $('excludeTax').checked};
   }
   function apply(b) {
     $('billNo').value = b.no || ''; $('billDate').value = b.date || todayISO();
@@ -2391,6 +2394,7 @@ function bahtText(value) {
     items = (b.items && b.items.length) ? b.items.map(i => ({name: i.name || '', qty: i.qty, price: i.price})) : [{name: '', qty: 1, price: 0}];
     $('discount').value = b.discount || 0; $('deposit').value = b.deposit || 0;
     $('vatMode').value = b.vatMode || 'add'; $('vatRate').value = b.vatRate || 7; $('note').value = b.note || '';
+    $('excludeTax').checked = !!b.excludeTax;
     syncVat(); renderItems(); renderBill();
   }
   function syncVat() {
@@ -2445,6 +2449,7 @@ function bahtText(value) {
       '<li data-id="' + esc(b.id) + '"><input type="checkbox" class="hist-chk" data-id="' + esc(b.id) + '"' + (histSelected.has(b.id) ? ' checked' : '') + ' aria-label="เลือกเอกสาร ' + esc(b.no) + '">' +
       '<div class="meta"><b>' + esc(b.no) + '</b><small>' + esc(thDate(b.date)) + ' · ' + esc(b.cName || 'ไม่ระบุชื่อลูกค้า') + (b.createdBy ? ' · โดย ' + esc(b.createdBy) : '') + '</small></div>' +
       '<span class="amt">' + money(b.total || 0) + ' บาท</span>' +
+      (b.excludeTax ? '<span class="status-pill taxoff" title="บิลนี้ถูกตั้งไว้ไม่ให้นับในรายงานภาษีขาย ติ๊กออกได้ที่ช่อง “ไม่นับบิลนี้ในรายงานภาษีขาย” ในหน้าแก้ไข">ไม่รวมภาษี</span>' : '') +
       '<button class="status-pill ' + (b.paid ? 'billdone' : 'pending') + '" data-act="togglepaid" data-id="' + esc(b.id) + '" type="button" title="กดเพื่อสลับสถานะ">' + (b.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</button>' +
       '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
       '<button class="btn small del" data-act="del" type="button">ลบ</button></li>').join('') + '</ul>';
@@ -2887,7 +2892,8 @@ function bahtText(value) {
     return sel ? 'เดือนภาษี ' + thMonthFull(sel) : 'ทุกช่วงเวลาที่มีข้อมูล';
   }
   function reportSalesRows(sel) {
-    const list = store.get('bs_bills', []).filter(b => !sel || monthKey(b.date) === sel)
+    // บิลที่ติ๊ก "ไม่นับในรายงานภาษีขาย" ไว้ จะยังเก็บอยู่ในประวัติเอกสารตามปกติ แค่ไม่ถูกนำมารวมในรายงาน/CSV ชุดนี้
+    const list = store.get('bs_bills', []).filter(b => !sel || monthKey(b.date) === sel).filter(b => !b.excludeTax)
       .slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
     return list.map(b => { const c = billCalc(b); return {date: b.date, no: b.no, name: b.cName, tax: b.cTax, base: c.base, vat: c.vat, total: c.total}; });
   }
