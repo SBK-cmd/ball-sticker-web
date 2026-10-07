@@ -3521,6 +3521,7 @@ function bahtText(value) {
       const t = wholesaleCalc(w);
       return '<li data-id="' + esc(w.id) + '"><div class="meta"><b>' + esc(w.buyerName || 'ไม่ระบุชื่อผู้ซื้อ') + '</b><small>' + esc(thDate(w.date)) + (w.ref ? ' · ' + esc(w.ref) : '') + (w.createdBy ? ' · โดย ' + esc(w.createdBy) : '') + '</small></div>' +
       '<span class="amt">' + money(t.total) + ' บาท</span>' +
+      '<button class="status-pill ' + (w.paid ? 'billdone' : 'pending') + '" data-act="togglepaid" data-id="' + esc(w.id) + '" type="button" title="กดเพื่อสลับสถานะ">' + (w.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</button>' +
       '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
       '<button class="btn small del" data-act="del" type="button">ลบ</button></li>';
     }).join('') + '</ul>';
@@ -3532,7 +3533,8 @@ function bahtText(value) {
     const id = currentWholesaleId || ('w' + Date.now());
     const idx = list.findIndex(w => w.id === id);
     const createdBy = idx >= 0 ? list[idx].createdBy : (currentUser ? currentUser.name : '');
-    const rec = Object.assign({id, savedAt: Date.now(), createdBy}, data);
+    const paid = idx >= 0 ? !!list[idx].paid : false;
+    const rec = Object.assign({id, savedAt: Date.now(), createdBy, paid}, data);
     if (idx >= 0) list[idx] = rec; else list.push(rec);
     const wasEditing = idx >= 0;
     currentWholesaleId = rec.id;
@@ -4421,7 +4423,14 @@ function bahtText(value) {
     const btn = e.target.closest('button[data-act]'); if (!btn) return;
     const id = btn.closest('li').dataset.id;
     const list = store.get('bs_wholesale', []);
-    if (btn.dataset.act === 'open') {
+    if (btn.dataset.act === 'togglepaid') {
+      const idx2 = list.findIndex(x => x.id === id); if (idx2 < 0) return;
+      list[idx2] = Object.assign({}, list[idx2], {paid: !list[idx2].paid});
+      store.set('bs_wholesale', list);
+      cloudSave('wholesale', list[idx2]);
+      renderWholesaleHistory();
+      toast(list[idx2].paid ? 'ทำเครื่องหมายว่าชำระเงินแล้ว' : 'เปลี่ยนกลับเป็นรอชำระแล้ว');
+    } else if (btn.dataset.act === 'open') {
       const w = list.find(x => x.id === id); if (!w) return;
       currentWholesaleId = id; applyWholesale(w); renderWholesaleEditState(); showTab('wholesale');
       window.scrollTo({top: 0, behavior: 'smooth'}); toast('เปิดใบราคาส่งแล้ว แก้ไขได้เลย');
