@@ -116,24 +116,15 @@ a{color:inherit}
 .tab-dropdown button:hover{background:var(--field)}
 .tab-dropdown button[aria-selected="true"]{background:var(--field);color:var(--sticker-line)}
 .tax-sheet-backdrop{position:fixed;inset:0;background:rgba(8,14,26,.18);z-index:950}
-.tax-sheet{position:fixed;right:10px;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:960;
-  width:max-content;max-width:min(300px,calc(100vw - 20px));background:var(--surface);
-  border:1px solid var(--line);border-radius:18px;box-shadow:0 14px 36px -14px rgba(8,14,26,.5);
-  padding:10px 6px;display:flex;flex-direction:column;gap:2px;transform-origin:bottom right}
-.tax-sheet-handle{display:none}
-.tax-sheet-title{font:700 15px/1.3 'Prompt','Sarabun',sans-serif;color:var(--ink);padding:2px 8px 6px}
-.tax-sheet-item{display:flex;align-items:center;gap:10px;width:100%;padding:7px 8px;border-radius:12px;border:0;
-  background:transparent;color:var(--ink);text-align:left;cursor:pointer;font-family:'Sarabun','Noto Sans Thai',system-ui,sans-serif;
+.tax-sheet{position:fixed;left:10px;right:10px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:960;
+  display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.tax-sheet-item{display:inline-flex;align-items:center;padding:8px 14px;border-radius:999px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap;
+  font:600 13px/1.2 'Sarabun','Noto Sans Thai',system-ui,sans-serif;box-shadow:var(--shadow-2);
   -webkit-tap-highlight-color:transparent}
 .tax-sheet-item:active{background:var(--field)}
-.tax-sheet-item:focus-visible{outline:2px solid var(--blue-ink);outline-offset:-2px}
-.tax-sheet-ico{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--field);color:var(--muted)}
-.tax-sheet-ico svg{width:18px;height:18px}
-.tax-sheet-text{display:flex;flex-direction:column;gap:2px;min-width:0}
-.tax-sheet-name{font-size:14px;font-weight:600;line-height:1.3}
-.tax-sheet-desc{font-size:12px;line-height:1.4;color:var(--muted)}
-.tax-sheet-item.active .tax-sheet-ico{background:color-mix(in srgb,var(--sticker) 26%,transparent);color:var(--blue-ink)}
-.tax-sheet-item.active .tax-sheet-name{font-weight:700}
+.tax-sheet-item:focus-visible{outline:2px solid var(--blue-ink);outline-offset:2px}
+.tax-sheet-item.active{background:var(--blue-bg);color:var(--blue-ink);border-color:transparent;font-weight:700}
 
 /* ---------- บัญชีผู้ใช้งาน (user chip) ---------- */
 .user-chip{position:relative;flex:none;margin-left:8px}
@@ -1117,28 +1108,11 @@ tr{break-inside:avoid}
 
   <div class="tax-sheet-backdrop no-print" id="taxSheetBackdrop" hidden></div>
   <div class="tax-sheet no-print" id="taxSheet" role="menu" aria-label="เมนูภาษี" hidden>
-    <div class="tax-sheet-handle"></div>
-    <div class="tax-sheet-title">ภาษีและรายงาน</div>
-    <button type="button" class="tax-sheet-item" data-tab="vat">
-      <span class="tax-sheet-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="8" y1="16" x2="16" y2="8"></line><circle cx="8.5" cy="8.5" r="1"></circle><circle cx="15.5" cy="15.5" r="1"></circle></svg></span>
-      <span class="tax-sheet-text"><span class="tax-sheet-name">คำนวณ VAT</span><span class="tax-sheet-desc">คิด VAT จากยอดเงินที่กรอก</span></span>
-    </button>
-    <button type="button" class="tax-sheet-item" data-tab="bill">
-      <span class="tax-sheet-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"></path><line x1="9" y1="8" x2="15" y2="8"></line><line x1="9" y1="12" x2="15" y2="12"></line></svg></span>
-      <span class="tax-sheet-text"><span class="tax-sheet-name">ใบเสร็จ / ใบกำกับภาษี</span><span class="tax-sheet-desc">ออกใบเสร็จหรือใบกำกับภาษีให้ลูกค้า</span></span>
-    </button>
-    <button type="button" class="tax-sheet-item" data-tab="purchase">
-      <span class="tax-sheet-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7L6 7z"></path><path d="M9 7a3 3 0 0 1 6 0"></path></svg></span>
-      <span class="tax-sheet-text"><span class="tax-sheet-name">ภาษีซื้อ</span><span class="tax-sheet-desc">บันทึกใบกำกับภาษีซื้อจากรูปหรือไฟล์</span></span>
-    </button>
-    <button type="button" class="tax-sheet-item" data-tab="dash">
-      <span class="tax-sheet-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="20" x2="5" y2="12"></line><line x1="12" y1="20" x2="12" y2="6"></line><line x1="19" y1="20" x2="19" y2="15"></line></svg></span>
-      <span class="tax-sheet-text"><span class="tax-sheet-name">แดชบอร์ด</span><span class="tax-sheet-desc">รวมยอดขายและภาษีขายจากบิลที่ออก</span></span>
-    </button>
-    <button type="button" class="tax-sheet-item" data-tab="report">
-      <span class="tax-sheet-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14H7V3z"></path><path d="M14 3v4h4"></path><line x1="9.5" y1="12" x2="14.5" y2="12"></line><line x1="9.5" y1="15.5" x2="14.5" y2="15.5"></line></svg></span>
-      <span class="tax-sheet-text"><span class="tax-sheet-name">รายงานภาษี</span><span class="tax-sheet-desc">รายงานภาษีขายและภาษีซื้อ</span></span>
-    </button>
+    <button type="button" class="tax-sheet-item" data-tab="vat">คำนวณ VAT</button>
+    <button type="button" class="tax-sheet-item" data-tab="bill">ใบเสร็จ / ใบกำกับภาษี</button>
+    <button type="button" class="tax-sheet-item" data-tab="purchase">ภาษีซื้อ</button>
+    <button type="button" class="tax-sheet-item" data-tab="dash">แดชบอร์ด</button>
+    <button type="button" class="tax-sheet-item" data-tab="report">รายงานภาษี</button>
   </div>
 
   <main>
