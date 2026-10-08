@@ -1544,7 +1544,7 @@ tr{break-inside:avoid}
                 <label class="f"><span>วันที่ซื้อ</span><div class="in"><input type="date" id="purchDate" class="txt"></div></label>
                 <label class="f"><span>ยอดภาษีซื้อ (VAT)</span><div class="in"><input type="number" inputmode="decimal" step="any" min="0" id="purchVat" placeholder="0.00"></div></label>
               </div>
-              <label class="f"><span>ร้านค้า / ผู้ขาย</span><div class="in"><input type="text" id="purchVendor" class="txt" placeholder="เช่น ร้านวัสดุการพิมพ์ ABC"></div></label>
+              <label class="f"><span>ร้านค้า / ผู้ขาย</span><div class="in"><input type="text" id="purchVendor" class="txt" autocomplete="off" list="vendorNames" placeholder="เช่น ร้านวัสดุการพิมพ์ ABC"></div></label>
               <div class="row2">
                 <label class="f"><span>เลขที่ใบกำกับภาษี (ถ้ามี)</span><div class="in"><input type="text" id="purchInvoiceNo" class="txt" placeholder="เช่น INV-00123"></div></label>
                 <label class="f"><span>เลขผู้เสียภาษีผู้ขาย (ถ้ามี)</span><div class="in"><input type="text" id="purchVendorTax" class="txt" inputmode="numeric" placeholder="13 หลัก"></div></label>
@@ -2132,20 +2132,21 @@ function bahtText(value) {
     for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
     return 'c' + Math.abs(h).toString(36) + '_' + s.length;
   }
-  function upsertCustomer(name, phone, addr) {
+  function upsertCustomer(name, phone, addr, tax) {
     const n = String(name || '').trim();
     if (!n) return;
     const list = store.get('bs_customers', []);
     const idx = list.findIndex(c => String(c.name || '').trim() === n);
-    const p = String(phone || '').trim(), a = String(addr || '').trim();
+    const p = String(phone || '').trim(), a = String(addr || '').trim(), tx = String(tax || '').trim();
     let rec;
     if (idx >= 0) {
       rec = Object.assign({}, list[idx], {name: n, lastUsed: Date.now()});
       if (p) rec.phone = p;
       if (a) rec.addr = a;
+      if (tx) rec.tax = tx;
       list[idx] = rec;
     } else {
-      rec = {name: n, phone: p, addr: a, lastUsed: Date.now()};
+      rec = {name: n, phone: p, addr: a, tax: tx, lastUsed: Date.now()};
       list.push(rec);
     }
     store.set('bs_customers', list);
@@ -2161,15 +2162,67 @@ function bahtText(value) {
     const n = String(name || '').trim(); if (!n) return null;
     return store.get('bs_customers', []).find(c => String(c.name || '').trim() === n) || null;
   }
-  function wireCustomerAutofill(nameId, phoneId, addrId, renderFn) {
+  function wireCustomerAutofill(nameId, phoneId, addrId, taxId, renderFn) {
     const nameEl = $(nameId); if (!nameEl) return;
     const fill = () => {
       const c = findCustomer(nameEl.value);
       if (!c) return;
       let changed = false;
-      const phoneEl = $(phoneId), addrEl = $(addrId);
+      const phoneEl = $(phoneId), addrEl = $(addrId), taxEl = taxId ? $(taxId) : null;
       if (phoneEl && !phoneEl.value.trim() && c.phone) { phoneEl.value = c.phone; changed = true; }
       if (addrEl && !addrEl.value.trim() && c.addr) { addrEl.value = c.addr; changed = true; }
+      if (taxEl && !taxEl.value.trim() && c.tax) { taxEl.value = c.tax; changed = true; }
+      if (changed && renderFn) renderFn();
+    };
+    nameEl.addEventListener('input', fill);
+    nameEl.addEventListener('change', fill);
+    nameEl.addEventListener('blur', fill);
+  }
+
+  /* ---------------- ฐานข้อมูลร้านค้า/ผู้ขาย (ฝั่งภาษีซื้อ) ใช้ autofill เลขผู้เสียภาษีผู้ขาย เวลาพิมพ์ชื่อร้านซ้ำ ----------------
+     เก็บเป็น bs_vendors: [{name, tax, lastUsed}] คีย์ด้วยชื่อ (ตัด space หัวท้าย) ซิงก์ขึ้นคลาวด์ เหมือนฐานข้อมูลลูกค้า */
+  function vendorCloudId(name) {
+    const s = String(name).trim();
+    let h = 0;
+    for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+    return 'v' + Math.abs(h).toString(36) + '_' + s.length;
+  }
+  function upsertVendor(name, tax) {
+    const n = String(name || '').trim();
+    if (!n) return;
+    const list = store.get('bs_vendors', []);
+    const idx = list.findIndex(v => String(v.name || '').trim() === n);
+    const tx = String(tax || '').trim();
+    let rec;
+    if (idx >= 0) {
+      rec = Object.assign({}, list[idx], {name: n, lastUsed: Date.now()});
+      if (tx) rec.tax = tx;
+      list[idx] = rec;
+    } else {
+      rec = {name: n, tax: tx, lastUsed: Date.now()};
+      list.push(rec);
+    }
+    store.set('bs_vendors', list);
+    cloudSave('vendors', Object.assign({id: vendorCloudId(n)}, rec));
+    renderVendorDatalist();
+  }
+  function renderVendorDatalist() {
+    const dl = $('vendorNames'); if (!dl) return;
+    const list = store.get('bs_vendors', []).slice().sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0));
+    dl.innerHTML = list.map(v => '<option value="' + esc(v.name) + '">').join('');
+  }
+  function findVendor(name) {
+    const n = String(name || '').trim(); if (!n) return null;
+    return store.get('bs_vendors', []).find(v => String(v.name || '').trim() === n) || null;
+  }
+  function wireVendorAutofill(nameId, taxId, renderFn) {
+    const nameEl = $(nameId); if (!nameEl) return;
+    const fill = () => {
+      const v = findVendor(nameEl.value);
+      if (!v) return;
+      let changed = false;
+      const taxEl = taxId ? $(taxId) : null;
+      if (taxEl && !taxEl.value.trim() && v.tax) { taxEl.value = v.tax; changed = true; }
       if (changed && renderFn) renderFn();
     };
     nameEl.addEventListener('input', fill);
@@ -2609,7 +2662,7 @@ function bahtText(value) {
     currentQuoteId = rec.id;
     const persisted = store.set('bs_quotes', list);
     cloudSave('quotes', rec);
-    upsertCustomer(rec.cName, rec.cPhone, rec.cAddr);
+    upsertCustomer(rec.cName, rec.cPhone, rec.cAddr, rec.cTax);
     renderQuoteHistory(); renderQuoteEditState();
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับเอกสาร ' : 'บันทึกเอกสาร ') + rec.no + ' แล้ว'
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
@@ -3056,7 +3109,7 @@ function bahtText(value) {
     currentId = rec.id;
     const persisted = store.set('bs_bills', list);
     cloudSave('bills', rec);
-    upsertCustomer(rec.cName, rec.cPhone, rec.cAddr);
+    upsertCustomer(rec.cName, rec.cPhone, rec.cAddr, rec.cTax);
     renderHistory(); renderEditState();
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับเอกสาร ' : 'บันทึกเอกสาร ') + rec.no + ' แล้ว'
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
@@ -3535,6 +3588,7 @@ function bahtText(value) {
     currentPurchaseId = rec.id;
     const persisted = store.set('bs_purchases', list);
     cloudSave('purchases', rec);
+    upsertVendor(rec.vendor, rec.vendorTax);
     renderPurchHistory(); renderPurchEditState();
     syncRecordPhotosToCloud('bs_purchases', 'purchases', rec.id, 'photo', renderPurchHistory);
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับรายการแล้ว' : 'บันทึกรายการภาษีซื้อแล้ว')
@@ -5263,15 +5317,18 @@ function bahtText(value) {
   newQuote(); renderQuoteHistory();
   newPurchase(); renderPurchHistory();
   renderCustomerDatalist();
-  wireCustomerAutofill('cName', 'cPhone', 'cAddr', renderBill);
-  wireCustomerAutofill('jName', 'jPhone', 'jAddr', renderJob);
-  wireCustomerAutofill('qName', 'qPhone', 'qAddr', renderQuote);
+  renderVendorDatalist();
+  wireCustomerAutofill('cName', 'cPhone', 'cAddr', 'cTax', renderBill);
+  wireCustomerAutofill('jName', 'jPhone', 'jAddr', null, renderJob);
+  wireCustomerAutofill('qName', 'qPhone', 'qAddr', 'qTax', renderQuote);
+  wireVendorAutofill('purchVendor', 'purchVendorTax', null);
   watchCloud('bills', 'bs_bills', renderHistory);
   watchCloud('jobs', 'bs_jobs', renderJobHistory);
   watchCloud('wholesale', 'bs_wholesale', renderWholesaleHistory);
   watchCloud('quotes', 'bs_quotes', renderQuoteHistory);
   watchCloud('purchases', 'bs_purchases', renderPurchHistory);
   watchCloud('customers', 'bs_customers', renderCustomerDatalist);
+  watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
   $('dashMonth').addEventListener('change', renderDash);
   $('dash-all').addEventListener('click', () => { $('dashMonth').value = ''; renderDash(); });
   $('dash-go-report').addEventListener('click', () => { $('reportMonth').value = $('dashMonth').value; showTab('report'); });
@@ -5290,5 +5347,6 @@ function bahtText(value) {
 })();
 </script>
 <datalist id="customerNames"></datalist>
+<datalist id="vendorNames"></datalist>
 </body>
 </html>
