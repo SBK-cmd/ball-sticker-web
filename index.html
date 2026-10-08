@@ -345,7 +345,9 @@ button.status-pill:active{filter:brightness(0.9)}
 .status-pill.pending{background:var(--warn-bg);color:var(--warn-ink)}
 .status-pill.printed{background:var(--blue-bg);color:var(--blue-ink)}
 .status-pill.shipped{background:#e6f6ea;color:#1a6b3a}
+.status-pill.trk-issue{background:#fdeaea;color:#b3261e}
 .job-status-select{font-size:12.5px;font-weight:700;padding:4px 8px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--field);cursor:pointer}
+.track-status-select{font-size:12.5px;font-weight:700;padding:4px 8px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--field);cursor:pointer}
 .ocr-actions{display:flex;gap:8px;flex-wrap:wrap}
 .ocr-actions .btn[disabled]{opacity:.65;cursor:default}
 .history li .thumb{width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid var(--line);flex:none}
@@ -986,6 +988,7 @@ tr{break-inside:avoid}
     </button>
     <nav class="tabs" role="tablist" aria-label="เมนูหลัก">
       <button role="tab" id="tab-calc" data-tab="calc" aria-selected="true" aria-controls="panel-calc">คำนวณสติ๊กเกอร์</button>
+      <button role="tab" id="tab-vat" data-tab="vat" aria-selected="false" aria-controls="panel-vat">คำนวณ VAT</button>
       <button role="tab" id="tab-confirm" data-tab="confirm" aria-selected="false" aria-controls="panel-confirm">ใบคอนเฟิร์มงาน</button>
       <button role="tab" id="tab-wholesale" data-tab="wholesale" aria-selected="false" aria-controls="panel-wholesale">ใบราคาส่ง</button>
       <button role="tab" id="tab-quote" data-tab="quote" aria-selected="false" aria-controls="panel-quote">ใบเสนอราคา</button>
@@ -1084,6 +1087,10 @@ tr{break-inside:avoid}
   <div class="tax-sheet-backdrop no-print" id="taxSheetBackdrop" hidden></div>
   <div class="tax-sheet no-print" id="taxSheet" role="menu" aria-label="เมนูภาษี" hidden>
     <div class="tax-sheet-handle"></div>
+    <button type="button" class="tax-sheet-item" data-tab="vat">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="8" y1="16" x2="16" y2="8"></line><circle cx="8.5" cy="8.5" r="1"></circle><circle cx="15.5" cy="15.5" r="1"></circle></svg>
+      <span>คำนวณ VAT</span>
+    </button>
     <button type="button" class="tax-sheet-item" data-tab="bill">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"></path><line x1="9" y1="8" x2="15" y2="8"></line><line x1="9" y1="12" x2="15" y2="12"></line></svg>
       <span>ใบเสร็จ / ใบกำกับภาษี</span>
@@ -1177,6 +1184,50 @@ tr{break-inside:avoid}
       </div>
 
       <article class="sheet print-only" id="sheet-calc" aria-hidden="true"></article>
+    </section>
+
+    <!-- ================= คำนวณ VAT ================= -->
+    <section id="panel-vat" class="panel" role="tabpanel" aria-labelledby="tab-vat">
+      <div class="page-head">
+        <h1>คำนวณภาษีมูลค่าเพิ่ม.</h1>
+        <p>ใส่ยอดเงิน เลือกว่าจะ “บวก VAT” หรือ “ถอด VAT” ระบบคำนวณให้ทันที อัตราเริ่มต้น 7% แก้ไขได้</p>
+      </div>
+      <div class="calc-grid">
+        <div class="card">
+          <fieldset>
+            <legend>ยอดเงิน</legend>
+            <label class="f"><span>จำนวนเงิน</span><div class="in"><input id="vatAmount" type="number" inputmode="decimal" step="any" min="0" value="0"><em>บาท</em></div></label>
+          </fieldset>
+          <fieldset>
+            <legend>รูปแบบ</legend>
+            <label class="f"><span>ยอดเงินที่กรอกคือ</span>
+              <select id="vatMode">
+                <option value="add">ราคายังไม่รวม VAT (ต้องการบวก VAT เพิ่ม)</option>
+                <option value="extract">ราคารวม VAT แล้ว (ต้องการถอด VAT ออกมาดู)</option>
+              </select>
+            </label>
+          </fieldset>
+          <fieldset style="margin-bottom:0">
+            <legend>อัตราภาษี</legend>
+            <label class="f"><span>VAT</span><div class="in"><input id="vatRateCalc" type="number" inputmode="decimal" step="any" min="0" value="7"><em>%</em></div></label>
+            <p class="hint">ค่าเริ่มต้น 7% ตามอัตรา VAT ปัจจุบันของไทย แก้เป็นอัตราอื่นได้ถ้าต้องการ</p>
+          </fieldset>
+        </div>
+
+        <div class="right">
+          <div class="result" aria-live="polite">
+            <div class="r-label">ราคารวม VAT (ยอดที่เรียกเก็บจริง)</div>
+            <div class="r-num"><span id="vatTotalOut">0.00</span><span>บาท</span></div>
+            <dl class="r-meta">
+              <div><dt>ราคาก่อน VAT</dt><dd id="vatBaseOut">0.00 บาท</dd></div>
+              <div><dt>ภาษีมูลค่าเพิ่ม (VAT)</dt><dd id="vatAmountOut">0.00 บาท</dd></div>
+            </dl>
+            <div class="actions" style="margin-top:14px">
+              <button class="btn" id="vat-copy" type="button">📋 คัดลอกผลลัพธ์</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ================= ใบคอนเฟิร์มงาน ================= -->
@@ -2399,6 +2450,37 @@ function bahtText(value) {
     $('pw').readOnly = $('ph').readOnly = !custom;
     if (!custom) { $('pw').value = PAPERS[v].w; $('ph').value = PAPERS[v].h; }
     renderCalc();
+  }
+
+  /* ---------------- หน้าคำนวณ VAT ---------------- */
+  function vatCalcValues() {
+    const amt = Math.max(0, num($('vatAmount').value));
+    const rate = Math.max(0, num($('vatRateCalc').value));
+    const mode = $('vatMode').value;
+    let base, vat, total;
+    if (mode === 'extract') {
+      total = amt;
+      vat = round2(total * rate / (100 + rate));
+      base = round2(total - vat);
+    } else {
+      base = amt;
+      vat = round2(base * rate / 100);
+      total = round2(base + vat);
+    }
+    return {base, vat, total, rate};
+  }
+  function renderVatCalc() {
+    const r = vatCalcValues();
+    $('vatTotalOut').textContent = money(r.total);
+    $('vatBaseOut').textContent = money(r.base) + ' บาท';
+    $('vatAmountOut').textContent = money(r.vat) + ' บาท';
+  }
+  function copyVatResult() {
+    const r = vatCalcValues();
+    const text = 'ราคาก่อน VAT: ' + money(r.base) + ' บาท\n' +
+      'VAT ' + fmt(r.rate) + '%: ' + money(r.vat) + ' บาท\n' +
+      'ราคารวม VAT: ' + money(r.total) + ' บาท';
+    navigator.clipboard.writeText(text).then(() => toast('คัดลอกผลลัพธ์แล้ว')).catch(() => toast('คัดลอกอัตโนมัติไม่ได้'));
   }
 
   /* ---------------- หน้าเปิดบิล ---------------- */
@@ -3654,6 +3736,21 @@ function bahtText(value) {
 
   /* ---------------- ติดตามพัสดุ (สร้างข้อความแจ้งลูกค้า) ----------------
      เก็บเฉพาะในเครื่อง (bs_tracking) ไม่ส่งขึ้นคลาวด์/Google Sheets ตามรูปแบบเครื่องมือเดิมที่รวมเข้ามา */
+  // สถานะพัสดุอัปเดตเองโดยร้าน (ไม่มี API เชื่อมขนส่งจริง) ใช้ dropdown ปรับสถานะในประวัติแต่ละรายการ คล้ายสถานะใบคอนเฟิร์มงาน
+  const TRACK_STATUS = {
+    transit: {label: 'กำลังจัดส่ง', cls: 'printed'},
+    delivered: {label: 'ถึงลูกค้าแล้ว', cls: 'shipped'},
+    pending: {label: 'รอดำเนินการ', cls: 'pending'},
+    issue: {label: 'มีปัญหา/ตีกลับ', cls: 'trk-issue'}
+  };
+  function updateTrackingStatus(id, status) {
+    const list = store.get('bs_tracking', []);
+    const idx = list.findIndex(t => t.id === id); if (idx < 0) return;
+    list[idx] = Object.assign({}, list[idx], {status});
+    store.set('bs_tracking', list);
+    renderTrackingHistory();
+    toast('อัปเดตสถานะเป็น "' + (TRACK_STATUS[status] ? TRACK_STATUS[status].label : status) + '" แล้ว');
+  }
   const TRACK_URL = {
     'Flash Express': code => 'https://www.flashexpress.com/fle/tracking?se=' + encodeURIComponent(code),
     'Kerry Express': code => 'https://th.kerryexpress.com/th/track/?track=' + encodeURIComponent(code),
@@ -3690,7 +3787,7 @@ function bahtText(value) {
     const msg = buildTrackingMessage(code, carrier, customer);
     $('trackMessage').value = msg;
     const list = store.get('bs_tracking', []);
-    const rec = {id: 't' + Date.now(), code, carrier, customer, message: msg, savedAt: Date.now()};
+    const rec = {id: 't' + Date.now(), code, carrier, customer, message: msg, status: 'transit', savedAt: Date.now()};
     list.unshift(rec);
     store.set('bs_tracking', list);
     if (customer) upsertCustomer(customer, '', '');
@@ -3717,18 +3814,28 @@ function bahtText(value) {
     $('trackHistCount').textContent = list.length;
     if (!list.length) { $('trackHistory').innerHTML = '<p class="empty">ยังไม่มีประวัติ สร้างข้อความแรกได้เลย</p>'; return; }
     if (!shown.length) { $('trackHistory').innerHTML = '<p class="empty">ไม่พบรายการที่ค้นหา</p>'; return; }
-    $('trackHistory').innerHTML = '<ul>' + shown.map(t =>
-      '<li data-id="' + esc(t.id) + '"><div class="meta"><b>' + esc(t.code) + '</b><small>' + esc(t.carrier) + (t.customer ? ' · ' + esc(t.customer) : '') + ' · ' + esc(new Date(t.savedAt).toLocaleString('th-TH')) + '</small></div>' +
+    $('trackHistory').innerHTML = '<ul>' + shown.map(t => {
+      const st = t.status || 'transit';
+      const cls = (TRACK_STATUS[st] || TRACK_STATUS.transit).cls;
+      return '<li data-id="' + esc(t.id) + '"><div class="meta"><b>' + esc(t.code) + '</b><small>' + esc(t.carrier) + (t.customer ? ' · ' + esc(t.customer) : '') + ' · ' + esc(new Date(t.savedAt).toLocaleString('th-TH')) + '</small></div>' +
+      '<select class="track-status-select status-pill ' + cls + '" data-id="' + esc(t.id) + '" aria-label="สถานะพัสดุ">' +
+        Object.keys(TRACK_STATUS).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + TRACK_STATUS[k].label + '</option>').join('') +
+      '</select>' +
+      (trackingLink(t.carrier, t.code) ? '<button class="btn small primary" data-act="checklive" type="button">🔍 เช็กสถานะจริง</button>' : '') +
       '<button class="btn small" data-act="copy" type="button">คัดลอก</button>' +
       '<button class="btn small edit" data-act="use" type="button">เปิดดู</button>' +
-      '<button class="btn small del" data-act="del" type="button">ลบ</button></li>').join('') + '</ul>';
+      '<button class="btn small del" data-act="del" type="button">ลบ</button></li>';
+    }).join('') + '</ul>';
   }
   $('trackHistory').addEventListener('click', e => {
     const btn = e.target.closest('button[data-act]'); if (!btn) return;
     const li = btn.closest('li'); const id = li.dataset.id;
     const list = store.get('bs_tracking', []);
     const rec = list.find(t => t.id === id); if (!rec) return;
-    if (btn.dataset.act === 'copy') {
+    if (btn.dataset.act === 'checklive') {
+      const link = trackingLink(rec.carrier, rec.code);
+      if (link) window.open(link, '_blank', 'noopener');
+    } else if (btn.dataset.act === 'copy') {
       navigator.clipboard.writeText(rec.message).then(() => toast('คัดลอกข้อความแล้ว')).catch(() => toast('คัดลอกอัตโนมัติไม่ได้'));
     } else if (btn.dataset.act === 'use') {
       $('trackCode').value = rec.code; $('trackCarrier').value = rec.carrier; $('trackCustomer').value = rec.customer || '';
@@ -3745,6 +3852,10 @@ function bahtText(value) {
       renderTrackingHistory();
       toast('ลบรายการแล้ว');
     }
+  });
+  $('trackHistory').addEventListener('change', e => {
+    const sel = e.target.closest('select.track-status-select'); if (!sel) return;
+    updateTrackingStatus(sel.dataset.id, sel.value);
   });
   $('trackHistSearch').addEventListener('input', renderTrackingHistory);
   $('track-make').addEventListener('click', saveTracking);
@@ -4844,7 +4955,7 @@ function bahtText(value) {
   }
   function showTab(name) {
     if (!isOwner && OWNER_ONLY_TABS.indexOf(name) >= 0) name = 'calc'; // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้หรือ URL
-    ['calc', 'confirm', 'bill', 'wholesale', 'quote', 'track', 'purchase', 'dash', 'report'].forEach(n => {
+    ['calc', 'vat', 'confirm', 'bill', 'wholesale', 'quote', 'track', 'purchase', 'dash', 'report'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
@@ -4860,6 +4971,7 @@ function bahtText(value) {
     if (name === 'wholesale') fitWholesale();
     if (name === 'quote') fitQuote();
     if (name === 'track') renderTrackingHistory();
+    if (name === 'vat') renderVatCalc();
     if (name === 'dash') renderDash();
     if (name === 'report') renderReport();
     const activeTab = isTax ? $('taxTrigger') : $('tab-' + name);
@@ -4887,6 +4999,9 @@ function bahtText(value) {
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTaxMenus(); });
 
   ['sw', 'sh', 'gap', 'margin', 'pw', 'ph'].forEach(id => $(id).addEventListener('input', renderCalc));
+  ['vatAmount', 'vatRateCalc'].forEach(id => $(id).addEventListener('input', renderVatCalc));
+  $('vatMode').addEventListener('change', renderVatCalc);
+  $('vat-copy').addEventListener('click', copyVatResult);
   $('paper').addEventListener('change', onPaperChange);
   $('print-calc').addEventListener('click', () => {
     if (inFrame() || isMobile()) { exportDoc('calc', $('print-calc'), {forPrint: true}); return; }
@@ -5481,6 +5596,7 @@ function bahtText(value) {
   /* ---------------- init ---------------- */
   bindShop(); renderFooter();
   onPaperChange();
+  renderVatCalc();
   newBill(); renderHistory();
   newJob(); renderJobHistory();
   newWholesale(); renderWholesaleHistory();
