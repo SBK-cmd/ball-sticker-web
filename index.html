@@ -35,6 +35,7 @@ if ('serviceWorker' in navigator) {
      หรือถูกบล็อกสคริปต์ภายนอก แอปจะสลับไปใช้เฉพาะข้อมูลในเครื่องนี้ (localStorage) แทนโดยอัตโนมัติ) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
 <!-- Tesseract.js (สแกนอ่านตัวหนังสือจากภาพใบกำกับภาษีซื้อ แล้วกรอกข้อมูลให้อัตโนมัติ — ต้องใช้อินเทอร์เน็ต
      ทำงานได้เต็มรูปแบบเฉพาะบนเว็บที่เผยแพร่จริงเท่านั้น หน้าตัวอย่างอาจบล็อกการโหลดไฟล์เสริมของไลบรารีนี้) -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js"></script>
@@ -746,19 +747,37 @@ tr{break-inside:avoid}
     if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
       var fbApp = (firebase.apps && firebase.apps.length) ? firebase.apps[0] : firebase.initializeApp(firebaseConfig);
       authDb = firebase.firestore(fbApp);
+      // เข้าสู่ระบบ Firebase แบบไม่ระบุตัวตน (anonymous) ก่อนอ่าน/เขียนข้อมูล — จำเป็นสำหรับกฎความปลอดภัยที่ต้องล็อกอินก่อน
+      // ใช้ promise กลางตัวเดียว (window.__bsAuthReady) ให้สคริปต์ส่วนซิงก์ข้อมูลอื่นๆ ในหน้านี้รอได้ด้วย
+      if (!window.__bsAuthReady) {
+        window.__bsAuthReady = new Promise(function (resolve) {
+          var settled = false;
+          var done = function () { if (!settled) { settled = true; resolve(); } };
+          try {
+            var fbAuth = firebase.auth(fbApp);
+            fbAuth.onAuthStateChanged(function (user) { if (user) done(); });
+            fbAuth.signInAnonymously().catch(function (e) { console.error('firebase anon sign-in failed', e); done(); });
+          } catch (e) { done(); }
+          setTimeout(done, 7000); // กันค้าง ถ้าล็อกอินไม่ได้ (เช่นยังไม่เปิด Anonymous ใน Firebase console) ให้ไปต่อแบบไม่มีคลาวด์
+        });
+      }
     }
   } catch (e) { authDb = null; }
   var usersDocRef = authDb ? authDb.collection('bs_meta').doc('users') : null;
   function pushUsersToCloud(list) {
     if (!usersDocRef) return;
-    usersDocRef.set({ list: list, updatedAt: Date.now() }).catch(function (e) { console.error('sync users to cloud failed', e); });
+    (window.__bsAuthReady || Promise.resolve()).then(function () {
+      usersDocRef.set({ list: list, updatedAt: Date.now() }).catch(function (e) { console.error('sync users to cloud failed', e); });
+    });
   }
   // ดึงรายชื่อบัญชีล่าสุดจากคลาวด์ครั้งเดียว — คืนค่า null ถ้าใช้คลาวด์ไม่ได้/หลุดเน็ต/ช้าเกินไป (ให้ผู้เรียกใช้ fallback เอง)
   // มี timeout กันเน็ตค้าง (เช่นออฟไลน์แบบไม่มี DNS) ไม่ให้ผู้ใช้ต้องรอหน้า "กำลังตรวจสอบบัญชี..." ค้างตลอดไป
   function fetchCloudUsers() {
     if (!usersDocRef) return Promise.resolve(null);
     var timeout = new Promise(function (resolve) { setTimeout(function () { resolve(null); }, 7000); });
-    var fetchP = usersDocRef.get().then(function (doc) {
+    var fetchP = (window.__bsAuthReady || Promise.resolve()).then(function () {
+      return usersDocRef.get();
+    }).then(function (doc) {
       return doc.exists ? (doc.data().list || []) : [];
     }).catch(function () { return null; });
     return Promise.race([fetchP, timeout]);
@@ -2191,11 +2210,15 @@ function bahtText(value) {
     const hasDataUri = v => Array.isArray(v) ? v.some(p => typeof p === 'string' && p.indexOf('data:') === 0) : (typeof v === 'string' && v.indexOf('data:') === 0);
     if (hasDataUri(safeRec.photos)) delete safeRec.photos;
     if (hasDataUri(safeRec.photo)) delete safeRec.photo;
-    cloudDb.collection(col).doc(String(rec.id)).set(safeRec, {merge: true}).catch(e => console.error(col + ' save error', e));
+    (window.__bsAuthReady || Promise.resolve()).then(() => {
+      cloudDb.collection(col).doc(String(rec.id)).set(safeRec, {merge: true}).catch(e => console.error(col + ' save error', e));
+    });
   }
   function cloudDelete(col, id) {
     if (!cloudDb) return;
-    cloudDb.collection(col).doc(String(id)).delete().catch(e => console.error(col + ' delete error', e));
+    (window.__bsAuthReady || Promise.resolve()).then(() => {
+      cloudDb.collection(col).doc(String(id)).delete().catch(e => console.error(col + ' delete error', e));
+    });
   }
   // หลังบันทึกแล้ว อัปโหลดรูปที่ยังเป็น data: URI ขึ้น Cloudinary เบื้องหลัง ไม่บล็อกหน้าจอ
   // แล้วแทนที่ด้วยลิงก์ https ถาวรทั้งในเครื่อง (เบาลง ไม่กิน localStorage) และในคลาวด์ (ดูได้ทุกเครื่อง)
@@ -2218,6 +2241,7 @@ function bahtText(value) {
         store.set(key, freshList);
       }
       if (cloudDb && uploaded.some(Boolean)) {
+        await (window.__bsAuthReady || Promise.resolve());
         cloudDb.collection(cloudCol).doc(String(id)).set(field === 'photos' ? {photos: finalArr} : {photo: finalArr[0]}, {merge: true})
           .catch(e => console.error(cloudCol + ' save photo url error', e));
       }
@@ -5609,13 +5633,17 @@ function bahtText(value) {
   wireCustomerAutofill('jName', 'jPhone', 'jAddr', null, renderJob);
   wireCustomerAutofill('qName', 'qPhone', 'qAddr', 'qTax', renderQuote);
   wireVendorAutofill('purchVendor', 'purchVendorTax', null);
-  watchCloud('bills', 'bs_bills', renderHistory);
-  watchCloud('jobs', 'bs_jobs', renderJobHistory);
-  watchCloud('wholesale', 'bs_wholesale', renderWholesaleHistory);
-  watchCloud('quotes', 'bs_quotes', renderQuoteHistory);
-  watchCloud('purchases', 'bs_purchases', renderPurchHistory);
-  watchCloud('customers', 'bs_customers', renderCustomerDatalist);
-  watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
+  // รอให้เข้าสู่ระบบ Firebase แบบไม่ระบุตัวตนเสร็จก่อน (ตั้งไว้ตอนโหลดหน้า) ค่อยเริ่มฟังข้อมูลคลาวด์แบบเรียลไทม์
+  // กันไม่ให้ยิง request ไปตอนยังไม่ได้ล็อกอิน ซึ่งจะโดนกฎความปลอดภัยของ Firestore ปฏิเสธ
+  (window.__bsAuthReady || Promise.resolve()).then(function () {
+    watchCloud('bills', 'bs_bills', renderHistory);
+    watchCloud('jobs', 'bs_jobs', renderJobHistory);
+    watchCloud('wholesale', 'bs_wholesale', renderWholesaleHistory);
+    watchCloud('quotes', 'bs_quotes', renderQuoteHistory);
+    watchCloud('purchases', 'bs_purchases', renderPurchHistory);
+    watchCloud('customers', 'bs_customers', renderCustomerDatalist);
+    watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
+  });
   $('dashMonth').addEventListener('change', renderDash);
   $('dash-all').addEventListener('click', () => { $('dashMonth').value = ''; renderDash(); });
   $('dash-go-report').addEventListener('click', () => { $('reportMonth').value = $('dashMonth').value; showTab('report'); });
