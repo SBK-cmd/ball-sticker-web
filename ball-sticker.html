@@ -312,7 +312,16 @@ details.shop .fields{margin-top:12px}
 .item.job,.item-head.job{grid-template-columns:minmax(0,1fr) 72px minmax(0,1fr) 36px}
 .item.job .i-note{text-align:left}
 .item-head.job span:nth-child(3){text-align:left}
-.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+/* แถบปุ่มดำเนินการ: เป็นตารางสองคอลัมน์ ปุ่มหลักเต็มแถว ปุ่มรองคู่กัน ปุ่มเปิดใหม่เป็นลิงก์เงียบท้ายแถว */
+.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px}
+.actions .btn{width:100%;min-height:46px;padding:10px 14px;border-radius:14px;font-size:15px;box-shadow:none;line-height:1.3;text-align:center}
+.actions .btn svg{width:17px;height:17px}
+.actions .btn.primary{grid-column:1/-1;min-height:52px;font-size:16px;border-color:var(--sticker-line)}
+.actions .btn.good{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.actions .btn.good:hover{background:var(--ink);filter:brightness(1.12)}
+.actions .btn.danger{min-height:40px;font-size:14px;border-color:transparent;color:var(--muted)}
+.actions .btn.wide{grid-column:1/-1}
+.actions .btn.danger:hover{background:var(--field)}
 .actions-note{margin:12px 0 0;font-size:13.5px;color:var(--muted)}
 .preview-col h2{font-size:19px;font-weight:600;margin-bottom:12px}
 .history ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
@@ -1301,8 +1310,8 @@ tr{break-inside:avoid}
               </button>
               <button class="btn" id="pdf-job" type="button">ดาวน์โหลด PDF</button>
               <button class="btn good" id="save-job" type="button">บันทึกลงประวัติ</button>
-              <button class="btn" id="job-to-bill" type="button">ใช้ข้อมูลนี้ออกบิล →</button>
-              <button class="btn" id="job-to-wholesale" type="button">ย้ายไปใบราคาส่ง →</button>
+              <button class="btn" id="job-to-bill" type="button">ใช้ข้อมูลนี้ออกบิล</button>
+              <button class="btn" id="job-to-wholesale" type="button">ย้ายไปใบราคาส่ง</button>
               <button class="btn danger" id="new-job" type="button">เปิดใบใหม่</button>
             </div>
             <p class="actions-note">ใบนี้ไม่มีราคา ใช้ยืนยันรายละเอียดงานกับลูกค้าและแจ้งฝ่ายผลิตก่อน เมื่อพร้อมออกบิลจริง กด “ใช้ข้อมูลนี้ออกบิล” เพื่อคัดลอกชื่อลูกค้าและรายการไปที่แท็บบิล หรือกด “ย้ายไปใบราคาส่ง” เพื่อคัดลอกชื่อลูกค้าและรายการไปออกใบราคาส่งแทน</p>
@@ -1398,9 +1407,9 @@ tr{break-inside:avoid}
               </button>
               <button class="btn" id="pdf-bill" type="button">ดาวน์โหลด PDF</button>
               <button class="btn good" id="save-bill" type="button">บันทึกลงประวัติ</button>
-              <button class="btn" id="bill-to-wholesale" type="button">ย้ายไปใบราคาส่ง →</button>
+              <button class="btn" id="bill-to-wholesale" type="button">ย้ายไปใบราคาส่ง</button>
               <button class="btn danger" id="new-bill" type="button">เปิดเอกสารใหม่</button>
-              <button class="btn" id="stmt-import-btn" type="button">เปิดบิลจากสเตทเม้นธนาคาร</button>
+              <button class="btn wide" id="stmt-import-btn" type="button">เปิดบิลจากสเตทเม้นธนาคาร</button>
             </div>
             <p class="actions-note">กด “พิมพ์เอกสาร” จะสร้างไฟล์แล้วเปิดในแท็บใหม่พร้อมขึ้นหน้าต่างแสดงตัวอย่าง ถ้าไม่มีหน้าต่างพิมพ์ขึ้นเอง ให้กด Ctrl+P (Mac: Cmd+P) ในแท็บที่เปิดขึ้น หรือกดปุ่ม “เปิดไฟล์ในแท็บใหม่” ในหน้าต่างแสดงตัวอย่าง การพิมพ์หรือดาวน์โหลดอย่างเดียวไม่บันทึกประวัติ ต้องกด “บันทึกลงประวัติ” ด้วย กด “ย้ายไปใบราคาส่ง” เพื่อคัดลอกชื่อลูกค้าและรายการ (พร้อมราคา) ไปออกใบราคาส่งแยกต่างหาก</p>
           </div>
