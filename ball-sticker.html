@@ -268,6 +268,11 @@ textarea{resize:vertical;min-height:72px}
 .btn.edit:hover{filter:brightness(.96);background:var(--accent)}
 .btn.del{border-color:#e5484d;color:#c2261f;background:transparent;box-shadow:none}
 .btn.del:hover{background:#fdeeee}
+/* ปุ่ม Live: เขียวเรืองแสงเมื่อเปิด / แดงเมื่อปิด */
+.btn.live-on{background:#2fa860;border-color:#1f7a45;color:#fff;font-weight:700;animation:liveGlow 1.8s ease-in-out infinite}
+.btn.live-off{background:transparent;border-color:#e5484d;color:#d6372f;font-weight:700;box-shadow:none}
+.btn.live-off:hover{background:#fdeeee}
+@keyframes liveGlow{0%,100%{box-shadow:0 0 0 0 rgba(47,168,96,.55),0 0 8px 0 rgba(47,168,96,.35)}50%{box-shadow:0 0 0 6px rgba(47,168,96,0),0 0 16px 4px rgba(47,168,96,.5)}}
 .btn svg{width:18px;height:18px;flex:none}
 
 /* ---------- calculator ---------- */
@@ -4085,6 +4090,7 @@ function bahtText(value) {
     b.setAttribute('aria-pressed', String(trackLiveOn));
     b.textContent = trackLiveOn ? '● Live: เปิด' : '○ Live: ปิด';
     b.classList.toggle('live-on', trackLiveOn);
+    b.classList.toggle('live-off', !trackLiveOn);
   }
   function renderTrackingHistory() {
     // เรียงตามลำดับของ iship เอง (วันที่สร้างออเดอร์จริง) ถ้ามีข้อมูล ไม่งั้นใช้เวลาที่บันทึกในเครื่องแทน
