@@ -4268,7 +4268,15 @@ function bahtText(value) {
   $('track-make').addEventListener('click', saveTracking);
   $('track-new').addEventListener('click', newTracking);
   $('track-copy').addEventListener('click', copyTrackingMessage);
-  $('track-import-iship').addEventListener('click', () => importOrdersFromIship(30));
+  let trackImporting = false;
+  $('track-import-iship').addEventListener('click', async () => {
+    if (trackImporting) return;
+    // รอให้ข้อมูลจากคลาวด์โหลดเสร็จก่อน ไม่งั้นระบบจะมองไม่เห็นรายการเดิมและเพิ่มซ้ำ
+    if (cloudDb && cloudStatus !== 'on') { toast('กำลังโหลดข้อมูลจากคลาวด์ รอสักครู่แล้วกดใหม่'); return; }
+    trackImporting = true;
+    const b = $('track-import-iship'); b.disabled = true;
+    try { await importOrdersFromIship(30); } finally { trackImporting = false; b.disabled = false; }
+  });
   $('track-live-toggle').addEventListener('click', () => {
     trackLiveOn = !trackLiveOn;
     try { localStorage.setItem(TRACK_LIVE_KEY, trackLiveOn ? '1' : '0'); } catch (e) {}
@@ -4303,7 +4311,11 @@ function bahtText(value) {
     toast('กำลังรีเฟรชสถานะจาก iship...');
     Promise.all(list.map(t => fetchLiveTracking(t.code, true))).then(() => renderTrackingHistory());
   });
-  // ตรวจรายการซ้ำ (โหมดพรีวิว: แสดงผลอย่างเดียว ยังไม่ลบข้อมูลใด ๆ)
+  // หน้าพรีวิวใช้ข้อมูลในเบราว์เซอร์ชุดเดียวกับเว็บจริง จึงปิดการลบ/กู้คืนไว้ที่หน้านี้
+  const PREVIEW_ONLY = /preview\.html$/.test(location.pathname);
+  const BACKUP_PREFIX = 'bs_tracking_backup_';
+  let dedupeArmed = false;
+  // ตรวจรายการซ้ำ
   function findDuplicateTracking(list) {
     const groups = new Map();
     list.forEach(t => { const k = String(t.code || '').trim().toUpperCase(); if (!k) return; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(t); });
@@ -4326,11 +4338,85 @@ function bahtText(value) {
       : 'ไม่พบรายการซ้ำ';
     const items = groups.map(g => '<li><b>' + esc(g.code) + '</b><small>มี ' + g.total + ' แถว · จะเก็บแถวของ ' + esc(g.keep.customer || '-') + ' (บันทึกเมื่อ ' + esc(new Date(g.keep.savedAt).toLocaleString('th-TH')) + ') · จะลบ ' + g.remove.length + ' แถว</small></li>').join('');
     const box = $('trackDedupe');
-    box.innerHTML = '<div class="track-day-head"><b>ตรวจรายการซ้ำ (โหมดพรีวิว)</b></div>' +
-      '<p class="hint">ยังไม่ลบอะไรในหน้านี้ ผลนี้ใช้ดูก่อนว่าจะเก็บแถวไหนไว้</p>' +
-      '<p>' + esc(head) + '</p>' + (groups.length ? '<ul>' + items + '</ul>' : '');
+    const runBtn = groups.length
+      ? '<div class="row-actions"><button type="button" class="btn small danger" id="dedupeRun"' + (PREVIEW_ONLY ? ' disabled' : '') + '>รวมรายการซ้ำ (ลบ ' + removeN + ' แถว)</button></div>'
+      : '';
+    const restoreBtn = getTrackBackupKey()
+      ? '<div class="row-actions"><button type="button" class="btn small" id="dedupeRestore"' + (PREVIEW_ONLY ? ' disabled' : '') + '>กู้คืนข้อมูลก่อนรวมล่าสุด</button></div>'
+      : '';
+    box.innerHTML = '<div class="track-day-head"><b>ตรวจรายการซ้ำ' + (PREVIEW_ONLY ? ' (โหมดพรีวิว)' : '') + '</b></div>' +
+      (PREVIEW_ONLY ? '<p class="hint">หน้านี้ใช้ข้อมูลเดียวกับเว็บจริง จึงปิดปุ่มรวมและกู้คืนไว้ ปุ่มจะเปิดเมื่อนำขึ้นเว็บจริงหลังยืนยันผล</p>' : '<p class="hint">ก่อนรวมระบบจะสำรองข้อมูลเดิมไว้ให้กู้คืนได้</p>') +
+      '<p>' + esc(head) + '</p>' + (groups.length ? '<ul>' + items + '</ul>' : '') + runBtn + restoreBtn;
     box.hidden = false;
   }
+
+  // สำรองข้อมูลก่อนรวม (เก็บไว้ชุดล่าสุดชุดเดียว)
+  function getTrackBackupKey() {
+    try {
+      const keys = Object.keys(localStorage).filter(k => k.indexOf(BACKUP_PREFIX) === 0).sort();
+      return keys.length ? keys[keys.length - 1] : null;
+    } catch (e) { return null; }
+  }
+  function saveTrackBackup(list) {
+    try {
+      Object.keys(localStorage).filter(k => k.indexOf(BACKUP_PREFIX) === 0).forEach(k => localStorage.removeItem(k));
+      localStorage.setItem(BACKUP_PREFIX + Date.now(), JSON.stringify(list));
+      return true;
+    } catch (e) { return false; }
+  }
+  function mergeDuplicateTracking() {
+    if (PREVIEW_ONLY) { toast('หน้าพรีวิวปิดการรวมไว้'); return; }
+    const list = store.get('bs_tracking', []);
+    const groups = findDuplicateTracking(list);
+    if (!groups.length) { toast('ไม่มีรายการซ้ำให้รวม'); return; }
+    if (!saveTrackBackup(list)) { toast('สำรองข้อมูลไม่สำเร็จ จึงยังไม่รวม'); return; }
+    const FILL = ['customer', 'sender', 'senderPhone', 'senderAddress', 'ishipCreatedAt', 'ishipStatusName', 'ishipId'];
+    const removeIds = new Set();
+    const keepById = new Map();
+    groups.forEach(g => {
+      const k = Object.assign({}, g.keep);
+      g.remove.forEach(r => { FILL.forEach(f => { if (!k[f] && r[f]) k[f] = r[f]; }); removeIds.add(r.id); });
+      keepById.set(g.keep.id, k);
+    });
+    const next = list.filter(t => !removeIds.has(t.id)).map(t => keepById.get(t.id) || t);
+    store.set('bs_tracking', next);
+    removeIds.forEach(id => cloudDelete('tracking', id));
+    keepById.forEach(k => cloudSave('tracking', k));
+    dedupeArmed = false;
+    renderTrackingHistory();
+    toast('รวมรายการซ้ำแล้ว ลบ ' + removeIds.size + ' แถว (สำรองไว้แล้ว)');
+    showTrackDedupe();
+  }
+  function restoreTrackingBackup() {
+    if (PREVIEW_ONLY) { toast('หน้าพรีวิวปิดการกู้คืนไว้'); return; }
+    const key = getTrackBackupKey();
+    if (!key) { toast('ไม่พบข้อมูลสำรอง'); return; }
+    let backup;
+    try { backup = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { toast('ข้อมูลสำรองอ่านไม่ได้'); return; }
+    // รวมข้อมูลสำรองกับรายการที่เพิ่มหลังสำรอง เพื่อไม่ทำให้รายการใหม่หาย
+    const backupIds = new Set(backup.map(t => t.id));
+    const current = store.get('bs_tracking', []);
+    const merged = backup.concat(current.filter(t => !backupIds.has(t.id)));
+    store.set('bs_tracking', merged);
+    merged.forEach(r => cloudSave('tracking', r));
+    renderTrackingHistory();
+    toast('กู้คืนข้อมูลก่อนรวมแล้ว');
+    showTrackDedupe();
+  }
+  $('trackDedupe').addEventListener('click', e => {
+    const run = e.target.closest('#dedupeRun');
+    if (run) {
+      if (!dedupeArmed) {
+        dedupeArmed = true;
+        run.textContent = 'กดอีกครั้งเพื่อยืนยันรวม';
+        setTimeout(() => { dedupeArmed = false; }, 5000);
+        return;
+      }
+      mergeDuplicateTracking();
+      return;
+    }
+    if (e.target.closest('#dedupeRestore')) restoreTrackingBackup();
+  });
   $('track-dedupe-check').addEventListener('click', () => {
     const box = $('trackDedupe');
     if (!box.hidden) { box.hidden = true; return; }
