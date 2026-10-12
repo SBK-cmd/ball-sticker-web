@@ -122,7 +122,7 @@ a{color:inherit}
 .tax-sheet-backdrop{position:fixed;inset:0;background:rgba(8,14,26,.18);z-index:950}
 .tax-sheet{position:fixed;left:10px;right:10px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:960;
   display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
-.tax-sheet-item{display:inline-flex;align-items:center;padding:8px 14px;border-radius:999px;
+.tax-sheet-item{display:inline-flex;align-items:center;padding:9px 16px;border-radius:999px;
   border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap;
   font:600 13px/1.2 'Sarabun','Noto Sans Thai',system-ui,sans-serif;box-shadow:var(--shadow-2);
   -webkit-tap-highlight-color:transparent}
@@ -677,6 +677,9 @@ tr{break-inside:avoid}
   .top-track:active{background:var(--surface)}
   .top-track svg{flex:none}
   .top-track span{overflow:hidden;text-overflow:ellipsis}
+  /* ติดตามพัสดุย้ายไปอยู่ในเมนูล่างแล้ว จึงซ่อนปุ่มลัดบนหัวเว็บ (กันปุ่มซ้ำสองที่) */
+  .top-track{display:none}
+  .top .brand{margin-right:auto}
   .wrap{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   /* เมนูล่าง (มือถือ): 5 ช่องเท่ากัน ปุ่ม "สั่งงาน" อยู่กึ่งกลางพอดี — พื้นแถบวาดด้วย ::after เพื่อให้วงรองปุ่มกลาง (::before ของปุ่ม) ซ่อนครึ่งล่างไว้หลังแถบได้ */
   .bnav{
@@ -689,12 +692,12 @@ tr{break-inside:avoid}
   .btab{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;
     background:transparent;border:0;margin:0;padding:0 2px 2px;color:var(--muted);cursor:pointer;
     font:600 11px/1.4 'Sarabun','Noto Sans Thai',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
-  .btab-ico{display:grid;place-items:center;width:52px;max-width:100%;height:30px;border-radius:15px;
+  .btab-ico{display:grid;place-items:center;width:56px;max-width:100%;height:32px;border-radius:16px;
     transition:background-color .18s ease,color .18s ease}
   .btab-ico svg{width:22px;height:22px;flex:none}
-  .btab-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .btab-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;letter-spacing:.01em}
   .btab:active .btab-ico,.btab[aria-expanded="true"] .btab-ico{background:var(--field)}
-  .btab.active{color:var(--ink);font-weight:700}
+  .btab.active{color:var(--blue-ink);font-weight:700}
   .btab.active .btab-ico{background:var(--blue-bg);background:color-mix(in srgb,var(--sticker) 24%,transparent);color:var(--blue-ink)}
   .btab:focus-visible{outline:2px solid var(--blue-ink);outline-offset:1px;border-radius:14px}
   /* ปุ่ม "สั่งงาน" กลางเมนูล่าง: วงกลมสีเหลืองยกขึ้นเหนือแถบ มีวงรองสีเดียวกับแถบโอบไว้ ให้ดูเป็นชิ้นเดียวกับเมนู */
@@ -703,7 +706,7 @@ tr{break-inside:avoid}
     box-sizing:border-box;border-radius:50%;background:var(--surface);border:1px solid var(--line)}
   .btab-fab-circle{
     width:56px;height:56px;border-radius:50%;background:var(--accent);color:var(--accent-ink);flex:none;
-    display:grid;place-items:center;margin:-28px 0 2px;transition:transform .12s ease;
+    display:grid;place-items:center;margin:-28px 0 4px;transition:transform .12s ease;
     box-shadow:inset -5px -5px 0 rgba(16,35,63,.14),0 0 0 5px var(--surface),0 12px 16px -8px rgba(16,35,63,.55);
   }
   .btab-fab-circle svg{width:25px;height:25px}
@@ -1159,18 +1162,19 @@ tr{break-inside:avoid}
       </span>
       <span class="btab-label">สั่งงาน</span>
     </button>
-    <button type="button" class="btab" data-tab="quote" aria-controls="panel-quote">
-      <span class="btab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="13" y2="17"></line></svg></span>
-      <span class="btab-label">เสนอราคา</span>
+    <button type="button" class="btab" data-tab="track" aria-controls="panel-track">
+      <span class="btab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5A1.5 1.5 0 0 1 3.5 5h9A1.5 1.5 0 0 1 14 6.5V16H2z"></path><path d="M14 9h3.6a1 1 0 0 1 .8.4l2.4 3.2a1 1 0 0 1 .2.6V16h-7"></path><circle cx="6.5" cy="17.5" r="2"></circle><circle cx="17.5" cy="17.5" r="2"></circle></svg></span>
+      <span class="btab-label">ติดตาม</span>
     </button>
     <button type="button" class="btab" id="bnavTaxTrigger" aria-haspopup="true" aria-expanded="false">
-      <span class="btab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="8.5" y1="15.5" x2="15.5" y2="8.5"></line><circle cx="9" cy="9" r="1"></circle><circle cx="15" cy="15" r="1"></circle></svg></span>
-      <span class="btab-label">ภาษี</span>
+      <span class="btab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"></rect></svg></span>
+      <span class="btab-label">เพิ่มเติม</span>
     </button>
   </nav>
 
   <div class="tax-sheet-backdrop no-print" id="taxSheetBackdrop" hidden></div>
-  <div class="tax-sheet no-print" id="taxSheet" role="menu" aria-label="เมนูภาษี" hidden>
+  <div class="tax-sheet no-print" id="taxSheet" role="menu" aria-label="เมนูเพิ่มเติม: ใบเสนอราคาและภาษี" hidden>
+    <button type="button" class="tax-sheet-item" data-tab="quote">ใบเสนอราคา</button>
     <button type="button" class="tax-sheet-item" data-tab="vat">คำนวณ VAT</button>
     <button type="button" class="tax-sheet-item" data-tab="bill">ใบเสร็จ / ใบกำกับภาษี</button>
     <button type="button" class="tax-sheet-item" data-tab="purchase">ภาษีซื้อ</button>
@@ -1707,11 +1711,9 @@ tr{break-inside:avoid}
         <div class="dash-filter" style="margin-bottom:10px">
           <button class="btn small" id="track-live-toggle" type="button" aria-pressed="false">○ Live: ปิด</button>
           <button class="btn small" id="track-day-summary" type="button" aria-expanded="false">📦 สรุปวันนี้</button>
-          <button class="btn small" id="track-dedupe-check" type="button">🧹 ตรวจรายการซ้ำ</button>
           <button class="btn danger small" id="track-clear-all" type="button">ล้างทั้งหมด</button>
         </div>
         <div id="trackDaySummary" class="track-day" hidden></div>
-        <div id="trackDedupe" class="track-day" hidden></div>
         <div id="trackHistory"></div>
       </section>
     </section>
@@ -2260,8 +2262,47 @@ function bahtText(value) {
       });
       store.set(key, list);
       cloudStatus = 'on';
+      if (col === 'tracking') autoMergeTrackingOnce();
       onChange();
     }, err => { console.error(col + ' sync error', err); cloudStatus = 'error'; onChange(); });
+  }
+  // รวมรายการพัสดุที่ "เลขพัสดุและชื่อลูกค้าตรงกัน" ให้เหลือแถวเดียว (ทำครั้งเดียวต่อเบราว์เซอร์ หลังข้อมูลจากคลาวด์โหลดเสร็จ)
+  // แถวที่เลขตรงแต่ชื่อต่างกันจะไม่ถูกแตะต้อง และสำรองข้อมูลก่อนรวมทุกครั้ง
+  const TRACK_AUTOMERGE_FLAG = 'bs_tracking_automerge_v1';
+  function autoMergeTrackingOnce() {
+    try { if (localStorage.getItem(TRACK_AUTOMERGE_FLAG)) return; } catch (e) { return; }
+    const list = store.get('bs_tracking', []);
+    const groups = new Map();
+    list.forEach(t => {
+      const code = String(t.code || '').trim().toUpperCase();
+      const name = String(t.customer || '').trim().replace(/\s+/g, ' ').toLowerCase();
+      if (!code || !name) return;
+      const k = code + '|' + name;
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(t);
+    });
+    const dup = [...groups.values()].filter(g => g.length > 1);
+    if (!dup.length) { try { localStorage.setItem(TRACK_AUTOMERGE_FLAG, '1'); } catch (e) {} return; }
+    try {
+      Object.keys(localStorage).filter(k => k.indexOf('bs_tracking_backup_') === 0).forEach(k => localStorage.removeItem(k));
+      localStorage.setItem('bs_tracking_backup_' + Date.now(), JSON.stringify(list));
+    } catch (e) { return; }
+    const score = t => (t.sender ? 1 : 0) + (t.senderPhone ? 1 : 0) + (t.ishipCreatedAt ? 1 : 0) + (t.ishipStatusName ? 1 : 0) + (t.status && t.status !== 'transit' ? 1 : 0);
+    const FILL = ['sender', 'senderPhone', 'senderAddress', 'ishipCreatedAt', 'ishipStatusName', 'ishipId'];
+    const removeIds = new Set();
+    const keepById = new Map();
+    dup.forEach(rows => {
+      const sorted = rows.slice().sort((a, b) => (score(b) - score(a)) || ((a.savedAt || 0) - (b.savedAt || 0)));
+      const k = Object.assign({}, sorted[0]);
+      sorted.slice(1).forEach(r => { FILL.forEach(f => { if (!k[f] && r[f]) k[f] = r[f]; }); removeIds.add(r.id); });
+      keepById.set(sorted[0].id, k);
+    });
+    const next = list.filter(t => !removeIds.has(t.id)).map(t => keepById.get(t.id) || t);
+    store.set('bs_tracking', next);
+    try { localStorage.setItem(TRACK_AUTOMERGE_FLAG, '1'); } catch (e) {}
+    removeIds.forEach(id => cloudDelete('tracking', id));
+    keepById.forEach(k => cloudSave('tracking', k));
+    toast('รวมรายการพัสดุที่ซ้ำกันแล้ว ' + removeIds.size + ' แถว (สำรองไว้แล้ว)');
   }
   function cloudSave(col, rec) {
     if (!cloudDb) return;
@@ -4268,15 +4309,7 @@ function bahtText(value) {
   $('track-make').addEventListener('click', saveTracking);
   $('track-new').addEventListener('click', newTracking);
   $('track-copy').addEventListener('click', copyTrackingMessage);
-  let trackImporting = false;
-  $('track-import-iship').addEventListener('click', async () => {
-    if (trackImporting) return;
-    // รอให้ข้อมูลจากคลาวด์โหลดเสร็จก่อน ไม่งั้นระบบจะมองไม่เห็นรายการเดิมและเพิ่มซ้ำ
-    if (cloudDb && cloudStatus !== 'on') { toast('กำลังโหลดข้อมูลจากคลาวด์ รอสักครู่แล้วกดใหม่'); return; }
-    trackImporting = true;
-    const b = $('track-import-iship'); b.disabled = true;
-    try { await importOrdersFromIship(30); } finally { trackImporting = false; b.disabled = false; }
-  });
+  $('track-import-iship').addEventListener('click', () => importOrdersFromIship(30));
   $('track-live-toggle').addEventListener('click', () => {
     trackLiveOn = !trackLiveOn;
     try { localStorage.setItem(TRACK_LIVE_KEY, trackLiveOn ? '1' : '0'); } catch (e) {}
@@ -4310,117 +4343,6 @@ function bahtText(value) {
     if (!cloudDb) { toast('ยังไม่ได้เชื่อมต่อฐานข้อมูลคลาวด์'); return; }
     toast('กำลังรีเฟรชสถานะจาก iship...');
     Promise.all(list.map(t => fetchLiveTracking(t.code, true))).then(() => renderTrackingHistory());
-  });
-  // หน้าพรีวิวใช้ข้อมูลในเบราว์เซอร์ชุดเดียวกับเว็บจริง จึงปิดการลบ/กู้คืนไว้ที่หน้านี้
-  const PREVIEW_ONLY = /preview\.html$/.test(location.pathname);
-  const BACKUP_PREFIX = 'bs_tracking_backup_';
-  let dedupeArmed = false;
-  // ตรวจรายการซ้ำ
-  function findDuplicateTracking(list) {
-    const groups = new Map();
-    list.forEach(t => { const k = String(t.code || '').trim().toUpperCase(); if (!k) return; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(t); });
-    // ให้คะแนนแถวที่มีข้อมูลครบกว่า (มีชื่อลูกค้า ผู้ส่ง เวลาจาก iship สถานะ) ถ้าเท่ากันเก็บแถวที่บันทึกก่อน
-    const score = t => (t.customer ? 1 : 0) + (t.sender ? 1 : 0) + (t.ishipCreatedAt ? 1 : 0) + (t.ishipStatusName ? 1 : 0) + (t.status && t.status !== 'transit' ? 1 : 0);
-    const out = [];
-    groups.forEach((rows, code) => {
-      if (rows.length < 2) return;
-      const sorted = rows.slice().sort((a, b) => (score(b) - score(a)) || ((a.savedAt || 0) - (b.savedAt || 0)));
-      out.push({code: code, keep: sorted[0], remove: sorted.slice(1), total: rows.length});
-    });
-    return out;
-  }
-  function showTrackDedupe() {
-    const groups = findDuplicateTracking(store.get('bs_tracking', []));
-    const totalRows = groups.reduce((n, g) => n + g.total, 0);
-    const removeN = groups.reduce((n, g) => n + g.remove.length, 0);
-    const head = groups.length
-      ? 'พบเลขพัสดุซ้ำ ' + groups.length + ' เลข (รวม ' + totalRows + ' แถว) · ถ้ารวมจะเหลือ ' + (totalRows - removeN) + ' แถว และลบ ' + removeN + ' แถว'
-      : 'ไม่พบรายการซ้ำ';
-    const items = groups.map(g => '<li><b>' + esc(g.code) + '</b><small>มี ' + g.total + ' แถว · จะเก็บแถวของ ' + esc(g.keep.customer || '-') + ' (บันทึกเมื่อ ' + esc(new Date(g.keep.savedAt).toLocaleString('th-TH')) + ') · จะลบ ' + g.remove.length + ' แถว</small></li>').join('');
-    const box = $('trackDedupe');
-    const runBtn = groups.length
-      ? '<div class="row-actions"><button type="button" class="btn small danger" id="dedupeRun"' + (PREVIEW_ONLY ? ' disabled' : '') + '>รวมรายการซ้ำ (ลบ ' + removeN + ' แถว)</button></div>'
-      : '';
-    const restoreBtn = getTrackBackupKey()
-      ? '<div class="row-actions"><button type="button" class="btn small" id="dedupeRestore"' + (PREVIEW_ONLY ? ' disabled' : '') + '>กู้คืนข้อมูลก่อนรวมล่าสุด</button></div>'
-      : '';
-    box.innerHTML = '<div class="track-day-head"><b>ตรวจรายการซ้ำ' + (PREVIEW_ONLY ? ' (โหมดพรีวิว)' : '') + '</b></div>' +
-      (PREVIEW_ONLY ? '<p class="hint">หน้านี้ใช้ข้อมูลเดียวกับเว็บจริง จึงปิดปุ่มรวมและกู้คืนไว้ ปุ่มจะเปิดเมื่อนำขึ้นเว็บจริงหลังยืนยันผล</p>' : '<p class="hint">ก่อนรวมระบบจะสำรองข้อมูลเดิมไว้ให้กู้คืนได้</p>') +
-      '<p>' + esc(head) + '</p>' + (groups.length ? '<ul>' + items + '</ul>' : '') + runBtn + restoreBtn;
-    box.hidden = false;
-  }
-
-  // สำรองข้อมูลก่อนรวม (เก็บไว้ชุดล่าสุดชุดเดียว)
-  function getTrackBackupKey() {
-    try {
-      const keys = Object.keys(localStorage).filter(k => k.indexOf(BACKUP_PREFIX) === 0).sort();
-      return keys.length ? keys[keys.length - 1] : null;
-    } catch (e) { return null; }
-  }
-  function saveTrackBackup(list) {
-    try {
-      Object.keys(localStorage).filter(k => k.indexOf(BACKUP_PREFIX) === 0).forEach(k => localStorage.removeItem(k));
-      localStorage.setItem(BACKUP_PREFIX + Date.now(), JSON.stringify(list));
-      return true;
-    } catch (e) { return false; }
-  }
-  function mergeDuplicateTracking() {
-    if (PREVIEW_ONLY) { toast('หน้าพรีวิวปิดการรวมไว้'); return; }
-    const list = store.get('bs_tracking', []);
-    const groups = findDuplicateTracking(list);
-    if (!groups.length) { toast('ไม่มีรายการซ้ำให้รวม'); return; }
-    if (!saveTrackBackup(list)) { toast('สำรองข้อมูลไม่สำเร็จ จึงยังไม่รวม'); return; }
-    const FILL = ['customer', 'sender', 'senderPhone', 'senderAddress', 'ishipCreatedAt', 'ishipStatusName', 'ishipId'];
-    const removeIds = new Set();
-    const keepById = new Map();
-    groups.forEach(g => {
-      const k = Object.assign({}, g.keep);
-      g.remove.forEach(r => { FILL.forEach(f => { if (!k[f] && r[f]) k[f] = r[f]; }); removeIds.add(r.id); });
-      keepById.set(g.keep.id, k);
-    });
-    const next = list.filter(t => !removeIds.has(t.id)).map(t => keepById.get(t.id) || t);
-    store.set('bs_tracking', next);
-    removeIds.forEach(id => cloudDelete('tracking', id));
-    keepById.forEach(k => cloudSave('tracking', k));
-    dedupeArmed = false;
-    renderTrackingHistory();
-    toast('รวมรายการซ้ำแล้ว ลบ ' + removeIds.size + ' แถว (สำรองไว้แล้ว)');
-    showTrackDedupe();
-  }
-  function restoreTrackingBackup() {
-    if (PREVIEW_ONLY) { toast('หน้าพรีวิวปิดการกู้คืนไว้'); return; }
-    const key = getTrackBackupKey();
-    if (!key) { toast('ไม่พบข้อมูลสำรอง'); return; }
-    let backup;
-    try { backup = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { toast('ข้อมูลสำรองอ่านไม่ได้'); return; }
-    // รวมข้อมูลสำรองกับรายการที่เพิ่มหลังสำรอง เพื่อไม่ทำให้รายการใหม่หาย
-    const backupIds = new Set(backup.map(t => t.id));
-    const current = store.get('bs_tracking', []);
-    const merged = backup.concat(current.filter(t => !backupIds.has(t.id)));
-    store.set('bs_tracking', merged);
-    merged.forEach(r => cloudSave('tracking', r));
-    renderTrackingHistory();
-    toast('กู้คืนข้อมูลก่อนรวมแล้ว');
-    showTrackDedupe();
-  }
-  $('trackDedupe').addEventListener('click', e => {
-    const run = e.target.closest('#dedupeRun');
-    if (run) {
-      if (!dedupeArmed) {
-        dedupeArmed = true;
-        run.textContent = 'กดอีกครั้งเพื่อยืนยันรวม';
-        setTimeout(() => { dedupeArmed = false; }, 5000);
-        return;
-      }
-      mergeDuplicateTracking();
-      return;
-    }
-    if (e.target.closest('#dedupeRestore')) restoreTrackingBackup();
-  });
-  $('track-dedupe-check').addEventListener('click', () => {
-    const box = $('trackDedupe');
-    if (!box.hidden) { box.hidden = true; return; }
-    showTrackDedupe();
   });
   $('track-clear-all').addEventListener('click', () => {
     const btn = $('track-clear-all');
@@ -5526,7 +5448,7 @@ function bahtText(value) {
     document.querySelectorAll('.top-track[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
     const isTax = TAX_TABS.indexOf(name) >= 0;
     $('taxTrigger').closest('.tab-group').classList.toggle('has-active', isTax);
-    $('bnavTaxTrigger').classList.toggle('active', isTax || name === 'vat');
+    $('bnavTaxTrigger').classList.toggle('active', isTax || name === 'vat' || name === 'quote');
     closeTaxMenus();
     if (name === 'bill') fitBill();
     if (name === 'confirm') fitJob();
@@ -6024,11 +5946,12 @@ function bahtText(value) {
   function applyRoleUI() {
     if (isOwner) return;
     // พนักงาน: เปิดได้แค่ "คำนวณสติ๊กเกอร์" กับ "ใบคอนเฟิร์มงาน" — ซ่อนแท็บ/เมนูอื่นทั้งหมด
-    ['tab-bill', 'tab-wholesale', 'tab-purchase', 'tab-dash', 'tab-report'].forEach(id => { const el = $(id); if (el) el.hidden = true; });
+    ['tab-bill', 'tab-wholesale', 'tab-quote', 'tab-purchase', 'tab-dash', 'tab-report'].forEach(id => { const el = $(id); if (el) el.hidden = true; });
     document.querySelectorAll('.tax-sheet-item[data-tab]').forEach(el => { el.hidden = true; });
     document.querySelectorAll('.btab[data-tab="bill"]').forEach(el => { el.hidden = true; });
     document.querySelectorAll('.btab[data-tab="wholesale"]').forEach(el => { el.hidden = true; });
     document.querySelectorAll('.btab[data-tab="dash"]').forEach(el => { el.hidden = true; });
+    document.querySelectorAll('[data-tab="quote"]').forEach(el => { el.hidden = true; });
     if ($('taxTrigger')) { const grp = $('taxTrigger').closest('.tab-group'); if (grp) grp.hidden = true; }
     if ($('bnavTaxTrigger')) $('bnavTaxTrigger').hidden = true;
     if ($('shopSettings')) $('shopSettings').hidden = true;
