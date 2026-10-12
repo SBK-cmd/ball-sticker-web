@@ -4095,18 +4095,19 @@ function bahtText(value) {
   const TRACK_LIVE_KEY = 'bs_track_live';
   let trackLiveOn = false;
   try { trackLiveOn = localStorage.getItem(TRACK_LIVE_KEY) === '1'; } catch (e) {}
-  // ดึงสถานะจาก iship ซ้ำทุก 10 นาที เฉพาะตอนเปิด Live และหน้านี้กำลังเปิดอยู่ (ข้ามรอบถ้าแท็บถูกซ่อน)
+  // ดึงสถานะจาก iship ทุก 10 นาที (ทำงานตลอดขณะเปิดแอป ไม่ต้องเปิด Live) เฉพาะพัสดุที่ยังไม่ถึงลูกค้า
+  // ข้ามรอบเมื่อแท็บถูกซ่อน ปุ่ม Live มีไว้สำหรับรับสถานะแบบเรียลไทม์เพิ่มเติมเท่านั้น
   const LIVE_REFRESH_MS = 10 * 60 * 1000;
   let liveTimer = null;
   function refreshAllLive() {
     if (document.hidden) return;
-    const list = store.get('bs_tracking', []);
+    const list = store.get('bs_tracking', []).filter(t => (t.status || 'transit') !== 'delivered');
     if (!list.length) return;
     Promise.all(list.map(t => fetchLiveTracking(t.code, true))).then(() => { if (isTrackPanelActive()) renderTrackingHistory(); });
   }
   function updateLiveTimer() {
-    clearInterval(liveTimer); liveTimer = null;
-    if (trackLiveOn) liveTimer = setInterval(refreshAllLive, LIVE_REFRESH_MS);
+    if (liveTimer) return;
+    liveTimer = setInterval(refreshAllLive, LIVE_REFRESH_MS);
   }
   function paintTrackLiveBtn() {
     const b = $('track-live-toggle'); if (!b) return;
@@ -4204,11 +4205,11 @@ function bahtText(value) {
     if (!trackLiveOn) store.get('bs_tracking', []).forEach(t => unsubscribeLiveTracking(t.code));
     paintTrackLiveBtn();
     updateLiveTimer();
-    if (trackLiveOn) refreshAllLive();
     renderTrackingHistory();
   });
   paintTrackLiveBtn();
   updateLiveTimer();
+  setTimeout(refreshAllLive, 3000); // ดึงสถานะรอบแรกหลังเปิดแอปไม่นาน
   // สรุปวันนี้: นับรายการที่บันทึกหรือสร้างในวันนี้ (ตามเวลาเครื่อง) และแสดงชื่อลูกค้า
   function dayKey(ms) {
     const d = new Date(ms); if (isNaN(d)) return '';
