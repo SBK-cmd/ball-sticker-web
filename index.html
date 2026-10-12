@@ -4206,7 +4206,7 @@ function bahtText(value) {
           liveHtml = '<div class="live-status live-ok"><span class="live-dot live-dot-on"></span>LIVE จาก iship: ' + esc(d.statusText) + (d.timeText ? ' · ' + esc(d.timeText) : '') + '</div>';
         }
       }
-      const senderHtml = t.sender ? '<div class="sender-info">📍 ผู้ส่ง: <b>' + esc(t.sender) + '</b>' + (t.senderAddress ? ' · ' + esc(t.senderAddress) : '') + (t.senderPhone ? ' · โทร ' + esc(t.senderPhone) : '') + '</div>' : '';
+      const senderHtml = t.sender ? '<div class="sender-info">📍 ผู้ส่ง: <b>' + esc(t.sender) + '</b>' + '</div>' : '';
       return '<li data-id="' + esc(t.id) + '"><div class="meta"><b>' + esc(revealedTrack.has(t.id) ? t.code : maskTrackCode(t.code)) + '</b>' + (t.customer ? '<span class="rcpt">' + esc(t.customer) + '</span>' : '') + '<small>' + esc(t.carrier) + ' · ' + esc(new Date(t.savedAt).toLocaleString('th-TH')) + '</small></div>' + senderHtml +
       '<select class="track-status-select status-pill ' + cls + '" data-id="' + esc(t.id) + '" aria-label="สถานะพัสดุ">' +
         Object.keys(TRACK_STATUS).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + TRACK_STATUS[k].label + '</option>').join('') +
