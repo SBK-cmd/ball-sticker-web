@@ -1663,6 +1663,7 @@ tr{break-inside:avoid}
         </div>
         <label class="f hist-search"><span>ค้นหา</span><input class="txt" id="trackHistSearch" type="search" autocomplete="off" placeholder="ค้นหาเลขพัสดุหรือชื่อขนส่ง..."></label>
         <div class="dash-filter" style="margin-bottom:10px">
+          <button class="btn small" id="track-live-toggle" type="button" aria-pressed="false">○ Live: ปิด</button>
           <button class="btn small primary" id="track-import-iship" type="button">📥 ดึงรายการจาก iship (30 วันล่าสุด)</button>
           <button class="btn small" id="track-refresh-live" type="button">🔄 รีเฟรชสถานะจาก iship ทั้งหมด</button>
           <button class="btn danger small" id="track-clear-all" type="button">ล้างทั้งหมด</button>
@@ -4075,6 +4076,16 @@ function bahtText(value) {
     }
   }
   let trackDelArmed = null, trackDelTimer = null, trackClearArmed = false, trackClearTimer = null;
+  // สถานะ Live: เปิดเฉพาะเมื่อผู้ใช้กดปุ่ม Live เท่านั้น ค่าจำไว้ในเครื่องนี้ (ไม่ได้ซิงก์ข้ามเครื่อง)
+  const TRACK_LIVE_KEY = 'bs_track_live';
+  let trackLiveOn = false;
+  try { trackLiveOn = localStorage.getItem(TRACK_LIVE_KEY) === '1'; } catch (e) {}
+  function paintTrackLiveBtn() {
+    const b = $('track-live-toggle'); if (!b) return;
+    b.setAttribute('aria-pressed', String(trackLiveOn));
+    b.textContent = trackLiveOn ? '● Live: เปิด' : '○ Live: ปิด';
+    b.classList.toggle('live-on', trackLiveOn);
+  }
   function renderTrackingHistory() {
     // เรียงตามลำดับของ iship เอง (วันที่สร้างออเดอร์จริง) ถ้ามีข้อมูล ไม่งั้นใช้เวลาที่บันทึกในเครื่องแทน
     const sortKey = t => (t.ishipCreatedAt != null ? t.ishipCreatedAt : (t.savedAt || 0));
@@ -4090,7 +4101,9 @@ function bahtText(value) {
       const live = cloudDb ? liveTrackCache[t.code] : undefined;
       let liveHtml = '';
       if (cloudDb) {
-        if (!live) {
+        if (!trackLiveOn) {
+          liveHtml = '<div class="live-status live-none">Live ปิดอยู่ กดปุ่ม Live ด้านบนเพื่อดูสถานะจาก iship</div>';
+        } else if (!live) {
           liveHtml = '<div class="live-status live-pending">⏳ กำลังเช็กสถานะจาก iship...</div>';
         } else if (!live.data) {
           liveHtml = '<div class="live-status live-none"><span class="live-dot"></span>ถ่ายทอดสด — ยังไม่มีสถานะจาก iship สำหรับเลขนี้</div>';
@@ -4109,7 +4122,7 @@ function bahtText(value) {
       '<button class="btn small del" data-act="del" type="button">ลบ</button>' +
       liveHtml + '</li>';
     }).join('') + '</ul>';
-    if (cloudDb) {
+    if (cloudDb && trackLiveOn) {
       shown.forEach(t => subscribeLiveTracking(t.code)); // เปิดฟังสถานะแบบเรียลไทม์ไว้ทุกรายการที่แสดงอยู่
     }
   }
@@ -4156,6 +4169,14 @@ function bahtText(value) {
   $('track-new').addEventListener('click', newTracking);
   $('track-copy').addEventListener('click', copyTrackingMessage);
   $('track-import-iship').addEventListener('click', () => importOrdersFromIship(30));
+  $('track-live-toggle').addEventListener('click', () => {
+    trackLiveOn = !trackLiveOn;
+    try { localStorage.setItem(TRACK_LIVE_KEY, trackLiveOn ? '1' : '0'); } catch (e) {}
+    if (!trackLiveOn) store.get('bs_tracking', []).forEach(t => unsubscribeLiveTracking(t.code));
+    paintTrackLiveBtn();
+    renderTrackingHistory();
+  });
+  paintTrackLiveBtn();
   $('track-refresh-live').addEventListener('click', () => {
     const list = store.get('bs_tracking', []);
     if (!cloudDb) { toast('ยังไม่ได้เชื่อมต่อฐานข้อมูลคลาวด์'); return; }
