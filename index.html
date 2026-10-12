@@ -4019,11 +4019,25 @@ function bahtText(value) {
     if (!orders.length) { toast('ไม่พบรายการพัสดุในช่วง ' + totalDays + ' วันล่าสุด'); return; }
     const list = store.get('bs_tracking', []);
     const existingCodes = new Set(list.map(t => t.code));
+    const byCode = new Map(list.map(t => [t.code, t]));
     const newRecs = [];
+    const backfilled = [];
     let added = 0;
     orders.forEach(o => {
       const code = o.track_no;
-      if (!code || existingCodes.has(code)) return;
+      if (!code) return;
+      if (existingCodes.has(code)) {
+        // รายการที่บันทึกไว้ก่อนมีข้อมูลผู้ส่ง → เติมชื่อ/ที่อยู่ผู้ส่งให้ (ไม่แตะข้อมูลอื่น)
+        const old = byCode.get(code);
+        const sName = o.label_name || o.src_name || '';
+        if (old && !old.sender && sName) {
+          old.sender = sName;
+          old.senderPhone = o.label_phone || o.src_phone || '';
+          old.senderAddress = o.label_address || [o.src_address, o.src_district, o.src_area, o.src_province, o.src_zipcode].filter(Boolean).join(' ');
+          backfilled.push(old);
+        }
+        return;
+      }
       const carrier = mapIshipCourierLabel(o.courier_code);
       const customer = o.dst_name || '';
       const message = buildTrackingMessage(code, carrier, customer);
@@ -4052,8 +4066,10 @@ function bahtText(value) {
     });
     store.set('bs_tracking', list);
     newRecs.forEach(rec => cloudSave('tracking', rec));
+    backfilled.forEach(rec => cloudSave('tracking', rec));
     renderTrackingHistory();
-    toast(added ? ('เพิ่มรายการใหม่ ' + added + ' รายการจาก iship แล้ว') : 'ไม่มีรายการใหม่ (มีอยู่ในประวัติครบแล้ว)');
+    const bfMsg = backfilled.length ? ' · เติมชื่อผู้ส่ง ' + backfilled.length + ' รายการ' : '';
+    toast((added ? ('เพิ่มรายการใหม่ ' + added + ' รายการจาก iship แล้ว') : 'ไม่มีรายการใหม่ (มีอยู่ในประวัติครบแล้ว)') + bfMsg);
   }
   function updateTrackingStatus(id, status) {
     const list = store.get('bs_tracking', []);
