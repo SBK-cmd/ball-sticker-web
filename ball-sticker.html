@@ -273,6 +273,27 @@ textarea{resize:vertical;min-height:72px}
 .btn.live-off{background:transparent;border-color:#e5484d;color:#d6372f;font-weight:700;box-shadow:none}
 .btn.live-off:hover{background:#fdeeee}
 .track-import-row{margin:0 0 12px}
+/* รายการประวัติติดตามพัสดุ: การ์ดแบบเรียบ มีแถบสีด้านซ้ายตามสถานะ */
+#trackHistory ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+#trackHistory li{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:14px 14px 14px 18px;
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-1)}
+#trackHistory li::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 4px 4px 0;background:var(--line)}
+#trackHistory li:has(.printed)::before{background:#2b7cc4}
+#trackHistory li:has(.shipped)::before{background:#2fa860}
+#trackHistory li:has(.pending)::before{background:#d59a10}
+#trackHistory li:has(.trk-issue)::before{background:#e5484d}
+#trackHistory .meta{flex-basis:100%;display:flex;flex-direction:column;gap:3px;min-width:0}
+#trackHistory .meta b{font-size:16px;letter-spacing:.03em;font-variant-numeric:tabular-nums;color:var(--ink);word-break:break-all}
+#trackHistory .meta small{color:var(--muted);font-size:12.5px;line-height:1.45}
+#trackHistory .track-status-select{flex:1 1 180px;min-width:0;border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px}
+#trackHistory li .btn{padding:7px 13px;font-size:13px;box-shadow:none;border-radius:10px}
+#trackHistory li .btn.primary{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+#trackHistory li .btn.primary:hover{background:var(--ink);filter:brightness(1.15)}
+#trackHistory li .btn.edit{background:var(--field);border-color:var(--line);color:var(--ink)}
+#trackHistory li .btn.edit:hover{background:var(--surface);filter:none}
+#trackHistory li .btn.del{background:transparent;border-color:transparent;color:#d6372f;padding-left:8px;padding-right:8px}
+#trackHistory li .btn.del:hover{background:#fdeeee}
+#trackHistory li .live-status{flex-basis:100%;margin-top:2px;border-radius:10px;padding:8px 12px;font-size:12.5px}
 .track-day{margin:4px 0 14px;padding:12px 14px;border-radius:12px;background:var(--field);border:1px solid var(--line)}
 .track-day-head{font-size:15px;margin-bottom:8px}
 .track-day ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
