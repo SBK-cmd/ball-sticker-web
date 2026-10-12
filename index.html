@@ -3817,11 +3817,51 @@ function bahtText(value) {
     liveTrackCache[code] = {data: found, fetchedAt: Date.now()};
     return found;
   }
+  // แปลสถานะดิบจากระบบ iship ให้เป็นภาษาไทยอ่านง่าย — เจอคำใหม่ๆ เพิ่มเข้า dict นี้ได้เรื่อยๆ
+  // (คีย์เป็นตัวพิมพ์เล็กทั้งหมด เทียบแบบไม่สนตัวพิมพ์ใหญ่-เล็กและ _/-/เว้นวรรค)
+  const IS_STATUS_TH = {
+    'pending': 'รอดำเนินการ',
+    'created': 'สร้างรายการแล้ว รอเข้ารับ',
+    'waiting pickup': 'รอขนส่งเข้ารับ',
+    'picked up': 'เข้ารับพัสดุแล้ว',
+    'picked_up': 'เข้ารับพัสดุแล้ว',
+    'in transit': 'กำลังขนส่ง',
+    'in_transit': 'กำลังขนส่ง',
+    'transit': 'กำลังขนส่ง',
+    'at hub': 'อยู่ที่ศูนย์คัดแยก',
+    'at_hub': 'อยู่ที่ศูนย์คัดแยก',
+    'out for delivery': 'กำลังนำส่ง',
+    'out_for_delivery': 'กำลังนำส่ง',
+    'delivering': 'กำลังนำส่ง',
+    'delivered': 'จัดส่งสำเร็จแล้ว',
+    'success': 'จัดส่งสำเร็จแล้ว',
+    'completed': 'จัดส่งสำเร็จแล้ว',
+    'failed': 'นำส่งไม่สำเร็จ',
+    'failed_delivery': 'นำส่งไม่สำเร็จ',
+    'delivery failed': 'นำส่งไม่สำเร็จ',
+    'returned': 'ตีกลับ',
+    'return': 'ตีกลับ',
+    'returning': 'กำลังตีกลับ',
+    'cancelled': 'ยกเลิกรายการ',
+    'canceled': 'ยกเลิกรายการ',
+    'lost': 'พัสดุสูญหาย',
+    'problem': 'มีปัญหา ต้องตรวจสอบ',
+    'exception': 'มีปัญหา ต้องตรวจสอบ'
+  };
+  function translateIshipStatus(raw) {
+    if (!raw) return raw;
+    const key = String(raw).trim().toLowerCase().replace(/[\s_-]+/g, ' ');
+    if (IS_STATUS_TH[key]) return IS_STATUS_TH[key];
+    const keyUnderscore = key.replace(/ /g, '_');
+    if (IS_STATUS_TH[keyUnderscore]) return IS_STATUS_TH[keyUnderscore];
+    return raw; // ไม่รู้จักคำนี้ ให้โชว์ค่าดิบไปก่อน (ส่งสกรีนช็อตมาเพิ่ม dict ได้)
+  }
   function describeLiveTracking(doc) {
     if (!doc) return null;
     const statusKeys = ['status', 'state', 'courierStatus', 'deliveryStatus', 'shipmentStatus', 'statusText', 'description', 'statusTh', 'msg', 'message'];
     let statusVal = null;
     for (const k of statusKeys) { if (doc[k] != null && doc[k] !== '') { statusVal = String(doc[k]); break; } }
+    if (statusVal) statusVal = translateIshipStatus(statusVal);
     const timeKeys = ['updatedAt', 'statusTime', 'time', 'timestamp', 'date', 'statusDate', 'eventTime'];
     let timeVal = null;
     for (const k of timeKeys) { if (doc[k] != null && doc[k] !== '') { timeVal = doc[k]; break; } }
