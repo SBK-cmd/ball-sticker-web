@@ -272,7 +272,7 @@ textarea{resize:vertical;min-height:72px}
 .btn.live-on{background:#2fa860;border-color:#1f7a45;color:#fff;font-weight:700;animation:liveGlow 1.8s ease-in-out infinite}
 .btn.live-off{background:transparent;border-color:#e5484d;color:#d6372f;font-weight:700;box-shadow:none}
 .btn.live-off:hover{background:#fdeeee}
-.track-import-row{margin:0 0 12px}
+.track-import-row{margin:0 0 12px;display:flex;flex-wrap:wrap;gap:8px}
 /* รายการประวัติติดตามพัสดุ: การ์ดแบบเรียบ มีแถบสีด้านซ้ายตามสถานะ */
 #trackHistory ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
 #trackHistory li{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:14px 14px 14px 18px;
@@ -1696,12 +1696,12 @@ tr{break-inside:avoid}
         </div>
         <div class="track-import-row">
   <button class="btn small primary" id="track-import-iship" type="button">📥 ดึงรายการจาก iship (30 วันล่าสุด)</button>
+          <button class="btn small" id="track-refresh-live" type="button">🔄 รีเฟรชสถานะจาก iship ทั้งหมด</button>
         </div>
         <label class="f hist-search"><span>ค้นหา</span><input class="txt" id="trackHistSearch" type="search" autocomplete="off" placeholder="ค้นหาเลขพัสดุหรือชื่อขนส่ง..."></label>
         <div class="dash-filter" style="margin-bottom:10px">
           <button class="btn small" id="track-live-toggle" type="button" aria-pressed="false">○ Live: ปิด</button>
           <button class="btn small" id="track-day-summary" type="button" aria-expanded="false">📦 สรุปวันนี้</button>
-          <button class="btn small" id="track-refresh-live" type="button">🔄 รีเฟรชสถานะจาก iship ทั้งหมด</button>
           <button class="btn danger small" id="track-clear-all" type="button">ล้างทั้งหมด</button>
         </div>
         <div id="trackDaySummary" class="track-day" hidden></div>
@@ -4138,6 +4138,9 @@ function bahtText(value) {
     b.classList.toggle('live-on', trackLiveOn);
     b.classList.toggle('live-off', !trackLiveOn);
   }
+  // ซ่อน 2 ตัวท้ายของเลขพัสดุในรายการ (กดปุ่มเพื่อดูเต็ม)
+  const revealedTrack = new Set();
+  function maskTrackCode(c) { c = String(c || ''); return c.length > 2 ? c.slice(0, -2) + '••' : c; }
   function renderTrackingHistory() {
     // เรียงตามลำดับของ iship เอง (วันที่สร้างออเดอร์จริง) ถ้ามีข้อมูล ไม่งั้นใช้เวลาที่บันทึกในเครื่องแทน
     const sortKey = t => (t.ishipCreatedAt != null ? t.ishipCreatedAt : (t.savedAt || 0));
@@ -4164,11 +4167,12 @@ function bahtText(value) {
           liveHtml = '<div class="live-status live-ok"><span class="live-dot live-dot-on"></span>LIVE จาก iship: ' + esc(d.statusText) + (d.timeText ? ' · ' + esc(d.timeText) : '') + '</div>';
         }
       }
-      return '<li data-id="' + esc(t.id) + '"><div class="meta"><b>' + esc(t.code) + '</b>' + (t.customer ? '<span class="rcpt">' + esc(t.customer) + '</span>' : '') + '<small>' + esc(t.carrier) + ' · ' + esc(new Date(t.savedAt).toLocaleString('th-TH')) + '</small></div>' +
+      return '<li data-id="' + esc(t.id) + '"><div class="meta"><b>' + esc(revealedTrack.has(t.id) ? t.code : maskTrackCode(t.code)) + '</b>' + (t.customer ? '<span class="rcpt">' + esc(t.customer) + '</span>' : '') + '<small>' + esc(t.carrier) + ' · ' + esc(new Date(t.savedAt).toLocaleString('th-TH')) + '</small></div>' +
       '<select class="track-status-select status-pill ' + cls + '" data-id="' + esc(t.id) + '" aria-label="สถานะพัสดุ">' +
         Object.keys(TRACK_STATUS).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + TRACK_STATUS[k].label + '</option>').join('') +
       '</select>' +
       (trackingLink(t.carrier, t.code) ? '<button class="btn small primary" data-act="checklive" type="button">🔍 เปิดหน้าติดตาม</button>' : '') +
+      '<button class="btn small" data-act="reveal" type="button">' + (revealedTrack.has(t.id) ? '🙈 ซ่อนเลข' : '👁 ดูเลขเต็ม') + '</button>' +
       '<button class="btn small" data-act="copy" type="button">คัดลอก</button>' +
       '<button class="btn small edit" data-act="use" type="button">เปิดดู</button>' +
       '<button class="btn small del" data-act="del" type="button">ลบ</button>' +
@@ -4187,6 +4191,7 @@ function bahtText(value) {
     }
     const btn = e.target.closest('button[data-act]'); if (!btn) return;
     const li = btn.closest('li'); const id = li.dataset.id;
+    if (btn.dataset.act === 'reveal') { revealedTrack.has(id) ? revealedTrack.delete(id) : revealedTrack.add(id); renderTrackingHistory(); return; }
     const list = store.get('bs_tracking', []);
     const rec = list.find(t => t.id === id); if (!rec) return;
     if (btn.dataset.act === 'checklive') {
