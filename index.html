@@ -272,6 +272,7 @@ textarea{resize:vertical;min-height:72px}
 .btn.live-on{background:#2fa860;border-color:#1f7a45;color:#fff;font-weight:700;animation:liveGlow 1.8s ease-in-out infinite}
 .btn.live-off{background:transparent;border-color:#e5484d;color:#d6372f;font-weight:700;box-shadow:none}
 .btn.live-off:hover{background:#fdeeee}
+.track-import-row{margin:0 0 12px}
 .track-day{margin:4px 0 14px;padding:12px 14px;border-radius:12px;background:var(--field);border:1px solid var(--line)}
 .track-day-head{font-size:15px;margin-bottom:8px}
 .track-day ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
@@ -1671,11 +1672,13 @@ tr{break-inside:avoid}
           <h2 id="trackhist-h">ประวัติ (<span id="trackHistCount">0</span>)</h2>
           <span>ซิงก์ข้ามเครื่องอัตโนมัติ (ไม่ส่งขึ้น Google Sheets)</span>
         </div>
+        <div class="track-import-row">
+  <button class="btn small primary" id="track-import-iship" type="button">📥 ดึงรายการจาก iship (30 วันล่าสุด)</button>
+        </div>
         <label class="f hist-search"><span>ค้นหา</span><input class="txt" id="trackHistSearch" type="search" autocomplete="off" placeholder="ค้นหาเลขพัสดุหรือชื่อขนส่ง..."></label>
         <div class="dash-filter" style="margin-bottom:10px">
           <button class="btn small" id="track-live-toggle" type="button" aria-pressed="false">○ Live: ปิด</button>
           <button class="btn small" id="track-day-summary" type="button" aria-expanded="false">📦 สรุปวันนี้</button>
-          <button class="btn small primary" id="track-import-iship" type="button">📥 ดึงรายการจาก iship (30 วันล่าสุด)</button>
           <button class="btn small" id="track-refresh-live" type="button">🔄 รีเฟรชสถานะจาก iship ทั้งหมด</button>
           <button class="btn danger small" id="track-clear-all" type="button">ล้างทั้งหมด</button>
         </div>
