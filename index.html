@@ -122,7 +122,7 @@ a{color:inherit}
 .tax-sheet-backdrop{position:fixed;inset:0;background:rgba(8,14,26,.18);z-index:950}
 .tax-sheet{position:fixed;left:10px;right:10px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:960;
   display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
-.tax-sheet-item{display:inline-flex;align-items:center;padding:8px 14px;border-radius:999px;
+.tax-sheet-item{display:inline-flex;align-items:center;padding:9px 16px;border-radius:999px;
   border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap;
   font:600 13px/1.2 'Sarabun','Noto Sans Thai',system-ui,sans-serif;box-shadow:var(--shadow-2);
   -webkit-tap-highlight-color:transparent}
@@ -677,6 +677,9 @@ tr{break-inside:avoid}
   .top-track:active{background:var(--surface)}
   .top-track svg{flex:none}
   .top-track span{overflow:hidden;text-overflow:ellipsis}
+  /* ติดตามพัสดุย้ายไปอยู่ในเมนูล่างแล้ว จึงซ่อนปุ่มลัดบนหัวเว็บ (กันปุ่มซ้ำสองที่) */
+  .top-track{display:none}
+  .top .brand{margin-right:auto}
   .wrap{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   /* เมนูล่าง (มือถือ): 5 ช่องเท่ากัน ปุ่ม "สั่งงาน" อยู่กึ่งกลางพอดี — พื้นแถบวาดด้วย ::after เพื่อให้วงรองปุ่มกลาง (::before ของปุ่ม) ซ่อนครึ่งล่างไว้หลังแถบได้ */
   .bnav{
@@ -689,12 +692,12 @@ tr{break-inside:avoid}
   .btab{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;
     background:transparent;border:0;margin:0;padding:0 2px 2px;color:var(--muted);cursor:pointer;
     font:600 11px/1.4 'Sarabun','Noto Sans Thai',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
-  .btab-ico{display:grid;place-items:center;width:52px;max-width:100%;height:30px;border-radius:15px;
+  .btab-ico{display:grid;place-items:center;width:56px;max-width:100%;height:32px;border-radius:16px;
     transition:background-color .18s ease,color .18s ease}
   .btab-ico svg{width:22px;height:22px;flex:none}
-  .btab-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .btab-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;letter-spacing:.01em}
   .btab:active .btab-ico,.btab[aria-expanded="true"] .btab-ico{background:var(--field)}
-  .btab.active{color:var(--ink);font-weight:700}
+  .btab.active{color:var(--blue-ink);font-weight:700}
   .btab.active .btab-ico{background:var(--blue-bg);background:color-mix(in srgb,var(--sticker) 24%,transparent);color:var(--blue-ink)}
   .btab:focus-visible{outline:2px solid var(--blue-ink);outline-offset:1px;border-radius:14px}
   /* ปุ่ม "สั่งงาน" กลางเมนูล่าง: วงกลมสีเหลืองยกขึ้นเหนือแถบ มีวงรองสีเดียวกับแถบโอบไว้ ให้ดูเป็นชิ้นเดียวกับเมนู */
@@ -703,7 +706,7 @@ tr{break-inside:avoid}
     box-sizing:border-box;border-radius:50%;background:var(--surface);border:1px solid var(--line)}
   .btab-fab-circle{
     width:56px;height:56px;border-radius:50%;background:var(--accent);color:var(--accent-ink);flex:none;
-    display:grid;place-items:center;margin:-28px 0 2px;transition:transform .12s ease;
+    display:grid;place-items:center;margin:-28px 0 4px;transition:transform .12s ease;
     box-shadow:inset -5px -5px 0 rgba(16,35,63,.14),0 0 0 5px var(--surface),0 12px 16px -8px rgba(16,35,63,.55);
   }
   .btab-fab-circle svg{width:25px;height:25px}
@@ -1159,18 +1162,19 @@ tr{break-inside:avoid}
       </span>
       <span class="btab-label">สั่งงาน</span>
     </button>
-    <button type="button" class="btab" data-tab="quote" aria-controls="panel-quote">
-      <span class="btab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="13" y2="17"></line></svg></span>
-      <span class="btab-label">เสนอราคา</span>
+    <button type="button" class="btab" data-tab="track" aria-controls="panel-track">
+      <span class="btab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5A1.5 1.5 0 0 1 3.5 5h9A1.5 1.5 0 0 1 14 6.5V16H2z"></path><path d="M14 9h3.6a1 1 0 0 1 .8.4l2.4 3.2a1 1 0 0 1 .2.6V16h-7"></path><circle cx="6.5" cy="17.5" r="2"></circle><circle cx="17.5" cy="17.5" r="2"></circle></svg></span>
+      <span class="btab-label">ติดตาม</span>
     </button>
     <button type="button" class="btab" id="bnavTaxTrigger" aria-haspopup="true" aria-expanded="false">
-      <span class="btab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="8.5" y1="15.5" x2="15.5" y2="8.5"></line><circle cx="9" cy="9" r="1"></circle><circle cx="15" cy="15" r="1"></circle></svg></span>
-      <span class="btab-label">ภาษี</span>
+      <span class="btab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"></rect></svg></span>
+      <span class="btab-label">เพิ่มเติม</span>
     </button>
   </nav>
 
   <div class="tax-sheet-backdrop no-print" id="taxSheetBackdrop" hidden></div>
-  <div class="tax-sheet no-print" id="taxSheet" role="menu" aria-label="เมนูภาษี" hidden>
+  <div class="tax-sheet no-print" id="taxSheet" role="menu" aria-label="เมนูเพิ่มเติม: ใบเสนอราคาและภาษี" hidden>
+    <button type="button" class="tax-sheet-item" data-tab="quote">ใบเสนอราคา</button>
     <button type="button" class="tax-sheet-item" data-tab="vat">คำนวณ VAT</button>
     <button type="button" class="tax-sheet-item" data-tab="bill">ใบเสร็จ / ใบกำกับภาษี</button>
     <button type="button" class="tax-sheet-item" data-tab="purchase">ภาษีซื้อ</button>
@@ -5444,7 +5448,7 @@ function bahtText(value) {
     document.querySelectorAll('.top-track[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
     const isTax = TAX_TABS.indexOf(name) >= 0;
     $('taxTrigger').closest('.tab-group').classList.toggle('has-active', isTax);
-    $('bnavTaxTrigger').classList.toggle('active', isTax || name === 'vat');
+    $('bnavTaxTrigger').classList.toggle('active', isTax || name === 'vat' || name === 'quote');
     closeTaxMenus();
     if (name === 'bill') fitBill();
     if (name === 'confirm') fitJob();
@@ -5942,11 +5946,12 @@ function bahtText(value) {
   function applyRoleUI() {
     if (isOwner) return;
     // พนักงาน: เปิดได้แค่ "คำนวณสติ๊กเกอร์" กับ "ใบคอนเฟิร์มงาน" — ซ่อนแท็บ/เมนูอื่นทั้งหมด
-    ['tab-bill', 'tab-wholesale', 'tab-purchase', 'tab-dash', 'tab-report'].forEach(id => { const el = $(id); if (el) el.hidden = true; });
+    ['tab-bill', 'tab-wholesale', 'tab-quote', 'tab-purchase', 'tab-dash', 'tab-report'].forEach(id => { const el = $(id); if (el) el.hidden = true; });
     document.querySelectorAll('.tax-sheet-item[data-tab]').forEach(el => { el.hidden = true; });
     document.querySelectorAll('.btab[data-tab="bill"]').forEach(el => { el.hidden = true; });
     document.querySelectorAll('.btab[data-tab="wholesale"]').forEach(el => { el.hidden = true; });
     document.querySelectorAll('.btab[data-tab="dash"]').forEach(el => { el.hidden = true; });
+    document.querySelectorAll('[data-tab="quote"]').forEach(el => { el.hidden = true; });
     if ($('taxTrigger')) { const grp = $('taxTrigger').closest('.tab-group'); if (grp) grp.hidden = true; }
     if ($('bnavTaxTrigger')) $('bnavTaxTrigger').hidden = true;
     if ($('shopSettings')) $('shopSettings').hidden = true;
