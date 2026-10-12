@@ -284,6 +284,7 @@ textarea{resize:vertical;min-height:72px}
 #trackHistory li:has(.trk-issue)::before{background:#e5484d}
 #trackHistory .meta{flex-basis:100%;display:flex;flex-direction:column;gap:3px;min-width:0}
 #trackHistory .meta b{font-size:16px;letter-spacing:.03em;font-variant-numeric:tabular-nums;color:var(--ink);word-break:break-all}
+#trackHistory .meta .rcpt{font-size:19px;font-weight:700;color:var(--ink);line-height:1.3;margin-top:2px;word-break:break-word}
 #trackHistory .meta small{color:var(--muted);font-size:12.5px;line-height:1.45}
 #trackHistory .track-status-select{flex:1 1 180px;min-width:0;border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px}
 #trackHistory li .btn{padding:7px 13px;font-size:13px;box-shadow:none;border-radius:10px}
@@ -4163,7 +4164,7 @@ function bahtText(value) {
           liveHtml = '<div class="live-status live-ok"><span class="live-dot live-dot-on"></span>LIVE จาก iship: ' + esc(d.statusText) + (d.timeText ? ' · ' + esc(d.timeText) : '') + '</div>';
         }
       }
-      return '<li data-id="' + esc(t.id) + '"><div class="meta"><b>' + esc(t.code) + '</b><small>' + esc(t.carrier) + (t.customer ? ' · ' + esc(t.customer) : '') + ' · ' + esc(new Date(t.savedAt).toLocaleString('th-TH')) + '</small></div>' +
+      return '<li data-id="' + esc(t.id) + '"><div class="meta"><b>' + esc(t.code) + '</b>' + (t.customer ? '<span class="rcpt">' + esc(t.customer) + '</span>' : '') + '<small>' + esc(t.carrier) + ' · ' + esc(new Date(t.savedAt).toLocaleString('th-TH')) + '</small></div>' +
       '<select class="track-status-select status-pill ' + cls + '" data-id="' + esc(t.id) + '" aria-label="สถานะพัสดุ">' +
         Object.keys(TRACK_STATUS).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + TRACK_STATUS[k].label + '</option>').join('') +
       '</select>' +
