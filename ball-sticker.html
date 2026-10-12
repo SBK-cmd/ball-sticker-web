@@ -1660,10 +1660,6 @@ tr{break-inside:avoid}
         </div>
         <label class="f hist-search"><span>ค้นหา</span><input class="txt" id="trackHistSearch" type="search" autocomplete="off" placeholder="ค้นหาเลขพัสดุหรือชื่อขนส่ง..."></label>
         <div class="dash-filter" style="margin-bottom:10px">
-<<<<<<< ours.html
-=======
-          <button class="btn small primary" id="track-import-iship" type="button">📥 ดึงรายการจาก iship (30 วันล่าสุด)</button>
->>>>>>> theirs.html
           <button class="btn small" id="track-refresh-live" type="button">🔄 รีเฟรชสถานะจาก iship ทั้งหมด</button>
           <button class="btn danger small" id="track-clear-all" type="button">ล้างทั้งหมด</button>
         </div>
@@ -3876,80 +3872,6 @@ function bahtText(value) {
     const p = document.getElementById('panel-track');
     return !!(p && p.classList.contains('active'));
   }
-<<<<<<< ours.html
-=======
-
-  /* ---------------- ดึงรายการพัสดุจาก iship โดยตรง (ผ่าน Cloudflare Worker ตัวกลาง)
-     Worker ถือ iship Bearer Token ไว้ฝั่ง server เอง แอปนี้แค่เรียก Worker ด้วย "กุญแจ" สั้นๆ
-     (ไม่ใช่โทเคนจริงของ iship) จึงไม่มีความลับฝังอยู่ในหน้าเว็บที่เปิดเผยสาธารณะ ---------------- */
-  const ISHIP_ORDERS_PROXY_URL = 'https://iship-orders-proxy.organic-parmesan.workers.dev';
-  const ISHIP_ORDERS_APP_KEY = 'bs2026ordq7fxk3mvhz9n';
-  const ISHIP_COURIER_LABEL = {
-    FlashExpress: 'Flash Express',
-    KerryExpress: 'Kerry Express',
-    ThailandPost: 'ไปรษณีย์ไทย (EMS)',
-    JNT: 'J&T Express',
-    NinjaVan: 'Ninja Van',
-    SCGExpress: 'SCG Express',
-    BestExpress: 'BEST Express'
-  };
-  function mapIshipCourierLabel(code) {
-    return ISHIP_COURIER_LABEL[code] || code || 'อื่นๆ';
-  }
-  function mapIshipStatusToLocal(statusName) {
-    const s = String(statusName || '');
-    if (/สำเร็จ|ถึงปลายทาง|ส่งมอบแล้ว/.test(s)) return 'delivered';
-    if (/ยกเลิก|ตีกลับ|คืน|ปัญหา|ไม่สำเร็จ/.test(s)) return 'issue';
-    if (/รอเข้ารับ/.test(s)) return 'pending';
-    return 'transit';
-  }
-  function ymd(d) { return d.toISOString().slice(0, 10); }
-  async function importOrdersFromIship(days) {
-    if (!ISHIP_ORDERS_PROXY_URL) { toast('ยังไม่ได้ตั้งค่า iship-orders-proxy — รอผมใส่ URL ให้ก่อน'); return; }
-    const end = new Date();
-    const start = new Date(Date.now() - (days || 30) * 86400000);
-    const qs = new URLSearchParams({
-      key: ISHIP_ORDERS_APP_KEY,
-      start_date: ymd(start),
-      end_date: ymd(end)
-    });
-    toast('กำลังดึงรายการจาก iship...');
-    let json;
-    try {
-      const res = await fetch(ISHIP_ORDERS_PROXY_URL + '?' + qs.toString());
-      json = await res.json();
-      if (!res.ok || json.status !== true) throw new Error(json.message || ('HTTP ' + res.status));
-    } catch (e) {
-      console.error('importOrdersFromIship error', e);
-      toast('ดึงรายการจาก iship ไม่สำเร็จ: ' + e.message);
-      return;
-    }
-    const orders = Array.isArray(json.data) ? json.data : [];
-    if (!orders.length) { toast('ไม่พบรายการพัสดุในช่วง ' + days + ' วันล่าสุด'); return; }
-    const list = store.get('bs_tracking', []);
-    const existingCodes = new Set(list.map(t => t.code));
-    let added = 0;
-    orders.forEach(o => {
-      const code = o.track_no;
-      if (!code || existingCodes.has(code)) return;
-      const carrier = mapIshipCourierLabel(o.courier_code);
-      const customer = o.dst_name || '';
-      const message = buildTrackingMessage(code, carrier, customer);
-      list.unshift({
-        id: 't' + Date.now() + '_' + (added++),
-        code, carrier, customer, message,
-        status: mapIshipStatusToLocal(o.status_name),
-        savedAt: Date.now(),
-        ishipStatusName: o.status_name || ''
-      });
-      existingCodes.add(code);
-      if (customer) upsertCustomer(customer, o.dst_phone || '', '');
-    });
-    store.set('bs_tracking', list);
-    renderTrackingHistory();
-    toast(added ? ('เพิ่มรายการใหม่ ' + added + ' รายการจาก iship แล้ว') : 'ไม่มีรายการใหม่ (มีอยู่ในประวัติครบแล้ว)');
-  }
->>>>>>> theirs.html
   function updateTrackingStatus(id, status) {
     const list = store.get('bs_tracking', []);
     const idx = list.findIndex(t => t.id === id); if (idx < 0) return;
@@ -4094,10 +4016,6 @@ function bahtText(value) {
   $('track-make').addEventListener('click', saveTracking);
   $('track-new').addEventListener('click', newTracking);
   $('track-copy').addEventListener('click', copyTrackingMessage);
-<<<<<<< ours.html
-=======
-  $('track-import-iship').addEventListener('click', () => importOrdersFromIship(30));
->>>>>>> theirs.html
   $('track-refresh-live').addEventListener('click', () => {
     const list = store.get('bs_tracking', []);
     if (!cloudDb) { toast('ยังไม่ได้เชื่อมต่อฐานข้อมูลคลาวด์'); return; }
