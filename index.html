@@ -1642,7 +1642,7 @@ tr{break-inside:avoid}
               <button class="btn good" id="track-make" type="button">✨ สร้างข้อความและบันทึก</button>
               <button class="btn danger" id="track-new" type="button">ล้างช่องกรอก</button>
             </div>
-            <p class="hint">🔒 ประวัติเก็บเฉพาะในอุปกรณ์นี้ ไม่ส่งขึ้นคลาวด์/Google Sheets</p>
+            <p class="hint">☁️ ประวัติซิงก์ข้ามเครื่องผ่านคลาวด์ของร้าน (ไม่เกี่ยวกับ Google Sheets)</p>
           </div>
         </div>
         <div class="preview-col">
@@ -1659,7 +1659,7 @@ tr{break-inside:avoid}
       <section class="card history no-print" style="margin-top:20px" aria-labelledby="trackhist-h">
         <div class="viz-head">
           <h2 id="trackhist-h">ประวัติ (<span id="trackHistCount">0</span>)</h2>
-          <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น ไม่ส่งขึ้นคลาวด์/Google Sheets</span>
+          <span>ซิงก์ข้ามเครื่องอัตโนมัติ (ไม่ส่งขึ้น Google Sheets)</span>
         </div>
         <label class="f hist-search"><span>ค้นหา</span><input class="txt" id="trackHistSearch" type="search" autocomplete="off" placeholder="ค้นหาเลขพัสดุหรือชื่อขนส่ง..."></label>
         <div class="dash-filter" style="margin-bottom:10px">
@@ -3776,7 +3776,7 @@ function bahtText(value) {
   }
 
   /* ---------------- ติดตามพัสดุ (สร้างข้อความแจ้งลูกค้า) ----------------
-     เก็บเฉพาะในเครื่อง (bs_tracking) ไม่ส่งขึ้นคลาวด์/Google Sheets ตามรูปแบบเครื่องมือเดิมที่รวมเข้ามา */
+     ซิงก์ข้ามเครื่องผ่าน Firestore (collection "tracking") เหมือนประวัติเอกสารอื่นๆ ในแอป — ถ้าไม่มี/ต่อคลาวด์ไม่ได้ จะใช้ bs_tracking ในเครื่องนี้ไปก่อนตามปกติ */
   // สถานะพัสดุอัปเดตเองโดยร้าน (ไม่มี API เชื่อมขนส่งจริง) ใช้ dropdown ปรับสถานะในประวัติแต่ละรายการ คล้ายสถานะใบคอนเฟิร์มงาน
   const TRACK_STATUS = {
     transit: {label: 'กำลังจัดส่ง', cls: 'printed'},
@@ -3976,6 +3976,7 @@ function bahtText(value) {
     if (!orders.length) { toast('ไม่พบรายการพัสดุในช่วง ' + totalDays + ' วันล่าสุด'); return; }
     const list = store.get('bs_tracking', []);
     const existingCodes = new Set(list.map(t => t.code));
+    const newRecs = [];
     let added = 0;
     orders.forEach(o => {
       const code = o.track_no;
@@ -3985,7 +3986,7 @@ function bahtText(value) {
       const message = buildTrackingMessage(code, carrier, customer);
       const createdStr = o.created || o.updated || '';
       const ishipCreatedAt = createdStr ? new Date(createdStr.replace(' ', 'T')).getTime() || null : null;
-      list.unshift({
+      const rec = {
         id: 't' + Date.now() + '_' + (added++),
         code, carrier, customer, message,
         status: mapIshipStatusToLocal(o.status_name),
@@ -3993,11 +3994,14 @@ function bahtText(value) {
         ishipStatusName: o.status_name || '',
         ishipId: o.id != null ? o.id : null,
         ishipCreatedAt: ishipCreatedAt
-      });
+      };
+      list.unshift(rec);
+      newRecs.push(rec);
       existingCodes.add(code);
       if (customer) upsertCustomer(customer, o.dst_phone || '', '');
     });
     store.set('bs_tracking', list);
+    newRecs.forEach(rec => cloudSave('tracking', rec));
     renderTrackingHistory();
     toast(added ? ('เพิ่มรายการใหม่ ' + added + ' รายการจาก iship แล้ว') : 'ไม่มีรายการใหม่ (มีอยู่ในประวัติครบแล้ว)');
   }
@@ -4006,6 +4010,7 @@ function bahtText(value) {
     const idx = list.findIndex(t => t.id === id); if (idx < 0) return;
     list[idx] = Object.assign({}, list[idx], {status});
     store.set('bs_tracking', list);
+    cloudSave('tracking', list[idx]);
     renderTrackingHistory();
     toast('อัปเดตสถานะเป็น "' + (TRACK_STATUS[status] ? TRACK_STATUS[status].label : status) + '" แล้ว');
   }
@@ -4052,6 +4057,7 @@ function bahtText(value) {
     const rec = {id: 't' + Date.now(), code, carrier, customer, message: msg, status: 'transit', savedAt: Date.now()};
     list.unshift(rec);
     store.set('bs_tracking', list);
+    cloudSave('tracking', rec);
     if (customer) upsertCustomer(customer, '', '');
     renderTrackingHistory();
     toast('สร้างข้อความและบันทึกประวัติแล้ว');
@@ -4136,6 +4142,7 @@ function bahtText(value) {
       clearTimeout(trackDelTimer); trackDelArmed = null;
       unsubscribeLiveTracking(rec.code);
       store.set('bs_tracking', list.filter(t => t.id !== id));
+      cloudDelete('tracking', id);
       renderTrackingHistory();
       toast('ลบรายการแล้ว');
     }
@@ -4163,6 +4170,7 @@ function bahtText(value) {
       return;
     }
     clearTimeout(trackClearTimer); trackClearArmed = false; btn.textContent = 'ล้างทั้งหมด';
+    store.get('bs_tracking', []).forEach(t => { unsubscribeLiveTracking(t.code); cloudDelete('tracking', t.id); });
     store.set('bs_tracking', []);
     renderTrackingHistory();
     toast('ล้างประวัติทั้งหมดแล้ว');
@@ -5914,6 +5922,22 @@ function bahtText(value) {
     watchCloud('purchases', 'bs_purchases', renderPurchHistory);
     watchCloud('customers', 'bs_customers', renderCustomerDatalist);
     watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
+    // ประวัติ "ติดตามพัสดุ" แต่ก่อนเก็บเฉพาะในเครื่องเท่านั้น — ครั้งแรกที่เปิดหน้านี้หลังอัปเดต
+    // ให้อัปโหลดรายการที่มีอยู่ในเครื่องนี้ขึ้นคลาวด์ก่อน 1 ครั้ง (กันไม่ให้ข้อมูลเดิมหายไปตอนเริ่มซิงก์)
+    // แล้วค่อยเริ่มฟังคลาวด์แบบเรียลไทม์ เพื่อให้ทุกเครื่องเห็นประวัติเดียวกัน
+    if (cloudDb) {
+      const MIGRATE_KEY = 'bs_tracking_cloud_migrated_v1';
+      const already = store.get(MIGRATE_KEY, false);
+      const startTrackingSync = () => watchCloud('tracking', 'bs_tracking', renderTrackingHistory);
+      if (already) {
+        startTrackingSync();
+      } else {
+        const localList = store.get('bs_tracking', []);
+        localList.forEach(rec => cloudSave('tracking', rec));
+        store.set(MIGRATE_KEY, true);
+        startTrackingSync();
+      }
+    }
   });
   $('dashMonth').addEventListener('change', renderDash);
   $('dash-all').addEventListener('click', () => { $('dashMonth').value = ''; renderDash(); });
