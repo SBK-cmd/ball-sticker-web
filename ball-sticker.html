@@ -2258,8 +2258,47 @@ function bahtText(value) {
       });
       store.set(key, list);
       cloudStatus = 'on';
+      if (col === 'tracking') autoMergeTrackingOnce();
       onChange();
     }, err => { console.error(col + ' sync error', err); cloudStatus = 'error'; onChange(); });
+  }
+  // รวมรายการพัสดุที่ "เลขพัสดุและชื่อลูกค้าตรงกัน" ให้เหลือแถวเดียว (ทำครั้งเดียวต่อเบราว์เซอร์ หลังข้อมูลจากคลาวด์โหลดเสร็จ)
+  // แถวที่เลขตรงแต่ชื่อต่างกันจะไม่ถูกแตะต้อง และสำรองข้อมูลก่อนรวมทุกครั้ง
+  const TRACK_AUTOMERGE_FLAG = 'bs_tracking_automerge_v1';
+  function autoMergeTrackingOnce() {
+    try { if (localStorage.getItem(TRACK_AUTOMERGE_FLAG)) return; } catch (e) { return; }
+    const list = store.get('bs_tracking', []);
+    const groups = new Map();
+    list.forEach(t => {
+      const code = String(t.code || '').trim().toUpperCase();
+      const name = String(t.customer || '').trim().replace(/\s+/g, ' ').toLowerCase();
+      if (!code || !name) return;
+      const k = code + '|' + name;
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(t);
+    });
+    const dup = [...groups.values()].filter(g => g.length > 1);
+    if (!dup.length) { try { localStorage.setItem(TRACK_AUTOMERGE_FLAG, '1'); } catch (e) {} return; }
+    try {
+      Object.keys(localStorage).filter(k => k.indexOf('bs_tracking_backup_') === 0).forEach(k => localStorage.removeItem(k));
+      localStorage.setItem('bs_tracking_backup_' + Date.now(), JSON.stringify(list));
+    } catch (e) { return; }
+    const score = t => (t.sender ? 1 : 0) + (t.senderPhone ? 1 : 0) + (t.ishipCreatedAt ? 1 : 0) + (t.ishipStatusName ? 1 : 0) + (t.status && t.status !== 'transit' ? 1 : 0);
+    const FILL = ['sender', 'senderPhone', 'senderAddress', 'ishipCreatedAt', 'ishipStatusName', 'ishipId'];
+    const removeIds = new Set();
+    const keepById = new Map();
+    dup.forEach(rows => {
+      const sorted = rows.slice().sort((a, b) => (score(b) - score(a)) || ((a.savedAt || 0) - (b.savedAt || 0)));
+      const k = Object.assign({}, sorted[0]);
+      sorted.slice(1).forEach(r => { FILL.forEach(f => { if (!k[f] && r[f]) k[f] = r[f]; }); removeIds.add(r.id); });
+      keepById.set(sorted[0].id, k);
+    });
+    const next = list.filter(t => !removeIds.has(t.id)).map(t => keepById.get(t.id) || t);
+    store.set('bs_tracking', next);
+    try { localStorage.setItem(TRACK_AUTOMERGE_FLAG, '1'); } catch (e) {}
+    removeIds.forEach(id => cloudDelete('tracking', id));
+    keepById.forEach(k => cloudSave('tracking', k));
+    toast('รวมรายการพัสดุที่ซ้ำกันแล้ว ' + removeIds.size + ' แถว (สำรองไว้แล้ว)');
   }
   function cloudSave(col, rec) {
     if (!cloudDb) return;
