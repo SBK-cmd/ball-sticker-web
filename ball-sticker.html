@@ -401,6 +401,8 @@ button.status-pill:active{filter:brightness(0.9)}
 .history li .live-status.live-none{background:var(--mat);color:var(--muted)}
 .history li .live-status.live-ok{background:#e6f6ea;color:#1a6b3a}
 .history li .live-status .refresh-one{margin-left:auto;background:none;border:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit;font-size:11.5px;padding:0}
+.history li .sender-info{flex-basis:100%;font-size:12px;color:var(--muted);background:var(--mat);border-radius:9px;padding:6px 10px;margin-top:-2px}
+.history li .sender-info b{color:inherit;font-weight:700}
 .history li .live-status .live-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
 .history li .live-status .live-dot-on{background:#1a6b3a;animation:liveDotPulse 1.6s ease-in-out infinite}
 @keyframes liveDotPulse{0%,100%{box-shadow:0 0 0 0 rgba(26,107,58,.45)}50%{box-shadow:0 0 0 5px rgba(26,107,58,0)}}
@@ -1698,7 +1700,10 @@ tr{break-inside:avoid}
   <button class="btn small primary" id="track-import-iship" type="button">📥 ดึงรายการจาก iship (30 วันล่าสุด)</button>
           <button class="btn small" id="track-refresh-live" type="button">🔄 รีเฟรชสถานะจาก iship ทั้งหมด</button>
         </div>
-        <label class="f hist-search"><span>ค้นหา</span><input class="txt" id="trackHistSearch" type="search" autocomplete="off" placeholder="ค้นหาเลขพัสดุหรือชื่อขนส่ง..."></label>
+        <div class="dash-filter" style="margin-bottom:10px">
+          <label class="f hist-search"><span>ค้นหา</span><input class="txt" id="trackHistSearch" type="search" autocomplete="off" placeholder="ค้นหาเลขพัสดุ, ขนส่ง, ลูกค้า, ผู้ส่ง..."></label>
+          <label class="f"><span>ผู้ส่ง/เพจ</span><select class="txt" id="trackSenderFilter"><option value="">ทั้งหมด</option></select></label>
+        </div>
         <div class="dash-filter" style="margin-bottom:10px">
           <button class="btn small" id="track-live-toggle" type="button" aria-pressed="false">○ Live: ปิด</button>
           <button class="btn small" id="track-day-summary" type="button" aria-expanded="false">📦 สรุปวันนี้</button>
@@ -4024,6 +4029,12 @@ function bahtText(value) {
       const message = buildTrackingMessage(code, carrier, customer);
       const createdStr = o.created || o.updated || '';
       const ishipCreatedAt = createdStr ? new Date(createdStr.replace(' ', 'T')).getTime() || null : null;
+      // ชื่อ/ที่อยู่ "ผู้ส่ง" จากข้อมูลออเดอร์ของ iship — เผื่อร้านมีหลายเพจ/หลายที่อยู่ต้นทางในบัญชี iship เดียวกัน
+      // label_name/label_address คือชื่อ-ที่อยู่ที่ใช้พิมพ์บนใบปะหน้าจริง ให้ความสำคัญก่อน src_* (ข้อมูลตั้งต้นของบัญชี)
+      const sender = o.label_name || o.src_name || '';
+      const senderPhone = o.label_phone || o.src_phone || '';
+      const senderAddress = o.label_address ||
+        [o.src_address, o.src_district, o.src_area, o.src_province, o.src_zipcode].filter(Boolean).join(' ');
       const rec = {
         id: 't' + Date.now() + '_' + (added++),
         code, carrier, customer, message,
@@ -4031,7 +4042,8 @@ function bahtText(value) {
         savedAt: Date.now(),
         ishipStatusName: o.status_name || '',
         ishipId: o.id != null ? o.id : null,
-        ishipCreatedAt: ishipCreatedAt
+        ishipCreatedAt: ishipCreatedAt,
+        sender, senderPhone, senderAddress
       };
       list.unshift(rec);
       newRecs.push(rec);
@@ -4146,7 +4158,18 @@ function bahtText(value) {
     const sortKey = t => (t.ishipCreatedAt != null ? t.ishipCreatedAt : (t.savedAt || 0));
     const list = store.get('bs_tracking', []).slice().sort((a, b) => sortKey(b) - sortKey(a));
     const q = $('trackHistSearch') ? $('trackHistSearch').value.trim() : '';
-    const shown = q ? list.filter(t => matchesSearch(t.code, q) || matchesSearch(t.carrier, q) || matchesSearch(t.customer, q)) : list;
+    // อัปเดตตัวเลือกใน dropdown "ผู้ส่ง/เพจ" ให้ตรงกับรายชื่อผู้ส่งที่มีอยู่จริงในประวัติ (เผื่อร้านมีหลายเพจ/หลายที่อยู่ต้นทาง)
+    const senderSel = $('trackSenderFilter');
+    let senderFilter = '';
+    if (senderSel) {
+      senderFilter = senderSel.value;
+      const senders = Array.from(new Set(list.map(t => t.sender).filter(Boolean))).sort();
+      const optsHtml = '<option value="">ทั้งหมด</option>' + senders.map(s => '<option value="' + esc(s) + '"' + (s === senderFilter ? ' selected' : '') + '>' + esc(s) + '</option>').join('');
+      if (senderSel.innerHTML !== optsHtml) senderSel.innerHTML = optsHtml;
+      if (senderFilter && senders.indexOf(senderFilter) < 0) senderFilter = ''; // ผู้ส่งที่เลือกไว้ไม่มีในรายการแล้ว (เช่นลบรายการนั้นหมด) กลับเป็น "ทั้งหมด"
+    }
+    let shown = q ? list.filter(t => matchesSearch(t.code, q) || matchesSearch(t.carrier, q) || matchesSearch(t.customer, q) || matchesSearch(t.sender, q) || matchesSearch(t.senderAddress, q)) : list;
+    if (senderFilter) shown = shown.filter(t => t.sender === senderFilter);
     $('trackHistCount').textContent = list.length;
     if (!list.length) { $('trackHistory').innerHTML = '<p class="empty">ยังไม่มีประวัติ สร้างข้อความแรกได้เลย</p>'; return; }
     if (!shown.length) { $('trackHistory').innerHTML = '<p class="empty">ไม่พบรายการที่ค้นหา</p>'; return; }
@@ -4167,7 +4190,8 @@ function bahtText(value) {
           liveHtml = '<div class="live-status live-ok"><span class="live-dot live-dot-on"></span>LIVE จาก iship: ' + esc(d.statusText) + (d.timeText ? ' · ' + esc(d.timeText) : '') + '</div>';
         }
       }
-      return '<li data-id="' + esc(t.id) + '"><div class="meta"><b>' + esc(revealedTrack.has(t.id) ? t.code : maskTrackCode(t.code)) + '</b>' + (t.customer ? '<span class="rcpt">' + esc(t.customer) + '</span>' : '') + '<small>' + esc(t.carrier) + ' · ' + esc(new Date(t.savedAt).toLocaleString('th-TH')) + '</small></div>' +
+      const senderHtml = t.sender ? '<div class="sender-info">📍 ผู้ส่ง: <b>' + esc(t.sender) + '</b>' + (t.senderAddress ? ' · ' + esc(t.senderAddress) : '') + (t.senderPhone ? ' · โทร ' + esc(t.senderPhone) : '') + '</div>' : '';
+      return '<li data-id="' + esc(t.id) + '"><div class="meta"><b>' + esc(revealedTrack.has(t.id) ? t.code : maskTrackCode(t.code)) + '</b>' + (t.customer ? '<span class="rcpt">' + esc(t.customer) + '</span>' : '') + '<small>' + esc(t.carrier) + ' · ' + esc(new Date(t.savedAt).toLocaleString('th-TH')) + '</small></div>' + senderHtml +
       '<select class="track-status-select status-pill ' + cls + '" data-id="' + esc(t.id) + '" aria-label="สถานะพัสดุ">' +
         Object.keys(TRACK_STATUS).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + TRACK_STATUS[k].label + '</option>').join('') +
       '</select>' +
@@ -4222,6 +4246,7 @@ function bahtText(value) {
     updateTrackingStatus(sel.dataset.id, sel.value);
   });
   $('trackHistSearch').addEventListener('input', renderTrackingHistory);
+  $('trackSenderFilter').addEventListener('change', renderTrackingHistory);
   $('track-make').addEventListener('click', saveTracking);
   $('track-new').addEventListener('click', newTracking);
   $('track-copy').addEventListener('click', copyTrackingMessage);
