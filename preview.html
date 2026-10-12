@@ -97,7 +97,10 @@ a{color:inherit}
 .brand small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
 .top-track{display:none}
 .tabs{display:flex;flex-wrap:wrap;gap:4px;align-items:center;background:var(--field);border:1px solid var(--line);border-radius:999px;padding:4px;position:relative}
-.tabs button,.tabs a{border:1.5px solid transparent;background:transparent;border-radius:999px;padding:8px 16px;font-weight:600;cursor:pointer;text-decoration:none;color:var(--muted);white-space:nowrap;transition:background-color .15s,color .15s}
+.tabs button,.tabs a{display:inline-flex;align-items:center;gap:9px;border:1.5px solid transparent;background:transparent;border-radius:999px;padding:8px 16px;font-weight:600;cursor:pointer;text-decoration:none;color:var(--muted);white-space:nowrap;transition:background-color .15s,color .15s}
+.tab-ic{flex:none;width:17px;height:17px;opacity:.85}
+.tabs button[aria-selected="true"] .tab-ic{opacity:1}
+.sidebar-cta{display:none}
 .tabs button:hover,.tabs a:hover{background:var(--surface);color:var(--ink)}
 .tabs button[aria-selected="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink);box-shadow:var(--shadow-1)}
 .tabs button[aria-selected="true"]:hover{background:var(--ink);color:var(--surface)}
@@ -106,13 +109,14 @@ a{color:inherit}
 .tab-trigger{display:inline-flex;align-items:center;gap:5px}
 .tab-group.open .tab-trigger,.tab-trigger[aria-expanded="true"]{background:var(--surface);color:var(--ink)}
 .tab-group.has-active .tab-trigger{background:var(--ink);color:var(--surface);border-color:var(--ink)}
-.tab-trigger svg{transition:transform .15s}
-.tab-group.open .tab-trigger svg{transform:rotate(180deg)}
+.tab-trigger .tab-chev{transition:transform .15s}
+.tab-group.open .tab-trigger .tab-chev{transform:rotate(180deg)}
 .tab-dropdown{position:absolute;top:calc(100% + 8px);left:0;min-width:190px;background:var(--surface);
   border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-2);padding:6px;
   display:flex;flex-direction:column;gap:2px;z-index:60}
-.tab-dropdown button{width:100%;text-align:left;border-radius:9px;padding:9px 12px;border:1.5px solid transparent;
+.tab-dropdown button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border-radius:9px;padding:9px 12px;border:1.5px solid transparent;
   background:transparent;color:var(--ink);font-weight:600;cursor:pointer}
+.tab-dropdown .tab-ic{opacity:.8}
 .tab-dropdown button:hover{background:var(--field)}
 .tab-dropdown button[aria-selected="true"]{background:var(--field);color:var(--sticker-line)}
 .tax-sheet-backdrop{position:fixed;inset:0;background:rgba(8,14,26,.18);z-index:950}
@@ -157,6 +161,8 @@ a{color:inherit}
     background:var(--surface);overflow-y:auto;
   }
   header.top .brand{padding:0 6px 20px;flex:none}
+  .sidebar-cta{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--sticker);border:1.5px solid var(--sticker-line);color:var(--ink);border-radius:12px;padding:12px 14px;font-weight:700;font-size:14.5px;text-decoration:none;margin:0 0 14px;box-shadow:var(--shadow-1);transition:transform .12s,filter .12s}
+  .sidebar-cta:hover{filter:brightness(.96);transform:translateY(-1px)}
   header.top .tabs{
     flex:1 1 auto;flex-direction:column;align-items:stretch;gap:3px;
     background:transparent;border:0;padding:0;border-radius:0;position:static;
@@ -262,6 +268,39 @@ textarea{resize:vertical;min-height:72px}
 .btn.edit:hover{filter:brightness(.96);background:var(--accent)}
 .btn.del{border-color:#e5484d;color:#c2261f;background:transparent;box-shadow:none}
 .btn.del:hover{background:#fdeeee}
+/* ปุ่ม Live: เขียวเรืองแสงเมื่อเปิด / แดงเมื่อปิด */
+.btn.live-on{background:#2fa860;border-color:#1f7a45;color:#fff;font-weight:700;animation:liveGlow 1.8s ease-in-out infinite}
+.btn.live-off{background:transparent;border-color:#e5484d;color:#d6372f;font-weight:700;box-shadow:none}
+.btn.live-off:hover{background:#fdeeee}
+.track-import-row{margin:0 0 12px;display:flex;flex-wrap:wrap;gap:8px}
+/* รายการประวัติติดตามพัสดุ: การ์ดแบบเรียบ มีแถบสีด้านซ้ายตามสถานะ */
+#trackHistory ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+#trackHistory li{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:14px 14px 14px 18px;
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-1)}
+#trackHistory li::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 4px 4px 0;background:var(--line)}
+#trackHistory li:has(.printed)::before{background:#2b7cc4}
+#trackHistory li:has(.shipped)::before{background:#2fa860}
+#trackHistory li:has(.pending)::before{background:#d59a10}
+#trackHistory li:has(.trk-issue)::before{background:#e5484d}
+#trackHistory .meta{flex-basis:100%;display:flex;flex-direction:column;gap:3px;min-width:0}
+#trackHistory .meta b{font-size:16px;letter-spacing:.03em;font-variant-numeric:tabular-nums;color:var(--ink);word-break:break-all}
+#trackHistory .meta .rcpt{font-size:19px;font-weight:700;color:var(--ink);line-height:1.3;margin-top:2px;word-break:break-word}
+#trackHistory .meta small{color:var(--muted);font-size:12.5px;line-height:1.45}
+#trackHistory .track-status-select{flex:1 1 180px;min-width:0;border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px}
+#trackHistory li .btn{padding:7px 13px;font-size:13px;box-shadow:none;border-radius:10px}
+#trackHistory li .btn.primary{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+#trackHistory li .btn.primary:hover{background:var(--ink);filter:brightness(1.15)}
+#trackHistory li .btn.edit{background:var(--field);border-color:var(--line);color:var(--ink)}
+#trackHistory li .btn.edit:hover{background:var(--surface);filter:none}
+#trackHistory li .btn.del{background:transparent;border-color:transparent;color:#d6372f;padding-left:8px;padding-right:8px}
+#trackHistory li .btn.del:hover{background:#fdeeee}
+#trackHistory li .live-status{flex-basis:100%;margin-top:2px;border-radius:10px;padding:8px 12px;font-size:12.5px}
+.track-day{margin:4px 0 14px;padding:12px 14px;border-radius:12px;background:var(--field);border:1px solid var(--line)}
+.track-day-head{font-size:15px;margin-bottom:8px}
+.track-day ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.track-day li{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:9px;background:var(--surface)}
+.track-day li small{color:var(--muted);font-size:12px}
+@keyframes liveGlow{0%,100%{box-shadow:0 0 0 0 rgba(47,168,96,.55),0 0 8px 0 rgba(47,168,96,.35)}50%{box-shadow:0 0 0 6px rgba(47,168,96,0),0 0 16px 4px rgba(47,168,96,.5)}}
 .btn svg{width:18px;height:18px;flex:none}
 
 /* ---------- calculator ---------- */
@@ -357,6 +396,16 @@ button.status-pill:active{filter:brightness(0.9)}
 .status-pill.printed{background:var(--blue-bg);color:var(--blue-ink)}
 .status-pill.shipped{background:#e6f6ea;color:#1a6b3a}
 .status-pill.trk-issue{background:#fdeaea;color:#b3261e}
+.history li .live-status{flex-basis:100%;font-size:12.5px;display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:9px;margin-top:2px}
+.history li .live-status.live-pending{background:var(--mat);color:var(--muted)}
+.history li .live-status.live-none{background:var(--mat);color:var(--muted)}
+.history li .live-status.live-ok{background:#e6f6ea;color:#1a6b3a}
+.history li .live-status .refresh-one{margin-left:auto;background:none;border:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit;font-size:11.5px;padding:0}
+.history li .sender-info{flex-basis:100%;font-size:12px;color:var(--muted);background:var(--mat);border-radius:9px;padding:6px 10px;margin-top:-2px}
+.history li .sender-info b{color:inherit;font-weight:700}
+.history li .live-status .live-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
+.history li .live-status .live-dot-on{background:#1a6b3a;animation:liveDotPulse 1.6s ease-in-out infinite}
+@keyframes liveDotPulse{0%,100%{box-shadow:0 0 0 0 rgba(26,107,58,.45)}50%{box-shadow:0 0 0 5px rgba(26,107,58,0)}}
 .job-status-select{font-size:12.5px;font-weight:700;padding:4px 8px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--field);cursor:pointer}
 .track-status-select{font-size:12.5px;font-weight:700;padding:4px 8px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--field);cursor:pointer}
 .ocr-actions{display:flex;gap:8px;flex-wrap:wrap}
@@ -1021,23 +1070,28 @@ tr{break-inside:avoid}
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
       <span>ติดตามพัสดุ</span>
     </button>
+    <a class="sidebar-cta no-print" href="#" data-tab="confirm" id="sidebarCta">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <span>รับ Order ใหม่</span>
+    </a>
     <nav class="tabs" role="tablist" aria-label="เมนูหลัก">
-      <button role="tab" id="tab-calc" data-tab="calc" aria-selected="true" aria-controls="panel-calc">คำนวณสติ๊กเกอร์</button>
-      <button role="tab" id="tab-vat" data-tab="vat" aria-selected="false" aria-controls="panel-vat">คำนวณ VAT</button>
-      <button role="tab" id="tab-confirm" data-tab="confirm" aria-selected="false" aria-controls="panel-confirm">ใบคอนเฟิร์มงาน</button>
-      <button role="tab" id="tab-wholesale" data-tab="wholesale" aria-selected="false" aria-controls="panel-wholesale">ใบราคาส่ง</button>
-      <button role="tab" id="tab-quote" data-tab="quote" aria-selected="false" aria-controls="panel-quote">ใบเสนอราคา</button>
-      <button role="tab" id="tab-track" data-tab="track" aria-selected="false" aria-controls="panel-track">ติดตามพัสดุ</button>
+      <button role="tab" id="tab-calc" data-tab="calc" aria-selected="true" aria-controls="panel-calc"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"></rect><line x1="8" y1="7" x2="16" y2="7"></line><line x1="8" y1="11" x2="8" y2="11.01"></line><line x1="12" y1="11" x2="12" y2="11.01"></line><line x1="16" y1="11" x2="16" y2="11.01"></line><line x1="8" y1="15" x2="8" y2="15.01"></line><line x1="12" y1="15" x2="12" y2="15.01"></line><line x1="16" y1="15" x2="16" y2="15.01"></line></svg><span>คำนวณสติ๊กเกอร์</span></button>
+      <button role="tab" id="tab-vat" data-tab="vat" aria-selected="false" aria-controls="panel-vat"><svg class="tab-ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="8" y1="16" x2="16" y2="8"></line><circle cx="8.5" cy="8.5" r="1"></circle><circle cx="15.5" cy="15.5" r="1"></circle></svg><span>คำนวณ VAT</span></button>
+      <button role="tab" id="tab-confirm" data-tab="confirm" aria-selected="false" aria-controls="panel-confirm"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"></rect><path d="M9 3h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V3z" fill="currentColor" stroke="none"></path><path d="m9 13 2 2 4-4"></path></svg><span>ใบคอนเฟิร์มงาน</span></button>
+      <button role="tab" id="tab-wholesale" data-tab="wholesale" aria-selected="false" aria-controls="panel-wholesale"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg><span>ใบราคาส่ง</span></button>
+      <button role="tab" id="tab-quote" data-tab="quote" aria-selected="false" aria-controls="panel-quote"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="13" y2="17"></line></svg><span>ใบเสนอราคา</span></button>
+      <button role="tab" id="tab-track" data-tab="track" aria-selected="false" aria-controls="panel-track"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg><span>ติดตามพัสดุ</span></button>
       <div class="tab-group">
         <button type="button" class="tab-trigger" id="taxTrigger" aria-haspopup="true" aria-expanded="false">
-          ภาษี
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          <svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7L6 7z"></path><path d="M9 7a3 3 0 0 1 6 0"></path></svg>
+          <span>ภาษี</span>
+          <svg class="tab-chev" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
         <div class="tab-dropdown" id="taxDropdown" role="menu" hidden>
-          <button role="tab" id="tab-bill" data-tab="bill" aria-selected="false" aria-controls="panel-bill">ใบเสร็จ / ใบกำกับภาษี</button>
-          <button role="tab" id="tab-purchase" data-tab="purchase" aria-selected="false" aria-controls="panel-purchase">ภาษีซื้อ</button>
-          <button role="tab" id="tab-dash" data-tab="dash" aria-selected="false" aria-controls="panel-dash">แดชบอร์ด</button>
-          <button role="tab" id="tab-report" data-tab="report" aria-selected="false" aria-controls="panel-report">รายงานภาษี</button>
+          <button role="tab" id="tab-bill" data-tab="bill" aria-selected="false" aria-controls="panel-bill"><svg class="tab-ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"></path><line x1="9" y1="8" x2="15" y2="8"></line><line x1="9" y1="12" x2="15" y2="12"></line></svg><span>ใบเสร็จ / ใบกำกับภาษี</span></button>
+          <button role="tab" id="tab-purchase" data-tab="purchase" aria-selected="false" aria-controls="panel-purchase"><svg class="tab-ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7L6 7z"></path><path d="M9 7a3 3 0 0 1 6 0"></path></svg><span>ภาษีซื้อ</span></button>
+          <button role="tab" id="tab-dash" data-tab="dash" aria-selected="false" aria-controls="panel-dash"><svg class="tab-ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="20" x2="5" y2="12"></line><line x1="12" y1="20" x2="12" y2="6"></line><line x1="19" y1="20" x2="19" y2="15"></line></svg><span>แดชบอร์ด</span></button>
+          <button role="tab" id="tab-report" data-tab="report" aria-selected="false" aria-controls="panel-report"><svg class="tab-ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="13" y2="17"></line></svg><span>รายงานภาษี</span></button>
         </div>
       </div>
     </nav>
@@ -1623,7 +1677,7 @@ tr{break-inside:avoid}
               <button class="btn good" id="track-make" type="button">✨ สร้างข้อความและบันทึก</button>
               <button class="btn danger" id="track-new" type="button">ล้างช่องกรอก</button>
             </div>
-            <p class="hint">🔒 ประวัติเก็บเฉพาะในอุปกรณ์นี้ ไม่ส่งขึ้นคลาวด์/Google Sheets</p>
+            <p class="hint">☁️ ประวัติซิงก์ข้ามเครื่องผ่านคลาวด์ของร้าน (ไม่เกี่ยวกับ Google Sheets)</p>
           </div>
         </div>
         <div class="preview-col">
@@ -1640,12 +1694,24 @@ tr{break-inside:avoid}
       <section class="card history no-print" style="margin-top:20px" aria-labelledby="trackhist-h">
         <div class="viz-head">
           <h2 id="trackhist-h">ประวัติ (<span id="trackHistCount">0</span>)</h2>
-          <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น ไม่ส่งขึ้นคลาวด์/Google Sheets</span>
+          <span>ซิงก์ข้ามเครื่องอัตโนมัติ (ไม่ส่งขึ้น Google Sheets)</span>
         </div>
-        <label class="f hist-search"><span>ค้นหา</span><input class="txt" id="trackHistSearch" type="search" autocomplete="off" placeholder="ค้นหาเลขพัสดุหรือชื่อขนส่ง..."></label>
+        <div class="track-import-row">
+  <button class="btn small primary" id="track-import-iship" type="button">📥 ดึงรายการจาก iship (30 วันล่าสุด)</button>
+          <button class="btn small" id="track-refresh-live" type="button">🔄 รีเฟรชสถานะจาก iship ทั้งหมด</button>
+        </div>
         <div class="dash-filter" style="margin-bottom:10px">
+          <label class="f hist-search"><span>ค้นหา</span><input class="txt" id="trackHistSearch" type="search" autocomplete="off" placeholder="ค้นหาเลขพัสดุ, ขนส่ง, ลูกค้า, ผู้ส่ง..."></label>
+          <label class="f"><span>ผู้ส่ง/เพจ</span><select class="txt" id="trackSenderFilter"><option value="">ทั้งหมด</option></select></label>
+        </div>
+        <div class="dash-filter" style="margin-bottom:10px">
+          <button class="btn small" id="track-live-toggle" type="button" aria-pressed="false">○ Live: ปิด</button>
+          <button class="btn small" id="track-day-summary" type="button" aria-expanded="false">📦 สรุปวันนี้</button>
+          <button class="btn small" id="track-dedupe-check" type="button">🧹 ตรวจรายการซ้ำ</button>
           <button class="btn danger small" id="track-clear-all" type="button">ล้างทั้งหมด</button>
         </div>
+        <div id="trackDaySummary" class="track-day" hidden></div>
+        <div id="trackDedupe" class="track-day" hidden></div>
         <div id="trackHistory"></div>
       </section>
     </section>
@@ -3755,7 +3821,7 @@ function bahtText(value) {
   }
 
   /* ---------------- ติดตามพัสดุ (สร้างข้อความแจ้งลูกค้า) ----------------
-     เก็บเฉพาะในเครื่อง (bs_tracking) ไม่ส่งขึ้นคลาวด์/Google Sheets ตามรูปแบบเครื่องมือเดิมที่รวมเข้ามา */
+     ซิงก์ข้ามเครื่องผ่าน Firestore (collection "tracking") เหมือนประวัติเอกสารอื่นๆ ในแอป — ถ้าไม่มี/ต่อคลาวด์ไม่ได้ จะใช้ bs_tracking ในเครื่องนี้ไปก่อนตามปกติ */
   // สถานะพัสดุอัปเดตเองโดยร้าน (ไม่มี API เชื่อมขนส่งจริง) ใช้ dropdown ปรับสถานะในประวัติแต่ละรายการ คล้ายสถานะใบคอนเฟิร์มงาน
   const TRACK_STATUS = {
     transit: {label: 'กำลังจัดส่ง', cls: 'printed'},
@@ -3763,11 +3829,256 @@ function bahtText(value) {
     pending: {label: 'รอดำเนินการ', cls: 'pending'},
     issue: {label: 'มีปัญหา/ตีกลับ', cls: 'trk-issue'}
   };
+  /* ---------------- สถานะจริงจาก iship (อ่านจาก Firestore: trackingWebhooks)
+     Cloudflare Worker (iship-webhook) เขียนข้อมูลสถานะของแต่ละเลขพัสดุไว้ที่เอกสาร
+     trackingWebhooks/{เลขพัสดุ} เมื่อ iship ยิง webhook เข้ามา — ฟังก์ชันนี้แค่ "อ่าน" มาโชว์
+     ไม่กระทบระบบเดิม ถ้ายังไม่มีข้อมูล (เช่น พัสดุยังไม่เปลี่ยนสถานะ หรือ webhook ยังไม่เคยยิงมา)
+     ก็จะโชว์ข้อความแจ้งเฉยๆ ไม่ error ----------------*/
+  const liveTrackCache = {}; // code -> {data: object|null, fetchedAt: number}
+  const liveTrackUnsub = {}; // code -> array of Firestore unsubscribe functions (เรียลไทม์)
+  function unsubscribeLiveTracking(code) {
+    const unsubs = liveTrackUnsub[code];
+    if (unsubs) { unsubs.forEach(fn => { try { fn(); } catch (e) {} }); delete liveTrackUnsub[code]; }
+  }
+  // เปิดฟังสถานะแบบเรียลไทม์: พอ iship ยิง webhook เข้ามาเปลี่ยนค่าใน Firestore เอกสารนี้ หน้าจอจะอัปเดตเองทันที
+  // ไม่ต้องกดรีเฟรชเอง (เหมือนหน้า dashboard ของ iship เอง)
+  function subscribeLiveTracking(code) {
+    if (!cloudDb || !code || liveTrackUnsub[code]) return;
+    const unsubs = [];
+    liveTrackUnsub[code] = unsubs; // กันการ subscribe ซ้ำระหว่างรอ auth
+    (window.__bsAuthReady || Promise.resolve()).then(() => {
+      sanitizeTrackIdCandidates(code).forEach(id => {
+        try {
+          const unsub = cloudDb.collection('trackingWebhooks').doc(id).onSnapshot(snap => {
+            if (snap.exists) {
+              liveTrackCache[code] = {data: Object.assign({}, snap.data()), fetchedAt: Date.now(), live: true};
+              if (isTrackPanelActive()) renderTrackingHistory();
+            } else if (!liveTrackCache[code] || !liveTrackCache[code].data) {
+              liveTrackCache[code] = {data: null, fetchedAt: Date.now(), live: true};
+              if (isTrackPanelActive()) renderTrackingHistory();
+            }
+          }, e => console.error('subscribeLiveTracking error', id, e));
+          unsubs.push(unsub);
+        } catch (e) { console.error('subscribeLiveTracking setup error', id, e); }
+      });
+    });
+  }
+  function sanitizeTrackIdCandidates(code) {
+    const raw = String(code || '').trim();
+    if (!raw) return [];
+    const upper = raw.toUpperCase();
+    const noSpace = upper.replace(/\s+/g, '');
+    const safe = noSpace.replace(/[^A-Za-z0-9_-]/g, '_');
+    const out = [];
+    [raw, upper, noSpace, safe].forEach(v => { if (v && out.indexOf(v) < 0) out.push(v); });
+    return out;
+  }
+  async function fetchLiveTracking(code, force) {
+    if (!cloudDb || !code) return null;
+    const cached = liveTrackCache[code];
+    if (!force && cached && (Date.now() - cached.fetchedAt < 5 * 60 * 1000)) return cached.data;
+    await (window.__bsAuthReady || Promise.resolve());
+    const ids = sanitizeTrackIdCandidates(code);
+    let found = null;
+    for (const id of ids) {
+      try {
+        const snap = await cloudDb.collection('trackingWebhooks').doc(id).get();
+        if (snap.exists) { found = Object.assign({}, snap.data()); break; }
+      } catch (e) { console.error('fetchLiveTracking error', id, e); }
+    }
+    liveTrackCache[code] = {data: found, fetchedAt: Date.now()};
+    return found;
+  }
+  // แปลสถานะดิบจากระบบ iship ให้เป็นภาษาไทยอ่านง่าย — เจอคำใหม่ๆ เพิ่มเข้า dict นี้ได้เรื่อยๆ
+  // (คีย์เป็นตัวพิมพ์เล็กทั้งหมด เทียบแบบไม่สนตัวพิมพ์ใหญ่-เล็กและ _/-/เว้นวรรค)
+  const IS_STATUS_TH = {
+    'pending': 'รอดำเนินการ',
+    'created': 'สร้างรายการแล้ว รอเข้ารับ',
+    'waiting pickup': 'รอขนส่งเข้ารับ',
+    'picked up': 'เข้ารับพัสดุแล้ว',
+    'picked_up': 'เข้ารับพัสดุแล้ว',
+    'in transit': 'กำลังขนส่ง',
+    'in_transit': 'กำลังขนส่ง',
+    'transit': 'กำลังขนส่ง',
+    'at hub': 'อยู่ที่ศูนย์คัดแยก',
+    'at_hub': 'อยู่ที่ศูนย์คัดแยก',
+    'out for delivery': 'กำลังนำส่ง',
+    'out_for_delivery': 'กำลังนำส่ง',
+    'delivering': 'กำลังนำส่ง',
+    'delivered': 'จัดส่งสำเร็จแล้ว',
+    'success': 'จัดส่งสำเร็จแล้ว',
+    'completed': 'จัดส่งสำเร็จแล้ว',
+    'failed': 'นำส่งไม่สำเร็จ',
+    'failed_delivery': 'นำส่งไม่สำเร็จ',
+    'delivery failed': 'นำส่งไม่สำเร็จ',
+    'returned': 'ตีกลับ',
+    'return': 'ตีกลับ',
+    'returning': 'กำลังตีกลับ',
+    'cancelled': 'ยกเลิกรายการ',
+    'canceled': 'ยกเลิกรายการ',
+    'lost': 'พัสดุสูญหาย',
+    'problem': 'มีปัญหา ต้องตรวจสอบ',
+    'exception': 'มีปัญหา ต้องตรวจสอบ'
+  };
+  function translateIshipStatus(raw) {
+    if (!raw) return raw;
+    const key = String(raw).trim().toLowerCase().replace(/[\s_-]+/g, ' ');
+    if (IS_STATUS_TH[key]) return IS_STATUS_TH[key];
+    const keyUnderscore = key.replace(/ /g, '_');
+    if (IS_STATUS_TH[keyUnderscore]) return IS_STATUS_TH[keyUnderscore];
+    return raw; // ไม่รู้จักคำนี้ ให้โชว์ค่าดิบไปก่อน (ส่งสกรีนช็อตมาเพิ่ม dict ได้)
+  }
+  function describeLiveTracking(doc) {
+    if (!doc) return null;
+    const statusKeys = ['status', 'state', 'courierStatus', 'deliveryStatus', 'shipmentStatus', 'statusText', 'description', 'statusTh', 'msg', 'message'];
+    let statusVal = null;
+    for (const k of statusKeys) { if (doc[k] != null && doc[k] !== '') { statusVal = String(doc[k]); break; } }
+    if (statusVal) statusVal = translateIshipStatus(statusVal);
+    const timeKeys = ['updatedAt', 'statusTime', 'time', 'timestamp', 'date', 'statusDate', 'eventTime'];
+    let timeVal = null;
+    for (const k of timeKeys) { if (doc[k] != null && doc[k] !== '') { timeVal = doc[k]; break; } }
+    let timeText = '';
+    if (timeVal != null) {
+      const n = typeof timeVal === 'number' ? (timeVal < 1e12 ? timeVal * 1000 : timeVal) : timeVal;
+      const d = new Date(n);
+      if (!isNaN(d.getTime())) timeText = d.toLocaleString('th-TH');
+    }
+    return {statusText: statusVal || 'มีข้อมูลจาก iship แล้ว แต่ไม่พบฟิลด์สถานะที่รู้จัก (ดูข้อมูลดิบได้ในคอนโซล)', timeText};
+  }
+  function isTrackPanelActive() {
+    const p = document.getElementById('panel-track');
+    return !!(p && p.classList.contains('active'));
+  }
+
+  /* ---------------- ดึงรายการพัสดุจาก iship โดยตรง (ผ่าน Cloudflare Worker ตัวกลาง)
+     Worker ถือ iship Bearer Token ไว้ฝั่ง server เอง แอปนี้แค่เรียก Worker ด้วย "กุญแจ" สั้นๆ
+     (ไม่ใช่โทเคนจริงของ iship) จึงไม่มีความลับฝังอยู่ในหน้าเว็บที่เปิดเผยสาธารณะ ---------------- */
+  const ISHIP_ORDERS_PROXY_URL = 'https://iship-orders-proxy.organic-parmesan.workers.dev';
+  const ISHIP_ORDERS_APP_KEY = 'bs2026ordq7fxk3mvhz9n';
+  const ISHIP_COURIER_LABEL = {
+    FlashExpress: 'Flash Express',
+    KerryExpress: 'Kerry Express',
+    ThailandPost: 'ไปรษณีย์ไทย (EMS)',
+    JNT: 'J&T Express',
+    NinjaVan: 'Ninja Van',
+    SCGExpress: 'SCG Express',
+    BestExpress: 'BEST Express'
+  };
+  function mapIshipCourierLabel(code) {
+    if (!code) return 'อื่นๆ';
+    if (ISHIP_COURIER_LABEL[code]) return ISHIP_COURIER_LABEL[code];
+    // iship บางครั้งส่ง courier_code มาเป็นรหัสย่อยของขนส่งเดิม เช่น "FlashExpressA" "FlashExpressB"
+    // จับคู่แบบ "ขึ้นต้นด้วยรหัสที่รู้จัก" เพื่อให้ยังเปิดลิงก์ติดตามของขนส่งหลักได้ถูกต้อง
+    const key = Object.keys(ISHIP_COURIER_LABEL).find(k => code.toLowerCase().startsWith(k.toLowerCase()));
+    return key ? ISHIP_COURIER_LABEL[key] : code;
+  }
+  function mapIshipStatusToLocal(statusName) {
+    const s = String(statusName || '');
+    if (/สำเร็จ|ถึงปลายทาง|ส่งมอบแล้ว/.test(s)) return 'delivered';
+    if (/ยกเลิก|ตีกลับ|คืน|ปัญหา|ไม่สำเร็จ/.test(s)) return 'issue';
+    if (/รอเข้ารับ/.test(s)) return 'pending';
+    return 'transit';
+  }
+  function ymd(d) { return d.toISOString().slice(0, 10); }
+  async function fetchIshipOrdersChunk(start, end) {
+    const qs = new URLSearchParams({
+      key: ISHIP_ORDERS_APP_KEY,
+      start_date: ymd(start),
+      end_date: ymd(end)
+    });
+    const res = await fetch(ISHIP_ORDERS_PROXY_URL + '?' + qs.toString());
+    const json = await res.json();
+    if (!res.ok || json.status !== true) throw new Error(json.message || ('HTTP ' + res.status));
+    return Array.isArray(json.data) ? json.data : [];
+  }
+  async function importOrdersFromIship(days) {
+    if (!ISHIP_ORDERS_PROXY_URL) { toast('ยังไม่ได้ตั้งค่า iship-orders-proxy — รอผมใส่ URL ให้ก่อน'); return; }
+    // iship จำกัดการค้นหาต่อครั้งไม่เกิน 7 วัน จึงแบ่งดึงเป็นช่วงละ 7 วันแล้วรวมผลลัพธ์
+    const totalDays = days || 30;
+    const CHUNK_DAYS = 7;
+    const now = Date.now();
+    const orders = [];
+    const seenIds = new Set();
+    toast('กำลังดึงรายการจาก iship...');
+    try {
+      for (let offset = 0; offset < totalDays; offset += CHUNK_DAYS) {
+        const chunkEnd = new Date(now - offset * 86400000);
+        const chunkStartOffset = Math.min(offset + CHUNK_DAYS, totalDays);
+        const chunkStart = new Date(now - chunkStartOffset * 86400000);
+        const chunkOrders = await fetchIshipOrdersChunk(chunkStart, chunkEnd);
+        chunkOrders.forEach(o => {
+          const key = o.id != null ? o.id : o.track_no;
+          if (key == null || seenIds.has(key)) return;
+          seenIds.add(key);
+          orders.push(o);
+        });
+      }
+    } catch (e) {
+      console.error('importOrdersFromIship error', e);
+      toast('ดึงรายการจาก iship ไม่สำเร็จ: ' + e.message);
+      return;
+    }
+    if (!orders.length) { toast('ไม่พบรายการพัสดุในช่วง ' + totalDays + ' วันล่าสุด'); return; }
+    const list = store.get('bs_tracking', []);
+    const existingCodes = new Set(list.map(t => t.code));
+    const byCode = new Map(list.map(t => [t.code, t]));
+    const newRecs = [];
+    const backfilled = [];
+    let added = 0;
+    orders.forEach(o => {
+      const code = o.track_no;
+      if (!code) return;
+      if (existingCodes.has(code)) {
+        // รายการที่บันทึกไว้ก่อนมีข้อมูลผู้ส่ง → เติมชื่อ/ที่อยู่ผู้ส่งให้ (ไม่แตะข้อมูลอื่น)
+        const old = byCode.get(code);
+        const sName = o.label_name || o.src_name || '';
+        if (old && !old.sender && sName) {
+          old.sender = sName;
+          old.senderPhone = o.label_phone || o.src_phone || '';
+          old.senderAddress = o.label_address || [o.src_address, o.src_district, o.src_area, o.src_province, o.src_zipcode].filter(Boolean).join(' ');
+          backfilled.push(old);
+        }
+        return;
+      }
+      const carrier = mapIshipCourierLabel(o.courier_code);
+      const customer = o.dst_name || '';
+      const message = buildTrackingMessage(code, carrier, customer);
+      const createdStr = o.created || o.updated || '';
+      const ishipCreatedAt = createdStr ? new Date(createdStr.replace(' ', 'T')).getTime() || null : null;
+      // ชื่อ/ที่อยู่ "ผู้ส่ง" จากข้อมูลออเดอร์ของ iship — เผื่อร้านมีหลายเพจ/หลายที่อยู่ต้นทางในบัญชี iship เดียวกัน
+      // label_name/label_address คือชื่อ-ที่อยู่ที่ใช้พิมพ์บนใบปะหน้าจริง ให้ความสำคัญก่อน src_* (ข้อมูลตั้งต้นของบัญชี)
+      const sender = o.label_name || o.src_name || '';
+      const senderPhone = o.label_phone || o.src_phone || '';
+      const senderAddress = o.label_address ||
+        [o.src_address, o.src_district, o.src_area, o.src_province, o.src_zipcode].filter(Boolean).join(' ');
+      const rec = {
+        id: 't' + Date.now() + '_' + (added++),
+        code, carrier, customer, message,
+        status: mapIshipStatusToLocal(o.status_name),
+        savedAt: Date.now(),
+        ishipStatusName: o.status_name || '',
+        ishipId: o.id != null ? o.id : null,
+        ishipCreatedAt: ishipCreatedAt,
+        sender, senderPhone, senderAddress
+      };
+      list.unshift(rec);
+      newRecs.push(rec);
+      existingCodes.add(code);
+      if (customer) upsertCustomer(customer, o.dst_phone || '', '');
+    });
+    store.set('bs_tracking', list);
+    newRecs.forEach(rec => cloudSave('tracking', rec));
+    backfilled.forEach(rec => cloudSave('tracking', rec));
+    renderTrackingHistory();
+    const bfMsg = backfilled.length ? ' · เติมชื่อผู้ส่ง ' + backfilled.length + ' รายการ' : '';
+    toast((added ? ('เพิ่มรายการใหม่ ' + added + ' รายการจาก iship แล้ว') : 'ไม่มีรายการใหม่ (มีอยู่ในประวัติครบแล้ว)') + bfMsg);
+  }
   function updateTrackingStatus(id, status) {
     const list = store.get('bs_tracking', []);
     const idx = list.findIndex(t => t.id === id); if (idx < 0) return;
     list[idx] = Object.assign({}, list[idx], {status});
     store.set('bs_tracking', list);
+    cloudSave('tracking', list[idx]);
     renderTrackingHistory();
     toast('อัปเดตสถานะเป็น "' + (TRACK_STATUS[status] ? TRACK_STATUS[status].label : status) + '" แล้ว');
   }
@@ -3782,7 +4093,11 @@ function bahtText(value) {
   };
   function trackingLink(carrier, code) {
     const f = TRACK_URL[carrier];
-    return f ? f(code) : '';
+    if (f) return f(code);
+    // เผื่อชื่อขนส่งที่บันทึกไว้เป็นรหัสย่อยแปลกๆ (เช่นนำเข้าจาก iship ก่อนหน้านี้) ให้จับคู่แบบคร่าวๆ ด้วย
+    const norm = String(carrier || '').toLowerCase().replace(/\s+/g, '');
+    const key = Object.keys(TRACK_URL).find(k => norm.startsWith(k.toLowerCase().replace(/\s+/g, '')));
+    return key ? TRACK_URL[key](code) : '';
   }
   function buildTrackingMessage(code, carrier, customer) {
     const link = trackingLink(carrier, code);
@@ -3810,6 +4125,7 @@ function bahtText(value) {
     const rec = {id: 't' + Date.now(), code, carrier, customer, message: msg, status: 'transit', savedAt: Date.now()};
     list.unshift(rec);
     store.set('bs_tracking', list);
+    cloudSave('tracking', rec);
     if (customer) upsertCustomer(customer, '', '');
     renderTrackingHistory();
     toast('สร้างข้อความและบันทึกประวัติแล้ว');
@@ -3827,29 +4143,97 @@ function bahtText(value) {
     }
   }
   let trackDelArmed = null, trackDelTimer = null, trackClearArmed = false, trackClearTimer = null;
+  // สถานะ Live: เปิดเฉพาะเมื่อผู้ใช้กดปุ่ม Live เท่านั้น ค่าจำไว้ในเครื่องนี้ (ไม่ได้ซิงก์ข้ามเครื่อง)
+  const TRACK_LIVE_KEY = 'bs_track_live';
+  let trackLiveOn = false;
+  try { trackLiveOn = localStorage.getItem(TRACK_LIVE_KEY) === '1'; } catch (e) {}
+  // ดึงสถานะจาก iship ทุก 10 นาที (ทำงานตลอดขณะเปิดแอป ไม่ต้องเปิด Live) เฉพาะพัสดุที่ยังไม่ถึงลูกค้า
+  // ข้ามรอบเมื่อแท็บถูกซ่อน ปุ่ม Live มีไว้สำหรับรับสถานะแบบเรียลไทม์เพิ่มเติมเท่านั้น
+  const LIVE_REFRESH_MS = 10 * 60 * 1000;
+  let liveTimer = null;
+  function refreshAllLive() {
+    if (document.hidden) return;
+    const list = store.get('bs_tracking', []).filter(t => (t.status || 'transit') !== 'delivered');
+    if (!list.length) return;
+    Promise.all(list.map(t => fetchLiveTracking(t.code, true))).then(() => { if (isTrackPanelActive()) renderTrackingHistory(); });
+  }
+  function updateLiveTimer() {
+    if (liveTimer) return;
+    liveTimer = setInterval(refreshAllLive, LIVE_REFRESH_MS);
+  }
+  function paintTrackLiveBtn() {
+    const b = $('track-live-toggle'); if (!b) return;
+    b.setAttribute('aria-pressed', String(trackLiveOn));
+    b.textContent = trackLiveOn ? '● Live: เปิด' : '○ Live: ปิด';
+    b.classList.toggle('live-on', trackLiveOn);
+    b.classList.toggle('live-off', !trackLiveOn);
+  }
+  // ซ่อน 2 ตัวท้ายของเลขพัสดุในรายการ (กดปุ่มเพื่อดูเต็ม)
+  const revealedTrack = new Set();
+  function maskTrackCode(c) { c = String(c || ''); return c.length > 2 ? c.slice(0, -2) + '••' : c; }
   function renderTrackingHistory() {
-    const list = store.get('bs_tracking', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+    // เรียงตามลำดับของ iship เอง (วันที่สร้างออเดอร์จริง) ถ้ามีข้อมูล ไม่งั้นใช้เวลาที่บันทึกในเครื่องแทน
+    const sortKey = t => (t.ishipCreatedAt != null ? t.ishipCreatedAt : (t.savedAt || 0));
+    const list = store.get('bs_tracking', []).slice().sort((a, b) => sortKey(b) - sortKey(a));
     const q = $('trackHistSearch') ? $('trackHistSearch').value.trim() : '';
-    const shown = q ? list.filter(t => matchesSearch(t.code, q) || matchesSearch(t.carrier, q) || matchesSearch(t.customer, q)) : list;
+    // อัปเดตตัวเลือกใน dropdown "ผู้ส่ง/เพจ" ให้ตรงกับรายชื่อผู้ส่งที่มีอยู่จริงในประวัติ (เผื่อร้านมีหลายเพจ/หลายที่อยู่ต้นทาง)
+    const senderSel = $('trackSenderFilter');
+    let senderFilter = '';
+    if (senderSel) {
+      senderFilter = senderSel.value;
+      const senders = Array.from(new Set(list.map(t => t.sender).filter(Boolean))).sort();
+      const optsHtml = '<option value="">ทั้งหมด</option>' + senders.map(s => '<option value="' + esc(s) + '"' + (s === senderFilter ? ' selected' : '') + '>' + esc(s) + '</option>').join('');
+      if (senderSel.innerHTML !== optsHtml) senderSel.innerHTML = optsHtml;
+      if (senderFilter && senders.indexOf(senderFilter) < 0) senderFilter = ''; // ผู้ส่งที่เลือกไว้ไม่มีในรายการแล้ว (เช่นลบรายการนั้นหมด) กลับเป็น "ทั้งหมด"
+    }
+    let shown = q ? list.filter(t => matchesSearch(t.code, q) || matchesSearch(t.carrier, q) || matchesSearch(t.customer, q) || matchesSearch(t.sender, q) || matchesSearch(t.senderAddress, q)) : list;
+    if (senderFilter) shown = shown.filter(t => t.sender === senderFilter);
     $('trackHistCount').textContent = list.length;
     if (!list.length) { $('trackHistory').innerHTML = '<p class="empty">ยังไม่มีประวัติ สร้างข้อความแรกได้เลย</p>'; return; }
     if (!shown.length) { $('trackHistory').innerHTML = '<p class="empty">ไม่พบรายการที่ค้นหา</p>'; return; }
     $('trackHistory').innerHTML = '<ul>' + shown.map(t => {
       const st = t.status || 'transit';
       const cls = (TRACK_STATUS[st] || TRACK_STATUS.transit).cls;
-      return '<li data-id="' + esc(t.id) + '"><div class="meta"><b>' + esc(t.code) + '</b><small>' + esc(t.carrier) + (t.customer ? ' · ' + esc(t.customer) : '') + ' · ' + esc(new Date(t.savedAt).toLocaleString('th-TH')) + '</small></div>' +
+      const live = cloudDb ? liveTrackCache[t.code] : undefined;
+      let liveHtml = '';
+      if (cloudDb) {
+        if (!trackLiveOn) {
+          liveHtml = '<div class="live-status live-none">Live ปิดอยู่ กดปุ่ม Live ด้านบนเพื่อดูสถานะจาก iship</div>';
+        } else if (!live) {
+          liveHtml = '<div class="live-status live-pending">⏳ กำลังเช็กสถานะจาก iship...</div>';
+        } else if (!live.data) {
+          liveHtml = '<div class="live-status live-none"><span class="live-dot"></span>ถ่ายทอดสด — ยังไม่มีสถานะจาก iship สำหรับเลขนี้</div>';
+        } else {
+          const d = describeLiveTracking(live.data);
+          liveHtml = '<div class="live-status live-ok"><span class="live-dot live-dot-on"></span>LIVE จาก iship: ' + esc(d.statusText) + (d.timeText ? ' · ' + esc(d.timeText) : '') + '</div>';
+        }
+      }
+      const senderHtml = t.sender ? '<div class="sender-info">📍 ผู้ส่ง: <b>' + esc(t.sender) + '</b>' + '</div>' : '';
+      return '<li data-id="' + esc(t.id) + '"><div class="meta"><b>' + esc(revealedTrack.has(t.id) ? t.code : maskTrackCode(t.code)) + '</b>' + (t.customer ? '<span class="rcpt">' + esc(t.customer) + '</span>' : '') + '<small>' + esc(t.carrier) + ' · ' + esc(new Date(t.savedAt).toLocaleString('th-TH')) + '</small></div>' + senderHtml +
       '<select class="track-status-select status-pill ' + cls + '" data-id="' + esc(t.id) + '" aria-label="สถานะพัสดุ">' +
         Object.keys(TRACK_STATUS).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + TRACK_STATUS[k].label + '</option>').join('') +
       '</select>' +
-      (trackingLink(t.carrier, t.code) ? '<button class="btn small primary" data-act="checklive" type="button">🔍 เช็กสถานะจริง</button>' : '') +
+      (trackingLink(t.carrier, t.code) ? '<button class="btn small primary" data-act="checklive" type="button">🔍 เปิดหน้าติดตาม</button>' : '') +
+      '<button class="btn small" data-act="reveal" type="button">' + (revealedTrack.has(t.id) ? '🙈 ซ่อนเลข' : '👁 ดูเลขเต็ม') + '</button>' +
       '<button class="btn small" data-act="copy" type="button">คัดลอก</button>' +
       '<button class="btn small edit" data-act="use" type="button">เปิดดู</button>' +
-      '<button class="btn small del" data-act="del" type="button">ลบ</button></li>';
+      '<button class="btn small del" data-act="del" type="button">ลบ</button>' +
+      liveHtml + '</li>';
     }).join('') + '</ul>';
+    if (cloudDb && trackLiveOn) {
+      shown.forEach(t => subscribeLiveTracking(t.code)); // เปิดฟังสถานะแบบเรียลไทม์ไว้ทุกรายการที่แสดงอยู่
+    }
   }
   $('trackHistory').addEventListener('click', e => {
+    const refreshBtn = e.target.closest('button[data-refresh]');
+    if (refreshBtn) {
+      const code = refreshBtn.dataset.refresh;
+      fetchLiveTracking(code, true).then(() => renderTrackingHistory());
+      return;
+    }
     const btn = e.target.closest('button[data-act]'); if (!btn) return;
     const li = btn.closest('li'); const id = li.dataset.id;
+    if (btn.dataset.act === 'reveal') { revealedTrack.has(id) ? revealedTrack.delete(id) : revealedTrack.add(id); renderTrackingHistory(); return; }
     const list = store.get('bs_tracking', []);
     const rec = list.find(t => t.id === id); if (!rec) return;
     if (btn.dataset.act === 'checklive') {
@@ -3868,7 +4252,9 @@ function bahtText(value) {
         return;
       }
       clearTimeout(trackDelTimer); trackDelArmed = null;
+      unsubscribeLiveTracking(rec.code);
       store.set('bs_tracking', list.filter(t => t.id !== id));
+      cloudDelete('tracking', id);
       renderTrackingHistory();
       toast('ลบรายการแล้ว');
     }
@@ -3878,9 +4264,78 @@ function bahtText(value) {
     updateTrackingStatus(sel.dataset.id, sel.value);
   });
   $('trackHistSearch').addEventListener('input', renderTrackingHistory);
+  $('trackSenderFilter').addEventListener('change', renderTrackingHistory);
   $('track-make').addEventListener('click', saveTracking);
   $('track-new').addEventListener('click', newTracking);
   $('track-copy').addEventListener('click', copyTrackingMessage);
+  $('track-import-iship').addEventListener('click', () => importOrdersFromIship(30));
+  $('track-live-toggle').addEventListener('click', () => {
+    trackLiveOn = !trackLiveOn;
+    try { localStorage.setItem(TRACK_LIVE_KEY, trackLiveOn ? '1' : '0'); } catch (e) {}
+    if (!trackLiveOn) store.get('bs_tracking', []).forEach(t => unsubscribeLiveTracking(t.code));
+    paintTrackLiveBtn();
+    updateLiveTimer();
+    renderTrackingHistory();
+  });
+  paintTrackLiveBtn();
+  updateLiveTimer();
+  setTimeout(refreshAllLive, 3000); // ดึงสถานะรอบแรกหลังเปิดแอปไม่นาน
+  // สรุปวันนี้: นับรายการที่บันทึกหรือสร้างในวันนี้ (ตามเวลาเครื่อง) และแสดงชื่อลูกค้า
+  function dayKey(ms) {
+    const d = new Date(ms); if (isNaN(d)) return '';
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  $('track-day-summary').addEventListener('click', () => {
+    const box = $('trackDaySummary');
+    if (!box.hidden) { box.hidden = true; $('track-day-summary').setAttribute('aria-expanded', 'false'); return; }
+    const today = dayKey(Date.now());
+    const list = store.get('bs_tracking', []).filter(t => dayKey(t.ishipCreatedAt != null ? t.ishipCreatedAt : t.savedAt) === today);
+    box.innerHTML = '<div class="track-day-head">วันนี้ส่ง <b>' + list.length + '</b> กล่อง</div>' +
+      (list.length
+        ? '<ul>' + list.map(t => '<li><b>' + esc((t.customer || '').trim() || 'ไม่ระบุชื่อ') + '</b><small>' + esc(t.carrier || '') + ' · ' + esc(t.code || '') + '</small></li>').join('') + '</ul>'
+        : '<p class="empty">ยังไม่มีรายการของวันนี้</p>');
+    box.hidden = false;
+    $('track-day-summary').setAttribute('aria-expanded', 'true');
+  });
+  $('track-refresh-live').addEventListener('click', () => {
+    const list = store.get('bs_tracking', []);
+    if (!cloudDb) { toast('ยังไม่ได้เชื่อมต่อฐานข้อมูลคลาวด์'); return; }
+    toast('กำลังรีเฟรชสถานะจาก iship...');
+    Promise.all(list.map(t => fetchLiveTracking(t.code, true))).then(() => renderTrackingHistory());
+  });
+  // ตรวจรายการซ้ำ (โหมดพรีวิว: แสดงผลอย่างเดียว ยังไม่ลบข้อมูลใด ๆ)
+  function findDuplicateTracking(list) {
+    const groups = new Map();
+    list.forEach(t => { const k = String(t.code || '').trim().toUpperCase(); if (!k) return; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(t); });
+    // ให้คะแนนแถวที่มีข้อมูลครบกว่า (มีชื่อลูกค้า ผู้ส่ง เวลาจาก iship สถานะ) ถ้าเท่ากันเก็บแถวที่บันทึกก่อน
+    const score = t => (t.customer ? 1 : 0) + (t.sender ? 1 : 0) + (t.ishipCreatedAt ? 1 : 0) + (t.ishipStatusName ? 1 : 0) + (t.status && t.status !== 'transit' ? 1 : 0);
+    const out = [];
+    groups.forEach((rows, code) => {
+      if (rows.length < 2) return;
+      const sorted = rows.slice().sort((a, b) => (score(b) - score(a)) || ((a.savedAt || 0) - (b.savedAt || 0)));
+      out.push({code: code, keep: sorted[0], remove: sorted.slice(1), total: rows.length});
+    });
+    return out;
+  }
+  function showTrackDedupe() {
+    const groups = findDuplicateTracking(store.get('bs_tracking', []));
+    const totalRows = groups.reduce((n, g) => n + g.total, 0);
+    const removeN = groups.reduce((n, g) => n + g.remove.length, 0);
+    const head = groups.length
+      ? 'พบเลขพัสดุซ้ำ ' + groups.length + ' เลข (รวม ' + totalRows + ' แถว) · ถ้ารวมจะเหลือ ' + (totalRows - removeN) + ' แถว และลบ ' + removeN + ' แถว'
+      : 'ไม่พบรายการซ้ำ';
+    const items = groups.map(g => '<li><b>' + esc(g.code) + '</b><small>มี ' + g.total + ' แถว · จะเก็บแถวของ ' + esc(g.keep.customer || '-') + ' (บันทึกเมื่อ ' + esc(new Date(g.keep.savedAt).toLocaleString('th-TH')) + ') · จะลบ ' + g.remove.length + ' แถว</small></li>').join('');
+    const box = $('trackDedupe');
+    box.innerHTML = '<div class="track-day-head"><b>ตรวจรายการซ้ำ (โหมดพรีวิว)</b></div>' +
+      '<p class="hint">ยังไม่ลบอะไรในหน้านี้ ผลนี้ใช้ดูก่อนว่าจะเก็บแถวไหนไว้</p>' +
+      '<p>' + esc(head) + '</p>' + (groups.length ? '<ul>' + items + '</ul>' : '');
+    box.hidden = false;
+  }
+  $('track-dedupe-check').addEventListener('click', () => {
+    const box = $('trackDedupe');
+    if (!box.hidden) { box.hidden = true; return; }
+    showTrackDedupe();
+  });
   $('track-clear-all').addEventListener('click', () => {
     const btn = $('track-clear-all');
     if (!trackClearArmed) {
@@ -3889,6 +4344,7 @@ function bahtText(value) {
       return;
     }
     clearTimeout(trackClearTimer); trackClearArmed = false; btn.textContent = 'ล้างทั้งหมด';
+    store.get('bs_tracking', []).forEach(t => { unsubscribeLiveTracking(t.code); cloudDelete('tracking', t.id); });
     store.set('bs_tracking', []);
     renderTrackingHistory();
     toast('ล้างประวัติทั้งหมดแล้ว');
@@ -4998,6 +5454,7 @@ function bahtText(value) {
     if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
   }
   document.querySelectorAll('.tabs button[data-tab], .btab[data-tab], .tax-sheet-item[data-tab], .top-track[data-tab]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  if ($('sidebarCta')) $('sidebarCta').addEventListener('click', e => { e.preventDefault(); showTab('confirm'); window.scrollTo({top: 0, behavior: 'smooth'}); });
 
   $('taxTrigger').addEventListener('click', e => {
     e.stopPropagation();
@@ -5639,6 +6096,22 @@ function bahtText(value) {
     watchCloud('purchases', 'bs_purchases', renderPurchHistory);
     watchCloud('customers', 'bs_customers', renderCustomerDatalist);
     watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
+    // ประวัติ "ติดตามพัสดุ" แต่ก่อนเก็บเฉพาะในเครื่องเท่านั้น — ครั้งแรกที่เปิดหน้านี้หลังอัปเดต
+    // ให้อัปโหลดรายการที่มีอยู่ในเครื่องนี้ขึ้นคลาวด์ก่อน 1 ครั้ง (กันไม่ให้ข้อมูลเดิมหายไปตอนเริ่มซิงก์)
+    // แล้วค่อยเริ่มฟังคลาวด์แบบเรียลไทม์ เพื่อให้ทุกเครื่องเห็นประวัติเดียวกัน
+    if (cloudDb) {
+      const MIGRATE_KEY = 'bs_tracking_cloud_migrated_v1';
+      const already = store.get(MIGRATE_KEY, false);
+      const startTrackingSync = () => watchCloud('tracking', 'bs_tracking', renderTrackingHistory);
+      if (already) {
+        startTrackingSync();
+      } else {
+        const localList = store.get('bs_tracking', []);
+        localList.forEach(rec => cloudSave('tracking', rec));
+        store.set(MIGRATE_KEY, true);
+        startTrackingSync();
+      }
+    }
   });
   $('dashMonth').addEventListener('change', renderDash);
   $('dash-all').addEventListener('click', () => { $('dashMonth').value = ''; renderDash(); });
