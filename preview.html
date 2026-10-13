@@ -1234,8 +1234,8 @@ tr{break-inside:avoid}
                 </select>
               </label>
               <div class="row2" style="margin-top:12px">
-                <label class="f"><span>กว้าง</span><div class="in"><input id="pw" type="number" inputmode="decimal" step="any" min="0" value="120" readonly><em>ซม.</em></div></label>
-                <label class="f"><span>ยาว</span><div class="in"><input id="ph" type="number" inputmode="decimal" step="any" min="0" value="80" readonly><em>ซม.</em></div></label>
+                <label class="f"><span>กว้าง</span><div class="in"><input id="pw" type="number" inputmode="decimal" step="any" min="0" value="121" readonly><em>ซม.</em></div></label>
+                <label class="f"><span>ยาว</span><div class="in"><input id="ph" type="number" inputmode="decimal" step="any" min="0" value="81" readonly><em>ซม.</em></div></label>
               </div>
             </fieldset>
             <fieldset style="margin-bottom:0">
@@ -2591,7 +2591,8 @@ function bahtText(value) {
   }
 
   /* ---------------- หน้าคำนวณ ---------------- */
-  const PAPERS = {hp: {w: 120, h: 80}, holo: {w: 55, h: 100}, hd: {w: 55, h: 100}};
+  // w/h = ขนาดแผ่นจริงที่ใช้เรียง (เผื่อเพิ่มด้านละ 1 ซม. จากขนาดชื่อเรียก) · nw/nh = ขนาดชื่อเรียก ใช้คิดราคา ตรม./เมตร
+  const PAPERS = {hp: {w: 121, h: 81, nw: 120, nh: 80}, holo: {w: 56, h: 101, nw: 55, nh: 100}, hd: {w: 56, h: 101, nw: 55, nh: 100}};
   // เรทราคาแยกตามเพจ: full = แผ่นเต็ม, part = เศษที่ไม่เต็มแผ่น (คิดตามสัดส่วนชิ้นที่เหลือ)
   // unit 'sqm' = คิดต่อ ตรม. ตามพื้นที่จริงของแผ่น (HP 120×80 = 0.96 ตรม.), unit 'm' = คิดต่อเมตรตามความยาวม้วน (55×100 = 1 เมตร)
   const PRICE_PAGES = {
@@ -2631,8 +2632,10 @@ function bahtText(value) {
     const rem = qty - full * per;
     const frac = rem / per;
     const sheets = full + frac;
-    const sqmPerSheet = (r.pw * r.ph) / 10000;   // ตรม. ต่อแผ่น ตามพื้นที่จริง
-    const mPerSheet = r.ph / 100;                // เมตร ต่อแผ่น ตามความยาวม้วน
+    const P = PAPERS[$('paper').value];
+    const bw = P ? P.nw : r.pw, bh = P ? P.nh : r.ph;   // ขนาดที่ใช้คิดเงิน (ชื่อเรียกของกระดาษ)
+    const sqmPerSheet = (bw * bh) / 10000;   // ตรม. ต่อแผ่น
+    const mPerSheet = bh / 100;              // เมตร ต่อแผ่น ตามความยาวม้วน
 
     set('psSheets', n2(sheets) + ' แผ่น');
     set('psSheetsSub', rem > 0
@@ -2640,7 +2643,7 @@ function bahtText(value) {
       : 'เต็มแผ่นพอดี');
     if (rate && rate.unit === 'm') {
       set('psArea', n2(sheets * mPerSheet) + ' เมตร');
-      set('psAreaSub', '= ' + n2(sheets * sqmPerSheet) + ' ตรม. (หน้ากว้าง ' + fmt(r.pw) + ' ซม.)');
+      set('psAreaSub', '= ' + n2(sheets * sqmPerSheet) + ' ตรม. (หน้ากว้าง ' + fmt(bw) + ' ซม.)');
     } else {
       set('psArea', n2(sheets * sqmPerSheet) + ' ตรม.');
       set('psAreaSub', 'แผ่นละ ' + n2(sqmPerSheet) + ' ตรม.');
@@ -2663,7 +2666,7 @@ function bahtText(value) {
     $('priceBreak').innerHTML = lines.join('');
     set('priceLabel', oneSheet ? 'ราคา 1 แผ่นเต็ม (' + per.toLocaleString('en-US') + ' ชิ้น)' : 'ราคา ' + qty.toLocaleString('en-US') + ' ชิ้น');
     set('priceHint', (oneSheet ? 'ยังไม่ได้ใส่จำนวนที่ลูกค้าสั่ง จึงคิดจากจำนวนที่คำนวณได้ 1 แผ่นก่อน · ' : '') +
-      '1 แผ่น ' + fmt(r.pw) + ' × ' + fmt(r.ph) + ' ซม. = ' + (rate.unit === 'sqm' ? n2(sqmPerSheet) + ' ตรม.' : n2(mPerSheet) + ' เมตร') + ' · ยอดรวมปัดเป็นบาท');
+      'คิดเงินแผ่นละ ' + fmt(bw) + ' × ' + fmt(bh) + ' ซม. = ' + (rate.unit === 'sqm' ? n2(sqmPerSheet) + ' ตรม.' : n2(mPerSheet) + ' เมตร') + ' · ยอดรวมปัดเป็นบาท');
 
     // ช่องปรับราคาต่อชิ้น: ใส่ราคาที่จะให้ลูกค้า แล้วคิดยอดใหม่ = จำนวน × ราคาต่อชิ้น
     const avg = Math.round(total / qty * 100) / 100;
