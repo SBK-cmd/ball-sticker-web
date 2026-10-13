@@ -475,6 +475,18 @@ button.status-pill:active{filter:brightness(0.9)}
 .dash-cat-item{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
 .dash-cat-item b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .job-queue-list{display:flex;flex-direction:column;gap:8px}
+.split-wrap{overflow-x:auto;margin:0 -2px}
+.split-table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.split-table th,.split-table td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top;white-space:nowrap}
+.split-table th:first-child,.split-table td:first-child{text-align:left;white-space:normal}
+.split-table thead th{font-size:12.5px;font-weight:600;color:var(--muted)}
+.split-table td small{display:block;font-size:11.5px;font-weight:500;color:var(--muted)}
+.split-table tr.grp td{background:var(--field);font-weight:700}
+.split-table tr.acc td:first-child{padding-left:20px}
+.split-table tfoot td{font-weight:700;border-bottom:0;border-top:2px solid var(--line)}
+.tax-tag{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700;vertical-align:1px;white-space:nowrap}
+.tax-tag.on{background:var(--blue-bg);color:var(--blue-ink)}
+.tax-tag.off{background:var(--warn-bg);color:var(--warn-ink)}
 .job-queue-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;background:var(--mat);border:1px solid var(--line);cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
 .job-queue-item:hover{filter:brightness(.97)}
 .job-queue-item.overdue{background:var(--warn-bg);border-color:var(--warn-bg)}
@@ -1385,7 +1397,10 @@ tr{break-inside:avoid}
                 <label class="f"><span>เลขที่ใบคอนเฟิร์มงาน</span><input class="txt" id="jobNo" type="text" autocomplete="off"></label>
                 <label class="f"><span>วันที่สั่งงาน</span><input class="txt" id="jobDate" type="date"></label>
               </div>
-              <label class="f"><span>กำหนดส่งงาน (ถ้ามี)</span><input class="txt" id="jobDue" type="date"></label>
+              <div class="row2">
+                <label class="f"><span>กำหนดส่งงาน (ถ้ามี)</span><input class="txt" id="jobDue" type="date"></label>
+                <label class="f"><span>เพจ</span><select class="txt" id="jobPage"><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop (UV)</option></select></label>
+              </div>
               <div class="row2">
                 <label class="f"><span>เลือกบัญชี</span>
                   <select class="txt" id="jobAccount">
@@ -1473,6 +1488,11 @@ tr{break-inside:avoid}
               <label class="f"><span>ชุดเอกสาร</span>
                 <select id="docCopy"><option value="ต้นฉบับ">ต้นฉบับ</option><option value="สำเนา">สำเนา</option></select>
               </label>
+              <div class="row2">
+                <label class="f"><span>เพจ</span><select id="billPage"><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop (UV)</option></select></label>
+                <label class="f"><span>บัญชีรับเงิน</span><select id="billAccount"><option value="">— ไม่ระบุ —</option><option value="กิติพงษ์">กิติพงษ์</option><option value="วันทิม">วันทิม</option></select></label>
+              </div>
+              <p class="hint" style="margin:-6px 0 0">เลือกบัญชีวันทิม ระบบจะติ๊ก "ไม่นับบิลนี้ในรายงานภาษีขาย" ให้เอง · เพจและบัญชีไม่พิมพ์ลงบิล</p>
               <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="cName" type="text" autocomplete="off" list="customerNames"></label>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="cPhone" type="tel" autocomplete="off"></label>
               <label class="f"><span>เลขประจำตัวผู้เสียภาษีลูกค้า (ถ้ามี)</span><input class="txt" id="cTax" type="text" inputmode="numeric" autocomplete="off"></label>
@@ -1912,6 +1932,15 @@ tr{break-inside:avoid}
           <span>งานที่ยังไม่จัดส่งและใกล้ถึงหรือเลยกำหนดส่งแล้ว (วันนี้ / พรุ่งนี้ / เลยกำหนด)</span>
         </div>
         <div id="dashJobQueue"></div>
+      </section>
+
+      <section class="card" id="dashSplitCard" aria-labelledby="dash-split-h">
+        <div class="viz-head">
+          <h2 id="dash-split-h">ยอดแยกตามเพจ / บัญชี</h2>
+          <span id="dashSplitCap"></span>
+        </div>
+        <div id="dashSplit"></div>
+        <p class="hint" style="margin:10px 0 0">เงินเข้า = ยอดตามสลิปในใบสั่งงาน · ยอดบิล = ยอดรวมในบิล/ใบกำกับภาษี · บัญชีวันทิมไม่นำไปยื่นภาษี</p>
       </section>
 
       <div class="dash-mid-row">
@@ -2602,6 +2631,10 @@ function bahtText(value) {
       hp: {full: 650, part: 650, unit: 'sqm'}, holo: {full: 1290, part: 1490, unit: 'm'}, hd: {full: 1290, part: 1490, unit: 'm'}}}
   };
   const baht = n => Math.round(n).toLocaleString('en-US');
+  // เพจ/บัญชีของงานและบิล — บัญชีใน NON_TAX_ACCOUNTS ไม่นำไปยื่นภาษี (บิลจะถูกติ๊ก "ไม่นับในรายงานภาษีขาย" ให้อัตโนมัติ)
+  const PAGE_LABEL = {ball: 'บอล สติ๊กเกอร์', roll: 'Roll shop'};
+  const ACCOUNTS = ['กิติพงษ์', 'วันทิม'];
+  const NON_TAX_ACCOUNTS = ['วันทิม'];
 
   const n2 = n => (+n).toLocaleString('en-US', {maximumFractionDigits: 2});
 
@@ -2862,7 +2895,7 @@ function bahtText(value) {
     return {no: $('billNo').value, date: $('billDate').value, cName: $('cName').value, cPhone: $('cPhone').value,
       cAddr: $('cAddr').value, cTax: $('cTax').value, docCopy: $('docCopy').value, items: items.map(i => ({name: i.name, qty: i.qty, price: i.price})),
       discount: $('discount').value, deposit: $('deposit').value, vatMode: $('vatMode').value, vatRate: $('vatRate').value, note: $('note').value,
-      excludeTax: $('excludeTax').checked};
+      page: $('billPage').value, account: $('billAccount').value, excludeTax: $('excludeTax').checked};
   }
   function apply(b) {
     $('billNo').value = b.no || ''; $('billDate').value = b.date || todayISO();
@@ -2870,6 +2903,7 @@ function bahtText(value) {
     items = (b.items && b.items.length) ? b.items.map(i => ({name: i.name || '', qty: i.qty, price: i.price})) : [{name: '', qty: 1, price: 0}];
     $('discount').value = b.discount || 0; $('deposit').value = b.deposit || 0;
     $('vatMode').value = b.vatMode || 'add'; $('vatRate').value = b.vatRate || 7; $('note').value = b.note || '';
+    $('billPage').value = PAGE_LABEL[b.page] ? b.page : 'ball'; $('billAccount').value = b.account || '';
     $('excludeTax').checked = !!b.excludeTax;
     syncVat(); renderItems(); renderBill();
   }
@@ -2923,7 +2957,7 @@ function bahtText(value) {
     }
     $('history').innerHTML = notice + '<ul>' + shown.map(b =>
       '<li data-id="' + esc(b.id) + '"><input type="checkbox" class="hist-chk" data-id="' + esc(b.id) + '"' + (histSelected.has(b.id) ? ' checked' : '') + ' aria-label="เลือกเอกสาร ' + esc(b.no) + '">' +
-      '<div class="meta"><b>' + esc(b.no) + '</b><small>' + esc(thDate(b.date)) + ' · ' + esc(b.cName || 'ไม่ระบุชื่อลูกค้า') + (b.createdBy ? ' · โดย ' + esc(b.createdBy) : '') + '</small></div>' +
+      '<div class="meta"><b>' + esc(b.no) + '</b><small>' + esc(thDate(b.date)) + ' · ' + esc(b.cName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[b.page] ? ' · ' + esc(PAGE_LABEL[b.page]) : '') + (b.account ? ' · บัญชี ' + esc(b.account) : '') + (b.createdBy ? ' · โดย ' + esc(b.createdBy) : '') + '</small></div>' +
       '<span class="amt">' + money(b.total || 0) + ' บาท</span>' +
       '<button class="status-pill ' + (b.excludeTax ? 'taxoff' : 'taxon') + '" data-act="toggletax" data-id="' + esc(b.id) + '" type="button" title="กดเพื่อสลับว่าจะนับบิลนี้ในรายงานภาษีขายหรือไม่">' + (b.excludeTax ? 'ไม่รวมภาษี' : 'รวมภาษี') + '</button>' +
       '<button class="status-pill ' + (b.paid ? 'billdone' : 'pending') + '" data-act="togglepaid" data-id="' + esc(b.id) + '" type="button" title="กดเพื่อสลับสถานะ">' + (b.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</button>' +
@@ -3107,13 +3141,53 @@ function bahtText(value) {
     return (names[m - 1] || '') + ' ' + String((y + 543) % 100).padStart(2, '0');
   };
 
+  // ยอดแยกตามเพจ × บัญชี: เงินเข้าจากสลิปในใบสั่งงาน และยอดบิล วางคู่กัน
+  function renderDashSplit(sel) {
+    const el = $('dashSplit'); if (!el) return;
+    $('dashSplitCap').textContent = sel ? thMonthFull(sel) : 'ทุกช่วงเวลา';
+    const inMonth = d => !sel || monthKey(d) === sel;
+    const jobs = store.get('bs_jobs', []).filter(j => inMonth(j.date));
+    const bills = store.get('bs_bills', []).filter(b => inMonth(b.date));
+    const pageKeys = Object.keys(PAGE_LABEL).concat(['']);
+    const accKeys = ACCOUNTS.concat(['']);
+    const pg = x => PAGE_LABEL[x.page] ? x.page : '';
+    const ac = x => ACCOUNTS.indexOf(x.account) >= 0 ? x.account : '';
+    const cell = (jl, bl) => {
+      const slip = jl.reduce((a, j) => a + num(j.slipAmount), 0);
+      const bt = bl.reduce((a, b) => a + billCalc(b).total, 0);
+      return '<td>' + money(round2(slip)) + '<small>' + jl.length + ' งาน</small></td><td>' + money(round2(bt)) + '<small>' + bl.length + ' ใบ</small></td>';
+    };
+    const accName = a => a ? esc(a) + (NON_TAX_ACCOUNTS.indexOf(a) >= 0 ? ' <span class="tax-tag off">ไม่ยื่นภาษี</span>' : ' <span class="tax-tag on">ยื่นภาษี</span>') : 'ไม่ระบุบัญชี';
+    let body = '';
+    pageKeys.forEach(p => {
+      const pj = jobs.filter(j => pg(j) === p), pb = bills.filter(b => pg(b) === p);
+      if (!pj.length && !pb.length) return;
+      body += '<tr class="grp"><td>' + esc(p ? PAGE_LABEL[p] : 'ไม่ระบุเพจ') + '</td>' + cell(pj, pb) + '</tr>';
+      accKeys.forEach(a => {
+        const aj = pj.filter(j => ac(j) === a), ab = pb.filter(b => ac(b) === a);
+        if (!aj.length && !ab.length) return;
+        body += '<tr class="acc"><td>' + accName(a) + '</td>' + cell(aj, ab) + '</tr>';
+      });
+    });
+    if (!body) { el.innerHTML = '<p class="empty">ยังไม่มีใบสั่งงานหรือบิลในช่วงนี้</p>'; return; }
+    let foot = '';
+    accKeys.forEach(a => {
+      const aj = jobs.filter(j => ac(j) === a), ab = bills.filter(b => ac(b) === a);
+      if (!aj.length && !ab.length) return;
+      foot += '<tr><td>รวม ' + accName(a) + '</td>' + cell(aj, ab) + '</tr>';
+    });
+    el.innerHTML = '<div class="split-wrap"><table class="split-table"><thead><tr><th>เพจ / บัญชี</th><th>เงินเข้า (สลิป)</th><th>ยอดบิล</th></tr></thead>' +
+      '<tbody>' + body + '</tbody><tfoot>' + foot + '</tfoot></table></div>';
+  }
+
   // ใช้เดือนที่มีข้อมูลจริงในระบบเท่านั้น (เหมือนหน้ารายงานภาษี) เพื่อไม่ให้พลาดบิล/ใบซื้อที่บันทึกวันที่ผิดปกติ
   function populateDashMonthOptions() {
     const sel = $('dashMonth'); if (!sel) return;
     const prev = sel.value;
     const bills = store.get('bs_bills', []);
     const purchases = store.get('bs_purchases', []);
-    const months = Array.from(new Set(bills.map(b => monthKey(b.date)).concat(purchases.map(p => monthKey(p.date))).filter(Boolean))).sort().reverse();
+    const jobsM = store.get('bs_jobs', []);
+    const months = Array.from(new Set(bills.map(b => monthKey(b.date)).concat(purchases.map(p => monthKey(p.date)), jobsM.map(j => monthKey(j.date))).filter(Boolean))).sort().reverse();
     sel.innerHTML = '<option value="">— ดูทั้งหมด —</option>' +
       months.map(m => {
         const sCount = bills.filter(b => monthKey(b.date) === m).length;
@@ -3127,6 +3201,7 @@ function bahtText(value) {
     populateDashMonthOptions();
     const list = store.get('bs_bills', []);
     const sel = $('dashMonth').value;
+    renderDashSplit(sel);
     const hintEl = $('dashMonthHint');
     if (hintEl) {
       hintEl.textContent = $('dashMonth').options.length > 1
@@ -4634,12 +4709,13 @@ function bahtText(value) {
   }
 
   function collectJob() {
-    return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, account: $('jobAccount').value, slipAmount: $('jobSlipAmount').value, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
+    return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, account: $('jobAccount').value, page: $('jobPage').value, slipAmount: $('jobSlipAmount').value, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
       items: jobItems.map(i => ({name: i.name, qty: i.qty, note: i.note})), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus};
   }
   function applyJob(j) {
     $('jobNo').value = j.no || ''; $('jobDate').value = j.date || todayISO(); $('jobDue').value = j.due || '';
     $('jobAccount').value = j.account || ''; $('jobSlipAmount').value = j.slipAmount || '';
+    $('jobPage').value = PAGE_LABEL[j.page] ? j.page : 'ball';
     $('jName').value = j.jName || ''; $('jPhone').value = j.jPhone || ''; $('jAddr').value = j.jAddr || '';
     jobItems = (j.items && j.items.length) ? j.items.map(i => ({name: i.name || '', qty: i.qty, note: i.note || ''})) : [{name: '', qty: 1, note: ''}];
     $('jobNote').value = j.note || '';
@@ -4669,7 +4745,7 @@ function bahtText(value) {
     $('jobHistory').innerHTML = notice + '<ul>' + shown.map(j => {
       const st = j.status || 'pending';
       return '<li data-id="' + esc(j.id) + '">' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '') +
-      '<div class="meta"><b>' + esc(j.no) + '</b><small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (j.account ? ' · บัญชี ' + esc(j.account) : '') + (num(j.slipAmount) > 0 ? ' · สลิป ' + money(num(j.slipAmount)) + ' บาท' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
+      '<div class="meta"><b>' + esc(j.no) + '</b><small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[j.page] ? ' · ' + esc(PAGE_LABEL[j.page]) : '') + (j.account ? ' · บัญชี ' + esc(j.account) : '') + (num(j.slipAmount) > 0 ? ' · สลิป ' + money(num(j.slipAmount)) + ' บาท' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
       '<select class="job-status-select status-pill ' + st + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
       '</select>' +
@@ -5663,7 +5739,7 @@ function bahtText(value) {
   $('quoteVatMode').addEventListener('change', () => { syncQuoteVat(); renderQuote(); });
   $('quoteDocCopy').addEventListener('change', renderQuote);
 
-  ['jobNo', 'jobDate', 'jobDue', 'jobAccount', 'jobSlipAmount', 'jName', 'jPhone', 'jAddr', 'jobNote'].forEach(id => $(id).addEventListener(id === 'jobAccount' ? 'change' : 'input', renderJob));
+  ['jobNo', 'jobDate', 'jobDue', 'jobAccount', 'jobPage', 'jobSlipAmount', 'jName', 'jPhone', 'jAddr', 'jobNote'].forEach(id => $(id).addEventListener((id === 'jobAccount' || id === 'jobPage') ? 'change' : 'input', renderJob));
 
   $('jobItems').addEventListener('input', e => {
     const row = e.target.closest('.item'); if (!row) return;
@@ -5706,6 +5782,8 @@ function bahtText(value) {
   $('new-job').addEventListener('click', () => { $('jobPhotoInput').value = ''; newJob(); toast('เปิดใบใหม่แล้ว'); });
   $('job-to-bill').addEventListener('click', () => {
     $('cName').value = $('jName').value; $('cPhone').value = $('jPhone').value; $('cAddr').value = $('jAddr').value;
+    $('billPage').value = $('jobPage').value;
+    if ($('jobAccount').value) { $('billAccount').value = $('jobAccount').value; $('excludeTax').checked = NON_TAX_ACCOUNTS.indexOf($('jobAccount').value) >= 0; }
     const shown = jobItems.filter(i => i.name.trim());
     items = shown.length ? shown.map(i => ({name: i.name, qty: i.qty, price: 0})) : [{name: '', qty: 1, price: 0}];
     if ($('jobNote').value.trim() && !$('note').value.trim()) $('note').value = $('jobNote').value;
@@ -5972,6 +6050,12 @@ function bahtText(value) {
   });
   $('save-bill').addEventListener('click', saveBill);
   $('new-bill').addEventListener('click', () => { newBill(); toast('เปิดเอกสารใหม่แล้ว'); });
+  $('billAccount').addEventListener('change', () => {
+    const acc = $('billAccount').value; if (!acc) return;
+    const off = NON_TAX_ACCOUNTS.indexOf(acc) >= 0;
+    $('excludeTax').checked = off;
+    toast(off ? 'บัญชี' + acc + ': ไม่นับบิลนี้ในรายงานภาษีขาย' : 'บัญชี' + acc + ': นับบิลนี้ในรายงานภาษีขาย');
+  });
   $('stmt-import-btn').addEventListener('click', openStmtOverlay);
   $('stmtClose').addEventListener('click', closeStmtOverlay);
   $('stmtOverlay').addEventListener('click', e => { if (e.target === $('stmtOverlay')) closeStmtOverlay(); });
