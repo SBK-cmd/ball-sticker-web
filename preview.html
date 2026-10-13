@@ -1280,7 +1280,7 @@ tr{break-inside:avoid}
               </label>
               <div class="row2 price-qty-row">
                 <label class="f"><span>จำนวนที่คำนวณได้</span><div class="in"><input id="pricePerSheet" type="text" readonly tabindex="-1" value="0" aria-describedby="priceHint"><em>ชิ้น/แผ่น</em></div></label>
-                <label class="f"><span>จำนวนที่ลูกค้าสั่ง</span><div class="in"><input id="priceQty" type="number" inputmode="numeric" step="1" min="0" placeholder="เช่น 1000"><em>ชิ้น</em></div></label>
+                <label class="f"><span>จำนวนที่ลูกค้าสั่ง</span><div class="in"><input id="priceQty" type="number" inputmode="numeric" step="1" min="0" placeholder="ใส่ทีหลังได้"><em>ชิ้น</em></div></label>
               </div>
               <div class="price-out" id="priceOut" aria-live="polite">
                 <div class="price-stats">
@@ -1288,7 +1288,7 @@ tr{break-inside:avoid}
                   <div class="ps"><span class="ps-l">พื้นที่</span><b id="psArea">—</b><small id="psAreaSub"></small></div>
                 </div>
                 <div class="price-money">
-                  <span class="ps-l">ราคา</span>
+                  <span class="ps-l" id="priceLabel">ราคา</span>
                   <div class="price-total"><span id="priceTotal">—</span><em>บาท</em></div>
                   <div class="price-sub" id="priceSub"></div>
                 </div>
@@ -2610,20 +2610,21 @@ function bahtText(value) {
     const pageKey = PRICE_PAGES[$('pricePage').value] ? $('pricePage').value : 'ball';
     const rate = PRICE_PAGES[pageKey].rates[$('paper').value] || null;
     const per = r.count;
-    const qty = Math.max(0, Math.floor(num($('priceQty').value)));
+    const typedQty = Math.max(0, Math.floor(num($('priceQty').value)));
+    const oneSheet = !(typedQty > 0);   // ยังไม่ใส่จำนวนที่ลูกค้าสั่ง → คิดราคาจากจำนวนที่คำนวณได้ (1 แผ่นเต็ม) ไปก่อน
+    const qty = oneSheet ? per : typedQty;
     $('pricePerSheet').value = per > 0 ? per.toLocaleString('en-US') : '0';
     const unitWord = rate && rate.unit === 'sqm' ? 'ตรม.' : 'เมตร';
     $('priceRateCap').textContent = rate
       ? (rate.full === rate.part ? baht(rate.full) + ' บาท/' + unitWord : 'เต็ม ' + baht(rate.full) + ' · ไม่เต็ม ' + baht(rate.part) + ' บาท/' + unitWord)
       : '';
     const set = (id, v) => { $(id).textContent = v; };
-    const clearPrice = () => { set('priceTotal', '—'); set('priceSub', ''); $('priceBreak').innerHTML = ''; $('priceAdjBox').hidden = true; };
+    const clearPrice = () => { set('priceLabel', 'ราคา'); set('priceTotal', '—'); set('priceSub', ''); $('priceBreak').innerHTML = ''; $('priceAdjBox').hidden = true; };
     const blank = (hint) => {
       ['psSheetsSub', 'psAreaSub'].forEach(id => set(id, ''));
       set('psSheets', '—'); set('psArea', '—'); clearPrice(); set('priceHint', hint);
     };
     if (!(per > 0)) return blank('ยังเรียงสติ๊กเกอร์บนแผ่นไม่ได้ ดูข้อความเตือนด้านบน');
-    if (!(qty > 0)) return blank('ใส่จำนวนที่ลูกค้าสั่ง เพื่อดูว่าใช้กี่แผ่น กี่ ตรม. และราคาเท่าไหร่');
 
     // จำนวนแผ่น: เต็มกี่แผ่น + เศษกี่ชิ้น (คิดเป็นสัดส่วนของแผ่น)
     const full = Math.floor(qty / per);
@@ -2660,7 +2661,9 @@ function bahtText(value) {
     if (full > 0) lines.push('<li><span>แผ่นเต็ม ' + full.toLocaleString('en-US') + ' แผ่น × ' + money(fullSheetPrice) + '</span><b>' + money(fullCost) + '</b></li>');
     if (rem > 0) lines.push('<li><span>เศษ ' + rem.toLocaleString('en-US') + ' ชิ้น (' + n2(frac) + ' แผ่น) × ' + money(partSheetPrice) + '</span><b>' + money(partCost) + '</b></li>');
     $('priceBreak').innerHTML = lines.join('');
-    set('priceHint', '1 แผ่น ' + fmt(r.pw) + ' × ' + fmt(r.ph) + ' ซม. = ' + (rate.unit === 'sqm' ? n2(sqmPerSheet) + ' ตรม.' : n2(mPerSheet) + ' เมตร') + ' · ยอดรวมปัดเป็นบาท');
+    set('priceLabel', oneSheet ? 'ราคา 1 แผ่นเต็ม (' + per.toLocaleString('en-US') + ' ชิ้น)' : 'ราคา ' + qty.toLocaleString('en-US') + ' ชิ้น');
+    set('priceHint', (oneSheet ? 'ยังไม่ได้ใส่จำนวนที่ลูกค้าสั่ง จึงคิดจากจำนวนที่คำนวณได้ 1 แผ่นก่อน · ' : '') +
+      '1 แผ่น ' + fmt(r.pw) + ' × ' + fmt(r.ph) + ' ซม. = ' + (rate.unit === 'sqm' ? n2(sqmPerSheet) + ' ตรม.' : n2(mPerSheet) + ' เมตร') + ' · ยอดรวมปัดเป็นบาท');
 
     // ช่องปรับราคาต่อชิ้น: ใส่ราคาที่จะให้ลูกค้า แล้วคิดยอดใหม่ = จำนวน × ราคาต่อชิ้น
     const avg = Math.round(total / qty * 100) / 100;
