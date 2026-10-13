@@ -138,6 +138,10 @@ a{color:inherit}
 .ps small{display:block;font-size:12px;line-height:1.45;margin-top:2px;color:var(--muted);white-space:pre-line}
 .ps small:empty{display:none}
 .price-money{margin-top:14px}
+.price-adj{margin-top:12px;padding:14px 16px;border-radius:14px;border:1.5px dashed var(--sticker-line);background:var(--surface)}
+.adj-out{margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--blue-bg)}
+.adj-out .price-total{color:var(--blue-ink)}
+.adj-out .price-sub b{color:var(--blue-ink)}
 .price-out{margin-top:14px;padding:14px 16px;border-radius:14px;background:var(--field);border:1px solid var(--line)}
 .price-total{display:flex;align-items:baseline;gap:8px;font-weight:800;font-size:34px;line-height:1.15;color:var(--ink);font-variant-numeric:tabular-nums}
 .price-total em{font-style:normal;font-size:15px;font-weight:700;color:var(--muted)}
@@ -1289,6 +1293,14 @@ tr{break-inside:avoid}
                   <div class="price-sub" id="priceSub"></div>
                 </div>
                 <ul class="price-break" id="priceBreak"></ul>
+              </div>
+              <div class="price-adj" id="priceAdjBox" hidden>
+                <label class="f"><span>ลดราคาต่อชิ้นเหลือ</span><div class="in"><input id="priceAdj" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00"><em>บาท/ชิ้น</em></div></label>
+                <div class="adj-out" id="adjOut" hidden>
+                  <span class="ps-l">ยอดหลังปรับราคา</span>
+                  <div class="price-total"><span id="adjTotal">—</span><em>บาท</em></div>
+                  <div class="price-sub" id="adjSub"></div>
+                </div>
               </div>
               <p class="hint" id="priceHint"></p>
             </div>
@@ -2605,7 +2617,7 @@ function bahtText(value) {
       ? (rate.full === rate.part ? baht(rate.full) + ' บาท/' + unitWord : 'เต็ม ' + baht(rate.full) + ' · ไม่เต็ม ' + baht(rate.part) + ' บาท/' + unitWord)
       : '';
     const set = (id, v) => { $(id).textContent = v; };
-    const clearPrice = () => { set('priceTotal', '—'); set('priceSub', ''); $('priceBreak').innerHTML = ''; };
+    const clearPrice = () => { set('priceTotal', '—'); set('priceSub', ''); $('priceBreak').innerHTML = ''; $('priceAdjBox').hidden = true; };
     const blank = (hint) => {
       ['psSheetsSub', 'psAreaSub'].forEach(id => set(id, ''));
       set('psSheets', '—'); set('psArea', '—'); clearPrice(); set('priceHint', hint);
@@ -2649,6 +2661,22 @@ function bahtText(value) {
     if (rem > 0) lines.push('<li><span>เศษ ' + rem.toLocaleString('en-US') + ' ชิ้น (' + n2(frac) + ' แผ่น) × ' + money(partSheetPrice) + '</span><b>' + money(partCost) + '</b></li>');
     $('priceBreak').innerHTML = lines.join('');
     set('priceHint', '1 แผ่น ' + fmt(r.pw) + ' × ' + fmt(r.ph) + ' ซม. = ' + (rate.unit === 'sqm' ? n2(sqmPerSheet) + ' ตรม.' : n2(mPerSheet) + ' เมตร') + ' · ยอดรวมปัดเป็นบาท');
+
+    // ช่องปรับราคาต่อชิ้น: ใส่ราคาที่จะให้ลูกค้า แล้วคิดยอดใหม่ = จำนวน × ราคาต่อชิ้น
+    const avg = Math.round(total / qty * 100) / 100;
+    $('priceAdjBox').hidden = false;
+    $('priceAdj').placeholder = money(avg);
+    const adjRaw = $('priceAdj').value.trim();
+    const adj = num(adjRaw);
+    if (adjRaw === '' || !(adj >= 0)) { $('adjOut').hidden = true; return; }
+    const adjTotal = Math.round(qty * adj);
+    const diff = total - adjTotal;
+    $('adjOut').hidden = false;
+    set('adjTotal', baht(adjTotal));
+    $('adjSub').innerHTML = qty.toLocaleString('en-US') + ' ชิ้น × ' + money(adj) + ' บาท · ' + (
+      diff > 0 ? 'ลดไป <b>' + baht(diff) + '</b> บาท (' + n2(diff / total * 100) + '%)'
+      : diff < 0 ? 'สูงกว่าราคาระบบ <b>' + baht(-diff) + '</b> บาท'
+      : 'เท่ากับราคาระบบ');
   }
   let lastLayout = null;
 
@@ -5611,6 +5639,7 @@ function bahtText(value) {
   try { const pg = localStorage.getItem('bs_price_page'); if (pg && PRICE_PAGES[pg]) $('pricePage').value = pg; } catch (e) {}
   $('pricePage').addEventListener('change', () => { try { localStorage.setItem('bs_price_page', $('pricePage').value); } catch (e) {} renderPrice(); });
   $('priceQty').addEventListener('input', renderPrice);
+  $('priceAdj').addEventListener('input', renderPrice);
   renderPrice();
   $('print-calc').addEventListener('click', () => {
     if (inFrame() || isMobile()) { exportDoc('calc', $('print-calc'), {forPrint: true}); return; }
