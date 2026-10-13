@@ -130,7 +130,14 @@ a{color:inherit}
 .tax-sheet-item:focus-visible{outline:2px solid var(--blue-ink);outline-offset:2px}
 .tax-sheet-item.active{background:var(--blue-bg);color:var(--blue-ink);border-color:transparent;font-weight:700}
 /* การ์ดคิดราคา (หน้าคำนวณ) */
-.price-card .row2{margin-top:2px}
+.price-qty-row{margin-top:12px}
+.price-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ps{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+.ps-l{display:block;font-size:12.5px;font-weight:600;color:var(--muted)}
+.ps b{display:block;font-size:22px;font-weight:800;line-height:1.25;margin-top:2px;color:var(--ink);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.ps small{display:block;font-size:12px;line-height:1.45;margin-top:2px;color:var(--muted);white-space:pre-line}
+.ps small:empty{display:none}
+.price-money{margin-top:14px}
 .price-out{margin-top:14px;padding:14px 16px;border-radius:14px;background:var(--field);border:1px solid var(--line)}
 .price-total{display:flex;align-items:baseline;gap:8px;font-weight:800;font-size:34px;line-height:1.15;color:var(--ink);font-variant-numeric:tabular-nums}
 .price-total em{font-style:normal;font-size:15px;font-weight:700;color:var(--muted)}
@@ -1261,18 +1268,26 @@ tr{break-inside:avoid}
                 <h2>คิดราคา</h2>
                 <span id="priceRateCap"></span>
               </div>
-              <div class="row2">
-                <label class="f"><span>เพจ</span>
-                  <select id="pricePage">
-                    <option value="ball">บอล สติ๊กเกอร์</option>
-                    <option value="roll">Roll shop (งาน UV)</option>
-                  </select>
-                </label>
-                <label class="f"><span>จำนวนที่สั่ง</span><div class="in"><input id="priceQty" type="number" inputmode="numeric" step="1" min="0" value="100"><em>ชิ้น</em></div></label>
+              <label class="f"><span>เพจ</span>
+                <select id="pricePage">
+                  <option value="ball">บอล สติ๊กเกอร์</option>
+                  <option value="roll">Roll shop (งาน UV)</option>
+                </select>
+              </label>
+              <div class="row2 price-qty-row">
+                <label class="f"><span>จำนวนที่คำนวณได้</span><div class="in"><input id="pricePerSheet" type="text" readonly tabindex="-1" value="0" aria-describedby="priceHint"><em>ชิ้น/แผ่น</em></div></label>
+                <label class="f"><span>จำนวนที่ลูกค้าสั่ง</span><div class="in"><input id="priceQty" type="number" inputmode="numeric" step="1" min="0" placeholder="เช่น 1000"><em>ชิ้น</em></div></label>
               </div>
               <div class="price-out" id="priceOut" aria-live="polite">
-                <div class="price-total"><span id="priceTotal">—</span><em>บาท</em></div>
-                <div class="price-sub" id="priceSub"></div>
+                <div class="price-stats">
+                  <div class="ps"><span class="ps-l">ใช้กระดาษ</span><b id="psSheets">—</b><small id="psSheetsSub"></small></div>
+                  <div class="ps"><span class="ps-l">พื้นที่</span><b id="psArea">—</b><small id="psAreaSub"></small></div>
+                </div>
+                <div class="price-money">
+                  <span class="ps-l">ราคา</span>
+                  <div class="price-total"><span id="priceTotal">—</span><em>บาท</em></div>
+                  <div class="price-sub" id="priceSub"></div>
+                </div>
                 <ul class="price-break" id="priceBreak"></ul>
               </div>
               <p class="hint" id="priceHint"></p>
@@ -2575,45 +2590,65 @@ function bahtText(value) {
   };
   const baht = n => Math.round(n).toLocaleString('en-US');
 
+  const n2 = n => (+n).toLocaleString('en-US', {maximumFractionDigits: 2});
+
   function renderPrice() {
     if (!$('priceCard')) return;
     const r = lastLayout || readLayout();
     const pageKey = PRICE_PAGES[$('pricePage').value] ? $('pricePage').value : 'ball';
-    const rate = PRICE_PAGES[pageKey].rates[$('paper').value];
-    const qty = Math.max(0, Math.floor(num($('priceQty').value)));
+    const rate = PRICE_PAGES[pageKey].rates[$('paper').value] || null;
     const per = r.count;
+    const qty = Math.max(0, Math.floor(num($('priceQty').value)));
+    $('pricePerSheet').value = per > 0 ? per.toLocaleString('en-US') : '0';
     const unitWord = rate && rate.unit === 'sqm' ? 'ตรม.' : 'เมตร';
     $('priceRateCap').textContent = rate
       ? (rate.full === rate.part ? baht(rate.full) + ' บาท/' + unitWord : 'เต็ม ' + baht(rate.full) + ' · ไม่เต็ม ' + baht(rate.part) + ' บาท/' + unitWord)
       : '';
+    const set = (id, v) => { $(id).textContent = v; };
+    const clearPrice = () => { set('priceTotal', '—'); set('priceSub', ''); $('priceBreak').innerHTML = ''; };
     const blank = (hint) => {
-      $('priceTotal').textContent = '—'; $('priceSub').textContent = ''; $('priceBreak').innerHTML = '';
-      $('priceHint').textContent = hint || '';
+      ['psSheetsSub', 'psAreaSub'].forEach(id => set(id, ''));
+      set('psSheets', '—'); set('psArea', '—'); clearPrice(); set('priceHint', hint);
     };
-    if (!rate) return blank('คิดราคาได้เมื่อเลือกกระดาษ HP PVC, โฮโลแกรม หรือสะท้อนแสง');
-    if (!(per > 0)) return blank('ยังเรียงสติ๊กเกอร์บนแผ่นไม่ได้ จึงยังคิดราคาไม่ได้');
-    if (!(qty > 0)) return blank('ใส่จำนวนที่ลูกค้าสั่งเพื่อดูราคา');
+    if (!(per > 0)) return blank('ยังเรียงสติ๊กเกอร์บนแผ่นไม่ได้ ดูข้อความเตือนด้านบน');
+    if (!(qty > 0)) return blank('ใส่จำนวนที่ลูกค้าสั่ง เพื่อดูว่าใช้กี่แผ่น กี่ ตรม. และราคาเท่าไหร่');
 
-    // ปริมาณต่อ 1 แผ่น: ตรม. ตามพื้นที่จริง หรือ เมตร ตามความยาวม้วน
-    const unitPerSheet = rate.unit === 'sqm' ? (r.pw * r.ph) / 10000 : r.ph / 100;
+    // จำนวนแผ่น: เต็มกี่แผ่น + เศษกี่ชิ้น (คิดเป็นสัดส่วนของแผ่น)
     const full = Math.floor(qty / per);
     const rem = qty - full * per;
     const frac = rem / per;
+    const sheets = full + frac;
+    const sqmPerSheet = (r.pw * r.ph) / 10000;   // ตรม. ต่อแผ่น ตามพื้นที่จริง
+    const mPerSheet = r.ph / 100;                // เมตร ต่อแผ่น ตามความยาวม้วน
+
+    set('psSheets', n2(sheets) + ' แผ่น');
+    set('psSheetsSub', rem > 0
+      ? (full > 0 ? 'เต็ม ' + full.toLocaleString('en-US') + ' + ' : '') + 'เศษ ' + rem.toLocaleString('en-US') + ' ชิ้น\nตัดจริง ' + Math.ceil(qty / per).toLocaleString('en-US') + ' แผ่น'
+      : 'เต็มแผ่นพอดี');
+    if (rate && rate.unit === 'm') {
+      set('psArea', n2(sheets * mPerSheet) + ' เมตร');
+      set('psAreaSub', '= ' + n2(sheets * sqmPerSheet) + ' ตรม. (หน้ากว้าง ' + fmt(r.pw) + ' ซม.)');
+    } else {
+      set('psArea', n2(sheets * sqmPerSheet) + ' ตรม.');
+      set('psAreaSub', 'แผ่นละ ' + n2(sqmPerSheet) + ' ตรม.');
+    }
+
+    if (!rate) { clearPrice(); set('priceHint', 'ราคาคิดได้เฉพาะ HP PVC, โฮโลแกรม และสะท้อนแสง'); return; }
+
+    const unitPerSheet = rate.unit === 'sqm' ? sqmPerSheet : mPerSheet;
     const fullSheetPrice = unitPerSheet * rate.full;
     const partSheetPrice = unitPerSheet * rate.part;
     const fullCost = full * fullSheetPrice;
     const partCost = frac * partSheetPrice;
     const total = Math.round(fullCost + partCost);
 
-    $('priceTotal').textContent = baht(total);
-    $('priceSub').innerHTML = 'เฉลี่ย <b>' + money(total / qty) + '</b> บาท/ชิ้น · ใช้ <b>' + fmt(full + frac) + '</b> แผ่น (' + per.toLocaleString('en-US') + ' ชิ้น/แผ่น)';
+    set('priceTotal', baht(total));
+    $('priceSub').innerHTML = 'เฉลี่ย <b>' + money(total / qty) + '</b> บาท/ชิ้น';
     const lines = [];
     if (full > 0) lines.push('<li><span>แผ่นเต็ม ' + full.toLocaleString('en-US') + ' แผ่น × ' + money(fullSheetPrice) + '</span><b>' + money(fullCost) + '</b></li>');
-    if (rem > 0) lines.push('<li><span>เศษ ' + rem.toLocaleString('en-US') + ' ชิ้น (' + fmt(frac) + ' แผ่น) × ' + money(partSheetPrice) + '</span><b>' + money(partCost) + '</b></li>');
+    if (rem > 0) lines.push('<li><span>เศษ ' + rem.toLocaleString('en-US') + ' ชิ้น (' + n2(frac) + ' แผ่น) × ' + money(partSheetPrice) + '</span><b>' + money(partCost) + '</b></li>');
     $('priceBreak').innerHTML = lines.join('');
-    $('priceHint').textContent = rate.unit === 'sqm'
-      ? '1 แผ่น ' + fmt(r.pw) + ' × ' + fmt(r.ph) + ' ซม. = ' + fmt(unitPerSheet) + ' ตรม. · ยอดรวมปัดเป็นบาท'
-      : '1 แผ่น ' + fmt(r.pw) + ' × ' + fmt(r.ph) + ' ซม. = ' + fmt(unitPerSheet) + ' เมตร · ยอดรวมปัดเป็นบาท';
+    set('priceHint', '1 แผ่น ' + fmt(r.pw) + ' × ' + fmt(r.ph) + ' ซม. = ' + (rate.unit === 'sqm' ? n2(sqmPerSheet) + ' ตรม.' : n2(mPerSheet) + ' เมตร') + ' · ยอดรวมปัดเป็นบาท');
   }
   let lastLayout = null;
 
