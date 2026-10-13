@@ -487,6 +487,35 @@ button.status-pill:active{filter:brightness(0.9)}
 .tax-tag{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700;vertical-align:1px;white-space:nowrap}
 .tax-tag.on{background:var(--blue-bg);color:var(--blue-ink)}
 .tax-tag.off{background:var(--warn-bg);color:var(--warn-ink)}
+/* แจ้งเตือนเงินเข้า */
+.bankin-banner{position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top,0px));z-index:1200;max-width:520px;margin:0 auto;
+  display:flex;align-items:center;gap:12px;padding:12px 12px 12px 14px;border-radius:16px;background:var(--hero-bg);color:#fff;
+  box-shadow:0 18px 40px -16px rgba(0,0,0,.55);animation:bibIn .28s ease}
+@keyframes bibIn{from{transform:translateY(-14px);opacity:0}to{transform:none;opacity:1}}
+.bib-ico{font-size:26px;line-height:1}
+.bib-main{flex:1;min-width:0}
+.bib-main b{display:block;font-size:18px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+.bib-main small{display:block;font-size:13px;opacity:.88;overflow-wrap:anywhere}
+.bib-view{flex:none;background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;padding:8px 14px;font:700 13.5px 'Sarabun','Noto Sans Thai',system-ui,sans-serif;cursor:pointer}
+.bib-x{flex:none;background:transparent;border:0;color:#fff;opacity:.75;font-size:16px;padding:6px;cursor:pointer}
+.bankin-sum{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.bis{background:var(--field);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+.bis .ps-l{margin-bottom:2px}
+.bis b{display:block;font-size:20px;font-weight:800;line-height:1.25;color:var(--ink);font-variant-numeric:tabular-nums}
+.bis small{display:block;font-size:12px;color:var(--muted);line-height:1.45}
+.bankin-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.bankin-list li,.bankin-opt{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--line);border-radius:12px;background:var(--surface);min-width:0}
+.bil-time{flex:none;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:66px}
+.bil-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.bil-mid small{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bil-amt{flex:none;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
+.bankin-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.bankin-pick{margin-top:-4px}
+.bankin-pick-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#jobBankInList{margin-top:8px;display:grid;gap:6px}
+.bankin-opt{width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.bankin-opt:active{background:var(--field)}
+.bankin-opt.sel{border-color:var(--sticker-line);background:var(--blue-bg)}
 .job-queue-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;background:var(--mat);border:1px solid var(--line);cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
 .job-queue-item:hover{filter:brightness(.97)}
 .job-queue-item.overdue{background:var(--warn-bg);border-color:var(--warn-bg)}
@@ -1182,6 +1211,13 @@ tr{break-inside:avoid}
   })();
   </script>
 
+  <div class="bankin-banner no-print" id="bankInBanner" role="status" aria-live="polite" hidden>
+    <span class="bib-ico" aria-hidden="true">💰</span>
+    <div class="bib-main"><b id="bibAmount"></b><small id="bibMeta"></small></div>
+    <button type="button" class="bib-view" id="bibView">ดู</button>
+    <button type="button" class="bib-x" id="bibClose" aria-label="ปิดแจ้งเตือน">✕</button>
+  </div>
+
   <nav class="bnav no-print" aria-label="เมนูหลัก (มือถือ)">
     <button type="button" class="btab active" data-tab="calc" aria-controls="panel-calc">
       <span class="btab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"></rect><line x1="8" y1="7" x2="16" y2="7"></line><line x1="8" y1="11" x2="8" y2="11.01"></line><line x1="12" y1="11" x2="12" y2="11.01"></line><line x1="16" y1="11" x2="16" y2="11.01"></line><line x1="8" y1="15" x2="8" y2="15.01"></line><line x1="12" y1="15" x2="12" y2="15.01"></line><line x1="16" y1="15" x2="16" y2="15.01"></line></svg></span>
@@ -1412,6 +1448,13 @@ tr{break-inside:avoid}
                 <label class="f"><span>จำนวนเงิน (ตามสลิป)</span><div class="in"><input type="number" inputmode="decimal" step="any" min="0" id="jobSlipAmount" placeholder="0.00"></div></label>
               </div>
               <p class="hint" style="margin:-8px 0 0">บัญชีและจำนวนเงินในสลิปจะไม่แสดงในใบคอนเฟิร์มงาน (กันพนักงานเห็น) แต่จะโชว์ในลิสต์ประวัติใบงานเท่านั้น</p>
+              <div class="bankin-pick" id="jobBankInPick" hidden>
+                <div class="bankin-pick-row">
+                  <button class="btn small" id="jobBankInBtn" type="button" aria-expanded="false">💰 เลือกยอดจากเงินเข้า</button>
+                  <span class="hint" id="jobBankInSel" style="margin:0"></span>
+                </div>
+                <div id="jobBankInList" hidden></div>
+              </div>
               <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="jName" type="text" autocomplete="off" list="customerNames"></label>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="jPhone" type="tel" autocomplete="off"></label>
               <label class="f"><span>ที่อยู่ลูกค้า (ถ้ามี)</span><textarea id="jAddr"></textarea></label>
@@ -1941,6 +1984,19 @@ tr{break-inside:avoid}
         </div>
         <div id="dashSplit"></div>
         <p class="hint" style="margin:10px 0 0">เงินเข้า = ยอดตามสลิปในใบสั่งงาน · ยอดบิล = ยอดรวมในบิล/ใบกำกับภาษี · บัญชีวันทิมไม่นำไปยื่นภาษี</p>
+      </section>
+
+      <section class="card no-print" id="dashBankInCard" aria-labelledby="dash-bankin-h">
+        <div class="viz-head">
+          <h2 id="dash-bankin-h">เงินเข้า (SMS ธนาคาร)</h2>
+          <span id="bankInCap"></span>
+        </div>
+        <div class="bankin-sum" id="bankInSum"></div>
+        <div id="bankInList"></div>
+        <div class="bankin-foot">
+          <button class="btn small" id="bankInNotifyBtn" type="button">เปิดแจ้งเตือนบนเครื่องนี้</button>
+          <span class="hint" id="bankInNotifyHint" style="margin:0"></span>
+        </div>
       </section>
 
       <div class="dash-mid-row">
@@ -2636,6 +2692,155 @@ function bahtText(value) {
   const ACCOUNTS = ['กิติพงษ์', 'วันทิม'];
   const NON_TAX_ACCOUNTS = ['วันทิม'];
 
+  /* ---------------- เงินเข้า (SMS ธนาคาร) ----------------
+     มือถือ (iPhone Shortcuts / Android MacroDroid) ส่ง SMS เงินเข้าไปที่ Cloudflare Worker "bank-in"
+     Worker อ่านยอดแล้วเขียนลง Firestore คอลเลกชัน bankIn → หน้านี้ฟังแบบเรียลไทม์ เด้งแจ้งเตือน + เสียง
+     และให้เลือกยอดไปผูกกับใบสั่งงานได้ (เจ้าของร้านเท่านั้น) */
+  const BANKIN_SEEN = 'bs_bankin_seen';
+  let jobBankInId = '';
+  let bankInLive = false;      // false = snapshot แรกหลังเปิดหน้า (ไม่ส่งเสียง), true = เงินเข้าระหว่างเปิดหน้าอยู่
+  let bankInTimer = null, audioCtx = null;
+  const pad2 = n => String(n).padStart(2, '0');
+  const localISO = d => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  const bankInAll = () => (store.get('bs_bank_in', []) || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  function bankInWhen(x, withDate) {
+    const d = new Date(x.createdAt || 0);
+    const hm = pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+    if (!withDate) return hm;
+    const k = localISO(d);
+    return (k === todayISO() ? 'วันนี้' : thDate(k)) + ' ' + hm;
+  }
+  function watchBankIn() {
+    if (!cloudDb || !isOwner) return;
+    cloudDb.collection('bankIn').orderBy('createdAt', 'desc').limit(300).onSnapshot(snap => {
+      const list = [];
+      snap.forEach(d => list.push(Object.assign({id: d.id}, d.data())));
+      store.set('bs_bank_in', list);
+      onBankInChange();
+    }, err => { console.error('bankIn sync error', err); renderBankIn(); });
+  }
+  function onBankInChange() {
+    if (!isOwner) return;
+    const list = bankInAll();
+    let seen = 0;
+    try { seen = +localStorage.getItem(BANKIN_SEEN) || 0; } catch (e) {}
+    const newest = list.length ? (list[0].createdAt || 0) : 0;
+    if (!seen) {
+      // เครื่องนี้เพิ่งเริ่มใช้: ไม่เด้งของเก่าทั้งหมด แค่จำไว้ว่าเห็นถึงตรงไหนแล้ว
+      try { localStorage.setItem(BANKIN_SEEN, String(newest || Date.now())); } catch (e) {}
+    } else {
+      const fresh = list.filter(x => (x.createdAt || 0) > seen);
+      if (fresh.length) {
+        showBankInBanner(fresh, bankInLive);
+        try { localStorage.setItem(BANKIN_SEEN, String(newest)); } catch (e) {}
+      }
+    }
+    bankInLive = true;
+    renderBankIn(); renderJobBankInPick();
+  }
+  function showBankInBanner(fresh, live) {
+    const total = fresh.reduce((a, x) => a + num(x.amount), 0);
+    const last = fresh[0];
+    $('bibAmount').textContent = fresh.length === 1 ? 'เงินเข้า ' + money(num(last.amount)) + ' บาท' : 'เงินเข้าใหม่ ' + fresh.length + ' รายการ · ' + money(total) + ' บาท';
+    $('bibMeta').textContent = (fresh.length > 1 ? 'ล่าสุด ' : '') + 'บัญชี' + (last.account || '-') + ' · ' + bankInWhen(last, true);
+    $('bankInBanner').hidden = false;
+    clearTimeout(bankInTimer);
+    bankInTimer = setTimeout(() => { $('bankInBanner').hidden = true; }, 15000);
+    if (live) {
+      playChime();
+      if (document.hidden) sysNotify($('bibAmount').textContent, $('bibMeta').textContent);
+    }
+  }
+  function unlockAudio() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (e) {}
+  }
+  function playChime() {
+    try {
+      unlockAudio(); if (!audioCtx) return;
+      const t = audioCtx.currentTime;
+      [[988, 0], [1319, 0.13], [1760, 0.26]].forEach(([f, dt]) => {
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t + dt);
+        g.gain.exponentialRampToValueAtTime(0.22, t + dt + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.4);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t + dt); o.stop(t + dt + 0.45);
+      });
+    } catch (e) {}
+  }
+  function sysNotify(title, body) {
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      const opts = {body, icon: 'icon-192.png', tag: 'bankin-' + Date.now()};
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready.then(r => r.showNotification(title, opts)).catch(() => { try { new Notification(title, opts); } catch (e) {} });
+      } else new Notification(title, opts);
+    } catch (e) {}
+  }
+  function renderBankInNotifyState() {
+    const btn = $('bankInNotifyBtn'), hint = $('bankInNotifyHint'); if (!btn) return;
+    if (!('Notification' in window)) { btn.hidden = true; hint.textContent = 'เครื่องนี้แจ้งเตือนได้ตอนเปิดแอปอยู่ (เด้งแถบด้านบน + เสียง)'; return; }
+    const st = Notification.permission;
+    btn.hidden = st === 'granted' || st === 'denied';
+    hint.textContent = st === 'granted' ? 'เปิดแจ้งเตือนเครื่องนี้แล้ว (ทำงานขณะแอปเปิดอยู่หรือพับไว้)'
+      : st === 'denied' ? 'เครื่องนี้ปิดการแจ้งเตือนของเว็บไว้ ไปเปิดในการตั้งค่าเบราว์เซอร์ได้'
+      : 'ตอนเปิดแอปอยู่จะเด้งแถบด้านบนพร้อมเสียงอยู่แล้ว';
+  }
+  function renderBankIn() {
+    const card = $('dashBankInCard'); if (!card) return;
+    card.hidden = !isOwner; if (!isOwner) return;
+    const list = bankInAll();
+    $('bankInCap').textContent = list.length ? 'ล่าสุด ' + bankInWhen(list[0], true) : (cloudDb ? 'ยังไม่มีรายการ — ตั้งค่ามือถือให้ส่ง SMS มาก่อน' : 'ต้องต่อคลาวด์ก่อน');
+    const today = todayISO(), month = today.slice(0, 7);
+    $('bankInSum').innerHTML = ACCOUNTS.map(a => {
+      const mine = list.filter(x => x.account === a);
+      const td = mine.filter(x => localISO(new Date(x.createdAt || 0)) === today);
+      const mo = mine.filter(x => localISO(new Date(x.createdAt || 0)).slice(0, 7) === month);
+      return '<div class="bis"><span class="ps-l">บัญชี' + esc(a) + ' · วันนี้</span><b>' + money(td.reduce((s, x) => s + num(x.amount), 0)) + '</b>' +
+        '<small>' + td.length + ' รายการ</small><small>เดือนนี้ ' + money(mo.reduce((s, x) => s + num(x.amount), 0)) + ' บาท</small></div>';
+    }).join('');
+    const rows = list.slice(0, 20);
+    $('bankInList').innerHTML = rows.length ? '<ul class="bankin-list">' + rows.map(x =>
+      '<li><span class="bil-time">' + esc(bankInWhen(x, true)) + '</span>' +
+      '<span class="bil-mid"><span><span class="tax-tag ' + (NON_TAX_ACCOUNTS.indexOf(x.account) >= 0 ? 'off' : 'on') + '">' + esc(x.account || '-') + '</span></span>' +
+      '<small>' + (x.matchedJobNo ? 'ใบงาน ' + esc(x.matchedJobNo) : 'ยังไม่ผูกใบงาน') + (x.from ? ' · จาก ' + esc(x.from) : '') + '</small></span>' +
+      '<span class="bil-amt">' + money(num(x.amount)) + '</span></li>').join('') + '</ul>'
+      : '<p class="empty">ยังไม่มีเงินเข้าที่ส่งมาจากมือถือ</p>';
+    renderBankInNotifyState();
+  }
+  function renderJobBankInPick() {
+    const box = $('jobBankInPick'); if (!box) return;
+    box.hidden = !isOwner || (!cloudDb && !bankInAll().length); if (box.hidden) return;
+    const linked = jobBankInId ? bankInAll().find(x => x.id === jobBankInId) : null;
+    $('jobBankInSel').textContent = linked ? 'ผูกกับเงินเข้า ' + money(num(linked.amount)) + ' บาท · บัญชี' + linked.account + ' · ' + bankInWhen(linked, true) : '';
+    const weekAgo = Date.now() - 7 * 86400000;
+    const opts = bankInAll().filter(x => x.id === jobBankInId || (!x.matchedJobId && (x.createdAt || 0) >= weekAgo)).slice(0, 15);
+    $('jobBankInList').innerHTML = opts.length ? opts.map(x =>
+      '<button type="button" class="bankin-opt' + (x.id === jobBankInId ? ' sel' : '') + '" data-bid="' + esc(x.id) + '">' +
+      '<span class="bil-time">' + esc(bankInWhen(x, true)) + '</span>' +
+      '<span class="bil-mid"><span>บัญชี' + esc(x.account || '-') + '</span>' + (x.from ? '<small>จาก ' + esc(x.from) + '</small>' : '') + '</span>' +
+      '<span class="bil-amt">' + money(num(x.amount)) + '</span></button>').join('')
+      : '<p class="empty" style="margin:0">ไม่มีเงินเข้าที่ยังไม่ผูกใบงานใน 7 วันล่าสุด</p>';
+  }
+  function linkBankIn(rec, prev) {
+    const cur = rec.bankInId || '';
+    if (!cur && !prev) return;
+    const list = store.get('bs_bank_in', []) || [];
+    const upd = (id, patch) => {
+      const i = list.findIndex(x => x.id === id);
+      if (i >= 0) list[i] = Object.assign({}, list[i], patch);
+      cloudSave('bankIn', Object.assign({id}, patch));
+    };
+    if (prev && prev !== cur) upd(prev, {matchedJobId: '', matchedJobNo: ''});
+    if (cur) upd(cur, {matchedJobId: rec.id, matchedJobNo: rec.no});
+    store.set('bs_bank_in', list);
+    renderBankIn(); renderJobBankInPick();
+  }
+
   const n2 = n => (+n).toLocaleString('en-US', {maximumFractionDigits: 2});
 
   function renderPrice() {
@@ -3202,6 +3407,7 @@ function bahtText(value) {
     const list = store.get('bs_bills', []);
     const sel = $('dashMonth').value;
     renderDashSplit(sel);
+    renderBankIn();
     const hintEl = $('dashMonthHint');
     if (hintEl) {
       hintEl.textContent = $('dashMonth').options.length > 1
@@ -4709,13 +4915,14 @@ function bahtText(value) {
   }
 
   function collectJob() {
-    return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, account: $('jobAccount').value, page: $('jobPage').value, slipAmount: $('jobSlipAmount').value, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
+    return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, account: $('jobAccount').value, page: $('jobPage').value, bankInId: jobBankInId, slipAmount: $('jobSlipAmount').value, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
       items: jobItems.map(i => ({name: i.name, qty: i.qty, note: i.note})), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus};
   }
   function applyJob(j) {
     $('jobNo').value = j.no || ''; $('jobDate').value = j.date || todayISO(); $('jobDue').value = j.due || '';
     $('jobAccount').value = j.account || ''; $('jobSlipAmount').value = j.slipAmount || '';
     $('jobPage').value = PAGE_LABEL[j.page] ? j.page : 'ball';
+    jobBankInId = j.bankInId || ''; if ($('jobBankInList')) { $('jobBankInList').hidden = true; $('jobBankInBtn').setAttribute('aria-expanded', 'false'); }
     $('jName').value = j.jName || ''; $('jPhone').value = j.jPhone || ''; $('jAddr').value = j.jAddr || '';
     jobItems = (j.items && j.items.length) ? j.items.map(i => ({name: i.name || '', qty: i.qty, note: i.note || ''})) : [{name: '', qty: 1, note: ''}];
     $('jobNote').value = j.note || '';
@@ -4761,12 +4968,14 @@ function bahtText(value) {
     const id = currentJobId || ('j' + Date.now());
     const idx = list.findIndex(j => j.id === id);
     const createdBy = idx >= 0 ? list[idx].createdBy : (currentUser ? currentUser.name : '');
+    const prevBankInId = idx >= 0 ? (list[idx].bankInId || '') : '';
     const rec = Object.assign({id, savedAt: Date.now(), createdBy}, data);
     if (idx >= 0) list[idx] = rec; else list.push(rec);
     const wasEditing = idx >= 0;
     currentJobId = rec.id;
     const persisted = store.set('bs_jobs', list);
     cloudSave('jobs', rec);
+    linkBankIn(rec, prevBankInId);
     upsertCustomer(rec.jName, rec.jPhone, rec.jAddr);
     renderJobHistory(); renderJobEditState();
     syncRecordPhotosToCloud('bs_jobs', 'jobs', rec.id, 'photos', renderJobHistory);
@@ -5779,6 +5988,33 @@ function bahtText(value) {
   });
   $('pdf-job').addEventListener('click', () => { markJobPrinted(); exportDoc('confirm', $('pdf-job')); });
   $('save-job').addEventListener('click', saveJob);
+  document.addEventListener('pointerdown', unlockAudio, {once: true});
+  $('bibClose').addEventListener('click', () => { $('bankInBanner').hidden = true; });
+  $('bibView').addEventListener('click', () => {
+    $('bankInBanner').hidden = true; showTab('dash');
+    setTimeout(() => { const c = $('dashBankInCard'); if (c) c.scrollIntoView({behavior: 'smooth', block: 'start'}); }, 60);
+  });
+  $('bankInNotifyBtn').addEventListener('click', () => {
+    if (!('Notification' in window)) return;
+    Notification.requestPermission().then(renderBankInNotifyState).catch(renderBankInNotifyState);
+  });
+  $('jobBankInBtn').addEventListener('click', () => {
+    const l = $('jobBankInList'); renderJobBankInPick();
+    l.hidden = !l.hidden; $('jobBankInBtn').setAttribute('aria-expanded', String(!l.hidden));
+  });
+  $('jobBankInList').addEventListener('click', e => {
+    const b = e.target.closest('[data-bid]'); if (!b) return;
+    const x = bankInAll().find(r => r.id === b.dataset.bid); if (!x) return;
+    jobBankInId = x.id;
+    if (ACCOUNTS.indexOf(x.account) >= 0) $('jobAccount').value = x.account;
+    $('jobSlipAmount').value = num(x.amount);
+    $('jobBankInList').hidden = true; $('jobBankInBtn').setAttribute('aria-expanded', 'false');
+    renderJob(); renderJobBankInPick();
+    toast('ใส่ยอด ' + money(num(x.amount)) + ' บาท บัญชี' + x.account + ' แล้ว กดบันทึกเพื่อผูกกับใบงานนี้');
+  });
+  renderJobBankInPick();
+  // ทดสอบในเครื่องที่ไม่ได้ต่อคลาวด์: ใช้รายการที่อยู่ใน localStorage (bs_bank_in)
+  if (!cloudDb && isOwner && store.get('bs_bank_in', []).length) onBankInChange();
   $('new-job').addEventListener('click', () => { $('jobPhotoInput').value = ''; newJob(); toast('เปิดใบใหม่แล้ว'); });
   $('job-to-bill').addEventListener('click', () => {
     $('cName').value = $('jName').value; $('cPhone').value = $('jPhone').value; $('cAddr').value = $('jAddr').value;
@@ -6349,6 +6585,7 @@ function bahtText(value) {
     watchCloud('purchases', 'bs_purchases', renderPurchHistory);
     watchCloud('customers', 'bs_customers', renderCustomerDatalist);
     watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
+    watchBankIn();
     // ประวัติ "ติดตามพัสดุ" แต่ก่อนเก็บเฉพาะในเครื่องเท่านั้น — ครั้งแรกที่เปิดหน้านี้หลังอัปเดต
     // ให้อัปโหลดรายการที่มีอยู่ในเครื่องนี้ขึ้นคลาวด์ก่อน 1 ครั้ง (กันไม่ให้ข้อมูลเดิมหายไปตอนเริ่มซิงก์)
     // แล้วค่อยเริ่มฟังคลาวด์แบบเรียลไทม์ เพื่อให้ทุกเครื่องเห็นประวัติเดียวกัน
