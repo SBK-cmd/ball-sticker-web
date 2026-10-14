@@ -52,7 +52,7 @@ if ('serviceWorker' in navigator) {
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Firebase (ใช้ซิงก์ประวัติบิล/ใบคอนเฟิร์มงานข้ามเครื่องแบบเรียลไทม์ — ถ้าโหลดไม่ได้ เช่น ไม่มีอินเทอร์เน็ต
      หรือถูกบล็อกสคริปต์ภายนอก แอปจะสลับไปใช้เฉพาะข้อมูลในเครื่องนี้ (localStorage) แทนโดยอัตโนมัติ) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
@@ -625,6 +625,27 @@ button.status-pill:active{filter:brightness(0.9)}
   .chat-back{display:block}
 }
 /* ---- แชท: หน้าตาแบบแอปแชท ---- */
+.chat-mic.rec{color:#fff!important;background:#ef4444!important;border-color:#ef4444!important;animation:micPulse 1.2s ease-in-out infinite}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
+.chat-send textarea.listening{border-color:#ef4444}
+.chat-voice{display:flex;align-items:center;gap:10px;width:min(230px,60vw);border:0;background:none;padding:2px 0;color:inherit;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.cv-ico{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:13px;background:currentColor}
+.cv-ico{background:color-mix(in srgb,currentColor 18%,transparent)}
+.cv-bar{flex:1;height:4px;border-radius:4px;background:color-mix(in srgb,currentColor 25%,transparent);overflow:hidden}
+.cv-fill{display:block;height:100%;width:0;background:currentColor;border-radius:4px}
+.cv-time{flex:none;font-size:12px;opacity:.85;min-width:34px;text-align:right}
+.chat-video{display:block;max-width:min(260px,64vw);max-height:320px;border-radius:14px;background:#000}
+.pay-amt{display:flex;align-items:center;gap:8px} .pay-amt span{font-size:26px;font-weight:800;color:var(--sticker-line)}
+.pay-amt input{flex:1;font-size:26px!important;font-weight:800;padding:8px 12px}
+.pay-prev{display:flex;justify-content:center} .pay-prev img{width:min(240px,70vw);border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.pay-hist{display:grid;gap:6px;margin-top:4px} .pay-hist b{font-size:13px;color:var(--muted)}
+.pay-row{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:14px}
+.pay-row small{display:block;color:var(--muted);font-size:11.5px}
+.pay-st{font-style:normal;font-size:12px;font-weight:800;padding:2px 10px;border-radius:999px;background:var(--field);color:var(--muted);white-space:nowrap}
+.pay-st.paid{background:color-mix(in srgb,var(--in-ink) 20%,transparent);color:var(--in-ink)}
+.chat-list-head{grid-template-columns:minmax(0,1fr)} .chat-list-head>*{min-width:0;max-width:100%}
+.push-btn{justify-self:start;white-space:normal;text-align:left}
+.push-status{font-size:12px;color:var(--muted)} .push-status.err{color:var(--out-ink);font-weight:700}
 .chat-hbtn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .chat-hbtn svg,.chat-sendbtn svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .chat-sendbtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;border-radius:999px;padding:0 16px}
@@ -2224,7 +2245,8 @@ tr{break-inside:avoid}
         </form>
         <div id="bankInList"></div>
         <div class="bankin-foot">
-          <button class="btn small" id="bankInNotifyBtn" type="button">เปิดแจ้งเตือนบนเครื่องนี้</button>
+          <button class="btn small" id="bankInNotifyBtn" type="button" data-push-enable>🔔 เปิดแจ้งเตือนเด้งบนมือถือ</button>
+          <button class="btn small" type="button" data-push-test hidden>🔔 ส่งแจ้งเตือนทดสอบ</button>
           <span class="hint" id="bankInNotifyHint" style="margin:0"></span>
         </div>
       </section>
@@ -2422,7 +2444,7 @@ tr{break-inside:avoid}
       <div class="card chat-card no-print">
         <div class="chat-shell" id="chatShell">
           <aside class="chat-list-pane">
-            <div class="chat-list-head"><input class="txt" id="chatSearch" type="search" placeholder="ค้นหาชื่อลูกค้า / ข้อความ" autocomplete="off"><small class="chat-quota" id="chatQuota"></small></div>
+            <div class="chat-list-head"><input class="txt" id="chatSearch" type="search" placeholder="ค้นหาชื่อลูกค้า / ข้อความ" autocomplete="off"><small class="chat-quota" id="chatQuota"></small><button type="button" class="btn small push-btn" data-push-enable hidden>🔔 เปิดแจ้งเตือนเด้งบนมือถือ</button><button type="button" class="btn small push-btn" data-push-test hidden>🔔 ส่งแจ้งเตือนทดสอบ</button><small class="push-status" data-push-status></small></div>
             <div class="chat-list" id="chatList"></div>
           </aside>
           <div class="chat-conv">
@@ -2443,6 +2465,7 @@ tr{break-inside:avoid}
                 <input type="file" id="chatMediaInput" accept="image/*,video/*" multiple hidden>
                 <input type="file" id="chatFileInput" hidden>
                 <textarea id="chatInput" rows="1" placeholder="พิมพ์ข้อความตอบลูกค้า..." aria-label="ข้อความ"></textarea>
+                <button type="button" class="chat-attach chat-mic" id="chatMicBtn" aria-label="พิมพ์ด้วยเสียง" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button>
                 <button class="btn primary chat-sendbtn" type="submit" id="chatSendBtn" aria-label="ส่ง"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/></svg><span>ส่ง</span></button>
               </form>
             </div>
@@ -2994,7 +3017,9 @@ function bahtText(value) {
     taxId: '1659900519381',
     branch: 'สำนักงานใหญ่',
     address: '8 หมู่ 19 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140',
-    phone: '093-5353555, 096-6697495'
+    phone: '093-5353555, 096-6697495',
+    promptpay: '0935353555',
+    promptpayName: 'นาย กิติพงษ์ สีทอง'
   };
   let shop = Object.assign({}, SHOP_DEFAULT, store.get('bs_shop', {}));
 
@@ -3136,6 +3161,7 @@ function bahtText(value) {
     const wasLive = bankInLive;
     bankInLive = true;
     renderBankIn(); renderJobBankInPick(); renderBell(wasLive);
+    try { matchPayCharges(); } catch (e) { console.error('pay match', e); }
   }
   function showBankInBanner(fresh, live) {
     const total = fresh.reduce((a, x) => a + num(x.amount), 0);
@@ -3180,13 +3206,58 @@ function bahtText(value) {
       } else new Notification(title, opts);
     } catch (e) {}
   }
+  /* ---------- แจ้งเตือนเด้งบนมือถือ (Web Push) — เด้งแม้ปิดแอป/ล็อกจอ ทั้ง iPhone (ต้องเพิ่มลงหน้าจอโฮม) และ Android ---------- */
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isStandalone = () => (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  let pushOn = false, pushErr = '';
+  async function pushSubId(endpoint) { const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(endpoint)); return Array.from(new Uint8Array(h)).slice(0, 20).map(b => b.toString(16).padStart(2, '0')).join(''); }
+  async function savePushSub(sub) {
+    if (!cloudDb || !sub) return;
+    const j = sub.toJSON(), id = await pushSubId(j.endpoint);
+    await cloudDb.collection('pushSubs').doc(id).set({endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, chat: can('chat'), bank: !!canBank,
+      user: currentUser ? (currentUser.username || currentUser.name || '') : '', device: (isIOS ? 'iPhone' : /Android/.test(navigator.userAgent) ? 'Android' : 'คอม') + (isStandalone() ? ' (แอป)' : ''), updatedAt: Date.now()});
+  }
+  async function enablePush() {
+    if (isIOS && !isStandalone()) { toast('iPhone: กดปุ่มแชร์ ⬆︎ → "เพิ่มไปยังหน้าจอโฮม" แล้วเปิดแอปจากไอคอนบนหน้าจอ ก่อนกดเปิดแจ้งเตือนครับ'); return; }
+    if (!pushSupported()) { toast('เครื่อง/เบราว์เซอร์นี้ไม่รองรับแจ้งเตือนเด้ง'); renderBankInNotifyState(); return; }
+    if (Notification.permission === 'denied') { toast('แจ้งเตือนถูกปิดไว้ในการตั้งค่าเครื่อง — เปิดก่อนแล้วกดใหม่'); renderBankInNotifyState(); return; }
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') { pushErr = perm === 'denied' ? 'denied' : 'ยังไม่ได้กดอนุญาต'; toast('ยังไม่ได้อนุญาตการแจ้งเตือน'); renderBankInNotifyState(); return; }
+      pushErr = '';
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        const r = await fetch(LINE_OA_URL + '/pushkey', {headers: {'x-app-key': LINE_OA_KEY}}); const j = await r.json();
+        if (!j.ok || !j.key) throw new Error('ยังไม่ได้ตั้งค่า VAPID ใน worker line-oa');
+        const raw = atob(j.key.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((j.key.length + 3) % 4));
+        sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: Uint8Array.from(raw, c => c.charCodeAt(0))});
+      }
+      await savePushSub(sub); pushOn = true;
+      toast('🔔 เปิดแจ้งเตือนเด้งบนเครื่องนี้แล้ว'); renderBankInNotifyState();
+    } catch (e) { console.error('push', e); pushErr = String(e && e.message || e); toast('เปิดแจ้งเตือนไม่สำเร็จ: ' + pushErr); renderBankInNotifyState(); }
+  }
+  async function refreshPushSub() {
+    if (!pushSupported() || Notification.permission !== 'granted') { renderBankInNotifyState(); return; }
+    try { const reg = await navigator.serviceWorker.ready; const sub = await reg.pushManager.getSubscription(); if (sub) { pushOn = true; await savePushSub(sub); } } catch (e) {}
+    renderBankInNotifyState();
+  }
   function renderBankInNotifyState() {
-    const btn = $('bankInNotifyBtn'), hint = $('bankInNotifyHint'); if (!btn) return;
-    if (!('Notification' in window)) { btn.hidden = true; hint.textContent = 'เครื่องนี้แจ้งเตือนได้ตอนเปิดแอปอยู่ (เด้งแถบด้านบน + เสียง)'; return; }
-    const st = Notification.permission;
-    btn.hidden = st === 'granted' || st === 'denied';
-    hint.textContent = st === 'granted' ? 'เปิดแจ้งเตือนเครื่องนี้แล้ว (ทำงานขณะแอปเปิดอยู่หรือพับไว้)'
-      : st === 'denied' ? 'เครื่องนี้ปิดการแจ้งเตือนของเว็บไว้ ไปเปิดในการตั้งค่าเบราว์เซอร์ได้'
+    const hint = $('bankInNotifyHint');
+    const denied = pushSupported() && Notification.permission === 'denied';
+    const showBtn = !pushOn; // แสดงเสมอถ้ายังไม่เปิด (กดซ้ำได้ ถ้าถูกปฏิเสธจะบอกวิธีแก้)
+    document.querySelectorAll('[data-push-enable]').forEach(b => { b.hidden = !showBtn; });
+    document.querySelectorAll('[data-push-test]').forEach(b => { b.hidden = !pushOn; });
+    const st = pushOn ? '✅ เครื่องนี้เปิดแจ้งเตือนเด้งแล้ว'
+      : !pushSupported() ? (isIOS && !isStandalone() ? 'iPhone: เพิ่มแอปลงหน้าจอโฮม แล้วเปิดจากไอคอนก่อน' : 'เครื่อง/เบราว์เซอร์นี้ไม่รองรับแจ้งเตือนเด้ง (iPhone ต้อง iOS 16.4 ขึ้นไป)')
+      : denied ? '⚠ เครื่องนี้ปิดการแจ้งเตือนของแอปไว้ — ไปที่ การตั้งค่า → การแจ้งเตือน → Ball Sticker → เปิด "อนุญาตการแจ้งเตือน" แล้วกดปุ่มอีกครั้ง'
+      : pushErr ? '⚠ เปิดไม่สำเร็จ: ' + pushErr : '';
+    document.querySelectorAll('[data-push-status]').forEach(el => { el.textContent = st; el.classList.toggle('err', !pushOn && !!(denied || pushErr)); });
+    if (!hint) return;
+    hint.textContent = pushOn ? '🔔 เครื่องนี้เปิดแจ้งเตือนเด้งแล้ว (เด้งแม้ปิดแอป/ล็อกจอ)'
+      : isIOS && !isStandalone() ? 'iPhone: เพิ่มแอปลงหน้าจอโฮมก่อน แล้วเปิดจากไอคอน จึงจะเปิดแจ้งเตือนเด้งได้'
+      : pushSupported() && Notification.permission === 'denied' ? 'เครื่องนี้ปิดการแจ้งเตือนของเว็บไว้ ไปเปิดในการตั้งค่าเครื่อง/เบราว์เซอร์'
       : 'ตอนเปิดแอปอยู่จะเด้งแถบด้านบนพร้อมเสียงอยู่แล้ว';
   }
   function renderBankIn() {
@@ -5026,6 +5097,10 @@ function bahtText(value) {
   }
   function msgBody(m) {
     const src = id => LINE_OA_URL + '/content?key=' + encodeURIComponent(LINE_OA_KEY) + '&id=' + encodeURIComponent(id);
+    const isAudio = m.type === 'audio' || (m.type === 'file' && /ข้อความเสียง/.test(m.text || ''));
+    const aud = u => '<button type="button" class="chat-voice" data-voice="' + esc(u) + '" aria-label="เล่นข้อความเสียง"><i class="cv-ico">▶</i><span class="cv-bar"><span class="cv-fill"></span></span><small class="cv-time">🎤</small></button>';
+    if (isAudio && (m.url || m.contentId)) return aud(m.url || src(m.contentId));
+    if (m.type === 'video' && m.contentId && !m.url) return '<video class="chat-video" controls playsinline preload="none" src="' + esc(src(m.contentId)) + '"></video>';
     if (m.type === 'flex') return '<span class="chat-flex">🃏 ' + esc(m.text || 'การ์ด') + '</span>';
     if (m.type === 'video' && m.url) return m.preview ? '<a class="chat-vid" href="' + esc(m.url) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(m.preview) + '" alt="วิดีโอ" loading="lazy"><i>▶</i></a>' : '<a class="chat-file" href="' + esc(m.url) + '" target="_blank" rel="noopener">▶ เปิดวิดีโอ</a>';
     if (m.type === 'file' && m.url) return '<a class="chat-file" href="' + esc(m.url) + '" target="_blank" rel="noopener">' + esc(m.text || 'เปิดไฟล์') + '</a>';
@@ -5036,9 +5111,32 @@ function bahtText(value) {
     if ((m.type === 'video' || m.type === 'audio' || m.type === 'file') && m.contentId) return '<a class="chat-file" href="' + esc(src(m.contentId)) + '" target="_blank" rel="noopener">' + esc(m.text || 'เปิดไฟล์') + '</a>';
     return esc(m.text || '').replace(/\n/g, '<br>');
   }
+  // เล่นข้อความเสียงในแชทเลย (ไม่เปิดหน้าใหม่) — มีตัวเล่นตัวเดียว กดอีกอันจะหยุดอันเดิม
+  let voiceAudio = null, voiceBtn = null;
+  const fmtSec = t => isFinite(t) && t > 0 ? Math.floor(t / 60) + ':' + pad2(Math.floor(t % 60)) : '';
+  function voiceUi(btn, playing) { if (!btn) return; btn.querySelector('.cv-ico').textContent = playing ? '❚❚' : '▶'; btn.classList.toggle('on', playing); }
+  $('chatMsgs').addEventListener('click', e => {
+    const btn = e.target.closest('[data-voice]'); if (!btn) return;
+    e.preventDefault();
+    if (voiceAudio && voiceBtn === btn) { if (voiceAudio.paused) voiceAudio.play().catch(() => {}); else voiceAudio.pause(); return; }
+    if (voiceAudio) { voiceAudio.pause(); voiceUi(voiceBtn, false); }
+    voiceBtn = btn; const a = voiceAudio = new Audio(btn.dataset.voice);
+    btn.querySelector('.cv-time').textContent = '…';
+    a.addEventListener('play', () => voiceUi(voiceBtn, true));
+    a.addEventListener('pause', () => voiceUi(voiceBtn, false));
+    a.addEventListener('timeupdate', () => { if (!voiceBtn) return; const f = voiceBtn.querySelector('.cv-fill'); if (f && a.duration) f.style.width = (a.currentTime / a.duration * 100) + '%'; voiceBtn.querySelector('.cv-time').textContent = fmtSec(a.duration ? a.duration - a.currentTime : a.currentTime) || '🎤'; });
+    a.addEventListener('ended', () => { voiceUi(voiceBtn, false); const f = voiceBtn && voiceBtn.querySelector('.cv-fill'); if (f) f.style.width = '0'; if (voiceBtn) voiceBtn.querySelector('.cv-time').textContent = fmtSec(a.duration) || '🎤'; });
+    a.addEventListener('error', () => { voiceUi(voiceBtn, false); if (voiceBtn) voiceBtn.querySelector('.cv-time').textContent = '⚠'; toast('เล่นข้อความเสียงไม่ได้'); });
+    a.play().catch(() => { voiceUi(btn, false); toast('เล่นข้อความเสียงไม่ได้'); });
+  });
   function renderChatMsgs() {
     const box = $('chatMsgs'); if (!box) return;
     { const c = chatList.find(x => x.userId === chatSel) || {}; box.dataset.pg = c.channel === 'fb' ? (FB_PAGE_CLASS[c.pageId] || 'fb') : 'line'; }
+    // กำลังเล่นเสียง/วิดีโออยู่ → ยังไม่วาดใหม่ (ไม่งั้นเสียงจะหยุดกลางคัน) รอให้หยุดก่อนค่อยอัปเดต
+    if (voiceAudio && !voiceAudio.paused && !voiceAudio.ended) { if (!voiceAudio._wait) { voiceAudio._wait = 1; ['pause', 'ended'].forEach(ev => voiceAudio.addEventListener(ev, () => { voiceAudio && (voiceAudio._wait = 0); renderChatMsgs(); }, {once: true})); } return; }
+    if (voiceAudio) { voiceAudio = null; voiceBtn = null; }
+    const playing = Array.from(box.querySelectorAll('audio,video')).find(a => !a.paused && !a.ended);
+    if (playing) { if (!playing.dataset.wait) { playing.dataset.wait = '1'; ['pause', 'ended'].forEach(ev => playing.addEventListener(ev, () => renderChatMsgs(), {once: true})); } return; }
     let last = '';
     box.innerHTML = chatMsgs.length ? chatMsgs.map(m => {
       const day = localISO(new Date(m.createdAt || 0));
@@ -5117,6 +5215,30 @@ function bahtText(value) {
       $('chatQuota').classList.toggle('low', left != null && left <= 30);
     } catch (e) { $('chatQuota').textContent = ''; }
   }
+  // พิมพ์ด้วยเสียง (Web Speech API — Chrome/Android, Safari iOS) พูดภาษาไทย ข้อความจะต่อท้ายในช่องพิมพ์ ให้ตรวจก่อนกดส่ง
+  (function setupChatMic() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition, btn = $('chatMicBtn'), inp = $('chatInput');
+    if (!btn) return;
+    if (!SR) { btn.hidden = false; btn.addEventListener('click', () => toast('เครื่องนี้ใช้พิมพ์ด้วยเสียงในแอปไม่ได้ ใช้ปุ่มไมค์บนคีย์บอร์ดแทนได้ครับ')); return; }
+    btn.hidden = false;
+    let rec = null, base = '', on = false;
+    const stop = () => { on = false; btn.classList.remove('rec'); inp.classList.remove('listening'); btn.setAttribute('aria-label', 'พิมพ์ด้วยเสียง'); };
+    btn.addEventListener('click', () => {
+      if (on && rec) { try { rec.stop(); } catch (e) {} return; }
+      rec = new SR(); rec.lang = 'th-TH'; rec.interimResults = true; rec.continuous = true;
+      base = inp.value ? inp.value.replace(/\s*$/, ' ') : '';
+      rec.onresult = e => {
+        let fin = '', tmp = '';
+        for (let i = 0; i < e.results.length; i++) { const t = e.results[i][0].transcript; if (e.results[i].isFinal) fin += t; else tmp += t; }
+        inp.value = base + fin + tmp; autoGrowChat();
+      };
+      rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast('กรุณาอนุญาตให้ใช้ไมโครโฟน แล้วลองใหม่'); else if (e.error !== 'aborted' && e.error !== 'no-speech') toast('ฟังเสียงไม่สำเร็จ: ' + e.error); };
+      rec.onend = () => { stop(); inp.focus(); };
+      try { rec.start(); on = true; btn.classList.add('rec'); inp.classList.add('listening'); btn.setAttribute('aria-label', 'หยุดฟัง'); toast('🎤 พูดได้เลย กดไมค์อีกครั้งเพื่อหยุด'); }
+      catch (err) { stop(); toast('เปิดไมค์ไม่ได้'); }
+    });
+    $('chatSendForm').addEventListener('submit', () => { if (on && rec) { try { rec.stop(); } catch (e) {} } }, true);
+  })();
   function autoGrowChat() { const t = $('chatInput'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; }
   function renderChat() { renderChatList(); renderChatHead(); renderChatMsgs(); loadChatQuota(); }
   $('chatList').addEventListener('click', e => { const b = e.target.closest('[data-uid]'); if (b) openChat(b.dataset.uid); });
@@ -5246,10 +5368,177 @@ function bahtText(value) {
       box.innerHTML = back + 'ส่งเลขพัสดุ</b></div><input class="txt" id="cpTrackQ" placeholder="ค้นหาชื่อลูกค้า / เลขพัสดุ" style="margin-bottom:8px"><div class="cp-replies" id="cpTrackList"></div>';
       renderChatTrackList(); return;
     }
+    if (name === 'pay') {
+      box.innerHTML = back + 'เรียกเก็บเงิน (QR พร้อมเพย์)</b></div><form class="cp-form" id="cpPayForm">' +
+        '<div class="pay-amt"><span>฿</span><input class="txt" id="cpPayAmt" inputmode="decimal" autocomplete="off" placeholder="0.00" required></div>' +
+        '<input class="txt" id="cpPayNote" placeholder="รายการ (ไม่บังคับ) เช่น ค่ามัดจำ สติ๊กเกอร์ 500 ดวง" maxlength="60">' +
+        '<div class="pay-prev" id="cpPayPrev" hidden><img id="cpPayImg" alt="QR พร้อมเพย์"></div>' +
+        '<div class="row2"><button class="btn primary" type="submit">ส่ง QR ให้ลูกค้า</button><button class="btn" type="button" id="cpPaySave">บันทึก/แชร์รูป</button></div>' +
+        '<p class="hint" style="margin:0">เงินเข้าพร้อมเพย์ ' + esc(ppMask(shop.promptpay)) + ' · ' + esc(shop.promptpayName || '') + ' · ลูกค้าโอนแล้วระบบเงินเข้าจะจับยอดให้อัตโนมัติ</p>' +
+        '<div class="pay-hist" id="cpPayHist"></div></form>';
+      renderPayHist(); return;
+    }
     if (name === 'call') {
       box.innerHTML = back + 'คำขอการโทร</b></div><div class="cp-form"><p style="margin:0">ส่งการ์ดที่มีปุ่ม <b>โทรหาร้าน</b> (เบอร์ ' + esc(String(shop.phone || '').split(/\s*[,/]\s*/)[0]) + ') ให้ลูกค้ากดโทรได้ทันที</p>' +
         '<button class="btn primary" type="button" id="cpCallSend">ส่งคำขอการโทร</button></div>';
     }
+  }
+  /* ---------- เรียกเก็บเงิน: QR พร้อมเพย์ตามยอด (EMVCo) + จับคู่กับเงินเข้าอัตโนมัติ ---------- */
+  // Minimal QR encoder: byte mode, EC level M, versions 1-10. Returns boolean matrix.
+  function qrEncode(text) {
+    const data = Array.from(new TextEncoder().encode(text));
+    const T = {1:[10,[[1,16]]],2:[16,[[1,28]]],3:[26,[[1,44]]],4:[18,[[2,32]]],5:[24,[[2,43]]],6:[16,[[4,27]]],7:[18,[[4,31]]],8:[22,[[2,38],[2,39]]],9:[22,[[3,36],[2,37]]],10:[26,[[4,43],[1,44]]]};
+    const AL = {1:[],2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42],9:[6,26,46],10:[6,28,50]};
+    let ver = 0, cap = 0;
+    for (let v = 1; v <= 10; v++) { cap = T[v][1].reduce((a, g) => a + g[0] * g[1], 0); if (4 + (v < 10 ? 8 : 16) + data.length * 8 <= cap * 8) { ver = v; break; } }
+    if (!ver) throw new Error('QR: data too long');
+    // bit stream
+    const bits = []; const put = (v, n) => { for (let i = n - 1; i >= 0; i--) bits.push((v >>> i) & 1); };
+    put(4, 4); put(data.length, ver < 10 ? 8 : 16); data.forEach(b => put(b, 8));
+    put(0, Math.min(4, cap * 8 - bits.length)); while (bits.length % 8) bits.push(0);
+    const cw = []; for (let i = 0; i < bits.length; i += 8) cw.push(parseInt(bits.slice(i, i + 8).join(''), 2));
+    for (let p = 0; cw.length < cap; p++) cw.push(p % 2 ? 0x11 : 0xEC);
+    // Reed-Solomon over GF(256)
+    const EXP = new Array(512), LOG = new Array(256); let x = 1;
+    for (let i = 0; i < 255; i++) { EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 256) x ^= 0x11D; }
+    for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+    const mul = (a, b) => a && b ? EXP[LOG[a] + LOG[b]] : 0;
+    const ecn = T[ver][0];
+    let gen = [1]; for (let i = 0; i < ecn; i++) { const ng = new Array(gen.length + 1).fill(0); gen.forEach((g, j) => { ng[j] ^= g; ng[j + 1] ^= mul(g, EXP[i]); }); gen = ng; }
+    const rs = blk => { const r = blk.concat(new Array(ecn).fill(0)); for (let i = 0; i < blk.length; i++) { const c = r[i]; if (c) for (let j = 0; j < gen.length; j++) r[i + j] ^= mul(gen[j], c); } return r.slice(blk.length); };
+    const blocks = [], ecs = []; let off = 0;
+    T[ver][1].forEach(([n, len]) => { for (let i = 0; i < n; i++) { const b = cw.slice(off, off + len); off += len; blocks.push(b); ecs.push(rs(b)); } });
+    const out = []; const maxLen = Math.max(...blocks.map(b => b.length));
+    for (let i = 0; i < maxLen; i++) blocks.forEach(b => { if (i < b.length) out.push(b[i]); });
+    for (let i = 0; i < ecn; i++) ecs.forEach(e => out.push(e[i]));
+    // matrix
+    const N = ver * 4 + 17; const M = [], F = [];
+    for (let i = 0; i < N; i++) { M.push(new Array(N).fill(false)); F.push(new Array(N).fill(false)); }
+    const set = (r, c, v) => { M[r][c] = v; F[r][c] = true; };
+    const finder = (r, c) => { for (let i = -1; i <= 7; i++) for (let j = -1; j <= 7; j++) { const rr = r + i, cc = c + j; if (rr < 0 || cc < 0 || rr >= N || cc >= N) continue; const on = i >= 0 && i <= 6 && j >= 0 && j <= 6 && (i === 0 || i === 6 || j === 0 || j === 6 || (i >= 2 && i <= 4 && j >= 2 && j <= 4)); set(rr, cc, on); } };
+    finder(0, 0); finder(0, N - 7); finder(N - 7, 0);
+    for (let i = 8; i < N - 8; i++) { set(6, i, i % 2 === 0); set(i, 6, i % 2 === 0); }
+    const al = AL[ver];
+    const la = al[al.length - 1];
+    al.forEach(r => al.forEach(c => { if ((r === 6 && c === 6) || (r === 6 && c === la) || (r === la && c === 6)) return; for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) set(r + i, c + j, Math.max(Math.abs(i), Math.abs(j)) !== 1); }));
+    set(N - 8, 8, true); // dark module
+    // reserve format areas
+    for (let i = 0; i < 9; i++) { if (!F[8][i]) set(8, i, false); if (!F[i][8]) set(i, 8, false); }
+    for (let i = 0; i < 8; i++) { if (!F[8][N - 1 - i]) set(8, N - 1 - i, false); if (!F[N - 1 - i][8]) set(N - 1 - i, 8, false); }
+    if (ver >= 7) { let v = ver << 12, g = 0x1F25; for (let i = 17; i >= 12; i--) if ((v >>> i) & 1) v ^= g << (i - 12); const vb = (ver << 12) | v;
+      for (let i = 0; i < 18; i++) { const b = ((vb >>> i) & 1) === 1, a = Math.floor(i / 3), c = i % 3 + N - 11; set(a, c, b); set(c, a, b); } }
+    // place data
+    const dbits = []; out.forEach(b => { for (let i = 7; i >= 0; i--) dbits.push((b >>> i) & 1); });
+    const pos = []; let up = true;
+    for (let c = N - 1; c > 0; c -= 2) { if (c === 6) c--; for (let k = 0; k < N; k++) { const r = up ? N - 1 - k : k; for (let d = 0; d < 2; d++) { const cc = c - d; if (!F[r][cc]) pos.push([r, cc]); } } up = !up; }
+    const masks = [(r, c) => (r + c) % 2 === 0, r => r % 2 === 0, (r, c) => c % 3 === 0, (r, c) => (r + c) % 3 === 0, (r, c) => (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0,
+      (r, c) => (r * c) % 2 + (r * c) % 3 === 0, (r, c) => ((r * c) % 2 + (r * c) % 3) % 2 === 0, (r, c) => ((r + c) % 2 + (r * c) % 3) % 2 === 0];
+    const build = mk => {
+      const A = M.map(row => row.slice());
+      pos.forEach(([r, c], i) => { const b = i < dbits.length ? dbits[i] === 1 : false; A[r][c] = b !== masks[mk](r, c); });
+      let f = (0 << 3) | mk, g = f << 10; for (let i = 14; i >= 10; i--) if ((g >>> i) & 1) g ^= 0x537 << (i - 10);
+      const fb = ((f << 10) | g) ^ 0x5412;
+      const bit = i => ((fb >>> i) & 1) === 1;
+      for (let i = 0; i <= 5; i++) A[i][8] = bit(i);
+      A[7][8] = bit(6); A[8][8] = bit(7); A[8][7] = bit(8);
+      for (let i = 9; i < 15; i++) A[8][14 - i] = bit(i);
+      for (let i = 0; i < 8; i++) A[8][N - 1 - i] = bit(i);
+      for (let i = 8; i < 15; i++) A[N - 15 + i][8] = bit(i);
+      A[N - 8][8] = true; return A;
+    };
+    const penalty = A => { let p = 0;
+      for (let r = 0; r < N; r++) { let run = 1; for (let c = 1; c < N; c++) { if (A[r][c] === A[r][c - 1]) { run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; } }
+      for (let c = 0; c < N; c++) { let run = 1; for (let r = 1; r < N; r++) { if (A[r][c] === A[r - 1][c]) { run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; } }
+      for (let r = 0; r < N - 1; r++) for (let c = 0; c < N - 1; c++) { const v = A[r][c]; if (v === A[r][c + 1] && v === A[r + 1][c] && v === A[r + 1][c + 1]) p += 3; }
+      let dark = 0; A.forEach(row => row.forEach(v => { if (v) dark++; })); p += Math.floor(Math.abs(dark * 100 / (N * N) - 50) / 5) * 10; return p; };
+    let best = null, bp = Infinity; for (let m = 0; m < 8; m++) { const A = build(m), p = penalty(A); if (p < bp) { bp = p; best = A; } }
+    return best;
+  }
+  const ppMask = v => { const d = String(v || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 3) + '-XXX-' + d.slice(6) : d.length === 13 ? 'X-XXXX-XXXXX-' + d.slice(10, 12) + '-' + d.slice(12) : d; };
+  function promptPayPayload(id, amount) {
+    const f = (t, v) => t + String(v.length).padStart(2, '0') + v;
+    const d = String(id || '').replace(/\D/g, '');
+    const acc = d.length === 13 ? f('02', d) : f('01', '0066' + d.replace(/^0/, ''));
+    let p = f('00', '01') + f('01', amount ? '12' : '11') + f('29', f('00', 'A000000677010111') + acc) + f('58', 'TH') + f('53', '764') + (amount ? f('54', (+amount).toFixed(2)) : '') + '6304';
+    let c = 0xFFFF;
+    for (let i = 0; i < p.length; i++) { c ^= p.charCodeAt(i) << 8; for (let k = 0; k < 8; k++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; }
+    return p + c.toString(16).toUpperCase().padStart(4, '0');
+  }
+  let payLogo = null;
+  const payLoadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+  // รูปเรียกเก็บเงิน: เรียบ สะอาด แบบหน้ารับเงินของแอปธนาคาร — ฟอนต์ Noto Sans Thai (วางสระ/วรรณยุกต์ถูกตำแหน่ง)
+  async function payCardDataUrl(amount, note, ref, at) {
+    const FN = 'Noto Sans Thai';
+    try { await Promise.all(['400', '500', '600', '700'].map(w => document.fonts.load(w + " 40px '" + FN + "'", 'กขต้อง฿1'))); await document.fonts.ready; } catch (e) {}
+    if (payLogo === null) payLogo = await payLoadImg('icon-512.png');
+    const W = 1080, H = 1560, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const g = cv.getContext('2d'), F = "'" + FN + "','Sarabun',sans-serif";
+    const NAVY = '#1f4e79', TEAL = '#3aa99f', INK = '#3a3a3a', MUTE = '#9a9a9a', LINE = '#e6e6e6';
+    const font = (w, px) => { g.font = w + ' ' + px + 'px ' + F; };
+    g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+    // แถบหัว: โลโก้ร้าน + ชื่อร้าน
+    g.fillStyle = NAVY; g.fillRect(0, 0, W, 200);
+    const lx = 300, ly = 100;
+    if (payLogo) { g.save(); g.beginPath(); g.arc(lx, ly, 62, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill(); g.clip(); g.drawImage(payLogo, lx - 60, ly - 60, 120, 120); g.restore(); }
+    g.textAlign = 'left'; g.fillStyle = '#fff'; font(700, 50); g.fillText(shop.name || 'บอลสติ๊กเกอร์', lx + 88, ly + 4);
+    g.fillStyle = 'rgba(255,255,255,.8)'; font(400, 28); g.fillText('ใบแจ้งชำระเงิน', lx + 88, ly + 48);
+    // ยอดเงิน
+    g.textAlign = 'center'; g.fillStyle = MUTE; font(400, 32); g.fillText('ยอดชำระ', W / 2, 290);
+    g.fillStyle = NAVY; font(700, 96); g.fillText(money(amount) + ' บาท', W / 2, 395);
+    if (note) { g.fillStyle = INK; font(400, 32); g.fillText(String(note).slice(0, 44), W / 2, 450); }
+    // QR
+    const m = qrEncode(promptPayPayload(shop.promptpay, amount)), n = m.length;
+    const qs = 560, cell = Math.floor(qs / n), q = cell * n, qx = Math.round((W - q) / 2), qy = note ? 500 : 470;
+    g.fillStyle = '#000';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (m[r][c]) g.fillRect(qx + c * cell, qy + r * cell, cell, cell);
+    // ข้อมูลผู้รับ
+    let y = qy + q + 105;
+    g.fillStyle = TEAL; font(500, 50); g.fillText('สแกน QR เพื่อโอนเข้าบัญชี', W / 2, y);
+    y += 72; g.fillStyle = INK; font(400, 48); g.fillText('ชื่อ: ' + (shop.promptpayName || ''), W / 2, y);
+    y += 68; g.fillText('พร้อมเพย์: ' + ppMask(shop.promptpay), W / 2, y);
+    y += 58; g.fillStyle = MUTE; font(400, 34); g.fillText('เลขที่อ้างอิง: ' + (ref || '—'), W / 2, y);
+    // ท้าย
+    const fy = H - 150; g.fillStyle = TEAL; g.fillRect(0, fy, W, 3);
+    g.fillStyle = MUTE; font(400, 34);
+    const d = at ? new Date(at) : new Date();
+    g.fillText('รับเงินได้จากทุกธนาคาร · ' + d.toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'}), W / 2, fy + 70);
+    font(400, 26); g.fillText('โปรดตรวจชื่อผู้รับให้ตรงก่อนยืนยันการโอน · ติดต่อร้าน ' + String(shop.phone || '').split(/\s*[,/]\s*/)[0], W / 2, fy + 118);
+    try { return cv.toDataURL('image/png'); } catch (e) { if (payLogo) { payLogo = false; return payCardDataUrl(amount, note, ref, at); } throw e; }
+  }
+  const payRef = t => 'BS' + new Date(t).toISOString().slice(2, 10).replace(/-/g, '') + '-' + String(t).slice(-4);
+  const payCharges = () => (store.get('bs_pay_charges', []) || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  function renderPayHist() {
+    const box = $('cpPayHist'); if (!box) return;
+    const list = payCharges().filter(x => x.chatId === chatSel).slice(0, 8);
+    box.innerHTML = list.length ? '<b>เรียกเก็บล่าสุด</b>' + list.map(x => '<div class="pay-row"><span>฿' + money(x.amount) + (x.note ? ' · ' + esc(x.note) : '') + '<small>' + esc(new Date(x.createdAt).toLocaleString('th-TH', {dateStyle: 'short', timeStyle: 'short'})) + '</small></span>' +
+      '<i class="pay-st ' + (x.status === 'paid' ? 'paid' : '') + '">' + (x.status === 'paid' ? '✓ ชำระแล้ว' : 'รอชำระ') + '</i></div>').join('') : '';
+  }
+  async function updatePayPreview() {
+    const a = parseFloat(String(($('cpPayAmt') || {}).value || '').replace(/,/g, ''));
+    const prev = $('cpPayPrev'); if (!prev) return;
+    if (!(a > 0)) { prev.hidden = true; return; }
+    $('cpPayImg').src = await payCardDataUrl(a, ($('cpPayNote').value || '').trim(), payRef(Date.now()), Date.now()); prev.hidden = false;
+  }
+  // จับคู่ยอดที่เรียกเก็บกับเงินเข้า (ยอดเท่ากัน · หลังเวลาที่ส่ง QR · ภายใน 7 วัน) แล้วแจ้งเตือน
+  function matchPayCharges() {
+    if (!canBank) return;
+    const pend = payCharges().filter(x => x.status !== 'paid' && Date.now() - (x.createdAt || 0) < 7 * 86400000);
+    if (!pend.length) return;
+    const used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
+    const ins = bankInAll();
+    const done = [];
+    pend.slice().reverse().forEach(x => {
+      const hit = ins.slice().reverse().find(b => !used.has(b.id) && Math.abs(num(b.amount) - x.amount) < 0.005 && (b.createdAt || 0) >= (x.createdAt || 0) - 60000);
+      if (!hit) return;
+      used.add(hit.id);
+      const rec = Object.assign({}, x, {status: 'paid', paidAt: hit.createdAt || Date.now(), bankInId: hit.id});
+      done.push(rec);
+    });
+    if (!done.length) return;
+    const all = payCharges().map(x => done.find(d => d.id === x.id) || x);
+    store.set('bs_pay_charges', all); done.forEach(r => cloudSave('payCharges', r));
+    toast('✅ ' + done.map(r => (r.name || 'ลูกค้า') + ' ชำระ ' + money(r.amount) + ' บาทแล้ว').join(' · ')); playChime();
+    renderPayHist();
   }
   // ส่งเลขพัสดุ: ดึงจากประวัติหน้า "ติดตามพัสดุ" เรียงชื่อที่ตรงกับลูกค้าในแชทขึ้นก่อน กดแล้วใส่ข้อความในช่องพิมพ์ให้ตรวจก่อนส่ง
   const normName = v => String(v || '').toLowerCase().replace(/^(คุณ|k\.|คุน)\s*/, '').replace(/[\s._-]+/g, '');
@@ -5278,8 +5567,9 @@ function bahtText(value) {
     replies: '<path d="M4 5h16v10H9l-4 4v-4H4z"/><path d="M8.5 10h.01M12 10h.01M15.5 10h.01"/>',
     card: '<path d="M4 5h16v10H9l-4 4v-4H4z"/><path d="M10 12.5l4.5-4.5 1.5 1.5-4.5 4.5H10z"/>',
     coupon: '<path d="M3.5 7h17v3a2 2 0 0 0 0 4v3h-17v-3a2 2 0 0 0 0-4z"/><path d="M9 7v10" stroke-dasharray="2 2"/>',
+    pay: '<rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><path d="M13.5 13.5h3v3h-3zM17.5 17.5h3v3h-3zM13.5 19.5v1M19.5 13.5h1"/>',
     call: '<path d="M4 5h16v10H9l-4 4v-4H4z"/><path d="M10 7.5c.5 2.5 2 4 4.5 4.5l.8-1.2-1.5-.8-.6.6c-.8-.4-1.4-1-1.8-1.8l.6-.6-.8-1.5z"/>'};
-  const CHAT_PLUS_GRID = '<div class="cp-grid">' + [['camera', 'กล้อง'], ['media', 'รูป & วิดีโอ'], ['file', 'ไฟล์'], ['replies', 'ข้อความตอบกลับ'], ['card', 'การ์ดเมสเสจ'], ['coupon', 'คูปอง'], ['call', 'คำขอการโทร']].map(([k, l]) =>
+  const CHAT_PLUS_GRID = '<div class="cp-grid">' + [['camera', 'กล้อง'], ['media', 'รูป & วิดีโอ'], ['file', 'ไฟล์'], ['replies', 'ข้อความตอบกลับ'], ['card', 'การ์ดเมสเสจ'], ['coupon', 'คูปอง'], ['call', 'คำขอการโทร'], ['pay', 'เรียกเก็บเงิน']].map(([k, l]) =>
     '<button type="button" class="cp-item" data-cp="' + k + '"><svg viewBox="0 0 24 24" aria-hidden="true">' + PICO[k] + '</svg><span>' + l + '</span></button>').join('') + '</div>';
   $('chatPlusBtn').addEventListener('click', () => { if (chatPanel) closeChatPlus(); else openChatPanel('grid'); });
   let cpCardImg = '';
@@ -5305,13 +5595,27 @@ function bahtText(value) {
       store.set('bs_line_replies', lineReplies().filter(r => r.id !== del.dataset.rdel));
       cloudDelete('lineReplies', del.dataset.rdel); openChatPanel('replies'); return;
     }
+    if (e.target.id === 'cpPaySave') {
+      const a = parseFloat(String($('cpPayAmt').value || '').replace(/,/g, ''));
+      if (!(a > 0)) { toast('ใส่จำนวนเงินก่อน'); return; }
+      const url = await payCardDataUrl(a, $('cpPayNote').value.trim(), payRef(Date.now()), Date.now());
+      try {
+        const blob = await (await fetch(url)).blob(), file = new File([blob], 'QR-' + a + '.png', {type: 'image/png'});
+        if (navigator.canShare && navigator.canShare({files: [file]})) { await navigator.share({files: [file], title: 'QR พร้อมเพย์ ' + money(a) + ' บาท'}); return; }
+      } catch (err) { if (err && err.name === 'AbortError') return; }
+      const aEl = document.createElement('a'); aEl.href = url; aEl.download = 'QR-' + a + '.png'; aEl.click(); return;
+    }
     if (e.target.id === 'cpCallSend') {
       e.target.disabled = true;
       try { await chatPost({flex: flexCall(), altText: '📞 โทรหา ' + (shop.name || 'ร้าน'), fbText: '📞 โทรหา ' + (shop.name || 'ร้าน') + ' ได้ที่ ' + String(shop.phone || '').split(/\s*[,/]\s*/)[0] + '\nหรือพิมพ์เบอร์ของคุณไว้ ร้านจะโทรกลับครับ'}); closeChatPlus(); toast('ส่งคำขอการโทรแล้ว'); }
       catch (err) { toast('ส่งไม่สำเร็จ: ' + err.message); e.target.disabled = false; }
     }
   });
-  $('chatPlus').addEventListener('input', e => { if (e.target.id === 'cpTrackQ') renderChatTrackList(); });
+  let payPrevTimer = 0;
+  $('chatPlus').addEventListener('input', e => {
+    if (e.target.id === 'cpTrackQ') renderChatTrackList();
+    if (e.target.id === 'cpPayAmt' || e.target.id === 'cpPayNote') { clearTimeout(payPrevTimer); payPrevTimer = setTimeout(updatePayPreview, 250); }
+  });
   $('chatPlus').addEventListener('change', async e => {
     if (e.target.id !== 'cpcImg' || !e.target.files[0]) return;
     $('cpcImgLbl').textContent = '⏳ กำลังอัปโหลดรูป...';
@@ -5325,6 +5629,23 @@ function bahtText(value) {
       const t = $('cpReplyText').value.trim(); if (!t) return;
       const rec = {id: 'lr' + Date.now(), text: t, createdAt: Date.now()};
       store.set('bs_line_replies', lineReplies().concat([rec])); cloudSave('lineReplies', rec); openChatPanel('replies'); return;
+    }
+    if (f.id === 'cpPayForm') {
+      const a = Math.round(parseFloat(String($('cpPayAmt').value || '').replace(/,/g, '')) * 100) / 100;
+      if (!(a > 0) || a > 2000000) { toast('จำนวนเงินไม่ถูกต้อง'); return; }
+      const note = $('cpPayNote').value.trim(), c = chatList.find(x => x.userId === chatSel) || {};
+      btn.disabled = true; btn.textContent = 'กำลังส่ง...';
+      try {
+        const at = Date.now(), ref = payRef(at);
+        const url = await uploadPhotoToCloudinary(await payCardDataUrl(a, note, ref, at));
+        if (!url) throw new Error('อัปโหลดรูป QR ไม่สำเร็จ');
+        await chatPost({image: url, preview: url.replace('/image/upload/', '/image/upload/w_480,c_limit,q_auto/')});
+        await chatPost({text: '💳 ยอดชำระ ' + money(a) + ' บาท' + (note ? '\n' + note : '') + '\nเลขอ้างอิง ' + ref + '\nสแกน QR ด้วยแอปธนาคารได้เลยครับ (พร้อมเพย์ ' + (shop.promptpayName || shop.name) + ')\nโอนแล้วแจ้งร้านหรือส่งสลิปมาได้เลยครับ 🙏'});
+        const rec = {id: 'pay' + at, ref, chatId: chatSel, name: c.name || '', channel: c.channel || 'line', amount: a, note, status: 'pending', createdAt: at, by: chatBy()};
+        store.set('bs_pay_charges', payCharges().concat([rec])); cloudSave('payCharges', rec);
+        toast('ส่ง QR เรียกเก็บ ' + money(a) + ' บาทแล้ว'); closeChatPlus(); matchPayCharges();
+      } catch (err) { toast('ส่งไม่สำเร็จ: ' + err.message); btn.disabled = false; btn.textContent = 'ส่ง QR ให้ลูกค้า'; }
+      return;
     }
     btn.disabled = true;
     try {
@@ -6992,10 +7313,30 @@ function bahtText(value) {
   document.addEventListener('click', e => { if (!e.target.closest('#bellPanel') && !e.target.closest('#bellBtn')) closeBell(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBell(); });
   renderBell(false);
-  $('bankInNotifyBtn').addEventListener('click', () => {
-    if (!('Notification' in window)) return;
-    Notification.requestPermission().then(renderBankInNotifyState).catch(renderBankInNotifyState);
+  document.addEventListener('click', async e => {
+    if (e.target.closest('[data-push-enable]')) enablePush();
+    const t = e.target.closest('[data-push-test]'); if (!t) return;
+    t.disabled = true;
+    try {
+      const r = await fetch(LINE_OA_URL + '/notify', {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': LINE_OA_KEY},
+        body: JSON.stringify({perm: can('chat') ? 'chat' : 'bank', title: '🔔 ทดสอบแจ้งเตือน Ball Sticker', body: 'ถ้าเห็นข้อความนี้ แปลว่าแจ้งเตือนเด้งใช้ได้แล้ว', tag: 'test', url: './'})});
+      const j = await r.json().catch(() => ({}));
+      if (!j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+      toast(j.sent ? 'ส่งแล้ว ' + j.sent + ' เครื่อง — ล็อกจอดูได้เลย (อาจช้าไม่กี่วินาที)' : 'ยังไม่มีเครื่องรับ: ' + (j.error || 'ลองกดเปิดแจ้งเตือนใหม่'));
+    } catch (err) { toast('ส่งทดสอบไม่สำเร็จ: ' + err.message); }
+    setTimeout(() => { t.disabled = false; }, 3000);
   });
+  setTimeout(refreshPushSub, 1500);
+  // เปิดจากการแตะแจ้งเตือน: ?tab=chat&chat=<id> หรือ ?tab=dash
+  function openFromLink(href) {
+    try {
+      const u = new URL(href, location.href), tab = u.searchParams.get('tab'), chat = u.searchParams.get('chat');
+      if (tab && can(tab)) showTab(tab);
+      if (tab === 'chat' && chat && typeof openChat === 'function') setTimeout(() => openChat(chat), 300);
+    } catch (e) {}
+  }
+  if (location.search.indexOf('tab=') >= 0) { setTimeout(() => { openFromLink(location.href); try { history.replaceState(null, '', location.pathname); } catch (e) {} }, 600); }
+  if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.open) openFromLink(e.data.open); });
   $('jobBankInBtn').addEventListener('click', () => {
     const l = $('jobBankInList'); renderJobBankInPick();
     l.hidden = !l.hidden; $('jobBankInBtn').setAttribute('aria-expanded', String(!l.hidden));
@@ -7757,6 +8098,7 @@ function bahtText(value) {
     watchBankIn();
     watchBankOut();
     watchLineChats();
+    if (can('chat') || canBank) watchCloud('payCharges', 'bs_pay_charges', () => { renderPayHist(); try { matchPayCharges(); } catch (e) {} });
     if (can('chat')) watchCloud('lineReplies', 'bs_line_replies', () => { if (chatPanel === 'replies') openChatPanel('replies'); });
     watchBankBalance();
     // ประวัติ "ติดตามพัสดุ" แต่ก่อนเก็บเฉพาะในเครื่องเท่านั้น — ครั้งแรกที่เปิดหน้านี้หลังอัปเดต
