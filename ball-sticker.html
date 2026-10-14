@@ -423,6 +423,15 @@ button.status-pill:active{filter:brightness(0.9)}
 .history li .live-status.live-pending{background:var(--mat);color:var(--muted)}
 .history li .live-status.live-none{background:var(--mat);color:var(--muted)}
 .history li .live-status.live-ok{background:#e6f6ea;color:#1a6b3a}
+.history li .live-status.live-bad{background:#fdeaea;color:#b3261e}
+.history li .live-status b{font-weight:700}
+.history li .live-status .live-when{margin-left:auto;font-size:11.5px;opacity:.85;white-space:nowrap}
+:root[data-theme="dark"] .history li .live-status.live-ok{background:#123824;color:#8fe0ae}
+:root[data-theme="dark"] .history li .live-status.live-bad{background:#3a1424;color:#ffb3cb}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .history li .live-status.live-ok{background:#123824;color:#8fe0ae}
+  :root:not([data-theme="light"]) .history li .live-status.live-bad{background:#3a1424;color:#ffb3cb}
+}
 .history li .live-status .refresh-one{margin-left:auto;background:none;border:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit;font-size:11.5px;padding:0}
 .history li .sender-info{flex-basis:100%;font-size:12px;color:var(--muted);background:var(--mat);border-radius:9px;padding:6px 10px;margin-top:-2px}
 .history li .sender-info b{color:inherit;font-weight:700}
@@ -1892,7 +1901,7 @@ tr{break-inside:avoid}
         </div>
         <div class="track-import-row">
   <button class="btn small primary" id="track-import-iship" type="button">📥 ดึงรายการจาก iship (30 วันล่าสุด)</button>
-          <button class="btn small" id="track-refresh-live" type="button">🔄 รีเฟรชสถานะจาก iship ทั้งหมด</button>
+          <button class="btn small" id="track-refresh-live" type="button">🔄 เช็กสถานะล่าสุดจาก iship</button>
         </div>
         <div class="dash-filter" style="margin-bottom:10px">
           <label class="f hist-search"><span>ค้นหา</span><input class="txt" id="trackHistSearch" type="search" autocomplete="off" placeholder="ค้นหาเลขพัสดุ, ขนส่ง, ลูกค้า, ผู้ส่ง..."></label>
@@ -4682,28 +4691,75 @@ function bahtText(value) {
     if (!res.ok || json.status !== true) throw new Error(json.message || ('HTTP ' + res.status));
     return Array.isArray(json.data) ? json.data : [];
   }
-  async function importOrdersFromIship(days) {
-    if (!ISHIP_ORDERS_PROXY_URL) { toast('ยังไม่ได้ตั้งค่า iship-orders-proxy — รอผมใส่ URL ให้ก่อน'); return; }
-    // iship จำกัดการค้นหาต่อครั้งไม่เกิน 7 วัน จึงแบ่งดึงเป็นช่วงละ 7 วันแล้วรวมผลลัพธ์
-    const totalDays = days || 30;
+  // ดึงออเดอร์จาก iship ย้อนหลัง totalDays วัน — iship จำกัดการค้นหาต่อครั้งไม่เกิน 7 วัน จึงแบ่งดึงเป็นช่วงละ 7 วันแล้วรวมผล (ตัดตัวซ้ำออก)
+  async function fetchIshipOrders(totalDays) {
     const CHUNK_DAYS = 7;
     const now = Date.now();
     const orders = [];
     const seenIds = new Set();
+    for (let offset = 0; offset < totalDays; offset += CHUNK_DAYS) {
+      const chunkEnd = new Date(now - offset * 86400000);
+      const chunkStartOffset = Math.min(offset + CHUNK_DAYS, totalDays);
+      const chunkStart = new Date(now - chunkStartOffset * 86400000);
+      const chunkOrders = await fetchIshipOrdersChunk(chunkStart, chunkEnd);
+      chunkOrders.forEach(o => {
+        const key = o.id != null ? o.id : o.track_no;
+        if (key == null || seenIds.has(key)) return;
+        seenIds.add(key);
+        orders.push(o);
+      });
+    }
+    return orders;
+  }
+  // เอาสถานะล่าสุดจากออเดอร์ของ iship (status_name) มาอัปเดตรายการที่มีอยู่แล้ว
+  // เปลี่ยนสถานะในเครื่องเฉพาะตอนที่ iship รายงานสถานะใหม่ (ถ้าเคยเลือกสถานะเองไว้ จะไม่ถูกทับจนกว่า iship จะเปลี่ยน)
+  const ISHIP_SYNC_KEY = 'bs_iship_sync_at';
+  function applyIshipStatuses(orders, list) {
+    const byCode = new Map();
+    orders.forEach(o => { if (o.track_no) byCode.set(String(o.track_no).trim().toUpperCase(), o); });
+    const changed = [];
+    list.forEach((t, i) => {
+      const o = byCode.get(String(t.code || '').trim().toUpperCase());
+      const name = o && (o.status_name || '');
+      if (!name || name === t.ishipStatusName) return;
+      list[i] = Object.assign({}, t, {ishipStatusName: name, status: mapIshipStatusToLocal(name), ishipStatusAt: Date.now()});
+      changed.push(list[i]);
+    });
+    return changed;
+  }
+  let ishipSyncing = false;
+  async function syncIshipStatuses(manual) {
+    if (!ISHIP_ORDERS_PROXY_URL || ishipSyncing) return null;
+    const open = store.get('bs_tracking', []).filter(t => (t.status || 'transit') !== 'delivered');
+    if (!open.length) { if (manual) toast('ทุกรายการถึงลูกค้าแล้ว ไม่มีอะไรต้องเช็ก'); return 0; }
+    // ย้อนหลังถึงรายการเก่าสุดที่ยังไม่ถึงลูกค้า (อย่างน้อย 7 วัน ไม่เกิน 30 วัน)
+    const oldest = Math.min.apply(null, open.map(t => t.ishipCreatedAt != null ? t.ishipCreatedAt : (t.savedAt || Date.now())));
+    const days = Math.max(7, Math.min(30, Math.ceil((Date.now() - oldest) / 86400000) + 1));
+    ishipSyncing = true;
+    if (manual) toast('กำลังเช็กสถานะล่าสุดจาก iship...');
+    try {
+      const orders = await fetchIshipOrders(days);
+      const list = store.get('bs_tracking', []);
+      const changed = applyIshipStatuses(orders, list);
+      if (changed.length) { store.set('bs_tracking', list); changed.forEach(rec => cloudSave('tracking', rec)); }
+      try { localStorage.setItem(ISHIP_SYNC_KEY, String(Date.now())); } catch (e) {}
+      if (isTrackPanelActive()) renderTrackingHistory();
+      const delivered = changed.filter(r => r.status === 'delivered').length;
+      if (manual) toast(changed.length ? 'อัปเดตสถานะ ' + changed.length + ' รายการ' + (delivered ? ' (ถึงลูกค้าแล้ว ' + delivered + ')' : '') : 'เช็กแล้ว ยังไม่มีสถานะใหม่จาก iship');
+      return changed.length;
+    } catch (e) {
+      console.error('syncIshipStatuses error', e);
+      if (manual) toast('เช็กสถานะจาก iship ไม่สำเร็จ: ' + e.message);
+      return null;
+    } finally { ishipSyncing = false; }
+  }
+  async function importOrdersFromIship(days) {
+    if (!ISHIP_ORDERS_PROXY_URL) { toast('ยังไม่ได้ตั้งค่า iship-orders-proxy — รอผมใส่ URL ให้ก่อน'); return; }
+    const totalDays = days || 30;
+    let orders;
     toast('กำลังดึงรายการจาก iship...');
     try {
-      for (let offset = 0; offset < totalDays; offset += CHUNK_DAYS) {
-        const chunkEnd = new Date(now - offset * 86400000);
-        const chunkStartOffset = Math.min(offset + CHUNK_DAYS, totalDays);
-        const chunkStart = new Date(now - chunkStartOffset * 86400000);
-        const chunkOrders = await fetchIshipOrdersChunk(chunkStart, chunkEnd);
-        chunkOrders.forEach(o => {
-          const key = o.id != null ? o.id : o.track_no;
-          if (key == null || seenIds.has(key)) return;
-          seenIds.add(key);
-          orders.push(o);
-        });
-      }
+      orders = await fetchIshipOrders(totalDays);
     } catch (e) {
       console.error('importOrdersFromIship error', e);
       toast('ดึงรายการจาก iship ไม่สำเร็จ: ' + e.message);
@@ -4757,11 +4813,17 @@ function bahtText(value) {
       existingCodes.add(code);
       if (customer) upsertCustomer(customer, o.dst_phone || '', '');
     });
+    const newIds = new Set(newRecs.map(r => r.id));
+    const statusChanged = applyIshipStatuses(orders, list).filter(r => !newIds.has(r.id));
+    const bfIds = new Set(statusChanged.map(r => r.id));
     store.set('bs_tracking', list);
+    try { localStorage.setItem(ISHIP_SYNC_KEY, String(Date.now())); } catch (e) {}
     newRecs.forEach(rec => cloudSave('tracking', rec));
-    backfilled.forEach(rec => cloudSave('tracking', rec));
+    // รายการที่เติมชื่อผู้ส่ง: ใช้ตัวล่าสุดใน list (เผื่อสถานะเพิ่งเปลี่ยนด้วย)
+    backfilled.forEach(rec => { if (!bfIds.has(rec.id)) cloudSave('tracking', list.find(t => t.id === rec.id) || rec); });
+    statusChanged.forEach(rec => cloudSave('tracking', rec));
     renderTrackingHistory();
-    const bfMsg = backfilled.length ? ' · เติมชื่อผู้ส่ง ' + backfilled.length + ' รายการ' : '';
+    const bfMsg = (backfilled.length ? ' · เติมชื่อผู้ส่ง ' + backfilled.length + ' รายการ' : '') + (statusChanged.length ? ' · อัปเดตสถานะ ' + statusChanged.length + ' รายการ' : '');
     toast((added ? ('เพิ่มรายการใหม่ ' + added + ' รายการจาก iship แล้ว') : 'ไม่มีรายการใหม่ (มีอยู่ในประวัติครบแล้ว)') + bfMsg);
   }
   function updateTrackingStatus(id, status) {
@@ -4844,6 +4906,7 @@ function bahtText(value) {
   let liveTimer = null;
   function refreshAllLive() {
     if (document.hidden) return;
+    if (can('track')) syncIshipStatuses(false); // สถานะจากรายการออเดอร์ของ iship (ใช้ได้แม้ยังไม่มี webhook)
     const list = store.get('bs_tracking', []).filter(t => (t.status || 'transit') !== 'delivered');
     if (!list.length) return;
     Promise.all(list.map(t => fetchLiveTracking(t.code, true))).then(() => { if (isTrackPanelActive()) renderTrackingHistory(); });
@@ -4882,18 +4945,28 @@ function bahtText(value) {
     $('trackHistCount').textContent = list.length;
     if (!list.length) { $('trackHistory').innerHTML = '<p class="empty">ยังไม่มีประวัติ สร้างข้อความแรกได้เลย</p>'; return; }
     if (!shown.length) { $('trackHistory').innerHTML = '<p class="empty">ไม่พบรายการที่ค้นหา</p>'; return; }
+    let ishipSyncWhen = '';
+    try { const at = +localStorage.getItem(ISHIP_SYNC_KEY) || 0; if (at) ishipSyncWhen = bankInWhen({createdAt: at}, true); } catch (e) {}
     $('trackHistory').innerHTML = '<ul>' + shown.map(t => {
       const st = t.status || 'transit';
       const cls = (TRACK_STATUS[st] || TRACK_STATUS.transit).cls;
       const live = cloudDb ? liveTrackCache[t.code] : undefined;
       let liveHtml = '';
-      if (cloudDb) {
+      if (live && live.data) {
+        const d = describeLiveTracking(live.data);
+        liveHtml = '<div class="live-status live-ok"><span class="live-dot live-dot-on"></span>LIVE จาก iship: ' + esc(d.statusText) + (d.timeText ? ' · ' + esc(d.timeText) : '') + '</div>';
+      } else if (t.ishipStatusName) {
+        // สถานะจากรายการออเดอร์ของ iship (เช็กให้เองทุก 10 นาที หรือกด "เช็กสถานะล่าสุด")
+        const doneCls = st === 'delivered' ? ' live-ok' : st === 'issue' ? ' live-bad' : ' live-none';
+        liveHtml = '<div class="live-status' + doneCls + '"><span class="live-dot' + (st === 'delivered' ? ' live-dot-on' : '') + '"></span>iship: <b>' + esc(translateIshipStatus(t.ishipStatusName)) + '</b>' +
+          (ishipSyncWhen ? '<span class="live-when">เช็กล่าสุด ' + esc(ishipSyncWhen) + '</span>' : '') + '</div>';
+      } else if (cloudDb) {
         if (!trackLiveOn) {
-          liveHtml = '<div class="live-status live-none">Live ปิดอยู่ กดปุ่ม Live ด้านบนเพื่อดูสถานะจาก iship</div>';
+          liveHtml = '<div class="live-status live-none">ยังไม่มีสถานะจาก iship — กด “เช็กสถานะล่าสุดจาก iship” ด้านบน</div>';
         } else if (!live) {
           liveHtml = '<div class="live-status live-pending">⏳ กำลังเช็กสถานะจาก iship...</div>';
         } else if (!live.data) {
-          liveHtml = '<div class="live-status live-none"><span class="live-dot"></span>ถ่ายทอดสด — ยังไม่มีสถานะจาก iship สำหรับเลขนี้</div>';
+          liveHtml = '<div class="live-status live-none"><span class="live-dot"></span>ยังไม่มีสถานะจาก iship สำหรับเลขนี้ (เลขที่ไม่ได้สร้างผ่าน iship จะไม่มีสถานะ)</div>';
         } else {
           const d = describeLiveTracking(live.data);
           liveHtml = '<div class="live-status live-ok"><span class="live-dot live-dot-on"></span>LIVE จาก iship: ' + esc(d.statusText) + (d.timeText ? ' · ' + esc(d.timeText) : '') + '</div>';
@@ -4989,10 +5062,8 @@ function bahtText(value) {
     $('track-day-summary').setAttribute('aria-expanded', 'true');
   });
   $('track-refresh-live').addEventListener('click', () => {
-    const list = store.get('bs_tracking', []);
-    if (!cloudDb) { toast('ยังไม่ได้เชื่อมต่อฐานข้อมูลคลาวด์'); return; }
-    toast('กำลังรีเฟรชสถานะจาก iship...');
-    Promise.all(list.map(t => fetchLiveTracking(t.code, true))).then(() => renderTrackingHistory());
+    syncIshipStatuses(true);
+    if (cloudDb) Promise.all(store.get('bs_tracking', []).map(t => fetchLiveTracking(t.code, true))).then(() => renderTrackingHistory());
   });
   $('track-clear-all').addEventListener('click', () => {
     const btn = $('track-clear-all');
