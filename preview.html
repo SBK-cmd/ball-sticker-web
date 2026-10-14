@@ -625,6 +625,9 @@ button.status-pill:active{filter:brightness(0.9)}
   .chat-back{display:block}
 }
 /* ---- แชท: หน้าตาแบบแอปแชท ---- */
+.chat-mic.rec{color:#fff!important;background:#ef4444!important;border-color:#ef4444!important;animation:micPulse 1.2s ease-in-out infinite}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
+.chat-send textarea.listening{border-color:#ef4444}
 .chat-hbtn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .chat-hbtn svg,.chat-sendbtn svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .chat-sendbtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;border-radius:999px;padding:0 16px}
@@ -2443,6 +2446,7 @@ tr{break-inside:avoid}
                 <input type="file" id="chatMediaInput" accept="image/*,video/*" multiple hidden>
                 <input type="file" id="chatFileInput" hidden>
                 <textarea id="chatInput" rows="1" placeholder="พิมพ์ข้อความตอบลูกค้า..." aria-label="ข้อความ"></textarea>
+                <button type="button" class="chat-attach chat-mic" id="chatMicBtn" aria-label="พิมพ์ด้วยเสียง" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button>
                 <button class="btn primary chat-sendbtn" type="submit" id="chatSendBtn" aria-label="ส่ง"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/></svg><span>ส่ง</span></button>
               </form>
             </div>
@@ -5117,6 +5121,30 @@ function bahtText(value) {
       $('chatQuota').classList.toggle('low', left != null && left <= 30);
     } catch (e) { $('chatQuota').textContent = ''; }
   }
+  // พิมพ์ด้วยเสียง (Web Speech API — Chrome/Android, Safari iOS) พูดภาษาไทย ข้อความจะต่อท้ายในช่องพิมพ์ ให้ตรวจก่อนกดส่ง
+  (function setupChatMic() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition, btn = $('chatMicBtn'), inp = $('chatInput');
+    if (!btn) return;
+    if (!SR) { btn.hidden = false; btn.addEventListener('click', () => toast('เครื่องนี้ใช้พิมพ์ด้วยเสียงในแอปไม่ได้ ใช้ปุ่มไมค์บนคีย์บอร์ดแทนได้ครับ')); return; }
+    btn.hidden = false;
+    let rec = null, base = '', on = false;
+    const stop = () => { on = false; btn.classList.remove('rec'); inp.classList.remove('listening'); btn.setAttribute('aria-label', 'พิมพ์ด้วยเสียง'); };
+    btn.addEventListener('click', () => {
+      if (on && rec) { try { rec.stop(); } catch (e) {} return; }
+      rec = new SR(); rec.lang = 'th-TH'; rec.interimResults = true; rec.continuous = true;
+      base = inp.value ? inp.value.replace(/\s*$/, ' ') : '';
+      rec.onresult = e => {
+        let fin = '', tmp = '';
+        for (let i = 0; i < e.results.length; i++) { const t = e.results[i][0].transcript; if (e.results[i].isFinal) fin += t; else tmp += t; }
+        inp.value = base + fin + tmp; autoGrowChat();
+      };
+      rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast('กรุณาอนุญาตให้ใช้ไมโครโฟน แล้วลองใหม่'); else if (e.error !== 'aborted' && e.error !== 'no-speech') toast('ฟังเสียงไม่สำเร็จ: ' + e.error); };
+      rec.onend = () => { stop(); inp.focus(); };
+      try { rec.start(); on = true; btn.classList.add('rec'); inp.classList.add('listening'); btn.setAttribute('aria-label', 'หยุดฟัง'); toast('🎤 พูดได้เลย กดไมค์อีกครั้งเพื่อหยุด'); }
+      catch (err) { stop(); toast('เปิดไมค์ไม่ได้'); }
+    });
+    $('chatSendForm').addEventListener('submit', () => { if (on && rec) { try { rec.stop(); } catch (e) {} } }, true);
+  })();
   function autoGrowChat() { const t = $('chatInput'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; }
   function renderChat() { renderChatList(); renderChatHead(); renderChatMsgs(); loadChatQuota(); }
   $('chatList').addEventListener('click', e => { const b = e.target.closest('[data-uid]'); if (b) openChat(b.dataset.uid); });
