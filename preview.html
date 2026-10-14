@@ -513,6 +513,17 @@ button.status-pill:active{filter:brightness(0.9)}
 .bell-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .bell-main b{font-size:14.5px;font-variant-numeric:tabular-nums}
 .bell-main small{font-size:12.5px;color:var(--muted)}
+.bis .bis-out{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;column-gap:8px;margin-top:6px;font-size:12.5px;color:var(--muted)}
+.bis .bis-out span{white-space:nowrap}
+.bis .bis-out b{display:inline;font-size:15px;font-weight:800;line-height:1.3;color:var(--warn-ink);font-variant-numeric:tabular-nums}
+.bk-seg{display:inline-flex;gap:3px;padding:3px;margin:0 0 10px;border:1px solid var(--line);border-radius:999px;background:var(--field)}
+.bk-seg button{border:0;background:transparent;border-radius:999px;padding:6px 14px;font:600 13px 'Sarabun','Noto Sans Thai',system-ui,sans-serif;color:var(--muted);cursor:pointer;white-space:nowrap}
+.bk-seg button:hover{color:var(--ink)}
+.bk-seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.bk-seg button .n{opacity:.7;font-weight:500;margin-left:4px}
+.bil-amt.amt-in::before{content:'+'}
+.bil-amt.amt-out{color:var(--warn-ink)}
+.bil-amt.amt-out::before{content:'\2212'}
 .bis-bal{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--muted)}
 .bis-bal b{display:block;font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums}
 .bell-bal{display:grid;gap:4px;margin:0 2px 10px;padding:10px 12px;border-radius:12px;background:var(--field);font-size:13px;color:var(--muted)}
@@ -2028,10 +2039,15 @@ tr{break-inside:avoid}
 
       <section class="card no-print" id="dashBankInCard" aria-labelledby="dash-bankin-h">
         <div class="viz-head">
-          <h2 id="dash-bankin-h">เงินเข้า (SMS ธนาคาร)</h2>
+          <h2 id="dash-bankin-h">เงินเข้า-ออก (SMS ธนาคาร)</h2>
           <span id="bankInCap"></span>
         </div>
         <div class="bankin-sum" id="bankInSum"></div>
+        <div class="bk-seg" id="bankListSeg" role="group" aria-label="แสดงรายการ">
+          <button type="button" data-bk="all" aria-pressed="true">ทั้งหมด</button>
+          <button type="button" data-bk="in" aria-pressed="false">เงินเข้า</button>
+          <button type="button" data-bk="out" aria-pressed="false">เงินออก</button>
+        </div>
         <div id="bankInList"></div>
         <div class="bankin-foot">
           <button class="btn small" id="bankInNotifyBtn" type="button">เปิดแจ้งเตือนบนเครื่องนี้</button>
@@ -2762,6 +2778,20 @@ function bahtText(value) {
       renderBankIn(); renderBell(false);
     }, err => console.error('bankBalance sync error', err));
   }
+  // เงินออก (SMS "เงินออก" / "ชำระ" / "ถอน" ...) — Worker เก็บที่คอลเลกชัน bankOut ไม่เด้ง ไม่มีเสียง แค่แสดงในรายการ
+  const bankOutAll = () => (store.get('bs_bank_out', []) || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const BANK_OUT_KIND = {'เงินออก': 'เงินออก', 'ชำระ': 'ชำระเงิน', 'จ่าย': 'จ่ายเงิน', 'ถอน': 'ถอนเงิน', 'โอนไป': 'โอนออก', 'โอนออก': 'โอนออก', 'โอนเงินออก': 'โอนออก', 'หักบัญชี': 'หักบัญชี'};
+  let bankListTab = 'all';
+  try { const t = localStorage.getItem('bs_bankin_tab'); if (t === 'in' || t === 'out') bankListTab = t; } catch (e) {}
+  function watchBankOut() {
+    if (!cloudDb || !isOwner) return;
+    cloudDb.collection('bankOut').orderBy('createdAt', 'desc').limit(300).onSnapshot(snap => {
+      const list = [];
+      snap.forEach(d => list.push(Object.assign({id: d.id}, d.data())));
+      store.set('bs_bank_out', list);
+      renderBankIn();
+    }, err => console.error('bankOut sync error', err));
+  }
   function watchBankIn() {
     if (!cloudDb || !isOwner) return;
     cloudDb.collection('bankIn').orderBy('createdAt', 'desc').limit(300).onSnapshot(snap => {
@@ -2846,25 +2876,44 @@ function bahtText(value) {
   function renderBankIn() {
     const card = $('dashBankInCard'); if (!card) return;
     card.hidden = !isOwner; if (!isOwner) return;
-    const list = bankInAll();
-    $('bankInCap').textContent = list.length ? 'ล่าสุด ' + bankInWhen(list[0], true) : (cloudDb ? 'ยังไม่มีรายการ — ตั้งค่ามือถือให้ส่ง SMS มาก่อน' : 'ต้องต่อคลาวด์ก่อน');
+    const list = bankInAll(), outs = bankOutAll();
+    const latest = Math.max(list.length ? list[0].createdAt || 0 : 0, outs.length ? outs[0].createdAt || 0 : 0);
+    $('bankInCap').textContent = latest ? 'ล่าสุด ' + bankInWhen({createdAt: latest}, true) : (cloudDb ? 'ยังไม่มีรายการ — ตั้งค่ามือถือให้ส่ง SMS มาก่อน' : 'ต้องต่อคลาวด์ก่อน');
     const today = todayISO(), month = today.slice(0, 7);
+    const sum = arr => arr.reduce((s, x) => s + num(x.amount), 0);
+    const onDay = arr => arr.filter(x => localISO(new Date(x.createdAt || 0)) === today);
+    const inMonth = arr => arr.filter(x => localISO(new Date(x.createdAt || 0)).slice(0, 7) === month);
     $('bankInSum').innerHTML = ACCOUNTS.map(a => {
-      const mine = list.filter(x => x.account === a);
-      const td = mine.filter(x => localISO(new Date(x.createdAt || 0)) === today);
-      const mo = mine.filter(x => localISO(new Date(x.createdAt || 0)).slice(0, 7) === month);
+      const mine = list.filter(x => x.account === a), mineOut = outs.filter(x => x.account === a);
+      const td = onDay(mine), tdOut = onDay(mineOut);
       const bal = bankBalOf(a);
-      return '<div class="bis"><span class="ps-l">บัญชี' + esc(a) + ' · เงินเข้าวันนี้</span><b>' + money(td.reduce((s, x) => s + num(x.amount), 0)) + '</b>' +
-        '<small>' + td.length + ' รายการ</small><small>เดือนนี้ ' + money(mo.reduce((s, x) => s + num(x.amount), 0)) + ' บาท</small>' +
+      return '<div class="bis"><span class="ps-l">บัญชี' + esc(a) + ' · เงินเข้าวันนี้</span><b>' + money(sum(td)) + '</b>' +
+        '<small>' + td.length + ' รายการ</small>' +
+        '<div class="bis-out"><span>เงินออกวันนี้' + (tdOut.length ? ' (' + tdOut.length + ')' : '') + '</span><b>' + (tdOut.length ? '\u2212' : '') + money(sum(tdOut)) + '</b></div>' +
+        '<small>เดือนนี้ เข้า ' + money(sum(inMonth(mine))) + ' · ออก ' + money(sum(inMonth(mineOut))) + ' บาท</small>' +
         '<div class="bis-bal">คงเหลือในบัญชี' + (bal ? '<b>' + money(num(bal.balance)) + ' บาท</b>อัปเดต ' + esc(bankBalWhen(bal)) : '<b>—</b>รอ SMS ครั้งถัดไป') + '</div></div>';
     }).join('');
-    const rows = list.slice(0, 20);
-    $('bankInList').innerHTML = rows.length ? '<ul class="bankin-list">' + rows.map(x =>
+    document.querySelectorAll('#bankListSeg button').forEach(b => {
+      const k = b.dataset.bk, n = k === 'in' ? list.length : k === 'out' ? outs.length : 0;
+      b.setAttribute('aria-pressed', String(k === bankListTab));
+      b.innerHTML = ({all: 'ทั้งหมด', in: 'เงินเข้า', out: 'เงินออก'})[k] + (n ? '<span class="n">' + n + '</span>' : '');
+    });
+    const tagOf = x => '<span class="tax-tag ' + (NON_TAX_ACCOUNTS.indexOf(x.account) >= 0 ? 'off' : 'on') + '">' + esc(x.account || '-') + '</span>';
+    const rowIn = x =>
       '<li><span class="bil-time">' + esc(bankInWhen(x, true)) + '</span>' +
-      '<span class="bil-mid"><span><span class="tax-tag ' + (NON_TAX_ACCOUNTS.indexOf(x.account) >= 0 ? 'off' : 'on') + '">' + esc(x.account || '-') + '</span></span>' +
+      '<span class="bil-mid"><span>' + tagOf(x) + '</span>' +
       '<small>' + (x.matchedJobNo ? 'ใบงาน ' + esc(x.matchedJobNo) : 'ยังไม่ผูกใบงาน') + (x.from ? ' · จาก ' + esc(x.from) : '') + '</small></span>' +
-      '<span class="bil-amt">' + money(num(x.amount)) + '</span></li>').join('') + '</ul>'
-      : '<p class="empty">ยังไม่มีเงินเข้าที่ส่งมาจากมือถือ</p>';
+      '<span class="bil-amt amt-in">' + money(num(x.amount)) + '</span></li>';
+    const rowOut = x =>
+      '<li class="is-out"><span class="bil-time">' + esc(bankInWhen(x, true)) + '</span>' +
+      '<span class="bil-mid"><span>' + tagOf(x) + '</span>' +
+      '<small>' + esc(BANK_OUT_KIND[x.kind] || x.kind || 'เงินออก') + (x.to ? ' · ไป ' + esc(x.to) : '') + '</small></span>' +
+      '<span class="bil-amt amt-out">' + money(num(x.amount)) + '</span></li>';
+    const merged = bankListTab === 'in' ? list.map(x => ['in', x]) : bankListTab === 'out' ? outs.map(x => ['out', x])
+      : list.map(x => ['in', x]).concat(outs.map(x => ['out', x])).sort((p, q) => (q[1].createdAt || 0) - (p[1].createdAt || 0));
+    const rows = merged.slice(0, 20);
+    $('bankInList').innerHTML = rows.length ? '<ul class="bankin-list">' + rows.map(([d, x]) => d === 'in' ? rowIn(x) : rowOut(x)).join('') + '</ul>'
+      : '<p class="empty">' + (bankListTab === 'out' ? 'ยังไม่มีเงินออกที่ส่งมาจากมือถือ' : bankListTab === 'in' ? 'ยังไม่มีเงินเข้าที่ส่งมาจากมือถือ' : 'ยังไม่มีรายการที่ส่งมาจากมือถือ') + '</p>';
     renderBankInNotifyState();
   }
   function renderJobBankInPick() {
@@ -6129,7 +6178,13 @@ function bahtText(value) {
   });
   renderJobBankInPick();
   // ทดสอบในเครื่องที่ไม่ได้ต่อคลาวด์: ใช้รายการที่อยู่ใน localStorage (bs_bank_in)
-  if (!cloudDb && isOwner && (store.get('bs_bank_in', []).length || store.get('bs_bank_balance', []).length)) onBankInChange();
+  if (!cloudDb && isOwner && (store.get('bs_bank_in', []).length || store.get('bs_bank_out', []).length || store.get('bs_bank_balance', []).length)) onBankInChange();
+  $('bankListSeg').addEventListener('click', e => {
+    const b = e.target.closest('button[data-bk]'); if (!b) return;
+    bankListTab = b.dataset.bk;
+    try { localStorage.setItem('bs_bankin_tab', bankListTab); } catch (e) {}
+    renderBankIn();
+  });
   $('new-job').addEventListener('click', () => { $('jobPhotoInput').value = ''; newJob(); toast('เปิดใบใหม่แล้ว'); });
   $('job-to-bill').addEventListener('click', () => {
     $('cName').value = $('jName').value; $('cPhone').value = $('jPhone').value; $('cAddr').value = $('jAddr').value;
@@ -6701,6 +6756,7 @@ function bahtText(value) {
     watchCloud('customers', 'bs_customers', renderCustomerDatalist);
     watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
     watchBankIn();
+    watchBankOut();
     watchBankBalance();
     // ประวัติ "ติดตามพัสดุ" แต่ก่อนเก็บเฉพาะในเครื่องเท่านั้น — ครั้งแรกที่เปิดหน้านี้หลังอัปเดต
     // ให้อัปโหลดรายการที่มีอยู่ในเครื่องนี้ขึ้นคลาวด์ก่อน 1 ครั้ง (กันไม่ให้ข้อมูลเดิมหายไปตอนเริ่มซิงก์)
