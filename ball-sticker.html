@@ -526,7 +526,22 @@ button.status-pill:active{filter:brightness(0.9)}
 .bis .bis-out span{white-space:nowrap}
 .bis .bis-out.zero b{color:var(--muted);font-weight:600}
 .bis .bis-out b{display:inline;font-size:15px;font-weight:800;line-height:1.3;color:var(--warn-ink);font-variant-numeric:tabular-nums}
-.bk-seg{display:inline-flex;gap:3px;padding:3px;margin:0 0 10px;border:1px solid var(--line);border-radius:999px;background:var(--field)}
+.bk-tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px}
+.bk-add{border:1px dashed var(--line);border-radius:12px;padding:12px;margin:0 0 12px;background:var(--field)}
+.bk-add-head b{display:block;font-size:15px}
+.bk-add-head small{display:block;font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:2px}
+.bk-add .row-actions{display:flex;gap:6px;flex-wrap:wrap}
+.bk-dir{display:flex;flex-wrap:wrap;gap:6px}
+.bk-dir label{position:relative;display:inline-flex;align-items:center;padding:7px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);cursor:pointer;font-weight:600;font-size:13.5px;color:var(--muted)}
+.bk-dir input{position:absolute;opacity:0;pointer-events:none}
+.bk-dir label:has(input:checked){background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.bk-dir label:has(input:focus-visible){outline:2px solid var(--sticker-line);outline-offset:2px}
+@media (max-width:520px){.bk-add .row2{grid-template-columns:1fr}}
+.bk-manual{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);background:var(--field);color:var(--muted);font-size:10.5px;font-weight:700;vertical-align:1px}
+.bil-del{flex:none;border:0;background:none;color:var(--muted);font:600 12px 'Sarabun','Noto Sans Thai',system-ui,sans-serif;padding:6px 2px 6px 6px;cursor:pointer;white-space:nowrap}
+.bil-del:hover{color:var(--warn-ink)}
+.bil-del.armed{color:var(--warn-ink);text-decoration:underline}
+.bk-seg{display:inline-flex;gap:3px;padding:3px;margin:0;border:1px solid var(--line);border-radius:999px;background:var(--field)}
 .bk-seg button{border:0;background:transparent;border-radius:999px;padding:6px 14px;font:600 13px 'Sarabun','Noto Sans Thai',system-ui,sans-serif;color:var(--muted);cursor:pointer;white-space:nowrap}
 .bk-seg button:hover{color:var(--ink)}
 .bk-seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
@@ -2067,11 +2082,35 @@ tr{break-inside:avoid}
           <span id="bankInCap"></span>
         </div>
         <div class="bankin-sum" id="bankInSum"></div>
-        <div class="bk-seg" id="bankListSeg" role="group" aria-label="แสดงรายการ">
-          <button type="button" data-bk="all" aria-pressed="true">ทั้งหมด</button>
-          <button type="button" data-bk="in" aria-pressed="false">เงินเข้า</button>
-          <button type="button" data-bk="out" aria-pressed="false">เงินออก</button>
+        <div class="bk-tools">
+          <div class="bk-seg" id="bankListSeg" role="group" aria-label="แสดงรายการ">
+            <button type="button" data-bk="all" aria-pressed="true">ทั้งหมด</button>
+            <button type="button" data-bk="in" aria-pressed="false">เงินเข้า</button>
+            <button type="button" data-bk="out" aria-pressed="false">เงินออก</button>
+          </div>
+          <button type="button" class="btn small" id="bankAddBtn" aria-expanded="false">+ เพิ่มรายการเอง</button>
         </div>
+        <form class="fields bk-add" id="bankAddForm" hidden>
+          <div class="bk-add-head"><b>เพิ่มรายการเอง</b><small>ใช้ตอน SMS ไม่เข้า หรือระบบอ่านข้อความผิด — ลบรายการที่ผิดได้จากปุ่ม “ลบ” ท้ายแต่ละรายการ</small></div>
+          <div class="bk-dir" role="radiogroup" aria-label="ประเภทรายการ">
+            <label><input type="radio" name="bkDir" value="out" checked><span>เงินออก / หักยอด</span></label>
+            <label><input type="radio" name="bkDir" value="in"><span>เงินเข้า</span></label>
+          </div>
+          <div class="row2">
+            <label class="f"><span>บัญชี</span><select class="txt" id="bkAcc"></select></label>
+            <label class="f"><span>จำนวนเงิน (บาท)</span><input class="txt" id="bkAmt" type="text" inputmode="decimal" autocomplete="off" placeholder="เช่น 3,302.00"></label>
+          </div>
+          <div class="row2">
+            <label class="f"><span>วันที่และเวลา</span><input class="txt" id="bkWhen" type="datetime-local"></label>
+            <label class="f"><span id="bkPartyLbl">ไปที่บัญชี (ไม่บังคับ)</span><input class="txt" id="bkParty" type="text" autocomplete="off" placeholder="เช่น X-0004"></label>
+          </div>
+          <div class="row2">
+            <label class="f"><span>หมายเหตุ (ไม่บังคับ)</span><input class="txt" id="bkNote" type="text" autocomplete="off" placeholder="เช่น ค่ากระดาษ"></label>
+            <label class="f"><span>ยอดคงเหลือหลังรายการ (ไม่บังคับ)</span><input class="txt" id="bkBal" type="text" inputmode="decimal" autocomplete="off" placeholder="ตามที่ขึ้นใน SMS"></label>
+          </div>
+          <p class="lock-err" id="bkErr" hidden></p>
+          <div class="row-actions"><button class="btn primary small" type="submit">บันทึกรายการ</button><button class="btn small" type="button" id="bkCancel">ยกเลิก</button></div>
+        </form>
         <div id="bankInList"></div>
         <div class="bankin-foot">
           <button class="btn small" id="bankInNotifyBtn" type="button">เปิดแจ้งเตือนบนเครื่องนี้</button>
@@ -2845,6 +2884,8 @@ function bahtText(value) {
   const bankOutAll = () => (store.get('bs_bank_out', []) || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   const BANK_OUT_KIND = {'เงินออก': 'เงินออก', 'ชำระ': 'ชำระเงิน', 'จ่าย': 'จ่ายเงิน', 'ถอน': 'ถอนเงิน', 'โอนไป': 'โอนออก', 'โอนออก': 'โอนออก', 'โอนเงินออก': 'โอนออก', 'หักบัญชี': 'หักบัญชี'};
   let bankListTab = 'all';
+  let bankDelArmed = null, bankDelTimer = null;
+  const BANK_BAL_KEY = {'กิติพงษ์': 'kittipong', 'วันทิม': 'wantim'};
   try { const t = localStorage.getItem('bs_bankin_tab'); if (t === 'in' || t === 'out') bankListTab = t; } catch (e) {}
   function watchBankOut() {
     if (!cloudDb || !canBank) return;
@@ -2962,16 +3003,19 @@ function bahtText(value) {
       b.innerHTML = ({all: 'ทั้งหมด', in: 'เงินเข้า', out: 'เงินออก'})[k] + (n ? '<span class="n">' + n + '</span>' : '');
     });
     const tagOf = x => '<span class="tax-tag ' + (NON_TAX_ACCOUNTS.indexOf(x.account) >= 0 ? 'off' : 'on') + '">' + esc(x.account || '-') + '</span>';
+    const manTag = x => x.source === 'manual' ? '<span class="bk-manual">เพิ่มเอง</span>' : '';
+    const noteOf = x => x.note ? ' · ' + esc(x.note) : '';
+    const delBtn = (d, x) => '<button type="button" class="bil-del' + (bankDelArmed === x.id ? ' armed' : '') + '" data-bkdel="' + d + '" data-id="' + esc(x.id) + '">' + (bankDelArmed === x.id ? 'กดอีกครั้งเพื่อลบ' : 'ลบ') + '</button>';
     const rowIn = x =>
       '<li><span class="bil-time">' + esc(bankInWhen(x, true)) + '</span>' +
-      '<span class="bil-mid"><span>' + tagOf(x) + '</span>' +
-      '<small>' + (x.matchedJobNo ? 'ใบงาน ' + esc(x.matchedJobNo) : 'ยังไม่ผูกใบงาน') + (x.from ? ' · จาก ' + esc(x.from) : '') + '</small></span>' +
-      '<span class="bil-amt amt-in">' + money(num(x.amount)) + '</span></li>';
+      '<span class="bil-mid"><span>' + tagOf(x) + manTag(x) + '</span>' +
+      '<small>' + (x.matchedJobNo ? 'ใบงาน ' + esc(x.matchedJobNo) : 'ยังไม่ผูกใบงาน') + (x.from ? ' · จาก ' + esc(x.from) : '') + noteOf(x) + '</small></span>' +
+      '<span class="bil-amt amt-in">' + money(num(x.amount)) + '</span>' + delBtn('in', x) + '</li>';
     const rowOut = x =>
       '<li class="is-out"><span class="bil-time">' + esc(bankInWhen(x, true)) + '</span>' +
-      '<span class="bil-mid"><span>' + tagOf(x) + '</span>' +
-      '<small>' + esc(BANK_OUT_KIND[x.kind] || x.kind || 'เงินออก') + (x.to ? ' · ไป ' + esc(x.to) : '') + '</small></span>' +
-      '<span class="bil-amt amt-out">' + money(num(x.amount)) + '</span></li>';
+      '<span class="bil-mid"><span>' + tagOf(x) + manTag(x) + '</span>' +
+      '<small>' + esc(BANK_OUT_KIND[x.kind] || x.kind || 'เงินออก') + (x.to ? ' · ไป ' + esc(x.to) : '') + noteOf(x) + '</small></span>' +
+      '<span class="bil-amt amt-out">' + money(num(x.amount)) + '</span>' + delBtn('out', x) + '</li>';
     const merged = bankListTab === 'in' ? list.map(x => ['in', x]) : bankListTab === 'out' ? outs.map(x => ['out', x])
       : list.map(x => ['in', x]).concat(outs.map(x => ['out', x])).sort((p, q) => (q[1].createdAt || 0) - (p[1].createdAt || 0));
     const rows = merged.slice(0, 20);
@@ -6304,6 +6348,87 @@ function bahtText(value) {
   renderJobBankInPick();
   // ทดสอบในเครื่องที่ไม่ได้ต่อคลาวด์: ใช้รายการที่อยู่ใน localStorage (bs_bank_in)
   if (!cloudDb && canBank && (store.get('bs_bank_in', []).length || store.get('bs_bank_out', []).length || store.get('bs_bank_balance', []).length)) onBankInChange();
+  /* เพิ่ม/ลบรายการเงินเข้า-ออกเอง (กรณี SMS ไม่เข้า หรือระบบอ่านผิด) */
+  $('bkAcc').innerHTML = ACCOUNTS.map(a => '<option value="' + esc(a) + '">บัญชี' + esc(a) + '</option>').join('');
+  const toLocalInput = ms => { const d = new Date(ms); return localISO(d) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); };
+  const bkDir = () => (document.querySelector('input[name="bkDir"]:checked') || {}).value || 'out';
+  function paintBkDir() { $('bkPartyLbl').textContent = bkDir() === 'in' ? 'จากบัญชี (ไม่บังคับ)' : 'ไปที่บัญชี (ไม่บังคับ)'; }
+  function openBankAdd(open) {
+    $('bankAddForm').hidden = !open;
+    $('bankAddBtn').setAttribute('aria-expanded', String(open));
+    $('bankAddBtn').textContent = open ? 'ปิดฟอร์ม' : '+ เพิ่มรายการเอง';
+    if (!open) return;
+    $('bankAddForm').reset();
+    const dir = bankListTab === 'in' ? 'in' : 'out';
+    document.querySelectorAll('input[name="bkDir"]').forEach(r => { r.checked = r.value === dir; });
+    $('bkWhen').value = toLocalInput(Date.now());
+    $('bkWhen').max = toLocalInput(Date.now() + 60000);
+    $('bkErr').hidden = true;
+    paintBkDir();
+    setTimeout(() => $('bkAmt').focus(), 30);
+  }
+  $('bankAddBtn').addEventListener('click', () => openBankAdd($('bankAddForm').hidden));
+  $('bkCancel').addEventListener('click', () => openBankAdd(false));
+  document.querySelectorAll('input[name="bkDir"]').forEach(r => r.addEventListener('change', paintBkDir));
+  $('bankAddForm').addEventListener('input', () => { $('bkErr').hidden = true; });
+  $('bankAddForm').addEventListener('submit', e => {
+    e.preventDefault();
+    if (!canBank) return;
+    const err = $('bkErr'); err.hidden = true;
+    const fail = m => { err.textContent = m; err.hidden = false; };
+    const amount = Math.round(num(String($('bkAmt').value).replace(/[,\s]/g, '')) * 100) / 100;
+    if (!(amount > 0)) return fail('ใส่จำนวนเงินให้ถูกต้อง');
+    const when = $('bkWhen').value ? new Date($('bkWhen').value).getTime() : Date.now();
+    if (!isFinite(when)) return fail('ใส่วันที่และเวลาให้ถูกต้อง');
+    if (when > Date.now() + 60000) return fail('วันเวลาต้องไม่เกินตอนนี้');
+    const balTxt = String($('bkBal').value).replace(/[,\s]/g, '');
+    const balance = balTxt === '' ? null : num(balTxt);
+    if (balTxt !== '' && !(balance >= 0)) return fail('ยอดคงเหลือไม่ถูกต้อง');
+    const dir = bkDir(), account = $('bkAcc').value, party = $('bkParty').value.trim().slice(0, 40), note = $('bkNote').value.trim().slice(0, 80);
+    const d = new Date(when);
+    const smsTime = pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + '/' + String(d.getFullYear() + 543).slice(-2) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+    const id = (dir === 'in' ? 'bim' : 'bom') + Date.now() + Math.random().toString(36).slice(2, 6);
+    const base = {id, account, amount, smsTime, note, source: 'manual', addedBy: currentUser ? (currentUser.name || currentUser.username) : '', createdAt: when};
+    const rec = dir === 'in' ? Object.assign(base, {from: party}) : Object.assign(base, {kind: 'เงินออก', to: party});
+    const key = dir === 'in' ? 'bs_bank_in' : 'bs_bank_out';
+    if (dir === 'in') { // เครื่องนี้ไม่ต้องเด้งแจ้งเตือนรายการที่เพิ่มเอง
+      try { const seen = +localStorage.getItem(BANKIN_SEEN) || 0; if (when > seen) localStorage.setItem(BANKIN_SEEN, String(when)); } catch (e2) {}
+    }
+    store.set(key, [rec].concat(store.get(key, []) || []));
+    cloudSave(dir === 'in' ? 'bankIn' : 'bankOut', rec);
+    let balMsg = '';
+    if (balance != null) {
+      const cur = bankBalOf(account);
+      if (!cur || (cur.updatedAt || 0) <= when) {
+        const b = {id: BANK_BAL_KEY[account], account, balance, smsTime, updatedAt: when, source: 'manual'};
+        const list = (store.get('bs_bank_balance', []) || []).filter(x => x.account !== account);
+        store.set('bs_bank_balance', list.concat([b]));
+        cloudSave('bankBalance', b);
+        balMsg = ' · อัปเดตยอดคงเหลือแล้ว';
+      } else balMsg = ' · ยอดคงเหลือในแอปใหม่กว่า เลยไม่เปลี่ยน';
+    }
+    openBankAdd(false);
+    if (bankListTab !== 'all' && bankListTab !== dir) { bankListTab = dir; try { localStorage.setItem('bs_bankin_tab', dir); } catch (e3) {} }
+    renderBankIn(); renderJobBankInPick(); renderBell(false);
+    toast('เพิ่ม' + (dir === 'in' ? 'เงินเข้า' : 'เงินออก') + ' ' + money(amount) + ' บาท แล้ว' + balMsg);
+  });
+  $('bankInList').addEventListener('click', e => {
+    const b = e.target.closest('button[data-bkdel]'); if (!b || !canBank) return;
+    const id = b.dataset.id, dir = b.dataset.bkdel;
+    if (bankDelArmed !== id) { // กดครั้งแรก: ขอให้ยืนยัน
+      bankDelArmed = id; clearTimeout(bankDelTimer);
+      bankDelTimer = setTimeout(() => { bankDelArmed = null; renderBankIn(); }, 4000);
+      renderBankIn(); return;
+    }
+    clearTimeout(bankDelTimer); bankDelArmed = null;
+    const key = dir === 'in' ? 'bs_bank_in' : 'bs_bank_out';
+    const list = store.get(key, []) || [];
+    const x = list.find(r => r.id === id);
+    store.set(key, list.filter(r => r.id !== id));
+    cloudDelete(dir === 'in' ? 'bankIn' : 'bankOut', id);
+    renderBankIn(); renderJobBankInPick(); renderBell(false);
+    toast('ลบรายการ' + (x ? ' ' + money(num(x.amount)) + ' บาท' : '') + ' แล้ว');
+  });
   $('bankListSeg').addEventListener('click', e => {
     const b = e.target.closest('button[data-bk]'); if (!b) return;
     bankListTab = b.dataset.bk;
