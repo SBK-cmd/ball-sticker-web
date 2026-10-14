@@ -529,6 +529,7 @@ button.status-pill:active{filter:brightness(0.9)}
 .bis .bis-out span{white-space:nowrap}
 .bis .bis-out.zero b{color:var(--muted);font-weight:600}
 .bis .bis-out b{display:inline;font-size:15px;font-weight:800;line-height:1.3;color:var(--out-ink);font-variant-numeric:tabular-nums}
+.bk-more{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px}
 .bk-tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px}
 .bk-add{border:1px dashed var(--line);border-radius:12px;padding:12px;margin:0 0 12px;background:var(--field)}
 .bk-add-head b{display:block;font-size:15px}
@@ -2024,6 +2025,48 @@ tr{break-inside:avoid}
         <p>รวมยอดขายและภาษีขายจากบิล/ใบกำกับภาษีที่บันทึกไว้ในเครื่องนี้ (และในคลาวด์ ถ้าเชื่อมต่อไว้)</p>
       </div>
 
+      <section class="card no-print" id="dashBankInCard" aria-labelledby="dash-bankin-h">
+        <div class="viz-head">
+          <h2 id="dash-bankin-h">เงินเข้า-ออก (SMS ธนาคาร)</h2>
+          <span id="bankInCap"></span>
+        </div>
+        <div class="bankin-sum" id="bankInSum"></div>
+        <div class="bk-tools">
+          <div class="bk-seg" id="bankListSeg" role="group" aria-label="แสดงรายการ">
+            <button type="button" data-bk="all" aria-pressed="true">ทั้งหมด</button>
+            <button type="button" data-bk="in" aria-pressed="false">เงินเข้า</button>
+            <button type="button" data-bk="out" aria-pressed="false">เงินออก</button>
+          </div>
+          <button type="button" class="btn small" id="bankAddBtn" aria-expanded="false">+ เพิ่มรายการเอง</button>
+        </div>
+        <form class="fields bk-add" id="bankAddForm" hidden>
+          <div class="bk-add-head"><b>เพิ่มรายการเอง</b><small>ใช้ตอน SMS ไม่เข้า หรือระบบอ่านข้อความผิด — ลบรายการที่ผิดได้จากปุ่ม “ลบ” ท้ายแต่ละรายการ</small></div>
+          <div class="bk-dir" role="radiogroup" aria-label="ประเภทรายการ">
+            <label><input type="radio" name="bkDir" value="out" checked><span>เงินออก / หักยอด</span></label>
+            <label><input type="radio" name="bkDir" value="in"><span>เงินเข้า</span></label>
+          </div>
+          <div class="row2">
+            <label class="f"><span>บัญชี</span><select class="txt" id="bkAcc"></select></label>
+            <label class="f"><span>จำนวนเงิน (บาท)</span><input class="txt" id="bkAmt" type="text" inputmode="decimal" autocomplete="off" placeholder="เช่น 3,302.00"></label>
+          </div>
+          <div class="row2">
+            <label class="f"><span>วันที่และเวลา</span><input class="txt" id="bkWhen" type="datetime-local"></label>
+            <label class="f"><span id="bkPartyLbl">ไปที่บัญชี (ไม่บังคับ)</span><input class="txt" id="bkParty" type="text" autocomplete="off" placeholder="เช่น X-0004"></label>
+          </div>
+          <div class="row2">
+            <label class="f"><span>หมายเหตุ (ไม่บังคับ)</span><input class="txt" id="bkNote" type="text" autocomplete="off" placeholder="เช่น ค่ากระดาษ"></label>
+            <label class="f"><span>ยอดคงเหลือหลังรายการ (ไม่บังคับ)</span><input class="txt" id="bkBal" type="text" inputmode="decimal" autocomplete="off" placeholder="ตามที่ขึ้นใน SMS"></label>
+          </div>
+          <p class="lock-err" id="bkErr" hidden></p>
+          <div class="row-actions"><button class="btn primary small" type="submit">บันทึกรายการ</button><button class="btn small" type="button" id="bkCancel">ยกเลิก</button></div>
+        </form>
+        <div id="bankInList"></div>
+        <div class="bankin-foot">
+          <button class="btn small" id="bankInNotifyBtn" type="button">เปิดแจ้งเตือนบนเครื่องนี้</button>
+          <span class="hint" id="bankInNotifyHint" style="margin:0"></span>
+        </div>
+      </section>
+
       <div class="card">
         <div class="dash-filter">
           <label class="f" style="max-width:260px">
@@ -2083,48 +2126,6 @@ tr{break-inside:avoid}
         </div>
         <div id="dashSplit"></div>
         <p class="hint" style="margin:10px 0 0">เงินเข้า = ยอดตามสลิปในใบสั่งงาน · ยอดบิล = ยอดรวมในบิล/ใบกำกับภาษี · บัญชีวันทิมไม่นำไปยื่นภาษี</p>
-      </section>
-
-      <section class="card no-print" id="dashBankInCard" aria-labelledby="dash-bankin-h">
-        <div class="viz-head">
-          <h2 id="dash-bankin-h">เงินเข้า-ออก (SMS ธนาคาร)</h2>
-          <span id="bankInCap"></span>
-        </div>
-        <div class="bankin-sum" id="bankInSum"></div>
-        <div class="bk-tools">
-          <div class="bk-seg" id="bankListSeg" role="group" aria-label="แสดงรายการ">
-            <button type="button" data-bk="all" aria-pressed="true">ทั้งหมด</button>
-            <button type="button" data-bk="in" aria-pressed="false">เงินเข้า</button>
-            <button type="button" data-bk="out" aria-pressed="false">เงินออก</button>
-          </div>
-          <button type="button" class="btn small" id="bankAddBtn" aria-expanded="false">+ เพิ่มรายการเอง</button>
-        </div>
-        <form class="fields bk-add" id="bankAddForm" hidden>
-          <div class="bk-add-head"><b>เพิ่มรายการเอง</b><small>ใช้ตอน SMS ไม่เข้า หรือระบบอ่านข้อความผิด — ลบรายการที่ผิดได้จากปุ่ม “ลบ” ท้ายแต่ละรายการ</small></div>
-          <div class="bk-dir" role="radiogroup" aria-label="ประเภทรายการ">
-            <label><input type="radio" name="bkDir" value="out" checked><span>เงินออก / หักยอด</span></label>
-            <label><input type="radio" name="bkDir" value="in"><span>เงินเข้า</span></label>
-          </div>
-          <div class="row2">
-            <label class="f"><span>บัญชี</span><select class="txt" id="bkAcc"></select></label>
-            <label class="f"><span>จำนวนเงิน (บาท)</span><input class="txt" id="bkAmt" type="text" inputmode="decimal" autocomplete="off" placeholder="เช่น 3,302.00"></label>
-          </div>
-          <div class="row2">
-            <label class="f"><span>วันที่และเวลา</span><input class="txt" id="bkWhen" type="datetime-local"></label>
-            <label class="f"><span id="bkPartyLbl">ไปที่บัญชี (ไม่บังคับ)</span><input class="txt" id="bkParty" type="text" autocomplete="off" placeholder="เช่น X-0004"></label>
-          </div>
-          <div class="row2">
-            <label class="f"><span>หมายเหตุ (ไม่บังคับ)</span><input class="txt" id="bkNote" type="text" autocomplete="off" placeholder="เช่น ค่ากระดาษ"></label>
-            <label class="f"><span>ยอดคงเหลือหลังรายการ (ไม่บังคับ)</span><input class="txt" id="bkBal" type="text" inputmode="decimal" autocomplete="off" placeholder="ตามที่ขึ้นใน SMS"></label>
-          </div>
-          <p class="lock-err" id="bkErr" hidden></p>
-          <div class="row-actions"><button class="btn primary small" type="submit">บันทึกรายการ</button><button class="btn small" type="button" id="bkCancel">ยกเลิก</button></div>
-        </form>
-        <div id="bankInList"></div>
-        <div class="bankin-foot">
-          <button class="btn small" id="bankInNotifyBtn" type="button">เปิดแจ้งเตือนบนเครื่องนี้</button>
-          <span class="hint" id="bankInNotifyHint" style="margin:0"></span>
-        </div>
       </section>
 
       <div class="dash-mid-row">
@@ -2895,6 +2896,7 @@ function bahtText(value) {
   const BANK_OUT_KIND = {'เงินออก': 'เงินออก', 'ชำระ': 'ชำระเงิน', 'จ่าย': 'จ่ายเงิน', 'ถอน': 'ถอนเงิน', 'โอนไป': 'โอนออก', 'โอนออก': 'โอนออก', 'โอนเงินออก': 'โอนออก', 'หักบัญชี': 'หักบัญชี'};
   let bankListTab = 'all';
   let bankDelArmed = null, bankDelTimer = null;
+  const BANK_LIST_STEP = 5; let bankListLimit = BANK_LIST_STEP; // ประวัติแสดงทีละ 5 รายการ กด "ดูเพิ่มเติม" เพื่อดูต่อ
   const BANK_BAL_KEY = {'กิติพงษ์': 'kittipong', 'วันทิม': 'wantim'};
   try { const t = localStorage.getItem('bs_bankin_tab'); if (t === 'in' || t === 'out') bankListTab = t; } catch (e) {}
   function watchBankOut() {
@@ -3028,8 +3030,12 @@ function bahtText(value) {
       '<span class="bil-amt amt-out">' + money(num(x.amount)) + '</span>' + delBtn('out', x) + '</li>';
     const merged = bankListTab === 'in' ? list.map(x => ['in', x]) : bankListTab === 'out' ? outs.map(x => ['out', x])
       : list.map(x => ['in', x]).concat(outs.map(x => ['out', x])).sort((p, q) => (q[1].createdAt || 0) - (p[1].createdAt || 0));
-    const rows = merged.slice(0, 20);
-    $('bankInList').innerHTML = rows.length ? '<ul class="bankin-list">' + rows.map(([d, x]) => d === 'in' ? rowIn(x) : rowOut(x)).join('') + '</ul>'
+    const rows = merged.slice(0, bankListLimit);
+    const more = merged.length - rows.length;
+    const moreHtml = (more > 0 || bankListLimit > BANK_LIST_STEP) ? '<div class="bk-more">' +
+      (more > 0 ? '<button type="button" class="btn small" data-bkmore="more">ดูเพิ่มเติม (อีก ' + more + ' รายการ)</button>' : '') +
+      (bankListLimit > BANK_LIST_STEP ? '<button type="button" class="btn small" data-bkmore="less">ย่อเหลือ ' + BANK_LIST_STEP + ' รายการ</button>' : '') + '</div>' : '';
+    $('bankInList').innerHTML = rows.length ? '<ul class="bankin-list">' + rows.map(([d, x]) => d === 'in' ? rowIn(x) : rowOut(x)).join('') + '</ul>' + moreHtml
       : '<p class="empty">' + (bankListTab === 'out' ? 'ยังไม่มีเงินออกที่ส่งมาจากมือถือ' : bankListTab === 'in' ? 'ยังไม่มีเงินเข้าที่ส่งมาจากมือถือ' : 'ยังไม่มีรายการที่ส่งมาจากมือถือ') + '</p>';
     renderBankInNotifyState();
   }
@@ -6453,6 +6459,12 @@ function bahtText(value) {
     toast('เพิ่ม' + (dir === 'in' ? 'เงินเข้า' : 'เงินออก') + ' ' + money(amount) + ' บาท แล้ว' + balMsg);
   });
   $('bankInList').addEventListener('click', e => {
+    const m = e.target.closest('button[data-bkmore]');
+    if (m) {
+      if (m.dataset.bkmore === 'more') bankListLimit += 10;
+      else { bankListLimit = BANK_LIST_STEP; const c = $('dashBankInCard'); if (c && c.getBoundingClientRect().top < 0) c.scrollIntoView({block: 'start', behavior: 'smooth'}); }
+      renderBankIn(); return;
+    }
     const b = e.target.closest('button[data-bkdel]'); if (!b || !canBank) return;
     const id = b.dataset.id, dir = b.dataset.bkdel;
     if (bankDelArmed !== id) { // กดครั้งแรก: ขอให้ยืนยัน
@@ -6471,7 +6483,7 @@ function bahtText(value) {
   });
   $('bankListSeg').addEventListener('click', e => {
     const b = e.target.closest('button[data-bk]'); if (!b) return;
-    bankListTab = b.dataset.bk;
+    bankListTab = b.dataset.bk; bankListLimit = BANK_LIST_STEP;
     try { localStorage.setItem('bs_bankin_tab', bankListTab); } catch (e) {}
     renderBankIn();
   });
@@ -7079,6 +7091,8 @@ function bahtText(value) {
 
   applyRoleUI();
   renderUserChip();
+  // เปิดแอปมาเจอแดชบอร์ดก่อน (เฉพาะคนที่มีสิทธิ์ดูแดชบอร์ด) — คนอื่นเปิดหน้าแรกที่เข้าได้ตามเดิม
+  if (can('dash')) setTimeout(() => showTab('dash'), 0);
 
   /* ---------------- init ---------------- */
   bindShop(); renderFooter();
