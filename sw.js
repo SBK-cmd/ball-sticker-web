@@ -34,3 +34,23 @@ self.addEventListener('fetch', event => {
     );
   }
 });
+
+// แจ้งเตือนเด้งบนมือถือ (Web Push จาก worker line-oa): ข้อความลูกค้าใหม่ / เงินเข้า
+self.addEventListener('push', event => {
+  let d = {};
+  try { d = event.data ? event.data.json() : {}; } catch (e) { d = {body: event.data ? event.data.text() : ''}; }
+  const title = d.title || 'Ball Sticker';
+  event.waitUntil(self.registration.showNotification(title, {
+    body: d.body || '', tag: d.tag || undefined, renotify: !!d.tag, icon: 'icon-192.png', badge: 'icon-192.png',
+    data: {url: d.url || './'}
+  }));
+});
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || './', self.registration.scope).href;
+  event.waitUntil(self.clients.matchAll({type: 'window', includeUncontrolled: true}).then(list => {
+    const c = list.find(w => w.url.indexOf(self.registration.scope) === 0);
+    if (c) { c.postMessage({open: url}); return c.focus(); }
+    return self.clients.openWindow(url);
+  }));
+});
