@@ -556,9 +556,9 @@ button.status-pill:active{filter:brightness(0.9)}
 .chat-msgs{flex:1;overflow:auto;padding:14px 14px 8px;display:flex;flex-direction:column;gap:6px}
 .chat-day{text-align:center;margin:8px 0} .chat-day span{font-size:11.5px;color:var(--muted);background:var(--field);padding:3px 10px;border-radius:999px}
 .chat-msg{display:flex;flex-direction:column;max-width:78%}
-.chat-msg.in{align-self:flex-start} .chat-msg.out{align-self:flex-end;align-items:flex-end}
+.chat-msg.m-in{align-self:flex-start} .chat-msg.m-out{align-self:flex-end;align-items:flex-end}
 .chat-bubble{padding:9px 13px;border-radius:18px;font-size:14.5px;line-height:1.5;overflow-wrap:anywhere;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-bottom-left-radius:6px}
-.chat-msg.out .chat-bubble{background:#06c755;color:#fff;border-color:#06c755;border-bottom-left-radius:18px;border-bottom-right-radius:6px}
+.chat-msg.m-out .chat-bubble{background:#06c755;color:#fff;border-color:#06c755;border-bottom-left-radius:18px;border-bottom-right-radius:6px}
 .chat-bubble.bare{padding:0;background:none!important;border:0!important}
 .chat-img{display:block;max-width:220px;max-height:260px;border-radius:14px;object-fit:cover}
 .chat-sticker{width:110px;height:110px;object-fit:contain}
@@ -4929,7 +4929,7 @@ function bahtText(value) {
       last = day;
       const d = new Date(m.createdAt || 0);
       const bare = m.type === 'sticker' || m.type === 'image';
-      return sep + '<div class="chat-msg ' + (m.dir === 'out' ? 'out' : 'in') + '"><div class="chat-bubble' + (bare ? ' bare' : '') + '">' + msgBody(m) + '</div>' +
+      return sep + '<div class="chat-msg ' + (m.dir === 'out' ? 'm-out' : 'm-in') + '"><div class="chat-bubble' + (bare ? ' bare' : '') + '">' + msgBody(m) + '</div>' +
         '<time>' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + (m.dir === 'out' && m.by ? ' · ' + esc(m.by) : '') + '</time></div>';
     }).join('') : '<p class="empty" style="margin:auto">' + (chatSel ? 'ยังไม่มีข้อความ' : '') + '</p>';
     box.scrollTop = box.scrollHeight;
