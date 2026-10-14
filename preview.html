@@ -4883,6 +4883,9 @@ function bahtText(value) {
   const chatIsFb = id => /^fb_/.test(String(id || chatSel || ''));
   const chatEndpoint = () => chatIsFb() ? '/fbsend' : '/send';
   const FB_WINDOW = 24 * 3600 * 1000;
+  // ชื่อเพจตาม ID (ใช้เมื่อ Facebook ไม่ส่งชื่อเพจมา)
+  const FB_PAGE_LABEL = {'108503502205863': 'บอล สติ๊กเกอร์', '148413448352561': 'Roll Shop', '408557829006929': 'Ball Sticker'};
+  const fbPageName = c => c.pageName || FB_PAGE_LABEL[c.pageId] || 'Facebook';
   let chatList = [], chatSel = null, chatMsgs = [], chatMsgUnsub = null, chatLive = false, chatSending = false;
   const lineSeen = () => { try { return JSON.parse(localStorage.getItem(LINE_SEEN) || '{}') || {}; } catch (e) { return {}; } };
   function markChatSeen(uid, at) { const m = lineSeen(); if ((m[uid] || 0) < at) { m[uid] = at; try { localStorage.setItem(LINE_SEEN, JSON.stringify(m)); } catch (e) {} } }
@@ -4923,7 +4926,7 @@ function bahtText(value) {
       return '<button type="button" class="chat-item' + (c.userId === chatSel ? ' sel' : '') + (un ? ' unread' : '') + '" data-uid="' + esc(c.userId) + '">' +
         avatarHtml(c, 'chat-av') +
         '<span class="chat-item-main"><span class="chat-item-top"><b>' + esc(c.name || (c.channel === 'fb' ? 'ลูกค้า Facebook' : 'ลูกค้า LINE')) + '</b><time>' + esc(chatWhen(c.lastAt)) + '</time></span>' +
-        '<small>' + (c.channel === 'fb' ? '<i class="ch-tag fb">เพจ' + (c.pageName ? ' ' + esc(c.pageName) : '') + '</i>' : '<i class="ch-tag ln">LINE</i>') + (c.lastDir === 'out' ? 'คุณ: ' : '') + esc(c.lastText || '') + '</small></span>' + (un ? '<i class="chat-dot" aria-label="ยังไม่อ่าน"></i>' : '') + '</button>';
+        '<small>' + (c.channel === 'fb' ? '<i class="ch-tag fb">เพจ ' + esc(fbPageName(c)) + '</i>' : '<i class="ch-tag ln">LINE</i>') + (c.lastDir === 'out' ? 'คุณ: ' : '') + esc(c.lastText || '') + '</small></span>' + (un ? '<i class="chat-dot" aria-label="ยังไม่อ่าน"></i>' : '') + '</button>';
     }).join('') : '<p class="empty">' + (chatList.length ? 'ไม่พบแชทที่ค้นหา' : (cloudDb ? 'ยังไม่มีแชท — ข้อความที่ลูกค้าทักมาใน LINE OA หลังเชื่อมระบบจะขึ้นที่นี่' : 'ต้องต่อคลาวด์ก่อน')) + '</p>';
   }
   function renderChatHead() {
@@ -4935,7 +4938,7 @@ function bahtText(value) {
     $('chatName').textContent = c.name || (c.channel === 'fb' ? 'ลูกค้า Facebook' : 'ลูกค้า LINE');
     const last = 'ทักล่าสุด ' + (c.lastInAt ? bankInWhen({createdAt: c.lastInAt}, true) : '—');
     $('chatSub').textContent = c.channel === 'fb'
-      ? 'เพจ ' + (c.pageName || 'Facebook') + ' · ' + last + (c.lastInAt && Date.now() - c.lastInAt > FB_WINDOW ? ' · เกิน 24 ชม. ส่งไม่ได้จนกว่าลูกค้าจะทักใหม่' : '')
+      ? 'เพจ ' + fbPageName(c) + ' · ' + last + (c.lastInAt && Date.now() - c.lastInAt > FB_WINDOW ? ' · เกิน 24 ชม. ส่งไม่ได้จนกว่าลูกค้าจะทักใหม่' : '')
       : c.followed === false ? 'บล็อก/เลิกเป็นเพื่อนแล้ว — ส่งข้อความไม่ได้' : 'LINE · ' + last;
   }
   function openChat(uid) {
