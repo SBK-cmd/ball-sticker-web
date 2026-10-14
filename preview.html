@@ -52,7 +52,7 @@ if ('serviceWorker' in navigator) {
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Firebase (ใช้ซิงก์ประวัติบิล/ใบคอนเฟิร์มงานข้ามเครื่องแบบเรียลไทม์ — ถ้าโหลดไม่ได้ เช่น ไม่มีอินเทอร์เน็ต
      หรือถูกบล็อกสคริปต์ภายนอก แอปจะสลับไปใช้เฉพาะข้อมูลในเครื่องนี้ (localStorage) แทนโดยอัตโนมัติ) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
@@ -5419,10 +5419,11 @@ function bahtText(value) {
   const payLoadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
   // รูปบิลเรียกเก็บเงินแบบใบแจ้งยอด: โลโก้ร้าน + ยอด + QR + ชื่อบัญชีให้ลูกค้าตรวจ + เลขอ้างอิง
   async function payCardDataUrl(amount, note, ref, at) {
-    try { await document.fonts.ready; } catch (e) {}
+    // ฟอนต์ไทยแบบมีหัว (Sarabun) ทุกบรรทัด — โหลดให้ครบทุกน้ำหนักก่อนวาด ไม่งั้นมือถือจะใช้ฟอนต์ไม่มีหัวของเครื่องแทน
+    try { await Promise.all(['500', '600', '700', '800'].map(w => document.fonts.load(w + " 40px 'Sarabun'", 'กข฿1'))); await document.fonts.ready; } catch (e) {}
     if (payLogo === null) payLogo = await payLoadImg('icon-512.png');
     const W = 1080, H = 1720, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-    const g = cv.getContext('2d'), F = "'Sarabun','Noto Sans Thai',sans-serif", P = "'Prompt','Sarabun',sans-serif";
+    const g = cv.getContext('2d'), F = "'Sarabun','Tahoma','FreeSerif',serif", P = F;
     const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
     const NAVY = '#0b2a55', INK = '#0f172a', MUTE = '#64748b', LINE = '#e2e8f0', GOLD = '#ffd60a';
     // พื้นหลัง
