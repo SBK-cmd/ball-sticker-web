@@ -624,6 +624,42 @@ button.status-pill:active{filter:brightness(0.9)}
   .chat-shell .chat-conv{display:none} .chat-shell.has-sel .chat-conv{display:flex} .chat-shell.has-sel .chat-list-pane{display:none}
   .chat-back{display:block}
 }
+/* ---- แชท: หน้าตาแบบแอปแชท ---- */
+.chat-hbtn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.chat-hbtn svg,.chat-sendbtn svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.chat-sendbtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;border-radius:999px;padding:0 16px}
+.chat-send{align-items:center}
+.chat-send textarea{border-radius:22px;padding:10px 16px}
+.chat-attach{border-radius:50%}
+.chat-msgs{background:radial-gradient(120% 60% at 50% 0%,color-mix(in srgb,var(--sticker) 7%,transparent),transparent 70%)}
+.chat-bubble{box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.chat-who small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:760px){
+  .chat-card{border-radius:18px}
+  .chat-shell{height:calc(100dvh - 230px);min-height:360px}
+  .chat-item{padding:11px 10px} .chat-av{width:48px;height:48px}
+  /* เปิดห้องแชทแล้ว = เต็มจอเหมือนแอปแชท (บังเมนูล่างชั่วคราว) */
+  .chat-shell.has-sel .chat-conv{position:fixed;left:0;right:0;top:0;height:100dvh;z-index:950;background:var(--bg)}
+  body.chat-full{overflow:hidden}
+  .chat-conv-head{gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) 8px 8px 4px;
+    background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  .chat-back{display:grid;place-items:center;width:38px;height:38px;font-size:32px;padding:0 0 3px}
+  .chat-conv-head .chat-av{width:38px;height:38px}
+  .chat-who b{font-size:16px} .chat-who small{font-size:12px}
+  .chat-hbtn{width:40px;height:40px;padding:0;justify-content:center;border-radius:50%}
+  .chat-hbtn span{display:none} .chat-hbtn svg{width:20px;height:20px}
+  .chat-msgs{padding:12px 10px 8px;gap:4px}
+  .chat-msg{max-width:82%}
+  .chat-bubble{font-size:15px;padding:9px 13px}
+  .chat-img{max-width:min(240px,62vw)}
+  .chat-send{gap:6px;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));background:var(--surface)}
+  .chat-attach{width:40px;height:40px;border:0;background:transparent;color:var(--sticker-line)}
+  .chat-attach svg{width:26px;height:26px}
+  .chat-send textarea{min-height:40px;padding:9px 14px;font-size:16px}
+  .chat-sendbtn{width:42px;min-height:42px;height:42px;padding:0;border-radius:50%}
+  .chat-sendbtn span{display:none} .chat-sendbtn svg{width:20px;height:20px}
+  .chat-plus{max-height:42dvh}
+}
 .bk-more{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px}
 .bk-tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px}
 .bk-add{border:1px dashed var(--line);border-radius:12px;padding:12px;margin:0 0 12px;background:var(--field)}
@@ -2396,8 +2432,8 @@ tr{break-inside:avoid}
                 <button type="button" class="chat-back" id="chatBack" aria-label="กลับไปรายการแชท">‹</button>
                 <span id="chatAvatarWrap"></span>
                 <div class="chat-who"><b id="chatName"></b><small id="chatSub"></small></div>
-                <button type="button" class="btn small" id="chatTrackBtn">📦 เลขพัสดุ</button>
-                <button type="button" class="btn small" id="chatToJob">+ สร้างใบงาน</button>
+                <button type="button" class="btn small chat-hbtn" id="chatTrackBtn" aria-label="ส่งเลขพัสดุ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5L12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5L12 12l8.5-4.5M12 12v9M7.8 5.2l8.5 4.6"/></svg><span>เลขพัสดุ</span></button>
+                <button type="button" class="btn small chat-hbtn" id="chatToJob" aria-label="สร้างใบงาน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14.5 3.5V8H19M10 13h6M13 10v6"/></svg><span>สร้างใบงาน</span></button>
               </div>
               <div class="chat-msgs" id="chatMsgs"></div>
               <div class="chat-plus" id="chatPlus" hidden></div>
@@ -2407,7 +2443,7 @@ tr{break-inside:avoid}
                 <input type="file" id="chatMediaInput" accept="image/*,video/*" multiple hidden>
                 <input type="file" id="chatFileInput" hidden>
                 <textarea id="chatInput" rows="1" placeholder="พิมพ์ข้อความตอบลูกค้า..." aria-label="ข้อความ"></textarea>
-                <button class="btn primary" type="submit" id="chatSendBtn">ส่ง</button>
+                <button class="btn primary chat-sendbtn" type="submit" id="chatSendBtn" aria-label="ส่ง"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/></svg><span>ส่ง</span></button>
               </form>
             </div>
           </div>
@@ -4965,6 +5001,7 @@ function bahtText(value) {
   function renderChatHead() {
     const c = chatList.find(x => x.userId === chatSel);
     $('chatShell').classList.toggle('has-sel', !!chatSel);
+    document.body.classList.toggle('chat-full', !!chatSel && isChatActive());
     $('chatEmpty').hidden = !!chatSel; $('chatConvInner').hidden = !chatSel;
     if (!c) return;
     $('chatAvatarWrap').innerHTML = avatarHtml(c, 'chat-av');
@@ -6838,6 +6875,7 @@ function bahtText(value) {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
+    document.body.classList.toggle('chat-full', name === 'chat' && !!(typeof chatSel !== 'undefined' && chatSel));
     document.querySelectorAll('.btab[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
     document.querySelectorAll('.tax-sheet-item[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
     document.querySelectorAll('.top-track[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
