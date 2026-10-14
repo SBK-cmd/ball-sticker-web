@@ -628,8 +628,12 @@ button.status-pill:active{filter:brightness(0.9)}
 .chat-mic.rec{color:#fff!important;background:#ef4444!important;border-color:#ef4444!important;animation:micPulse 1.2s ease-in-out infinite}
 @keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
 .chat-send textarea.listening{border-color:#ef4444}
-.chat-audio{display:grid;gap:6px;min-width:min(260px,64vw)} .chat-audio span{font-weight:700;font-size:13.5px}
-.chat-audio audio{width:100%;height:40px;border-radius:999px} .chat-audio .chat-file{font-size:12px;opacity:.8}
+.chat-voice{display:flex;align-items:center;gap:10px;width:min(230px,60vw);border:0;background:none;padding:2px 0;color:inherit;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.cv-ico{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:13px;background:currentColor}
+.cv-ico{background:color-mix(in srgb,currentColor 18%,transparent)}
+.cv-bar{flex:1;height:4px;border-radius:4px;background:color-mix(in srgb,currentColor 25%,transparent);overflow:hidden}
+.cv-fill{display:block;height:100%;width:0;background:currentColor;border-radius:4px}
+.cv-time{flex:none;font-size:12px;opacity:.85;min-width:34px;text-align:right}
 .chat-video{display:block;max-width:min(260px,64vw);max-height:320px;border-radius:14px;background:#000}
 .chat-hbtn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .chat-hbtn svg,.chat-sendbtn svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -5034,7 +5038,7 @@ function bahtText(value) {
   function msgBody(m) {
     const src = id => LINE_OA_URL + '/content?key=' + encodeURIComponent(LINE_OA_KEY) + '&id=' + encodeURIComponent(id);
     const isAudio = m.type === 'audio' || (m.type === 'file' && /ข้อความเสียง/.test(m.text || ''));
-    const aud = u => '<div class="chat-audio"><span>🎤 ข้อความเสียง</span><audio controls preload="none" src="' + esc(u) + '"></audio><a class="chat-file" href="' + esc(u) + '" target="_blank" rel="noopener">เปิดไฟล์</a></div>';
+    const aud = u => '<button type="button" class="chat-voice" data-voice="' + esc(u) + '" aria-label="เล่นข้อความเสียง"><i class="cv-ico">▶</i><span class="cv-bar"><span class="cv-fill"></span></span><small class="cv-time">🎤</small></button>';
     if (isAudio && (m.url || m.contentId)) return aud(m.url || src(m.contentId));
     if (m.type === 'video' && m.contentId && !m.url) return '<video class="chat-video" controls playsinline preload="none" src="' + esc(src(m.contentId)) + '"></video>';
     if (m.type === 'flex') return '<span class="chat-flex">🃏 ' + esc(m.text || 'การ์ด') + '</span>';
@@ -5047,10 +5051,30 @@ function bahtText(value) {
     if ((m.type === 'video' || m.type === 'audio' || m.type === 'file') && m.contentId) return '<a class="chat-file" href="' + esc(src(m.contentId)) + '" target="_blank" rel="noopener">' + esc(m.text || 'เปิดไฟล์') + '</a>';
     return esc(m.text || '').replace(/\n/g, '<br>');
   }
+  // เล่นข้อความเสียงในแชทเลย (ไม่เปิดหน้าใหม่) — มีตัวเล่นตัวเดียว กดอีกอันจะหยุดอันเดิม
+  let voiceAudio = null, voiceBtn = null;
+  const fmtSec = t => isFinite(t) && t > 0 ? Math.floor(t / 60) + ':' + pad2(Math.floor(t % 60)) : '';
+  function voiceUi(btn, playing) { if (!btn) return; btn.querySelector('.cv-ico').textContent = playing ? '❚❚' : '▶'; btn.classList.toggle('on', playing); }
+  $('chatMsgs').addEventListener('click', e => {
+    const btn = e.target.closest('[data-voice]'); if (!btn) return;
+    e.preventDefault();
+    if (voiceAudio && voiceBtn === btn) { if (voiceAudio.paused) voiceAudio.play().catch(() => {}); else voiceAudio.pause(); return; }
+    if (voiceAudio) { voiceAudio.pause(); voiceUi(voiceBtn, false); }
+    voiceBtn = btn; const a = voiceAudio = new Audio(btn.dataset.voice);
+    btn.querySelector('.cv-time').textContent = '…';
+    a.addEventListener('play', () => voiceUi(voiceBtn, true));
+    a.addEventListener('pause', () => voiceUi(voiceBtn, false));
+    a.addEventListener('timeupdate', () => { if (!voiceBtn) return; const f = voiceBtn.querySelector('.cv-fill'); if (f && a.duration) f.style.width = (a.currentTime / a.duration * 100) + '%'; voiceBtn.querySelector('.cv-time').textContent = fmtSec(a.duration ? a.duration - a.currentTime : a.currentTime) || '🎤'; });
+    a.addEventListener('ended', () => { voiceUi(voiceBtn, false); const f = voiceBtn && voiceBtn.querySelector('.cv-fill'); if (f) f.style.width = '0'; if (voiceBtn) voiceBtn.querySelector('.cv-time').textContent = fmtSec(a.duration) || '🎤'; });
+    a.addEventListener('error', () => { voiceUi(voiceBtn, false); if (voiceBtn) voiceBtn.querySelector('.cv-time').textContent = '⚠'; toast('เล่นข้อความเสียงไม่ได้'); });
+    a.play().catch(() => { voiceUi(btn, false); toast('เล่นข้อความเสียงไม่ได้'); });
+  });
   function renderChatMsgs() {
     const box = $('chatMsgs'); if (!box) return;
     { const c = chatList.find(x => x.userId === chatSel) || {}; box.dataset.pg = c.channel === 'fb' ? (FB_PAGE_CLASS[c.pageId] || 'fb') : 'line'; }
     // กำลังเล่นเสียง/วิดีโออยู่ → ยังไม่วาดใหม่ (ไม่งั้นเสียงจะหยุดกลางคัน) รอให้หยุดก่อนค่อยอัปเดต
+    if (voiceAudio && !voiceAudio.paused && !voiceAudio.ended) { if (!voiceAudio._wait) { voiceAudio._wait = 1; ['pause', 'ended'].forEach(ev => voiceAudio.addEventListener(ev, () => { voiceAudio && (voiceAudio._wait = 0); renderChatMsgs(); }, {once: true})); } return; }
+    if (voiceAudio) { voiceAudio = null; voiceBtn = null; }
     const playing = Array.from(box.querySelectorAll('audio,video')).find(a => !a.paused && !a.ended);
     if (playing) { if (!playing.dataset.wait) { playing.dataset.wait = '1'; ['pause', 'ended'].forEach(ev => playing.addEventListener(ev, () => renderChatMsgs(), {once: true})); } return; }
     let last = '';
