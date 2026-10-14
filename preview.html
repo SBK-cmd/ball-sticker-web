@@ -2244,6 +2244,7 @@ tr{break-inside:avoid}
         <div id="bankInList"></div>
         <div class="bankin-foot">
           <button class="btn small" id="bankInNotifyBtn" type="button" data-push-enable>🔔 เปิดแจ้งเตือนเด้งบนมือถือ</button>
+          <button class="btn small" type="button" data-push-test hidden>🔔 ส่งแจ้งเตือนทดสอบ</button>
           <span class="hint" id="bankInNotifyHint" style="margin:0"></span>
         </div>
       </section>
@@ -2441,7 +2442,7 @@ tr{break-inside:avoid}
       <div class="card chat-card no-print">
         <div class="chat-shell" id="chatShell">
           <aside class="chat-list-pane">
-            <div class="chat-list-head"><input class="txt" id="chatSearch" type="search" placeholder="ค้นหาชื่อลูกค้า / ข้อความ" autocomplete="off"><small class="chat-quota" id="chatQuota"></small><button type="button" class="btn small push-btn" data-push-enable hidden>🔔 เปิดแจ้งเตือนเด้งบนมือถือ</button></div>
+            <div class="chat-list-head"><input class="txt" id="chatSearch" type="search" placeholder="ค้นหาชื่อลูกค้า / ข้อความ" autocomplete="off"><small class="chat-quota" id="chatQuota"></small><button type="button" class="btn small push-btn" data-push-enable hidden>🔔 เปิดแจ้งเตือนเด้งบนมือถือ</button><button type="button" class="btn small push-btn" data-push-test hidden>🔔 ส่งแจ้งเตือนทดสอบ</button></div>
             <div class="chat-list" id="chatList"></div>
           </aside>
           <div class="chat-conv">
@@ -3242,6 +3243,7 @@ function bahtText(value) {
     const hint = $('bankInNotifyHint');
     const showBtn = !pushOn && !(pushSupported() && Notification.permission === 'denied');
     document.querySelectorAll('[data-push-enable]').forEach(b => { b.hidden = !showBtn; });
+    document.querySelectorAll('[data-push-test]').forEach(b => { b.hidden = !pushOn; });
     if (!hint) return;
     hint.textContent = pushOn ? '🔔 เครื่องนี้เปิดแจ้งเตือนเด้งแล้ว (เด้งแม้ปิดแอป/ล็อกจอ)'
       : isIOS && !isStandalone() ? 'iPhone: เพิ่มแอปลงหน้าจอโฮมก่อน แล้วเปิดจากไอคอน จึงจะเปิดแจ้งเตือนเด้งได้'
@@ -7301,7 +7303,19 @@ function bahtText(value) {
   document.addEventListener('click', e => { if (!e.target.closest('#bellPanel') && !e.target.closest('#bellBtn')) closeBell(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBell(); });
   renderBell(false);
-  document.addEventListener('click', e => { if (e.target.closest('[data-push-enable]')) enablePush(); });
+  document.addEventListener('click', async e => {
+    if (e.target.closest('[data-push-enable]')) enablePush();
+    const t = e.target.closest('[data-push-test]'); if (!t) return;
+    t.disabled = true;
+    try {
+      const r = await fetch(LINE_OA_URL + '/notify', {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': LINE_OA_KEY},
+        body: JSON.stringify({perm: can('chat') ? 'chat' : 'bank', title: '🔔 ทดสอบแจ้งเตือน Ball Sticker', body: 'ถ้าเห็นข้อความนี้ แปลว่าแจ้งเตือนเด้งใช้ได้แล้ว', tag: 'test', url: './'})});
+      const j = await r.json().catch(() => ({}));
+      if (!j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+      toast(j.sent ? 'ส่งแล้ว ' + j.sent + ' เครื่อง — ล็อกจอดูได้เลย (อาจช้าไม่กี่วินาที)' : 'ยังไม่มีเครื่องรับ: ' + (j.error || 'ลองกดเปิดแจ้งเตือนใหม่'));
+    } catch (err) { toast('ส่งทดสอบไม่สำเร็จ: ' + err.message); }
+    setTimeout(() => { t.disabled = false; }, 3000);
+  });
   setTimeout(refreshPushSub, 1500);
   // เปิดจากการแตะแจ้งเตือน: ?tab=chat&chat=<id> หรือ ?tab=dash
   function openFromLink(href) {
