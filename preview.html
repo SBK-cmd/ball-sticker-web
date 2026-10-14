@@ -569,6 +569,25 @@ button.status-pill:active{filter:brightness(0.9)}
 .chat-attach:hover{color:var(--ink)}
 .chat-attach svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .chat-img.sending{opacity:.55}
+.chat-attach.open svg{transform:rotate(45deg)} .chat-attach svg{transition:transform .15s}
+.chat-plus{border-top:1px solid var(--line);background:var(--surface);padding:12px;max-height:46vh;overflow:auto}
+.cp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 4px}
+.cp-item{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:none;padding:8px 2px;border-radius:12px;cursor:pointer;color:var(--muted);font:600 12.5px 'Sarabun','Noto Sans Thai',system-ui,sans-serif;text-align:center}
+.cp-item:hover{background:var(--field);color:var(--ink)}
+.cp-item svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.cp-head{display:flex;align-items:center;gap:6px;margin-bottom:10px} .cp-head b{font-size:15px}
+.cp-back{border:0;background:none;font-size:26px;line-height:1;color:var(--ink);cursor:pointer;padding:0 6px}
+.cp-replies{display:grid;gap:6px}
+.cp-reply{display:flex;gap:6px;align-items:stretch}
+.cp-reply-use{flex:1;text-align:left;border:1px solid var(--line);background:var(--field);border-radius:12px;padding:9px 12px;font:inherit;font-size:14px;color:var(--ink);cursor:pointer}
+.cp-reply-use:hover{border-color:var(--sticker-line)}
+.cp-reply-del{flex:none;border:0;background:none;color:var(--muted);cursor:pointer;padding:0 8px}
+.cp-add{display:flex;gap:6px;margin-top:10px} .cp-add .txt{flex:1}
+.cp-form{display:grid;gap:8px}
+.cp-file{display:block;border:1.5px dashed var(--field-line);border-radius:12px;padding:10px;text-align:center;cursor:pointer;font-size:13.5px;color:var(--muted)}
+.chat-flex{display:inline-block;font-weight:700}
+.chat-vid{position:relative;display:inline-block} .chat-vid i{position:absolute;inset:0;display:grid;place-items:center;font-style:normal;font-size:34px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+
 .chat-send textarea{flex:1;resize:none;min-height:42px;max-height:140px;padding:10px 12px;border-radius:14px;border:1.5px solid var(--field-line);background:var(--field);color:var(--ink);font:inherit;font-size:15px}
 @media (max-width:760px){
   .chat-shell{grid-template-columns:1fr;height:calc(100dvh - 210px)}
@@ -2350,8 +2369,12 @@ tr{break-inside:avoid}
                 <button type="button" class="btn small" id="chatToJob">+ สร้างใบงาน</button>
               </div>
               <div class="chat-msgs" id="chatMsgs"></div>
+              <div class="chat-plus" id="chatPlus" hidden></div>
               <form class="chat-send" id="chatSendForm">
-                <label class="chat-attach" title="ส่งรูปภาพ" aria-label="ส่งรูปภาพ"><input type="file" id="chatImgInput" accept="image/*" multiple hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg></label>
+                <button type="button" class="chat-attach" id="chatPlusBtn" aria-label="เพิ่มเติม: รูป ไฟล์ การ์ด คูปอง" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+                <input type="file" id="chatCamInput" accept="image/*" capture="environment" hidden>
+                <input type="file" id="chatMediaInput" accept="image/*,video/*" multiple hidden>
+                <input type="file" id="chatFileInput" hidden>
                 <textarea id="chatInput" rows="1" placeholder="พิมพ์ข้อความตอบลูกค้า..." aria-label="ข้อความ"></textarea>
                 <button class="btn primary" type="submit" id="chatSendBtn">ส่ง</button>
               </form>
@@ -4907,6 +4930,7 @@ function bahtText(value) {
     $('chatSub').textContent = c.followed === false ? 'บล็อก/เลิกเป็นเพื่อนแล้ว — ส่งข้อความไม่ได้' : 'ทักล่าสุด ' + (c.lastInAt ? bankInWhen({createdAt: c.lastInAt}, true) : '—');
   }
   function openChat(uid) {
+    if (chatPanel) closeChatPlus();
     chatSel = uid; chatMsgs = [];
     if (chatMsgUnsub) { try { chatMsgUnsub(); } catch (e) {} chatMsgUnsub = null; }
     renderChatHead(); renderChatList(); renderChatMsgs();
@@ -4920,6 +4944,8 @@ function bahtText(value) {
   }
   function msgBody(m) {
     const src = id => LINE_OA_URL + '/content?key=' + encodeURIComponent(LINE_OA_KEY) + '&id=' + encodeURIComponent(id);
+    if (m.type === 'flex') return '<span class="chat-flex">🃏 ' + esc(m.text || 'การ์ด') + '</span>';
+    if (m.type === 'video' && m.url) return '<a class="chat-vid" href="' + esc(m.url) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(m.preview || '') + '" alt="วิดีโอ" loading="lazy"><i>▶</i></a>';
     if (m.type === 'image' && m.url) return '<a href="' + esc(m.url) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(m.preview || m.url) + '" alt="รูปที่ส่ง" loading="lazy"></a>';
     if (m.type === 'image' && m.localUrl) return '<img class="chat-img sending" src="' + esc(m.localUrl) + '" alt="กำลังส่งรูป">';
     if (m.type === 'image' && m.contentId) return '<a href="' + esc(src(m.contentId)) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(src(m.contentId)) + '" alt="รูปจากลูกค้า" loading="lazy"></a>';
@@ -5013,7 +5039,194 @@ function bahtText(value) {
   $('chatBack').addEventListener('click', () => { chatSel = null; if (chatMsgUnsub) { try { chatMsgUnsub(); } catch (e) {} chatMsgUnsub = null; } renderChatHead(); renderChatList(); });
   $('chatSendForm').addEventListener('submit', e => { e.preventDefault(); sendChat(); });
   $('chatInput').addEventListener('input', autoGrowChat);
-  $('chatImgInput').addEventListener('change', e => { const fs = e.target.files; sendChatImages(fs); e.target.value = ''; });
+  /* ---- ปุ่ม + ในแชท: กล้อง / รูป & วิดีโอ / ไฟล์ / ข้อความตอบกลับ / การ์ดเมสเสจ / คูปอง / คำขอการโทร ---- */
+  const chatBy = () => currentUser ? (currentUser.name || currentUser.username) : '';
+  async function chatPost(payload) {
+    const r = await fetch(LINE_OA_URL + '/send', {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': LINE_OA_KEY},
+      body: JSON.stringify(Object.assign({userId: chatSel, by: chatBy()}, payload))});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+    if (!cloudDb) { chatMsgs.push(Object.assign({dir: 'out', createdAt: Date.now()}, payload.flex ? {type: 'flex', text: payload.altText} : payload.video ? {type: 'video', text: '[วิดีโอ]', url: payload.video, preview: payload.preview} : payload.text ? {type: 'text', text: payload.text} : {})); renderChatMsgs(); }
+    loadChatQuota();
+    return j;
+  }
+  async function cldUpload(blob, kind, name) {
+    const fd = new FormData();
+    fd.append('file', blob, name || 'upload');
+    fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    const res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/' + kind + '/upload', {method: 'POST', body: fd});
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok || !j.secure_url) throw new Error((j.error && j.error.message) || 'อัปโหลดไม่สำเร็จ');
+    return j.secure_url;
+  }
+  async function sendChatVideo(file) {
+    const temp = {dir: 'out', type: 'text', text: '⏳ กำลังส่งวิดีโอ ' + (file.name || ''), createdAt: Date.now(), pending: true};
+    chatMsgs.push(temp); renderChatMsgs();
+    try {
+      if (file.size > 95 * 1024 * 1024) throw new Error('วิดีโอใหญ่เกิน 95MB');
+      const url = await cldUpload(file, 'video', file.name);
+      const mp4 = url.replace(/\.[a-z0-9]+$/i, '.mp4');
+      const preview = url.replace('/video/upload/', '/video/upload/so_0,w_480,c_limit/').replace(/\.[a-z0-9]+$/i, '.jpg');
+      await chatPost({video: mp4, preview});
+    } catch (e) { toast('ส่งวิดีโอไม่สำเร็จ: ' + e.message); }
+    chatMsgs = chatMsgs.filter(m => m !== temp); renderChatMsgs();
+  }
+  async function sendChatFile(file) {
+    const temp = {dir: 'out', type: 'text', text: '⏳ กำลังส่งไฟล์ ' + (file.name || ''), createdAt: Date.now(), pending: true};
+    chatMsgs.push(temp); renderChatMsgs();
+    try {
+      if (file.size > 9.5 * 1024 * 1024) throw new Error('ไฟล์ใหญ่เกิน 10MB');
+      const url = await cldUpload(file, 'raw', file.name);
+      await chatPost({text: '📎 ' + (file.name || 'ไฟล์') + '\n' + url});
+    } catch (e) { toast('ส่งไฟล์ไม่สำเร็จ: ' + e.message); }
+    chatMsgs = chatMsgs.filter(m => m !== temp); renderChatMsgs();
+  }
+  async function sendChatMedia(files) {
+    const list = Array.from(files || []).slice(0, 5);
+    const imgs = list.filter(f => /^image\//.test(f.type)), vids = list.filter(f => /^video\//.test(f.type));
+    if (imgs.length) await sendChatImages(imgs);
+    for (const v of vids) await sendChatVideo(v);
+  }
+  // การ์ด (Flex Message)
+  const okLink = u => /^(https?:\/\/|tel:|line:\/\/)/i.test(String(u || '').trim());
+  function flexCard(o) {
+    const body = [{type: 'text', text: o.title || ' ', weight: 'bold', size: 'lg', wrap: true}];
+    if (o.detail) body.push({type: 'text', text: o.detail, size: 'sm', color: '#555555', wrap: true, margin: 'md'});
+    if (o.price) body.push({type: 'text', text: o.price, size: 'xl', weight: 'bold', color: '#06C755', margin: 'lg', wrap: true});
+    const b = {type: 'bubble', body: {type: 'box', layout: 'vertical', contents: body}};
+    if (o.image) b.hero = {type: 'image', url: o.image, size: 'full', aspectMode: 'cover', aspectRatio: '20:13'};
+    if (o.btnLabel && okLink(o.btnUrl)) b.footer = {type: 'box', layout: 'vertical', contents: [{type: 'button', style: 'primary', color: '#06C755', action: {type: 'uri', label: String(o.btnLabel).slice(0, 20), uri: String(o.btnUrl).trim()}}]};
+    return b;
+  }
+  function flexCoupon(o) {
+    const c = [
+      {type: 'text', text: '🎟 คูปอง · ' + (shop.name || 'ร้าน'), size: 'xs', color: '#B07A00', weight: 'bold', wrap: true},
+      {type: 'text', text: o.name || 'ส่วนลดพิเศษ', size: 'lg', weight: 'bold', wrap: true, margin: 'sm'},
+      {type: 'text', text: o.discount || '-', size: '3xl', weight: 'bold', color: '#E53935', margin: 'md', wrap: true}];
+    if (o.cond) c.push({type: 'text', text: o.cond, size: 'sm', color: '#555555', wrap: true, margin: 'md'});
+    c.push({type: 'separator', margin: 'lg', color: '#E8C76A'});
+    if (o.code) c.push({type: 'text', text: 'โค้ด: ' + o.code, size: 'md', weight: 'bold', margin: 'md'});
+    if (o.until) c.push({type: 'text', text: 'ใช้ได้ถึง ' + o.until, size: 'xs', color: '#888888', margin: 'sm'});
+    return {type: 'bubble', body: {type: 'box', layout: 'vertical', backgroundColor: '#FFF6DC', contents: c}};
+  }
+  function flexCall() {
+    const tel = String(shop.phone || '').split(/\s*[,/]\s*/)[0].replace(/[^\d+]/g, '');
+    return {type: 'bubble', body: {type: 'box', layout: 'vertical', contents: [
+      {type: 'text', text: '📞 คุยทางโทรศัพท์กับ ' + (shop.name || 'ร้าน'), weight: 'bold', size: 'md', wrap: true},
+      {type: 'text', text: 'กดปุ่มด้านล่างเพื่อโทรหาร้านได้เลย หรือพิมพ์เบอร์ของคุณไว้ ร้านจะโทรกลับครับ', size: 'sm', color: '#555555', wrap: true, margin: 'md'}]},
+      footer: {type: 'box', layout: 'vertical', contents: [{type: 'button', style: 'primary', color: '#06C755', action: {type: 'uri', label: 'โทรหาร้าน', uri: 'tel:' + tel}}]}};
+  }
+  // ข้อความตอบกลับสำเร็จรูป (เก็บที่คลาวด์ lineReplies ใช้ร่วมกันทุกเครื่อง)
+  const DEFAULT_REPLIES = ['สวัสดีครับ ยินดีให้บริการครับ 🙏', 'รบกวนแจ้งขนาด จำนวน และชนิดสติ๊กเกอร์ที่ต้องการด้วยนะครับ', 'ได้รับยอดโอนแล้วครับ ขอบคุณครับ 🙏', 'จัดส่งเรียบร้อยแล้วครับ เลขพัสดุ: ', 'งานเสร็จแล้วครับ พร้อมจัดส่ง/รับได้เลยครับ'];
+  const lineReplies = () => (store.get('bs_line_replies', []) || []).slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  let chatPanel = '';
+  function closeChatPlus() { chatPanel = ''; $('chatPlus').hidden = true; $('chatPlusBtn').classList.remove('open'); $('chatPlusBtn').setAttribute('aria-expanded', 'false'); }
+  function openChatPanel(name) {
+    chatPanel = name; $('chatPlus').hidden = false; $('chatPlusBtn').classList.add('open'); $('chatPlusBtn').setAttribute('aria-expanded', 'true');
+    const back = '<div class="cp-head"><button type="button" class="cp-back" data-cp="grid">‹</button><b>';
+    const box = $('chatPlus');
+    if (name === 'grid') { box.innerHTML = CHAT_PLUS_GRID; return; }
+    if (name === 'replies') {
+      const saved = lineReplies();
+      const rows = (saved.length ? saved.map(r => ({id: r.id, text: r.text})) : DEFAULT_REPLIES.map(t => ({id: '', text: t})));
+      box.innerHTML = back + 'ข้อความตอบกลับ</b></div><div class="cp-replies">' + rows.map(r =>
+        '<div class="cp-reply"><button type="button" class="cp-reply-use" data-rtext="' + esc(r.text) + '">' + esc(r.text) + '</button>' +
+        (r.id ? '<button type="button" class="cp-reply-del" data-rdel="' + esc(r.id) + '" aria-label="ลบ">✕</button>' : '') + '</div>').join('') + '</div>' +
+        '<form class="cp-add" id="cpReplyForm"><input class="txt" id="cpReplyText" placeholder="เพิ่มข้อความตอบกลับใหม่..." maxlength="500"><button class="btn small" type="submit">บันทึก</button></form>' +
+        (saved.length ? '' : '<p class="hint" style="margin:6px 2px 0">ตัวอย่างด้านบนกดใช้ได้เลย ถ้าเพิ่มข้อความเอง ตัวอย่างจะถูกแทนด้วยของคุณ</p>');
+      return;
+    }
+    if (name === 'card') {
+      box.innerHTML = back + 'การ์ดเมสเสจ</b></div><form class="cp-form" id="cpCardForm">' +
+        '<input class="txt" id="cpcTitle" placeholder="หัวข้อ เช่น สติ๊กเกอร์ไดคัท 5x5 ซม." required maxlength="80">' +
+        '<textarea class="txt" id="cpcDetail" rows="2" placeholder="รายละเอียด (ไม่บังคับ)" maxlength="500"></textarea>' +
+        '<input class="txt" id="cpcPrice" placeholder="ราคา (ไม่บังคับ) เช่น 500 ดวง 690 บาท" maxlength="60">' +
+        '<label class="cp-file"><input type="file" id="cpcImg" accept="image/*" hidden><span id="cpcImgLbl">🖼 เพิ่มรูปบนการ์ด (ไม่บังคับ)</span></label>' +
+        '<div class="row2"><input class="txt" id="cpcBtn" placeholder="ข้อความปุ่ม เช่น สั่งเลย" maxlength="20"><input class="txt" id="cpcUrl" placeholder="ลิงก์ปุ่ม https://..." maxlength="500"></div>' +
+        '<button class="btn primary" type="submit">ส่งการ์ด</button></form>';
+      return;
+    }
+    if (name === 'coupon') {
+      box.innerHTML = back + 'คูปอง</b></div><form class="cp-form" id="cpCouponForm">' +
+        '<input class="txt" id="cpqName" placeholder="ชื่อคูปอง เช่น ลูกค้าประจำ" maxlength="60">' +
+        '<input class="txt" id="cpqDisc" placeholder="ส่วนลด เช่น ลด 10% หรือ ลด 50 บาท" required maxlength="30">' +
+        '<textarea class="txt" id="cpqCond" rows="2" placeholder="เงื่อนไข (ไม่บังคับ) เช่น เมื่อสั่งครบ 500 บาท" maxlength="300"></textarea>' +
+        '<div class="row2"><input class="txt" id="cpqCode" placeholder="โค้ด (ไม่บังคับ)" maxlength="20"><input class="txt" id="cpqUntil" type="date"></div>' +
+        '<p class="hint" style="margin:0">เป็นการ์ดคูปองที่ร้านออกเอง ลูกค้าแคปหรือแจ้งโค้ดตอนสั่ง (คูปองในระบบ LINE OA ส่งผ่านหน้านี้ไม่ได้)</p>' +
+        '<button class="btn primary" type="submit">ส่งคูปอง</button></form>';
+      return;
+    }
+    if (name === 'call') {
+      box.innerHTML = back + 'คำขอการโทร</b></div><div class="cp-form"><p style="margin:0">ส่งการ์ดที่มีปุ่ม <b>โทรหาร้าน</b> (เบอร์ ' + esc(String(shop.phone || '').split(/\s*[,/]\s*/)[0]) + ') ให้ลูกค้ากดโทรได้ทันที</p>' +
+        '<button class="btn primary" type="button" id="cpCallSend">ส่งคำขอการโทร</button></div>';
+    }
+  }
+  const PICO = {
+    camera: '<path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.6"/>',
+    media: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M7 16l4-5 3 3.5 2-2 2.5 3.5"/><circle cx="16" cy="8.5" r="1.3"/>',
+    file: '<path d="M6 3.5h8l4.5 4.5V20a.5.5 0 0 1-.5.5H6a.5.5 0 0 1-.5-.5V4a.5.5 0 0 1 .5-.5z"/><path d="M14 3.5V8h4.5M8.5 12h7M8.5 15.5h5"/>',
+    replies: '<path d="M4 5h16v10H9l-4 4v-4H4z"/><path d="M8.5 10h.01M12 10h.01M15.5 10h.01"/>',
+    card: '<path d="M4 5h16v10H9l-4 4v-4H4z"/><path d="M10 12.5l4.5-4.5 1.5 1.5-4.5 4.5H10z"/>',
+    coupon: '<path d="M3.5 7h17v3a2 2 0 0 0 0 4v3h-17v-3a2 2 0 0 0 0-4z"/><path d="M9 7v10" stroke-dasharray="2 2"/>',
+    call: '<path d="M4 5h16v10H9l-4 4v-4H4z"/><path d="M10 7.5c.5 2.5 2 4 4.5 4.5l.8-1.2-1.5-.8-.6.6c-.8-.4-1.4-1-1.8-1.8l.6-.6-.8-1.5z"/>'};
+  const CHAT_PLUS_GRID = '<div class="cp-grid">' + [['camera', 'กล้อง'], ['media', 'รูป & วิดีโอ'], ['file', 'ไฟล์'], ['replies', 'ข้อความตอบกลับ'], ['card', 'การ์ดเมสเสจ'], ['coupon', 'คูปอง'], ['call', 'คำขอการโทร']].map(([k, l]) =>
+    '<button type="button" class="cp-item" data-cp="' + k + '"><svg viewBox="0 0 24 24" aria-hidden="true">' + PICO[k] + '</svg><span>' + l + '</span></button>').join('') + '</div>';
+  $('chatPlusBtn').addEventListener('click', () => { if (chatPanel) closeChatPlus(); else openChatPanel('grid'); });
+  let cpCardImg = '';
+  $('chatPlus').addEventListener('click', async e => {
+    const it = e.target.closest('[data-cp]');
+    if (it) {
+      const k = it.dataset.cp;
+      if (k === 'camera') { $('chatCamInput').click(); return; }
+      if (k === 'media') { $('chatMediaInput').click(); return; }
+      if (k === 'file') { $('chatFileInput').click(); return; }
+      cpCardImg = ''; openChatPanel(k); return;
+    }
+    const use = e.target.closest('[data-rtext]');
+    if (use) { $('chatInput').value = use.dataset.rtext; autoGrowChat(); closeChatPlus(); $('chatInput').focus(); return; }
+    const del = e.target.closest('[data-rdel]');
+    if (del) {
+      store.set('bs_line_replies', lineReplies().filter(r => r.id !== del.dataset.rdel));
+      cloudDelete('lineReplies', del.dataset.rdel); openChatPanel('replies'); return;
+    }
+    if (e.target.id === 'cpCallSend') {
+      e.target.disabled = true;
+      try { await chatPost({flex: flexCall(), altText: '📞 โทรหา ' + (shop.name || 'ร้าน')}); closeChatPlus(); toast('ส่งคำขอการโทรแล้ว'); }
+      catch (err) { toast('ส่งไม่สำเร็จ: ' + err.message); e.target.disabled = false; }
+    }
+  });
+  $('chatPlus').addEventListener('change', async e => {
+    if (e.target.id !== 'cpcImg' || !e.target.files[0]) return;
+    $('cpcImgLbl').textContent = '⏳ กำลังอัปโหลดรูป...';
+    try { const d = await shrinkImage(e.target.files[0]); cpCardImg = await uploadPhotoToCloudinary(d) || ''; $('cpcImgLbl').textContent = cpCardImg ? '✓ ใส่รูปแล้ว (กดเพื่อเปลี่ยน)' : 'อัปโหลดรูปไม่สำเร็จ'; }
+    catch (err) { $('cpcImgLbl').textContent = 'อัปโหลดรูปไม่สำเร็จ'; }
+  });
+  $('chatPlus').addEventListener('submit', async e => {
+    e.preventDefault();
+    const f = e.target, btn = f.querySelector('button[type=submit]');
+    if (f.id === 'cpReplyForm') {
+      const t = $('cpReplyText').value.trim(); if (!t) return;
+      const rec = {id: 'lr' + Date.now(), text: t, createdAt: Date.now()};
+      store.set('bs_line_replies', lineReplies().concat([rec])); cloudSave('lineReplies', rec); openChatPanel('replies'); return;
+    }
+    btn.disabled = true;
+    try {
+      if (f.id === 'cpCardForm') {
+        const o = {title: $('cpcTitle').value.trim(), detail: $('cpcDetail').value.trim(), price: $('cpcPrice').value.trim(), image: cpCardImg, btnLabel: $('cpcBtn').value.trim(), btnUrl: $('cpcUrl').value.trim()};
+        if (o.btnLabel && !okLink(o.btnUrl)) throw new Error('ลิงก์ปุ่มต้องขึ้นต้นด้วย https:// หรือ tel:');
+        await chatPost({flex: flexCard(o), altText: o.title});
+      } else if (f.id === 'cpCouponForm') {
+        const u = $('cpqUntil').value;
+        const o = {name: $('cpqName').value.trim(), discount: $('cpqDisc').value.trim(), cond: $('cpqCond').value.trim(), code: $('cpqCode').value.trim(), until: u ? thDate(u) : ''};
+        await chatPost({flex: flexCoupon(o), altText: '🎟 คูปอง ' + o.discount});
+      }
+      closeChatPlus(); toast('ส่งแล้ว');
+    } catch (err) { toast('ส่งไม่สำเร็จ: ' + err.message); btn.disabled = false; }
+  });
+  $('chatCamInput').addEventListener('change', e => { const fs = Array.from(e.target.files); e.target.value = ''; closeChatPlus(); sendChatImages(fs); });
+  $('chatMediaInput').addEventListener('change', e => { const fs = Array.from(e.target.files); e.target.value = ''; closeChatPlus(); sendChatMedia(fs); });
+  $('chatFileInput').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; closeChatPlus(); if (f) sendChatFile(f); });
+
   $('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && window.matchMedia('(min-width:900px)').matches) { e.preventDefault(); sendChat(); } });
   $('chatToJob').addEventListener('click', () => {
     const c = chatList.find(x => x.userId === chatSel); if (!c) return;
@@ -7426,6 +7639,7 @@ function bahtText(value) {
     watchBankIn();
     watchBankOut();
     watchLineChats();
+    if (can('chat')) watchCloud('lineReplies', 'bs_line_replies', () => { if (chatPanel === 'replies') openChatPanel('replies'); });
     watchBankBalance();
     // ประวัติ "ติดตามพัสดุ" แต่ก่อนเก็บเฉพาะในเครื่องเท่านั้น — ครั้งแรกที่เปิดหน้านี้หลังอัปเดต
     // ให้อัปโหลดรายการที่มีอยู่ในเครื่องนี้ขึ้นคลาวด์ก่อน 1 ครั้ง (กันไม่ให้ข้อมูลเดิมหายไปตอนเริ่มซิงก์)
