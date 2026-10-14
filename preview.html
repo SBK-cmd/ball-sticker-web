@@ -488,6 +488,32 @@ button.status-pill:active{filter:brightness(0.9)}
 .tax-tag.on{background:var(--blue-bg);color:var(--blue-ink)}
 .tax-tag.off{background:var(--warn-bg);color:var(--warn-ink)}
 /* แจ้งเตือนเงินเข้า */
+.top-tools{display:flex;align-items:center;gap:8px;flex:none}
+.top-tools .theme-toggle{margin-left:0}
+@media (min-width:561px){
+  header.top .top-tools{margin:14px 0 0;align-self:flex-start}
+  header.top .top-tools .theme-toggle{margin:0}
+}
+.bell-btn{position:relative}
+.bell-btn.ring svg{animation:bellRing .9s ease}
+@keyframes bellRing{0%,100%{transform:rotate(0)}15%{transform:rotate(16deg)}30%{transform:rotate(-14deg)}45%{transform:rotate(10deg)}60%{transform:rotate(-6deg)}75%{transform:rotate(3deg)}}
+.bell-badge{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;
+  background:var(--magenta);color:#fff;font:700 11px/18px 'Sarabun','Noto Sans Thai',system-ui,sans-serif;text-align:center;
+  box-shadow:0 0 0 2px var(--surface)}
+.bell-panel{position:fixed;z-index:1150;top:calc(64px + env(safe-area-inset-top,0px));left:12px;right:12px;max-width:420px;margin-left:auto;
+  max-height:min(70vh,560px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:16px;
+  box-shadow:var(--shadow-2);padding:12px}
+@media (min-width:561px){.bell-panel{top:auto;bottom:24px;left:236px;right:auto;width:380px;margin-left:0}}
+.bell-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 4px 10px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.bell-head b{font-size:15.5px}
+.bell-item{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;padding:10px;border:0;border-radius:12px;background:transparent;color:var(--ink);cursor:pointer;font:inherit}
+.bell-item:hover,.bell-item:focus-visible{background:var(--field)}
+.bell-item.unread{background:var(--blue-bg)}
+.bell-ic{flex:none;font-size:20px;line-height:1.2}
+.bell-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.bell-main b{font-size:14.5px;font-variant-numeric:tabular-nums}
+.bell-main small{font-size:12.5px;color:var(--muted)}
+.bell-dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--magenta);margin-top:7px}
 .bankin-banner{position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top,0px));z-index:1200;max-width:520px;margin:0 auto;
   display:flex;align-items:center;gap:12px;padding:12px 12px 12px 14px;border-radius:16px;background:var(--hero-bg);color:#fff;
   box-shadow:0 18px 40px -16px rgba(0,0,0,.55);animation:bibIn .28s ease}
@@ -1162,10 +1188,13 @@ tr{break-inside:avoid}
         </div>
       </div>
     </nav>
+    <div class="top-tools no-print">
+    <button type="button" class="theme-toggle bell-btn" id="bellBtn" aria-label="การแจ้งเตือน" aria-haspopup="true" aria-expanded="false" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg><span class="bell-badge" id="bellBadge" hidden>0</span></button>
     <button type="button" class="theme-toggle no-print" id="themeToggleBtn" aria-label="สลับโหมดมืด/สว่าง">
       <svg id="themeIconSun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
       <svg id="themeIconMoon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none" hidden><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
     </button>
+    </div>
     <div class="user-chip no-print" id="userChip">
       <button type="button" class="user-chip-btn" id="userChipBtn" aria-haspopup="true" aria-expanded="false">
         <span class="user-chip-avatar" id="userChipAvatar">B</span>
@@ -1210,6 +1239,11 @@ tr{break-inside:avoid}
     });
   })();
   </script>
+
+  <div class="bell-panel no-print" id="bellPanel" role="dialog" aria-labelledby="bellTitle" hidden>
+    <div class="bell-head"><b id="bellTitle">การแจ้งเตือน</b><button type="button" class="btn small" id="bellAll">ดูทั้งหมด</button></div>
+    <div id="bellList"></div>
+  </div>
 
   <div class="bankin-banner no-print" id="bankInBanner" role="status" aria-live="polite" hidden>
     <span class="bib-ico" aria-hidden="true">💰</span>
@@ -2735,8 +2769,9 @@ function bahtText(value) {
         try { localStorage.setItem(BANKIN_SEEN, String(newest)); } catch (e) {}
       }
     }
+    const wasLive = bankInLive;
     bankInLive = true;
-    renderBankIn(); renderJobBankInPick();
+    renderBankIn(); renderJobBankInPick(); renderBell(wasLive);
   }
   function showBankInBanner(fresh, live) {
     const total = fresh.reduce((a, x) => a + num(x.amount), 0);
@@ -2826,6 +2861,56 @@ function bahtText(value) {
       '<span class="bil-amt">' + money(num(x.amount)) + '</span></button>').join('')
       : '<p class="empty" style="margin:0">ไม่มีเงินเข้าที่ยังไม่ผูกใบงานใน 7 วันล่าสุด</p>';
   }
+  // ---- กระดิ่งแจ้งเตือน: นับเงินเข้าที่ยังไม่ได้เปิดดู (แยกจากแถบเด้ง) ----
+  const BELL_SEEN = 'bs_bell_seen';
+  function bellSeen() {
+    let v = 0;
+    try { v = +localStorage.getItem(BELL_SEEN) || 0; } catch (e) {}
+    if (!v) { v = Date.now(); try { localStorage.setItem(BELL_SEEN, String(v)); } catch (e) {} }
+    return v;
+  }
+  function renderBell(ring) {
+    const btn = $('bellBtn'); if (!btn) return;
+    btn.hidden = !isOwner; if (!isOwner) return;
+    const seen = bellSeen();
+    const unread = bankInAll().filter(x => (x.createdAt || 0) > seen).length;
+    $('bellBadge').hidden = !unread;
+    $('bellBadge').textContent = unread > 9 ? '9+' : String(unread);
+    btn.setAttribute('aria-label', unread ? 'การแจ้งเตือน มีรายการใหม่ ' + unread + ' รายการ' : 'การแจ้งเตือน');
+    if (ring && unread) { btn.classList.remove('ring'); void btn.offsetWidth; btn.classList.add('ring'); }
+    if (!$('bellPanel').hidden) renderBellList();
+  }
+  let bellOpenSeen = 0;   // ค่าที่ใช้ไฮไลต์ "ใหม่" ระหว่างที่แผงเปิดอยู่
+  function renderBellList() {
+    const rows = bankInAll().slice(0, 15);
+    $('bellList').innerHTML = rows.length ? rows.map(x => {
+      const isNew = (x.createdAt || 0) > bellOpenSeen;
+      return '<button type="button" class="bell-item' + (isNew ? ' unread' : '') + '" data-bid="' + esc(x.id) + '">' +
+        '<span class="bell-ic" aria-hidden="true">💰</span>' +
+        '<span class="bell-main"><b>เงินเข้า ' + money(num(x.amount)) + ' บาท</b>' +
+        '<small>บัญชี' + esc(x.account || '-') + ' · ' + esc(bankInWhen(x, true)) + '</small>' +
+        '<small>' + (x.matchedJobNo ? 'ผูกกับใบงาน ' + esc(x.matchedJobNo) : 'ยังไม่ผูกใบงาน') + '</small></span>' +
+        (isNew ? '<span class="bell-dot" aria-label="ใหม่"></span>' : '') + '</button>';
+    }).join('') : '<p class="empty" style="margin:8px 4px">ยังไม่มีการแจ้งเตือน</p>';
+  }
+  function openBell() {
+    bellOpenSeen = bellSeen();
+    renderBellList();
+    $('bellPanel').hidden = false; $('bellBtn').setAttribute('aria-expanded', 'true');
+    const newest = bankInAll().length ? (bankInAll()[0].createdAt || 0) : 0;
+    if (newest > bellOpenSeen) { try { localStorage.setItem(BELL_SEEN, String(newest)); } catch (e) {} }
+    $('bellBadge').hidden = true;
+  }
+  function closeBell() {
+    if (!$('bellPanel') || $('bellPanel').hidden) return;
+    $('bellPanel').hidden = true; $('bellBtn').setAttribute('aria-expanded', 'false');
+    renderBell(false);
+  }
+  function goBankInCard() {
+    closeBell(); $('bankInBanner').hidden = true; showTab('dash');
+    setTimeout(() => { const c = $('dashBankInCard'); if (c) c.scrollIntoView({behavior: 'smooth', block: 'start'}); }, 60);
+  }
+
   function linkBankIn(rec, prev) {
     const cur = rec.bankInId || '';
     if (!cur && !prev) return;
@@ -5990,10 +6075,13 @@ function bahtText(value) {
   $('save-job').addEventListener('click', saveJob);
   document.addEventListener('pointerdown', unlockAudio, {once: true});
   $('bibClose').addEventListener('click', () => { $('bankInBanner').hidden = true; });
-  $('bibView').addEventListener('click', () => {
-    $('bankInBanner').hidden = true; showTab('dash');
-    setTimeout(() => { const c = $('dashBankInCard'); if (c) c.scrollIntoView({behavior: 'smooth', block: 'start'}); }, 60);
-  });
+  $('bibView').addEventListener('click', goBankInCard);
+  $('bellBtn').addEventListener('click', e => { e.stopPropagation(); if ($('bellPanel').hidden) openBell(); else closeBell(); });
+  $('bellAll').addEventListener('click', goBankInCard);
+  $('bellList').addEventListener('click', e => { if (e.target.closest('[data-bid]')) goBankInCard(); });
+  document.addEventListener('click', e => { if (!e.target.closest('#bellPanel') && !e.target.closest('#bellBtn')) closeBell(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBell(); });
+  renderBell(false);
   $('bankInNotifyBtn').addEventListener('click', () => {
     if (!('Notification' in window)) return;
     Notification.requestPermission().then(renderBankInNotifyState).catch(renderBankInNotifyState);
