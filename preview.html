@@ -569,6 +569,7 @@ button.status-pill:active{filter:brightness(0.9)}
 .chat-attach:hover{color:var(--ink)}
 .chat-attach svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .chat-img.sending{opacity:.55}
+.chat-free{color:#06c755;font-weight:800}
 .chat-attach.open svg{transform:rotate(45deg)} .chat-attach svg{transition:transform .15s}
 .chat-plus{border-top:1px solid var(--line);background:var(--surface);padding:12px;max-height:46vh;overflow:auto}
 .cp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 4px}
@@ -4963,7 +4964,7 @@ function bahtText(value) {
       const d = new Date(m.createdAt || 0);
       const bare = m.type === 'sticker' || m.type === 'image';
       return sep + '<div class="chat-msg ' + (m.dir === 'out' ? 'm-out' : 'm-in') + '"><div class="chat-bubble' + (bare ? ' bare' : '') + '">' + msgBody(m) + '</div>' +
-        '<time>' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + (m.dir === 'out' && m.by ? ' · ' + esc(m.by) : '') + '</time></div>';
+        '<time>' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + (m.dir === 'out' && m.by ? ' · ' + esc(m.by) : '') + (m.dir === 'out' && m.free ? ' · <b class="chat-free">ฟรี</b>' : '') + '</time></div>';
     }).join('') : '<p class="empty" style="margin:auto">' + (chatSel ? 'ยังไม่มีข้อความ' : '') + '</p>';
     box.scrollTop = box.scrollHeight;
     box.querySelectorAll('img').forEach(i => { if (!i.complete) i.addEventListener('load', () => { box.scrollTop = box.scrollHeight; }, {once: true}); });
@@ -4978,6 +4979,7 @@ function bahtText(value) {
       const j = await r.json().catch(() => ({}));
       if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
       $('chatInput').value = ''; autoGrowChat();
+      if (j.free) toast('ส่งแล้ว · ฟรี ไม่เสียโควตา');
       if (!cloudDb) { chatMsgs.push({dir: 'out', type: 'text', text, createdAt: Date.now()}); renderChatMsgs(); }
       loadChatQuota();
     } catch (e) { toast('ส่งไม่สำเร็จ: ' + e.message); }
@@ -5028,7 +5030,7 @@ function bahtText(value) {
       const j = await r.json();
       if (!j.ok || j.used == null) { $('chatQuota').textContent = ''; return; }
       const left = j.limit != null ? j.limit - j.used : null;
-      $('chatQuota').textContent = j.limit != null ? 'โควตาส่งข้อความเดือนนี้ ' + j.used + '/' + j.limit + (left <= 30 ? ' · เหลือ ' + left : '') : 'ส่งไปแล้วเดือนนี้ ' + j.used + ' ข้อความ';
+      $('chatQuota').textContent = (j.limit != null ? 'โควตาส่งข้อความเดือนนี้ ' + j.used + '/' + j.limit + (left <= 30 ? ' · เหลือ ' + left : '') : 'ส่งไปแล้วเดือนนี้ ' + j.used + ' ข้อความ') + ' · ตอบภายในไม่กี่นาทีหลังลูกค้าทัก = ฟรี';
       $('chatQuota').classList.toggle('low', left != null && left <= 30);
     } catch (e) { $('chatQuota').textContent = ''; }
   }
