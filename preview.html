@@ -4910,7 +4910,11 @@ function bahtText(value) {
       const list = []; snap.forEach(d => list.push(Object.assign({userId: d.id}, d.data())));
       if (chatLive) { // ข้อความใหม่ระหว่างเปิดแอป → เด้งแจ้ง + เสียง
         const fresh = list.filter(c => (c.lastInAt || 0) > (prev.get(c.userId) || 0) && !(isChatActive() && chatSel === c.userId && !document.hidden));
-        if (fresh.length) { toast('💬 ข้อความใหม่จาก ' + (fresh[0].name || 'ลูกค้า') + (fresh.length > 1 ? ' และอีก ' + (fresh.length - 1) + ' คน' : '')); playChime(); }
+        if (fresh.length) {
+          const c0 = fresh[0], who = (c0.name || 'ลูกค้า') + (c0.channel === 'fb' ? ' (เพจ ' + fbPageName(c0) + ')' : ' (LINE)');
+          toast('💬 ข้อความใหม่จาก ' + who + (fresh.length > 1 ? ' และอีก ' + (fresh.length - 1) + ' คน' : '')); playChime();
+          sysNotify('💬 ' + who, String(c0.lastText || 'ส่งข้อความมา').slice(0, 100));
+        }
       }
       chatList = list; chatLive = true;
       if (chatSel && isChatActive() && !document.hidden) { const c = chatList.find(x => x.userId === chatSel); if (c) markChatSeen(c.userId, c.lastInAt || 0); }
