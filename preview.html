@@ -635,6 +635,14 @@ button.status-pill:active{filter:brightness(0.9)}
 .cv-fill{display:block;height:100%;width:0;background:currentColor;border-radius:4px}
 .cv-time{flex:none;font-size:12px;opacity:.85;min-width:34px;text-align:right}
 .chat-video{display:block;max-width:min(260px,64vw);max-height:320px;border-radius:14px;background:#000}
+.pay-amt{display:flex;align-items:center;gap:8px} .pay-amt span{font-size:26px;font-weight:800;color:var(--sticker-line)}
+.pay-amt input{flex:1;font-size:26px!important;font-weight:800;padding:8px 12px}
+.pay-prev{display:flex;justify-content:center} .pay-prev img{width:min(240px,70vw);border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.pay-hist{display:grid;gap:6px;margin-top:4px} .pay-hist b{font-size:13px;color:var(--muted)}
+.pay-row{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:14px}
+.pay-row small{display:block;color:var(--muted);font-size:11.5px}
+.pay-st{font-style:normal;font-size:12px;font-weight:800;padding:2px 10px;border-radius:999px;background:var(--field);color:var(--muted);white-space:nowrap}
+.pay-st.paid{background:color-mix(in srgb,var(--in-ink) 20%,transparent);color:var(--in-ink)}
 .chat-hbtn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .chat-hbtn svg,.chat-sendbtn svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .chat-sendbtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;border-radius:999px;padding:0 16px}
@@ -3005,7 +3013,9 @@ function bahtText(value) {
     taxId: '1659900519381',
     branch: 'สำนักงานใหญ่',
     address: '8 หมู่ 19 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140',
-    phone: '093-5353555, 096-6697495'
+    phone: '093-5353555, 096-6697495',
+    promptpay: '0935353555',
+    promptpayName: 'กิติพงษ์ สีทอง'
   };
   let shop = Object.assign({}, SHOP_DEFAULT, store.get('bs_shop', {}));
 
@@ -3147,6 +3157,7 @@ function bahtText(value) {
     const wasLive = bankInLive;
     bankInLive = true;
     renderBankIn(); renderJobBankInPick(); renderBell(wasLive);
+    try { matchPayCharges(); } catch (e) { console.error('pay match', e); }
   }
   function showBankInBanner(fresh, live) {
     const total = fresh.reduce((a, x) => a + num(x.amount), 0);
@@ -5308,10 +5319,155 @@ function bahtText(value) {
       box.innerHTML = back + 'ส่งเลขพัสดุ</b></div><input class="txt" id="cpTrackQ" placeholder="ค้นหาชื่อลูกค้า / เลขพัสดุ" style="margin-bottom:8px"><div class="cp-replies" id="cpTrackList"></div>';
       renderChatTrackList(); return;
     }
+    if (name === 'pay') {
+      box.innerHTML = back + 'เรียกเก็บเงิน (QR พร้อมเพย์)</b></div><form class="cp-form" id="cpPayForm">' +
+        '<div class="pay-amt"><span>฿</span><input class="txt" id="cpPayAmt" inputmode="decimal" autocomplete="off" placeholder="0.00" required></div>' +
+        '<input class="txt" id="cpPayNote" placeholder="รายการ (ไม่บังคับ) เช่น ค่ามัดจำ สติ๊กเกอร์ 500 ดวง" maxlength="60">' +
+        '<div class="pay-prev" id="cpPayPrev" hidden><img id="cpPayImg" alt="QR พร้อมเพย์"></div>' +
+        '<div class="row2"><button class="btn primary" type="submit">ส่ง QR ให้ลูกค้า</button><button class="btn" type="button" id="cpPaySave">บันทึก/แชร์รูป</button></div>' +
+        '<p class="hint" style="margin:0">เงินเข้าพร้อมเพย์ ' + esc(ppMask(shop.promptpay)) + ' · ' + esc(shop.promptpayName || '') + ' · ลูกค้าโอนแล้วระบบเงินเข้าจะจับยอดให้อัตโนมัติ</p>' +
+        '<div class="pay-hist" id="cpPayHist"></div></form>';
+      renderPayHist(); return;
+    }
     if (name === 'call') {
       box.innerHTML = back + 'คำขอการโทร</b></div><div class="cp-form"><p style="margin:0">ส่งการ์ดที่มีปุ่ม <b>โทรหาร้าน</b> (เบอร์ ' + esc(String(shop.phone || '').split(/\s*[,/]\s*/)[0]) + ') ให้ลูกค้ากดโทรได้ทันที</p>' +
         '<button class="btn primary" type="button" id="cpCallSend">ส่งคำขอการโทร</button></div>';
     }
+  }
+  /* ---------- เรียกเก็บเงิน: QR พร้อมเพย์ตามยอด (EMVCo) + จับคู่กับเงินเข้าอัตโนมัติ ---------- */
+  // Minimal QR encoder: byte mode, EC level M, versions 1-10. Returns boolean matrix.
+  function qrEncode(text) {
+    const data = Array.from(new TextEncoder().encode(text));
+    const T = {1:[10,[[1,16]]],2:[16,[[1,28]]],3:[26,[[1,44]]],4:[18,[[2,32]]],5:[24,[[2,43]]],6:[16,[[4,27]]],7:[18,[[4,31]]],8:[22,[[2,38],[2,39]]],9:[22,[[3,36],[2,37]]],10:[26,[[4,43],[1,44]]]};
+    const AL = {1:[],2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42],9:[6,26,46],10:[6,28,50]};
+    let ver = 0, cap = 0;
+    for (let v = 1; v <= 10; v++) { cap = T[v][1].reduce((a, g) => a + g[0] * g[1], 0); if (4 + (v < 10 ? 8 : 16) + data.length * 8 <= cap * 8) { ver = v; break; } }
+    if (!ver) throw new Error('QR: data too long');
+    // bit stream
+    const bits = []; const put = (v, n) => { for (let i = n - 1; i >= 0; i--) bits.push((v >>> i) & 1); };
+    put(4, 4); put(data.length, ver < 10 ? 8 : 16); data.forEach(b => put(b, 8));
+    put(0, Math.min(4, cap * 8 - bits.length)); while (bits.length % 8) bits.push(0);
+    const cw = []; for (let i = 0; i < bits.length; i += 8) cw.push(parseInt(bits.slice(i, i + 8).join(''), 2));
+    for (let p = 0; cw.length < cap; p++) cw.push(p % 2 ? 0x11 : 0xEC);
+    // Reed-Solomon over GF(256)
+    const EXP = new Array(512), LOG = new Array(256); let x = 1;
+    for (let i = 0; i < 255; i++) { EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 256) x ^= 0x11D; }
+    for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+    const mul = (a, b) => a && b ? EXP[LOG[a] + LOG[b]] : 0;
+    const ecn = T[ver][0];
+    let gen = [1]; for (let i = 0; i < ecn; i++) { const ng = new Array(gen.length + 1).fill(0); gen.forEach((g, j) => { ng[j] ^= g; ng[j + 1] ^= mul(g, EXP[i]); }); gen = ng; }
+    const rs = blk => { const r = blk.concat(new Array(ecn).fill(0)); for (let i = 0; i < blk.length; i++) { const c = r[i]; if (c) for (let j = 0; j < gen.length; j++) r[i + j] ^= mul(gen[j], c); } return r.slice(blk.length); };
+    const blocks = [], ecs = []; let off = 0;
+    T[ver][1].forEach(([n, len]) => { for (let i = 0; i < n; i++) { const b = cw.slice(off, off + len); off += len; blocks.push(b); ecs.push(rs(b)); } });
+    const out = []; const maxLen = Math.max(...blocks.map(b => b.length));
+    for (let i = 0; i < maxLen; i++) blocks.forEach(b => { if (i < b.length) out.push(b[i]); });
+    for (let i = 0; i < ecn; i++) ecs.forEach(e => out.push(e[i]));
+    // matrix
+    const N = ver * 4 + 17; const M = [], F = [];
+    for (let i = 0; i < N; i++) { M.push(new Array(N).fill(false)); F.push(new Array(N).fill(false)); }
+    const set = (r, c, v) => { M[r][c] = v; F[r][c] = true; };
+    const finder = (r, c) => { for (let i = -1; i <= 7; i++) for (let j = -1; j <= 7; j++) { const rr = r + i, cc = c + j; if (rr < 0 || cc < 0 || rr >= N || cc >= N) continue; const on = i >= 0 && i <= 6 && j >= 0 && j <= 6 && (i === 0 || i === 6 || j === 0 || j === 6 || (i >= 2 && i <= 4 && j >= 2 && j <= 4)); set(rr, cc, on); } };
+    finder(0, 0); finder(0, N - 7); finder(N - 7, 0);
+    for (let i = 8; i < N - 8; i++) { set(6, i, i % 2 === 0); set(i, 6, i % 2 === 0); }
+    const al = AL[ver];
+    const la = al[al.length - 1];
+    al.forEach(r => al.forEach(c => { if ((r === 6 && c === 6) || (r === 6 && c === la) || (r === la && c === 6)) return; for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) set(r + i, c + j, Math.max(Math.abs(i), Math.abs(j)) !== 1); }));
+    set(N - 8, 8, true); // dark module
+    // reserve format areas
+    for (let i = 0; i < 9; i++) { if (!F[8][i]) set(8, i, false); if (!F[i][8]) set(i, 8, false); }
+    for (let i = 0; i < 8; i++) { if (!F[8][N - 1 - i]) set(8, N - 1 - i, false); if (!F[N - 1 - i][8]) set(N - 1 - i, 8, false); }
+    if (ver >= 7) { let v = ver << 12, g = 0x1F25; for (let i = 17; i >= 12; i--) if ((v >>> i) & 1) v ^= g << (i - 12); const vb = (ver << 12) | v;
+      for (let i = 0; i < 18; i++) { const b = ((vb >>> i) & 1) === 1, a = Math.floor(i / 3), c = i % 3 + N - 11; set(a, c, b); set(c, a, b); } }
+    // place data
+    const dbits = []; out.forEach(b => { for (let i = 7; i >= 0; i--) dbits.push((b >>> i) & 1); });
+    const pos = []; let up = true;
+    for (let c = N - 1; c > 0; c -= 2) { if (c === 6) c--; for (let k = 0; k < N; k++) { const r = up ? N - 1 - k : k; for (let d = 0; d < 2; d++) { const cc = c - d; if (!F[r][cc]) pos.push([r, cc]); } } up = !up; }
+    const masks = [(r, c) => (r + c) % 2 === 0, r => r % 2 === 0, (r, c) => c % 3 === 0, (r, c) => (r + c) % 3 === 0, (r, c) => (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0,
+      (r, c) => (r * c) % 2 + (r * c) % 3 === 0, (r, c) => ((r * c) % 2 + (r * c) % 3) % 2 === 0, (r, c) => ((r + c) % 2 + (r * c) % 3) % 2 === 0];
+    const build = mk => {
+      const A = M.map(row => row.slice());
+      pos.forEach(([r, c], i) => { const b = i < dbits.length ? dbits[i] === 1 : false; A[r][c] = b !== masks[mk](r, c); });
+      let f = (0 << 3) | mk, g = f << 10; for (let i = 14; i >= 10; i--) if ((g >>> i) & 1) g ^= 0x537 << (i - 10);
+      const fb = ((f << 10) | g) ^ 0x5412;
+      const bit = i => ((fb >>> i) & 1) === 1;
+      for (let i = 0; i <= 5; i++) A[i][8] = bit(i);
+      A[7][8] = bit(6); A[8][8] = bit(7); A[8][7] = bit(8);
+      for (let i = 9; i < 15; i++) A[8][14 - i] = bit(i);
+      for (let i = 0; i < 8; i++) A[8][N - 1 - i] = bit(i);
+      for (let i = 8; i < 15; i++) A[N - 15 + i][8] = bit(i);
+      A[N - 8][8] = true; return A;
+    };
+    const penalty = A => { let p = 0;
+      for (let r = 0; r < N; r++) { let run = 1; for (let c = 1; c < N; c++) { if (A[r][c] === A[r][c - 1]) { run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; } }
+      for (let c = 0; c < N; c++) { let run = 1; for (let r = 1; r < N; r++) { if (A[r][c] === A[r - 1][c]) { run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; } }
+      for (let r = 0; r < N - 1; r++) for (let c = 0; c < N - 1; c++) { const v = A[r][c]; if (v === A[r][c + 1] && v === A[r + 1][c] && v === A[r + 1][c + 1]) p += 3; }
+      let dark = 0; A.forEach(row => row.forEach(v => { if (v) dark++; })); p += Math.floor(Math.abs(dark * 100 / (N * N) - 50) / 5) * 10; return p; };
+    let best = null, bp = Infinity; for (let m = 0; m < 8; m++) { const A = build(m), p = penalty(A); if (p < bp) { bp = p; best = A; } }
+    return best;
+  }
+  const ppMask = v => { const d = String(v || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 3) + '-XXX-' + d.slice(6) : d.length === 13 ? 'X-XXXX-XXXXX-' + d.slice(10, 12) + '-' + d.slice(12) : d; };
+  function promptPayPayload(id, amount) {
+    const f = (t, v) => t + String(v.length).padStart(2, '0') + v;
+    const d = String(id || '').replace(/\D/g, '');
+    const acc = d.length === 13 ? f('02', d) : f('01', '0066' + d.replace(/^0/, ''));
+    let p = f('00', '01') + f('01', amount ? '12' : '11') + f('29', f('00', 'A000000677010111') + acc) + f('58', 'TH') + f('53', '764') + (amount ? f('54', (+amount).toFixed(2)) : '') + '6304';
+    let c = 0xFFFF;
+    for (let i = 0; i < p.length; i++) { c ^= p.charCodeAt(i) << 8; for (let k = 0; k < 8; k++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; }
+    return p + c.toString(16).toUpperCase().padStart(4, '0');
+  }
+  async function payCardDataUrl(amount, note) {
+    try { await document.fonts.ready; } catch (e) {}
+    const W = 720, H = 1000, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const g = cv.getContext('2d'), F = "'Sarabun','Noto Sans Thai',sans-serif";
+    g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#113566'; g.fillRect(0, 0, W, 130);
+    g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = '700 46px ' + F; g.fillText('สแกนจ่าย พร้อมเพย์', W / 2, 64);
+    g.font = '600 30px ' + F; g.fillText('PromptPay · ' + (shop.name || ''), W / 2, 108);
+    const m = qrEncode(promptPayPayload(shop.promptpay, amount)), n = m.length, size = 500, cell = Math.floor(size / n), q = cell * n, x0 = (W - q) / 2, y0 = 165;
+    g.fillStyle = '#111';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (m[r][c]) g.fillRect(x0 + c * cell, y0 + r * cell, cell, cell);
+    let y = y0 + q + 70;
+    g.fillStyle = '#113566'; g.font = '800 64px ' + F; g.fillText('฿ ' + money(amount), W / 2, y);
+    g.fillStyle = '#334155'; g.font = '600 30px ' + F;
+    if (note) { y += 52; g.fillText(String(note).slice(0, 40), W / 2, y); }
+    y += 52; g.fillText('ชื่อบัญชี: ' + (shop.promptpayName || shop.name || ''), W / 2, y);
+    y += 44; g.fillStyle = '#64748b'; g.font = '500 26px ' + F; g.fillText('พร้อมเพย์ ' + ppMask(shop.promptpay) + ' · ' + (shop.name || ''), W / 2, y);
+    g.fillStyle = '#ffd60a'; g.fillRect(0, H - 14, W, 14);
+    return cv.toDataURL('image/png');
+  }
+  const payCharges = () => (store.get('bs_pay_charges', []) || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  function renderPayHist() {
+    const box = $('cpPayHist'); if (!box) return;
+    const list = payCharges().filter(x => x.chatId === chatSel).slice(0, 8);
+    box.innerHTML = list.length ? '<b>เรียกเก็บล่าสุด</b>' + list.map(x => '<div class="pay-row"><span>฿' + money(x.amount) + (x.note ? ' · ' + esc(x.note) : '') + '<small>' + esc(new Date(x.createdAt).toLocaleString('th-TH', {dateStyle: 'short', timeStyle: 'short'})) + '</small></span>' +
+      '<i class="pay-st ' + (x.status === 'paid' ? 'paid' : '') + '">' + (x.status === 'paid' ? '✓ ชำระแล้ว' : 'รอชำระ') + '</i></div>').join('') : '';
+  }
+  async function updatePayPreview() {
+    const a = parseFloat(String(($('cpPayAmt') || {}).value || '').replace(/,/g, ''));
+    const prev = $('cpPayPrev'); if (!prev) return;
+    if (!(a > 0)) { prev.hidden = true; return; }
+    $('cpPayImg').src = await payCardDataUrl(a, ($('cpPayNote').value || '').trim()); prev.hidden = false;
+  }
+  // จับคู่ยอดที่เรียกเก็บกับเงินเข้า (ยอดเท่ากัน · หลังเวลาที่ส่ง QR · ภายใน 7 วัน) แล้วแจ้งเตือน
+  function matchPayCharges() {
+    if (!canBank) return;
+    const pend = payCharges().filter(x => x.status !== 'paid' && Date.now() - (x.createdAt || 0) < 7 * 86400000);
+    if (!pend.length) return;
+    const used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
+    const ins = bankInAll();
+    const done = [];
+    pend.slice().reverse().forEach(x => {
+      const hit = ins.slice().reverse().find(b => !used.has(b.id) && Math.abs(num(b.amount) - x.amount) < 0.005 && (b.createdAt || 0) >= (x.createdAt || 0) - 60000);
+      if (!hit) return;
+      used.add(hit.id);
+      const rec = Object.assign({}, x, {status: 'paid', paidAt: hit.createdAt || Date.now(), bankInId: hit.id});
+      done.push(rec);
+    });
+    if (!done.length) return;
+    const all = payCharges().map(x => done.find(d => d.id === x.id) || x);
+    store.set('bs_pay_charges', all); done.forEach(r => cloudSave('payCharges', r));
+    toast('✅ ' + done.map(r => (r.name || 'ลูกค้า') + ' ชำระ ' + money(r.amount) + ' บาทแล้ว').join(' · ')); playChime();
+    renderPayHist();
   }
   // ส่งเลขพัสดุ: ดึงจากประวัติหน้า "ติดตามพัสดุ" เรียงชื่อที่ตรงกับลูกค้าในแชทขึ้นก่อน กดแล้วใส่ข้อความในช่องพิมพ์ให้ตรวจก่อนส่ง
   const normName = v => String(v || '').toLowerCase().replace(/^(คุณ|k\.|คุน)\s*/, '').replace(/[\s._-]+/g, '');
@@ -5340,8 +5496,9 @@ function bahtText(value) {
     replies: '<path d="M4 5h16v10H9l-4 4v-4H4z"/><path d="M8.5 10h.01M12 10h.01M15.5 10h.01"/>',
     card: '<path d="M4 5h16v10H9l-4 4v-4H4z"/><path d="M10 12.5l4.5-4.5 1.5 1.5-4.5 4.5H10z"/>',
     coupon: '<path d="M3.5 7h17v3a2 2 0 0 0 0 4v3h-17v-3a2 2 0 0 0 0-4z"/><path d="M9 7v10" stroke-dasharray="2 2"/>',
+    pay: '<rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><path d="M13.5 13.5h3v3h-3zM17.5 17.5h3v3h-3zM13.5 19.5v1M19.5 13.5h1"/>',
     call: '<path d="M4 5h16v10H9l-4 4v-4H4z"/><path d="M10 7.5c.5 2.5 2 4 4.5 4.5l.8-1.2-1.5-.8-.6.6c-.8-.4-1.4-1-1.8-1.8l.6-.6-.8-1.5z"/>'};
-  const CHAT_PLUS_GRID = '<div class="cp-grid">' + [['camera', 'กล้อง'], ['media', 'รูป & วิดีโอ'], ['file', 'ไฟล์'], ['replies', 'ข้อความตอบกลับ'], ['card', 'การ์ดเมสเสจ'], ['coupon', 'คูปอง'], ['call', 'คำขอการโทร']].map(([k, l]) =>
+  const CHAT_PLUS_GRID = '<div class="cp-grid">' + [['camera', 'กล้อง'], ['media', 'รูป & วิดีโอ'], ['file', 'ไฟล์'], ['replies', 'ข้อความตอบกลับ'], ['card', 'การ์ดเมสเสจ'], ['coupon', 'คูปอง'], ['call', 'คำขอการโทร'], ['pay', 'เรียกเก็บเงิน']].map(([k, l]) =>
     '<button type="button" class="cp-item" data-cp="' + k + '"><svg viewBox="0 0 24 24" aria-hidden="true">' + PICO[k] + '</svg><span>' + l + '</span></button>').join('') + '</div>';
   $('chatPlusBtn').addEventListener('click', () => { if (chatPanel) closeChatPlus(); else openChatPanel('grid'); });
   let cpCardImg = '';
@@ -5367,13 +5524,27 @@ function bahtText(value) {
       store.set('bs_line_replies', lineReplies().filter(r => r.id !== del.dataset.rdel));
       cloudDelete('lineReplies', del.dataset.rdel); openChatPanel('replies'); return;
     }
+    if (e.target.id === 'cpPaySave') {
+      const a = parseFloat(String($('cpPayAmt').value || '').replace(/,/g, ''));
+      if (!(a > 0)) { toast('ใส่จำนวนเงินก่อน'); return; }
+      const url = await payCardDataUrl(a, $('cpPayNote').value.trim());
+      try {
+        const blob = await (await fetch(url)).blob(), file = new File([blob], 'QR-' + a + '.png', {type: 'image/png'});
+        if (navigator.canShare && navigator.canShare({files: [file]})) { await navigator.share({files: [file], title: 'QR พร้อมเพย์ ' + money(a) + ' บาท'}); return; }
+      } catch (err) { if (err && err.name === 'AbortError') return; }
+      const aEl = document.createElement('a'); aEl.href = url; aEl.download = 'QR-' + a + '.png'; aEl.click(); return;
+    }
     if (e.target.id === 'cpCallSend') {
       e.target.disabled = true;
       try { await chatPost({flex: flexCall(), altText: '📞 โทรหา ' + (shop.name || 'ร้าน'), fbText: '📞 โทรหา ' + (shop.name || 'ร้าน') + ' ได้ที่ ' + String(shop.phone || '').split(/\s*[,/]\s*/)[0] + '\nหรือพิมพ์เบอร์ของคุณไว้ ร้านจะโทรกลับครับ'}); closeChatPlus(); toast('ส่งคำขอการโทรแล้ว'); }
       catch (err) { toast('ส่งไม่สำเร็จ: ' + err.message); e.target.disabled = false; }
     }
   });
-  $('chatPlus').addEventListener('input', e => { if (e.target.id === 'cpTrackQ') renderChatTrackList(); });
+  let payPrevTimer = 0;
+  $('chatPlus').addEventListener('input', e => {
+    if (e.target.id === 'cpTrackQ') renderChatTrackList();
+    if (e.target.id === 'cpPayAmt' || e.target.id === 'cpPayNote') { clearTimeout(payPrevTimer); payPrevTimer = setTimeout(updatePayPreview, 250); }
+  });
   $('chatPlus').addEventListener('change', async e => {
     if (e.target.id !== 'cpcImg' || !e.target.files[0]) return;
     $('cpcImgLbl').textContent = '⏳ กำลังอัปโหลดรูป...';
@@ -5387,6 +5558,22 @@ function bahtText(value) {
       const t = $('cpReplyText').value.trim(); if (!t) return;
       const rec = {id: 'lr' + Date.now(), text: t, createdAt: Date.now()};
       store.set('bs_line_replies', lineReplies().concat([rec])); cloudSave('lineReplies', rec); openChatPanel('replies'); return;
+    }
+    if (f.id === 'cpPayForm') {
+      const a = Math.round(parseFloat(String($('cpPayAmt').value || '').replace(/,/g, '')) * 100) / 100;
+      if (!(a > 0) || a > 2000000) { toast('จำนวนเงินไม่ถูกต้อง'); return; }
+      const note = $('cpPayNote').value.trim(), c = chatList.find(x => x.userId === chatSel) || {};
+      btn.disabled = true; btn.textContent = 'กำลังส่ง...';
+      try {
+        const url = await uploadPhotoToCloudinary(await payCardDataUrl(a, note));
+        if (!url) throw new Error('อัปโหลดรูป QR ไม่สำเร็จ');
+        await chatPost({image: url, preview: url.replace('/image/upload/', '/image/upload/w_480,c_limit,q_auto/')});
+        await chatPost({text: '💳 ยอดชำระ ' + money(a) + ' บาท' + (note ? '\n' + note : '') + '\nสแกน QR ด้วยแอปธนาคารได้เลยครับ (พร้อมเพย์ ' + (shop.promptpayName || shop.name) + ')\nโอนแล้วแจ้งร้านหรือส่งสลิปมาได้เลยครับ 🙏'});
+        const rec = {id: 'pay' + Date.now(), chatId: chatSel, name: c.name || '', channel: c.channel || 'line', amount: a, note, status: 'pending', createdAt: Date.now(), by: chatBy()};
+        store.set('bs_pay_charges', payCharges().concat([rec])); cloudSave('payCharges', rec);
+        toast('ส่ง QR เรียกเก็บ ' + money(a) + ' บาทแล้ว'); closeChatPlus(); matchPayCharges();
+      } catch (err) { toast('ส่งไม่สำเร็จ: ' + err.message); btn.disabled = false; btn.textContent = 'ส่ง QR ให้ลูกค้า'; }
+      return;
     }
     btn.disabled = true;
     try {
@@ -7819,6 +8006,7 @@ function bahtText(value) {
     watchBankIn();
     watchBankOut();
     watchLineChats();
+    if (can('chat') || canBank) watchCloud('payCharges', 'bs_pay_charges', () => { renderPayHist(); try { matchPayCharges(); } catch (e) {} });
     if (can('chat')) watchCloud('lineReplies', 'bs_line_replies', () => { if (chatPanel === 'replies') openChatPanel('replies'); });
     watchBankBalance();
     // ประวัติ "ติดตามพัสดุ" แต่ก่อนเก็บเฉพาะในเครื่องเท่านั้น — ครั้งแรกที่เปิดหน้านี้หลังอัปเดต
