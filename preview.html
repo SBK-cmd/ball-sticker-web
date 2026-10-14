@@ -588,6 +588,10 @@ button.status-pill:active{filter:brightness(0.9)}
 .bankin-opt{width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit}
 .bankin-opt:active{background:var(--field)}
 .bankin-opt.sel{border-color:var(--sticker-line);background:var(--blue-bg)}
+.bko-check{flex:none;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--field-line);display:grid;place-items:center;font-size:13px;font-weight:800;color:#fff;background:var(--surface)}
+.bankin-opt.sel .bko-check{background:var(--sticker-line);border-color:var(--sticker-line)}
+.bko-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);padding:2px 2px 0}
+.bko-foot b{color:var(--ink)}
 .job-queue-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;background:var(--mat);border:1px solid var(--line);cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
 .job-queue-item:hover{filter:brightness(.97)}
 .job-queue-item.overdue{background:var(--warn-bg);border-color:var(--warn-bg)}
@@ -2860,7 +2864,8 @@ function bahtText(value) {
      Worker อ่านยอดแล้วเขียนลง Firestore คอลเลกชัน bankIn → หน้านี้ฟังแบบเรียลไทม์ เด้งแจ้งเตือน + เสียง
      และให้เลือกยอดไปผูกกับใบสั่งงานได้ (เจ้าของร้านเท่านั้น) */
   const BANKIN_SEEN = 'bs_bankin_seen';
-  let jobBankInId = '';
+  let jobBankInIds = []; // ใบงานหนึ่งผูกเงินเข้าได้หลายยอด (เช่น มัดจำ + ส่วนที่เหลือ)
+  const jobBankIdsOf = j => Array.isArray(j && j.bankInIds) ? j.bankInIds.filter(Boolean) : (j && j.bankInId ? [j.bankInId] : []);
   let bankInLive = false;      // false = snapshot แรกหลังเปิดหน้า (ไม่ส่งเสียง), true = เงินเข้าระหว่างเปิดหน้าอยู่
   let bankInTimer = null, audioCtx = null;
   const pad2 = n => String(n).padStart(2, '0');
@@ -3028,19 +3033,39 @@ function bahtText(value) {
       : '<p class="empty">' + (bankListTab === 'out' ? 'ยังไม่มีเงินออกที่ส่งมาจากมือถือ' : bankListTab === 'in' ? 'ยังไม่มีเงินเข้าที่ส่งมาจากมือถือ' : 'ยังไม่มีรายการที่ส่งมาจากมือถือ') + '</p>';
     renderBankInNotifyState();
   }
+  // วันเวลาแบบสั้นสำหรับรายการเลือกยอด: วันนี้ 11:50 / เมื่อวาน 11:52 / 12 ต.ค. 09:10
+  const TH_MON_S = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  function bankInWhenShort(x) {
+    const d = new Date(x.createdAt || 0), hm = pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+    const k = localISO(d), y = localISO(new Date(Date.now() - 86400000));
+    if (k === todayISO()) return 'วันนี้ ' + hm;
+    if (k === y) return 'เมื่อวาน ' + hm;
+    return d.getDate() + ' ' + TH_MON_S[d.getMonth()] + ' ' + hm;
+  }
   function renderJobBankInPick() {
     const box = $('jobBankInPick'); if (!box) return;
     box.hidden = !canBank || (!cloudDb && !bankInAll().length); if (box.hidden) return;
-    const linked = jobBankInId ? bankInAll().find(x => x.id === jobBankInId) : null;
-    $('jobBankInSel').textContent = linked ? 'ผูกกับเงินเข้า ' + money(num(linked.amount)) + ' บาท · บัญชี' + linked.account + ' · ' + bankInWhen(linked, true) : '';
-    const weekAgo = Date.now() - 7 * 86400000;
-    const opts = bankInAll().filter(x => x.id === jobBankInId || (!x.matchedJobId && (x.createdAt || 0) >= weekAgo)).slice(0, 15);
-    $('jobBankInList').innerHTML = opts.length ? opts.map(x =>
-      '<button type="button" class="bankin-opt' + (x.id === jobBankInId ? ' sel' : '') + '" data-bid="' + esc(x.id) + '">' +
-      '<span class="bil-time">' + esc(bankInWhen(x, true)) + '</span>' +
-      '<span class="bil-mid"><span>บัญชี' + esc(x.account || '-') + '</span>' + (x.from ? '<small>จาก ' + esc(x.from) + '</small>' : '') + '</span>' +
-      '<span class="bil-amt">' + money(num(x.amount)) + '</span></button>').join('')
-      : '<p class="empty" style="margin:0">ไม่มีเงินเข้าที่ยังไม่ผูกใบงานใน 7 วันล่าสุด</p>';
+    const all = bankInAll();
+    const linked = jobBankInIds.map(id => all.find(x => x.id === id)).filter(Boolean);
+    const total = linked.reduce((a, x) => a + num(x.amount), 0);
+    $('jobBankInSel').textContent = !linked.length ? '' : linked.length === 1
+      ? 'ผูกกับเงินเข้า ' + money(num(linked[0].amount)) + ' บาท · บัญชี' + linked[0].account + ' · ' + bankInWhen(linked[0], true)
+      : 'ผูกกับเงินเข้า ' + linked.length + ' ยอด รวม ' + money(total) + ' บาท (' + linked.map(x => money(num(x.amount))).join(' + ') + ')';
+    $('jobBankInBtn').textContent = linked.length ? '💰 เลือก/เพิ่มยอดเงินเข้า' : '💰 เลือกยอดจากเงินเข้า';
+    const weekAgo = Date.now() - 30 * 86400000;
+    // ยอดที่ผูกกับใบนี้อยู่แล้ว + ยอดที่ยังไม่ผูกใบไหนใน 30 วันล่าสุด (มัดจำอาจโอนมาก่อนหลายวัน)
+    const opts = all.filter(x => jobBankInIds.indexOf(x.id) >= 0 || (currentJobId && x.matchedJobId === currentJobId) ||
+      (!x.matchedJobId && (x.createdAt || 0) >= weekAgo)).slice(0, 30);
+    $('jobBankInList').innerHTML = (opts.length ? opts.map(x => {
+      const sel = jobBankInIds.indexOf(x.id) >= 0;
+      return '<button type="button" class="bankin-opt' + (sel ? ' sel' : '') + '" data-bid="' + esc(x.id) + '" aria-pressed="' + sel + '">' +
+        '<span class="bko-check" aria-hidden="true">' + (sel ? '✓' : '') + '</span>' +
+        '<span class="bil-time">' + esc(bankInWhenShort(x)) + '</span>' +
+        '<span class="bil-mid"><span>บัญชี' + esc(x.account || '-') + '</span>' + (x.from || x.note ? '<small>' + esc([x.from ? 'จาก ' + x.from : '', x.note || ''].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
+        '<span class="bil-amt amt-in">' + money(num(x.amount)) + '</span></button>';
+    }).join('') : '<p class="empty" style="margin:0">ไม่มีเงินเข้าที่ยังไม่ผูกใบงานใน 30 วันล่าสุด</p>') +
+      '<div class="bko-foot"><span>เลือกได้หลายยอด เช่น มัดจำ + ส่วนที่เหลือ' + (linked.length > 1 ? ' · รวม <b>' + money(total) + '</b> บาท' : '') + '</span>' +
+      '<button type="button" class="btn small" data-bkdone="1">เสร็จ</button></div>';
   }
   // ---- กระดิ่งแจ้งเตือน: นับเงินเข้าที่ยังไม่ได้เปิดดู (แยกจากแถบเด้ง) ----
   const BELL_SEEN = 'bs_bell_seen';
@@ -3099,17 +3124,17 @@ function bahtText(value) {
     setTimeout(() => { const c = $('dashBankInCard'); if (c) c.scrollIntoView({behavior: 'smooth', block: 'start'}); }, 60);
   }
 
-  function linkBankIn(rec, prev) {
-    const cur = rec.bankInId || '';
-    if (!cur && !prev) return;
+  function linkBankIn(rec, prevIds) {
+    const cur = jobBankIdsOf(rec), prev = prevIds || [];
+    if (!cur.length && !prev.length) return;
     const list = store.get('bs_bank_in', []) || [];
     const upd = (id, patch) => {
       const i = list.findIndex(x => x.id === id);
       if (i >= 0) list[i] = Object.assign({}, list[i], patch);
       cloudSave('bankIn', Object.assign({id}, patch));
     };
-    if (prev && prev !== cur) upd(prev, {matchedJobId: '', matchedJobNo: ''});
-    if (cur) upd(cur, {matchedJobId: rec.id, matchedJobNo: rec.no});
+    prev.filter(id => cur.indexOf(id) < 0).forEach(id => upd(id, {matchedJobId: '', matchedJobNo: ''}));
+    cur.forEach(id => upd(id, {matchedJobId: rec.id, matchedJobNo: rec.no}));
     store.set('bs_bank_in', list);
     renderBankIn(); renderJobBankInPick();
   }
@@ -5250,14 +5275,14 @@ function bahtText(value) {
   }
 
   function collectJob() {
-    return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, account: $('jobAccount').value, page: $('jobPage').value, bankInId: jobBankInId, slipAmount: $('jobSlipAmount').value, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
+    return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, account: $('jobAccount').value, page: $('jobPage').value, bankInIds: jobBankInIds.slice(), bankInId: jobBankInIds[0] || '', slipAmount: $('jobSlipAmount').value, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
       items: jobItems.map(i => ({name: i.name, qty: i.qty, note: i.note})), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus};
   }
   function applyJob(j) {
     $('jobNo').value = j.no || ''; $('jobDate').value = j.date || todayISO(); $('jobDue').value = j.due || '';
     $('jobAccount').value = j.account || ''; $('jobSlipAmount').value = j.slipAmount || '';
     $('jobPage').value = PAGE_LABEL[j.page] ? j.page : 'ball';
-    jobBankInId = j.bankInId || ''; if ($('jobBankInList')) { $('jobBankInList').hidden = true; $('jobBankInBtn').setAttribute('aria-expanded', 'false'); }
+    jobBankInIds = jobBankIdsOf(j); if ($('jobBankInList')) { $('jobBankInList').hidden = true; $('jobBankInBtn').setAttribute('aria-expanded', 'false'); }
     $('jName').value = j.jName || ''; $('jPhone').value = j.jPhone || ''; $('jAddr').value = j.jAddr || '';
     jobItems = (j.items && j.items.length) ? j.items.map(i => ({name: i.name || '', qty: i.qty, note: i.note || ''})) : [{name: '', qty: 1, note: ''}];
     $('jobNote').value = j.note || '';
@@ -5303,14 +5328,14 @@ function bahtText(value) {
     const id = currentJobId || ('j' + Date.now());
     const idx = list.findIndex(j => j.id === id);
     const createdBy = idx >= 0 ? list[idx].createdBy : (currentUser ? currentUser.name : '');
-    const prevBankInId = idx >= 0 ? (list[idx].bankInId || '') : '';
+    const prevBankInIds = idx >= 0 ? jobBankIdsOf(list[idx]) : [];
     const rec = Object.assign({id, savedAt: Date.now(), createdBy}, data);
     if (idx >= 0) list[idx] = rec; else list.push(rec);
     const wasEditing = idx >= 0;
     currentJobId = rec.id;
     const persisted = store.set('bs_jobs', list);
     cloudSave('jobs', rec);
-    linkBankIn(rec, prevBankInId);
+    linkBankIn(rec, prevBankInIds);
     upsertCustomer(rec.jName, rec.jPhone, rec.jAddr);
     renderJobHistory(); renderJobEditState();
     syncRecordPhotosToCloud('bs_jobs', 'jobs', rec.id, 'photos', renderJobHistory);
@@ -6341,14 +6366,24 @@ function bahtText(value) {
     l.hidden = !l.hidden; $('jobBankInBtn').setAttribute('aria-expanded', String(!l.hidden));
   });
   $('jobBankInList').addEventListener('click', e => {
+    if (e.target.closest('[data-bkdone]')) { $('jobBankInList').hidden = true; $('jobBankInBtn').setAttribute('aria-expanded', 'false'); return; }
     const b = e.target.closest('[data-bid]'); if (!b) return;
     const x = bankInAll().find(r => r.id === b.dataset.bid); if (!x) return;
-    jobBankInId = x.id;
-    if (ACCOUNTS.indexOf(x.account) >= 0) $('jobAccount').value = x.account;
-    $('jobSlipAmount').value = num(x.amount);
-    $('jobBankInList').hidden = true; $('jobBankInBtn').setAttribute('aria-expanded', 'false');
-    renderJob(); renderJobBankInPick();
-    toast('ใส่ยอด ' + money(num(x.amount)) + ' บาท บัญชี' + x.account + ' แล้ว กดบันทึกเพื่อผูกกับใบงานนี้');
+    const k = jobBankInIds.indexOf(x.id);
+    if (k >= 0) jobBankInIds.splice(k, 1); else jobBankInIds.push(x.id);
+    // จำนวนเงินตามสลิป = ผลรวมของยอดที่เลือก, บัญชีตามยอดแรก
+    const sel = jobBankInIds.map(id => bankInAll().find(r => r.id === id)).filter(Boolean);
+    if (sel.length) {
+      const total = Math.round(sel.reduce((a, r) => a + num(r.amount), 0) * 100) / 100;
+      $('jobSlipAmount').value = total;
+      if (ACCOUNTS.indexOf(sel[0].account) >= 0) $('jobAccount').value = sel[0].account;
+      renderJob(); renderJobBankInPick();
+      toast((k >= 0 ? 'เอาออกแล้ว · ' : '') + 'รวม ' + sel.length + ' ยอด ' + money(total) + ' บาท — กดบันทึกเพื่อผูกกับใบงานนี้');
+    } else {
+      $('jobSlipAmount').value = '';
+      renderJob(); renderJobBankInPick();
+      toast('ไม่ได้ผูกยอดเงินเข้าแล้ว — กดบันทึกเพื่อยืนยัน');
+    }
   });
   renderJobBankInPick();
   // ทดสอบในเครื่องที่ไม่ได้ต่อคลาวด์: ใช้รายการที่อยู่ใน localStorage (bs_bank_in)
