@@ -573,6 +573,8 @@ button.status-pill:active{filter:brightness(0.9)}
 .bib-x{flex:none;background:transparent;border:0;color:#fff;opacity:.75;font-size:16px;padding:6px;cursor:pointer}
 .bankin-sum{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
 @media (max-width:760px){.bankin-sum{grid-template-columns:1fr}}
+.bankin-sum.one{grid-template-columns:minmax(0,560px)}
+.bkc-toggle{grid-column:1/-1;display:flex;justify-content:flex-start}
 .bkc{position:relative;overflow:hidden;border-radius:18px;padding:16px;border:1px solid var(--line);
   background:radial-gradient(120% 90% at 100% 0%,color-mix(in srgb,var(--sticker) 22%,transparent),transparent 60%),var(--field)}
 .bkc-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
@@ -2923,6 +2925,7 @@ function bahtText(value) {
   const BANK_OUT_KIND = {'เงินออก': 'เงินออก', 'ชำระ': 'ชำระเงิน', 'จ่าย': 'จ่ายเงิน', 'ถอน': 'ถอนเงิน', 'โอนไป': 'โอนออก', 'โอนออก': 'โอนออก', 'โอนเงินออก': 'โอนออก', 'หักบัญชี': 'หักบัญชี'};
   let bankListTab = 'all';
   let bankDelArmed = null, bankDelTimer = null;
+  const BANK_HIDE_DEFAULT = ['วันทิม']; // บัญชีที่ซ่อนการ์ดไว้ก่อน กดปุ่มเพื่อแสดง
   const BANK_LIST_STEP = 5; let bankListLimit = BANK_LIST_STEP; // ประวัติแสดงทีละ 5 รายการ กด "ดูเพิ่มเติม" เพื่อดูต่อ
   const BANK_BAL_KEY = {'กิติพงษ์': 'kittipong', 'วันทิม': 'wantim'};
   try { const t = localStorage.getItem('bs_bankin_tab'); if (t === 'in' || t === 'out') bankListTab = t; } catch (e) {}
@@ -3028,7 +3031,12 @@ function bahtText(value) {
     const inMonth = arr => arr.filter(x => localISO(new Date(x.createdAt || 0)).slice(0, 7) === month);
     const ICO_IN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>';
     const ICO_OUT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>';
-    $('bankInSum').innerHTML = ACCOUNTS.map(a => {
+    let showHidden = false;
+    try { showHidden = localStorage.getItem('bs_bk_show_hidden') === '1'; } catch (e) {}
+    const shownAcc = ACCOUNTS.filter(a => showHidden || BANK_HIDE_DEFAULT.indexOf(a) < 0);
+    const hiddenAcc = ACCOUNTS.filter(a => BANK_HIDE_DEFAULT.indexOf(a) >= 0);
+    $('bankInSum').classList.toggle('one', shownAcc.length === 1);
+    $('bankInSum').innerHTML = shownAcc.map(a => {
       const mine = list.filter(x => x.account === a), mineOut = outs.filter(x => x.account === a);
       const td = onDay(mine), tdOut = onDay(mineOut);
       const bal = bankBalOf(a);
@@ -3042,7 +3050,8 @@ function bahtText(value) {
         '</div>' +
         '<div class="bkc-month"><span>เดือนนี้</span><span class="m-in">เข้า ' + money(mIn) + '</span><span class="m-out">ออก ' + money(mOut) + '</span><span class="net">สุทธิ ' + (net < 0 ? '\u2212' : '+') + money(Math.abs(net)) + '</span></div>' +
         '</div>';
-    }).join('');
+    }).join('') + (hiddenAcc.length ? '<div class="bkc-toggle"><button type="button" class="btn small" data-bkshow="1">' +
+      (showHidden ? 'ซ่อนบัญชี' + hiddenAcc.join(', ') : '👁 แสดงบัญชี' + hiddenAcc.join(', ')) + '</button></div>' : '');
     document.querySelectorAll('#bankListSeg button').forEach(b => {
       const k = b.dataset.bk, n = k === 'in' ? list.length : k === 'out' ? outs.length : 0;
       b.setAttribute('aria-pressed', String(k === bankListTab));
@@ -6514,6 +6523,11 @@ function bahtText(value) {
     cloudDelete(dir === 'in' ? 'bankIn' : 'bankOut', id);
     renderBankIn(); renderJobBankInPick(); renderBell(false);
     toast('ลบรายการ' + (x ? ' ' + money(num(x.amount)) + ' บาท' : '') + ' แล้ว');
+  });
+  $('bankInSum').addEventListener('click', e => {
+    if (!e.target.closest('[data-bkshow]')) return;
+    try { localStorage.setItem('bs_bk_show_hidden', localStorage.getItem('bs_bk_show_hidden') === '1' ? '0' : '1'); } catch (e2) {}
+    renderBankIn();
   });
   $('bankListSeg').addEventListener('click', e => {
     const b = e.target.closest('button[data-bk]'); if (!b) return;
