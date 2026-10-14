@@ -628,6 +628,9 @@ button.status-pill:active{filter:brightness(0.9)}
 .chat-mic.rec{color:#fff!important;background:#ef4444!important;border-color:#ef4444!important;animation:micPulse 1.2s ease-in-out infinite}
 @keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
 .chat-send textarea.listening{border-color:#ef4444}
+.chat-audio{display:grid;gap:6px;min-width:min(260px,64vw)} .chat-audio span{font-weight:700;font-size:13.5px}
+.chat-audio audio{width:100%;height:40px;border-radius:999px} .chat-audio .chat-file{font-size:12px;opacity:.8}
+.chat-video{display:block;max-width:min(260px,64vw);max-height:320px;border-radius:14px;background:#000}
 .chat-hbtn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .chat-hbtn svg,.chat-sendbtn svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .chat-sendbtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;border-radius:999px;padding:0 16px}
@@ -5030,6 +5033,10 @@ function bahtText(value) {
   }
   function msgBody(m) {
     const src = id => LINE_OA_URL + '/content?key=' + encodeURIComponent(LINE_OA_KEY) + '&id=' + encodeURIComponent(id);
+    const isAudio = m.type === 'audio' || (m.type === 'file' && /ข้อความเสียง/.test(m.text || ''));
+    const aud = u => '<div class="chat-audio"><span>🎤 ข้อความเสียง</span><audio controls preload="none" src="' + esc(u) + '"></audio><a class="chat-file" href="' + esc(u) + '" target="_blank" rel="noopener">เปิดไฟล์</a></div>';
+    if (isAudio && (m.url || m.contentId)) return aud(m.url || src(m.contentId));
+    if (m.type === 'video' && m.contentId && !m.url) return '<video class="chat-video" controls playsinline preload="none" src="' + esc(src(m.contentId)) + '"></video>';
     if (m.type === 'flex') return '<span class="chat-flex">🃏 ' + esc(m.text || 'การ์ด') + '</span>';
     if (m.type === 'video' && m.url) return m.preview ? '<a class="chat-vid" href="' + esc(m.url) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(m.preview) + '" alt="วิดีโอ" loading="lazy"><i>▶</i></a>' : '<a class="chat-file" href="' + esc(m.url) + '" target="_blank" rel="noopener">▶ เปิดวิดีโอ</a>';
     if (m.type === 'file' && m.url) return '<a class="chat-file" href="' + esc(m.url) + '" target="_blank" rel="noopener">' + esc(m.text || 'เปิดไฟล์') + '</a>';
@@ -5043,6 +5050,9 @@ function bahtText(value) {
   function renderChatMsgs() {
     const box = $('chatMsgs'); if (!box) return;
     { const c = chatList.find(x => x.userId === chatSel) || {}; box.dataset.pg = c.channel === 'fb' ? (FB_PAGE_CLASS[c.pageId] || 'fb') : 'line'; }
+    // กำลังเล่นเสียง/วิดีโออยู่ → ยังไม่วาดใหม่ (ไม่งั้นเสียงจะหยุดกลางคัน) รอให้หยุดก่อนค่อยอัปเดต
+    const playing = Array.from(box.querySelectorAll('audio,video')).find(a => !a.paused && !a.ended);
+    if (playing) { if (!playing.dataset.wait) { playing.dataset.wait = '1'; ['pause', 'ended'].forEach(ev => playing.addEventListener(ev, () => renderChatMsgs(), {once: true})); } return; }
     let last = '';
     box.innerHTML = chatMsgs.length ? chatMsgs.map(m => {
       const day = localISO(new Date(m.createdAt || 0));
