@@ -4922,7 +4922,7 @@ function bahtText(value) {
       const un = chatUnread(c);
       return '<button type="button" class="chat-item' + (c.userId === chatSel ? ' sel' : '') + (un ? ' unread' : '') + '" data-uid="' + esc(c.userId) + '">' +
         avatarHtml(c, 'chat-av') +
-        '<span class="chat-item-main"><span class="chat-item-top"><b>' + esc(c.name || 'ลูกค้า LINE') + '</b><time>' + esc(chatWhen(c.lastAt)) + '</time></span>' +
+        '<span class="chat-item-main"><span class="chat-item-top"><b>' + esc(c.name || (c.channel === 'fb' ? 'ลูกค้า Facebook' : 'ลูกค้า LINE')) + '</b><time>' + esc(chatWhen(c.lastAt)) + '</time></span>' +
         '<small>' + (c.channel === 'fb' ? '<i class="ch-tag fb">เพจ' + (c.pageName ? ' ' + esc(c.pageName) : '') + '</i>' : '<i class="ch-tag ln">LINE</i>') + (c.lastDir === 'out' ? 'คุณ: ' : '') + esc(c.lastText || '') + '</small></span>' + (un ? '<i class="chat-dot" aria-label="ยังไม่อ่าน"></i>' : '') + '</button>';
     }).join('') : '<p class="empty">' + (chatList.length ? 'ไม่พบแชทที่ค้นหา' : (cloudDb ? 'ยังไม่มีแชท — ข้อความที่ลูกค้าทักมาใน LINE OA หลังเชื่อมระบบจะขึ้นที่นี่' : 'ต้องต่อคลาวด์ก่อน')) + '</p>';
   }
@@ -4932,7 +4932,7 @@ function bahtText(value) {
     $('chatEmpty').hidden = !!chatSel; $('chatConvInner').hidden = !chatSel;
     if (!c) return;
     $('chatAvatarWrap').innerHTML = avatarHtml(c, 'chat-av');
-    $('chatName').textContent = c.name || 'ลูกค้า LINE';
+    $('chatName').textContent = c.name || (c.channel === 'fb' ? 'ลูกค้า Facebook' : 'ลูกค้า LINE');
     const last = 'ทักล่าสุด ' + (c.lastInAt ? bankInWhen({createdAt: c.lastInAt}, true) : '—');
     $('chatSub').textContent = c.channel === 'fb'
       ? 'เพจ ' + (c.pageName || 'Facebook') + ' · ' + last + (c.lastInAt && Date.now() - c.lastInAt > FB_WINDOW ? ' · เกิน 24 ชม. ส่งไม่ได้จนกว่าลูกค้าจะทักใหม่' : '')
