@@ -597,7 +597,7 @@ button.status-pill:active{filter:brightness(0.9)}
 .bkc-chip small{font-size:11.5px;color:var(--muted)}
 .bkc-month{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .bkc-month span:first-child{font-weight:700;color:var(--ink)}
-.bkc-month .in{color:var(--in-ink)} .bkc-month .out{color:var(--out-ink)} .bkc-month .net{margin-left:auto;font-weight:700;color:var(--ink)}
+.bkc-month .m-in{color:var(--in-ink)} .bkc-month .m-out{color:var(--out-ink)} .bkc-month .net{margin-left:auto;font-weight:700;color:var(--ink)}
 
 .bis{background:var(--field);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
 .bis .ps-l{margin-bottom:2px}
@@ -3040,7 +3040,7 @@ function bahtText(value) {
           '<div class="bkc-chip in' + (td.length ? '' : ' zero') + '"><i>' + ICO_IN + '</i><span>เข้าวันนี้</span><b>' + (td.length ? '+' : '') + money(sum(td)) + '</b><small>' + td.length + ' รายการ</small></div>' +
           '<div class="bkc-chip out' + (tdOut.length ? '' : ' zero') + '"><i>' + ICO_OUT + '</i><span>ออกวันนี้</span><b>' + (tdOut.length ? '\u2212' : '') + money(sum(tdOut)) + '</b><small>' + tdOut.length + ' รายการ</small></div>' +
         '</div>' +
-        '<div class="bkc-month"><span>เดือนนี้</span><span class="in">เข้า ' + money(mIn) + '</span><span class="out">ออก ' + money(mOut) + '</span><span class="net">สุทธิ ' + (net < 0 ? '\u2212' : '+') + money(Math.abs(net)) + '</span></div>' +
+        '<div class="bkc-month"><span>เดือนนี้</span><span class="m-in">เข้า ' + money(mIn) + '</span><span class="m-out">ออก ' + money(mOut) + '</span><span class="net">สุทธิ ' + (net < 0 ? '\u2212' : '+') + money(Math.abs(net)) + '</span></div>' +
         '</div>';
     }).join('');
     document.querySelectorAll('#bankListSeg button').forEach(b => {
