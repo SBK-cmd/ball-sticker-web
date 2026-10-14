@@ -1817,7 +1817,7 @@ tr{break-inside:avoid}
                   <select class="txt" id="jobAccount">
                     <option value="">— เลือกบัญชี —</option>
                     <option value="กิติพงษ์">กิติพงษ์</option>
-                    <option value="วันทิม">วันทิม</option>
+                    <option value="วันทิม" hidden>วันทิม</option>
                   </select>
                 </label>
                 <label class="f"><span>จำนวนเงิน (ตามสลิป)</span><div class="in"><input type="number" inputmode="decimal" step="any" min="0" id="jobSlipAmount" placeholder="0.00"></div></label>
@@ -1908,9 +1908,9 @@ tr{break-inside:avoid}
               </label>
               <div class="row2">
                 <label class="f"><span>เพจ</span><select id="billPage"><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop (UV)</option></select></label>
-                <label class="f"><span>บัญชีรับเงิน</span><select id="billAccount"><option value="">— ไม่ระบุ —</option><option value="กิติพงษ์">กิติพงษ์</option><option value="วันทิม">วันทิม</option></select></label>
+                <label class="f"><span>บัญชีรับเงิน</span><select id="billAccount"><option value="">— ไม่ระบุ —</option><option value="กิติพงษ์">กิติพงษ์</option><option value="วันทิม" hidden>วันทิม</option></select></label>
               </div>
-              <p class="hint" style="margin:-6px 0 0">เลือกบัญชีวันทิม ระบบจะติ๊ก "ไม่นับบิลนี้ในรายงานภาษีขาย" ให้เอง · เพจและบัญชีไม่พิมพ์ลงบิล</p>
+              <p class="hint" style="margin:-6px 0 0">เพจและบัญชีไม่พิมพ์ลงบิล</p>
               <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="cName" type="text" autocomplete="off" list="customerNames"></label>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="cPhone" type="tel" autocomplete="off"></label>
               <label class="f"><span>เลขประจำตัวผู้เสียภาษีลูกค้า (ถ้ามี)</span><input class="txt" id="cTax" type="text" inputmode="numeric" autocomplete="off"></label>
@@ -2401,7 +2401,7 @@ tr{break-inside:avoid}
           <span id="dashSplitCap"></span>
         </div>
         <div id="dashSplit"></div>
-        <p class="hint" style="margin:10px 0 0">เงินเข้า = ยอดตามสลิปในใบสั่งงาน · ยอดบิล = ยอดรวมในบิล/ใบกำกับภาษี · บัญชีวันทิมไม่นำไปยื่นภาษี</p>
+        <p class="hint" style="margin:10px 0 0">เงินเข้า = ยอดตามสลิปในใบสั่งงาน · ยอดบิล = ยอดรวมในบิล/ใบกำกับภาษี</p>
       </section>
 
       <div class="dash-mid-row">
@@ -3175,6 +3175,10 @@ function bahtText(value) {
   const PAGE_LABEL = {ball: 'บอล สติ๊กเกอร์', roll: 'Roll shop'};
   const ACCOUNTS = ['กิติพงษ์', 'วันทิม'];
   const NON_TAX_ACCOUNTS = ['วันทิม'];
+  // บัญชีที่ปิดไว้ชั่วคราว: ไม่แสดงในทุกหน้า (ข้อมูลเดิมยังเก็บไว้ครบ ไม่ได้ลบ) — เอาชื่อออกจากรายการนี้เมื่ออยากให้กลับมาแสดง
+  const HIDDEN_ACCOUNTS = ['วันทิม'];
+  const VISIBLE_ACCOUNTS = ACCOUNTS.filter(a => HIDDEN_ACCOUNTS.indexOf(a) < 0);
+  const accHidden = x => !!(x && HIDDEN_ACCOUNTS.indexOf(x.account) >= 0);
 
   /* ---------------- เงินเข้า (SMS ธนาคาร) ----------------
      มือถือ (iPhone Shortcuts / Android MacroDroid) ส่ง SMS เงินเข้าไปที่ Cloudflare Worker "bank-in"
@@ -3187,7 +3191,7 @@ function bahtText(value) {
   let bankInTimer = null, audioCtx = null;
   const pad2 = n => String(n).padStart(2, '0');
   const localISO = d => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
-  const bankInAll = () => (store.get('bs_bank_in', []) || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const bankInAll = () => (store.get('bs_bank_in', []) || []).filter(x => !accHidden(x)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   function bankInWhen(x, withDate) {
     const d = new Date(x.createdAt || 0);
     const hm = pad2(d.getHours()) + ':' + pad2(d.getMinutes());
@@ -3208,7 +3212,7 @@ function bahtText(value) {
     }, err => console.error('bankBalance sync error', err));
   }
   // เงินออก (SMS "เงินออก" / "ชำระ" / "ถอน" ...) — Worker เก็บที่คอลเลกชัน bankOut ไม่เด้ง ไม่มีเสียง แค่แสดงในรายการ
-  const bankOutAll = () => (store.get('bs_bank_out', []) || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const bankOutAll = () => (store.get('bs_bank_out', []) || []).filter(x => !accHidden(x)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   const BANK_OUT_KIND = {'เงินออก': 'เงินออก', 'ชำระ': 'ชำระเงิน', 'จ่าย': 'จ่ายเงิน', 'ถอน': 'ถอนเงิน', 'โอนไป': 'โอนออก', 'โอนออก': 'โอนออก', 'โอนเงินออก': 'โอนออก', 'หักบัญชี': 'หักบัญชี'};
   let bankListTab = 'all';
   let bankDelArmed = null, bankDelTimer = null;
@@ -3366,8 +3370,8 @@ function bahtText(value) {
     const ICO_OUT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>';
     let showHidden = false;
     try { showHidden = localStorage.getItem('bs_bk_show_hidden') === '1'; } catch (e) {}
-    const shownAcc = ACCOUNTS.filter(a => showHidden || BANK_HIDE_DEFAULT.indexOf(a) < 0);
-    const hiddenAcc = ACCOUNTS.filter(a => BANK_HIDE_DEFAULT.indexOf(a) >= 0);
+    const shownAcc = VISIBLE_ACCOUNTS.filter(a => showHidden || BANK_HIDE_DEFAULT.indexOf(a) < 0);
+    const hiddenAcc = VISIBLE_ACCOUNTS.filter(a => BANK_HIDE_DEFAULT.indexOf(a) >= 0);
     $('bankInSum').classList.toggle('one', shownAcc.length === 1);
     $('bankInSum').innerHTML = shownAcc.map(a => {
       const mine = list.filter(x => x.account === a), mineOut = outs.filter(x => x.account === a);
@@ -3471,7 +3475,7 @@ function bahtText(value) {
   let bellOpenSeen = 0;   // ค่าที่ใช้ไฮไลต์ "ใหม่" ระหว่างที่แผงเปิดอยู่
   function renderBellBal() {
     const el = $('bellBal'); if (!el) return;
-    const rows = ACCOUNTS.map(a => ({a, b: bankBalOf(a)})).filter(r => r.b);
+    const rows = VISIBLE_ACCOUNTS.map(a => ({a, b: bankBalOf(a)})).filter(r => r.b);
     el.hidden = !rows.length;
     el.innerHTML = rows.map(r => '<div><span>คงเหลือ บัญชี' + esc(r.a) + ' <small>(' + esc(bankBalWhen(r.b)) + ')</small></span><b>' + money(num(r.b.balance)) + ' บาท</b></div>').join('');
   }
@@ -4031,10 +4035,10 @@ function bahtText(value) {
     const el = $('dashSplit'); if (!el) return;
     $('dashSplitCap').textContent = sel ? thMonthFull(sel) : 'ทุกช่วงเวลา';
     const inMonth = d => !sel || monthKey(d) === sel;
-    const jobs = store.get('bs_jobs', []).filter(j => inMonth(j.date));
-    const bills = store.get('bs_bills', []).filter(b => inMonth(b.date));
+    const jobs = store.get('bs_jobs', []).filter(j => inMonth(j.date) && !accHidden(j));
+    const bills = store.get('bs_bills', []).filter(b => inMonth(b.date) && !accHidden(b));
     const pageKeys = Object.keys(PAGE_LABEL).concat(['']);
-    const accKeys = ACCOUNTS.concat(['']);
+    const accKeys = VISIBLE_ACCOUNTS.concat(['']);
     const pg = x => PAGE_LABEL[x.page] ? x.page : '';
     const ac = x => ACCOUNTS.indexOf(x.account) >= 0 ? x.account : '';
     const cell = (jl, bl) => {
@@ -7468,7 +7472,7 @@ function bahtText(value) {
   // ทดสอบในเครื่องที่ไม่ได้ต่อคลาวด์: ใช้รายการที่อยู่ใน localStorage (bs_bank_in)
   if (!cloudDb && canBank && (store.get('bs_bank_in', []).length || store.get('bs_bank_out', []).length || store.get('bs_bank_balance', []).length)) onBankInChange();
   /* เพิ่ม/ลบรายการเงินเข้า-ออกเอง (กรณี SMS ไม่เข้า หรือระบบอ่านผิด) */
-  $('bkAcc').innerHTML = ACCOUNTS.map(a => '<option value="' + esc(a) + '">บัญชี' + esc(a) + '</option>').join('');
+  $('bkAcc').innerHTML = VISIBLE_ACCOUNTS.map(a => '<option value="' + esc(a) + '">บัญชี' + esc(a) + '</option>').join('');
   const toLocalInput = ms => { const d = new Date(ms); return localISO(d) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); };
   const bkDir = () => (document.querySelector('input[name="bkDir"]:checked') || {}).value || 'out';
   function paintBkDir() { $('bkPartyLbl').textContent = bkDir() === 'in' ? 'จากบัญชี (ไม่บังคับ)' : 'ไปที่บัญชี (ไม่บังคับ)'; }
