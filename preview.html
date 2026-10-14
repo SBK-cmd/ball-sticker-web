@@ -5415,26 +5415,63 @@ function bahtText(value) {
     for (let i = 0; i < p.length; i++) { c ^= p.charCodeAt(i) << 8; for (let k = 0; k < 8; k++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; }
     return p + c.toString(16).toUpperCase().padStart(4, '0');
   }
-  async function payCardDataUrl(amount, note) {
+  let payLogo = null;
+  const payLoadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+  // รูปบิลเรียกเก็บเงินแบบใบแจ้งยอด: โลโก้ร้าน + ยอด + QR + ชื่อบัญชีให้ลูกค้าตรวจ + เลขอ้างอิง
+  async function payCardDataUrl(amount, note, ref, at) {
     try { await document.fonts.ready; } catch (e) {}
-    const W = 720, H = 1000, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-    const g = cv.getContext('2d'), F = "'Sarabun','Noto Sans Thai',sans-serif";
-    g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
-    g.fillStyle = '#113566'; g.fillRect(0, 0, W, 130);
-    g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = '700 46px ' + F; g.fillText('สแกนจ่าย พร้อมเพย์', W / 2, 64);
-    g.font = '600 30px ' + F; g.fillText('PromptPay · ' + (shop.name || ''), W / 2, 108);
-    const m = qrEncode(promptPayPayload(shop.promptpay, amount)), n = m.length, size = 500, cell = Math.floor(size / n), q = cell * n, x0 = (W - q) / 2, y0 = 165;
-    g.fillStyle = '#111';
-    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (m[r][c]) g.fillRect(x0 + c * cell, y0 + r * cell, cell, cell);
-    let y = y0 + q + 70;
-    g.fillStyle = '#113566'; g.font = '800 64px ' + F; g.fillText('฿ ' + money(amount), W / 2, y);
-    g.fillStyle = '#334155'; g.font = '600 30px ' + F;
-    if (note) { y += 52; g.fillText(String(note).slice(0, 40), W / 2, y); }
-    y += 52; g.fillText('ชื่อบัญชี: ' + (shop.promptpayName || shop.name || ''), W / 2, y);
-    y += 44; g.fillStyle = '#64748b'; g.font = '500 26px ' + F; g.fillText('พร้อมเพย์ ' + ppMask(shop.promptpay) + ' · ' + (shop.name || ''), W / 2, y);
-    g.fillStyle = '#ffd60a'; g.fillRect(0, H - 14, W, 14);
-    return cv.toDataURL('image/png');
+    if (payLogo === null) payLogo = await payLoadImg('icon-512.png');
+    const W = 1080, H = 1720, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const g = cv.getContext('2d'), F = "'Sarabun','Noto Sans Thai',sans-serif", P = "'Prompt','Sarabun',sans-serif";
+    const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+    const NAVY = '#0b2a55', INK = '#0f172a', MUTE = '#64748b', LINE = '#e2e8f0', GOLD = '#ffd60a';
+    // พื้นหลัง
+    const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0b2a55'); bg.addColorStop(.42, '#123d7a'); bg.addColorStop(.42, '#eef2f7'); bg.addColorStop(1, '#eef2f7');
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    // หัว: โลโก้ + ชื่อร้าน
+    if (payLogo) { g.save(); g.beginPath(); g.arc(120, 120, 62, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill(); g.clip(); g.drawImage(payLogo, 58, 58, 124, 124); g.restore(); }
+    g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = '700 46px ' + P; g.fillText(shop.name || 'บอลสติ๊กเกอร์', 205, 112);
+    g.fillStyle = 'rgba(255,255,255,.75)'; g.font = '500 28px ' + F; g.fillText('ใบแจ้งชำระเงิน · Payment Request', 205, 158);
+    // การ์ดขาว
+    const cx = 60, cy = 230, cw = W - 120, ch = H - 300;
+    g.save(); g.shadowColor = 'rgba(11,42,85,.28)'; g.shadowBlur = 50; g.shadowOffsetY = 18; rr(cx, cy, cw, ch, 36); g.fillStyle = '#fff'; g.fill(); g.restore();
+    // ยอดชำระ
+    g.textAlign = 'center'; g.fillStyle = MUTE; g.font = '600 30px ' + F; g.fillText('ยอดที่ต้องชำระ', W / 2, cy + 78);
+    g.fillStyle = NAVY; g.font = '800 104px ' + P; g.fillText('฿' + money(amount), W / 2, cy + 192);
+    if (note) { g.fillStyle = INK; g.font = '600 32px ' + F; g.fillText(String(note).slice(0, 42), W / 2, cy + 248); }
+    // QR ในกรอบ
+    const m = qrEncode(promptPayPayload(shop.promptpay, amount)), n = m.length;
+    const qs = 560, cell = Math.floor(qs / n), q = cell * n, qx = Math.round((W - q) / 2), qy = cy + (note ? 335 : 290);
+    const pad = 34; rr(qx - pad, qy - pad, q + pad * 2, q + pad * 2, 28); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 3; g.strokeStyle = LINE; g.stroke();
+    // มุมกรอบสแกน
+    g.strokeStyle = NAVY; g.lineWidth = 8; g.lineCap = 'round'; const L = 54, o = pad + 2;
+    [[qx - o, qy - o, 1, 1], [qx + q + o, qy - o, -1, 1], [qx - o, qy + q + o, 1, -1], [qx + q + o, qy + q + o, -1, -1]].forEach(([x, y, dx, dy]) => { g.beginPath(); g.moveTo(x, y + dy * L); g.lineTo(x, y); g.lineTo(x + dx * L, y); g.stroke(); });
+    g.fillStyle = '#0b1220';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (m[r][c]) g.fillRect(qx + c * cell, qy + r * cell, cell, cell);
+    // ป้ายพร้อมเพย์
+    let y = qy + q + pad + 70;
+    rr(W / 2 - 170, y - 46, 340, 64, 32); g.fillStyle = NAVY; g.fill();
+    g.fillStyle = '#fff'; g.font = '700 30px ' + P; g.fillText('สแกนจ่ายพร้อมเพย์', W / 2, y - 3);
+    // ผู้รับเงิน
+    y += 66; g.fillStyle = MUTE; g.font = '500 28px ' + F; g.fillText('ชื่อบัญชีผู้รับเงิน', W / 2, y);
+    y += 52; g.fillStyle = INK; g.font = '700 44px ' + P; g.fillText(shop.promptpayName || '', W / 2, y);
+    y += 44; g.fillStyle = MUTE; g.font = '500 28px ' + F; g.fillText('พร้อมเพย์ ' + ppMask(shop.promptpay), W / 2, y);
+    // กล่องเตือนตรวจชื่อ
+    y += 40; rr(cx + 50, y, cw - 100, 96, 20); g.fillStyle = '#ecfdf3'; g.fill(); g.strokeStyle = '#86efac'; g.lineWidth = 2; g.stroke();
+    g.fillStyle = '#15803d'; g.font = '700 28px ' + F; g.fillText('✓ ก่อนยืนยัน ตรวจว่าชื่อผู้รับเป็น "' + (shop.promptpayName || '') + '"', W / 2, y + 44);
+    g.fillStyle = '#166534'; g.font = '500 24px ' + F; g.fillText('และยอดตรงกับ ฿' + money(amount) + ' · โอนแล้วส่งสลิปให้ร้านได้เลย', W / 2, y + 78);
+    // อ้างอิง
+    const d = at ? new Date(at) : new Date();
+    y = cy + ch - 46; g.strokeStyle = LINE; g.lineWidth = 2; g.setLineDash([10, 10]); g.beginPath(); g.moveTo(cx + 40, y - 58); g.lineTo(cx + cw - 40, y - 58); g.stroke(); g.setLineDash([]);
+    g.font = '500 25px ' + F; g.fillStyle = MUTE; g.textAlign = 'left'; g.fillText('เลขอ้างอิง ' + (ref || '—'), cx + 50, y);
+    g.textAlign = 'right'; g.fillText(d.toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'}), cx + cw - 50, y);
+    // ท้าย
+    g.textAlign = 'center'; g.fillStyle = MUTE; g.font = '500 24px ' + F;
+    g.fillText('ติดต่อร้าน ' + String(shop.phone || '').split(/\s*[,/]\s*/)[0] + (shop.taxId ? ' · ผู้ประกอบการจดทะเบียน VAT' : ''), W / 2, H - 30);
+    g.fillStyle = GOLD; g.fillRect(cx + 36, cy, cw - 72, 8);
+    try { return cv.toDataURL('image/png'); } catch (e) { if (payLogo) { payLogo = false; return payCardDataUrl(amount, note, ref, at); } throw e; }
   }
+  const payRef = t => 'BS' + new Date(t).toISOString().slice(2, 10).replace(/-/g, '') + '-' + String(t).slice(-4);
   const payCharges = () => (store.get('bs_pay_charges', []) || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   function renderPayHist() {
     const box = $('cpPayHist'); if (!box) return;
@@ -5446,7 +5483,7 @@ function bahtText(value) {
     const a = parseFloat(String(($('cpPayAmt') || {}).value || '').replace(/,/g, ''));
     const prev = $('cpPayPrev'); if (!prev) return;
     if (!(a > 0)) { prev.hidden = true; return; }
-    $('cpPayImg').src = await payCardDataUrl(a, ($('cpPayNote').value || '').trim()); prev.hidden = false;
+    $('cpPayImg').src = await payCardDataUrl(a, ($('cpPayNote').value || '').trim(), payRef(Date.now()), Date.now()); prev.hidden = false;
   }
   // จับคู่ยอดที่เรียกเก็บกับเงินเข้า (ยอดเท่ากัน · หลังเวลาที่ส่ง QR · ภายใน 7 วัน) แล้วแจ้งเตือน
   function matchPayCharges() {
@@ -5527,7 +5564,7 @@ function bahtText(value) {
     if (e.target.id === 'cpPaySave') {
       const a = parseFloat(String($('cpPayAmt').value || '').replace(/,/g, ''));
       if (!(a > 0)) { toast('ใส่จำนวนเงินก่อน'); return; }
-      const url = await payCardDataUrl(a, $('cpPayNote').value.trim());
+      const url = await payCardDataUrl(a, $('cpPayNote').value.trim(), payRef(Date.now()), Date.now());
       try {
         const blob = await (await fetch(url)).blob(), file = new File([blob], 'QR-' + a + '.png', {type: 'image/png'});
         if (navigator.canShare && navigator.canShare({files: [file]})) { await navigator.share({files: [file], title: 'QR พร้อมเพย์ ' + money(a) + ' บาท'}); return; }
@@ -5565,11 +5602,12 @@ function bahtText(value) {
       const note = $('cpPayNote').value.trim(), c = chatList.find(x => x.userId === chatSel) || {};
       btn.disabled = true; btn.textContent = 'กำลังส่ง...';
       try {
-        const url = await uploadPhotoToCloudinary(await payCardDataUrl(a, note));
+        const at = Date.now(), ref = payRef(at);
+        const url = await uploadPhotoToCloudinary(await payCardDataUrl(a, note, ref, at));
         if (!url) throw new Error('อัปโหลดรูป QR ไม่สำเร็จ');
         await chatPost({image: url, preview: url.replace('/image/upload/', '/image/upload/w_480,c_limit,q_auto/')});
-        await chatPost({text: '💳 ยอดชำระ ' + money(a) + ' บาท' + (note ? '\n' + note : '') + '\nสแกน QR ด้วยแอปธนาคารได้เลยครับ (พร้อมเพย์ ' + (shop.promptpayName || shop.name) + ')\nโอนแล้วแจ้งร้านหรือส่งสลิปมาได้เลยครับ 🙏'});
-        const rec = {id: 'pay' + Date.now(), chatId: chatSel, name: c.name || '', channel: c.channel || 'line', amount: a, note, status: 'pending', createdAt: Date.now(), by: chatBy()};
+        await chatPost({text: '💳 ยอดชำระ ' + money(a) + ' บาท' + (note ? '\n' + note : '') + '\nเลขอ้างอิง ' + ref + '\nสแกน QR ด้วยแอปธนาคารได้เลยครับ (พร้อมเพย์ ' + (shop.promptpayName || shop.name) + ')\nโอนแล้วแจ้งร้านหรือส่งสลิปมาได้เลยครับ 🙏'});
+        const rec = {id: 'pay' + at, ref, chatId: chatSel, name: c.name || '', channel: c.channel || 'line', amount: a, note, status: 'pending', createdAt: at, by: chatBy()};
         store.set('bs_pay_charges', payCharges().concat([rec])); cloudSave('payCharges', rec);
         toast('ส่ง QR เรียกเก็บ ' + money(a) + ' บาทแล้ว'); closeChatPlus(); matchPayCharges();
       } catch (err) { toast('ส่งไม่สำเร็จ: ' + err.message); btn.disabled = false; btn.textContent = 'ส่ง QR ให้ลูกค้า'; }
