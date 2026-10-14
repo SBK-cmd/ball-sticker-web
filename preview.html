@@ -565,6 +565,10 @@ button.status-pill:active{filter:brightness(0.9)}
 .chat-file{color:inherit;text-decoration:underline}
 .chat-msg time{font-size:10.5px;color:var(--muted);margin:2px 6px 0}
 .chat-send{display:flex;gap:8px;align-items:flex-end;padding:10px 12px;border-top:1px solid var(--line);background:var(--surface)}
+.chat-attach{flex:none;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;cursor:pointer;color:var(--muted);border:1.5px solid var(--field-line);background:var(--field)}
+.chat-attach:hover{color:var(--ink)}
+.chat-attach svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.chat-img.sending{opacity:.55}
 .chat-send textarea{flex:1;resize:none;min-height:42px;max-height:140px;padding:10px 12px;border-radius:14px;border:1.5px solid var(--field-line);background:var(--field);color:var(--ink);font:inherit;font-size:15px}
 @media (max-width:760px){
   .chat-shell{grid-template-columns:1fr;height:calc(100dvh - 210px)}
@@ -2347,6 +2351,7 @@ tr{break-inside:avoid}
               </div>
               <div class="chat-msgs" id="chatMsgs"></div>
               <form class="chat-send" id="chatSendForm">
+                <label class="chat-attach" title="ส่งรูปภาพ" aria-label="ส่งรูปภาพ"><input type="file" id="chatImgInput" accept="image/*" multiple hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg></label>
                 <textarea id="chatInput" rows="1" placeholder="พิมพ์ข้อความตอบลูกค้า..." aria-label="ข้อความ"></textarea>
                 <button class="btn primary" type="submit" id="chatSendBtn">ส่ง</button>
               </form>
@@ -4910,11 +4915,13 @@ function bahtText(value) {
     if (!cloudDb) { chatMsgs = ((store.get('bs_line_msgs', {}) || {})[uid] || []).slice().sort((a, b) => a.createdAt - b.createdAt); renderChatMsgs(); return; }
     chatMsgUnsub = cloudDb.collection('lineChats').doc(uid).collection('messages').orderBy('createdAt', 'desc').limit(150).onSnapshot(snap => {
       const l = []; snap.forEach(d => l.push(Object.assign({id: d.id}, d.data())));
-      chatMsgs = l.reverse(); renderChatMsgs();
+      chatMsgs = l.reverse().concat(chatMsgs.filter(m => m.pending)); renderChatMsgs();
     }, e => console.error('lineMessages sync error', e));
   }
   function msgBody(m) {
     const src = id => LINE_OA_URL + '/content?key=' + encodeURIComponent(LINE_OA_KEY) + '&id=' + encodeURIComponent(id);
+    if (m.type === 'image' && m.url) return '<a href="' + esc(m.url) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(m.preview || m.url) + '" alt="รูปที่ส่ง" loading="lazy"></a>';
+    if (m.type === 'image' && m.localUrl) return '<img class="chat-img sending" src="' + esc(m.localUrl) + '" alt="กำลังส่งรูป">';
     if (m.type === 'image' && m.contentId) return '<a href="' + esc(src(m.contentId)) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(src(m.contentId)) + '" alt="รูปจากลูกค้า" loading="lazy"></a>';
     if (m.type === 'sticker' && m.stickerId) return '<img class="chat-sticker" src="https://stickershop.line-scdn.net/stickershop/v1/sticker/' + esc(m.stickerId) + '/android/sticker.png" alt="สติกเกอร์" loading="lazy">';
     if ((m.type === 'video' || m.type === 'audio' || m.type === 'file') && m.contentId) return '<a class="chat-file" href="' + esc(src(m.contentId)) + '" target="_blank" rel="noopener">' + esc(m.text || 'เปิดไฟล์') + '</a>';
@@ -4933,6 +4940,7 @@ function bahtText(value) {
         '<time>' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + (m.dir === 'out' && m.by ? ' · ' + esc(m.by) : '') + '</time></div>';
     }).join('') : '<p class="empty" style="margin:auto">' + (chatSel ? 'ยังไม่มีข้อความ' : '') + '</p>';
     box.scrollTop = box.scrollHeight;
+    box.querySelectorAll('img').forEach(i => { if (!i.complete) i.addEventListener('load', () => { box.scrollTop = box.scrollHeight; }, {once: true}); });
   }
   async function sendChat() {
     const text = $('chatInput').value.trim();
@@ -4948,6 +4956,45 @@ function bahtText(value) {
       loadChatQuota();
     } catch (e) { toast('ส่งไม่สำเร็จ: ' + e.message); }
     finally { chatSending = false; $('chatSendBtn').disabled = false; $('chatInput').focus(); }
+  }
+  // ส่งรูป: ย่อรูปในเครื่อง (ด้านยาวสุด 1600px, JPEG) → อัปขึ้น Cloudinary → ให้ Worker ส่งลิงก์รูปเข้า LINE
+  function shrinkImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image(), url = URL.createObjectURL(file);
+      img.onload = () => {
+        const k = Math.min(1, 1600 / Math.max(img.width, img.height));
+        const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+        resolve(c.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('เปิดรูปไม่ได้')); };
+      img.src = url;
+    });
+  }
+  async function sendChatImages(files) {
+    if (!chatSel || !files.length) return;
+    const uid = chatSel;
+    for (const f of Array.from(files).slice(0, 5)) {
+      const temp = {dir: 'out', type: 'image', localUrl: '', createdAt: Date.now(), pending: true};
+      try {
+        const dataUrl = await shrinkImage(f);
+        temp.localUrl = dataUrl; chatMsgs.push(temp); renderChatMsgs();
+        const url = await uploadPhotoToCloudinary(dataUrl);
+        if (!url) throw new Error('อัปโหลดรูปไม่สำเร็จ');
+        const preview = url.replace('/image/upload/', '/image/upload/w_480,c_limit,q_auto/');
+        const r = await fetch(LINE_OA_URL + '/send', {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': LINE_OA_KEY},
+          body: JSON.stringify({userId: uid, image: url, preview, by: currentUser ? (currentUser.name || currentUser.username) : ''})});
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+        if (!cloudDb) { temp.url = url; temp.preview = preview; delete temp.localUrl; }
+        else chatMsgs = chatMsgs.filter(m => m !== temp);
+        renderChatMsgs();
+      } catch (e) {
+        chatMsgs = chatMsgs.filter(m => m !== temp); renderChatMsgs();
+        toast('ส่งรูปไม่สำเร็จ: ' + e.message);
+      }
+    }
+    loadChatQuota();
   }
   async function loadChatQuota() {
     try {
@@ -4966,6 +5013,7 @@ function bahtText(value) {
   $('chatBack').addEventListener('click', () => { chatSel = null; if (chatMsgUnsub) { try { chatMsgUnsub(); } catch (e) {} chatMsgUnsub = null; } renderChatHead(); renderChatList(); });
   $('chatSendForm').addEventListener('submit', e => { e.preventDefault(); sendChat(); });
   $('chatInput').addEventListener('input', autoGrowChat);
+  $('chatImgInput').addEventListener('change', e => { const fs = e.target.files; sendChatImages(fs); e.target.value = ''; });
   $('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && window.matchMedia('(min-width:900px)').matches) { e.preventDefault(); sendChat(); } });
   $('chatToJob').addEventListener('click', () => {
     const c = chatList.find(x => x.userId === chatSel); if (!c) return;
