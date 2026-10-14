@@ -2371,6 +2371,7 @@ tr{break-inside:avoid}
                 <button type="button" class="chat-back" id="chatBack" aria-label="กลับไปรายการแชท">‹</button>
                 <span id="chatAvatarWrap"></span>
                 <div class="chat-who"><b id="chatName"></b><small id="chatSub"></small></div>
+                <button type="button" class="btn small" id="chatTrackBtn">📦 เลขพัสดุ</button>
                 <button type="button" class="btn small" id="chatToJob">+ สร้างใบงาน</button>
               </div>
               <div class="chat-msgs" id="chatMsgs"></div>
@@ -5178,11 +5179,35 @@ function bahtText(value) {
         '<button class="btn primary" type="submit">ส่งคูปอง</button></form>';
       return;
     }
+    if (name === 'track') {
+      box.innerHTML = back + 'ส่งเลขพัสดุ</b></div><input class="txt" id="cpTrackQ" placeholder="ค้นหาชื่อลูกค้า / เลขพัสดุ" style="margin-bottom:8px"><div class="cp-replies" id="cpTrackList"></div>';
+      renderChatTrackList(); return;
+    }
     if (name === 'call') {
       box.innerHTML = back + 'คำขอการโทร</b></div><div class="cp-form"><p style="margin:0">ส่งการ์ดที่มีปุ่ม <b>โทรหาร้าน</b> (เบอร์ ' + esc(String(shop.phone || '').split(/\s*[,/]\s*/)[0]) + ') ให้ลูกค้ากดโทรได้ทันที</p>' +
         '<button class="btn primary" type="button" id="cpCallSend">ส่งคำขอการโทร</button></div>';
     }
   }
+  // ส่งเลขพัสดุ: ดึงจากประวัติหน้า "ติดตามพัสดุ" เรียงชื่อที่ตรงกับลูกค้าในแชทขึ้นก่อน กดแล้วใส่ข้อความในช่องพิมพ์ให้ตรวจก่อนส่ง
+  const normName = v => String(v || '').toLowerCase().replace(/^(คุณ|k\.|คุน)\s*/, '').replace(/[\s._-]+/g, '');
+  function renderChatTrackList() {
+    const box = $('cpTrackList'); if (!box) return;
+    const c = chatList.find(x => x.userId === chatSel) || {};
+    const me = normName(c.name), q = ($('cpTrackQ') ? $('cpTrackQ').value : '').trim().toLowerCase();
+    const hit = t => { const n = normName(t.customer); return !!(me && n && (n.includes(me) || me.includes(n))); };
+    let list = (store.get('bs_tracking', []) || []).filter(t => t && t.code);
+    if (q) list = list.filter(t => String(t.code).toLowerCase().includes(q) || String(t.customer || '').toLowerCase().includes(q) || String(t.carrier || '').toLowerCase().includes(q));
+    const when = t => t.ishipCreatedAt != null ? t.ishipCreatedAt : (t.savedAt || 0);
+    list.sort((a, b) => (hit(b) - hit(a)) || (when(b) - when(a)));
+    list = list.slice(0, 30);
+    box.innerHTML = list.length ? list.map(t => '<div class="cp-reply"><button type="button" class="cp-reply-use" data-trk="' + esc(t.id) + '">' +
+      (hit(t) ? '⭐ ' : '') + '<b>' + esc(t.customer || 'ไม่ระบุชื่อ') + '</b> · ' + esc(t.carrier || '') + '<br><small>' + esc(t.code) + ' · ' + esc(new Date(t.savedAt || when(t)).toLocaleDateString('th-TH')) + '</small></button></div>').join('')
+      : '<p class="empty">' + (q ? 'ไม่พบเลขพัสดุที่ค้นหา' : 'ยังไม่มีประวัติเลขพัสดุ (สร้างได้ที่หน้า ติดตามพัสดุ)') + '</p>';
+  }
+  $('chatTrackBtn').addEventListener('click', () => {
+    if (!can('track')) { toast('ไม่มีสิทธิ์ดูเลขพัสดุ'); return; }
+    if (chatPanel === 'track') closeChatPlus(); else openChatPanel('track');
+  });
   const PICO = {
     camera: '<path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.6"/>',
     media: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M7 16l4-5 3 3.5 2-2 2.5 3.5"/><circle cx="16" cy="8.5" r="1.3"/>',
@@ -5204,6 +5229,12 @@ function bahtText(value) {
       if (k === 'file') { $('chatFileInput').click(); return; }
       cpCardImg = ''; openChatPanel(k); return;
     }
+    const trk = e.target.closest('[data-trk]');
+    if (trk) {
+      const rec = (store.get('bs_tracking', []) || []).find(t => t.id === trk.dataset.trk); if (!rec) return;
+      $('chatInput').value = rec.message || buildTrackingMessage(rec.code, rec.carrier, rec.customer);
+      autoGrowChat(); closeChatPlus(); $('chatInput').focus(); toast('ใส่ข้อความเลขพัสดุแล้ว ตรวจแล้วกดส่งได้เลย'); return;
+    }
     const use = e.target.closest('[data-rtext]');
     if (use) { $('chatInput').value = use.dataset.rtext; autoGrowChat(); closeChatPlus(); $('chatInput').focus(); return; }
     const del = e.target.closest('[data-rdel]');
@@ -5217,6 +5248,7 @@ function bahtText(value) {
       catch (err) { toast('ส่งไม่สำเร็จ: ' + err.message); e.target.disabled = false; }
     }
   });
+  $('chatPlus').addEventListener('input', e => { if (e.target.id === 'cpTrackQ') renderChatTrackList(); });
   $('chatPlus').addEventListener('change', async e => {
     if (e.target.id !== 'cpcImg' || !e.target.files[0]) return;
     $('cpcImgLbl').textContent = '⏳ กำลังอัปโหลดรูป...';
