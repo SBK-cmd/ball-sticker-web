@@ -52,7 +52,7 @@ if ('serviceWorker' in navigator) {
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Firebase (ใช้ซิงก์ประวัติบิล/ใบคอนเฟิร์มงานข้ามเครื่องแบบเรียลไทม์ — ถ้าโหลดไม่ได้ เช่น ไม่มีอินเทอร์เน็ต
      หรือถูกบล็อกสคริปต์ภายนอก แอปจะสลับไปใช้เฉพาะข้อมูลในเครื่องนี้ (localStorage) แทนโดยอัตโนมัติ) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
@@ -3015,7 +3015,7 @@ function bahtText(value) {
     address: '8 หมู่ 19 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140',
     phone: '093-5353555, 096-6697495',
     promptpay: '0935353555',
-    promptpayName: 'กิติพงษ์ สีทอง'
+    promptpayName: 'นาย กิติพงษ์ สีทอง'
   };
   let shop = Object.assign({}, SHOP_DEFAULT, store.get('bs_shop', {}));
 
@@ -5417,59 +5417,43 @@ function bahtText(value) {
   }
   let payLogo = null;
   const payLoadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
-  // รูปบิลเรียกเก็บเงินแบบใบแจ้งยอด: โลโก้ร้าน + ยอด + QR + ชื่อบัญชีให้ลูกค้าตรวจ + เลขอ้างอิง
+  // รูปเรียกเก็บเงิน: เรียบ สะอาด แบบหน้ารับเงินของแอปธนาคาร — ฟอนต์ Noto Sans Thai (วางสระ/วรรณยุกต์ถูกตำแหน่ง)
   async function payCardDataUrl(amount, note, ref, at) {
-    // ฟอนต์ไทยแบบมีหัว (Sarabun) ทุกบรรทัด — โหลดให้ครบทุกน้ำหนักก่อนวาด ไม่งั้นมือถือจะใช้ฟอนต์ไม่มีหัวของเครื่องแทน
-    try { await Promise.all(['500', '600', '700', '800'].map(w => document.fonts.load(w + " 40px 'Sarabun'", 'กข฿1'))); await document.fonts.ready; } catch (e) {}
+    const FN = 'Noto Sans Thai';
+    try { await Promise.all(['400', '500', '600', '700'].map(w => document.fonts.load(w + " 40px '" + FN + "'", 'กขต้อง฿1'))); await document.fonts.ready; } catch (e) {}
     if (payLogo === null) payLogo = await payLoadImg('icon-512.png');
-    const W = 1080, H = 1720, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-    const g = cv.getContext('2d'), F = "'Sarabun','Tahoma','FreeSerif',serif", P = F;
-    const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
-    const NAVY = '#0b2a55', INK = '#0f172a', MUTE = '#64748b', LINE = '#e2e8f0', GOLD = '#ffd60a';
-    // พื้นหลัง
-    const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0b2a55'); bg.addColorStop(.42, '#123d7a'); bg.addColorStop(.42, '#eef2f7'); bg.addColorStop(1, '#eef2f7');
-    g.fillStyle = bg; g.fillRect(0, 0, W, H);
-    // หัว: โลโก้ + ชื่อร้าน
-    if (payLogo) { g.save(); g.beginPath(); g.arc(120, 120, 62, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill(); g.clip(); g.drawImage(payLogo, 58, 58, 124, 124); g.restore(); }
-    g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = '700 46px ' + P; g.fillText(shop.name || 'บอลสติ๊กเกอร์', 205, 112);
-    g.fillStyle = 'rgba(255,255,255,.75)'; g.font = '500 28px ' + F; g.fillText('ใบแจ้งชำระเงิน · Payment Request', 205, 158);
-    // การ์ดขาว
-    const cx = 60, cy = 230, cw = W - 120, ch = H - 300;
-    g.save(); g.shadowColor = 'rgba(11,42,85,.28)'; g.shadowBlur = 50; g.shadowOffsetY = 18; rr(cx, cy, cw, ch, 36); g.fillStyle = '#fff'; g.fill(); g.restore();
-    // ยอดชำระ
-    g.textAlign = 'center'; g.fillStyle = MUTE; g.font = '600 30px ' + F; g.fillText('ยอดที่ต้องชำระ', W / 2, cy + 78);
-    g.fillStyle = NAVY; g.font = '800 104px ' + P; g.fillText('฿' + money(amount), W / 2, cy + 192);
-    if (note) { g.fillStyle = INK; g.font = '600 32px ' + F; g.fillText(String(note).slice(0, 42), W / 2, cy + 248); }
-    // QR ในกรอบ
+    const W = 1080, H = 1560, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const g = cv.getContext('2d'), F = "'" + FN + "','Sarabun',sans-serif";
+    const NAVY = '#1f4e79', TEAL = '#3aa99f', INK = '#3a3a3a', MUTE = '#9a9a9a', LINE = '#e6e6e6';
+    const font = (w, px) => { g.font = w + ' ' + px + 'px ' + F; };
+    g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+    // แถบหัว: โลโก้ร้าน + ชื่อร้าน
+    g.fillStyle = NAVY; g.fillRect(0, 0, W, 200);
+    const lx = 300, ly = 100;
+    if (payLogo) { g.save(); g.beginPath(); g.arc(lx, ly, 62, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill(); g.clip(); g.drawImage(payLogo, lx - 60, ly - 60, 120, 120); g.restore(); }
+    g.textAlign = 'left'; g.fillStyle = '#fff'; font(700, 50); g.fillText(shop.name || 'บอลสติ๊กเกอร์', lx + 88, ly + 4);
+    g.fillStyle = 'rgba(255,255,255,.8)'; font(400, 28); g.fillText('ใบแจ้งชำระเงิน', lx + 88, ly + 48);
+    // ยอดเงิน
+    g.textAlign = 'center'; g.fillStyle = MUTE; font(400, 32); g.fillText('ยอดชำระ', W / 2, 290);
+    g.fillStyle = NAVY; font(700, 96); g.fillText(money(amount) + ' บาท', W / 2, 395);
+    if (note) { g.fillStyle = INK; font(400, 32); g.fillText(String(note).slice(0, 44), W / 2, 450); }
+    // QR
     const m = qrEncode(promptPayPayload(shop.promptpay, amount)), n = m.length;
-    const qs = 560, cell = Math.floor(qs / n), q = cell * n, qx = Math.round((W - q) / 2), qy = cy + (note ? 335 : 290);
-    const pad = 34; rr(qx - pad, qy - pad, q + pad * 2, q + pad * 2, 28); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 3; g.strokeStyle = LINE; g.stroke();
-    // มุมกรอบสแกน
-    g.strokeStyle = NAVY; g.lineWidth = 8; g.lineCap = 'round'; const L = 54, o = pad + 2;
-    [[qx - o, qy - o, 1, 1], [qx + q + o, qy - o, -1, 1], [qx - o, qy + q + o, 1, -1], [qx + q + o, qy + q + o, -1, -1]].forEach(([x, y, dx, dy]) => { g.beginPath(); g.moveTo(x, y + dy * L); g.lineTo(x, y); g.lineTo(x + dx * L, y); g.stroke(); });
-    g.fillStyle = '#0b1220';
+    const qs = 560, cell = Math.floor(qs / n), q = cell * n, qx = Math.round((W - q) / 2), qy = note ? 500 : 470;
+    g.fillStyle = '#000';
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (m[r][c]) g.fillRect(qx + c * cell, qy + r * cell, cell, cell);
-    // ป้ายพร้อมเพย์
-    let y = qy + q + pad + 70;
-    rr(W / 2 - 170, y - 46, 340, 64, 32); g.fillStyle = NAVY; g.fill();
-    g.fillStyle = '#fff'; g.font = '700 30px ' + P; g.fillText('สแกนจ่ายพร้อมเพย์', W / 2, y - 3);
-    // ผู้รับเงิน
-    y += 66; g.fillStyle = MUTE; g.font = '500 28px ' + F; g.fillText('ชื่อบัญชีผู้รับเงิน', W / 2, y);
-    y += 52; g.fillStyle = INK; g.font = '700 44px ' + P; g.fillText(shop.promptpayName || '', W / 2, y);
-    y += 44; g.fillStyle = MUTE; g.font = '500 28px ' + F; g.fillText('พร้อมเพย์ ' + ppMask(shop.promptpay), W / 2, y);
-    // กล่องเตือนตรวจชื่อ
-    y += 40; rr(cx + 50, y, cw - 100, 96, 20); g.fillStyle = '#ecfdf3'; g.fill(); g.strokeStyle = '#86efac'; g.lineWidth = 2; g.stroke();
-    g.fillStyle = '#15803d'; g.font = '700 28px ' + F; g.fillText('✓ ก่อนยืนยัน ตรวจว่าชื่อผู้รับเป็น "' + (shop.promptpayName || '') + '"', W / 2, y + 44);
-    g.fillStyle = '#166534'; g.font = '500 24px ' + F; g.fillText('และยอดตรงกับ ฿' + money(amount) + ' · โอนแล้วส่งสลิปให้ร้านได้เลย', W / 2, y + 78);
-    // อ้างอิง
-    const d = at ? new Date(at) : new Date();
-    y = cy + ch - 46; g.strokeStyle = LINE; g.lineWidth = 2; g.setLineDash([10, 10]); g.beginPath(); g.moveTo(cx + 40, y - 58); g.lineTo(cx + cw - 40, y - 58); g.stroke(); g.setLineDash([]);
-    g.font = '500 25px ' + F; g.fillStyle = MUTE; g.textAlign = 'left'; g.fillText('เลขอ้างอิง ' + (ref || '—'), cx + 50, y);
-    g.textAlign = 'right'; g.fillText(d.toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'}), cx + cw - 50, y);
+    // ข้อมูลผู้รับ
+    let y = qy + q + 105;
+    g.fillStyle = TEAL; font(500, 50); g.fillText('สแกน QR เพื่อโอนเข้าบัญชี', W / 2, y);
+    y += 72; g.fillStyle = INK; font(400, 48); g.fillText('ชื่อ: ' + (shop.promptpayName || ''), W / 2, y);
+    y += 68; g.fillText('พร้อมเพย์: ' + ppMask(shop.promptpay), W / 2, y);
+    y += 58; g.fillStyle = MUTE; font(400, 34); g.fillText('เลขที่อ้างอิง: ' + (ref || '—'), W / 2, y);
     // ท้าย
-    g.textAlign = 'center'; g.fillStyle = MUTE; g.font = '500 24px ' + F;
-    g.fillText('ติดต่อร้าน ' + String(shop.phone || '').split(/\s*[,/]\s*/)[0] + (shop.taxId ? ' · ผู้ประกอบการจดทะเบียน VAT' : ''), W / 2, H - 30);
-    g.fillStyle = GOLD; g.fillRect(cx + 36, cy, cw - 72, 8);
+    const fy = H - 150; g.fillStyle = TEAL; g.fillRect(0, fy, W, 3);
+    g.fillStyle = MUTE; font(400, 34);
+    const d = at ? new Date(at) : new Date();
+    g.fillText('รับเงินได้จากทุกธนาคาร · ' + d.toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'}), W / 2, fy + 70);
+    font(400, 26); g.fillText('โปรดตรวจชื่อผู้รับให้ตรงก่อนยืนยันการโอน · ติดต่อร้าน ' + String(shop.phone || '').split(/\s*[,/]\s*/)[0], W / 2, fy + 118);
     try { return cv.toDataURL('image/png'); } catch (e) { if (payLogo) { payLogo = false; return payCardDataUrl(amount, note, ref, at); } throw e; }
   }
   const payRef = t => 'BS' + new Date(t).toISOString().slice(2, 10).replace(/-/g, '') + '-' + String(t).slice(-4);
