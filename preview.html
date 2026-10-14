@@ -650,6 +650,30 @@ button.status-pill:active{filter:brightness(0.9)}
 .pay-st.paid{background:color-mix(in srgb,var(--in-ink) 20%,transparent);color:var(--in-ink)}
 .chat-list-head{grid-template-columns:minmax(0,1fr)} .chat-list-head>*{min-width:0;max-width:100%}
 .btab-ico{position:relative} .btab-badge{position:absolute;top:-4px;right:6px;margin:0;min-width:18px;height:18px;font-size:10.5px;line-height:18px;padding:0 5px}
+.chat-av-wrap{position:relative;flex:none;display:grid}
+.chat-unread-dot{position:absolute;top:0;right:0;width:13px;height:13px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 2.5px var(--surface)}
+.chat-item small{display:flex;align-items:center;min-width:0;gap:0}
+.chat-item small .ch-tag{flex:none}
+.chat-prev{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-item.unread .chat-item-top time{color:#ef4444;font-weight:800}
+.chat-item.unread .chat-prev{color:var(--ink);font-weight:700}
+.chat-item-top b{min-width:0}
+@media (max-width:760px){
+  .chat-shell{grid-template-columns:minmax(0,1fr)!important}
+  .chat-list-pane,.chat-list,.chat-item,.chat-item-main{min-width:0;max-width:100%}
+  #panel-chat .page-head{padding:14px 0 10px}
+  #panel-chat .page-head p{display:none}
+  .chat-list-head{padding:10px;gap:6px}
+  .chat-quota{font-size:11px}
+  .chat-list{padding:4px}
+  .chat-item{padding:10px 8px;gap:12px;border-radius:14px}
+  .chat-item + .chat-item{border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent);border-radius:0}
+  .chat-item-top b{font-size:15.5px}
+  .chat-item small{font-size:13px}
+  .push-btn{font-size:13px;min-height:34px;padding:5px 12px}
+  .chat-list-pane{border-right:0}
+  .push-status{font-size:11.5px;line-height:1.45}
+}
 .push-btn{justify-self:start;white-space:normal;text-align:left}
 .push-status{font-size:12px;color:var(--muted)} .push-status.err{color:var(--out-ink);font-weight:700}
 .chat-hbtn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
@@ -5132,9 +5156,9 @@ function bahtText(value) {
     $('chatList').innerHTML = shown.length ? shown.map(c => {
       const un = chatUnread(c);
       return '<button type="button" class="chat-item' + (c.userId === chatSel ? ' sel' : '') + (un ? ' unread' : '') + '" data-uid="' + esc(c.userId) + '">' +
-        avatarHtml(c, 'chat-av') +
+        '<span class="chat-av-wrap">' + avatarHtml(c, 'chat-av') + (un ? '<i class="chat-unread-dot" aria-label="ยังไม่อ่าน"></i>' : '') + '</span>' +
         '<span class="chat-item-main"><span class="chat-item-top"><b>' + esc(c.name || (c.channel === 'fb' ? 'ลูกค้า Facebook' : 'ลูกค้า LINE')) + '</b><time>' + esc(chatWhen(c.lastAt)) + '</time></span>' +
-        '<small>' + (c.channel === 'fb' ? '<i class="ch-tag fb ' + (FB_PAGE_CLASS[c.pageId] || '') + '">เพจ ' + esc(fbPageName(c)) + '</i>' : '<i class="ch-tag ln">LINE</i>') + (c.lastDir === 'out' ? 'คุณ: ' : '') + esc(c.lastText || '') + '</small></span>' + (un ? '<i class="chat-dot" aria-label="ยังไม่อ่าน"></i>' : '') + '</button>';
+        '<small>' + (c.channel === 'fb' ? '<i class="ch-tag fb ' + (FB_PAGE_CLASS[c.pageId] || '') + '">เพจ ' + esc(fbPageName(c)) + '</i>' : '<i class="ch-tag ln">LINE</i>') + (c.lastDir === 'out' ? 'คุณ: ' : '') + '<span class="chat-prev">' + esc(c.lastText || '') + '</span></small></span></button>';
     }).join('') : '<p class="empty">' + (chatList.length ? 'ไม่พบแชทที่ค้นหา' : (cloudDb ? 'ยังไม่มีแชท — ข้อความที่ลูกค้าทักมาใน LINE OA หลังเชื่อมระบบจะขึ้นที่นี่' : 'ต้องต่อคลาวด์ก่อน')) + '</p>';
   }
   function renderChatHead() {
