@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>บอลสติ๊กเกอร์ พิษณุโลก · สติ๊กเกอร์สั่งทำ ไดคัทตามรูป</title>
+<meta name="description" content="รับทำสติ๊กเกอร์สั่งทำ ไดคัทตามรูป ฉลากสินค้า โฮโลแกรม งาน UV สั่งง่ายผ่าน LINE ส่งทั่วประเทศ จากบอลสติ๊กเกอร์ พิษณุโลก">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#10305c;      /* หมึกหลัก — สีเดียวกับโลโก้ */
+  --navy-deep:#0a2142;
+  --yolk:#ffd23f;      /* เหลืองโลโก้ */
+  --liner:#e9eef5;     /* สีกระดาษรองหลังสติ๊กเกอร์ */
+  --paper:#ffffff;
+  --ink:#1b2738;
+  --muted:#5a6779;
+  --sky:#2fa8e0;
+  --line:#d6dee9;
+  --display:'Mitr','IBM Plex Sans Thai',sans-serif;
+  --body:'IBM Plex Sans Thai','Sarabun',sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.7 var(--body);-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--sky);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1160px;margin:0 auto;padding:0 20px}
+.skip{position:absolute;left:-999px;top:8px;background:var(--navy);color:#fff;padding:8px 14px;border-radius:8px;z-index:99}
+.skip:focus{left:12px}
+
+/* แถบประกาศ */
+.notice{background:var(--navy-deep);color:#dbe6f5;font-size:14px;text-align:center;padding:8px 16px}
+.notice a{color:var(--yolk);font-weight:600;text-decoration:none}
+
+/* หัวเว็บ */
+header.top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:20px;height:68px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;margin-right:auto}
+.brand img{width:42px;height:42px;border-radius:50%}
+.brand b{font:600 19px/1.1 var(--display);color:var(--navy)}
+.brand small{display:block;font:400 12.5px/1.2 var(--body);color:var(--muted)}
+nav.menu{display:flex;gap:22px}
+nav.menu a{text-decoration:none;font-weight:500;color:var(--ink);font-size:15px}
+nav.menu a:hover{color:var(--sky)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:10px 22px;border-radius:999px;border:2px solid var(--navy);background:var(--paper);color:var(--navy);font:600 16px/1.2 var(--display);text-decoration:none;cursor:pointer;transition:transform .15s ease,background-color .15s ease}
+.btn:active{transform:scale(.97)}
+.btn.line{background:#06c755;border-color:#06c755;color:#fff}
+.btn.solid{background:var(--navy);color:#fff}
+.btn svg{width:20px;height:20px;flex:none}
+@media (max-width:860px){nav.menu{display:none}.top .btn.line span{display:none}.top .btn.line{padding:10px 14px}}
+
+/* ส่วนเปิด: หัวเรื่องซ้าย แผ่นสติ๊กเกอร์ขวา */
+.hero{position:relative;padding:56px 0 64px;overflow:hidden}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:48px;align-items:center}
+.hero h1{font:600 clamp(36px,5.4vw,64px)/1.12 var(--display);color:var(--navy);margin:0 0 18px;letter-spacing:-.01em}
+.hero p.lead{font-size:18px;color:var(--muted);max-width:34em;margin:0 0 28px}
+.hero .cta{display:flex;flex-wrap:wrap;gap:12px}
+.hero .facts{display:flex;flex-wrap:wrap;gap:10px 22px;margin:28px 0 0;padding:0;list-style:none;color:var(--ink);font-size:15px}
+.hero .facts li{display:flex;align-items:center;gap:8px}
+.hero .facts svg{width:20px;height:20px;color:var(--sky);flex:none}
+
+/* แผ่นสติ๊กเกอร์ (ชิ้นเด่นของหน้า) */
+.sheet{position:relative;aspect-ratio:1/1.08;background:var(--liner);border-radius:18px;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:28px 28px;
+  box-shadow:0 30px 60px -30px rgba(16,48,92,.45);transform:rotate(2deg)}
+.sheet::after{content:"แผ่นรองหลัง · ลอกแล้วติดได้เลย";position:absolute;left:18px;bottom:12px;font-size:12px;color:#8a97a8}
+.stk{position:absolute;filter:drop-shadow(0 6px 8px rgba(16,48,92,.22))}
+.stk svg{width:100%;height:auto;overflow:visible}
+.s1{width:46%;left:7%;top:8%;transform:rotate(-8deg)}
+.s2{width:40%;right:6%;top:12%;transform:rotate(7deg)}
+.s3{width:44%;left:10%;bottom:12%;transform:rotate(4deg)}
+.s4{width:36%;right:9%;bottom:16%;transform:rotate(-6deg)}
+.peel{animation:peel 1.4s .5s cubic-bezier(.2,.8,.2,1) both}
+@keyframes peel{from{transform:rotate(7deg) translateY(0)}to{transform:rotate(11deg) translate(6px,-14px)}}
+@media (prefers-reduced-motion:reduce){.peel{animation:none}html{scroll-behavior:auto}}
+@media (max-width:860px){
+  .hero{padding:32px 0 44px}
+  .hero .wrap{grid-template-columns:1fr;gap:34px}
+  .sheet{max-width:420px;width:100%;margin:0 auto}
+  .hero p.lead{font-size:16.5px}
+}
+
+/* ส่วนทั่วไป */
+section.block{padding:72px 0}
+section.block.alt{background:var(--liner)}
+.block h2{font:600 clamp(28px,3.6vw,40px)/1.2 var(--display);color:var(--navy);margin:0 0 10px}
+.block .sub{color:var(--muted);margin:0 0 34px;max-width:40em}
+
+/* แบบสติ๊กเกอร์: รูปทรงของการ์ดตรงกับชนิดงาน */
+.types{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.type{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:10px}
+.type .art{height:150px;display:grid;place-items:center;background:var(--liner);border-radius:14px}
+.type .art svg{height:120px;width:auto;filter:drop-shadow(0 6px 8px rgba(16,48,92,.18))}
+.type h3{font:600 21px/1.3 var(--display);margin:6px 0 0;color:var(--navy)}
+.type p{margin:0;color:var(--muted);font-size:15px}
+.type .pick{margin-top:auto;align-self:flex-start;background:none;border:0;padding:6px 0;color:var(--sky);font:600 15.5px var(--display);cursor:pointer;text-decoration:underline;text-underline-offset:4px}
+@media (max-width:900px){.types{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.types{grid-template-columns:1fr}.type .art{height:130px}}
+
+/* ขั้นตอนสั่งงาน (เป็นลำดับจริง จึงใส่เลข) */
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;counter-reset:s;list-style:none;margin:0;padding:0}
+.steps li{position:relative;padding:58px 18px 20px;background:var(--paper);border-radius:18px;border:1px solid var(--line)}
+.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:18px;top:16px;width:32px;height:32px;border-radius:50%;background:var(--yolk);color:var(--navy);display:grid;place-items:center;font:600 16px var(--display)}
+.steps h3{font:600 18px/1.35 var(--display);margin:0 0 6px;color:var(--navy)}
+.steps p{margin:0;color:var(--muted);font-size:15px}
+@media (max-width:900px){.steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.steps{grid-template-columns:1fr}}
+
+/* ฟอร์มขอราคา */
+.quote{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:40px;align-items:start}
+.quote aside{background:var(--navy);color:#e3ecf8;border-radius:22px;padding:28px}
+.quote aside h3{font:600 22px/1.3 var(--display);color:#fff;margin:0 0 12px}
+.quote aside ul{margin:0;padding-left:20px}
+.quote aside li{margin:6px 0}
+form.qf{display:grid;gap:14px;background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:24px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label.f span{display:block;font-weight:600;font-size:14.5px;margin-bottom:6px}
+.f input,.f select,.f textarea{width:100%;min-height:48px;border:1.5px solid var(--line);border-radius:12px;padding:11px 14px;font:400 16px var(--body);color:var(--ink);background:#fff}
+.f textarea{min-height:96px;resize:vertical}
+.f input:focus,.f select:focus,.f textarea:focus{outline:none;border-color:var(--sky);box-shadow:0 0 0 3px rgba(47,168,224,.2)}
+.qf .hint{font-size:13.5px;color:var(--muted);margin:-4px 0 0}
+.qf .actions{display:flex;flex-wrap:wrap;gap:10px}
+@media (max-width:860px){.quote{grid-template-columns:1fr}.quote aside{order:2}}
+
+/* ผลงาน */
+.gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:880px}
+.gallery figure{margin:0;aspect-ratio:4/3;border-radius:16px;border:2px dashed var(--line);display:grid;place-items:center;color:#8a97a8;font-size:14px;text-align:center;padding:12px;background:var(--paper)}
+@media (max-width:560px){.gallery{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ความมั่นใจ */
+.trust{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}
+.trust div h3{font:600 18px/1.35 var(--display);color:var(--navy);margin:10px 0 4px}
+.trust div p{margin:0;color:var(--muted);font-size:15px}
+.trust svg{width:34px;height:34px;color:var(--sky)}
+@media (max-width:760px){.trust{grid-template-columns:1fr;gap:22px}}
+
+/* ท้ายเว็บ */
+footer.foot{background:var(--navy-deep);color:#c7d4e6;padding:48px 0 90px;font-size:15px}
+.foot .wrap{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:30px}
+.foot b{display:block;font:600 18px var(--display);color:#fff;margin-bottom:8px}
+.foot a{color:#fff}
+.foot ul{list-style:none;margin:0;padding:0}
+.foot li{margin:6px 0}
+@media (max-width:760px){.foot .wrap{grid-template-columns:1fr}}
+
+/* ปุ่ม LINE ลอยบนมือถือ */
+.float-line{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:30;display:none;box-shadow:0 10px 24px -8px rgba(6,199,85,.6)}
+@media (max-width:860px){.float-line{display:inline-flex}}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 18px;border-radius:12px;font-size:15px;z-index:40;max-width:calc(100% - 32px)}
+.preview-tag{position:fixed;left:12px;bottom:12px;z-index:50;background:#ffefc2;color:#6b4e00;border:1px solid #f0cf6b;border-radius:10px;padding:6px 10px;font-size:12.5px}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">ข้ามไปเนื้อหา</a>
+<div class="notice">สั่งงานผ่าน LINE ได้ทุกวัน ส่งทั่วประเทศ ติดตามพัสดุได้ทุกออเดอร์ · <a href="#quote">ขอราคาเลย</a></div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#"><img src="icon-192.png" alt=""><span><b>บอลสติ๊กเกอร์</b><small>พิษณุโลก · ทำสติ๊กเกอร์สั่งทำ</small></span></a>
+    <nav class="menu" aria-label="เมนูหลัก">
+      <a href="#types">แบบสติ๊กเกอร์</a>
+      <a href="#how">วิธีสั่ง</a>
+      <a href="#quote">ขอราคา</a>
+      <a href="#work">ผลงาน</a>
+      <a href="#contact">ติดต่อ</a>
+    </nav>
+    <a class="btn line" data-line href="#quote"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.4 5.9-3.5 8-6C21.4 14.3 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg><span>ทัก LINE</span></a>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <h1>สติ๊กเกอร์ที่ติดแน่น สีไม่ซีด ตัดตามรูปที่คุณออกแบบ</h1>
+        <p class="lead">ทำฉลากสินค้า โลโก้ร้าน และสติ๊กเกอร์ไดคัททุกรูปทรง ส่งไฟล์หรือไอเดียมาทาง LINE ร้านจัดแบบให้ตรวจก่อนพิมพ์ทุกงาน</p>
+        <div class="cta">
+          <a class="btn solid" href="#quote">ขอราคางานของฉัน</a>
+          <a class="btn line" data-line href="#quote"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.4 5.9-3.5 8-6C21.4 14.3 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg>ทัก LINE สั่งงาน</a>
+        </div>
+        <ul class="facts">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg>ตรวจแบบก่อนพิมพ์</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg>จ่ายง่ายด้วย QR พร้อมเพย์</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg>มีใบกำกับภาษี</li>
+        </ul>
+      </div>
+
+      <div class="sheet" aria-hidden="true">
+        <!-- สติ๊กเกอร์ตัวอย่าง: ขอบขาวหนา = รอยไดคัท -->
+        <div class="stk s1"><svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="94" fill="#fff"/><circle cx="100" cy="100" r="82" fill="#ffd23f"/><circle cx="100" cy="100" r="82" fill="none" stroke="#10305c" stroke-width="6"/><text x="100" y="94" text-anchor="middle" font-family="Mitr" font-weight="600" font-size="29" fill="#10305c">ร้านป้าแดง</text><text x="100" y="132" text-anchor="middle" font-family="Mitr" font-size="22" fill="#10305c">ข้าวมันไก่</text></svg></div>
+        <div class="stk s2 peel"><svg viewBox="0 0 200 150"><rect x="4" y="4" width="192" height="142" rx="34" fill="#fff"/><rect x="16" y="16" width="168" height="118" rx="24" fill="#10305c"/><text x="100" y="72" text-anchor="middle" font-family="Mitr" font-weight="600" font-size="30" fill="#fff">Handmade</text><text x="100" y="106" text-anchor="middle" font-family="Mitr" font-size="18" fill="#ffd23f">ทำมือทุกชิ้น</text><path d="M196 110 L196 146 L160 146 Z" fill="#e9eef5"/><path d="M196 110 L160 146 L172 116 Z" fill="#cfd8e4"/></svg></div>
+        <div class="stk s3"><svg viewBox="0 0 220 160"><path d="M30 20 C70 -6 150 0 190 24 C226 46 222 116 186 138 C140 166 64 164 28 136 C-6 110 -6 44 30 20 Z" fill="#fff"/><path d="M40 32 C76 10 146 14 180 34 C210 52 206 110 176 128 C136 152 70 150 40 126 C12 104 12 52 40 32 Z" fill="#2fa8e0"/><text x="110" y="86" text-anchor="middle" font-family="Mitr" font-weight="600" font-size="34" fill="#fff">ขายดี!</text><text x="110" y="116" text-anchor="middle" font-family="Mitr" font-size="17" fill="#e6f6ff">ป้ายโปรหน้าร้าน</text></svg></div>
+        <div class="stk s4"><svg viewBox="0 0 160 160"><defs><linearGradient id="holo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a6f0ff"/><stop offset=".35" stop-color="#f4b7ff"/><stop offset=".7" stop-color="#fff1a8"/><stop offset="1" stop-color="#9dffd2"/></linearGradient></defs><path d="M80 4 L98 52 L150 54 L109 86 L124 136 L80 106 L36 136 L51 86 L10 54 L62 52 Z" fill="#fff" stroke="#fff" stroke-width="14" stroke-linejoin="round"/><path d="M80 18 L95 58 L138 60 L104 86 L116 126 L80 102 L44 126 L56 86 L22 60 L65 58 Z" fill="url(#holo)"/><text x="80" y="86" text-anchor="middle" font-family="Mitr" font-weight="600" font-size="18" fill="#10305c">โฮโลแกรม</text></svg></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block alt" id="types">
+    <div class="wrap">
+      <h2>เลือกแบบสติ๊กเกอร์</h2>
+      <p class="sub">ทุกแบบสั่งขนาดได้ตามต้องการ บอกขนาดกับจำนวนมา ร้านคำนวณราคาให้ภายในแชทเดียว</p>
+      <div class="types">
+        <article class="type">
+          <div class="art"><svg viewBox="0 0 220 160" aria-hidden="true"><path d="M30 20 C70 -6 150 0 190 24 C226 46 222 116 186 138 C140 166 64 164 28 136 C-6 110 -6 44 30 20 Z" fill="#fff"/><path d="M40 32 C76 10 146 14 180 34 C210 52 206 110 176 128 C136 152 70 150 40 126 C12 104 12 52 40 32 Z" fill="#10305c"/><circle cx="110" cy="80" r="26" fill="#ffd23f"/></svg></div>
+          <h3>ไดคัทตามรูป</h3>
+          <p>ตัดขอบตามรูปทรงโลโก้หรือภาพของคุณ เหมาะกับโลโก้ร้านและของแจก</p>
+          <button class="pick" type="button" data-pick="ไดคัทตามรูป">ขอราคาแบบนี้</button>
+        </article>
+        <article class="type">
+          <div class="art"><svg viewBox="0 0 200 160" aria-hidden="true"><circle cx="70" cy="80" r="60" fill="#fff"/><circle cx="70" cy="80" r="50" fill="#ffd23f"/><rect x="118" y="26" width="76" height="108" rx="16" fill="#fff"/><rect x="126" y="34" width="60" height="92" rx="10" fill="#2fa8e0"/></svg></div>
+          <h3>วงกลม / สี่เหลี่ยม</h3>
+          <p>ฉลากติดสินค้า กล่อง ขวด ถุงขนม ทรงมาตรฐาน ตัดเร็ว ราคาประหยัด</p>
+          <button class="pick" type="button" data-pick="วงกลม / สี่เหลี่ยม">ขอราคาแบบนี้</button>
+        </article>
+        <article class="type">
+          <div class="art"><svg viewBox="0 0 160 160" aria-hidden="true"><defs><linearGradient id="holo2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a6f0ff"/><stop offset=".35" stop-color="#f4b7ff"/><stop offset=".7" stop-color="#fff1a8"/><stop offset="1" stop-color="#9dffd2"/></linearGradient></defs><path d="M80 4 L98 52 L150 54 L109 86 L124 136 L80 106 L36 136 L51 86 L10 54 L62 52 Z" fill="#fff" stroke="#fff" stroke-width="14" stroke-linejoin="round"/><path d="M80 18 L95 58 L138 60 L104 86 L116 126 L80 102 L44 126 L56 86 L22 60 L65 58 Z" fill="url(#holo2)"/></svg></div>
+          <h3>โฮโลแกรม</h3>
+          <p>สะท้อนแสงรุ้งเวลาขยับ ทำให้แพ็กเกจดูพรีเมียม และช่วยกันของปลอม</p>
+          <button class="pick" type="button" data-pick="โฮโลแกรม">ขอราคาแบบนี้</button>
+        </article>
+        <article class="type">
+          <div class="art"><svg viewBox="0 0 200 160" aria-hidden="true"><rect x="20" y="20" width="160" height="120" rx="22" fill="#fff"/><rect x="32" y="32" width="136" height="96" rx="14" fill="#e9eef5" stroke="#10305c" stroke-width="3" stroke-dasharray="7 6"/><text x="100" y="90" text-anchor="middle" font-family="Mitr" font-weight="600" font-size="22" fill="#10305c">PVC ใส</text></svg></div>
+          <h3>สติ๊กเกอร์ใส</h3>
+          <p>พื้นใส เห็นเนื้อสินค้า ติดกระจก ขวดแก้ว หรือกล่องใสได้สวย</p>
+          <button class="pick" type="button" data-pick="สติ๊กเกอร์ใส">ขอราคาแบบนี้</button>
+        </article>
+        <article class="type">
+          <div class="art"><svg viewBox="0 0 200 160" aria-hidden="true"><rect x="24" y="24" width="152" height="112" rx="18" fill="#fff"/><rect x="36" y="36" width="128" height="88" rx="10" fill="#10305c"/><circle cx="76" cy="80" r="18" fill="#ffd23f"/><circle cx="124" cy="80" r="18" fill="#2fa8e0"/></svg></div>
+          <h3>งานพิมพ์ UV</h3>
+          <p>พิมพ์ลงวัสดุโดยตรง สีนูน ทนน้ำทนแดด งานจาก Roll Shop เครือเดียวกัน</p>
+          <button class="pick" type="button" data-pick="งานพิมพ์ UV">ขอราคาแบบนี้</button>
+        </article>
+        <article class="type">
+          <div class="art"><svg viewBox="0 0 200 160" aria-hidden="true"><rect x="30" y="28" width="140" height="104" rx="10" fill="#fff"/><g fill="#ffd23f"><circle cx="62" cy="58" r="14"/><circle cx="100" cy="58" r="14"/><circle cx="138" cy="58" r="14"/><circle cx="62" cy="100" r="14"/><circle cx="100" cy="100" r="14"/><circle cx="138" cy="100" r="14"/></g></svg></div>
+          <h3>สติ๊กเกอร์แผ่น</h3>
+          <p>หลายดวงบนแผ่นเดียว เหมาะกับงานจำนวนมาก ลอกใช้ทีละดวงสะดวก</p>
+          <button class="pick" type="button" data-pick="สติ๊กเกอร์แผ่น">ขอราคาแบบนี้</button>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="how">
+    <div class="wrap">
+      <h2>สั่งงานใน 4 ขั้น</h2>
+      <p class="sub">คุยจบในแชทเดียว ไม่ต้องเดินทางมาที่ร้าน</p>
+      <ol class="steps">
+        <li><h3>ส่งไฟล์หรือไอเดีย</h3><p>ทัก LINE ส่งโลโก้ รูป หรือร่างคร่าวๆ พร้อมขนาดและจำนวน</p></li>
+        <li><h3>รับราคาและแบบให้ตรวจ</h3><p>ร้านแจ้งราคา แล้วจัดแบบให้ดูก่อนพิมพ์ แก้ได้จนพอใจ</p></li>
+        <li><h3>ชำระด้วย QR</h3><p>สแกน QR พร้อมเพย์ตามยอดที่ร้านส่งให้ ระบบแจ้งร้านทันทีที่ยอดเข้า</p></li>
+        <li><h3>ผลิตและจัดส่ง</h3><p>ร้านส่งเลขพัสดุให้ในแชท ติดตามสถานะได้ตลอดทาง</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="block alt" id="quote">
+    <div class="wrap quote">
+      <div>
+        <h2>ขอราคางานของคุณ</h2>
+        <p class="sub">กรอกรายละเอียดคร่าวๆ แล้วกดส่ง ระบบจะเปิด LINE พร้อมข้อความให้ ไม่ต้องพิมพ์ซ้ำ</p>
+        <aside>
+          <h3>ข้อมูลที่ช่วยให้ได้ราคาเร็ว</h3>
+          <ul>
+            <li>ขนาดที่ต้องการ (กว้าง × สูง เป็นเซนติเมตร)</li>
+            <li>จำนวนดวงหรือจำนวนแผ่น</li>
+            <li>ติดบนอะไร เช่น ขวด กล่อง ถุง กระจก</li>
+            <li>ไฟล์งาน ถ้ามี ส่งตามในแชทได้เลย</li>
+          </ul>
+        </aside>
+      </div>
+      <form class="qf" id="qf" novalidate>
+        <label class="f"><span>แบบสติ๊กเกอร์</span>
+          <select id="qType">
+            <option>ไดคัทตามรูป</option><option>วงกลม / สี่เหลี่ยม</option><option>โฮโลแกรม</option><option>สติ๊กเกอร์ใส</option><option>งานพิมพ์ UV</option><option>สติ๊กเกอร์แผ่น</option><option>ยังไม่แน่ใจ ให้ร้านแนะนำ</option>
+          </select>
+        </label>
+        <div class="row">
+          <label class="f"><span>กว้าง (ซม.)</span><input id="qW" inputmode="decimal" placeholder="5"></label>
+          <label class="f"><span>สูง (ซม.)</span><input id="qH" inputmode="decimal" placeholder="5"></label>
+        </div>
+        <label class="f"><span>จำนวน</span><input id="qQty" inputmode="numeric" placeholder="เช่น 500 ดวง"></label>
+        <label class="f"><span>รายละเอียดเพิ่มเติม</span><textarea id="qNote" placeholder="เช่น ติดบนกล่องขนม อยากได้กันน้ำ"></textarea></label>
+        <p class="hint">ยังไม่มีไฟล์ก็ส่งได้ ร้านช่วยจัดแบบให้</p>
+        <div class="actions">
+          <button class="btn line" type="submit"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.4 5.9-3.5 8-6C21.4 14.3 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg>ส่งรายละเอียดทาง LINE</button>
+          <a class="btn" href="tel:0935353555">โทร 093-535-3555</a>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="block" id="work">
+    <div class="wrap">
+      <h2>ผลงานล่าสุด</h2>
+      <p class="sub">ตัวอย่างงานจริงที่ร้านผลิตให้ลูกค้า</p>
+      <div class="gallery">
+        <figure>รูปผลงาน 1</figure><figure>รูปผลงาน 2</figure><figure>รูปผลงาน 3</figure>
+        <figure>รูปผลงาน 4</figure><figure>รูปผลงาน 5</figure><figure>รูปผลงาน 6</figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="block alt">
+    <div class="wrap trust">
+      <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/></svg><h3>ตรวจแบบก่อนพิมพ์ทุกงาน</h3><p>เห็นหน้าตางานจริงก่อน ไม่ต้องลุ้นตอนได้ของ</p></div>
+      <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg><h3>ออกใบเสร็จ / ใบกำกับภาษีได้</h3><p>ร้านจดทะเบียนภาษีมูลค่าเพิ่ม เหมาะกับร้านค้าและบริษัท</p></div>
+      <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h11v9H2zM13 10h4l3 3v3h-7"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><h3>ส่งทั่วประเทศ มีเลขพัสดุ</h3><p>ร้านส่งเลขพัสดุให้ในแชท ตามดูได้ว่าของถึงไหนแล้ว</p></div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot" id="contact">
+  <div class="wrap">
+    <div>
+      <b>บอลสติ๊กเกอร์ พิษณุโลก</b>
+      <p style="margin:0">8 หมู่ 19 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140</p>
+      <p style="margin:6px 0 0">โทร <a href="tel:0935353555">093-535-3555</a>, <a href="tel:0966697495">096-669-7495</a></p>
+    </div>
+    <div>
+      <b>สั่งงาน</b>
+      <ul><li><a href="#quote">ขอราคา</a></li><li><a href="#how">วิธีสั่ง</a></li><li><a href="https://ball-sticker-tracking.nutty-hill-4377.chatgpt.site/" target="_blank" rel="noopener">ติดตามงานสติ๊กเกอร์</a></li></ul>
+    </div>
+    <div>
+      <b>ข้อมูลร้าน</b>
+      <ul><li><a href="privacy.html">นโยบายความเป็นส่วนตัว</a></li><li><a href="terms.html">ข้อกำหนดการใช้บริการ</a></li></ul>
+    </div>
+  </div>
+</footer>
+
+<a class="btn line float-line" data-line href="#quote" aria-label="ทัก LINE สั่งงาน"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.4 5.9-3.5 8-6C21.4 14.3 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg>ทัก LINE</a>
+<div class="preview-tag">ตัวอย่างหน้าเว็บ (พรีวิว)</div>
+
+<script>
+// ใส่ LINE ID ของร้าน (เช่น '@ballsticker') แล้วปุ่ม LINE ทุกปุ่มจะเปิดแชทร้านพร้อมข้อความ
+const LINE_ID = '';
+const lineUrl = text => LINE_ID ? 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_ID) + '/' + (text ? '?' + encodeURIComponent(text) : '') : '';
+function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3200); }
+document.querySelectorAll('[data-line]').forEach(a => { const u = lineUrl(''); if (u) { a.href = u; a.target = '_blank'; a.rel = 'noopener'; } });
+document.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => {
+  document.getElementById('qType').value = b.dataset.pick;
+  document.getElementById('quote').scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+  setTimeout(() => document.getElementById('qW').focus({preventScroll: true}), 450);
+}));
+document.getElementById('qf').addEventListener('submit', async e => {
+  e.preventDefault();
+  const v = id => document.getElementById(id).value.trim();
+  const size = v('qW') && v('qH') ? v('qW') + ' × ' + v('qH') + ' ซม.' : 'ยังไม่ระบุ';
+  const text = 'สวัสดีครับ ขอราคาสติ๊กเกอร์\nแบบ: ' + v('qType') + '\nขนาด: ' + size + '\nจำนวน: ' + (v('qQty') || 'ยังไม่ระบุ') + (v('qNote') ? '\nรายละเอียด: ' + v('qNote') : '');
+  const u = lineUrl(text);
+  if (u) { window.open(u, '_blank', 'noopener'); return; }
+  try { await navigator.clipboard.writeText(text); toast('คัดลอกรายละเอียดแล้ว วางในแชท LINE ของร้านได้เลย'); }
+  catch (err) { toast('กรุณาทัก LINE ร้าน แล้วพิมพ์รายละเอียดงาน'); }
+});
+</script>
+</body>
+</html>
