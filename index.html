@@ -513,6 +513,11 @@ button.status-pill:active{filter:brightness(0.9)}
 .bell-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .bell-main b{font-size:14.5px;font-variant-numeric:tabular-nums}
 .bell-main small{font-size:12.5px;color:var(--muted)}
+.bis-bal{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--muted)}
+.bis-bal b{display:block;font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums}
+.bell-bal{display:grid;gap:4px;margin:0 2px 10px;padding:10px 12px;border-radius:12px;background:var(--field);font-size:13px;color:var(--muted)}
+.bell-bal div{display:flex;justify-content:space-between;gap:10px}
+.bell-bal b{color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
 .bell-dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--magenta);margin-top:7px}
 .bankin-banner{position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top,0px));z-index:1200;max-width:520px;margin:0 auto;
   display:flex;align-items:center;gap:12px;padding:12px 12px 12px 14px;border-radius:16px;background:var(--hero-bg);color:#fff;
@@ -1242,6 +1247,7 @@ tr{break-inside:avoid}
 
   <div class="bell-panel no-print" id="bellPanel" role="dialog" aria-labelledby="bellTitle" hidden>
     <div class="bell-head"><b id="bellTitle">การแจ้งเตือน</b><button type="button" class="btn small" id="bellAll">ดูทั้งหมด</button></div>
+    <div class="bell-bal" id="bellBal" hidden></div>
     <div id="bellList"></div>
   </div>
 
@@ -2744,6 +2750,18 @@ function bahtText(value) {
     const k = localISO(d);
     return (k === todayISO() ? 'วันนี้' : thDate(k)) + ' ' + hm;
   }
+  // ยอดคงเหลือล่าสุดต่อบัญชี (Worker อัปเดตจากบรรทัด "คงเหลือ" ใน SMS) — เอกสาร bankBalance/{kittipong|wantim}
+  const bankBalOf = acc => (store.get('bs_bank_balance', []) || []).find(b => b.account === acc) || null;
+  function bankBalWhen(b) { return b && b.updatedAt ? bankInWhen({createdAt: b.updatedAt}, true) : ''; }
+  function watchBankBalance() {
+    if (!cloudDb || !isOwner) return;
+    cloudDb.collection('bankBalance').onSnapshot(snap => {
+      const list = [];
+      snap.forEach(d => list.push(Object.assign({id: d.id}, d.data())));
+      store.set('bs_bank_balance', list);
+      renderBankIn(); renderBell(false);
+    }, err => console.error('bankBalance sync error', err));
+  }
   function watchBankIn() {
     if (!cloudDb || !isOwner) return;
     cloudDb.collection('bankIn').orderBy('createdAt', 'desc').limit(300).onSnapshot(snap => {
@@ -2835,8 +2853,10 @@ function bahtText(value) {
       const mine = list.filter(x => x.account === a);
       const td = mine.filter(x => localISO(new Date(x.createdAt || 0)) === today);
       const mo = mine.filter(x => localISO(new Date(x.createdAt || 0)).slice(0, 7) === month);
-      return '<div class="bis"><span class="ps-l">บัญชี' + esc(a) + ' · วันนี้</span><b>' + money(td.reduce((s, x) => s + num(x.amount), 0)) + '</b>' +
-        '<small>' + td.length + ' รายการ</small><small>เดือนนี้ ' + money(mo.reduce((s, x) => s + num(x.amount), 0)) + ' บาท</small></div>';
+      const bal = bankBalOf(a);
+      return '<div class="bis"><span class="ps-l">บัญชี' + esc(a) + ' · เงินเข้าวันนี้</span><b>' + money(td.reduce((s, x) => s + num(x.amount), 0)) + '</b>' +
+        '<small>' + td.length + ' รายการ</small><small>เดือนนี้ ' + money(mo.reduce((s, x) => s + num(x.amount), 0)) + ' บาท</small>' +
+        '<div class="bis-bal">คงเหลือในบัญชี' + (bal ? '<b>' + money(num(bal.balance)) + ' บาท</b>อัปเดต ' + esc(bankBalWhen(bal)) : '<b>—</b>รอ SMS ครั้งถัดไป') + '</div></div>';
     }).join('');
     const rows = list.slice(0, 20);
     $('bankInList').innerHTML = rows.length ? '<ul class="bankin-list">' + rows.map(x =>
@@ -2881,7 +2901,14 @@ function bahtText(value) {
     if (!$('bellPanel').hidden) renderBellList();
   }
   let bellOpenSeen = 0;   // ค่าที่ใช้ไฮไลต์ "ใหม่" ระหว่างที่แผงเปิดอยู่
+  function renderBellBal() {
+    const el = $('bellBal'); if (!el) return;
+    const rows = ACCOUNTS.map(a => ({a, b: bankBalOf(a)})).filter(r => r.b);
+    el.hidden = !rows.length;
+    el.innerHTML = rows.map(r => '<div><span>คงเหลือ บัญชี' + esc(r.a) + ' <small>(' + esc(bankBalWhen(r.b)) + ')</small></span><b>' + money(num(r.b.balance)) + ' บาท</b></div>').join('');
+  }
   function renderBellList() {
+    renderBellBal();
     const rows = bankInAll().slice(0, 15);
     $('bellList').innerHTML = rows.length ? rows.map(x => {
       const isNew = (x.createdAt || 0) > bellOpenSeen;
@@ -6102,7 +6129,7 @@ function bahtText(value) {
   });
   renderJobBankInPick();
   // ทดสอบในเครื่องที่ไม่ได้ต่อคลาวด์: ใช้รายการที่อยู่ใน localStorage (bs_bank_in)
-  if (!cloudDb && isOwner && store.get('bs_bank_in', []).length) onBankInChange();
+  if (!cloudDb && isOwner && (store.get('bs_bank_in', []).length || store.get('bs_bank_balance', []).length)) onBankInChange();
   $('new-job').addEventListener('click', () => { $('jobPhotoInput').value = ''; newJob(); toast('เปิดใบใหม่แล้ว'); });
   $('job-to-bill').addEventListener('click', () => {
     $('cName').value = $('jName').value; $('cPhone').value = $('jPhone').value; $('cAddr').value = $('jAddr').value;
@@ -6674,6 +6701,7 @@ function bahtText(value) {
     watchCloud('customers', 'bs_customers', renderCustomerDatalist);
     watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
     watchBankIn();
+    watchBankBalance();
     // ประวัติ "ติดตามพัสดุ" แต่ก่อนเก็บเฉพาะในเครื่องเท่านั้น — ครั้งแรกที่เปิดหน้านี้หลังอัปเดต
     // ให้อัปโหลดรายการที่มีอยู่ในเครื่องนี้ขึ้นคลาวด์ก่อน 1 ครั้ง (กันไม่ให้ข้อมูลเดิมหายไปตอนเริ่มซิงก์)
     // แล้วค่อยเริ่มฟังคลาวด์แบบเรียลไทม์ เพื่อให้ทุกเครื่องเห็นประวัติเดียวกัน
