@@ -28,7 +28,7 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function () {});
   });
 }
-// พรีวิวเท่านั้น: GitHub Pages ให้เบราว์เซอร์จำหน้าเว็บไว้ ~10 นาที ทำให้กดรีเฟรชธรรมดาแล้วยังเห็นของเก่า
+// GitHub Pages ให้เบราว์เซอร์จำหน้าเว็บไว้ ~10 นาที ทำให้กดรีเฟรชธรรมดาแล้วยังเห็นของเก่า
 // จึงเช็กกับเซิร์ฟเวอร์ตรงๆ ทุกครั้งที่เปิด/กลับมาที่หน้านี้ ถ้ามีเวอร์ชันใหม่จะโหลดใหม่ให้เอง
 (function () {
   var mine = Date.parse(document.lastModified) || 0;

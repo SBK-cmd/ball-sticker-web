@@ -28,6 +28,28 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function () {});
   });
 }
+// GitHub Pages ให้เบราว์เซอร์จำหน้าเว็บไว้ ~10 นาที ทำให้กดรีเฟรชธรรมดาแล้วยังเห็นของเก่า
+// จึงเช็กกับเซิร์ฟเวอร์ตรงๆ ทุกครั้งที่เปิด/กลับมาที่หน้านี้ ถ้ามีเวอร์ชันใหม่จะโหลดใหม่ให้เอง
+(function () {
+  var mine = Date.parse(document.lastModified) || 0;
+  function check() {
+    if (!window.fetch) return;
+    fetch(location.pathname, {cache: 'reload'}).then(function (r) {
+      var srv = Date.parse(r.headers.get('last-modified') || '') || 0;
+      if (!srv || !mine || srv <= mine + 1000) return;
+      var k = 'bs_preview_reload', last = 0;
+      try { last = +sessionStorage.getItem(k) || 0; } catch (e) {}
+      if (Date.now() - last < 20000) return; // กันรีโหลดวนซ้ำ
+      try { sessionStorage.setItem(k, String(Date.now())); } catch (e) {}
+      location.reload();
+    }).catch(function () {});
+  }
+  window.addEventListener('load', check);
+  document.addEventListener('visibilitychange', function () {
+    var a = document.activeElement;
+    if (!document.hidden && !(a && /INPUT|TEXTAREA|SELECT/.test(a.tagName))) check();
+  });
+})();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -529,6 +551,79 @@ button.status-pill:active{filter:brightness(0.9)}
 .bis .bis-out span{white-space:nowrap}
 .bis .bis-out.zero b{color:var(--muted);font-weight:600}
 .bis .bis-out b{display:inline;font-size:15px;font-weight:800;line-height:1.3;color:var(--out-ink);font-variant-numeric:tabular-nums}
+.tab-badge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:4px;border-radius:999px;background:var(--magenta);color:#fff;font-size:11px;font-weight:800;line-height:1}
+.chat-card{padding:0;overflow:hidden}
+.chat-shell{display:grid;grid-template-columns:320px 1fr;height:min(72vh,680px);min-height:420px}
+.chat-list-pane{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.chat-list-head{padding:12px;border-bottom:1px solid var(--line);display:grid;gap:6px}
+.chat-quota{font-size:11.5px;color:var(--muted)} .chat-quota.low{color:var(--out-ink);font-weight:700}
+.chat-list{overflow:auto;flex:1;padding:6px}
+.chat-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:transparent;border-radius:12px;padding:9px 10px;cursor:pointer;font:inherit;color:inherit;min-width:0}
+.chat-item:hover{background:var(--field)} .chat-item.sel{background:var(--blue-bg)}
+.chat-av{flex:none;width:42px;height:42px;border-radius:50%;object-fit:cover;background:var(--field)}
+.chat-av.ph{display:grid;place-items:center;font-weight:800;color:var(--sticker-line);background:var(--blue-bg)}
+.chat-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.chat-item-top{display:flex;justify-content:space-between;gap:8px}
+.chat-item-top b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-item-top time{flex:none;font-size:11.5px;color:var(--muted)}
+.chat-item small{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-item.unread b,.chat-item.unread small{color:var(--ink);font-weight:700}
+.chat-dot{flex:none;width:9px;height:9px;border-radius:50%;background:#06c755}
+.chat-conv{position:relative;display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--bg)}
+.chat-empty{margin:auto;text-align:center;color:var(--muted)} .chat-empty span{font-size:40px}
+.chat-conv-inner{display:flex;flex-direction:column;min-height:0;flex:1}
+.chat-conv-head{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--surface)}
+.chat-who{flex:1;min-width:0;display:flex;flex-direction:column} .chat-who b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .chat-who small{font-size:12px;color:var(--muted)}
+.chat-back{display:none;border:0;background:none;font-size:30px;line-height:1;color:var(--ink);cursor:pointer;padding:0 6px}
+.chat-msgs{flex:1;overflow:auto;padding:14px 14px 8px;display:flex;flex-direction:column;gap:6px}
+.chat-day{text-align:center;margin:8px 0} .chat-day span{font-size:11.5px;color:var(--muted);background:var(--field);padding:3px 10px;border-radius:999px}
+.chat-msg{display:flex;flex-direction:column;max-width:78%}
+.chat-msgs[data-pg=pg-ball] .chat-msg.m-out .chat-bubble{background:#ffd60a;border-color:#ffd60a;color:#1a1300}
+.chat-msgs[data-pg=pg-roll] .chat-msg.m-out .chat-bubble{background:#38bdf8;border-color:#38bdf8;color:#04121c}
+.chat-msgs[data-pg=fb] .chat-msg.m-out .chat-bubble{background:#1877f2;border-color:#1877f2;color:#fff}
+.chat-msg.m-in{align-self:flex-start} .chat-msg.m-out{align-self:flex-end;align-items:flex-end}
+.chat-bubble{padding:9px 13px;border-radius:18px;font-size:14.5px;line-height:1.5;overflow-wrap:anywhere;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-bottom-left-radius:6px}
+.chat-msg.m-out .chat-bubble{background:#06c755;color:#fff;border-color:#06c755;border-bottom-left-radius:18px;border-bottom-right-radius:6px}
+.chat-bubble.bare{padding:0;background:none!important;border:0!important}
+.chat-img{display:block;max-width:220px;max-height:260px;border-radius:14px;object-fit:cover}
+.chat-sticker{width:110px;height:110px;object-fit:contain}
+.chat-file{color:inherit;text-decoration:underline}
+.chat-msg time{font-size:10.5px;color:var(--muted);margin:2px 6px 0}
+.chat-send{display:flex;gap:8px;align-items:flex-end;padding:10px 12px;border-top:1px solid var(--line);background:var(--surface)}
+.chat-attach{flex:none;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;cursor:pointer;color:var(--muted);border:1.5px solid var(--field-line);background:var(--field)}
+.chat-attach:hover{color:var(--ink)}
+.chat-attach svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.chat-img.sending{opacity:.55}
+.chat-free{color:#06c755;font-weight:800}
+.ch-tag{display:inline-block;font-style:normal;font-size:10px;font-weight:800;padding:0 6px;border-radius:999px;margin-right:5px;vertical-align:1px;color:#fff}
+.ch-tag.ln{background:#06c755} .ch-tag.fb{background:#1877f2}
+.ch-tag.fb.pg-ball{background:#ffd60a;color:#1a1300}
+.ch-tag.fb.pg-roll{background:#38bdf8;color:#04121c}
+.chat-attach.open svg{transform:rotate(45deg)} .chat-attach svg{transition:transform .15s}
+.chat-plus{border-top:1px solid var(--line);background:var(--surface);padding:12px;max-height:46vh;overflow:auto}
+.cp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 4px}
+.cp-item{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:none;padding:8px 2px;border-radius:12px;cursor:pointer;color:var(--muted);font:600 12.5px 'Sarabun','Noto Sans Thai',system-ui,sans-serif;text-align:center}
+.cp-item:hover{background:var(--field);color:var(--ink)}
+.cp-item svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.cp-head{display:flex;align-items:center;gap:6px;margin-bottom:10px} .cp-head b{font-size:15px}
+.cp-back{border:0;background:none;font-size:26px;line-height:1;color:var(--ink);cursor:pointer;padding:0 6px}
+.cp-replies{display:grid;gap:6px}
+.cp-reply{display:flex;gap:6px;align-items:stretch}
+.cp-reply-use{flex:1;text-align:left;border:1px solid var(--line);background:var(--field);border-radius:12px;padding:9px 12px;font:inherit;font-size:14px;color:var(--ink);cursor:pointer}
+.cp-reply-use:hover{border-color:var(--sticker-line)}
+.cp-reply-del{flex:none;border:0;background:none;color:var(--muted);cursor:pointer;padding:0 8px}
+.cp-add{display:flex;gap:6px;margin-top:10px} .cp-add .txt{flex:1}
+.cp-form{display:grid;gap:8px}
+.cp-file{display:block;border:1.5px dashed var(--field-line);border-radius:12px;padding:10px;text-align:center;cursor:pointer;font-size:13.5px;color:var(--muted)}
+.chat-flex{display:inline-block;font-weight:700}
+.chat-vid{position:relative;display:inline-block} .chat-vid i{position:absolute;inset:0;display:grid;place-items:center;font-style:normal;font-size:34px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+
+.chat-send textarea{flex:1;resize:none;min-height:42px;max-height:140px;padding:10px 12px;border-radius:14px;border:1.5px solid var(--field-line);background:var(--field);color:var(--ink);font:inherit;font-size:15px}
+@media (max-width:760px){
+  .chat-shell{grid-template-columns:1fr;height:calc(100dvh - 210px)}
+  .chat-shell .chat-conv{display:none} .chat-shell.has-sel .chat-conv{display:flex} .chat-shell.has-sel .chat-list-pane{display:none}
+  .chat-back{display:block}
+}
 .bk-more{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px}
 .bk-tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px}
 .bk-add{border:1px dashed var(--line);border-radius:12px;padding:12px;margin:0 0 12px;background:var(--field)}
@@ -1268,6 +1363,7 @@ tr{break-inside:avoid}
       <button role="tab" id="tab-wholesale" data-tab="wholesale" aria-selected="false" aria-controls="panel-wholesale"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg><span>ใบราคาส่ง</span></button>
       <button role="tab" id="tab-quote" data-tab="quote" aria-selected="false" aria-controls="panel-quote"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="13" y2="17"></line></svg><span>ใบเสนอราคา</span></button>
       <button role="tab" id="tab-track" data-tab="track" aria-selected="false" aria-controls="panel-track"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg><span>ติดตามพัสดุ</span></button>
+      <button role="tab" id="tab-chat" data-tab="chat" aria-selected="false" aria-controls="panel-chat"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path></svg><span>แชทลูกค้า</span><span class="tab-badge" id="chatTabBadge" hidden></span></button>
       <div class="tab-group">
         <button type="button" class="tab-trigger" id="taxTrigger" aria-haspopup="true" aria-expanded="false">
           <svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7L6 7z"></path><path d="M9 7a3 3 0 0 1 6 0"></path></svg>
@@ -1374,6 +1470,7 @@ tr{break-inside:avoid}
 
   <div class="tax-sheet-backdrop no-print" id="taxSheetBackdrop" hidden></div>
   <div class="tax-sheet no-print" id="taxSheet" role="menu" aria-label="เมนูเพิ่มเติม: ใบเสนอราคาและภาษี" hidden>
+    <button type="button" class="tax-sheet-item" data-tab="chat">แชทลูกค้า <span class="tab-badge" id="chatSheetBadge" hidden></span></button>
     <button type="button" class="tax-sheet-item" data-tab="quote">ใบเสนอราคา</button>
     <button type="button" class="tax-sheet-item" data-tab="vat">คำนวณ VAT</button>
     <button type="button" class="tax-sheet-item" data-tab="bill">ใบเสร็จ / ใบกำกับภาษี</button>
@@ -2281,6 +2378,43 @@ tr{break-inside:avoid}
     </section>
 
     <!-- ================= รายงานภาษีซื้อ-ขาย ================= -->
+    <section id="panel-chat" class="panel" role="tabpanel" aria-labelledby="tab-chat">
+      <div class="page-head no-print">
+        <h1>แชทลูกค้า.</h1>
+        <p>ข้อความจาก LINE OA และแชทเพจ Facebook ของร้าน ตอบกลับได้จากที่นี่ (LINE: นับโควตาของ LINE OA · เพจ: ตอบได้ภายใน 24 ชม. หลังลูกค้าทักล่าสุด)</p>
+      </div>
+      <div class="card chat-card no-print">
+        <div class="chat-shell" id="chatShell">
+          <aside class="chat-list-pane">
+            <div class="chat-list-head"><input class="txt" id="chatSearch" type="search" placeholder="ค้นหาชื่อลูกค้า / ข้อความ" autocomplete="off"><small class="chat-quota" id="chatQuota"></small></div>
+            <div class="chat-list" id="chatList"></div>
+          </aside>
+          <div class="chat-conv">
+            <div class="chat-empty" id="chatEmpty"><span>💬</span><p>เลือกแชทจากรายการ</p></div>
+            <div class="chat-conv-inner" id="chatConvInner" hidden>
+              <div class="chat-conv-head">
+                <button type="button" class="chat-back" id="chatBack" aria-label="กลับไปรายการแชท">‹</button>
+                <span id="chatAvatarWrap"></span>
+                <div class="chat-who"><b id="chatName"></b><small id="chatSub"></small></div>
+                <button type="button" class="btn small" id="chatTrackBtn">📦 เลขพัสดุ</button>
+                <button type="button" class="btn small" id="chatToJob">+ สร้างใบงาน</button>
+              </div>
+              <div class="chat-msgs" id="chatMsgs"></div>
+              <div class="chat-plus" id="chatPlus" hidden></div>
+              <form class="chat-send" id="chatSendForm">
+                <button type="button" class="chat-attach" id="chatPlusBtn" aria-label="เพิ่มเติม: รูป ไฟล์ การ์ด คูปอง" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+                <input type="file" id="chatCamInput" accept="image/*" capture="environment" hidden>
+                <input type="file" id="chatMediaInput" accept="image/*,video/*" multiple hidden>
+                <input type="file" id="chatFileInput" hidden>
+                <textarea id="chatInput" rows="1" placeholder="พิมพ์ข้อความตอบลูกค้า..." aria-label="ข้อความ"></textarea>
+                <button class="btn primary" type="submit" id="chatSendBtn">ส่ง</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="panel-report" class="panel" role="tabpanel" aria-labelledby="tab-report">
       <div class="page-head">
         <h1>รายงานภาษีซื้อ-ขาย.</h1>
@@ -2496,7 +2630,7 @@ function bahtText(value) {
     {title: 'หน้าที่เปิดได้', items: [
       ['calc', 'คำนวณสติ๊กเกอร์'], ['vat', 'คำนวณ VAT'], ['confirm', 'ใบคอนเฟิร์มงาน'], ['track', 'ติดตามพัสดุ'],
       ['wholesale', 'ใบราคาส่ง'], ['quote', 'ใบเสนอราคา'], ['bill', 'ใบเสร็จ / ใบกำกับภาษี'], ['purchase', 'ภาษีซื้อ'],
-      ['dash', 'แดชบอร์ด'], ['report', 'รายงานภาษี']]},
+      ['dash', 'แดชบอร์ด'], ['report', 'รายงานภาษี'], ['chat', 'แชทลูกค้า (LINE / เพจ)']]},
     {title: 'ข้อมูลสำคัญ', items: [
       ['price', 'ราคาในหน้าคำนวณสติ๊กเกอร์'], ['bank', 'เงินเข้า-ออก · ยอดคงเหลือ · กระดิ่ง'], ['shop', 'แก้ข้อมูลร้าน']]}
   ];
@@ -4768,6 +4902,419 @@ function bahtText(value) {
     }
     return {statusText: statusVal || 'มีข้อมูลจาก iship แล้ว แต่ไม่พบฟิลด์สถานะที่รู้จัก (ดูข้อมูลดิบได้ในคอนโซล)', timeText};
   }
+  /* ---------------- แชท LINE OA ----------------
+     Cloudflare Worker "line-oa" รับข้อความจาก LINE (webhook) แล้วเขียนลง Firestore: lineChats/{userId} + lineChats/{userId}/messages
+     หน้านี้ฟังแบบเรียลไทม์ ตอบกลับผ่าน Worker (/send) ซึ่งนับโควตาข้อความของ LINE OA */
+  const LINE_OA_URL = 'https://line-oa.organic-parmesan.workers.dev';
+  const LINE_OA_KEY = 'loa5408501ccebb8cc0e6155';
+  const LINE_SEEN = 'bs_line_seen';
+  const chatIsFb = id => /^fb_/.test(String(id || chatSel || ''));
+  const chatEndpoint = () => chatIsFb() ? '/fbsend' : '/send';
+  const FB_WINDOW = 24 * 3600 * 1000;
+  // ชื่อเพจตาม ID (ใช้เมื่อ Facebook ไม่ส่งชื่อเพจมา)
+  const FB_PAGE_LABEL = {'108503502205863': 'บอล สติ๊กเกอร์', '148413448352561': 'Roll Shop', '408557829006929': 'Ball Sticker'};
+  const FB_PAGE_CLASS = {'108503502205863': 'pg-ball', '148413448352561': 'pg-roll'};
+  const fbPageName = c => c.pageName || FB_PAGE_LABEL[c.pageId] || 'Facebook';
+  let chatList = [], chatSel = null, chatMsgs = [], chatMsgUnsub = null, chatLive = false, chatSending = false;
+  const lineSeen = () => { try { return JSON.parse(localStorage.getItem(LINE_SEEN) || '{}') || {}; } catch (e) { return {}; } };
+  function markChatSeen(uid, at) { const m = lineSeen(); if ((m[uid] || 0) < at) { m[uid] = at; try { localStorage.setItem(LINE_SEEN, JSON.stringify(m)); } catch (e) {} } }
+  const chatUnread = c => (c.lastInAt || 0) > (lineSeen()[c.userId] || 0);
+  const isChatActive = () => { const p = $('panel-chat'); return !!(p && p.classList.contains('active')); };
+  function chatWhen(ms) {
+    const d = new Date(ms || 0), hm = pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+    if (localISO(d) === todayISO()) return hm;
+    if (localISO(d) === localISO(new Date(Date.now() - 86400000))) return 'เมื่อวาน';
+    return d.getDate() + ' ' + TH_MON_S[d.getMonth()];
+  }
+  const avatarHtml = (c, cls) => c && c.picture ? '<img class="' + cls + '" src="' + esc(c.picture) + '" alt="" loading="lazy" referrerpolicy="no-referrer">'
+    : '<span class="' + cls + ' ph">' + esc(((c && c.name) || '?').trim().charAt(0) || '?') + '</span>';
+  function watchLineChats() {
+    if (!can('chat')) return;
+    if (!cloudDb) { chatList = store.get('bs_line_chats', []) || []; renderChatList(); paintChatBadge(); return; }
+    cloudDb.collection('lineChats').orderBy('lastAt', 'desc').limit(200).onSnapshot(snap => {
+      const prev = new Map(chatList.map(c => [c.userId, c.lastInAt || 0]));
+      const list = []; snap.forEach(d => list.push(Object.assign({userId: d.id}, d.data())));
+      if (chatLive) { // ข้อความใหม่ระหว่างเปิดแอป → เด้งแจ้ง + เสียง
+        const fresh = list.filter(c => (c.lastInAt || 0) > (prev.get(c.userId) || 0) && !(isChatActive() && chatSel === c.userId && !document.hidden));
+        if (fresh.length) {
+          const c0 = fresh[0], who = (c0.name || 'ลูกค้า') + (c0.channel === 'fb' ? ' (เพจ ' + fbPageName(c0) + ')' : ' (LINE)');
+          toast('💬 ข้อความใหม่จาก ' + who + (fresh.length > 1 ? ' และอีก ' + (fresh.length - 1) + ' คน' : '')); playChime();
+          sysNotify('💬 ' + who, String(c0.lastText || 'ส่งข้อความมา').slice(0, 100));
+        }
+      }
+      chatList = list; chatLive = true;
+      if (chatSel && isChatActive() && !document.hidden) { const c = chatList.find(x => x.userId === chatSel); if (c) markChatSeen(c.userId, c.lastInAt || 0); }
+      renderChatList(); paintChatBadge(); renderChatHead();
+    }, e => { console.error('lineChats sync error', e); $('chatList').innerHTML = '<p class="empty">โหลดแชทไม่ได้: ' + esc(e.message || e) + '</p>'; });
+  }
+  function paintChatBadge() {
+    const n = chatList.filter(chatUnread).length;
+    ['chatTabBadge', 'chatSheetBadge'].forEach(id => { const b = $(id); if (b) { b.hidden = !n; b.textContent = n > 99 ? '99+' : String(n); } });
+  }
+  function renderChatList() {
+    const q = ($('chatSearch').value || '').trim().toLowerCase();
+    const shown = chatList.filter(c => !q || String(c.name || '').toLowerCase().includes(q) || String(c.lastText || '').toLowerCase().includes(q));
+    $('chatList').innerHTML = shown.length ? shown.map(c => {
+      const un = chatUnread(c);
+      return '<button type="button" class="chat-item' + (c.userId === chatSel ? ' sel' : '') + (un ? ' unread' : '') + '" data-uid="' + esc(c.userId) + '">' +
+        avatarHtml(c, 'chat-av') +
+        '<span class="chat-item-main"><span class="chat-item-top"><b>' + esc(c.name || (c.channel === 'fb' ? 'ลูกค้า Facebook' : 'ลูกค้า LINE')) + '</b><time>' + esc(chatWhen(c.lastAt)) + '</time></span>' +
+        '<small>' + (c.channel === 'fb' ? '<i class="ch-tag fb ' + (FB_PAGE_CLASS[c.pageId] || '') + '">เพจ ' + esc(fbPageName(c)) + '</i>' : '<i class="ch-tag ln">LINE</i>') + (c.lastDir === 'out' ? 'คุณ: ' : '') + esc(c.lastText || '') + '</small></span>' + (un ? '<i class="chat-dot" aria-label="ยังไม่อ่าน"></i>' : '') + '</button>';
+    }).join('') : '<p class="empty">' + (chatList.length ? 'ไม่พบแชทที่ค้นหา' : (cloudDb ? 'ยังไม่มีแชท — ข้อความที่ลูกค้าทักมาใน LINE OA หลังเชื่อมระบบจะขึ้นที่นี่' : 'ต้องต่อคลาวด์ก่อน')) + '</p>';
+  }
+  function renderChatHead() {
+    const c = chatList.find(x => x.userId === chatSel);
+    $('chatShell').classList.toggle('has-sel', !!chatSel);
+    $('chatEmpty').hidden = !!chatSel; $('chatConvInner').hidden = !chatSel;
+    if (!c) return;
+    $('chatAvatarWrap').innerHTML = avatarHtml(c, 'chat-av');
+    $('chatName').textContent = c.name || (c.channel === 'fb' ? 'ลูกค้า Facebook' : 'ลูกค้า LINE');
+    const last = 'ทักล่าสุด ' + (c.lastInAt ? bankInWhen({createdAt: c.lastInAt}, true) : '—');
+    $('chatSub').textContent = c.channel === 'fb'
+      ? 'เพจ ' + fbPageName(c) + ' · ' + last + (c.lastInAt && Date.now() - c.lastInAt > FB_WINDOW ? ' · เกิน 24 ชม. ส่งไม่ได้จนกว่าลูกค้าจะทักใหม่' : '')
+      : c.followed === false ? 'บล็อก/เลิกเป็นเพื่อนแล้ว — ส่งข้อความไม่ได้' : 'LINE · ' + last;
+  }
+  function openChat(uid) {
+    if (chatPanel) closeChatPlus();
+    chatSel = uid; chatMsgs = [];
+    if (chatMsgUnsub) { try { chatMsgUnsub(); } catch (e) {} chatMsgUnsub = null; }
+    renderChatHead(); renderChatList(); renderChatMsgs();
+    const c = chatList.find(x => x.userId === uid); if (c) markChatSeen(uid, c.lastInAt || 0);
+    paintChatBadge(); renderChatList();
+    if (!cloudDb) { chatMsgs = ((store.get('bs_line_msgs', {}) || {})[uid] || []).slice().sort((a, b) => a.createdAt - b.createdAt); renderChatMsgs(); return; }
+    chatMsgUnsub = cloudDb.collection('lineChats').doc(uid).collection('messages').orderBy('createdAt', 'desc').limit(150).onSnapshot(snap => {
+      const l = []; snap.forEach(d => l.push(Object.assign({id: d.id}, d.data())));
+      chatMsgs = l.reverse().concat(chatMsgs.filter(m => m.pending)); renderChatMsgs();
+    }, e => console.error('lineMessages sync error', e));
+  }
+  function msgBody(m) {
+    const src = id => LINE_OA_URL + '/content?key=' + encodeURIComponent(LINE_OA_KEY) + '&id=' + encodeURIComponent(id);
+    if (m.type === 'flex') return '<span class="chat-flex">🃏 ' + esc(m.text || 'การ์ด') + '</span>';
+    if (m.type === 'video' && m.url) return m.preview ? '<a class="chat-vid" href="' + esc(m.url) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(m.preview) + '" alt="วิดีโอ" loading="lazy"><i>▶</i></a>' : '<a class="chat-file" href="' + esc(m.url) + '" target="_blank" rel="noopener">▶ เปิดวิดีโอ</a>';
+    if (m.type === 'file' && m.url) return '<a class="chat-file" href="' + esc(m.url) + '" target="_blank" rel="noopener">' + esc(m.text || 'เปิดไฟล์') + '</a>';
+    if (m.type === 'image' && m.url) return '<a href="' + esc(m.url) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(m.preview || m.url) + '" alt="รูปที่ส่ง" loading="lazy"></a>';
+    if (m.type === 'image' && m.localUrl) return '<img class="chat-img sending" src="' + esc(m.localUrl) + '" alt="กำลังส่งรูป">';
+    if (m.type === 'image' && m.contentId) return '<a href="' + esc(src(m.contentId)) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(src(m.contentId)) + '" alt="รูปจากลูกค้า" loading="lazy"></a>';
+    if (m.type === 'sticker' && m.stickerId) return '<img class="chat-sticker" src="https://stickershop.line-scdn.net/stickershop/v1/sticker/' + esc(m.stickerId) + '/android/sticker.png" alt="สติกเกอร์" loading="lazy">';
+    if ((m.type === 'video' || m.type === 'audio' || m.type === 'file') && m.contentId) return '<a class="chat-file" href="' + esc(src(m.contentId)) + '" target="_blank" rel="noopener">' + esc(m.text || 'เปิดไฟล์') + '</a>';
+    return esc(m.text || '').replace(/\n/g, '<br>');
+  }
+  function renderChatMsgs() {
+    const box = $('chatMsgs'); if (!box) return;
+    { const c = chatList.find(x => x.userId === chatSel) || {}; box.dataset.pg = c.channel === 'fb' ? (FB_PAGE_CLASS[c.pageId] || 'fb') : 'line'; }
+    let last = '';
+    box.innerHTML = chatMsgs.length ? chatMsgs.map(m => {
+      const day = localISO(new Date(m.createdAt || 0));
+      const sep = day !== last ? '<div class="chat-day"><span>' + esc(day === todayISO() ? 'วันนี้' : thDate(day)) + '</span></div>' : '';
+      last = day;
+      const d = new Date(m.createdAt || 0);
+      const bare = m.type === 'sticker' || m.type === 'image';
+      return sep + '<div class="chat-msg ' + (m.dir === 'out' ? 'm-out' : 'm-in') + '"><div class="chat-bubble' + (bare ? ' bare' : '') + '">' + msgBody(m) + '</div>' +
+        '<time>' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + (m.dir === 'out' && m.by ? ' · ' + esc(m.by) : '') + (m.dir === 'out' && m.free ? ' · <b class="chat-free">ฟรี</b>' : '') + '</time></div>';
+    }).join('') : '<p class="empty" style="margin:auto">' + (chatSel ? 'ยังไม่มีข้อความ' : '') + '</p>';
+    box.scrollTop = box.scrollHeight;
+    box.querySelectorAll('img').forEach(i => { if (!i.complete) i.addEventListener('load', () => { box.scrollTop = box.scrollHeight; }, {once: true}); });
+  }
+  async function sendChat() {
+    const text = $('chatInput').value.trim();
+    if (!text || !chatSel || chatSending) return;
+    chatSending = true; $('chatSendBtn').disabled = true;
+    try {
+      const r = await fetch(LINE_OA_URL + chatEndpoint(), {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': LINE_OA_KEY},
+        body: JSON.stringify({userId: chatSel, text, by: currentUser ? (currentUser.name || currentUser.username) : ''})});
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+      $('chatInput').value = ''; autoGrowChat();
+      if (j.free) toast('ส่งแล้ว · ฟรี ไม่เสียโควตา');
+      if (!cloudDb) { chatMsgs.push({dir: 'out', type: 'text', text, createdAt: Date.now()}); renderChatMsgs(); }
+      loadChatQuota();
+    } catch (e) { toast('ส่งไม่สำเร็จ: ' + e.message); }
+    finally { chatSending = false; $('chatSendBtn').disabled = false; $('chatInput').focus(); }
+  }
+  // ส่งรูป: ย่อรูปในเครื่อง (ด้านยาวสุด 1600px, JPEG) → อัปขึ้น Cloudinary → ให้ Worker ส่งลิงก์รูปเข้า LINE
+  function shrinkImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image(), url = URL.createObjectURL(file);
+      img.onload = () => {
+        const k = Math.min(1, 1600 / Math.max(img.width, img.height));
+        const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+        resolve(c.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('เปิดรูปไม่ได้')); };
+      img.src = url;
+    });
+  }
+  async function sendChatImages(files) {
+    if (!chatSel || !files.length) return;
+    const uid = chatSel;
+    for (const f of Array.from(files).slice(0, 5)) {
+      const temp = {dir: 'out', type: 'image', localUrl: '', createdAt: Date.now(), pending: true};
+      try {
+        const dataUrl = await shrinkImage(f);
+        temp.localUrl = dataUrl; chatMsgs.push(temp); renderChatMsgs();
+        const url = await uploadPhotoToCloudinary(dataUrl);
+        if (!url) throw new Error('อัปโหลดรูปไม่สำเร็จ');
+        const preview = url.replace('/image/upload/', '/image/upload/w_480,c_limit,q_auto/');
+        const r = await fetch(LINE_OA_URL + chatEndpoint(), {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': LINE_OA_KEY},
+          body: JSON.stringify({userId: uid, image: url, preview, by: currentUser ? (currentUser.name || currentUser.username) : ''})});
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+        if (!cloudDb) { temp.url = url; temp.preview = preview; delete temp.localUrl; }
+        else chatMsgs = chatMsgs.filter(m => m !== temp);
+        renderChatMsgs();
+      } catch (e) {
+        chatMsgs = chatMsgs.filter(m => m !== temp); renderChatMsgs();
+        toast('ส่งรูปไม่สำเร็จ: ' + e.message);
+      }
+    }
+    loadChatQuota();
+  }
+  async function loadChatQuota() {
+    try {
+      const r = await fetch(LINE_OA_URL + '/quota', {headers: {'x-app-key': LINE_OA_KEY}});
+      const j = await r.json();
+      if (!j.ok || j.used == null) { $('chatQuota').textContent = ''; return; }
+      const left = j.limit != null ? j.limit - j.used : null;
+      $('chatQuota').textContent = (j.limit != null ? 'โควตาส่งข้อความเดือนนี้ ' + j.used + '/' + j.limit + (left <= 30 ? ' · เหลือ ' + left : '') : 'ส่งไปแล้วเดือนนี้ ' + j.used + ' ข้อความ') + ' · ตอบภายในไม่กี่นาทีหลังลูกค้าทัก = ฟรี';
+      $('chatQuota').classList.toggle('low', left != null && left <= 30);
+    } catch (e) { $('chatQuota').textContent = ''; }
+  }
+  function autoGrowChat() { const t = $('chatInput'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; }
+  function renderChat() { renderChatList(); renderChatHead(); renderChatMsgs(); loadChatQuota(); }
+  $('chatList').addEventListener('click', e => { const b = e.target.closest('[data-uid]'); if (b) openChat(b.dataset.uid); });
+  $('chatSearch').addEventListener('input', renderChatList);
+  $('chatBack').addEventListener('click', () => { chatSel = null; if (chatMsgUnsub) { try { chatMsgUnsub(); } catch (e) {} chatMsgUnsub = null; } renderChatHead(); renderChatList(); });
+  $('chatSendForm').addEventListener('submit', e => { e.preventDefault(); sendChat(); });
+  $('chatInput').addEventListener('input', autoGrowChat);
+  /* ---- ปุ่ม + ในแชท: กล้อง / รูป & วิดีโอ / ไฟล์ / ข้อความตอบกลับ / การ์ดเมสเสจ / คูปอง / คำขอการโทร ---- */
+  const chatBy = () => currentUser ? (currentUser.name || currentUser.username) : '';
+  async function chatPost(payload) {
+    if (chatIsFb() && payload.flex) payload = {text: payload.fbText || payload.altText}; // เพจ Facebook ไม่รองรับการ์ดแบบ LINE ส่งเป็นข้อความแทน
+    const r = await fetch(LINE_OA_URL + chatEndpoint(), {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': LINE_OA_KEY},
+      body: JSON.stringify(Object.assign({userId: chatSel, by: chatBy()}, payload))});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+    if (!cloudDb) { chatMsgs.push(Object.assign({dir: 'out', createdAt: Date.now()}, payload.flex ? {type: 'flex', text: payload.altText} : payload.video ? {type: 'video', text: '[วิดีโอ]', url: payload.video, preview: payload.preview} : payload.text ? {type: 'text', text: payload.text} : {})); renderChatMsgs(); }
+    loadChatQuota();
+    return j;
+  }
+  async function cldUpload(blob, kind, name) {
+    const fd = new FormData();
+    fd.append('file', blob, name || 'upload');
+    fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    const res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/' + kind + '/upload', {method: 'POST', body: fd});
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok || !j.secure_url) throw new Error((j.error && j.error.message) || 'อัปโหลดไม่สำเร็จ');
+    return j.secure_url;
+  }
+  async function sendChatVideo(file) {
+    const temp = {dir: 'out', type: 'text', text: '⏳ กำลังส่งวิดีโอ ' + (file.name || ''), createdAt: Date.now(), pending: true};
+    chatMsgs.push(temp); renderChatMsgs();
+    try {
+      if (file.size > 95 * 1024 * 1024) throw new Error('วิดีโอใหญ่เกิน 95MB');
+      const url = await cldUpload(file, 'video', file.name);
+      const mp4 = url.replace(/\.[a-z0-9]+$/i, '.mp4');
+      const preview = url.replace('/video/upload/', '/video/upload/so_0,w_480,c_limit/').replace(/\.[a-z0-9]+$/i, '.jpg');
+      await chatPost({video: mp4, preview});
+    } catch (e) { toast('ส่งวิดีโอไม่สำเร็จ: ' + e.message); }
+    chatMsgs = chatMsgs.filter(m => m !== temp); renderChatMsgs();
+  }
+  async function sendChatFile(file) {
+    const temp = {dir: 'out', type: 'text', text: '⏳ กำลังส่งไฟล์ ' + (file.name || ''), createdAt: Date.now(), pending: true};
+    chatMsgs.push(temp); renderChatMsgs();
+    try {
+      if (file.size > 9.5 * 1024 * 1024) throw new Error('ไฟล์ใหญ่เกิน 10MB');
+      const url = await cldUpload(file, 'raw', file.name);
+      await chatPost({text: '📎 ' + (file.name || 'ไฟล์') + '\n' + url});
+    } catch (e) { toast('ส่งไฟล์ไม่สำเร็จ: ' + e.message); }
+    chatMsgs = chatMsgs.filter(m => m !== temp); renderChatMsgs();
+  }
+  async function sendChatMedia(files) {
+    const list = Array.from(files || []).slice(0, 5);
+    const imgs = list.filter(f => /^image\//.test(f.type)), vids = list.filter(f => /^video\//.test(f.type));
+    if (imgs.length) await sendChatImages(imgs);
+    for (const v of vids) await sendChatVideo(v);
+  }
+  // การ์ด (Flex Message)
+  const okLink = u => /^(https?:\/\/|tel:|line:\/\/)/i.test(String(u || '').trim());
+  function flexCard(o) {
+    const body = [{type: 'text', text: o.title || ' ', weight: 'bold', size: 'lg', wrap: true}];
+    if (o.detail) body.push({type: 'text', text: o.detail, size: 'sm', color: '#555555', wrap: true, margin: 'md'});
+    if (o.price) body.push({type: 'text', text: o.price, size: 'xl', weight: 'bold', color: '#06C755', margin: 'lg', wrap: true});
+    const b = {type: 'bubble', body: {type: 'box', layout: 'vertical', contents: body}};
+    if (o.image) b.hero = {type: 'image', url: o.image, size: 'full', aspectMode: 'cover', aspectRatio: '20:13'};
+    if (o.btnLabel && okLink(o.btnUrl)) b.footer = {type: 'box', layout: 'vertical', contents: [{type: 'button', style: 'primary', color: '#06C755', action: {type: 'uri', label: String(o.btnLabel).slice(0, 20), uri: String(o.btnUrl).trim()}}]};
+    return b;
+  }
+  function flexCoupon(o) {
+    const c = [
+      {type: 'text', text: '🎟 คูปอง · ' + (shop.name || 'ร้าน'), size: 'xs', color: '#B07A00', weight: 'bold', wrap: true},
+      {type: 'text', text: o.name || 'ส่วนลดพิเศษ', size: 'lg', weight: 'bold', wrap: true, margin: 'sm'},
+      {type: 'text', text: o.discount || '-', size: '3xl', weight: 'bold', color: '#E53935', margin: 'md', wrap: true}];
+    if (o.cond) c.push({type: 'text', text: o.cond, size: 'sm', color: '#555555', wrap: true, margin: 'md'});
+    c.push({type: 'separator', margin: 'lg', color: '#E8C76A'});
+    if (o.code) c.push({type: 'text', text: 'โค้ด: ' + o.code, size: 'md', weight: 'bold', margin: 'md'});
+    if (o.until) c.push({type: 'text', text: 'ใช้ได้ถึง ' + o.until, size: 'xs', color: '#888888', margin: 'sm'});
+    return {type: 'bubble', body: {type: 'box', layout: 'vertical', backgroundColor: '#FFF6DC', contents: c}};
+  }
+  function flexCall() {
+    const tel = String(shop.phone || '').split(/\s*[,/]\s*/)[0].replace(/[^\d+]/g, '');
+    return {type: 'bubble', body: {type: 'box', layout: 'vertical', contents: [
+      {type: 'text', text: '📞 คุยทางโทรศัพท์กับ ' + (shop.name || 'ร้าน'), weight: 'bold', size: 'md', wrap: true},
+      {type: 'text', text: 'กดปุ่มด้านล่างเพื่อโทรหาร้านได้เลย หรือพิมพ์เบอร์ของคุณไว้ ร้านจะโทรกลับครับ', size: 'sm', color: '#555555', wrap: true, margin: 'md'}]},
+      footer: {type: 'box', layout: 'vertical', contents: [{type: 'button', style: 'primary', color: '#06C755', action: {type: 'uri', label: 'โทรหาร้าน', uri: 'tel:' + tel}}]}};
+  }
+  // ข้อความตอบกลับสำเร็จรูป (เก็บที่คลาวด์ lineReplies ใช้ร่วมกันทุกเครื่อง)
+  const DEFAULT_REPLIES = ['สวัสดีครับ ยินดีให้บริการครับ 🙏', 'รบกวนแจ้งขนาด จำนวน และชนิดสติ๊กเกอร์ที่ต้องการด้วยนะครับ', 'ได้รับยอดโอนแล้วครับ ขอบคุณครับ 🙏', 'จัดส่งเรียบร้อยแล้วครับ เลขพัสดุ: ', 'งานเสร็จแล้วครับ พร้อมจัดส่ง/รับได้เลยครับ'];
+  const lineReplies = () => (store.get('bs_line_replies', []) || []).slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  let chatPanel = '';
+  function closeChatPlus() { chatPanel = ''; $('chatPlus').hidden = true; $('chatPlusBtn').classList.remove('open'); $('chatPlusBtn').setAttribute('aria-expanded', 'false'); }
+  function openChatPanel(name) {
+    chatPanel = name; $('chatPlus').hidden = false; $('chatPlusBtn').classList.add('open'); $('chatPlusBtn').setAttribute('aria-expanded', 'true');
+    const back = '<div class="cp-head"><button type="button" class="cp-back" data-cp="grid">‹</button><b>';
+    const box = $('chatPlus');
+    if (name === 'grid') { box.innerHTML = CHAT_PLUS_GRID; return; }
+    if (name === 'replies') {
+      const saved = lineReplies();
+      const rows = (saved.length ? saved.map(r => ({id: r.id, text: r.text})) : DEFAULT_REPLIES.map(t => ({id: '', text: t})));
+      box.innerHTML = back + 'ข้อความตอบกลับ</b></div><div class="cp-replies">' + rows.map(r =>
+        '<div class="cp-reply"><button type="button" class="cp-reply-use" data-rtext="' + esc(r.text) + '">' + esc(r.text) + '</button>' +
+        (r.id ? '<button type="button" class="cp-reply-del" data-rdel="' + esc(r.id) + '" aria-label="ลบ">✕</button>' : '') + '</div>').join('') + '</div>' +
+        '<form class="cp-add" id="cpReplyForm"><input class="txt" id="cpReplyText" placeholder="เพิ่มข้อความตอบกลับใหม่..." maxlength="500"><button class="btn small" type="submit">บันทึก</button></form>' +
+        (saved.length ? '' : '<p class="hint" style="margin:6px 2px 0">ตัวอย่างด้านบนกดใช้ได้เลย ถ้าเพิ่มข้อความเอง ตัวอย่างจะถูกแทนด้วยของคุณ</p>');
+      return;
+    }
+    if (name === 'card') {
+      box.innerHTML = back + 'การ์ดเมสเสจ</b></div><form class="cp-form" id="cpCardForm">' +
+        '<input class="txt" id="cpcTitle" placeholder="หัวข้อ เช่น สติ๊กเกอร์ไดคัท 5x5 ซม." required maxlength="80">' +
+        '<textarea class="txt" id="cpcDetail" rows="2" placeholder="รายละเอียด (ไม่บังคับ)" maxlength="500"></textarea>' +
+        '<input class="txt" id="cpcPrice" placeholder="ราคา (ไม่บังคับ) เช่น 500 ดวง 690 บาท" maxlength="60">' +
+        '<label class="cp-file"><input type="file" id="cpcImg" accept="image/*" hidden><span id="cpcImgLbl">🖼 เพิ่มรูปบนการ์ด (ไม่บังคับ)</span></label>' +
+        '<div class="row2"><input class="txt" id="cpcBtn" placeholder="ข้อความปุ่ม เช่น สั่งเลย" maxlength="20"><input class="txt" id="cpcUrl" placeholder="ลิงก์ปุ่ม https://..." maxlength="500"></div>' +
+        '<button class="btn primary" type="submit">ส่งการ์ด</button></form>';
+      return;
+    }
+    if (name === 'coupon') {
+      box.innerHTML = back + 'คูปอง</b></div><form class="cp-form" id="cpCouponForm">' +
+        '<input class="txt" id="cpqName" placeholder="ชื่อคูปอง เช่น ลูกค้าประจำ" maxlength="60">' +
+        '<input class="txt" id="cpqDisc" placeholder="ส่วนลด เช่น ลด 10% หรือ ลด 50 บาท" required maxlength="30">' +
+        '<textarea class="txt" id="cpqCond" rows="2" placeholder="เงื่อนไข (ไม่บังคับ) เช่น เมื่อสั่งครบ 500 บาท" maxlength="300"></textarea>' +
+        '<div class="row2"><input class="txt" id="cpqCode" placeholder="โค้ด (ไม่บังคับ)" maxlength="20"><input class="txt" id="cpqUntil" type="date"></div>' +
+        '<p class="hint" style="margin:0">เป็นการ์ดคูปองที่ร้านออกเอง ลูกค้าแคปหรือแจ้งโค้ดตอนสั่ง (คูปองในระบบ LINE OA ส่งผ่านหน้านี้ไม่ได้)</p>' +
+        '<button class="btn primary" type="submit">ส่งคูปอง</button></form>';
+      return;
+    }
+    if (name === 'track') {
+      box.innerHTML = back + 'ส่งเลขพัสดุ</b></div><input class="txt" id="cpTrackQ" placeholder="ค้นหาชื่อลูกค้า / เลขพัสดุ" style="margin-bottom:8px"><div class="cp-replies" id="cpTrackList"></div>';
+      renderChatTrackList(); return;
+    }
+    if (name === 'call') {
+      box.innerHTML = back + 'คำขอการโทร</b></div><div class="cp-form"><p style="margin:0">ส่งการ์ดที่มีปุ่ม <b>โทรหาร้าน</b> (เบอร์ ' + esc(String(shop.phone || '').split(/\s*[,/]\s*/)[0]) + ') ให้ลูกค้ากดโทรได้ทันที</p>' +
+        '<button class="btn primary" type="button" id="cpCallSend">ส่งคำขอการโทร</button></div>';
+    }
+  }
+  // ส่งเลขพัสดุ: ดึงจากประวัติหน้า "ติดตามพัสดุ" เรียงชื่อที่ตรงกับลูกค้าในแชทขึ้นก่อน กดแล้วใส่ข้อความในช่องพิมพ์ให้ตรวจก่อนส่ง
+  const normName = v => String(v || '').toLowerCase().replace(/^(คุณ|k\.|คุน)\s*/, '').replace(/[\s._-]+/g, '');
+  function renderChatTrackList() {
+    const box = $('cpTrackList'); if (!box) return;
+    const c = chatList.find(x => x.userId === chatSel) || {};
+    const me = normName(c.name), q = ($('cpTrackQ') ? $('cpTrackQ').value : '').trim().toLowerCase();
+    const hit = t => { const n = normName(t.customer); return !!(me && n && (n.includes(me) || me.includes(n))); };
+    let list = (store.get('bs_tracking', []) || []).filter(t => t && t.code);
+    if (q) list = list.filter(t => String(t.code).toLowerCase().includes(q) || String(t.customer || '').toLowerCase().includes(q) || String(t.carrier || '').toLowerCase().includes(q));
+    const when = t => t.ishipCreatedAt != null ? t.ishipCreatedAt : (t.savedAt || 0);
+    list.sort((a, b) => (hit(b) - hit(a)) || (when(b) - when(a)));
+    list = list.slice(0, 30);
+    box.innerHTML = list.length ? list.map(t => '<div class="cp-reply"><button type="button" class="cp-reply-use" data-trk="' + esc(t.id) + '">' +
+      (hit(t) ? '⭐ ' : '') + '<b>' + esc(t.customer || 'ไม่ระบุชื่อ') + '</b> · ' + esc(t.carrier || '') + '<br><small>' + esc(t.code) + ' · ' + esc(new Date(t.savedAt || when(t)).toLocaleDateString('th-TH')) + '</small></button></div>').join('')
+      : '<p class="empty">' + (q ? 'ไม่พบเลขพัสดุที่ค้นหา' : 'ยังไม่มีประวัติเลขพัสดุ (สร้างได้ที่หน้า ติดตามพัสดุ)') + '</p>';
+  }
+  $('chatTrackBtn').addEventListener('click', () => {
+    if (!can('track')) { toast('ไม่มีสิทธิ์ดูเลขพัสดุ'); return; }
+    if (chatPanel === 'track') closeChatPlus(); else openChatPanel('track');
+  });
+  const PICO = {
+    camera: '<path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.6"/>',
+    media: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M7 16l4-5 3 3.5 2-2 2.5 3.5"/><circle cx="16" cy="8.5" r="1.3"/>',
+    file: '<path d="M6 3.5h8l4.5 4.5V20a.5.5 0 0 1-.5.5H6a.5.5 0 0 1-.5-.5V4a.5.5 0 0 1 .5-.5z"/><path d="M14 3.5V8h4.5M8.5 12h7M8.5 15.5h5"/>',
+    replies: '<path d="M4 5h16v10H9l-4 4v-4H4z"/><path d="M8.5 10h.01M12 10h.01M15.5 10h.01"/>',
+    card: '<path d="M4 5h16v10H9l-4 4v-4H4z"/><path d="M10 12.5l4.5-4.5 1.5 1.5-4.5 4.5H10z"/>',
+    coupon: '<path d="M3.5 7h17v3a2 2 0 0 0 0 4v3h-17v-3a2 2 0 0 0 0-4z"/><path d="M9 7v10" stroke-dasharray="2 2"/>',
+    call: '<path d="M4 5h16v10H9l-4 4v-4H4z"/><path d="M10 7.5c.5 2.5 2 4 4.5 4.5l.8-1.2-1.5-.8-.6.6c-.8-.4-1.4-1-1.8-1.8l.6-.6-.8-1.5z"/>'};
+  const CHAT_PLUS_GRID = '<div class="cp-grid">' + [['camera', 'กล้อง'], ['media', 'รูป & วิดีโอ'], ['file', 'ไฟล์'], ['replies', 'ข้อความตอบกลับ'], ['card', 'การ์ดเมสเสจ'], ['coupon', 'คูปอง'], ['call', 'คำขอการโทร']].map(([k, l]) =>
+    '<button type="button" class="cp-item" data-cp="' + k + '"><svg viewBox="0 0 24 24" aria-hidden="true">' + PICO[k] + '</svg><span>' + l + '</span></button>').join('') + '</div>';
+  $('chatPlusBtn').addEventListener('click', () => { if (chatPanel) closeChatPlus(); else openChatPanel('grid'); });
+  let cpCardImg = '';
+  $('chatPlus').addEventListener('click', async e => {
+    const it = e.target.closest('[data-cp]');
+    if (it) {
+      const k = it.dataset.cp;
+      if (k === 'camera') { $('chatCamInput').click(); return; }
+      if (k === 'media') { $('chatMediaInput').click(); return; }
+      if (k === 'file') { $('chatFileInput').click(); return; }
+      cpCardImg = ''; openChatPanel(k); return;
+    }
+    const trk = e.target.closest('[data-trk]');
+    if (trk) {
+      const rec = (store.get('bs_tracking', []) || []).find(t => t.id === trk.dataset.trk); if (!rec) return;
+      $('chatInput').value = rec.message || buildTrackingMessage(rec.code, rec.carrier, rec.customer);
+      autoGrowChat(); closeChatPlus(); $('chatInput').focus(); toast('ใส่ข้อความเลขพัสดุแล้ว ตรวจแล้วกดส่งได้เลย'); return;
+    }
+    const use = e.target.closest('[data-rtext]');
+    if (use) { $('chatInput').value = use.dataset.rtext; autoGrowChat(); closeChatPlus(); $('chatInput').focus(); return; }
+    const del = e.target.closest('[data-rdel]');
+    if (del) {
+      store.set('bs_line_replies', lineReplies().filter(r => r.id !== del.dataset.rdel));
+      cloudDelete('lineReplies', del.dataset.rdel); openChatPanel('replies'); return;
+    }
+    if (e.target.id === 'cpCallSend') {
+      e.target.disabled = true;
+      try { await chatPost({flex: flexCall(), altText: '📞 โทรหา ' + (shop.name || 'ร้าน'), fbText: '📞 โทรหา ' + (shop.name || 'ร้าน') + ' ได้ที่ ' + String(shop.phone || '').split(/\s*[,/]\s*/)[0] + '\nหรือพิมพ์เบอร์ของคุณไว้ ร้านจะโทรกลับครับ'}); closeChatPlus(); toast('ส่งคำขอการโทรแล้ว'); }
+      catch (err) { toast('ส่งไม่สำเร็จ: ' + err.message); e.target.disabled = false; }
+    }
+  });
+  $('chatPlus').addEventListener('input', e => { if (e.target.id === 'cpTrackQ') renderChatTrackList(); });
+  $('chatPlus').addEventListener('change', async e => {
+    if (e.target.id !== 'cpcImg' || !e.target.files[0]) return;
+    $('cpcImgLbl').textContent = '⏳ กำลังอัปโหลดรูป...';
+    try { const d = await shrinkImage(e.target.files[0]); cpCardImg = await uploadPhotoToCloudinary(d) || ''; $('cpcImgLbl').textContent = cpCardImg ? '✓ ใส่รูปแล้ว (กดเพื่อเปลี่ยน)' : 'อัปโหลดรูปไม่สำเร็จ'; }
+    catch (err) { $('cpcImgLbl').textContent = 'อัปโหลดรูปไม่สำเร็จ'; }
+  });
+  $('chatPlus').addEventListener('submit', async e => {
+    e.preventDefault();
+    const f = e.target, btn = f.querySelector('button[type=submit]');
+    if (f.id === 'cpReplyForm') {
+      const t = $('cpReplyText').value.trim(); if (!t) return;
+      const rec = {id: 'lr' + Date.now(), text: t, createdAt: Date.now()};
+      store.set('bs_line_replies', lineReplies().concat([rec])); cloudSave('lineReplies', rec); openChatPanel('replies'); return;
+    }
+    btn.disabled = true;
+    try {
+      if (f.id === 'cpCardForm') {
+        const o = {title: $('cpcTitle').value.trim(), detail: $('cpcDetail').value.trim(), price: $('cpcPrice').value.trim(), image: cpCardImg, btnLabel: $('cpcBtn').value.trim(), btnUrl: $('cpcUrl').value.trim()};
+        if (o.btnLabel && !okLink(o.btnUrl)) throw new Error('ลิงก์ปุ่มต้องขึ้นต้นด้วย https:// หรือ tel:');
+        await chatPost({flex: flexCard(o), altText: o.title, fbText: [o.title, o.detail, o.price, o.btnUrl ? (o.btnLabel || 'ลิงก์') + ': ' + o.btnUrl : ''].filter(Boolean).join('\n')});
+      } else if (f.id === 'cpCouponForm') {
+        const u = $('cpqUntil').value;
+        const o = {name: $('cpqName').value.trim(), discount: $('cpqDisc').value.trim(), cond: $('cpqCond').value.trim(), code: $('cpqCode').value.trim(), until: u ? thDate(u) : ''};
+        await chatPost({flex: flexCoupon(o), altText: '🎟 คูปอง ' + o.discount, fbText: ['🎟 คูปอง ' + (shop.name || ''), o.name, o.discount, o.cond, o.code ? 'โค้ด: ' + o.code : '', o.until ? 'ใช้ได้ถึง ' + o.until : ''].filter(Boolean).join('\n')});
+      }
+      closeChatPlus(); toast('ส่งแล้ว');
+    } catch (err) { toast('ส่งไม่สำเร็จ: ' + err.message); btn.disabled = false; }
+  });
+  $('chatCamInput').addEventListener('change', e => { const fs = Array.from(e.target.files); e.target.value = ''; closeChatPlus(); sendChatImages(fs); });
+  $('chatMediaInput').addEventListener('change', e => { const fs = Array.from(e.target.files); e.target.value = ''; closeChatPlus(); sendChatMedia(fs); });
+  $('chatFileInput').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; closeChatPlus(); if (f) sendChatFile(f); });
+
+  $('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && window.matchMedia('(min-width:900px)').matches) { e.preventDefault(); sendChat(); } });
+  $('chatToJob').addEventListener('click', () => {
+    const c = chatList.find(x => x.userId === chatSel); if (!c) return;
+    if (!can('confirm')) { toast('ไม่มีสิทธิ์เปิดใบคอนเฟิร์มงาน'); return; }
+    newJob(); $('jName').value = c.name || ''; renderJob(); showTab('confirm');
+    toast('เปิดใบงานใหม่ให้ ' + (c.name || 'ลูกค้า') + ' แล้ว');
+  });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && chatSel && isChatActive()) { const c = chatList.find(x => x.userId === chatSel); if (c) { markChatSeen(c.userId, c.lastInAt || 0); paintChatBadge(); renderChatList(); } } });
   function isTrackPanelActive() {
     const p = document.getElementById('panel-track');
     return !!(p && p.classList.contains('active'));
@@ -6276,7 +6823,7 @@ function bahtText(value) {
 
   /* ---------------- events ---------------- */
   const TAX_TABS = ['bill', 'purchase', 'dash', 'report'];
-  const firstAllowedTab = () => ['calc', 'confirm', 'track', 'vat', 'wholesale', 'quote', 'bill', 'purchase', 'dash', 'report'].find(can) || 'calc';
+  const firstAllowedTab = () => ['calc', 'confirm', 'track', 'chat', 'vat', 'wholesale', 'quote', 'bill', 'purchase', 'dash', 'report'].find(can) || 'calc';
   function closeTaxMenus() {
     $('taxTrigger').setAttribute('aria-expanded', 'false');
     $('taxDropdown').hidden = true;
@@ -6287,7 +6834,7 @@ function bahtText(value) {
   }
   function showTab(name) {
     if (!can(name)) name = firstAllowedTab(); // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้ หรือโค้ดส่วนอื่นที่สั่งเปิดหน้า
-    ['calc', 'vat', 'confirm', 'bill', 'wholesale', 'quote', 'track', 'purchase', 'dash', 'report'].forEach(n => {
+    ['calc', 'vat', 'confirm', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
@@ -6296,7 +6843,7 @@ function bahtText(value) {
     document.querySelectorAll('.top-track[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
     const isTax = TAX_TABS.indexOf(name) >= 0;
     $('taxTrigger').closest('.tab-group').classList.toggle('has-active', isTax);
-    $('bnavTaxTrigger').classList.toggle('active', isTax || name === 'vat' || name === 'quote');
+    $('bnavTaxTrigger').classList.toggle('active', isTax || name === 'vat' || name === 'quote' || name === 'chat');
     closeTaxMenus();
     if (name === 'bill') fitBill();
     if (name === 'confirm') fitJob();
@@ -6306,6 +6853,7 @@ function bahtText(value) {
     if (name === 'vat') renderVatCalc();
     if (name === 'dash') renderDash();
     if (name === 'report') renderReport();
+    if (name === 'chat') renderChat();
     const activeTab = isTax ? $('taxTrigger') : $('tab-' + name);
     if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
   }
@@ -6941,7 +7489,7 @@ function bahtText(value) {
 
   /* ---------------- บัญชีผู้ใช้งาน (ล็อกอิน/สิทธิ์/จัดการบัญชี) ---------------- */
   const PERM_SHORT = {calc: 'คำนวณ', vat: 'VAT', confirm: 'ใบคอนเฟิร์ม', track: 'ติดตามพัสดุ', wholesale: 'ราคาส่ง', quote: 'ใบเสนอราคา',
-    bill: 'ใบเสร็จ', purchase: 'ภาษีซื้อ', dash: 'แดชบอร์ด', report: 'รายงานภาษี', price: 'ราคา', bank: 'เงินเข้า-ออก', shop: 'ข้อมูลร้าน'};
+    bill: 'ใบเสร็จ', purchase: 'ภาษีซื้อ', dash: 'แดชบอร์ด', report: 'รายงานภาษี', chat: 'แชทลูกค้า', price: 'ราคา', bank: 'เงินเข้า-ออก', shop: 'ข้อมูลร้าน'};
   // ใครเปิด "จัดการผู้ใช้งานและสิทธิ์" ได้: ผู้ดูแลระบบสูงสุด (@ball) คนเดียว
   // (กันล็อกตัวเอง: ถ้าในระบบไม่มีบัญชี @ball เลย ให้บัญชีเจ้าของร้านเดิมจัดการแทนได้)
   const canManageUsers = isSuper || (!!meRec && meRec.role === 'owner' && !(window.BSAuth ? window.BSAuth.getUsers() : []).some(isSuperUser));
@@ -6956,7 +7504,7 @@ function bahtText(value) {
     });
     if (!can('confirm') && $('sidebarCta')) $('sidebarCta').hidden = true;
     if ($('taxTrigger') && !TAX_TABS.some(can)) { const grp = $('taxTrigger').closest('.tab-group'); if (grp) grp.hidden = true; }
-    if ($('bnavTaxTrigger') && !['quote', 'vat', 'bill', 'purchase', 'dash', 'report'].some(can)) $('bnavTaxTrigger').hidden = true;
+    if ($('bnavTaxTrigger') && !['chat', 'quote', 'vat', 'bill', 'purchase', 'dash', 'report'].some(can)) $('bnavTaxTrigger').hidden = true;
     if (!can('shop') && $('shopSettings')) $('shopSettings').hidden = true;
     if (!can('price') && $('priceCard')) $('priceCard').hidden = true;
     if (!can('calc')) setTimeout(() => showTab(firstAllowedTab()), 0); // หน้าแรกปกติคือ "คำนวณ" ถ้าไม่มีสิทธิ์ให้เปิดหน้าแรกที่เข้าได้
@@ -7170,6 +7718,8 @@ function bahtText(value) {
     watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
     watchBankIn();
     watchBankOut();
+    watchLineChats();
+    if (can('chat')) watchCloud('lineReplies', 'bs_line_replies', () => { if (chatPanel === 'replies') openChatPanel('replies'); });
     watchBankBalance();
     // ประวัติ "ติดตามพัสดุ" แต่ก่อนเก็บเฉพาะในเครื่องเท่านั้น — ครั้งแรกที่เปิดหน้านี้หลังอัปเดต
     // ให้อัปโหลดรายการที่มีอยู่ในเครื่องนี้ขึ้นคลาวด์ก่อน 1 ครั้ง (กันไม่ให้ข้อมูลเดิมหายไปตอนเริ่มซิงก์)
