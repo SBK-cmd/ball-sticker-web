@@ -571,7 +571,36 @@ button.status-pill:active{filter:brightness(0.9)}
 .bib-main small{display:block;font-size:13px;opacity:.88;overflow-wrap:anywhere}
 .bib-view{flex:none;background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;padding:8px 14px;font:700 13.5px 'Sarabun','Noto Sans Thai',system-ui,sans-serif;cursor:pointer}
 .bib-x{flex:none;background:transparent;border:0;color:#fff;opacity:.75;font-size:16px;padding:6px;cursor:pointer}
-.bankin-sum{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.bankin-sum{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+@media (max-width:760px){.bankin-sum{grid-template-columns:1fr}}
+.bankin-sum.one{grid-template-columns:minmax(0,560px)}
+.bkc-toggle{grid-column:1/-1;display:flex;justify-content:flex-start}
+.bkc{position:relative;overflow:hidden;border-radius:18px;padding:16px;border:1px solid var(--line);
+  background:radial-gradient(120% 90% at 100% 0%,color-mix(in srgb,var(--sticker) 22%,transparent),transparent 60%),var(--field)}
+.bkc-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.bkc-name{font-weight:800;font-size:14.5px;color:var(--ink)}
+.bkc-when{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.bkc-bal{margin:8px 0 14px}
+.bkc-bal span{display:block;font-size:12.5px;color:var(--muted);font-weight:600}
+.bkc-bal b{display:flex;align-items:baseline;gap:6px;font-size:32px;font-weight:800;line-height:1.15;letter-spacing:-.01em;color:var(--ink);font-variant-numeric:tabular-nums}
+.bkc-bal b em{font-style:normal;font-size:14px;font-weight:600;color:var(--muted)}
+.bkc-bal b.none{color:var(--muted)}
+.bkc-bal small{font-size:12px;color:var(--muted)}
+.bkc-flow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bkc-chip{display:grid;grid-template-columns:auto 1fr;column-gap:8px;align-items:center;padding:10px 11px;border-radius:14px;background:var(--surface);border:1px solid var(--line);min-width:0}
+.bkc-chip i{grid-row:span 3;width:30px;height:30px;border-radius:10px;display:grid;place-items:center}
+.bkc-chip i svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.bkc-chip.in i{color:var(--in-ink);background:color-mix(in srgb,var(--in-ink) 14%,transparent)}
+.bkc-chip.out i{color:var(--out-ink);background:color-mix(in srgb,var(--out-ink) 14%,transparent)}
+.bkc-chip span{font-size:12px;color:var(--muted);font-weight:600}
+.bkc-chip b{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bkc-chip.in b{color:var(--in-ink)} .bkc-chip.out b{color:var(--out-ink)}
+.bkc-chip.zero b{color:var(--muted);font-weight:600}
+.bkc-chip small{font-size:11.5px;color:var(--muted)}
+.bkc-month{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bkc-month span:first-child{font-weight:700;color:var(--ink)}
+.bkc-month .m-in{color:var(--in-ink)} .bkc-month .m-out{color:var(--out-ink)} .bkc-month .net{margin-left:auto;font-weight:700;color:var(--ink)}
+
 .bis{background:var(--field);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
 .bis .ps-l{margin-bottom:2px}
 .bis b{display:block;font-size:20px;font-weight:800;line-height:1.25;color:var(--ink);font-variant-numeric:tabular-nums}
@@ -2896,6 +2925,7 @@ function bahtText(value) {
   const BANK_OUT_KIND = {'เงินออก': 'เงินออก', 'ชำระ': 'ชำระเงิน', 'จ่าย': 'จ่ายเงิน', 'ถอน': 'ถอนเงิน', 'โอนไป': 'โอนออก', 'โอนออก': 'โอนออก', 'โอนเงินออก': 'โอนออก', 'หักบัญชี': 'หักบัญชี'};
   let bankListTab = 'all';
   let bankDelArmed = null, bankDelTimer = null;
+  const BANK_HIDE_DEFAULT = ['วันทิม']; // บัญชีที่ซ่อนการ์ดไว้ก่อน กดปุ่มเพื่อแสดง
   const BANK_LIST_STEP = 5; let bankListLimit = BANK_LIST_STEP; // ประวัติแสดงทีละ 5 รายการ กด "ดูเพิ่มเติม" เพื่อดูต่อ
   const BANK_BAL_KEY = {'กิติพงษ์': 'kittipong', 'วันทิม': 'wantim'};
   try { const t = localStorage.getItem('bs_bankin_tab'); if (t === 'in' || t === 'out') bankListTab = t; } catch (e) {}
@@ -2999,16 +3029,29 @@ function bahtText(value) {
     const sum = arr => arr.reduce((s, x) => s + num(x.amount), 0);
     const onDay = arr => arr.filter(x => localISO(new Date(x.createdAt || 0)) === today);
     const inMonth = arr => arr.filter(x => localISO(new Date(x.createdAt || 0)).slice(0, 7) === month);
-    $('bankInSum').innerHTML = ACCOUNTS.map(a => {
+    const ICO_IN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>';
+    const ICO_OUT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>';
+    let showHidden = false;
+    try { showHidden = localStorage.getItem('bs_bk_show_hidden') === '1'; } catch (e) {}
+    const shownAcc = ACCOUNTS.filter(a => showHidden || BANK_HIDE_DEFAULT.indexOf(a) < 0);
+    const hiddenAcc = ACCOUNTS.filter(a => BANK_HIDE_DEFAULT.indexOf(a) >= 0);
+    $('bankInSum').classList.toggle('one', shownAcc.length === 1);
+    $('bankInSum').innerHTML = shownAcc.map(a => {
       const mine = list.filter(x => x.account === a), mineOut = outs.filter(x => x.account === a);
       const td = onDay(mine), tdOut = onDay(mineOut);
       const bal = bankBalOf(a);
-      return '<div class="bis"><span class="ps-l">บัญชี' + esc(a) + ' · เงินเข้าวันนี้</span><b' + (td.length ? ' class="bis-in"' : '') + '>' + money(sum(td)) + '</b>' +
-        '<small>' + td.length + ' รายการ</small>' +
-        '<div class="bis-out' + (tdOut.length ? '' : ' zero') + '"><span>เงินออกวันนี้' + (tdOut.length ? ' (' + tdOut.length + ')' : '') + '</span><b>' + (tdOut.length ? '\u2212' : '') + money(sum(tdOut)) + '</b></div>' +
-        '<small>เดือนนี้ เข้า ' + money(sum(inMonth(mine))) + ' · ออก ' + money(sum(inMonth(mineOut))) + ' บาท</small>' +
-        '<div class="bis-bal">คงเหลือในบัญชี' + (bal ? '<b>' + money(num(bal.balance)) + ' บาท</b>อัปเดต ' + esc(bankBalWhen(bal)) : '<b>—</b>รอ SMS ครั้งถัดไป') + '</div></div>';
-    }).join('');
+      const mIn = sum(inMonth(mine)), mOut = sum(inMonth(mineOut)), net = mIn - mOut;
+      return '<div class="bkc">' +
+        '<div class="bkc-head"><span class="bkc-name">บัญชี' + esc(a) + '</span>' + (bal ? '<span class="bkc-when">อัปเดต ' + esc(bankBalWhen(bal)) + '</span>' : '') + '</div>' +
+        '<div class="bkc-bal"><span>ยอดคงเหลือ</span>' + (bal ? '<b>' + money(num(bal.balance)) + '<em>บาท</em></b>' : '<b class="none">—</b><small>รอ SMS ครั้งถัดไป</small>') + '</div>' +
+        '<div class="bkc-flow">' +
+          '<div class="bkc-chip in' + (td.length ? '' : ' zero') + '"><i>' + ICO_IN + '</i><span>เข้าวันนี้</span><b>' + (td.length ? '+' : '') + money(sum(td)) + '</b><small>' + td.length + ' รายการ</small></div>' +
+          '<div class="bkc-chip out' + (tdOut.length ? '' : ' zero') + '"><i>' + ICO_OUT + '</i><span>ออกวันนี้</span><b>' + (tdOut.length ? '\u2212' : '') + money(sum(tdOut)) + '</b><small>' + tdOut.length + ' รายการ</small></div>' +
+        '</div>' +
+        '<div class="bkc-month"><span>เดือนนี้</span><span class="m-in">เข้า ' + money(mIn) + '</span><span class="m-out">ออก ' + money(mOut) + '</span><span class="net">สุทธิ ' + (net < 0 ? '\u2212' : '+') + money(Math.abs(net)) + '</span></div>' +
+        '</div>';
+    }).join('') + (hiddenAcc.length ? '<div class="bkc-toggle"><button type="button" class="btn small" data-bkshow="1">' +
+      (showHidden ? 'ซ่อนบัญชี' + hiddenAcc.join(', ') : '👁 แสดงบัญชี' + hiddenAcc.join(', ')) + '</button></div>' : '');
     document.querySelectorAll('#bankListSeg button').forEach(b => {
       const k = b.dataset.bk, n = k === 'in' ? list.length : k === 'out' ? outs.length : 0;
       b.setAttribute('aria-pressed', String(k === bankListTab));
@@ -6480,6 +6523,11 @@ function bahtText(value) {
     cloudDelete(dir === 'in' ? 'bankIn' : 'bankOut', id);
     renderBankIn(); renderJobBankInPick(); renderBell(false);
     toast('ลบรายการ' + (x ? ' ' + money(num(x.amount)) + ' บาท' : '') + ' แล้ว');
+  });
+  $('bankInSum').addEventListener('click', e => {
+    if (!e.target.closest('[data-bkshow]')) return;
+    try { localStorage.setItem('bs_bk_show_hidden', localStorage.getItem('bs_bk_show_hidden') === '1' ? '0' : '1'); } catch (e2) {}
+    renderBankIn();
   });
   $('bankListSeg').addEventListener('click', e => {
     const b = e.target.closest('button[data-bk]'); if (!b) return;
