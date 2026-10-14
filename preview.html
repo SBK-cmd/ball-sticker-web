@@ -144,14 +144,19 @@ a{color:inherit}
 .tab-dropdown .tab-ic{opacity:.8}
 .tab-dropdown button:hover{background:var(--field)}
 .tab-dropdown button[aria-selected="true"]{background:var(--field);color:var(--sticker-line)}
-.tax-sheet-backdrop{position:fixed;inset:0;background:rgba(8,14,26,.18);z-index:950}
-.tax-sheet{position:fixed;left:10px;right:10px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:960;
-  display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
-.tax-sheet-item{display:inline-flex;align-items:center;padding:9px 16px;border-radius:999px;
-  border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap;
-  font:600 13px/1.2 'Sarabun','Noto Sans Thai',system-ui,sans-serif;box-shadow:var(--shadow-2);
-  -webkit-tap-highlight-color:transparent}
-.tax-sheet-item:active{background:var(--field)}
+.tax-sheet-backdrop{position:fixed;inset:0;background:rgba(4,8,16,.55);z-index:950;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+/* เมนู "เพิ่มเติม" (มือถือ): แผงเลื่อนขึ้นจากล่าง ปุ่มเรียงเป็นตาราง 2 คอลัมน์ ขนาดเท่ากัน */
+.tax-sheet{position:fixed;left:10px;right:10px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:960;
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px;border-radius:20px;
+  background:var(--surface);border:1px solid var(--line);box-shadow:0 -12px 40px -12px rgba(0,0,0,.55)}
+.tax-sheet::before{content:"เมนูเพิ่มเติม";grid-column:1/-1;font:700 14px 'Prompt','Sarabun',sans-serif;color:var(--muted);padding:0 4px 2px}
+.tax-sheet[hidden]{display:none}
+.tax-sheet-item{display:flex;align-items:center;justify-content:center;gap:6px;min-height:48px;padding:10px 12px;border-radius:14px;
+  border:1px solid var(--line);background:var(--field);color:var(--ink);cursor:pointer;text-align:center;
+  font:600 14px/1.25 'Sarabun','Noto Sans Thai',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+.tax-sheet-item[hidden]{display:none}
+.tax-sheet-item:nth-of-type(odd):last-of-type{grid-column:1/-1}
+.tax-sheet-item:active{background:var(--surface)}
 .tax-sheet-item:focus-visible{outline:2px solid var(--blue-ink);outline-offset:2px}
 .tax-sheet-item.active{background:var(--blue-bg);color:var(--blue-ink);border-color:transparent;font-weight:700}
 /* การ์ดคิดราคา (หน้าคำนวณ) */
