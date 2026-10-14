@@ -53,6 +53,7 @@ if ('serviceWorker' in navigator) {
   --accent:#ffd23f; --accent-ink:#10233f; --magenta:#d81f66; --hero-bg:#10233f;
   --sticker:#7fd3ef; --sticker-line:#0d6f92; --mat:#dde5ee; --mat-line:#cfd9e5; --warn-bg:#fff1f5; --warn-ink:#8f1444;
   --blue-bg:#e8f4fc; --blue-ink:#0c5a86;
+  --in-ink:#16803f; --out-ink:#c62828;
   --shadow-1:0 1px 2px rgba(16,32,58,.05), 0 10px 26px -16px rgba(16,32,58,.28);
   --shadow-2:0 2px 4px rgba(16,32,58,.06), 0 18px 40px -18px rgba(16,32,58,.32);
   box-sizing:border-box;
@@ -65,6 +66,7 @@ if ('serviceWorker' in navigator) {
     --accent-ink:#10233f; --magenta:#ff6fa0; --hero-bg:#1b3462; --mat:#0f1c31; --mat-line:#182a45;
     --warn-bg:#3a1424; --warn-ink:#ffb3cb;
     --blue-bg:#122c40; --blue-ink:#7fd3ef;
+    --in-ink:#6fdc9a; --out-ink:#ff8a80;
     --shadow-1:0 1px 2px rgba(0,0,0,.3), 0 10px 26px -16px rgba(0,0,0,.55);
     --shadow-2:0 2px 4px rgba(0,0,0,.32), 0 18px 40px -18px rgba(0,0,0,.6);
   }
@@ -74,6 +76,7 @@ if ('serviceWorker' in navigator) {
   --accent-ink:#10233f; --magenta:#ff6fa0; --hero-bg:#1b3462; --mat:#0f1c31; --mat-line:#182a45;
   --warn-bg:#3a1424; --warn-ink:#ffb3cb;
   --blue-bg:#122c40; --blue-ink:#7fd3ef;
+  --in-ink:#6fdc9a; --out-ink:#ff8a80;
   --shadow-1:0 1px 2px rgba(0,0,0,.3), 0 10px 26px -16px rgba(0,0,0,.55);
   --shadow-2:0 2px 4px rgba(0,0,0,.32), 0 18px 40px -18px rgba(0,0,0,.6);
 }
@@ -525,7 +528,7 @@ button.status-pill:active{filter:brightness(0.9)}
 .bis .bis-out{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;column-gap:8px;margin-top:6px;font-size:12.5px;color:var(--muted)}
 .bis .bis-out span{white-space:nowrap}
 .bis .bis-out.zero b{color:var(--muted);font-weight:600}
-.bis .bis-out b{display:inline;font-size:15px;font-weight:800;line-height:1.3;color:var(--warn-ink);font-variant-numeric:tabular-nums}
+.bis .bis-out b{display:inline;font-size:15px;font-weight:800;line-height:1.3;color:var(--out-ink);font-variant-numeric:tabular-nums}
 .bk-tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px}
 .bk-add{border:1px dashed var(--line);border-radius:12px;padding:12px;margin:0 0 12px;background:var(--field)}
 .bk-add-head b{display:block;font-size:15px}
@@ -546,8 +549,10 @@ button.status-pill:active{filter:brightness(0.9)}
 .bk-seg button:hover{color:var(--ink)}
 .bk-seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
 .bk-seg button .n{opacity:.7;font-weight:500;margin-left:4px}
+.bil-amt.amt-in{color:var(--in-ink)}
 .bil-amt.amt-in::before{content:'+'}
-.bil-amt.amt-out{color:var(--warn-ink)}
+.bil-amt.amt-out{color:var(--out-ink)}
+.bis b.bis-in{color:var(--in-ink)}
 .bil-amt.amt-out::before{content:'\2212'}
 .bis-bal{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--muted)}
 .bis-bal b{display:block;font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums}
@@ -2991,7 +2996,7 @@ function bahtText(value) {
       const mine = list.filter(x => x.account === a), mineOut = outs.filter(x => x.account === a);
       const td = onDay(mine), tdOut = onDay(mineOut);
       const bal = bankBalOf(a);
-      return '<div class="bis"><span class="ps-l">บัญชี' + esc(a) + ' · เงินเข้าวันนี้</span><b>' + money(sum(td)) + '</b>' +
+      return '<div class="bis"><span class="ps-l">บัญชี' + esc(a) + ' · เงินเข้าวันนี้</span><b' + (td.length ? ' class="bis-in"' : '') + '>' + money(sum(td)) + '</b>' +
         '<small>' + td.length + ' รายการ</small>' +
         '<div class="bis-out' + (tdOut.length ? '' : ' zero') + '"><span>เงินออกวันนี้' + (tdOut.length ? ' (' + tdOut.length + ')' : '') + '</span><b>' + (tdOut.length ? '\u2212' : '') + money(sum(tdOut)) + '</b></div>' +
         '<small>เดือนนี้ เข้า ' + money(sum(inMonth(mine))) + ' · ออก ' + money(sum(inMonth(mineOut))) + ' บาท</small>' +
