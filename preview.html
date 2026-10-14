@@ -572,6 +572,8 @@ button.status-pill:active{filter:brightness(0.9)}
 .chat-free{color:#06c755;font-weight:800}
 .ch-tag{display:inline-block;font-style:normal;font-size:10px;font-weight:800;padding:0 6px;border-radius:999px;margin-right:5px;vertical-align:1px;color:#fff}
 .ch-tag.ln{background:#06c755} .ch-tag.fb{background:#1877f2}
+.ch-tag.pg-ball{background:#ffd60a;color:#0a66d8;box-shadow:inset 0 0 0 1.5px #0a66d8}
+.ch-tag.pg-roll{background:#ffd60a;color:#d90429;box-shadow:inset 0 0 0 1.5px #d90429}
 .chat-attach.open svg{transform:rotate(45deg)} .chat-attach svg{transition:transform .15s}
 .chat-plus{border-top:1px solid var(--line);background:var(--surface);padding:12px;max-height:46vh;overflow:auto}
 .cp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 4px}
@@ -4885,6 +4887,7 @@ function bahtText(value) {
   const FB_WINDOW = 24 * 3600 * 1000;
   // ชื่อเพจตาม ID (ใช้เมื่อ Facebook ไม่ส่งชื่อเพจมา)
   const FB_PAGE_LABEL = {'108503502205863': 'บอล สติ๊กเกอร์', '148413448352561': 'Roll Shop', '408557829006929': 'Ball Sticker'};
+  const FB_PAGE_CLASS = {'108503502205863': 'pg-ball', '148413448352561': 'pg-roll'};
   const fbPageName = c => c.pageName || FB_PAGE_LABEL[c.pageId] || 'Facebook';
   let chatList = [], chatSel = null, chatMsgs = [], chatMsgUnsub = null, chatLive = false, chatSending = false;
   const lineSeen = () => { try { return JSON.parse(localStorage.getItem(LINE_SEEN) || '{}') || {}; } catch (e) { return {}; } };
@@ -4926,7 +4929,7 @@ function bahtText(value) {
       return '<button type="button" class="chat-item' + (c.userId === chatSel ? ' sel' : '') + (un ? ' unread' : '') + '" data-uid="' + esc(c.userId) + '">' +
         avatarHtml(c, 'chat-av') +
         '<span class="chat-item-main"><span class="chat-item-top"><b>' + esc(c.name || (c.channel === 'fb' ? 'ลูกค้า Facebook' : 'ลูกค้า LINE')) + '</b><time>' + esc(chatWhen(c.lastAt)) + '</time></span>' +
-        '<small>' + (c.channel === 'fb' ? '<i class="ch-tag fb">เพจ ' + esc(fbPageName(c)) + '</i>' : '<i class="ch-tag ln">LINE</i>') + (c.lastDir === 'out' ? 'คุณ: ' : '') + esc(c.lastText || '') + '</small></span>' + (un ? '<i class="chat-dot" aria-label="ยังไม่อ่าน"></i>' : '') + '</button>';
+        '<small>' + (c.channel === 'fb' ? '<i class="ch-tag fb ' + (FB_PAGE_CLASS[c.pageId] || '') + '">เพจ ' + esc(fbPageName(c)) + '</i>' : '<i class="ch-tag ln">LINE</i>') + (c.lastDir === 'out' ? 'คุณ: ' : '') + esc(c.lastText || '') + '</small></span>' + (un ? '<i class="chat-dot" aria-label="ยังไม่อ่าน"></i>' : '') + '</button>';
     }).join('') : '<p class="empty">' + (chatList.length ? 'ไม่พบแชทที่ค้นหา' : (cloudDb ? 'ยังไม่มีแชท — ข้อความที่ลูกค้าทักมาใน LINE OA หลังเชื่อมระบบจะขึ้นที่นี่' : 'ต้องต่อคลาวด์ก่อน')) + '</p>';
   }
   function renderChatHead() {
