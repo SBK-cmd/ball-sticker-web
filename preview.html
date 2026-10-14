@@ -28,6 +28,28 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function () {});
   });
 }
+// พรีวิวเท่านั้น: GitHub Pages ให้เบราว์เซอร์จำหน้าเว็บไว้ ~10 นาที ทำให้กดรีเฟรชธรรมดาแล้วยังเห็นของเก่า
+// จึงเช็กกับเซิร์ฟเวอร์ตรงๆ ทุกครั้งที่เปิด/กลับมาที่หน้านี้ ถ้ามีเวอร์ชันใหม่จะโหลดใหม่ให้เอง
+(function () {
+  var mine = Date.parse(document.lastModified) || 0;
+  function check() {
+    if (!window.fetch) return;
+    fetch(location.pathname, {cache: 'reload'}).then(function (r) {
+      var srv = Date.parse(r.headers.get('last-modified') || '') || 0;
+      if (!srv || !mine || srv <= mine + 1000) return;
+      var k = 'bs_preview_reload', last = 0;
+      try { last = +sessionStorage.getItem(k) || 0; } catch (e) {}
+      if (Date.now() - last < 20000) return; // กันรีโหลดวนซ้ำ
+      try { sessionStorage.setItem(k, String(Date.now())); } catch (e) {}
+      location.reload();
+    }).catch(function () {});
+  }
+  window.addEventListener('load', check);
+  document.addEventListener('visibilitychange', function () {
+    var a = document.activeElement;
+    if (!document.hidden && !(a && /INPUT|TEXTAREA|SELECT/.test(a.tagName))) check();
+  });
+})();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
