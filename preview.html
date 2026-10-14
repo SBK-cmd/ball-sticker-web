@@ -556,6 +556,9 @@ button.status-pill:active{filter:brightness(0.9)}
 .chat-msgs{flex:1;overflow:auto;padding:14px 14px 8px;display:flex;flex-direction:column;gap:6px}
 .chat-day{text-align:center;margin:8px 0} .chat-day span{font-size:11.5px;color:var(--muted);background:var(--field);padding:3px 10px;border-radius:999px}
 .chat-msg{display:flex;flex-direction:column;max-width:78%}
+.chat-msgs[data-pg=pg-ball] .chat-msg.m-out .chat-bubble{background:#ffd60a;border-color:#ffd60a;color:#1a1300}
+.chat-msgs[data-pg=pg-roll] .chat-msg.m-out .chat-bubble{background:#38bdf8;border-color:#38bdf8;color:#04121c}
+.chat-msgs[data-pg=fb] .chat-msg.m-out .chat-bubble{background:#1877f2;border-color:#1877f2;color:#fff}
 .chat-msg.m-in{align-self:flex-start} .chat-msg.m-out{align-self:flex-end;align-items:flex-end}
 .chat-bubble{padding:9px 13px;border-radius:18px;font-size:14.5px;line-height:1.5;overflow-wrap:anywhere;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-bottom-left-radius:6px}
 .chat-msg.m-out .chat-bubble{background:#06c755;color:#fff;border-color:#06c755;border-bottom-left-radius:18px;border-bottom-right-radius:6px}
@@ -4976,6 +4979,7 @@ function bahtText(value) {
   }
   function renderChatMsgs() {
     const box = $('chatMsgs'); if (!box) return;
+    { const c = chatList.find(x => x.userId === chatSel) || {}; box.dataset.pg = c.channel === 'fb' ? (FB_PAGE_CLASS[c.pageId] || 'fb') : 'line'; }
     let last = '';
     box.innerHTML = chatMsgs.length ? chatMsgs.map(m => {
       const day = localISO(new Date(m.createdAt || 0));
