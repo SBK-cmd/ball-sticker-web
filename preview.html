@@ -570,6 +570,8 @@ button.status-pill:active{filter:brightness(0.9)}
 .chat-attach svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .chat-img.sending{opacity:.55}
 .chat-free{color:#06c755;font-weight:800}
+.ch-tag{display:inline-block;font-style:normal;font-size:10px;font-weight:800;padding:0 6px;border-radius:999px;margin-right:5px;vertical-align:1px;color:#fff}
+.ch-tag.ln{background:#06c755} .ch-tag.fb{background:#1877f2}
 .chat-attach.open svg{transform:rotate(45deg)} .chat-attach svg{transition:transform .15s}
 .chat-plus{border-top:1px solid var(--line);background:var(--surface);padding:12px;max-height:46vh;overflow:auto}
 .cp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 4px}
@@ -1334,7 +1336,7 @@ tr{break-inside:avoid}
       <button role="tab" id="tab-wholesale" data-tab="wholesale" aria-selected="false" aria-controls="panel-wholesale"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg><span>ใบราคาส่ง</span></button>
       <button role="tab" id="tab-quote" data-tab="quote" aria-selected="false" aria-controls="panel-quote"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="13" y2="17"></line></svg><span>ใบเสนอราคา</span></button>
       <button role="tab" id="tab-track" data-tab="track" aria-selected="false" aria-controls="panel-track"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg><span>ติดตามพัสดุ</span></button>
-      <button role="tab" id="tab-chat" data-tab="chat" aria-selected="false" aria-controls="panel-chat"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path></svg><span>แชท LINE</span><span class="tab-badge" id="chatTabBadge" hidden></span></button>
+      <button role="tab" id="tab-chat" data-tab="chat" aria-selected="false" aria-controls="panel-chat"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path></svg><span>แชทลูกค้า</span><span class="tab-badge" id="chatTabBadge" hidden></span></button>
       <div class="tab-group">
         <button type="button" class="tab-trigger" id="taxTrigger" aria-haspopup="true" aria-expanded="false">
           <svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7L6 7z"></path><path d="M9 7a3 3 0 0 1 6 0"></path></svg>
@@ -1441,7 +1443,7 @@ tr{break-inside:avoid}
 
   <div class="tax-sheet-backdrop no-print" id="taxSheetBackdrop" hidden></div>
   <div class="tax-sheet no-print" id="taxSheet" role="menu" aria-label="เมนูเพิ่มเติม: ใบเสนอราคาและภาษี" hidden>
-    <button type="button" class="tax-sheet-item" data-tab="chat">แชท LINE <span class="tab-badge" id="chatSheetBadge" hidden></span></button>
+    <button type="button" class="tax-sheet-item" data-tab="chat">แชทลูกค้า <span class="tab-badge" id="chatSheetBadge" hidden></span></button>
     <button type="button" class="tax-sheet-item" data-tab="quote">ใบเสนอราคา</button>
     <button type="button" class="tax-sheet-item" data-tab="vat">คำนวณ VAT</button>
     <button type="button" class="tax-sheet-item" data-tab="bill">ใบเสร็จ / ใบกำกับภาษี</button>
@@ -2351,8 +2353,8 @@ tr{break-inside:avoid}
     <!-- ================= รายงานภาษีซื้อ-ขาย ================= -->
     <section id="panel-chat" class="panel" role="tabpanel" aria-labelledby="tab-chat">
       <div class="page-head no-print">
-        <h1>แชท LINE.</h1>
-        <p>ข้อความที่ลูกค้าทักมาใน LINE OA ของร้าน ตอบกลับได้จากที่นี่ (ข้อความที่ส่งจากหน้านี้นับโควตาของ LINE OA)</p>
+        <h1>แชทลูกค้า.</h1>
+        <p>ข้อความจาก LINE OA และแชทเพจ Facebook ของร้าน ตอบกลับได้จากที่นี่ (LINE: นับโควตาของ LINE OA · เพจ: ตอบได้ภายใน 24 ชม. หลังลูกค้าทักล่าสุด)</p>
       </div>
       <div class="card chat-card no-print">
         <div class="chat-shell" id="chatShell">
@@ -2600,7 +2602,7 @@ function bahtText(value) {
     {title: 'หน้าที่เปิดได้', items: [
       ['calc', 'คำนวณสติ๊กเกอร์'], ['vat', 'คำนวณ VAT'], ['confirm', 'ใบคอนเฟิร์มงาน'], ['track', 'ติดตามพัสดุ'],
       ['wholesale', 'ใบราคาส่ง'], ['quote', 'ใบเสนอราคา'], ['bill', 'ใบเสร็จ / ใบกำกับภาษี'], ['purchase', 'ภาษีซื้อ'],
-      ['dash', 'แดชบอร์ด'], ['report', 'รายงานภาษี'], ['chat', 'แชท LINE']]},
+      ['dash', 'แดชบอร์ด'], ['report', 'รายงานภาษี'], ['chat', 'แชทลูกค้า (LINE / เพจ)']]},
     {title: 'ข้อมูลสำคัญ', items: [
       ['price', 'ราคาในหน้าคำนวณสติ๊กเกอร์'], ['bank', 'เงินเข้า-ออก · ยอดคงเหลือ · กระดิ่ง'], ['shop', 'แก้ข้อมูลร้าน']]}
   ];
@@ -4878,6 +4880,9 @@ function bahtText(value) {
   const LINE_OA_URL = 'https://line-oa.organic-parmesan.workers.dev';
   const LINE_OA_KEY = 'loa5408501ccebb8cc0e6155';
   const LINE_SEEN = 'bs_line_seen';
+  const chatIsFb = id => /^fb_/.test(String(id || chatSel || ''));
+  const chatEndpoint = () => chatIsFb() ? '/fbsend' : '/send';
+  const FB_WINDOW = 24 * 3600 * 1000;
   let chatList = [], chatSel = null, chatMsgs = [], chatMsgUnsub = null, chatLive = false, chatSending = false;
   const lineSeen = () => { try { return JSON.parse(localStorage.getItem(LINE_SEEN) || '{}') || {}; } catch (e) { return {}; } };
   function markChatSeen(uid, at) { const m = lineSeen(); if ((m[uid] || 0) < at) { m[uid] = at; try { localStorage.setItem(LINE_SEEN, JSON.stringify(m)); } catch (e) {} } }
@@ -4918,7 +4923,7 @@ function bahtText(value) {
       return '<button type="button" class="chat-item' + (c.userId === chatSel ? ' sel' : '') + (un ? ' unread' : '') + '" data-uid="' + esc(c.userId) + '">' +
         avatarHtml(c, 'chat-av') +
         '<span class="chat-item-main"><span class="chat-item-top"><b>' + esc(c.name || 'ลูกค้า LINE') + '</b><time>' + esc(chatWhen(c.lastAt)) + '</time></span>' +
-        '<small>' + (c.lastDir === 'out' ? 'คุณ: ' : '') + esc(c.lastText || '') + '</small></span>' + (un ? '<i class="chat-dot" aria-label="ยังไม่อ่าน"></i>' : '') + '</button>';
+        '<small>' + (c.channel === 'fb' ? '<i class="ch-tag fb">เพจ' + (c.pageName ? ' ' + esc(c.pageName) : '') + '</i>' : '<i class="ch-tag ln">LINE</i>') + (c.lastDir === 'out' ? 'คุณ: ' : '') + esc(c.lastText || '') + '</small></span>' + (un ? '<i class="chat-dot" aria-label="ยังไม่อ่าน"></i>' : '') + '</button>';
     }).join('') : '<p class="empty">' + (chatList.length ? 'ไม่พบแชทที่ค้นหา' : (cloudDb ? 'ยังไม่มีแชท — ข้อความที่ลูกค้าทักมาใน LINE OA หลังเชื่อมระบบจะขึ้นที่นี่' : 'ต้องต่อคลาวด์ก่อน')) + '</p>';
   }
   function renderChatHead() {
@@ -4928,7 +4933,10 @@ function bahtText(value) {
     if (!c) return;
     $('chatAvatarWrap').innerHTML = avatarHtml(c, 'chat-av');
     $('chatName').textContent = c.name || 'ลูกค้า LINE';
-    $('chatSub').textContent = c.followed === false ? 'บล็อก/เลิกเป็นเพื่อนแล้ว — ส่งข้อความไม่ได้' : 'ทักล่าสุด ' + (c.lastInAt ? bankInWhen({createdAt: c.lastInAt}, true) : '—');
+    const last = 'ทักล่าสุด ' + (c.lastInAt ? bankInWhen({createdAt: c.lastInAt}, true) : '—');
+    $('chatSub').textContent = c.channel === 'fb'
+      ? 'เพจ ' + (c.pageName || 'Facebook') + ' · ' + last + (c.lastInAt && Date.now() - c.lastInAt > FB_WINDOW ? ' · เกิน 24 ชม. ส่งไม่ได้จนกว่าลูกค้าจะทักใหม่' : '')
+      : c.followed === false ? 'บล็อก/เลิกเป็นเพื่อนแล้ว — ส่งข้อความไม่ได้' : 'LINE · ' + last;
   }
   function openChat(uid) {
     if (chatPanel) closeChatPlus();
@@ -4946,7 +4954,8 @@ function bahtText(value) {
   function msgBody(m) {
     const src = id => LINE_OA_URL + '/content?key=' + encodeURIComponent(LINE_OA_KEY) + '&id=' + encodeURIComponent(id);
     if (m.type === 'flex') return '<span class="chat-flex">🃏 ' + esc(m.text || 'การ์ด') + '</span>';
-    if (m.type === 'video' && m.url) return '<a class="chat-vid" href="' + esc(m.url) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(m.preview || '') + '" alt="วิดีโอ" loading="lazy"><i>▶</i></a>';
+    if (m.type === 'video' && m.url) return m.preview ? '<a class="chat-vid" href="' + esc(m.url) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(m.preview) + '" alt="วิดีโอ" loading="lazy"><i>▶</i></a>' : '<a class="chat-file" href="' + esc(m.url) + '" target="_blank" rel="noopener">▶ เปิดวิดีโอ</a>';
+    if (m.type === 'file' && m.url) return '<a class="chat-file" href="' + esc(m.url) + '" target="_blank" rel="noopener">' + esc(m.text || 'เปิดไฟล์') + '</a>';
     if (m.type === 'image' && m.url) return '<a href="' + esc(m.url) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(m.preview || m.url) + '" alt="รูปที่ส่ง" loading="lazy"></a>';
     if (m.type === 'image' && m.localUrl) return '<img class="chat-img sending" src="' + esc(m.localUrl) + '" alt="กำลังส่งรูป">';
     if (m.type === 'image' && m.contentId) return '<a href="' + esc(src(m.contentId)) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(src(m.contentId)) + '" alt="รูปจากลูกค้า" loading="lazy"></a>';
@@ -4974,7 +4983,7 @@ function bahtText(value) {
     if (!text || !chatSel || chatSending) return;
     chatSending = true; $('chatSendBtn').disabled = true;
     try {
-      const r = await fetch(LINE_OA_URL + '/send', {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': LINE_OA_KEY},
+      const r = await fetch(LINE_OA_URL + chatEndpoint(), {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': LINE_OA_KEY},
         body: JSON.stringify({userId: chatSel, text, by: currentUser ? (currentUser.name || currentUser.username) : ''})});
       const j = await r.json().catch(() => ({}));
       if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
@@ -5010,7 +5019,7 @@ function bahtText(value) {
         const url = await uploadPhotoToCloudinary(dataUrl);
         if (!url) throw new Error('อัปโหลดรูปไม่สำเร็จ');
         const preview = url.replace('/image/upload/', '/image/upload/w_480,c_limit,q_auto/');
-        const r = await fetch(LINE_OA_URL + '/send', {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': LINE_OA_KEY},
+        const r = await fetch(LINE_OA_URL + chatEndpoint(), {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': LINE_OA_KEY},
           body: JSON.stringify({userId: uid, image: url, preview, by: currentUser ? (currentUser.name || currentUser.username) : ''})});
         const j = await r.json().catch(() => ({}));
         if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
@@ -5044,7 +5053,8 @@ function bahtText(value) {
   /* ---- ปุ่ม + ในแชท: กล้อง / รูป & วิดีโอ / ไฟล์ / ข้อความตอบกลับ / การ์ดเมสเสจ / คูปอง / คำขอการโทร ---- */
   const chatBy = () => currentUser ? (currentUser.name || currentUser.username) : '';
   async function chatPost(payload) {
-    const r = await fetch(LINE_OA_URL + '/send', {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': LINE_OA_KEY},
+    if (chatIsFb() && payload.flex) payload = {text: payload.fbText || payload.altText}; // เพจ Facebook ไม่รองรับการ์ดแบบ LINE ส่งเป็นข้อความแทน
+    const r = await fetch(LINE_OA_URL + chatEndpoint(), {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': LINE_OA_KEY},
       body: JSON.stringify(Object.assign({userId: chatSel, by: chatBy()}, payload))});
     const j = await r.json().catch(() => ({}));
     if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
@@ -5193,7 +5203,7 @@ function bahtText(value) {
     }
     if (e.target.id === 'cpCallSend') {
       e.target.disabled = true;
-      try { await chatPost({flex: flexCall(), altText: '📞 โทรหา ' + (shop.name || 'ร้าน')}); closeChatPlus(); toast('ส่งคำขอการโทรแล้ว'); }
+      try { await chatPost({flex: flexCall(), altText: '📞 โทรหา ' + (shop.name || 'ร้าน'), fbText: '📞 โทรหา ' + (shop.name || 'ร้าน') + ' ได้ที่ ' + String(shop.phone || '').split(/\s*[,/]\s*/)[0] + '\nหรือพิมพ์เบอร์ของคุณไว้ ร้านจะโทรกลับครับ'}); closeChatPlus(); toast('ส่งคำขอการโทรแล้ว'); }
       catch (err) { toast('ส่งไม่สำเร็จ: ' + err.message); e.target.disabled = false; }
     }
   });
@@ -5216,11 +5226,11 @@ function bahtText(value) {
       if (f.id === 'cpCardForm') {
         const o = {title: $('cpcTitle').value.trim(), detail: $('cpcDetail').value.trim(), price: $('cpcPrice').value.trim(), image: cpCardImg, btnLabel: $('cpcBtn').value.trim(), btnUrl: $('cpcUrl').value.trim()};
         if (o.btnLabel && !okLink(o.btnUrl)) throw new Error('ลิงก์ปุ่มต้องขึ้นต้นด้วย https:// หรือ tel:');
-        await chatPost({flex: flexCard(o), altText: o.title});
+        await chatPost({flex: flexCard(o), altText: o.title, fbText: [o.title, o.detail, o.price, o.btnUrl ? (o.btnLabel || 'ลิงก์') + ': ' + o.btnUrl : ''].filter(Boolean).join('\n')});
       } else if (f.id === 'cpCouponForm') {
         const u = $('cpqUntil').value;
         const o = {name: $('cpqName').value.trim(), discount: $('cpqDisc').value.trim(), cond: $('cpqCond').value.trim(), code: $('cpqCode').value.trim(), until: u ? thDate(u) : ''};
-        await chatPost({flex: flexCoupon(o), altText: '🎟 คูปอง ' + o.discount});
+        await chatPost({flex: flexCoupon(o), altText: '🎟 คูปอง ' + o.discount, fbText: ['🎟 คูปอง ' + (shop.name || ''), o.name, o.discount, o.cond, o.code ? 'โค้ด: ' + o.code : '', o.until ? 'ใช้ได้ถึง ' + o.until : ''].filter(Boolean).join('\n')});
       }
       closeChatPlus(); toast('ส่งแล้ว');
     } catch (err) { toast('ส่งไม่สำเร็จ: ' + err.message); btn.disabled = false; }
@@ -7411,7 +7421,7 @@ function bahtText(value) {
 
   /* ---------------- บัญชีผู้ใช้งาน (ล็อกอิน/สิทธิ์/จัดการบัญชี) ---------------- */
   const PERM_SHORT = {calc: 'คำนวณ', vat: 'VAT', confirm: 'ใบคอนเฟิร์ม', track: 'ติดตามพัสดุ', wholesale: 'ราคาส่ง', quote: 'ใบเสนอราคา',
-    bill: 'ใบเสร็จ', purchase: 'ภาษีซื้อ', dash: 'แดชบอร์ด', report: 'รายงานภาษี', chat: 'แชท LINE', price: 'ราคา', bank: 'เงินเข้า-ออก', shop: 'ข้อมูลร้าน'};
+    bill: 'ใบเสร็จ', purchase: 'ภาษีซื้อ', dash: 'แดชบอร์ด', report: 'รายงานภาษี', chat: 'แชทลูกค้า', price: 'ราคา', bank: 'เงินเข้า-ออก', shop: 'ข้อมูลร้าน'};
   // ใครเปิด "จัดการผู้ใช้งานและสิทธิ์" ได้: ผู้ดูแลระบบสูงสุด (@ball) คนเดียว
   // (กันล็อกตัวเอง: ถ้าในระบบไม่มีบัญชี @ball เลย ให้บัญชีเจ้าของร้านเดิมจัดการแทนได้)
   const canManageUsers = isSuper || (!!meRec && meRec.role === 'owner' && !(window.BSAuth ? window.BSAuth.getUsers() : []).some(isSuperUser));
