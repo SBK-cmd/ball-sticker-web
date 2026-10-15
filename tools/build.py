@@ -23,12 +23,23 @@ def out(name, code):
     open(os.path.join(ROOT, 'js', name), 'w', encoding='utf-8').write(code)
     return 'js/%s?v=%s' % (name, h)
 lock_url = out(pre + 'lock.js', lock_js); app_url = out(pre + 'app.js', app_js)
-# ตัวแอปโหลดเฉพาะเครื่องที่ล็อกอินแล้ว (ยังไม่ล็อกอิน = เห็นแค่หน้าล็อกอิน ซึ่งพอล็อกอินสำเร็จหน้าจะรีโหลดเองอยู่แล้ว)
-loader = ('<script>(function(){var ok=true;try{ok=!!localStorage.getItem(\'bs_session\')}catch(e){}'
-          'if(ok)document.write(\'<script defer src="%s"><\\/script>\')})();</script>') % app_url
+# โหลดสคริปต์แบบฉลาด:
+#  - เครื่องที่ล็อกอินแล้ว: Firebase + lock + app โหลดแบบ defer ทันที (เข้าแอปเร็วสุด)
+#  - ยังไม่ล็อกอิน: วาดฟอร์มล็อกอินให้เสร็จก่อน แล้วค่อยโหลด Firebase + lock หลังหน้าโหลดเสร็จ (ไม่โหลดตัวแอปเลย)
+#    พอล็อกอินสำเร็จหน้าจะรีโหลดเอง แล้วเข้าทางแรก
+fb = re.findall(r'<script src="(https://www\.gstatic\.com/firebasejs/[^"]+)"></script>', s)
+s = re.sub(r'<script src="https://www\.gstatic\.com/firebasejs/[^"]+"></script>\n?', '', s)
+font_m = re.search(r'<link href="(https://fonts\.googleapis\.com/css2[^"]+)" rel="stylesheet"[^>]*>', s)
+font_url = font_m.group(1); s = s.replace(font_m.group(0), '', 1)
+import json
+loader = ('<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}'
+  'var core=%s,app=%s,font=%s;'
+  'if(ok){var h="";core.concat([app]).forEach(function(u){h+=\'<script defer src="\'+u+\'"><\\/script>\'});document.write(h);'
+  'var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}'
+  'else{addEventListener("load",function(){core.forEach(function(u){var e=document.createElement("script");e.src=u;e.async=false;document.body.appendChild(e);});});}'
+  '})();</script>') % (json.dumps(fb + [lock_url]), json.dumps(app_url), json.dumps(font_url))
 s = s.replace(app_block, loader, 1)
-s = s.replace(block, '<script defer src="%s"></script>' % lock_url, 1)
-s = re.sub(r'<script src="(https://www\.gstatic\.com/firebasejs/[^"]+)"></script>', r'<script defer src="\1"></script>', s)
+s = s.replace(block, '', 1)
 files = ['preview.html'] if target == 'preview' else ['index.html', 'ball-sticker.html']
 for f in files: open(os.path.join(ROOT, f), 'w', encoding='utf-8').write(s)
 print('built', files, 'html', len(s), 'lock', len(lock_js), 'app', len(app_js))

@@ -101,7 +101,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
+
 <noscript><link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <!-- Firebase (ใช้ซิงก์ประวัติบิล/ใบคอนเฟิร์มงานข้ามเครื่องแบบเรียลไทม์ — ถ้าโหลดไม่ได้ เช่น ไม่มีอินเทอร์เน็ต
      หรือถูกบล็อกสคริปต์ภายนอก แอปจะสลับไปใช้เฉพาะข้อมูลในเครื่องนี้ (localStorage) แทนโดยอัตโนมัติ) -->
@@ -1231,7 +1231,7 @@ tr{break-inside:avoid}
       <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp" width="90" height="77">
       <h2>ตั้งค่าบัญชีเจ้าของร้าน</h2>
       <p>สร้างบัญชีแรกสำหรับเข้าใช้งานระบบ — เป็นบัญชี “เจ้าของร้าน” ที่มีสิทธิ์เต็ม เพิ่มบัญชีพนักงานได้ภายหลัง</p>
-      <form id="lockSetupForm" class="lock-form">
+      <form id="lockSetupForm" class="lock-form" onsubmit="return false">
         <label class="f"><span>ชื่อที่แสดง</span><input class="txt" id="setupName" type="text" autocomplete="name" required></label>
         <label class="f"><span>ชื่อผู้ใช้ (ใช้ล็อกอิน)</span><input class="txt" id="setupUser" type="text" autocomplete="username" autocapitalize="off" required></label>
         <label class="f"><span>รหัสผ่าน</span><input class="txt" id="setupPass" type="password" autocomplete="new-password" required minlength="4"></label>
@@ -1245,7 +1245,7 @@ tr{break-inside:avoid}
       <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp" width="90" height="77">
       <h2>เข้าสู่ระบบ</h2>
       <p>ระบบภายในร้านบอลสติ๊กเกอร์ พิษณุโลก</p>
-      <form id="lockLoginForm" class="lock-form">
+      <form id="lockLoginForm" class="lock-form" onsubmit="return false">
         <label class="f"><span>ชื่อผู้ใช้</span><input class="txt" id="loginUser" type="text" autocomplete="username" autocapitalize="off" required></label>
         <label class="f"><span>รหัสผ่าน</span><input class="txt" id="loginPass" type="password" autocomplete="current-password" required></label>
         <p class="lock-err" id="loginErr" hidden>ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</p>
@@ -1259,7 +1259,7 @@ tr{break-inside:avoid}
       <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp" width="90" height="77">
       <h2>สมัครสมาชิกใหม่</h2>
       <p>สร้างบัญชีผู้ใช้งาน (สิทธิ์ “พนักงาน”) สำหรับเข้าใช้งานระบบร้านบอลสติ๊กเกอร์ พิษณุโลก</p>
-      <form id="lockRegisterForm" class="lock-form">
+      <form id="lockRegisterForm" class="lock-form" onsubmit="return false">
         <label class="f"><span>ชื่อที่แสดง</span><input class="txt" id="regName" type="text" autocomplete="name" required></label>
         <label class="f"><span>ชื่อผู้ใช้ (ใช้ล็อกอิน)</span><input class="txt" id="regUser" type="text" autocomplete="username" autocapitalize="off" required></label>
         <label class="f"><span>รหัสผ่าน</span><input class="txt" id="regPass" type="password" autocomplete="new-password" required minlength="4"></label>
@@ -1280,10 +1280,7 @@ tr{break-inside:avoid}
 
   </div>
 </div>
-<script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
-<script defer src="js/p-lock.js?v=7272b5d3c4"></script>
+
 <div class="wrap">
 
   <header class="top no-print">
@@ -2512,7 +2509,7 @@ tr{break-inside:avoid}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem('bs_session')}catch(e){}if(ok)document.write('<script defer src="js/p-app.js?v=43ffb9c10a"><\/script>')})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=7272b5d3c4"],app="js/p-app.js?v=43ffb9c10a",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{addEventListener("load",function(){core.forEach(function(u){var e=document.createElement("script");e.src=u;e.async=false;document.body.appendChild(e);});});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 </body>
