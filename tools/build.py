@@ -23,7 +23,10 @@ def out(name, code):
     open(os.path.join(ROOT, 'js', name), 'w', encoding='utf-8').write(code)
     return 'js/%s?v=%s' % (name, h)
 lock_url = out(pre + 'lock.js', lock_js); app_url = out(pre + 'app.js', app_js)
-s = s.replace(app_block, '<script defer src="%s"></script>' % app_url, 1)
+# ตัวแอปโหลดเฉพาะเครื่องที่ล็อกอินแล้ว (ยังไม่ล็อกอิน = เห็นแค่หน้าล็อกอิน ซึ่งพอล็อกอินสำเร็จหน้าจะรีโหลดเองอยู่แล้ว)
+loader = ('<script>(function(){var ok=true;try{ok=!!localStorage.getItem(\'bs_session\')}catch(e){}'
+          'if(ok)document.write(\'<script defer src="%s"><\\/script>\')})();</script>') % app_url
+s = s.replace(app_block, loader, 1)
 s = s.replace(block, '<script defer src="%s"></script>' % lock_url, 1)
 s = re.sub(r'<script src="(https://www\.gstatic\.com/firebasejs/[^"]+)"></script>', r'<script defer src="\1"></script>', s)
 files = ['preview.html'] if target == 'preview' else ['index.html', 'ball-sticker.html']
