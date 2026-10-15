@@ -1243,6 +1243,9 @@ tr{break-inside:avoid}
     if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
       var fbApp = (firebase.apps && firebase.apps.length) ? firebase.apps[0] : firebase.initializeApp(firebaseConfig);
       authDb = firebase.firestore(fbApp);
+      // เก็บข้อมูลคลาวด์ไว้ในเครื่อง (IndexedDB) — เปิดแอปใหม่จะแสดงจากเครื่องทันที และถ้ากลับมาภายใน ~30 นาที
+      // Firestore จะส่งมาเฉพาะรายการที่เปลี่ยน ไม่ต้องอ่านทั้งคอลเลกชันใหม่ (ประหยัดโควตาอ่านฟรี 50K/วัน)
+      try { authDb.enablePersistence({synchronizeTabs: true}).catch(function (e) { console.warn('firestore persistence off', e && e.code); }); } catch (e) {}
       // เข้าสู่ระบบ Firebase แบบไม่ระบุตัวตน (anonymous) ก่อนอ่าน/เขียนข้อมูล — จำเป็นสำหรับกฎความปลอดภัยที่ต้องล็อกอินก่อน
       // ใช้ promise กลางตัวเดียว (window.__bsAuthReady) ให้สคริปต์ส่วนซิงก์ข้อมูลอื่นๆ ในหน้านี้รอได้ด้วย
       if (!window.__bsAuthReady) {
@@ -1311,6 +1314,7 @@ tr{break-inside:avoid}
     if (!usersDocRef) return;
     (window.__bsAuthReady || Promise.resolve()).then(function () {
       usersDocRef.onSnapshot(function (doc) {
+        try { if (!doc.metadata.fromCache) { var k='bs_reads_'+(function(d){return d.getFullYear()+''+(d.getMonth()+1)+d.getDate();})(new Date()); localStorage.setItem(k, String((+localStorage.getItem(k)||0)+1)); } } catch (e) {}
         if (!doc.exists) return;
         var list = doc.data().list || [];
         saveUsersLocal(list);
@@ -1817,7 +1821,7 @@ tr{break-inside:avoid}
                   <select class="txt" id="jobAccount">
                     <option value="">— เลือกบัญชี —</option>
                     <option value="กิติพงษ์">กิติพงษ์</option>
-                    <option value="วันทิม">วันทิม</option>
+                    <option value="วันทิม" hidden>วันทิม</option>
                   </select>
                 </label>
                 <label class="f"><span>จำนวนเงิน (ตามสลิป)</span><div class="in"><input type="number" inputmode="decimal" step="any" min="0" id="jobSlipAmount" placeholder="0.00"></div></label>
@@ -1908,9 +1912,9 @@ tr{break-inside:avoid}
               </label>
               <div class="row2">
                 <label class="f"><span>เพจ</span><select id="billPage"><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop (UV)</option></select></label>
-                <label class="f"><span>บัญชีรับเงิน</span><select id="billAccount"><option value="">— ไม่ระบุ —</option><option value="กิติพงษ์">กิติพงษ์</option><option value="วันทิม">วันทิม</option></select></label>
+                <label class="f"><span>บัญชีรับเงิน</span><select id="billAccount"><option value="">— ไม่ระบุ —</option><option value="กิติพงษ์">กิติพงษ์</option><option value="วันทิม" hidden>วันทิม</option></select></label>
               </div>
-              <p class="hint" style="margin:-6px 0 0">เลือกบัญชีวันทิม ระบบจะติ๊ก "ไม่นับบิลนี้ในรายงานภาษีขาย" ให้เอง · เพจและบัญชีไม่พิมพ์ลงบิล</p>
+              <p class="hint" style="margin:-6px 0 0">เพจและบัญชีไม่พิมพ์ลงบิล</p>
               <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="cName" type="text" autocomplete="off" list="customerNames"></label>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="cPhone" type="tel" autocomplete="off"></label>
               <label class="f"><span>เลขประจำตัวผู้เสียภาษีลูกค้า (ถ้ามี)</span><input class="txt" id="cTax" type="text" inputmode="numeric" autocomplete="off"></label>
@@ -2401,7 +2405,7 @@ tr{break-inside:avoid}
           <span id="dashSplitCap"></span>
         </div>
         <div id="dashSplit"></div>
-        <p class="hint" style="margin:10px 0 0">เงินเข้า = ยอดตามสลิปในใบสั่งงาน · ยอดบิล = ยอดรวมในบิล/ใบกำกับภาษี · บัญชีวันทิมไม่นำไปยื่นภาษี</p>
+        <p class="hint" style="margin:10px 0 0">เงินเข้า = ยอดตามสลิปในใบสั่งงาน · ยอดบิล = ยอดรวมในบิล/ใบกำกับภาษี</p>
       </section>
 
       <div class="dash-mid-row">
@@ -2871,9 +2875,24 @@ function bahtText(value) {
     } catch (e) { console.error('cloudinary upload error', e); return null; }
   }
 
+  // นับจำนวนเอกสารที่ "อ่านจากเซิร์ฟเวอร์จริง" ของเครื่องนี้ต่อวัน (ประมาณการ) — ไว้ดูว่าใช้โควตาอ่านไปเท่าไร
+  const readsKey = () => { const d = new Date(); return 'bs_reads_' + d.getFullYear() + '' + (d.getMonth() + 1) + d.getDate(); };
+  const readsByCol = {};
+  function countReads(col, snap) {
+    try {
+      if (!snap || (snap.metadata && snap.metadata.fromCache)) return;
+      const n = snap.docChanges ? snap.docChanges().length : (snap.exists !== undefined ? 1 : 0);
+      if (!n) return;
+      readsByCol[col] = (readsByCol[col] || 0) + n;
+      const k = readsKey(); localStorage.setItem(k, String((+localStorage.getItem(k) || 0) + n));
+    } catch (e) {}
+  }
+  function readsToday() { try { return +localStorage.getItem(readsKey()) || 0; } catch (e) { return 0; } }
+  window.bsReads = () => ({today: readsToday(), session: Object.assign({}, readsByCol)});
   function watchCloud(col, key, onChange) {
     if (!cloudDb) return;
-    cloudDb.collection(col).onSnapshot(snap => {
+    cloudDb.collection(col).onSnapshot({includeMetadataChanges: false}, snap => {
+      countReads(col, snap);
       // ถ้าเอกสารจากคลาวด์ยังไม่มีรูป (เพราะกำลังอัปโหลดขึ้น Cloudinary อยู่เบื้องหลัง) แต่เครื่องนี้มีรูปอยู่แล้ว ให้ใช้รูปเดิมไปก่อน
       // กันไม่ให้รูปกะพริบหายระหว่างรอสักครู่ที่รูปกำลังอัปโหลด
       const prevById = {};
@@ -2980,7 +2999,7 @@ function bahtText(value) {
     })();
   }
   function cloudNotice() {
-    if (cloudStatus === 'on') return '<p class="notice" style="background:#e6f6ea;color:#1a6b3a">ซิงก์กับคลาวด์แล้ว ทุกเครื่องที่เปิดหน้านี้เห็นข้อมูลเดียวกัน</p>';
+    if (cloudStatus === 'on') return '<p class="notice" style="background:#e6f6ea;color:#1a6b3a">ซิงก์กับคลาวด์แล้ว ทุกเครื่องที่เปิดหน้านี้เห็นข้อมูลเดียวกัน · วันนี้เครื่องนี้อ่านข้อมูล ~' + readsToday().toLocaleString() + ' รายการ (โควตาฟรีรวมทุกเครื่อง 50,000/วัน)</p>';
     if (cloudStatus === 'connecting') return '<p class="notice">กำลังเชื่อมต่อคลาวด์…</p>';
     if (cloudStatus === 'error') return '<p class="notice">เชื่อมต่อคลาวด์ไม่ได้ตอนนี้ (เช่น ไม่มีอินเทอร์เน็ต) ใช้ข้อมูลในเครื่องนี้ไปก่อน จะซิงก์ให้เองเมื่อเชื่อมต่อได้</p>';
     return '';
@@ -3175,6 +3194,10 @@ function bahtText(value) {
   const PAGE_LABEL = {ball: 'บอล สติ๊กเกอร์', roll: 'Roll shop'};
   const ACCOUNTS = ['กิติพงษ์', 'วันทิม'];
   const NON_TAX_ACCOUNTS = ['วันทิม'];
+  // บัญชีที่ปิดไว้ชั่วคราว: ไม่แสดงในทุกหน้า (ข้อมูลเดิมยังเก็บไว้ครบ ไม่ได้ลบ) — เอาชื่อออกจากรายการนี้เมื่ออยากให้กลับมาแสดง
+  const HIDDEN_ACCOUNTS = ['วันทิม'];
+  const VISIBLE_ACCOUNTS = ACCOUNTS.filter(a => HIDDEN_ACCOUNTS.indexOf(a) < 0);
+  const accHidden = x => !!(x && HIDDEN_ACCOUNTS.indexOf(x.account) >= 0);
 
   /* ---------------- เงินเข้า (SMS ธนาคาร) ----------------
      มือถือ (iPhone Shortcuts / Android MacroDroid) ส่ง SMS เงินเข้าไปที่ Cloudflare Worker "bank-in"
@@ -3187,7 +3210,7 @@ function bahtText(value) {
   let bankInTimer = null, audioCtx = null;
   const pad2 = n => String(n).padStart(2, '0');
   const localISO = d => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
-  const bankInAll = () => (store.get('bs_bank_in', []) || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const bankInAll = () => (store.get('bs_bank_in', []) || []).filter(x => !accHidden(x)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   function bankInWhen(x, withDate) {
     const d = new Date(x.createdAt || 0);
     const hm = pad2(d.getHours()) + ':' + pad2(d.getMinutes());
@@ -3201,6 +3224,7 @@ function bahtText(value) {
   function watchBankBalance() {
     if (!cloudDb || !canBank) return;
     cloudDb.collection('bankBalance').onSnapshot(snap => {
+      countReads('bankBalance', snap);
       const list = [];
       snap.forEach(d => list.push(Object.assign({id: d.id}, d.data())));
       store.set('bs_bank_balance', list);
@@ -3208,7 +3232,7 @@ function bahtText(value) {
     }, err => console.error('bankBalance sync error', err));
   }
   // เงินออก (SMS "เงินออก" / "ชำระ" / "ถอน" ...) — Worker เก็บที่คอลเลกชัน bankOut ไม่เด้ง ไม่มีเสียง แค่แสดงในรายการ
-  const bankOutAll = () => (store.get('bs_bank_out', []) || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const bankOutAll = () => (store.get('bs_bank_out', []) || []).filter(x => !accHidden(x)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   const BANK_OUT_KIND = {'เงินออก': 'เงินออก', 'ชำระ': 'ชำระเงิน', 'จ่าย': 'จ่ายเงิน', 'ถอน': 'ถอนเงิน', 'โอนไป': 'โอนออก', 'โอนออก': 'โอนออก', 'โอนเงินออก': 'โอนออก', 'หักบัญชี': 'หักบัญชี'};
   let bankListTab = 'all';
   let bankDelArmed = null, bankDelTimer = null;
@@ -3219,6 +3243,7 @@ function bahtText(value) {
   function watchBankOut() {
     if (!cloudDb || !canBank) return;
     cloudDb.collection('bankOut').orderBy('createdAt', 'desc').limit(300).onSnapshot(snap => {
+      countReads('bankOut', snap);
       const list = [];
       snap.forEach(d => list.push(Object.assign({id: d.id}, d.data())));
       store.set('bs_bank_out', list);
@@ -3228,6 +3253,7 @@ function bahtText(value) {
   function watchBankIn() {
     if (!cloudDb || !canBank) return;
     cloudDb.collection('bankIn').orderBy('createdAt', 'desc').limit(300).onSnapshot(snap => {
+      countReads('bankIn', snap);
       const list = [];
       snap.forEach(d => list.push(Object.assign({id: d.id}, d.data())));
       store.set('bs_bank_in', list);
@@ -3366,8 +3392,8 @@ function bahtText(value) {
     const ICO_OUT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>';
     let showHidden = false;
     try { showHidden = localStorage.getItem('bs_bk_show_hidden') === '1'; } catch (e) {}
-    const shownAcc = ACCOUNTS.filter(a => showHidden || BANK_HIDE_DEFAULT.indexOf(a) < 0);
-    const hiddenAcc = ACCOUNTS.filter(a => BANK_HIDE_DEFAULT.indexOf(a) >= 0);
+    const shownAcc = VISIBLE_ACCOUNTS.filter(a => showHidden || BANK_HIDE_DEFAULT.indexOf(a) < 0);
+    const hiddenAcc = VISIBLE_ACCOUNTS.filter(a => BANK_HIDE_DEFAULT.indexOf(a) >= 0);
     $('bankInSum').classList.toggle('one', shownAcc.length === 1);
     $('bankInSum').innerHTML = shownAcc.map(a => {
       const mine = list.filter(x => x.account === a), mineOut = outs.filter(x => x.account === a);
@@ -3471,7 +3497,7 @@ function bahtText(value) {
   let bellOpenSeen = 0;   // ค่าที่ใช้ไฮไลต์ "ใหม่" ระหว่างที่แผงเปิดอยู่
   function renderBellBal() {
     const el = $('bellBal'); if (!el) return;
-    const rows = ACCOUNTS.map(a => ({a, b: bankBalOf(a)})).filter(r => r.b);
+    const rows = VISIBLE_ACCOUNTS.map(a => ({a, b: bankBalOf(a)})).filter(r => r.b);
     el.hidden = !rows.length;
     el.innerHTML = rows.map(r => '<div><span>คงเหลือ บัญชี' + esc(r.a) + ' <small>(' + esc(bankBalWhen(r.b)) + ')</small></span><b>' + money(num(r.b.balance)) + ' บาท</b></div>').join('');
   }
@@ -4031,10 +4057,10 @@ function bahtText(value) {
     const el = $('dashSplit'); if (!el) return;
     $('dashSplitCap').textContent = sel ? thMonthFull(sel) : 'ทุกช่วงเวลา';
     const inMonth = d => !sel || monthKey(d) === sel;
-    const jobs = store.get('bs_jobs', []).filter(j => inMonth(j.date));
-    const bills = store.get('bs_bills', []).filter(b => inMonth(b.date));
+    const jobs = store.get('bs_jobs', []).filter(j => inMonth(j.date) && !accHidden(j));
+    const bills = store.get('bs_bills', []).filter(b => inMonth(b.date) && !accHidden(b));
     const pageKeys = Object.keys(PAGE_LABEL).concat(['']);
-    const accKeys = ACCOUNTS.concat(['']);
+    const accKeys = VISIBLE_ACCOUNTS.concat(['']);
     const pg = x => PAGE_LABEL[x.page] ? x.page : '';
     const ac = x => ACCOUNTS.indexOf(x.account) >= 0 ? x.account : '';
     const cell = (jl, bl) => {
@@ -5130,7 +5156,8 @@ function bahtText(value) {
   function watchLineChats() {
     if (!can('chat')) return;
     if (!cloudDb) { chatList = store.get('bs_line_chats', []) || []; renderChatList(); paintChatBadge(); return; }
-    cloudDb.collection('lineChats').orderBy('lastAt', 'desc').limit(200).onSnapshot(snap => {
+    cloudDb.collection('lineChats').orderBy('lastAt', 'desc').limit(120).onSnapshot(snap => {
+      countReads('lineChats', snap);
       const prev = new Map(chatList.map(c => [c.userId, c.lastInAt || 0]));
       const list = []; snap.forEach(d => list.push(Object.assign({userId: d.id}, d.data())));
       if (chatLive) { // ข้อความใหม่ระหว่างเปิดแอป → เด้งแจ้ง + เสียง
@@ -5182,7 +5209,8 @@ function bahtText(value) {
     const c = chatList.find(x => x.userId === uid); if (c) markChatSeen(uid, c.lastInAt || 0);
     paintChatBadge(); renderChatList();
     if (!cloudDb) { chatMsgs = ((store.get('bs_line_msgs', {}) || {})[uid] || []).slice().sort((a, b) => a.createdAt - b.createdAt); renderChatMsgs(); return; }
-    chatMsgUnsub = cloudDb.collection('lineChats').doc(uid).collection('messages').orderBy('createdAt', 'desc').limit(150).onSnapshot(snap => {
+    chatMsgUnsub = cloudDb.collection('lineChats').doc(uid).collection('messages').orderBy('createdAt', 'desc').limit(80).onSnapshot(snap => {
+      countReads('messages', snap);
       const l = []; snap.forEach(d => l.push(Object.assign({id: d.id}, d.data())));
       chatMsgs = l.reverse().concat(chatMsgs.filter(m => m.pending)); renderChatMsgs();
     }, e => console.error('lineMessages sync error', e));
@@ -7468,7 +7496,7 @@ function bahtText(value) {
   // ทดสอบในเครื่องที่ไม่ได้ต่อคลาวด์: ใช้รายการที่อยู่ใน localStorage (bs_bank_in)
   if (!cloudDb && canBank && (store.get('bs_bank_in', []).length || store.get('bs_bank_out', []).length || store.get('bs_bank_balance', []).length)) onBankInChange();
   /* เพิ่ม/ลบรายการเงินเข้า-ออกเอง (กรณี SMS ไม่เข้า หรือระบบอ่านผิด) */
-  $('bkAcc').innerHTML = ACCOUNTS.map(a => '<option value="' + esc(a) + '">บัญชี' + esc(a) + '</option>').join('');
+  $('bkAcc').innerHTML = VISIBLE_ACCOUNTS.map(a => '<option value="' + esc(a) + '">บัญชี' + esc(a) + '</option>').join('');
   const toLocalInput = ms => { const d = new Date(ms); return localISO(d) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); };
   const bkDir = () => (document.querySelector('input[name="bkDir"]:checked') || {}).value || 'out';
   function paintBkDir() { $('bkPartyLbl').textContent = bkDir() === 'in' ? 'จากบัญชี (ไม่บังคับ)' : 'ไปที่บัญชี (ไม่บังคับ)'; }
