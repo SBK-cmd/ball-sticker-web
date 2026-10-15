@@ -320,6 +320,7 @@ footer.foot{background:var(--navy-deep);color:#c7d4e6;padding:48px 0 90px;font-s
       <b>บอลสติ๊กเกอร์ พิษณุโลก</b>
       <p style="margin:0">8 หมู่ 19 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140</p>
       <p style="margin:6px 0 0">โทร <a href="tel:0935353555">093-535-3555</a>, <a href="tel:0966697495">096-669-7495</a></p>
+      <p style="margin:6px 0 0">LINE <a href="https://line.me/R/ti/p/%40bk25" target="_blank" rel="noopener">@bk25</a> · อีเมล <a href="mailto:info@ballsticker.co.th">info@ballsticker.co.th</a></p>
     </div>
     <div>
       <b>สั่งงาน</b>
@@ -337,7 +338,7 @@ footer.foot{background:var(--navy-deep);color:#c7d4e6;padding:48px 0 90px;font-s
 
 <script>
 // ใส่ LINE ID ของร้าน (เช่น '@ballsticker') แล้วปุ่ม LINE ทุกปุ่มจะเปิดแชทร้านพร้อมข้อความ
-const LINE_ID = '';
+const LINE_ID = '@bk25';
 const lineUrl = text => LINE_ID ? 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_ID) + '/' + (text ? '?' + encodeURIComponent(text) : '') : '';
 function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3200); }
 document.querySelectorAll('[data-line]').forEach(a => { const u = lineUrl(''); if (u) { a.href = u; a.target = '_blank'; a.rel = 'noopener'; } });
