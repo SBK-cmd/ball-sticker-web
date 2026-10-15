@@ -1,9 +1,9 @@
 // Service Worker สำหรับ Ball Sticker — ทำให้ "เพิ่มลงหน้าจอโฮม" แล้วเปิดได้เหมือนแอป
 // และเปิดได้แม้เน็ตหลุดชั่วคราว (ใช้เวอร์ชันที่เคยโหลดไว้ค้างไว้ในเครื่อง)
-const CACHE_NAME = 'ball-sticker-v2';
+const CACHE_NAME = 'ball-sticker-v3';
 const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './logo.jpg'];
-// หน้าที่เปิดจากแคชทันที (เร็ว) แล้วค่อยเช็กเวอร์ชันใหม่เบื้องหลัง — ตอนนี้ทดสอบเฉพาะหน้าพรีวิวก่อน
-const FAST_PAGES = /preview\.html$/;
+// หน้าแอปเปิดจากแคชทันที (เร็ว) แล้วค่อยเช็กเวอร์ชันใหม่เบื้องหลัง ถ้ามีของใหม่จะขึ้นปุ่มให้แตะโหลด
+const FAST_PAGES = /(^\/$|\/index\.html$|\/ball-sticker\.html$|\/preview\.html$)/;
 
 self.addEventListener('install', event => {
   event.waitUntil(
