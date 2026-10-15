@@ -128,8 +128,13 @@ label.f span{display:block;font-weight:600;font-size:14.5px;margin-bottom:6px}
 @media (max-width:860px){.quote{grid-template-columns:1fr}.quote aside{order:2}}
 
 /* ผลงาน */
-.gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:880px}
-.gallery figure{margin:0;aspect-ratio:4/3;border-radius:16px;border:2px dashed var(--line);display:grid;place-items:center;color:#8a97a8;font-size:14px;text-align:center;padding:12px;background:var(--paper)}
+.gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:1040px}
+.gallery figure{margin:0;position:relative;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:var(--paper);box-shadow:0 1px 0 var(--line)}
+.gallery img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
+.gallery figure:hover img{transform:scale(1.04)}
+.gallery figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 12px 10px;background:linear-gradient(transparent,rgba(10,20,35,.82));color:#fff;font-size:13px;line-height:1.35}
+.gallery figcaption b{display:block;font-size:14px}
+.gallery figcaption span{opacity:.85}
 @media (max-width:560px){.gallery{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* ความมั่นใจ */
@@ -299,8 +304,18 @@ footer.foot{background:var(--navy-deep);color:#c7d4e6;padding:48px 0 90px;font-s
       <h2>ผลงานล่าสุด</h2>
       <p class="sub">ตัวอย่างงานจริงที่ร้านผลิตให้ลูกค้า</p>
       <div class="gallery">
-        <figure>รูปผลงาน 1</figure><figure>รูปผลงาน 2</figure><figure>รูปผลงาน 3</figure>
-        <figure>รูปผลงาน 4</figure><figure>รูปผลงาน 5</figure><figure>รูปผลงาน 6</figure>
+        <figure><img src="work/w01.jpg" alt="ไข่แดง หัวยอด — สติ๊กเกอร์ไดคัท 2 สี" width="960" height="720" loading="lazy"><figcaption><b>ไข่แดง หัวยอด</b><span>สติ๊กเกอร์ไดคัท 2 สี</span></figcaption></figure>
+        <figure><img src="work/w02.jpg" alt="แดกดื่น ของดีหมู่ 6 — ไดคัท ลายการ์ตูน" width="960" height="720" loading="lazy"><figcaption><b>แดกดื่น ของดีหมู่ 6</b><span>ไดคัท ลายการ์ตูน</span></figcaption></figure>
+        <figure><img src="work/w03.jpg" alt="Chiang Miang / Suriyo Story — วงกลม ขาวดำ" width="960" height="720" loading="lazy"><figcaption><b>Chiang Miang / Suriyo Story</b><span>วงกลม ขาวดำ</span></figcaption></figure>
+        <figure><img src="work/w04.jpg" alt="อาหารปลา กระสอบขาว — โลโก้ร้านค้า" width="960" height="720" loading="lazy"><figcaption><b>อาหารปลา กระสอบขาว</b><span>โลโก้ร้านค้า</span></figcaption></figure>
+        <figure><img src="work/w05.jpg" alt="ขอมาจัดให้ ไม่เคยขัด — การ์ตูนเหมือนจริง" width="960" height="720" loading="lazy"><figcaption><b>ขอมาจัดให้ ไม่เคยขัด</b><span>การ์ตูนเหมือนจริง</span></figcaption></figure>
+        <figure><img src="work/w06.jpg" alt="NHT Audio — โลโก้ร้านเครื่องเสียง" width="960" height="720" loading="lazy"><figcaption><b>NHT Audio</b><span>โลโก้ร้านเครื่องเสียง</span></figcaption></figure>
+        <figure><img src="work/w07.jpg" alt="KAKA ตอนเดียว — รถกระบะ ไดคัท" width="960" height="720" loading="lazy"><figcaption><b>KAKA ตอนเดียว</b><span>รถกระบะ ไดคัท</span></figcaption></figure>
+        <figure><img src="work/w08.jpg" alt="Rabbit Adventure Trip — ไดคัทตามรูป" width="960" height="720" loading="lazy"><figcaption><b>Rabbit Adventure Trip</b><span>ไดคัทตามรูป</span></figcaption></figure>
+        <figure><img src="work/w09.jpg" alt="LEO รถพยาบาล — โลโก้ธุรกิจ" width="960" height="720" loading="lazy"><figcaption><b>LEO รถพยาบาล</b><span>โลโก้ธุรกิจ</span></figcaption></figure>
+        <figure><img src="work/w10.jpg" alt="BANK EV — มอเตอร์ไซค์ ไฟฟ้า" width="960" height="720" loading="lazy"><figcaption><b>BANK EV</b><span>มอเตอร์ไซค์ ไฟฟ้า</span></figcaption></figure>
+        <figure><img src="work/w11.jpg" alt="Sure Auto Tire — ร้านยางรถยนต์" width="960" height="720" loading="lazy"><figcaption><b>Sure Auto Tire</b><span>ร้านยางรถยนต์</span></figcaption></figure>
+        <figure><img src="work/w12.jpg" alt="อาร์ท บ้านสวน — ไดคัท 2 แบบ" width="960" height="720" loading="lazy"><figcaption><b>อาร์ท บ้านสวน</b><span>ไดคัท 2 แบบ</span></figcaption></figure>
       </div>
     </div>
   </section>
