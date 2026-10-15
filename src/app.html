@@ -52,7 +52,7 @@
 <script>
 try { if (!localStorage.getItem('bs_session')) document.documentElement.classList.add('bs-nosess'); } catch (e) {}
 </script>
-<style>.bs-nosess #lockLoading{display:none}.bs-nosess #lockLoginView[hidden]{display:block}</style>
+<style>.bs-nosess #lockLoading{display:none!important}.bs-nosess #lockLoginView[hidden]{display:block!important}</style>
 <script>
 // ตั้งโหมดมืด/สว่างจากค่าที่จำไว้ทันทีตั้งแต่ก่อนวาดหน้าจอ กันไฟกะพริบสลับธีมตอนโหลด
 // ค่าเริ่มต้นของระบบตอนนี้คือโหมดมืด เว้นแต่ผู้ใช้เคยกดเลือกโหมดสว่างไว้เอง (จำไว้ใน localStorage)
@@ -61,7 +61,7 @@ try { if (!localStorage.getItem('bs_session')) document.documentElement.classLis
 // ทำแบบเงียบๆ เบื้องหลัง ถ้าเบราว์เซอร์ไม่รองรับหรือโหลดไม่ได้ก็ไม่กระทบการใช้งานอื่นเลย
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.js').catch(function () {});
+    setTimeout(function () { navigator.serviceWorker.register('sw.js').catch(function () {}); }, 3000); // ลงทะเบียนหลังหน้าโหลดเสร็จ ไม่แย่งเน็ตตอนเปิดหน้า
   });
   // service worker เปิดหน้าจากแคชทันทีแล้วเช็กเวอร์ชันใหม่เบื้องหลัง — ถ้ามีของใหม่ ขึ้นปุ่มให้แตะโหลด (พรีวิว: โหลดใหม่ให้เลย)
   navigator.serviceWorker.addEventListener('message', function (e) {
@@ -92,7 +92,7 @@ if ('serviceWorker' in navigator) {
       location.reload();
     }).catch(function () {});
   }
-  window.addEventListener('load', check);
+  window.addEventListener('load', function () { setTimeout(check, 4000); });
   document.addEventListener('visibilitychange', function () {
     var a = document.activeElement;
     if (!document.hidden && !(a && /INPUT|TEXTAREA|SELECT/.test(a.tagName))) check();
@@ -309,6 +309,10 @@ a{color:inherit}
 
 /* ---------- ล็อกอิน (บัญชีผู้ใช้งาน) ---------- */
 .lock-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+/* หน้าล็อกอินใช้ฟอนต์ของเครื่อง: ขึ้นจอทันที ไม่กระตุกตอนฟอนต์เว็บโหลดเสร็จ */
+.lock-card,.lock-card *{font-family:system-ui,-apple-system,'Segoe UI','Noto Sans Thai',Tahoma,sans-serif!important}
+/* ระหว่างยังล็อกอยู่ ซ่อนเนื้อหาแอปด้านหลังไว้ (กันหน้าจอขยับ และไม่ต้องวาดสิ่งที่มองไม่เห็น) */
+#lockScreen:not([hidden]) ~ *{visibility:hidden}
 .lock-card{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:30px 26px;max-width:360px;width:100%;text-align:center;box-shadow:var(--shadow-2);margin:auto}
 .lock-card h2{font-size:19px;margin:0 0 4px}
 .lock-card p{color:var(--muted);font-size:14px;margin:0 0 22px}
@@ -1219,12 +1223,12 @@ tr{break-inside:avoid}
 <div id="lockScreen" class="lock-screen no-print">
   <div class="lock-card" id="lockCard">
     <div id="lockLoading" style="text-align:center;padding:8px 0 4px">
-      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp" width="72" height="72">
+      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp" width="90" height="77">
       <p style="color:#7a7f8a;margin:0;padding:8px 0 16px">กำลังตรวจสอบบัญชี...</p>
     </div>
 
     <div id="lockSetupView" hidden>
-      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp">
+      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp" width="90" height="77">
       <h2>ตั้งค่าบัญชีเจ้าของร้าน</h2>
       <p>สร้างบัญชีแรกสำหรับเข้าใช้งานระบบ — เป็นบัญชี “เจ้าของร้าน” ที่มีสิทธิ์เต็ม เพิ่มบัญชีพนักงานได้ภายหลัง</p>
       <form id="lockSetupForm" class="lock-form">
@@ -1238,7 +1242,7 @@ tr{break-inside:avoid}
     </div>
 
     <div id="lockLoginView" hidden>
-      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp">
+      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp" width="90" height="77">
       <h2>เข้าสู่ระบบ</h2>
       <p>ระบบภายในร้านบอลสติ๊กเกอร์ พิษณุโลก</p>
       <form id="lockLoginForm" class="lock-form">
@@ -1252,7 +1256,7 @@ tr{break-inside:avoid}
     </div>
 
     <div id="lockRegisterView" hidden>
-      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp">
+      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp" width="90" height="77">
       <h2>สมัครสมาชิกใหม่</h2>
       <p>สร้างบัญชีผู้ใช้งาน (สิทธิ์ “พนักงาน”) สำหรับเข้าใช้งานระบบร้านบอลสติ๊กเกอร์ พิษณุโลก</p>
       <form id="lockRegisterForm" class="lock-form">
@@ -1267,7 +1271,7 @@ tr{break-inside:avoid}
     </div>
 
     <div id="lockResetView" hidden>
-      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp">
+      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp" width="90" height="77">
       <h2>ลืมรหัสผ่าน</h2>
       <p>ให้ผู้ดูแลระบบ (บัญชี <b>@ball</b>) ตั้งรหัสผ่านใหม่ให้ ที่เมนู <b>จัดการผู้ใช้งานและสิทธิ์</b> → ปุ่ม <b>รหัสผ่าน</b> ข้างชื่อของคุณ แล้วกลับมาเข้าสู่ระบบด้วยรหัสใหม่</p>
       <p class="hint" style="margin:0 0 10px">ร้าน <span id="resetShopName"></span> · ระบบนี้ไม่มีปุ่มล้างบัญชีจากหน้าเข้าสู่ระบบแล้ว เพื่อไม่ให้ใครตั้งตัวเองเป็นเจ้าของร้านได้</p>
@@ -1563,7 +1567,7 @@ tr{break-inside:avoid}
 
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
-      <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp">
+      <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp" width="90" height="77">
       <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์ · เวอร์ชัน 9</small></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
