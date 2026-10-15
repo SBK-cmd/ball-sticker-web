@@ -1184,6 +1184,10 @@ tr{break-inside:avoid}
 <body>
 <div id="lockScreen" class="lock-screen no-print">
   <div class="lock-card" id="lockCard">
+    <div id="lockLoading" style="text-align:center;padding:8px 0 4px">
+      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo.jpg" width="72" height="72">
+      <p style="color:#7a7f8a;margin:0;padding:8px 0 16px">กำลังตรวจสอบบัญชี...</p>
+    </div>
 
     <div id="lockSetupView" hidden>
       <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo.jpg">
@@ -1366,16 +1370,24 @@ tr{break-inside:avoid}
   }
 
   // แสดงข้อความระหว่างรอเช็กคลาวด์ ก่อนตัดสินใจว่าจะขึ้นหน้าตั้งค่าบัญชีเจ้าของร้าน หรือหน้าเข้าสู่ระบบ
-  var loadingMsg = document.createElement('p');
-  loadingMsg.textContent = 'กำลังตรวจสอบบัญชี...';
-  loadingMsg.style.cssText = 'text-align:center;color:#7a7f8a;padding:24px 0';
-  card.appendChild(loadingMsg);
+  var loadingMsg = document.getElementById('lockLoading'); // อยู่ใน HTML เลย — ขึ้นจอได้ทันทีไม่ต้องรอโหลดสคริปต์
 
   // ---- ตัดสินใจว่าจะขึ้นหน้าไหน: รอผลจากคลาวด์ก่อนเสมอ (ถ้ามีคลาวด์ตั้งค่าไว้และต่อได้) ----
   // สำคัญ: ต้องรอ ไม่ใช่เดาจากแคชเครื่องนี้ก่อนแล้วค่อยสลับทีหลัง เพราะเครื่องใหม่ที่ยังไม่มีแคช
   // อาจโชว์หน้า "ตั้งค่าบัญชีเจ้าของร้าน" ผิดๆ และถ้าพลาดกดสร้างบัญชีไปก่อนคลาวด์ตอบ จะได้บัญชีซ้อนกัน
   (async function initLockScreen() {
     var effectiveUsers = getUsersLocal();
+    // ทางลัด: เครื่องนี้เคยล็อกอินไว้แล้วและบัญชียังอยู่ในแคช → เข้าแอปทันที ไม่ต้องรอคลาวด์
+    // แล้วค่อยเช็กกับคลาวด์เบื้องหลัง ถ้าบัญชีถูกลบไปแล้วจะออกจากระบบให้เอง
+    if (session && effectiveUsers.some(function (u) { return u.id === session.id; })) {
+      users = effectiveUsers; loadingMsg.remove(); screen.hidden = true;
+      if (usersDocRef) fetchCloudUsers().then(function (cloudList) {
+        if (!cloudList) return;
+        saveUsersLocal(cloudList); users = cloudList;
+        if (!cloudList.some(function (u) { return u.id === session.id; })) { clearSession(); location.reload(); }
+      });
+      return;
+    }
     if (usersDocRef) {
       var cloudList = await fetchCloudUsers();
       if (cloudList) {
