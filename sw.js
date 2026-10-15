@@ -1,7 +1,9 @@
 // Service Worker สำหรับ Ball Sticker — ทำให้ "เพิ่มลงหน้าจอโฮม" แล้วเปิดได้เหมือนแอป
 // และเปิดได้แม้เน็ตหลุดชั่วคราว (ใช้เวอร์ชันที่เคยโหลดไว้ค้างไว้ในเครื่อง)
-const CACHE_NAME = 'ball-sticker-v1';
-const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE_NAME = 'ball-sticker-v2';
+const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './logo.jpg'];
+// หน้าที่เปิดจากแคชทันที (เร็ว) แล้วค่อยเช็กเวอร์ชันใหม่เบื้องหลัง — ตอนนี้ทดสอบเฉพาะหน้าพรีวิวก่อน
+const FAST_PAGES = /preview\.html$/;
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -23,12 +25,32 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   const isHTML = event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html');
   if (isHTML) {
+    const url = new URL(event.request.url);
+    if (FAST_PAGES.test(url.pathname)) {
+      // เปิดจากแคชทันที + โหลดเวอร์ชันล่าสุดเบื้องหลัง ถ้าเปลี่ยนจะบอกหน้าเว็บให้ขึ้นปุ่ม "โหลดเวอร์ชันใหม่"
+      event.respondWith(caches.open(CACHE_NAME).then(async cache => {
+        const cached = await cache.match(event.request, {ignoreSearch: true});
+        const net = fetch(event.request, {cache: 'no-cache'}).then(async res => {
+          if (res && res.ok) {
+            const tag = r => r && (r.headers.get('etag') || r.headers.get('last-modified') || '');
+            const changed = cached && tag(cached) && tag(res) && tag(cached) !== tag(res);
+            await cache.put(event.request, res.clone());
+            if (changed) self.clients.matchAll({type: 'window'}).then(list => list.forEach(c => c.postMessage({bsUpdated: true})));
+          }
+          return res;
+        });
+        if (cached) { event.waitUntil(net.catch(() => {})); return cached; }
+        return net.catch(() => caches.match('./index.html'));
+      }));
+      return;
+    }
     event.respondWith(
       fetch(event.request)
         .then(res => { caches.open(CACHE_NAME).then(c => c.put(event.request, res.clone())); return res; })
         .catch(() => caches.match(event.request).then(r => r || caches.match('./index.html')))
     );
   } else {
+    if (event.request.cache === 'reload' || event.request.cache === 'no-cache' || event.request.cache === 'no-store') return; // ขอของใหม่จากเซิร์ฟเวอร์ตรงๆ
     event.respondWith(
       caches.match(event.request).then(cached => cached || fetch(event.request))
     );
