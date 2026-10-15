@@ -18,6 +18,38 @@
 <meta name="mobile-web-app-capable" content="yes">
 
 <script>
+// ความเร็ว: การจัดรูปแบบตัวเลข/วันที่ (toLocaleString) สร้างตัวจัดรูปแบบใหม่ทุกครั้ง ช้ามากบนมือถือเมื่อมีรายการเยอะ
+// จึงจำตัวจัดรูปแบบ (Intl) ไว้ใช้ซ้ำ ผลลัพธ์เหมือนเดิมทุกตัวอักษร
+(function () {
+  if (typeof Intl === 'undefined') return;
+  var nf = {}, df = {};
+  var key = function (l, o) { try { return String(l) + '|' + (o ? JSON.stringify(o) : ''); } catch (e) { return null; } };
+  var NP = Number.prototype, origN = NP.toLocaleString;
+  NP.toLocaleString = function (l, o) {
+    var k = key(l, o); if (k === null) return origN.call(this, l, o);
+    try { return (nf[k] || (nf[k] = new Intl.NumberFormat(l, o))).format(this); } catch (e) { return origN.call(this, l, o); }
+  };
+  var has = function (o, ks) { if (!o) return false; for (var i = 0; i < ks.length; i++) if (o[ks[i]] !== undefined) return true; return false; };
+  var DATE = ['weekday', 'era', 'year', 'month', 'day', 'dateStyle'], TIME = ['hour', 'minute', 'second', 'dayPeriod', 'fractionalSecondDigits', 'timeStyle'];
+  var defs = {
+    s: {year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric'},
+    d: {year: 'numeric', month: 'numeric', day: 'numeric'},
+    t: {hour: 'numeric', minute: 'numeric', second: 'numeric'}
+  };
+  var DP = Date.prototype;
+  [['toLocaleString', 's'], ['toLocaleDateString', 'd'], ['toLocaleTimeString', 't']].forEach(function (m) {
+    var orig = DP[m[0]];
+    DP[m[0]] = function (l, o) {
+      var need = m[1] === 's' ? !has(o, DATE) && !has(o, TIME) : m[1] === 'd' ? !has(o, DATE) && !has(o, ['timeStyle']) : !has(o, TIME) && !has(o, ['dateStyle']);
+      var opts = o || {};
+      if (need) { opts = {}; for (var a in o) opts[a] = o[a]; var d0 = defs[m[1]]; for (var b in d0) opts[b] = d0[b]; }
+      var k = key(l, opts); if (k === null || isNaN(this.getTime())) return orig.call(this, l, o);
+      try { return (df[k] || (df[k] = new Intl.DateTimeFormat(l, opts))).format(this); } catch (e) { return orig.call(this, l, o); }
+    };
+  });
+})();
+</script>
+<script>
 // ตั้งโหมดมืด/สว่างจากค่าที่จำไว้ทันทีตั้งแต่ก่อนวาดหน้าจอ กันไฟกะพริบสลับธีมตอนโหลด
 // ค่าเริ่มต้นของระบบตอนนี้คือโหมดมืด เว้นแต่ผู้ใช้เคยกดเลือกโหมดสว่างไว้เอง (จำไว้ใน localStorage)
 (function(){try{var t=localStorage.getItem('bs_theme');document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
