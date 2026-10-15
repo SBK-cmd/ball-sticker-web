@@ -64,22 +64,24 @@ if ('serviceWorker' in navigator) {
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <!-- Firebase (ใช้ซิงก์ประวัติบิล/ใบคอนเฟิร์มงานข้ามเครื่องแบบเรียลไทม์ — ถ้าโหลดไม่ได้ เช่น ไม่มีอินเทอร์เน็ต
      หรือถูกบล็อกสคริปต์ภายนอก แอปจะสลับไปใช้เฉพาะข้อมูลในเครื่องนี้ (localStorage) แทนโดยอัตโนมัติ) -->
-<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
-<!-- Tesseract.js (สแกนอ่านตัวหนังสือจากภาพใบกำกับภาษีซื้อ แล้วกรอกข้อมูลให้อัตโนมัติ — ต้องใช้อินเทอร์เน็ต
-     ทำงานได้เต็มรูปแบบเฉพาะบนเว็บที่เผยแพร่จริงเท่านั้น หน้าตัวอย่างอาจบล็อกการโหลดไฟล์เสริมของไลบรารีนี้) -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js"></script>
-<!-- PDF.js (อ่านไฟล์สเตทเม้นธนาคาร PDF แบบมีรหัสผ่าน เพื่อดึงรายการเงินเข้ามาช่วยกรอกบิลขาย — ต้องใช้อินเทอร์เน็ต
-     ทำงานได้เต็มรูปแบบเฉพาะบนเว็บที่เผยแพร่จริงเท่านั้น หน้าตัวอย่างอาจบล็อกการโหลดไฟล์ worker เสริมของไลบรารีนี้) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js">
+<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js">
+<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js">
 <script>
-  if (typeof pdfjsLib !== 'undefined') {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-  }
+  // ไลบรารีสแกนบิล (Tesseract) และอ่าน PDF สเตทเม้น (PDF.js) ใหญ่มาก — โหลดเฉพาะตอนกดใช้งานจริง ไม่ให้หน่วงตอนเปิดแอป
+  window.bsLoadScript = function (src) {
+    window.__bsScripts = window.__bsScripts || {};
+    if (!window.__bsScripts[src]) window.__bsScripts[src] = new Promise(function (res, rej) {
+      var el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = function () { delete window.__bsScripts[src]; rej(new Error('load ' + src)); };
+      document.head.appendChild(el);
+    });
+    return window.__bsScripts[src];
+  };
 </script>
 <style>
 :root{
@@ -1236,6 +1238,9 @@ tr{break-inside:avoid}
 
   </div>
 </div>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
 <script>
 (function () {
   // ---- คลาวด์ (Firebase) สำหรับซิงค์ "บัญชีผู้ใช้งาน" ข้ามเครื่อง/อุปกรณ์ ----
@@ -4732,6 +4737,7 @@ function bahtText(value) {
       }
       if (!fields) {
         btn.textContent = 'กำลังสแกนบิล…';
+        try { await bsLoadScript('https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js'); } catch (e) {}
         if (typeof Tesseract === 'undefined') { toast('โหลดระบบสแกนบิลไม่สำเร็จ (ต้องใช้อินเทอร์เน็ต) กรอกข้อมูลด้วยตนเองได้เลย'); return; }
         const worker = await getOcrWorker();
         const {data: {text}} = await worker.recognize(source);
@@ -4865,6 +4871,7 @@ function bahtText(value) {
   async function parseStatement() {
     const file = $('stmtFile').files && $('stmtFile').files[0];
     if (!file) { stmtSetStatus('กรุณาเลือกไฟล์ PDF สเตทเม้นก่อน'); return; }
+    try { await bsLoadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js'); pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js'; } catch (e) {}
     if (typeof pdfjsLib === 'undefined') {
       stmtSetStatus('โหลดระบบอ่าน PDF ไม่สำเร็จ (ต้องใช้อินเทอร์เน็ต ใช้งานได้เต็มรูปแบบบนเว็บที่เผยแพร่จริงเท่านั้น) กรุณาเปิดบิลด้วยตนเองไปก่อน');
       return;
