@@ -106,9 +106,6 @@ if ('serviceWorker' in navigator) {
 <!-- Firebase (ใช้ซิงก์ประวัติบิล/ใบคอนเฟิร์มงานข้ามเครื่องแบบเรียลไทม์ — ถ้าโหลดไม่ได้ เช่น ไม่มีอินเทอร์เน็ต
      หรือถูกบล็อกสคริปต์ภายนอก แอปจะสลับไปใช้เฉพาะข้อมูลในเครื่องนี้ (localStorage) แทนโดยอัตโนมัติ) -->
 <link rel="preconnect" href="https://www.gstatic.com">
-<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js">
-<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js">
-<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js">
 <script>
   // ไลบรารีสแกนบิล (Tesseract) และอ่าน PDF สเตทเม้น (PDF.js) ใหญ่มาก — โหลดเฉพาะตอนกดใช้งานจริง ไม่ให้หน่วงตอนเปิดแอป
   window.bsLoadScript = function (src) {
