@@ -36,7 +36,11 @@ loader = ('<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_ses
   'var core=%s,app=%s,font=%s;'
   'if(ok){var h="";core.concat([app]).forEach(function(u){h+=\'<script defer src="\'+u+\'"><\\/script>\'});document.write(h);'
   'var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}'
-  'else{addEventListener("load",function(){core.forEach(function(u){var e=document.createElement("script");e.src=u;e.async=false;document.body.appendChild(e);});});}'
+  'else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;'
+  'core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}'
+  'window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};'
+  '["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});'
+  'addEventListener("load",function(){setTimeout(function(){go()},6000)});}'
   '})();</script>') % (json.dumps(fb + [lock_url]), json.dumps(app_url), json.dumps(font_url))
 s = s.replace(app_block, loader, 1)
 s = s.replace(block, '', 1)
