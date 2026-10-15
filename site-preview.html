@@ -50,6 +50,17 @@ nav.menu a:hover{color:var(--sky)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:10px 22px;border-radius:999px;border:2px solid var(--navy);background:var(--paper);color:var(--navy);font:600 16px/1.2 var(--display);text-decoration:none;cursor:pointer;transition:transform .15s ease,background-color .15s ease}
 .btn:active{transform:scale(.97)}
 .btn.line{background:#06c755;border-color:#06c755;color:#fff}
+.btn.fb{background:#0866ff;border-color:#0866ff;color:#fff}
+.visit{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:22px;align-items:stretch}
+.visit .map{border-radius:18px;overflow:hidden;border:1px solid var(--line);min-height:320px;background:var(--paper)}
+.visit .map iframe{width:100%;height:100%;min-height:320px;border:0;display:block}
+.visit .card{border:1px solid var(--line);border-radius:18px;padding:22px;background:var(--paper);display:flex;flex-direction:column;gap:12px}
+.visit .qr{display:flex;gap:14px;align-items:center}
+.visit .qr img{width:120px;height:120px;border-radius:12px;background:#fff;padding:6px;border:1px solid var(--line)}
+.visit .btns{display:flex;flex-wrap:wrap;gap:10px}
+@media (max-width:860px){.visit{grid-template-columns:minmax(0,1fr)}}
+.float-fb{position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:30;display:none;width:52px;height:52px;border-radius:50%;padding:0;justify-content:center;box-shadow:0 10px 24px -8px rgba(8,102,255,.6)}
+@media (max-width:860px){.float-fb{display:inline-flex}}
 .btn.solid{background:var(--navy);color:#fff}
 .btn svg{width:20px;height:20px;flex:none}
 @media (max-width:860px){nav.menu{display:none}.top .btn.line span{display:none}.top .btn.line{padding:10px 14px}}
@@ -172,7 +183,7 @@ footer.foot{background:var(--navy-deep);color:#c7d4e6;padding:48px 0 90px;font-s
       <a href="#how">วิธีสั่ง</a>
       <a href="#quote">ขอราคา</a>
       <a href="#work">ผลงาน</a>
-      <a href="#contact">ติดต่อ</a>
+      <a href="#visit">แผนที่ &amp; ติดต่อ</a>
     </nav>
     <a class="btn line" data-line href="#quote"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.4 5.9-3.5 8-6C21.4 14.3 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg><span>ทัก LINE</span></a>
   </div>
@@ -327,6 +338,27 @@ footer.foot{background:var(--navy-deep);color:#c7d4e6;padding:48px 0 90px;font-s
       <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h11v9H2zM13 10h4l3 3v3h-7"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><h3>ส่งทั่วประเทศ มีเลขพัสดุ</h3><p>ร้านส่งเลขพัสดุให้ในแชท ตามดูได้ว่าของถึงไหนแล้ว</p></div>
     </div>
   </section>
+
+  <section class="block" id="visit">
+    <div class="wrap">
+      <h2>ติดต่อและแผนที่ร้าน</h2>
+      <p class="sub">ทักแชทได้ทุกวัน หรือแวะมาคุยงานที่ร้าน</p>
+      <div class="visit">
+        <div class="map"><iframe title="แผนที่ร้านบอลสติ๊กเกอร์" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=%E0%B8%9A%E0%B8%AD%E0%B8%A5%E0%B8%AA%E0%B8%95%E0%B8%B4%E0%B9%8A%E0%B8%81%E0%B9%80%E0%B8%81%E0%B8%AD%E0%B8%A3%E0%B9%8C%208%20%E0%B8%AB%E0%B8%A1%E0%B8%B9%E0%B9%88%2019%20%E0%B8%95.%E0%B8%9A%E0%B8%B2%E0%B8%87%E0%B8%A3%E0%B8%B0%E0%B8%81%E0%B8%B3%20%E0%B8%AD.%E0%B8%9A%E0%B8%B2%E0%B8%87%E0%B8%A3%E0%B8%B0%E0%B8%81%E0%B8%B3%20%E0%B8%88.%E0%B8%9E%E0%B8%B4%E0%B8%A9%E0%B8%93%E0%B8%B8%E0%B9%82%E0%B8%A5%E0%B8%81%2065140&hl=th&z=16&output=embed"></iframe></div>
+        <div class="card">
+          <b style="font-size:18px">บอลสติ๊กเกอร์ พิษณุโลก</b>
+          <span>8 หมู่ 19 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140</span>
+          <span>โทร <a href="tel:0935353555">093-535-3555</a>, <a href="tel:0966697495">096-669-7495</a></span>
+          <div class="qr"><img src="line-qr.png" width="120" height="120" alt="QR code เพิ่มเพื่อน LINE @bk25" loading="lazy"><span>สแกนเพื่อเพิ่มเพื่อน LINE<br><b>@bk25</b></span></div>
+          <div class="btns">
+            <a class="btn line" href="https://lin.ee/5WdXssc" target="_blank" rel="noopener">เพิ่มเพื่อน LINE</a>
+            <a class="btn fb" href="https://m.me/108503502205863" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 2C6.4 2 2 6.1 2 11.6c0 2.9 1.2 5.4 3.2 7.1V22l3-1.6c1.2.3 2.5.5 3.8.5 5.6 0 10-4.1 10-9.4S17.6 2 12 2zm1 12.6-2.5-2.7-4.9 2.7 5.4-5.8 2.6 2.7 4.8-2.7-5.4 5.8z"/></svg>ทักแชท Facebook</a>
+            <a class="btn" href="https://www.google.com/maps/search/?api=1&query=%E0%B8%9A%E0%B8%AD%E0%B8%A5%E0%B8%AA%E0%B8%95%E0%B8%B4%E0%B9%8A%E0%B8%81%E0%B9%80%E0%B8%81%E0%B8%AD%E0%B8%A3%E0%B9%8C%208%20%E0%B8%AB%E0%B8%A1%E0%B8%B9%E0%B9%88%2019%20%E0%B8%95.%E0%B8%9A%E0%B8%B2%E0%B8%87%E0%B8%A3%E0%B8%B0%E0%B8%81%E0%B8%B3%20%E0%B8%AD.%E0%B8%9A%E0%B8%B2%E0%B8%87%E0%B8%A3%E0%B8%B0%E0%B8%81%E0%B8%B3%20%E0%B8%88.%E0%B8%9E%E0%B8%B4%E0%B8%A9%E0%B8%93%E0%B8%B8%E0%B9%82%E0%B8%A5%E0%B8%81%2065140" target="_blank" rel="noopener">นำทางด้วย Google Maps</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 </main>
 
 <footer class="foot" id="contact">
@@ -335,11 +367,11 @@ footer.foot{background:var(--navy-deep);color:#c7d4e6;padding:48px 0 90px;font-s
       <b>บอลสติ๊กเกอร์ พิษณุโลก</b>
       <p style="margin:0">8 หมู่ 19 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140</p>
       <p style="margin:6px 0 0">โทร <a href="tel:0935353555">093-535-3555</a>, <a href="tel:0966697495">096-669-7495</a></p>
-      <p style="margin:6px 0 0">LINE <a href="https://line.me/R/ti/p/%40bk25" target="_blank" rel="noopener">@bk25</a> · อีเมล <a href="mailto:info@ballsticker.co.th">info@ballsticker.co.th</a></p>
+      <p style="margin:6px 0 0">LINE <a href="https://lin.ee/5WdXssc" target="_blank" rel="noopener">@bk25</a> · <a href="https://m.me/108503502205863" target="_blank" rel="noopener">Facebook</a> · อีเมล <a href="mailto:info@ballsticker.co.th">info@ballsticker.co.th</a></p>
     </div>
     <div>
       <b>สั่งงาน</b>
-      <ul><li><a href="#quote">ขอราคา</a></li><li><a href="#how">วิธีสั่ง</a></li><li><a href="https://ball-sticker-tracking.nutty-hill-4377.chatgpt.site/" target="_blank" rel="noopener">ติดตามงานสติ๊กเกอร์</a></li></ul>
+      <ul><li><a href="#quote">ขอราคา</a></li><li><a href="#visit">แผนที่ร้าน</a></li><li><a href="#how">วิธีสั่ง</a></li><li><a href="https://ball-sticker-tracking.nutty-hill-4377.chatgpt.site/" target="_blank" rel="noopener">ติดตามงานสติ๊กเกอร์</a></li></ul>
     </div>
     <div>
       <b>ข้อมูลร้าน</b>
@@ -348,6 +380,7 @@ footer.foot{background:var(--navy-deep);color:#c7d4e6;padding:48px 0 90px;font-s
   </div>
 </footer>
 
+<a class="btn fb float-fb" href="https://m.me/108503502205863" target="_blank" rel="noopener" aria-label="ทักแชท Facebook"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 2C6.4 2 2 6.1 2 11.6c0 2.9 1.2 5.4 3.2 7.1V22l3-1.6c1.2.3 2.5.5 3.8.5 5.6 0 10-4.1 10-9.4S17.6 2 12 2zm1 12.6-2.5-2.7-4.9 2.7 5.4-5.8 2.6 2.7 4.8-2.7-5.4 5.8z"/></svg></a>
 <a class="btn line float-line" data-line href="#quote" aria-label="ทัก LINE สั่งงาน"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.4 5.9-3.5 8-6C21.4 14.3 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg>ทัก LINE</a>
 <div class="preview-tag">ตัวอย่างหน้าเว็บ (พรีวิว)</div>
 
