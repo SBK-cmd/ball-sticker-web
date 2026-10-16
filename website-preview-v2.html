@@ -280,13 +280,48 @@ a:hover .arrow,button:hover .arrow{transform:translate(4px,-3px)}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important;animation:none!important}}
 
+
+/* AUTHENTIC STORE CONTACT / V2.1 */
+.store-contact{background:#eceeea;padding:94px 0;color:#15191c}
+.store-contact-head{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:30px}
+.store-contact-head .eyebrow{color:#816918}
+.store-contact-head h2{font:800 clamp(37px,4.4vw,62px)/1.08 var(--display);letter-spacing:-.05em;margin:13px 0 0}
+.store-contact-head p{color:#606b70;font-size:13px;line-height:1.8;max-width:340px}
+.contact-layout{display:grid;grid-template-columns:1.08fr .92fr;gap:17px}
+.contact-main{background:#14181c;color:#fff;padding:36px;border-radius:20px}
+.contact-title{color:var(--yellow);font:600 13px var(--body);margin:0 0 10px}
+.contact-main h3{font:700 29px var(--display);margin:0 0 8px;letter-spacing:-.03em}
+.contact-address{color:#c0c6ca;line-height:1.85;margin:0 0 27px;font-size:14px}
+.contact-methods{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.contact-method{border:1px solid #3b434b;border-radius:12px;padding:16px 17px;min-height:96px;display:flex;flex-direction:column;justify-content:space-between;gap:10px;transition:border-color .2s,background .2s}
+.contact-method:hover{background:#21272c;border-color:#ffdb35}
+.contact-method small{color:#a5b0b8;font-size:11px}
+.contact-method strong{font:600 14px var(--body);color:#fff;word-break:break-word}
+.contact-method .yellow{color:var(--yellow)}
+.contact-cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.contact-cta a{padding:13px 17px;border-radius:9px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:10px}
+.contact-cta .line-contact{background:#06c755;color:#fff}
+.contact-cta .facebook-contact{background:#2f70ef;color:#fff}
+.contact-cta .map-contact{border:1px solid #6a737b;color:#fff}
+.contact-map-card{background:#fff;border-radius:20px;padding:15px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.contact-map{height:320px;position:relative;background:#e0e2e4;border-radius:12px;overflow:hidden}
+.contact-map iframe{height:100%;width:100%;border:0}
+.contact-map-footer{display:flex;align-items:center;gap:15px;padding:3px 7px 7px}
+.contact-map-footer img{width:86px;height:86px;flex-shrink:0;padding:5px;border-radius:9px;border:1px solid #e5e5e5;object-fit:contain}
+.contact-map-footer strong{font:700 18px var(--display);display:block}
+.contact-map-footer p{font-size:11px;margin:4px 0 8px;color:#6e757a;line-height:1.5}
+.contact-map-footer a{font-size:12px;color:#252d31;font-weight:700;border-bottom:1px solid #b79a22}
+.contact-source{font-size:11px;color:#788187;margin-top:18px}
+@media(max-width:900px){.contact-layout{grid-template-columns:1fr}.contact-map{height:320px}}
+@media(max-width:580px){.store-contact{padding:65px 0}.store-contact-head{display:block}.store-contact-head p{margin-top:15px}.contact-main{padding:23px 20px}.contact-main h3{font-size:25px}.contact-methods{grid-template-columns:1fr;gap:9px}.contact-method{min-height:76px}.contact-cta a{flex:1;justify-content:center}.contact-map{height:260px}.contact-map-footer img{width:73px;height:73px}.contact-map-footer strong{font-size:17px}}
+
 </style>
 </head>
 <body>
 <div class="topline"><div class="container"><span>บริการทำสติ๊กเกอร์สั่งทำ <strong>พิษณุโลก</strong> · จัดส่งทั่วประเทศ</span><span class="desktop-note">ตรวจแบบก่อนพิมพ์ทุกงาน &nbsp; ✦ &nbsp; สอบถามราคาได้ทาง LINE</span></div></div>
 <header class="header"><div class="container header-inner">
 <a class="identity" href="#home" aria-label="กลับหน้าแรก BALL STICKER"><img src="https://www.ballsticker.co.th/icon-192.png" alt="โลโก้ บอลสติ๊กเกอร์"><div><div class="identity-name">BALL<span>STICKER</span></div><small>สติ๊กเกอร์สั่งทำ · พิษณุโลก</small></div></a>
-<nav class="links" id="navLinks" aria-label="เมนูหลัก"><a href="#services">บริการของเรา</a><a href="#portfolio">ผลงานจริง</a><a href="#how">วิธีสั่งงาน</a><a href="#quote">ขอราคา</a><a href="#contact">ติดต่อเรา</a></nav>
+<nav class="links" id="navLinks" aria-label="เมนูหลัก"><a href="#services">บริการของเรา</a><a href="#portfolio">ผลงานจริง</a><a href="#how">วิธีสั่งงาน</a><a href="#quote">ขอราคา</a><a href="#store-contact">ติดต่อเรา</a></nav>
 <a class="nav-cta" href="https://lin.ee/5WdXssc" target="_blank" rel="noopener">สั่งงานทาง LINE <span class="arrow">↗</span></a>
 <button class="mobile-toggle" type="button" id="menuToggle" aria-label="เปิดเมนู" aria-expanded="false" aria-controls="navLinks">☰</button>
 </div></header>
@@ -301,9 +336,9 @@ a:hover .arrow,button:hover .arrow{transform:translate(4px,-3px)}
 </div>
 <div class="hero-visual" aria-label="ภาพคอลลาจตัวอย่างสติ๊กเกอร์ที่ร้านผลิตจริง">
 <div class="hero-ring"></div><div class="hero-orbit">BST</div>
-<img class="hero-img main" alt="ตัวอย่างงานสติ๊กเกอร์บอลสติ๊กเกอร์" src="https://www.ballsticker.co.th/w05.webp">
-<img class="hero-img left" alt="สติ๊กเกอร์แบบโลโก้วงกลม" src="https://www.ballsticker.co.th/w03.webp">
-<img class="hero-img mini" alt="ตัวอย่างงานไดคัทตามรูป" src="https://www.ballsticker.co.th/w08.webp">
+<img class="hero-img main" alt="ตัวอย่างงานสติ๊กเกอร์บอลสติ๊กเกอร์" src="https://www.ballsticker.co.th/work/w05.webp">
+<img class="hero-img left" alt="สติ๊กเกอร์แบบโลโก้วงกลม" src="https://www.ballsticker.co.th/work/w03.webp">
+<img class="hero-img mini" alt="ตัวอย่างงานไดคัทตามรูป" src="https://www.ballsticker.co.th/work/w08.webp">
 <div class="hero-stamp">MADE<br>TO<br>STICK!</div>
 </div><div class="hero-bottom">CUSTOM PRINT STUDIO — THAILAND</div>
 </div></section>
@@ -311,12 +346,12 @@ a:hover .arrow,button:hover .arrow{transform:translate(4px,-3px)}
 <section class="section-pad" id="services"><div class="container">
 <div class="section-head"><div><div class="eyebrow">WHAT WE MAKE</div><h2>งานสติ๊กเกอร์<br>สำหรับทุกไอเดีย<span style="color:#d9ab04">.</span></h2></div><p>ไม่ว่าจะเป็นแบรนด์เล็กหรือร้านค้าที่มีเอกลักษณ์ เลือกชนิดงานให้เข้ากับสิ่งที่คุณต้องการ แล้วส่งรายละเอียดมาคุยราคาได้เลย</p></div>
 <div class="services-grid">
-<article class="service"><span class="service-no">SERVICES / 01</span><div class="service-text"><h3>สติ๊กเกอร์ไดคัท</h3><p>ตัดตามขอบโลโก้และรูปทรงอิสระ งานเฉพาะตัวสำหรับร้านและแบรนด์ของคุณ</p><button class="service-link" type="button" data-service="ไดคัทตามรูป">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน สติ๊กเกอร์ไดคัท" src="https://www.ballsticker.co.th/w05.webp"></article>
-<article class="service"><span class="service-no">SERVICES / 02</span><div class="service-text"><h3>ฉลากสินค้า</h3><p>วงกลม สี่เหลี่ยม ติดขวด กล่อง หรือบรรจุภัณฑ์ทุกประเภท</p><button class="service-link" type="button" data-service="วงกลม / สี่เหลี่ยม">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน ฉลากสินค้า" src="https://www.ballsticker.co.th/w03.webp"></article>
-<article class="service"><span class="service-no">SERVICES / 03</span><div class="service-text"><h3>โฮโลแกรม</h3><p>สะท้อนสีรุ้งเพิ่มความพิเศษให้แพ็กเกจและฉลากสินค้า</p><button class="service-link" type="button" data-service="โฮโลแกรม">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน โฮโลแกรม" src="https://www.ballsticker.co.th/w02.webp"></article>
-<article class="service"><span class="service-no">SERVICES / 04</span><div class="service-text"><h3>สติ๊กเกอร์ใส</h3><p>พื้นใส ดูคลีน เหมาะกับกระจก ขวดแก้ว และบรรจุภัณฑ์</p><button class="service-link" type="button" data-service="สติ๊กเกอร์ใส">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน สติ๊กเกอร์ใส" src="https://www.ballsticker.co.th/w07.webp"></article>
-<article class="service"><span class="service-no">SERVICES / 05</span><div class="service-text"><h3>งานพิมพ์ UV</h3><p>งานสีสดบนวัสดุหลากหลาย เลือกสเปกตามการใช้งาน</p><button class="service-link" type="button" data-service="งานพิมพ์ UV">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน งานพิมพ์ UV" src="https://www.ballsticker.co.th/w10.webp"></article>
-<article class="service"><span class="service-no">SERVICES / 06</span><div class="service-text"><h3>สติ๊กเกอร์แผ่น</h3><p>พิมพ์หลายดวงไว้บนแผ่นเดียว สะดวกลอกใช้งานและจัดเก็บ</p><button class="service-link" type="button" data-service="สติ๊กเกอร์แผ่น">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน สติ๊กเกอร์แผ่น" src="https://www.ballsticker.co.th/w12.webp"></article>
+<article class="service"><span class="service-no">SERVICES / 01</span><div class="service-text"><h3>สติ๊กเกอร์ไดคัท</h3><p>ตัดตามขอบโลโก้และรูปทรงอิสระ งานเฉพาะตัวสำหรับร้านและแบรนด์ของคุณ</p><button class="service-link" type="button" data-service="ไดคัทตามรูป">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน สติ๊กเกอร์ไดคัท" src="https://www.ballsticker.co.th/work/w05.webp"></article>
+<article class="service"><span class="service-no">SERVICES / 02</span><div class="service-text"><h3>ฉลากสินค้า</h3><p>วงกลม สี่เหลี่ยม ติดขวด กล่อง หรือบรรจุภัณฑ์ทุกประเภท</p><button class="service-link" type="button" data-service="วงกลม / สี่เหลี่ยม">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน ฉลากสินค้า" src="https://www.ballsticker.co.th/work/w03.webp"></article>
+<article class="service"><span class="service-no">SERVICES / 03</span><div class="service-text"><h3>โฮโลแกรม</h3><p>สะท้อนสีรุ้งเพิ่มความพิเศษให้แพ็กเกจและฉลากสินค้า</p><button class="service-link" type="button" data-service="โฮโลแกรม">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน โฮโลแกรม" src="https://www.ballsticker.co.th/work/w02.webp"></article>
+<article class="service"><span class="service-no">SERVICES / 04</span><div class="service-text"><h3>สติ๊กเกอร์ใส</h3><p>พื้นใส ดูคลีน เหมาะกับกระจก ขวดแก้ว และบรรจุภัณฑ์</p><button class="service-link" type="button" data-service="สติ๊กเกอร์ใส">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน สติ๊กเกอร์ใส" src="https://www.ballsticker.co.th/work/w07.webp"></article>
+<article class="service"><span class="service-no">SERVICES / 05</span><div class="service-text"><h3>งานพิมพ์ UV</h3><p>งานสีสดบนวัสดุหลากหลาย เลือกสเปกตามการใช้งาน</p><button class="service-link" type="button" data-service="งานพิมพ์ UV">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน งานพิมพ์ UV" src="https://www.ballsticker.co.th/work/w10.webp"></article>
+<article class="service"><span class="service-no">SERVICES / 06</span><div class="service-text"><h3>สติ๊กเกอร์แผ่น</h3><p>พิมพ์หลายดวงไว้บนแผ่นเดียว สะดวกลอกใช้งานและจัดเก็บ</p><button class="service-link" type="button" data-service="สติ๊กเกอร์แผ่น">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน สติ๊กเกอร์แผ่น" src="https://www.ballsticker.co.th/work/w12.webp"></article>
 </div></div></section>
 <section class="section-pad portfolio" id="portfolio"><div class="container">
 <div class="section-head dark"><div><div class="eyebrow">OUR REAL WORK</div><h2>ของจริง<br>งานจริง ไม่ใช่แค่ภาพฝัน<span style="color:var(--yellow)">.</span></h2></div><p>รวมผลงานที่ร้านผลิตให้ลูกค้า ดูสไตล์งานและไอเดียสำหรับงานของคุณได้ที่นี่</p></div>
@@ -326,18 +361,18 @@ a:hover .arrow,button:hover .arrow{transform:translate(4px,-3px)}
 <button class="filter" data-filter="diecut" type="button" aria-pressed="false">ไดคัท / การ์ตูน</button>
 <button class="filter" data-filter="label" type="button" aria-pressed="false">ฉลากสินค้า / อื่น ๆ</button>
 </div>
-<div class="works" id="worksGrid"><button class="work" type="button" data-cat="logo" data-index="0" aria-label="ดูผลงาน ไข่แดง หัวยอด"><img loading="lazy" src="https://www.ballsticker.co.th/w01.webp" alt="ผลงานจริง ไข่แดง หัวยอด"><span class="work-caption"><span><b>ไข่แดง หัวยอด</b><small>ไดคัท</small></span><i>↗</i></span></button>
-<button class="work" type="button" data-cat="diecut" data-index="1" aria-label="ดูผลงาน แดกดื่น ของดีหมู่ 6"><img loading="lazy" src="https://www.ballsticker.co.th/w02.webp" alt="ผลงานจริง แดกดื่น ของดีหมู่ 6"><span class="work-caption"><span><b>แดกดื่น ของดีหมู่ 6</b><small>ลายการ์ตูน</small></span><i>↗</i></span></button>
-<button class="work" type="button" data-cat="logo" data-index="2" aria-label="ดูผลงาน Chiang Miang / Suriyo Story"><img loading="lazy" src="https://www.ballsticker.co.th/w03.webp" alt="ผลงานจริง Chiang Miang / Suriyo Story"><span class="work-caption"><span><b>Chiang Miang / Suriyo Story</b><small>โลโก้วงกลม</small></span><i>↗</i></span></button>
-<button class="work" type="button" data-cat="label" data-index="3" aria-label="ดูผลงาน อาหารปลา กระสอบขาว"><img loading="lazy" src="https://www.ballsticker.co.th/w04.webp" alt="ผลงานจริง อาหารปลา กระสอบขาว"><span class="work-caption"><span><b>อาหารปลา กระสอบขาว</b><small>ฉลากสินค้า</small></span><i>↗</i></span></button>
-<button class="work" type="button" data-cat="diecut" data-index="4" aria-label="ดูผลงาน ขอมาจัดให้ ไม่เคยขัด"><img loading="lazy" src="https://www.ballsticker.co.th/w05.webp" alt="ผลงานจริง ขอมาจัดให้ ไม่เคยขัด"><span class="work-caption"><span><b>ขอมาจัดให้ ไม่เคยขัด</b><small>สติ๊กเกอร์ไดคัท</small></span><i>↗</i></span></button>
-<button class="work" type="button" data-cat="logo" data-index="5" aria-label="ดูผลงาน NHT Audio"><img loading="lazy" src="https://www.ballsticker.co.th/w06.webp" alt="ผลงานจริง NHT Audio"><span class="work-caption"><span><b>NHT Audio</b><small>โลโก้ร้านเครื่องเสียง</small></span><i>↗</i></span></button>
-<button class="work" type="button" data-cat="diecut" data-index="6" aria-label="ดูผลงาน KAKA ตอนเดียว"><img loading="lazy" src="https://www.ballsticker.co.th/w07.webp" alt="ผลงานจริง KAKA ตอนเดียว"><span class="work-caption"><span><b>KAKA ตอนเดียว</b><small>งานรถยนต์</small></span><i>↗</i></span></button>
-<button class="work" type="button" data-cat="diecut" data-index="7" aria-label="ดูผลงาน Rabbit Adventure Trip"><img loading="lazy" src="https://www.ballsticker.co.th/w08.webp" alt="ผลงานจริง Rabbit Adventure Trip"><span class="work-caption"><span><b>Rabbit Adventure Trip</b><small>ไดคัทตามรูป</small></span><i>↗</i></span></button>
-<button class="work" type="button" data-cat="logo" data-index="8" aria-label="ดูผลงาน LEO รถพยาบาล"><img loading="lazy" src="https://www.ballsticker.co.th/w09.webp" alt="ผลงานจริง LEO รถพยาบาล"><span class="work-caption"><span><b>LEO รถพยาบาล</b><small>โลโก้ธุรกิจ</small></span><i>↗</i></span></button>
-<button class="work" type="button" data-cat="label" data-index="9" aria-label="ดูผลงาน BANK EV"><img loading="lazy" src="https://www.ballsticker.co.th/w10.webp" alt="ผลงานจริง BANK EV"><span class="work-caption"><span><b>BANK EV</b><small>สติ๊กเกอร์ร้านค้า</small></span><i>↗</i></span></button>
-<button class="work" type="button" data-cat="logo" data-index="10" aria-label="ดูผลงาน Sure Auto Tire"><img loading="lazy" src="https://www.ballsticker.co.th/w11.webp" alt="ผลงานจริง Sure Auto Tire"><span class="work-caption"><span><b>Sure Auto Tire</b><small>ร้านยางรถยนต์</small></span><i>↗</i></span></button>
-<button class="work" type="button" data-cat="diecut" data-index="11" aria-label="ดูผลงาน อาร์ท บ้านสวน"><img loading="lazy" src="https://www.ballsticker.co.th/w12.webp" alt="ผลงานจริง อาร์ท บ้านสวน"><span class="work-caption"><span><b>อาร์ท บ้านสวน</b><small>ไดคัท 2 แบบ</small></span><i>↗</i></span></button></div>
+<div class="works" id="worksGrid"><button class="work" type="button" data-cat="logo" data-index="0" aria-label="ดูผลงาน ไข่แดง หัวยอด"><img loading="lazy" src="https://www.ballsticker.co.th/work/w01.webp" alt="ผลงานจริง ไข่แดง หัวยอด"><span class="work-caption"><span><b>ไข่แดง หัวยอด</b><small>ไดคัท</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="diecut" data-index="1" aria-label="ดูผลงาน แดกดื่น ของดีหมู่ 6"><img loading="lazy" src="https://www.ballsticker.co.th/work/w02.webp" alt="ผลงานจริง แดกดื่น ของดีหมู่ 6"><span class="work-caption"><span><b>แดกดื่น ของดีหมู่ 6</b><small>ลายการ์ตูน</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="logo" data-index="2" aria-label="ดูผลงาน Chiang Miang / Suriyo Story"><img loading="lazy" src="https://www.ballsticker.co.th/work/w03.webp" alt="ผลงานจริง Chiang Miang / Suriyo Story"><span class="work-caption"><span><b>Chiang Miang / Suriyo Story</b><small>โลโก้วงกลม</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="label" data-index="3" aria-label="ดูผลงาน อาหารปลา กระสอบขาว"><img loading="lazy" src="https://www.ballsticker.co.th/work/w04.webp" alt="ผลงานจริง อาหารปลา กระสอบขาว"><span class="work-caption"><span><b>อาหารปลา กระสอบขาว</b><small>ฉลากสินค้า</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="diecut" data-index="4" aria-label="ดูผลงาน ขอมาจัดให้ ไม่เคยขัด"><img loading="lazy" src="https://www.ballsticker.co.th/work/w05.webp" alt="ผลงานจริง ขอมาจัดให้ ไม่เคยขัด"><span class="work-caption"><span><b>ขอมาจัดให้ ไม่เคยขัด</b><small>สติ๊กเกอร์ไดคัท</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="logo" data-index="5" aria-label="ดูผลงาน NHT Audio"><img loading="lazy" src="https://www.ballsticker.co.th/work/w06.webp" alt="ผลงานจริง NHT Audio"><span class="work-caption"><span><b>NHT Audio</b><small>โลโก้ร้านเครื่องเสียง</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="diecut" data-index="6" aria-label="ดูผลงาน KAKA ตอนเดียว"><img loading="lazy" src="https://www.ballsticker.co.th/work/w07.webp" alt="ผลงานจริง KAKA ตอนเดียว"><span class="work-caption"><span><b>KAKA ตอนเดียว</b><small>งานรถยนต์</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="diecut" data-index="7" aria-label="ดูผลงาน Rabbit Adventure Trip"><img loading="lazy" src="https://www.ballsticker.co.th/work/w08.webp" alt="ผลงานจริง Rabbit Adventure Trip"><span class="work-caption"><span><b>Rabbit Adventure Trip</b><small>ไดคัทตามรูป</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="logo" data-index="8" aria-label="ดูผลงาน LEO รถพยาบาล"><img loading="lazy" src="https://www.ballsticker.co.th/work/w09.webp" alt="ผลงานจริง LEO รถพยาบาล"><span class="work-caption"><span><b>LEO รถพยาบาล</b><small>โลโก้ธุรกิจ</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="label" data-index="9" aria-label="ดูผลงาน BANK EV"><img loading="lazy" src="https://www.ballsticker.co.th/work/w10.webp" alt="ผลงานจริง BANK EV"><span class="work-caption"><span><b>BANK EV</b><small>สติ๊กเกอร์ร้านค้า</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="logo" data-index="10" aria-label="ดูผลงาน Sure Auto Tire"><img loading="lazy" src="https://www.ballsticker.co.th/work/w11.webp" alt="ผลงานจริง Sure Auto Tire"><span class="work-caption"><span><b>Sure Auto Tire</b><small>ร้านยางรถยนต์</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="diecut" data-index="11" aria-label="ดูผลงาน อาร์ท บ้านสวน"><img loading="lazy" src="https://www.ballsticker.co.th/work/w12.webp" alt="ผลงานจริง อาร์ท บ้านสวน"><span class="work-caption"><span><b>อาร์ท บ้านสวน</b><small>ไดคัท 2 แบบ</small></span><i>↗</i></span></button></div>
 <div class="portfolio-more"><p>แตะรูปเพื่อดูผลงานขนาดใหญ่</p><a class="big-btn primary" href="#quote">อยากได้งานแบบนี้ ขอราคา <span class="arrow">↗</span></a></div>
 </div></section>
 <section class="section-pad" id="how"><div class="container">
@@ -371,6 +406,42 @@ a:hover .arrow,button:hover .arrow{transform:translate(4px,-3px)}
 <div class="trust-item"><span>▣</span><h3>เอกสารภาษี</h3><p>ติดต่อร้านเพื่อขอใบเสร็จและใบกำกับภาษี</p></div>
 </div></section>
 </main>
+
+<section class="store-contact" id="store-contact" aria-label="ข้อมูลติดต่อบอลสติ๊กเกอร์">
+<div class="container">
+<div class="store-contact-head">
+<div><div class="eyebrow">VISIT / CONTACT OUR STUDIO</div><h2>มาคุยงานกัน<br>ติดต่อร้านได้เลย<span style="color:#c6a51e">.</span></h2></div>
+<p>ช่องทางติดต่อและตำแหน่งร้านจากเว็บไซต์ BALL STICKER เดิม ใช้สำหรับสอบถามราคา ส่งไฟล์งาน และเดินทางมาที่ร้าน</p>
+</div>
+<div class="contact-layout">
+<div class="contact-main">
+<p class="contact-title">BALL STICKER · PHITSANULOK</p>
+<h3>บอลสติ๊กเกอร์ พิษณุโลก</h3>
+<p class="contact-address">8 หมู่ 19 ต.บางระกำ อ.บางระกำ<br>จ.พิษณุโลก 65140</p>
+<div class="contact-methods">
+<a class="contact-method" href="tel:0935353555"><small>โทรศัพท์หลัก ↗</small><strong>093-535-3555</strong></a>
+<a class="contact-method" href="tel:0966697495"><small>โทรศัพท์เพิ่มเติม ↗</small><strong>096-669-7495</strong></a>
+<a class="contact-method" href="https://lin.ee/5WdXssc" target="_blank" rel="noopener"><small>LINE Official ↗</small><strong class="yellow">@bk25</strong></a>
+<a class="contact-method" href="mailto:info@ballsticker.co.th"><small>อีเมล ↗</small><strong>info@ballsticker.co.th</strong></a>
+</div>
+<div class="contact-cta">
+<a class="line-contact" href="https://lin.ee/5WdXssc" target="_blank" rel="noopener">LINE สอบถามราคา ↗</a>
+<a class="facebook-contact" href="https://www.facebook.com/share/1CHNqRvwvv/" target="_blank" rel="noopener">เพจ Facebook ↗</a>
+<a class="map-contact" href="https://maps.app.goo.gl/d8F8hY2ko8PbT1Hv8" target="_blank" rel="noopener">นำทางร้าน ↗</a>
+</div>
+</div>
+<div class="contact-map-card">
+<div class="contact-map"><iframe title="แผนที่ร้านบอลสติ๊กเกอร์ พิษณุโลก" src="https://www.google.com/maps?q=%E0%B8%9A%E0%B8%AD%E0%B8%A5%E0%B8%AA%E0%B8%95%E0%B8%B4%E0%B9%8A%E0%B8%81%E0%B9%80%E0%B8%81%E0%B8%AD%E0%B8%A3%E0%B9%8C%20%E0%B8%9E%E0%B8%B4%E0%B8%A9%E0%B8%93%E0%B8%B8%E0%B9%82%E0%B8%A5%E0%B8%81%20%E0%B8%9A%E0%B8%B2%E0%B8%87%E0%B8%A3%E0%B8%B0%E0%B8%81%E0%B8%B3&hl=th&z=16&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe></div>
+<div class="contact-map-footer">
+<img src="https://www.ballsticker.co.th/line-qr.png" alt="คิวอาร์โค้ด LINE ร้านบอลสติ๊กเกอร์ @bk25" loading="lazy" width="86" height="86">
+<div><strong>LINE @bk25</strong><p>สแกนเพื่อเพิ่มเพื่อนร้าน หรือกดเปิดแชทโดยตรง</p><a href="https://lin.ee/5WdXssc" target="_blank" rel="noopener">เปิด LINE เพิ่มเพื่อน ↗</a></div>
+</div>
+</div>
+</div>
+<p class="contact-source">ข้อมูลติดต่ออ้างอิงจากเว็บไซต์ทางการของร้าน · <a href="https://www.ballsticker.co.th/" target="_blank" rel="noopener" style="text-decoration:underline">www.ballsticker.co.th</a></p>
+</div>
+</section>
+
 <footer class="footer" id="contact"><div class="container">
 <div class="footer-grid"><div><a class="identity" href="#home"><img src="https://www.ballsticker.co.th/icon-192.png" alt=""><div><div class="identity-name">BALL<span>STICKER</span></div><small>รับทำสติ๊กเกอร์สั่งทำ พิษณุโลก</small></div></a><p>8 หมู่ 19 ต.บางระกำ อ.บางระกำ<br>จ.พิษณุโลก 65140</p><p>โทร <a href="tel:0935353555">093-535-3555</a> · <a href="tel:0966697495">096-669-7495</a><br>อีเมล <a href="mailto:info@ballsticker.co.th">info@ballsticker.co.th</a></p></div>
 <div><h3>สำรวจเว็บไซต์</h3><ul><li><a href="#services">ประเภทสติ๊กเกอร์</a></li><li><a href="#portfolio">ผลงานจริง</a></li><li><a href="#how">วิธีสั่งงาน</a></li><li><a href="#quote">ขอราคางาน</a></li><li><a href="https://www.ballsticker.co.th/privacy.html">นโยบายความเป็นส่วนตัว</a></li></ul></div>
