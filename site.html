@@ -396,24 +396,23 @@ footer.foot{background:var(--navy-deep);color:#c7d4e6;padding:48px 0 90px;font-s
 <script>
 // ใส่ LINE ID ของร้าน (เช่น '@ballsticker') แล้วปุ่ม LINE ทุกปุ่มจะเปิดแชทร้านพร้อมข้อความ
 const LINE_ID = '@bk25';
-const lineUrl = text => LINE_ID ? 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_ID) + '/' + (text ? '?' + encodeURIComponent(text) : '') : '';
-function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3200); }
-document.querySelectorAll('[data-line]').forEach(a => { const u = lineUrl(''); if (u) { a.href = u; a.target = '_blank'; a.rel = 'noopener'; } });
-document.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => {
-  document.getElementById('qType').value = b.dataset.pick;
-  document.getElementById('quote').scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
-  setTimeout(() => document.getElementById('qW').focus({preventScroll: true}), 450);
-}));
-document.getElementById('qf').addEventListener('submit', async e => {
-  e.preventDefault();
-  const v = id => document.getElementById(id).value.trim();
-  const size = v('qW') && v('qH') ? v('qW') + ' × ' + v('qH') + ' ซม.' : 'ยังไม่ระบุ';
-  const text = 'สวัสดีครับ ขอราคาสติ๊กเกอร์\nแบบ: ' + v('qType') + '\nขนาด: ' + size + '\nจำนวน: ' + (v('qQty') || 'ยังไม่ระบุ') + (v('qNote') ? '\nรายละเอียด: ' + v('qNote') : '');
-  const u = lineUrl(text);
-  if (u) { window.open(u, '_blank', 'noopener'); return; }
-  try { await navigator.clipboard.writeText(text); toast('คัดลอกรายละเอียดแล้ว วางในแชท LINE ของร้านได้เลย'); }
-  catch (err) { toast('กรุณาทัก LINE ร้าน แล้วพิมพ์รายละเอียดงาน'); }
-});
+  const ADD_URL = 'https://lin.ee/5WdXssc';
+  const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
+  const lineUrl = text => 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_ID) + '/' + (text ? '?' + encodeURIComponent(text) : '');
+  function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 6000); }
+  document.querySelectorAll('[data-line]').forEach(a => { a.href = IS_MOBILE ? lineUrl('') : ADD_URL; a.target = '_blank'; a.rel = 'noopener'; });
+  document.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => { document.getElementById('qType').value = b.dataset.pick; document.getElementById('quote').scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'}); setTimeout(() => document.getElementById('qW').focus({preventScroll: true}), 450); }));
+  function copyText(text) { if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text); return new Promise((ok, fail) => { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); const done = document.execCommand('copy'); ta.remove(); done ? ok() : fail(); }); }
+  document.getElementById('qf').addEventListener('submit', async e => {
+    e.preventDefault();
+    const v = id => document.getElementById(id).value.trim();
+    const size = v('qW') && v('qH') ? v('qW') + ' × ' + v('qH') + ' ซม.' : 'ยังไม่ระบุ';
+    const text = 'สวัสดีครับ ขอราคาสติ๊กเกอร์\nแบบ: ' + v('qType') + '\nขนาด: ' + size + '\nจำนวน: ' + (v('qQty') || 'ยังไม่ระบุ') + (v('qNote') ? '\nรายละเอียด: ' + v('qNote') : '');
+    if (IS_MOBILE) { location.href = lineUrl(text); return; }
+    const copied = copyText(text);
+    window.open(ADD_URL, '_blank', 'noopener');
+    try { await copied; toast('คัดลอกรายละเอียดแล้ว สแกน QR เพื่อเปิดแชทร้านใน LINE แล้ววางข้อความได้เลย'); } catch (err) { toast('สแกน QR เพื่อทัก LINE ร้าน แล้วพิมพ์รายละเอียดงาน'); }
+  });
 </script>
 </body>
 </html>
