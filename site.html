@@ -227,7 +227,7 @@ footer.foot{background:var(--ink);color:var(--muted-dark);padding:80px 0 0;font-
 /* ปุ่มลอยบนมือถือ */
 .float-line,.float-fb{position:fixed;right:16px;z-index:30;display:none;box-shadow:0 12px 28px -10px rgba(0,0,0,.45)}
 .float-line{bottom:calc(16px + env(safe-area-inset-bottom,0px));border-radius:999px}
-.float-fb{bottom:calc(76px + env(safe-area-inset-bottom,0px));width:50px;height:50px;padding:0;border-radius:50%;background:#0866ff;color:#fff}
+.float-fb{bottom:calc(76px + env(safe-area-inset-bottom,0px));height:50px;padding:0 20px;gap:8px;align-items:center;justify-content:center;border-radius:999px;background:#0866ff;color:#fff;font-weight:700}
 @media (max-width:860px){.float-line,.float-fb{display:inline-flex}}
 .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 20px;border-radius:10px;font-size:15px;z-index:40;max-width:calc(100% - 32px);box-shadow:0 16px 40px -16px rgba(0,0,0,.5)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
@@ -438,7 +438,7 @@ footer.foot{background:var(--ink);color:var(--muted-dark);padding:80px 0 0;font-
 </div>
 </footer>
 
-<a class="btn float-fb" href="https://m.me/108503502205863" target="_blank" rel="noopener" aria-label="ทักแชท Facebook"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.4 3.7 7.1V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.5 0 10-4.1 10-9.2S17.5 2 12 2zm1 12.4-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg></a>
+<a class="btn float-fb" href="https://m.me/108503502205863" target="_blank" rel="noopener" aria-label="ทักแชท Facebook"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.4 3.7 7.1V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.5 0 10-4.1 10-9.2S17.5 2 12 2zm1 12.4-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg>ทัก Facebook</a>
 <a class="btn line float-line" data-line href="#quote" aria-label="ทัก LINE สั่งงาน"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.4 5.9-3.5 8-6C21.4 14.3 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg>ทัก LINE</a>
 
 <script>
