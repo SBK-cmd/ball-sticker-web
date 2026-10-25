@@ -56,6 +56,10 @@ try { if (!localStorage.getItem('bs_session')) document.documentElement.classLis
 .unit-seg button{flex:1;min-height:42px;border:1.5px solid var(--field-line);background:var(--field);border-radius:12px;font:600 15px/1 inherit;font-family:inherit;color:inherit;cursor:pointer}
 .unit-seg button.on{background:#14284a;border-color:#14284a;color:#fff}
 :root[data-theme="dark"] .unit-seg button.on{background:#f5c518;border-color:#f5c518;color:#1a1a1a}
+.ratio-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 8px}
+.rlock{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px;cursor:pointer;min-height:42px}
+.rlock input{width:22px;height:22px;accent-color:#14284a}
+.ratio-row button{min-height:42px;padding:0 14px;border:1.5px dashed var(--field-line);background:transparent;border-radius:12px;font:600 14px/1 inherit;font-family:inherit;color:inherit;cursor:pointer}
 </style>
 <script>
 // ตั้งโหมดมืด/สว่างจากค่าที่จำไว้ทันทีตั้งแต่ก่อนวาดหน้าจอ กันไฟกะพริบสลับธีมตอนโหลด
@@ -1721,6 +1725,12 @@ tr{break-inside:avoid}
               <div class="unit-seg" id="sunit" role="group" aria-label="หน่วยขนาดสติ๊กเกอร์">
                 <button type="button" data-u="mm">มม.</button><button type="button" data-u="cm" class="on">ซม.</button><button type="button" data-u="in">นิ้ว</button><button type="button" data-u="ft">ฟุต</button><button type="button" data-u="yd">หลา</button>
               </div>
+              <div class="ratio-row">
+                <label class="rlock"><input type="checkbox" id="rlock"><span>ล็อกสัดส่วน กว้าง:สูง</span></label>
+                <button type="button" id="rimgBtn">ใช้สัดส่วนจากรูปงาน</button>
+                <input type="file" id="rimg" accept="image/*" hidden>
+              </div>
+              <p class="hint" id="rhint" hidden></p>
               <div class="row2">
                 <label class="f"><span>กว้าง</span><div class="in"><input id="sw" type="number" inputmode="decimal" step="any" min="0" value="3"><em class="su">ซม.</em></div></label>
                 <label class="f"><span>สูง</span><div class="in"><input id="sh" type="number" inputmode="decimal" step="any" min="0" value="3"><em class="su">ซม.</em></div></label>
@@ -3732,6 +3742,40 @@ function bahtText(value) {
   document.querySelectorAll('#sunit button').forEach(b => b.addEventListener('click', () => { setSUnit(b.dataset.u, true); renderCalc(); }));
   ['sw', 'sh'].forEach(id => $(id).addEventListener('input', () => { $(id)._cm = null; }));
   setSUnit(sUnit, false);
+  // ล็อกสัดส่วน: ใส่ด้านเดียว อีกด้านคิดให้ตามสัดส่วน (จากรูปงาน หรือจากขนาดปัจจุบัน)
+  let ratio = 0, ratioSrc = '';
+  const rEl = () => $('rlock');
+  function ratioNow() { const w = parseFloat($('sw').value), h = parseFloat($('sh').value); return (w > 0 && h > 0) ? h / w : 0; }
+  function rnd(v) { return String(Math.round(v * 10000) / 10000); }
+  function applyRatio(from) {
+    if (!rEl().checked || !(ratio > 0)) return;
+    if (from === 'sw') { const w = parseFloat($('sw').value); if (w > 0) { $('sh').value = rnd(w * ratio); $('sh')._cm = null; } }
+    else { const h = parseFloat($('sh').value); if (h > 0) { $('sw').value = rnd(h / ratio); $('sw')._cm = null; } }
+    $('sw')._cm = null; $('sh')._cm = null;
+  }
+  function ratioHint() {
+    const h = $('rhint');
+    if (!rEl().checked || !(ratio > 0)) { h.hidden = true; return; }
+    h.textContent = 'สัดส่วนกว้าง:สูง = 1 : ' + (Math.round(ratio * 1000) / 1000) + (ratioSrc ? ' (' + ratioSrc + ')' : '') + ' · ใส่กว้างหรือสูงอย่างใดอย่างหนึ่ง อีกด้านคิดให้';
+    h.hidden = false;
+  }
+  rEl().addEventListener('change', () => {
+    if (rEl().checked) { if (!(ratio > 0)) { ratio = ratioNow(); ratioSrc = 'จากขนาดปัจจุบัน'; } if (!(ratio > 0)) { rEl().checked = false; toast('ใส่ขนาดกว้างและสูงก่อน แล้วค่อยล็อกสัดส่วน'); } }
+    ratioHint(); renderCalc();
+  });
+  ['sw', 'sh'].forEach(id => $(id).addEventListener('input', () => { if (rEl().checked) applyRatio(id); }));
+  $('rimgBtn').addEventListener('click', () => $('rimg').click());
+  $('rimg').addEventListener('change', () => {
+    const f = $('rimg').files && $('rimg').files[0]; if (!f) return;
+    const url = URL.createObjectURL(f), im = new Image();
+    im.onload = () => {
+      ratio = im.naturalHeight / im.naturalWidth; ratioSrc = 'รูป ' + im.naturalWidth + ' × ' + im.naturalHeight + ' px';
+      URL.revokeObjectURL(url); rEl().checked = true; applyRatio('sw'); ratioHint(); renderCalc();
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); toast('เปิดรูปนี้ไม่ได้'); };
+    im.src = url; $('rimg').value = '';
+  });
+
 
   let lastLayout = null;
 
