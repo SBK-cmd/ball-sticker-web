@@ -224,12 +224,25 @@ footer.foot{background:var(--ink);color:var(--muted-dark);padding:80px 0 0;font-
 @media (max-width:1080px){.foot .cols{grid-template-columns:1fr 1fr 1fr}.foot .cols>div:first-child{grid-column:1/-1}}
 @media (max-width:640px){.foot .cols{grid-template-columns:1fr 1fr;gap:40px 20px}.foot .cols>div:nth-child(4),.foot .cols>div:nth-child(5){grid-column:1/-1}}
 
-/* ปุ่มลอยบนมือถือ */
-.float-line,.float-fb{position:fixed;right:16px;z-index:30;display:none;box-shadow:0 12px 28px -10px rgba(0,0,0,.45)}
-.float-line{bottom:calc(16px + env(safe-area-inset-bottom,0px));border-radius:999px}
-.float-fb{bottom:calc(76px + env(safe-area-inset-bottom,0px));height:50px;padding:0 20px;gap:8px;align-items:center;justify-content:center;border-radius:999px;background:#0866ff;color:#fff;font-weight:700}
-@media (max-width:860px){.float-line,.float-fb{display:inline-flex}}
-.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 20px;border-radius:10px;font-size:15px;z-index:40;max-width:calc(100% - 32px);box-shadow:0 16px 40px -16px rgba(0,0,0,.5)}
+/* แถบปุ่มล่างบนมือถือ + เมนู */
+.mbar{display:none}
+.burger{display:none;width:48px;height:48px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);align-items:center;justify-content:center;cursor:pointer;flex:none;padding:0}
+.burger svg{width:24px;height:24px}
+.mmenu{display:none}
+@media (max-width:860px){
+.burger{display:inline-flex;margin-left:auto}
+.top .wrap{gap:10px}
+.top .btn.line{display:none}
+.mmenu.open{display:block;position:fixed;left:0;right:0;top:72px;z-index:45;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 20px 30px -20px rgba(0,0,0,.4);padding:8px 16px 16px}
+.mmenu a{display:flex;align-items:center;min-height:56px;font:600 18px/1 var(--display);color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)}
+.mmenu a:last-child{border-bottom:0}
+.mbar{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--line);box-shadow:0 -8px 24px -12px rgba(0,0,0,.35);padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));gap:6px}
+.mbar a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:58px;border-radius:12px;font:700 14px/1 var(--display);color:#fff;text-decoration:none}
+.mbar svg{width:24px;height:24px}
+.mbar .c{background:var(--ink)}.mbar .m{background:#ea4335}.mbar .f{background:#0866ff}.mbar .l{background:var(--green)}
+body{padding-bottom:84px}
+}
+.toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 20px;border-radius:10px;font-size:15px;z-index:40;max-width:calc(100% - 32px);box-shadow:0 16px 40px -16px rgba(0,0,0,.5)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -246,6 +259,7 @@ footer.foot{background:var(--ink);color:var(--muted-dark);padding:80px 0 0;font-
 <a href="#quote">ขอราคา</a>
 <a href="#visit">ติดต่อ</a>
 </nav>
+<button class="burger" id="burger" aria-label="เมนู" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
 <a class="btn line" data-line href="#quote"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.4 5.9-3.5 8-6C21.4 14.3 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg><span>ทัก LINE</span></a>
 </div>
 </header>
@@ -438,9 +452,14 @@ footer.foot{background:var(--ink);color:var(--muted-dark);padding:80px 0 0;font-
 </div>
 </footer>
 
-<a class="btn float-fb" href="https://m.me/108503502205863" target="_blank" rel="noopener" aria-label="ทักแชท Facebook"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.4 3.7 7.1V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.5 0 10-4.1 10-9.2S17.5 2 12 2zm1 12.4-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg>ทัก Facebook</a>
-<a class="btn line float-line" data-line href="#quote" aria-label="ทัก LINE สั่งงาน"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.4 5.9-3.5 8-6C21.4 14.3 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg>ทัก LINE</a>
 
+<div class="mbar">
+<a class="c" href="tel:0935353555"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg>โทร</a>
+<a class="m" href="https://maps.app.goo.gl/d8F8hY2ko8PbT1Hv8" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>แผนที่</a>
+<a class="f" href="https://m.me/108503502205863" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.4 3.7 7.1V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.5 0 10-4.1 10-9.2S17.5 2 12 2zm1 12.4-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg>Facebook</a>
+<a class="l" data-line href="#quote"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.4 5.9-3.5 8-6C21.4 14.3 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg>LINE</a>
+</div>
+<nav class="mmenu" id="mmenu" aria-label="เมนูมือถือ"><a href="#types">บริการ</a><a href="#work">ผลงาน</a><a href="#how">ขั้นตอน</a><a href="#quote">ขอราคา</a><a href="#visit">ติดต่อ / แผนที่</a></nav>
 <script>
 // ใส่ LINE ID ของร้าน (เช่น '@ballsticker') แล้วปุ่ม LINE ทุกปุ่มจะเปิดแชทร้านพร้อมข้อความ
 const LINE_ID = '@bk25';
@@ -462,5 +481,6 @@ const LINE_ID = '@bk25';
     try { await copied; toast('คัดลอกรายละเอียดแล้ว สแกน QR เพื่อเปิดแชทร้านใน LINE แล้ววางข้อความได้เลย'); } catch (err) { toast('สแกน QR เพื่อทัก LINE ร้าน แล้วพิมพ์รายละเอียดงาน'); }
   });
 </script>
+<script>(function(){var b=document.getElementById('burger'),m=document.getElementById('mmenu');if(!b||!m)return;function c(){m.classList.remove('open');b.setAttribute('aria-expanded','false')}b.addEventListener('click',function(){var o=m.classList.toggle('open');b.setAttribute('aria-expanded',o)});m.addEventListener('click',function(e){if(e.target.tagName==='A')c()});})();</script>
 </body>
 </html>
