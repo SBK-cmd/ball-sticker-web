@@ -75,6 +75,8 @@ progress{width:100%;height:10px;margin-top:8px}
   <label class="r"><input type="checkbox" id="trim" checked> ตัดขอบว่างรอบงานออกให้พอดี</label>
   <progress id="prog" max="100" value="0" hidden></progress>
   <p class="msg" id="msg2"></p>
+  <div class="stage" id="stage2" style="margin-top:10px" hidden></div>
+  <p class="note" id="cap2" style="margin:6px 0 0" hidden>ภาพที่ตัดพื้นหลังแล้ว (ลายหมากรุก = ส่วนโปร่งใส)</p>
   <button class="btn" id="bgUndo" type="button" hidden style="margin-top:8px">ยกเลิก ใช้รูปต้นฉบับ</button>
 </section>
 
@@ -192,6 +194,9 @@ progress{width:100%;height:10px;margin-top:8px}
     cur = c; result = null; $('sec4').hidden = true;
     var s = $('stage0'); s.innerHTML = ''; var v = mk(c.width, c.height); v.getContext('2d').drawImage(c, 0, 0); s.appendChild(v); s.hidden = false;
     $('info0').innerHTML = '<b>ขนาด</b><span>' + c.width + ' × ' + c.height + ' px' + (note ? ' · ' + note : '') + '</span>';
+    var cut = !!note && note !== 'ต้นฉบับ', s2 = $('stage2');
+    s2.innerHTML = ''; s2.hidden = !cut; $('cap2').hidden = !cut;
+    if (cut) { var v2 = mk(c.width, c.height); v2.getContext('2d').drawImage(c, 0, 0); s2.appendChild(v2); setTimeout(function () { s2.scrollIntoView({behavior: 'smooth', block: 'center'}); }, 80); }
     $('bgUndo').hidden = false; upd3();
   }
 
