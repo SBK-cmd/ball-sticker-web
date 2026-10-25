@@ -1229,6 +1229,47 @@ tr{break-inside:avoid}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
+<style id="skin2">
+/* ===== skin2: กระดาษ+หมึก — พื้นเทาอ่อน เส้นบาง เหลืองแบรนด์เป็นจุดเน้นเดียว ===== */
+:root{--bg:#f4f4f1;--surface:#fff;--ink:#16181b;--muted:#5c6168;--line:#dddcd7;--field:#f1f1ee;--field-line:#cdccc6;
+  --accent:#ffc300;--accent-ink:#16181b;--magenta:#d9261c;--hero-bg:#16181b;--sticker:#ffc300;--sticker-line:#16181b;
+  --blue-bg:#fff1b8;--blue-ink:#16181b;--shadow-1:none;--shadow-2:0 12px 32px -12px rgba(0,0,0,.25)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101113;--surface:#18191c;--ink:#f2f2ee;--muted:#a2a5aa;--line:#2b2d31;--field:#202125;--field-line:#34363b;
+  --accent-ink:#16181b;--hero-bg:#18191c;--sticker:#ffc300;--sticker-line:#ffc300;--blue-bg:#34290a;--blue-ink:#ffd54a;--shadow-1:none;--shadow-2:0 12px 32px -12px rgba(0,0,0,.7)}}
+:root[data-theme="dark"]{--bg:#101113;--surface:#18191c;--ink:#f2f2ee;--muted:#a2a5aa;--line:#2b2d31;--field:#202125;--field-line:#34363b;
+  --accent-ink:#16181b;--hero-bg:#18191c;--sticker:#ffc300;--sticker-line:#ffc300;--blue-bg:#34290a;--blue-ink:#ffd54a;--shadow-1:none;--shadow-2:0 12px 32px -12px rgba(0,0,0,.7)}
+:focus-visible{outline-color:var(--ink)}
+h1,h2,h3,.brand b,.page-head h1{font-family:'IBM Plex Sans Thai','Prompt',sans-serif;font-weight:600}
+.page-head h1{letter-spacing:-.01em}
+.card{border-radius:10px;box-shadow:none}
+.card h2{font-size:16px;font-weight:600;border-bottom:1px solid var(--line)}
+.card h2::before{display:none}
+.btn{border-radius:8px;box-shadow:none;transition:background-color .12s}
+.btn:hover,.btn:active{transform:none}
+.btn.primary,.btn.edit{background:var(--accent);border-color:var(--accent);color:#16181b}
+.btn.primary:hover,.btn.edit:hover{background:#f0b800;filter:none}
+.btn.good,.btn.live-on{background:#16181b;border-color:#16181b;color:#fff;animation:none}
+select,.txt,textarea{border-radius:8px}
+select:focus-visible,.txt:focus-visible,textarea:focus-visible{border-color:var(--ink);box-shadow:0 0 0 3px rgba(255,195,0,.45)}
+.tabs{border-radius:10px}
+.tabs button,.tabs a{border-radius:7px}
+.mark,.mark.img{box-shadow:none}
+.user-chip-btn,.theme-toggle{border-radius:8px}
+.user-chip-avatar{border-radius:6px;background:var(--accent);color:#16181b}
+.lock-card{border-radius:12px;box-shadow:none}
+.tax-sheet{border-radius:12px}
+.tax-sheet-item{border-radius:8px}
+@media (max-width:560px){
+  .card{border-radius:10px;padding:16px}
+  .bnav::after{border-radius:0;box-shadow:none}
+  .btab-ico{border-radius:8px}
+  .btab.active .btab-ico{background:var(--accent);color:#16181b}
+  .btab.active{color:var(--ink)}
+  .btab-fab::before{display:none}
+  .btab-fab-circle{border-radius:14px;box-shadow:none!important;width:52px;height:52px;margin:-22px 0 4px;border:2px solid var(--ink)}
+  .btab-fab.active .btab-fab-circle{background:var(--ink);color:var(--accent)}
+}
+</style>
 </head>
 <body>
 <div id="lockScreen" class="lock-screen no-print">
@@ -2526,7 +2567,7 @@ tr{break-inside:avoid}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=7272b5d3c4"],app="js/p-app.js?v=2130b4011e",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=7272b5d3c4"],app="js/p-app.js?v=2130b4011e",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 </body>
