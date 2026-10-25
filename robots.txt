@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /index.html
+Disallow: /ball-sticker.html
+Disallow: /preview.html
+Disallow: /site-preview.html
+Disallow: /js/
+
+Sitemap: https://www.ballsticker.co.th/sitemap.xml
