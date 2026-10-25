@@ -931,6 +931,69 @@ function bahtText(value) {
   document.querySelectorAll('#sunit button').forEach(b => b.addEventListener('click', () => { setSUnit(b.dataset.u, true); renderCalc(); }));
   ['sw', 'sh'].forEach(id => $(id).addEventListener('input', () => { $(id)._cm = null; }));
   setSUnit(sUnit, false);
+  // ล็อกสัดส่วน: ใส่ด้านเดียว อีกด้านคิดให้ตามสัดส่วน (จากรูปงาน หรือจากขนาดปัจจุบัน)
+  let ratio = 0, ratioSrc = '';
+  const rEl = () => $('rlock');
+  function ratioNow() { const w = parseFloat($('sw').value), h = parseFloat($('sh').value); return (w > 0 && h > 0) ? h / w : 0; }
+  function rnd(v) { return String(Math.round(v * 10000) / 10000); }
+  function applyRatio(from) {
+    if (!rEl().checked || !(ratio > 0)) return;
+    if (from === 'sw') { const w = parseFloat($('sw').value); if (w > 0) { $('sh').value = rnd(w * ratio); $('sh')._cm = null; } }
+    else { const h = parseFloat($('sh').value); if (h > 0) { $('sw').value = rnd(h / ratio); $('sw')._cm = null; } }
+    $('sw')._cm = null; $('sh')._cm = null;
+  }
+  function ratioHint() {
+    const h = $('rhint');
+    if (!rEl().checked || !(ratio > 0)) { h.hidden = true; return; }
+    h.textContent = 'สัดส่วนกว้าง:สูง = 1 : ' + (Math.round(ratio * 1000) / 1000) + (ratioSrc ? ' (' + ratioSrc + ')' : '') + ' · ใส่กว้างหรือสูงอย่างใดอย่างหนึ่ง อีกด้านคิดให้';
+    h.hidden = false;
+  }
+  rEl().addEventListener('change', () => {
+    if (rEl().checked) { if (!(ratio > 0)) { ratio = ratioNow(); ratioSrc = 'จากขนาดปัจจุบัน'; } if (!(ratio > 0)) { rEl().checked = false; toast('ใส่ขนาดกว้างและสูงก่อน แล้วค่อยล็อกสัดส่วน'); } }
+    ratioHint(); renderCalc();
+  });
+  ['sw', 'sh'].forEach(id => $(id).addEventListener('input', () => { if (rEl().checked) applyRatio(id); }));
+  $('rimgBtn').addEventListener('click', () => $('rimg').click());
+  $('rimg').addEventListener('change', () => {
+    const f = $('rimg').files && $('rimg').files[0]; if (!f) return;
+    const url = URL.createObjectURL(f), im = new Image();
+    im.onload = () => {
+      // ตัดพื้นหลังรอบงาน (พื้นขาว/พื้นสีเดียว/พื้นโปร่งใส) แล้วใช้สัดส่วนของตัวงานจริง
+      let bw = im.naturalWidth, bh = im.naturalHeight, note = 'รูป ' + bw + ' × ' + bh + ' px', crop = null;
+      try {
+        const sc = Math.min(1, 700 / Math.max(bw, bh)), cw = Math.max(1, Math.round(bw * sc)), ch = Math.max(1, Math.round(bh * sc));
+        const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+        const cx = cv.getContext('2d', {willReadFrequently: true}); cx.drawImage(im, 0, 0, cw, ch);
+        const d = cx.getImageData(0, 0, cw, ch).data;
+        const px = (x, y) => { const i = (y * cw + x) * 4; return [d[i], d[i + 1], d[i + 2], d[i + 3]]; };
+        const cs = [px(0, 0), px(cw - 1, 0), px(0, ch - 1), px(cw - 1, ch - 1)];
+        let bg = cs.find(c => c[3] < 20) || cs.reduce((a, c) => (a[0] + a[1] + a[2] > c[0] + c[1] + c[2] ? a : c)); // มุมที่สว่างสุด
+        const isFg = i => d[i + 3] > 20 && (bg[3] < 20 || Math.max(Math.abs(d[i] - bg[0]), Math.abs(d[i + 1] - bg[1]), Math.abs(d[i + 2] - bg[2])) > 40);
+        let x0 = cw, y0 = ch, x1 = -1, y1 = -1; const colN = new Uint32Array(cw), rowN = new Uint32Array(ch);
+        for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) if (isFg((y * cw + x) * 4)) { colN[x]++; rowN[y]++; }
+        const mn = 2; // กันจุดรบกวนเล็กๆ
+        for (let x = 0; x < cw; x++) if (colN[x] > mn) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); }
+        for (let y = 0; y < ch; y++) if (rowN[y] > mn) { y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+        if (x1 > x0 && y1 > y0) {
+          bw = Math.round((x1 - x0 + 1) / sc); bh = Math.round((y1 - y0 + 1) / sc);
+          note = 'ตัดขอบแล้ว ตัวงาน ' + bw + ' × ' + bh + ' px จากรูป ' + im.naturalWidth + ' × ' + im.naturalHeight;
+          crop = {cv, x0, y0, w: x1 - x0 + 1, h: y1 - y0 + 1};
+        }
+      } catch (e) {}
+      ratio = bh / bw; ratioSrc = note;
+      const th = $('rthumb');
+      if (crop && th) {
+        const k = Math.min(1, 120 / Math.max(crop.w, crop.h));
+        th.width = Math.max(1, Math.round(crop.w * k)); th.height = Math.max(1, Math.round(crop.h * k));
+        const t = th.getContext('2d'); t.clearRect(0, 0, th.width, th.height); t.fillStyle = '#fff'; t.fillRect(0, 0, th.width, th.height);
+        t.drawImage(crop.cv, crop.x0, crop.y0, crop.w, crop.h, 0, 0, th.width, th.height); th.hidden = false;
+      } else if (th) th.hidden = true;
+      URL.revokeObjectURL(url); rEl().checked = true; applyRatio('sw'); ratioHint(); renderCalc();
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); toast('เปิดรูปนี้ไม่ได้'); };
+    im.src = url; $('rimg').value = '';
+  });
+
 
   let lastLayout = null;
 
