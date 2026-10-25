@@ -52,7 +52,11 @@
 <script>
 try { if (!localStorage.getItem('bs_session')) document.documentElement.classList.add('bs-nosess'); } catch (e) {}
 </script>
-<style>.bs-nosess #lockLoading{display:none!important}.bs-nosess #lockLoginView[hidden]{display:block!important}</style>
+<style>.bs-nosess #lockLoading{display:none!important}.bs-nosess #lockLoginView[hidden]{display:block!important}.unit-seg{display:flex;gap:6px;margin:2px 0 12px}
+.unit-seg button{flex:1;min-height:42px;border:1.5px solid var(--field-line);background:var(--field);border-radius:12px;font:600 15px/1 inherit;font-family:inherit;color:inherit;cursor:pointer}
+.unit-seg button.on{background:#14284a;border-color:#14284a;color:#fff}
+:root[data-theme="dark"] .unit-seg button.on{background:#f5c518;border-color:#f5c518;color:#1a1a1a}
+</style>
 <script>
 // ตั้งโหมดมืด/สว่างจากค่าที่จำไว้ทันทีตั้งแต่ก่อนวาดหน้าจอ กันไฟกะพริบสลับธีมตอนโหลด
 // ค่าเริ่มต้นของระบบตอนนี้คือโหมดมืด เว้นแต่ผู้ใช้เคยกดเลือกโหมดสว่างไว้เอง (จำไว้ใน localStorage)
@@ -1425,17 +1429,21 @@ tr{break-inside:avoid}
       <div class="no-print">
         <div class="page-head">
           <h1>จัดให้พอดี ทุกชิ้น.</h1>
-          <p>ใส่ขนาด ดูจำนวนและการเรียงได้ทันที หน่วยทั้งหมดเป็นเซนติเมตร</p>
+          <p>ใส่ขนาด ดูจำนวนและการเรียงได้ทันที เลือกหน่วยขนาดสติ๊กเกอร์ได้ ส่วนกระดาษและช่องไฟเป็นเซนติเมตร</p>
         </div>
 
         <div class="calc-grid">
           <div class="card">
             <fieldset>
               <legend>ขนาดสติ๊กเกอร์</legend>
-              <div class="row2">
-                <label class="f"><span>กว้าง</span><div class="in"><input id="sw" type="number" inputmode="decimal" step="any" min="0" value="3"><em>ซม.</em></div></label>
-                <label class="f"><span>สูง</span><div class="in"><input id="sh" type="number" inputmode="decimal" step="any" min="0" value="3"><em>ซม.</em></div></label>
+              <div class="unit-seg" id="sunit" role="group" aria-label="หน่วยขนาดสติ๊กเกอร์">
+                <button type="button" data-u="mm">มม.</button><button type="button" data-u="cm" class="on">ซม.</button><button type="button" data-u="in">นิ้ว</button><button type="button" data-u="ft">ฟุต</button><button type="button" data-u="yd">หลา</button>
               </div>
+              <div class="row2">
+                <label class="f"><span>กว้าง</span><div class="in"><input id="sw" type="number" inputmode="decimal" step="any" min="0" value="3"><em class="su">ซม.</em></div></label>
+                <label class="f"><span>สูง</span><div class="in"><input id="sh" type="number" inputmode="decimal" step="any" min="0" value="3"><em class="su">ซม.</em></div></label>
+              </div>
+              <p class="hint" id="sunitHint" hidden></p>
             </fieldset>
             <fieldset>
               <legend>ขนาดกระดาษ</legend>
@@ -2509,7 +2517,7 @@ tr{break-inside:avoid}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=7272b5d3c4"],app="js/app.js?v=43ffb9c10a",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=7272b5d3c4"],app="js/app.js?v=4eec9da574",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 </body>
