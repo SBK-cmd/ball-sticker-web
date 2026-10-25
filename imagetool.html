@@ -55,7 +55,9 @@ progress{width:100%;height:10px;margin-top:8px}
   <p class="s">รูปไม่ถูกส่งออกไปไหน ประมวลผลในเครื่องนี้ (ยกเว้นครั้งแรกที่ต้องโหลดโมเดลตัดพื้นหลัง AI)</p>
   <button class="btn p" id="pick" type="button">เลือกรูปจากเครื่อง</button>
   <input type="file" id="file" accept="image/*" hidden>
-  <div class="stage" id="stage0" style="margin-top:12px" hidden><img id="orig" alt="รูปต้นฉบับ"></div>
+  <p class="msg" id="msg1" style="margin-top:8px"></p>
+  <p class="note" style="margin:6px 0 0">ในหน้าต่างเลือกไฟล์ ให้เลือก <b>แกลเลอรี / รูปภาพ / อัลบั้ม</b> เพื่อเลือกจากอัลบั้มในเครื่อง</p>
+  <div class="stage" id="stage0" style="margin-top:12px" hidden></div>
   <div class="kv" id="info0" hidden></div>
 </section>
 
@@ -114,21 +116,32 @@ progress{width:100%;height:10px;margin-top:8px}
 
   // ---------- โหลดรูป ----------
   $('pick').onclick = function () { $('file').click(); };
-  $('file').onchange = function () {
+  async function decode(f) {
+    // 1) createImageBitmap (หมุนรูปตาม EXIF ให้เอง) 2) <img> สำรอง
+    try { var bm = await createImageBitmap(f, {imageOrientation: 'from-image'}); return {w: bm.width, h: bm.height, draw: function (c) { c.getContext('2d').drawImage(bm, 0, 0); }, url: null}; } catch (e1) {}
+    return await new Promise(function (res, rej) {
+      var url = URL.createObjectURL(f), im = new Image();
+      im.onload = function () { res({w: im.naturalWidth, h: im.naturalHeight, draw: function (c) { c.getContext('2d').drawImage(im, 0, 0); }, url: url}); };
+      im.onerror = function () { URL.revokeObjectURL(url); rej(new Error('decode')); };
+      im.src = url;
+    });
+  }
+  $('file').onchange = async function () {
     var f = $('file').files && $('file').files[0]; if (!f) return;
-    var url = URL.createObjectURL(f), im = new Image();
-    im.onload = function () {
-      var w = im.naturalWidth, h = im.naturalHeight;
-      if (w * h > MAX_PIX) { URL.revokeObjectURL(url); msg('msg2', 'รูปใหญ่เกินไป (เกิน 60 ล้านพิกเซล)', 'bad'); return; }
-      var c = mk(w, h); c.getContext('2d').drawImage(im, 0, 0);
-      src = {canvas: c, name: (f.name || 'image').replace(/\.[^.]+$/, '')}; cur = c; result = null;
-      $('orig').src = url; $('stage0').hidden = false;
-      $('info0').hidden = false; $('info0').innerHTML = '<b>ขนาด</b><span>' + w + ' × ' + h + ' px</span>';
-      ['sec2', 'sec3'].forEach(function (i) { $(i).hidden = false; }); $('sec4').hidden = true; $('bgUndo').hidden = true;
-      msg('msg2', ''); msg('msg3', ''); upd3();
-    };
-    im.onerror = function () { URL.revokeObjectURL(url); msg('msg2', 'เปิดรูปนี้ไม่ได้', 'bad'); };
-    im.src = url; $('file').value = '';
+    msg('msg1', 'กำลังเปิดรูป ' + (f.name || '') + ' …');
+    try {
+      var im = await decode(f), w = im.w, h = im.h;
+      if (!w || !h) throw new Error('ขนาดรูปไม่ถูกต้อง');
+      if (w * h > MAX_PIX) throw new Error('รูปใหญ่เกินไป (' + w + ' × ' + h + ' px เกิน 60 ล้านพิกเซล) ลองย่อรูปก่อน');
+      var c = mk(w, h); im.draw(c);
+      src = {canvas: c, name: (f.name || 'image').replace(/\.[^.]+$/, '')};
+      showCur(c, 'ต้นฉบับ'); $('bgUndo').hidden = true;
+      ['sec2', 'sec3'].forEach(function (i) { $(i).hidden = false; }); $('sec4').hidden = true;
+      msg('msg2', ''); msg('msg3', ''); msg('msg1', 'เปิดรูปแล้ว: ' + (f.name || '') + ' (' + w + ' × ' + h + ' px)', 'ok');
+    } catch (e) {
+      var t = (f.type || '').toLowerCase();
+      msg('msg1', 'เปิดรูปนี้ไม่ได้ (' + (f.name || 'ไม่มีชื่อ') + (t ? ' · ' + t : '') + ' · ' + Math.round(f.size / 1024) + ' KB)' + (/heic|heif|avif/.test(t + (f.name || '').toLowerCase()) ? ' รูปแบบ HEIC/AVIF บางเครื่องไม่รองรับ ให้ส่งออกเป็น JPG หรือ PNG ก่อน' : ' ลองบันทึกรูปใหม่เป็น JPG หรือ PNG แล้วเลือกอีกครั้ง') + ' [' + (e && e.message ? e.message : e) + ']', 'bad');
+    } finally { $('file').value = ''; }
   };
 
   // ---------- ตัดพื้นหลังแบบพื้นเรียบ ----------
