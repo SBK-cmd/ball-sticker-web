@@ -245,35 +245,28 @@ body{padding-bottom:84px}
 .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 20px;border-radius:10px;font-size:15px;z-index:40;max-width:calc(100% - 32px);box-shadow:0 16px 40px -16px rgba(0,0,0,.5)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 
-/* ===== มือถือ: ฮีโร่ใหม่ ===== */
+/* ===== มือถือ: ฮีโร่ใหม่ เห็นผลงานเด่นชัด ===== */
 .hero-show{display:none}
 @media (max-width:860px){
-.hero{background:var(--ink)}
+.hero{background:radial-gradient(120% 60% at 50% 0%,#1d3354 0%,var(--ink) 70%)}
 .hero-bg{display:none}
-.hero .wrap{padding-top:20px;padding-bottom:36px}
-.hero-show{display:block;margin:0 -20px 30px}
-.hs-top{display:flex;justify-content:space-between;align-items:baseline;padding:0 20px 12px;font:500 11.5px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:#8d9bb2}
-.hs-top b{color:#fff;font-weight:600;letter-spacing:.08em;font-variant-numeric:tabular-nums}
-.hs-rail{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 20px;scroll-padding:0 20px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-.hs-rail::-webkit-scrollbar{display:none}
-.hs-card{flex:none;width:76%;max-width:300px;scroll-snap-align:start;margin:0}
-.hs-card .ph{aspect-ratio:1/1;border-radius:4px;overflow:hidden;background:#0a1220}
-.hs-card img{width:100%;height:100%;object-fit:cover;display:block}
-.hs-card figcaption{display:flex;gap:10px;align-items:baseline;padding-top:11px;border-top:1px solid rgba(255,255,255,.16);margin-top:11px}
-.hs-card figcaption i{font:500 12px/1 var(--display);font-style:normal;color:var(--gold);font-variant-numeric:tabular-nums}
-.hs-card figcaption b{font:600 15px/1.3 var(--display);color:#fff}
-.hs-card figcaption span{display:block;font-size:13px;color:#8d9bb2;margin-top:2px;font-weight:400}
-.hs-bar{height:2px;background:rgba(255,255,255,.14);margin:18px 20px 0;position:relative}
-.hs-bar i{position:absolute;left:0;top:0;height:100%;width:12.5%;background:var(--gold);transition:left .15s}
-.hero .eyebrow{font-size:12px}
-.hero h1{font-size:clamp(28px,8vw,36px);margin-bottom:14px}
-.hero .lead{font-size:16px;margin:0 0 24px;color:#b4c0d3}
+.hero .wrap{padding-top:22px;padding-bottom:36px}
+.hero-show{display:block;overflow:hidden;margin:0 -20px 26px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+.hero-show .tr{display:flex;gap:12px;width:max-content;animation:hs 38s linear infinite}
+.hero-show .tr+.tr{margin-top:12px;animation-direction:reverse;animation-duration:44s}
+.hero-show img{width:150px;height:112px;object-fit:cover;border-radius:14px;border:2px solid rgba(255,255,255,.14);box-shadow:0 10px 24px -10px rgba(0,0,0,.7);flex:none}
+@keyframes hs{to{transform:translateX(-50%)}}
+.hero .eyebrow{justify-content:center;text-align:center;font-size:12px}
+.hero h1{font-size:clamp(28px,8vw,36px);text-align:center;margin-bottom:14px}
+.hero .lead{font-size:16px;text-align:center;margin:0 auto 22px;color:#c3cddd}
 .hero .cta{flex-direction:column;gap:10px}
 .hero .cta .btn{width:100%;min-height:54px;font-size:17px}
-.hero .facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
-.hero .facts li{padding:8px 14px;border:1px solid rgba(255,255,255,.18);border-radius:999px;font-size:0;line-height:1}
+.hero .cta .btn.gold{box-shadow:0 12px 26px -10px rgba(255,200,40,.6)}
+.hero .facts{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:22px}
+.hero .facts li{padding:8px 14px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(255,255,255,.06);font-size:0;line-height:1}
 .hero .facts li b{display:inline;font-size:14px;color:#fff}
 }
+@media (prefers-reduced-motion:reduce){.hero-show .tr{animation:none}}
 .preview-tag{position:fixed;left:12px;top:78px;z-index:60;background:#ffefc2;color:#6b4e00;border:1px solid #f0cf6b;border-radius:10px;padding:4px 10px;font-size:12px;pointer-events:none}
 </style>
 </head>
@@ -301,7 +294,7 @@ body{padding-bottom:84px}
 <div class="hero-bg" aria-hidden="true"><img src="work/fb07.webp" width="1200" height="900" alt="" fetchpriority="high"></div>
 <div class="wrap">
 <div>
-<div class="hero-show"><div class="hs-top"><span>ผลงานจริงจากร้าน</span><b id="hsN">01 / 08</b></div><div class="hs-rail" id="hsRail"><figure class="hs-card"><div class="ph"><img src="work/fb01.webp" width="300" height="300" alt="KEN Clutch — ไดคัทโลโก้" decoding="async"></div><figcaption><i>01</i><div><b>KEN Clutch</b><span>ไดคัทโลโก้</span></div></figcaption></figure><figure class="hs-card"><div class="ph"><img src="work/fb07.webp" width="300" height="300" alt="KEN — โฮโลแกรม" loading="lazy" decoding="async"></div><figcaption><i>02</i><div><b>KEN</b><span>โฮโลแกรม</span></div></figcaption></figure><figure class="hs-card"><div class="ph"><img src="work/fb04.webp" width="300" height="300" alt="Ride Together — ไดคัทตัวอักษร" loading="lazy" decoding="async"></div><figcaption><i>03</i><div><b>Ride Together</b><span>ไดคัทตัวอักษร</span></div></figcaption></figure><figure class="hs-card"><div class="ph"><img src="work/fb05.webp" width="300" height="300" alt="ส.เหน่ง สัมผัส 8 — ไดคัทลายการ์ตูน" loading="lazy" decoding="async"></div><figcaption><i>04</i><div><b>ส.เหน่ง สัมผัส 8</b><span>ไดคัทลายการ์ตูน</span></div></figcaption></figure><figure class="hs-card"><div class="ph"><img src="work/fb06.webp" width="300" height="300" alt="SN Shop — ไดคัทตัวอักษร" loading="lazy" decoding="async"></div><figcaption><i>05</i><div><b>SN Shop</b><span>ไดคัทตัวอักษร</span></div></figcaption></figure><figure class="hs-card"><div class="ph"><img src="work/fb10.webp" width="300" height="300" alt="ธนสารปูเป็น — วงกลม สีทอง" loading="lazy" decoding="async"></div><figcaption><i>06</i><div><b>ธนสารปูเป็น</b><span>วงกลม สีทอง</span></div></figcaption></figure><figure class="hs-card"><div class="ph"><img src="work/fb13.webp" width="300" height="300" alt="WLR — ไดคัทลายการ์ตูน" loading="lazy" decoding="async"></div><figcaption><i>07</i><div><b>WLR</b><span>ไดคัทลายการ์ตูน</span></div></figcaption></figure><figure class="hs-card"><div class="ph"><img src="work/fb08.webp" width="300" height="300" alt="JJA100 — ไดคัทตามรูป" loading="lazy" decoding="async"></div><figcaption><i>08</i><div><b>JJA100</b><span>ไดคัทตามรูป</span></div></figcaption></figure></div><div class="hs-bar"><i id="hsI"></i></div></div>
+<div class="hero-show" aria-hidden="true"><div class="tr"><img src="work/fb01.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb02.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb06.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb10.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb13.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb15.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb01.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb02.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb06.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb10.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb13.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb15.webp" width="150" height="112" alt="" loading="eager" decoding="async"></div><div class="tr"><img src="work/fb05.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb08.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb11.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb14.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb03.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb16.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb05.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb08.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb11.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb14.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb03.webp" width="150" height="112" alt="" loading="eager" decoding="async"><img src="work/fb16.webp" width="150" height="112" alt="" loading="eager" decoding="async"></div></div>
 <div class="eyebrow">Sticker &amp; Label Printing</div>
 <h1><span class="nw">สติ๊กเกอร์และฉลากสินค้า</span><br><span class="nw">ที่ทำให้แบรนด์<em>ดูดีขึ้น</em></span></h1>
 <p class="lead">ไดคัทตามรูป ฉลากสินค้า โฮโลแกรม และงานพิมพ์ UV ร้านจัดแบบให้ตรวจก่อนพิมพ์ทุกงาน สั่งง่ายผ่าน LINE ส่งทั่วประเทศ</p>
@@ -515,6 +508,5 @@ const LINE_ID = '@bk25';
   });
 </script>
 <script>(function(){var b=document.getElementById('burger'),m=document.getElementById('mmenu');if(!b||!m)return;function c(){m.classList.remove('open');b.setAttribute('aria-expanded','false')}b.addEventListener('click',function(){var o=m.classList.toggle('open');b.setAttribute('aria-expanded',o)});m.addEventListener('click',function(e){if(e.target.tagName==='A')c()});})();</script>
-<script>(function(){var r=document.getElementById("hsRail");if(!r)return;var n=document.getElementById("hsN"),i=document.getElementById("hsI"),c=r.children.length;var t=0,hold=0,rm=matchMedia("(prefers-reduced-motion:reduce)").matches;function go(){if(Date.now()<hold)return;var w=r.children[1].offsetLeft-r.children[0].offsetLeft;if(r.scrollLeft+r.clientWidth>=r.scrollWidth-4)r.scrollTo({left:0,behavior:"smooth"});else r.scrollBy({left:w,behavior:"smooth"})}function pause(){hold=Date.now()+6000}["touchstart","pointerdown","wheel"].forEach(function(e){r.addEventListener(e,pause,{passive:true})});if(!rm)setInterval(go,3200);r.addEventListener("scroll",function(){var p=r.scrollLeft/(r.scrollWidth-r.clientWidth||1),k=Math.min(c,Math.round(p*(c-1))+1);n.textContent=("0"+k).slice(-2)+" / "+("0"+c).slice(-2);i.style.left=(p*(100-100/c))+"%"},{passive:true})})();</script>
 </body>
 </html>
