@@ -93,6 +93,8 @@ progress{width:100%;height:10px;margin-top:8px}
   <h2>3. ขยายภาพ</h2>
   <p class="s">ขยายแบบคมชัด ไม่เบลอ ไม่เพี้ยนสัดส่วน และยังคงขอบโปร่งใสไว้</p>
   <div class="seg" id="scaleSeg"><button data-k="1" class="on" type="button">เท่าเดิม</button><button data-k="2" type="button">2×</button><button data-k="3" type="button">3×</button><button data-k="4" type="button">4×</button></div>
+  <label class="note" style="display:block;margin-top:4px">พื้นหลังของภาพผลลัพธ์</label>
+  <div class="seg" id="bgSeg"><button data-b="t" class="on" type="button">โปร่งใส</button><button data-b="w" type="button">พื้นขาว</button></div>
   <label class="r"><input type="checkbox" id="sharp" checked> เพิ่มความคมเล็กน้อยหลังขยาย</label>
   <div class="kv" id="info3"></div>
   <button class="btn p" id="go" type="button" style="margin-top:12px">สร้างภาพผลลัพธ์</button>
@@ -105,7 +107,7 @@ progress{width:100%;height:10px;margin-top:8px}
   <div class="stage"><canvas id="out"></canvas></div>
   <div class="kv" id="info4"></div>
   <div class="row" style="margin-top:12px">
-    <button class="btn g" id="dlPng" type="button">ดาวน์โหลด PNG (พื้นโปร่งใส)</button>
+    <button class="btn g" id="dlPng" type="button">ดาวน์โหลด PNG</button>
     <button class="btn" id="dlJpg" type="button">ดาวน์โหลด JPG (พื้นขาว)</button>
   </div>
   <p class="note" style="margin:10px 0 0">ไฟล์ที่ได้ฝังค่า 300 DPI ไว้แล้ว เปิดในโปรแกรมออกแบบจะได้ขนาดจริงที่พิมพ์ได้ตามที่แสดงด้านบน</p>
@@ -118,7 +120,9 @@ progress{width:100%;height:10px;margin-top:8px}
   var $ = function (id) { return document.getElementById(id); };
   var src = null;      // {canvas, name}  ต้นฉบับ
   var cur = null;      // canvas หลังตัดพื้น (หรือเท่ากับต้นฉบับ)
-  var result = null, scale = 1;
+  var result = null, scale = 1, bgMode = 't';
+  function onWhite(c) { var t = mk(c.width, c.height), x = t.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, t.width, t.height); x.drawImage(c, 0, 0); return t; }
+  function paintOut() { if (!result) return; var o = $('out'), c = bgMode === 'w' ? onWhite(result) : result; o.width = c.width; o.height = c.height; var x = o.getContext('2d'); x.clearRect(0, 0, c.width, c.height); x.drawImage(c, 0, 0); }
   var MAX_SIDE = 10000, MAX_PIX = 60e6;
 
   function mk(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
@@ -365,12 +369,13 @@ progress{width:100%;height:10px;margin-top:8px}
     document.querySelectorAll('#scaleSeg button').forEach(function (x) { x.classList.toggle('on', x === b); }); upd3();
   });
 
+  $('bgSeg').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; bgMode = b.dataset.b; document.querySelectorAll('#bgSeg button').forEach(function (x) { x.classList.toggle('on', x === b); }); paintOut(); });
   $('go').onclick = async function () {
     if (!cur) return; var p = planned(), pr = $('prog3'); $('go').disabled = true; pr.hidden = false; pr.value = 0; msg('msg3', 'กำลังประมวลผล…');
     try {
       var c = p.k === 1 ? (function () { var t = mk(cur.width, cur.height); t.getContext('2d').drawImage(cur, 0, 0); return t; })() : await resize(cur, p.w, p.h, function (v) { pr.value = v; });
       if ($('sharp').checked && p.k > 1) sharpen(c, 0.35);
-      result = c; var o = $('out'); o.width = c.width; o.height = c.height; o.getContext('2d').clearRect(0, 0, c.width, c.height); o.getContext('2d').drawImage(c, 0, 0);
+      result = c; paintOut();
       $('info4').innerHTML = '<b>ขนาด</b><span>' + c.width + ' × ' + c.height + ' px</span><b>พิมพ์ได้คมที่</b><span>' + cmAt300(c.width) + ' × ' + cmAt300(c.height) + ' ซม. (300 DPI)</span>';
       $('sec4').hidden = false; msg('msg3', 'เสร็จแล้ว', 'ok'); $('sec4').scrollIntoView({behavior: 'smooth'});
     } catch (e) { msg('msg3', 'ทำไม่สำเร็จ: ' + e.message + ' (ลองลดตัวคูณขยาย)', 'bad'); }
@@ -388,7 +393,7 @@ progress{width:100%;height:10px;margin-top:8px}
   function jpgDpi(buf) { var u = new Uint8Array(buf); if (u[2] === 0xFF && u[3] === 0xE0 && u[6] === 0x4A) { u[13] = 1; u[14] = 0x01; u[15] = 0x2C; u[16] = 0x01; u[17] = 0x2C; } return u; }
   function save(blob, name) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 4000); }
   $('dlPng').onclick = function () {
-    if (!result) return; result.toBlob(async function (b) { var buf = await b.arrayBuffer(); save(new Blob([pngDpi(buf)], {type: 'image/png'}), (src.name || 'image') + '-' + result.width + 'px.png'); }, 'image/png');
+    if (!result) return; (bgMode === 'w' ? onWhite(result) : result).toBlob(async function (b) { var buf = await b.arrayBuffer(); save(new Blob([pngDpi(buf)], {type: 'image/png'}), (src.name || 'image') + '-' + result.width + 'px.png'); }, 'image/png');
   };
   $('dlJpg').onclick = function () {
     if (!result) return; var t = mk(result.width, result.height), x = t.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, t.width, t.height); x.drawImage(result, 0, 0);
