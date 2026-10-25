@@ -69,14 +69,23 @@ progress{width:100%;height:10px;margin-top:8px}
     <button class="btn" id="bgFlat" type="button">ตัดแบบพื้นเรียบ (ไวสุด)</button>
   </div>
   <div style="margin-top:12px" id="tolBox">
-    <label for="tol" class="note">ความไวของแบบพื้นเรียบ (ยิ่งมากยิ่งตัดพื้นออกเยอะ): <b id="tolV">40</b></label>
-    <input type="range" id="tol" min="8" max="120" value="40">
+    <label for="tol" class="note">ความไวของแบบพื้นเรียบ (ยิ่งมากยิ่งตัดพื้นออกเยอะ): <b id="tolV">16</b></label>
+    <input type="range" id="tol" min="6" max="120" value="16">
   </div>
   <label class="r"><input type="checkbox" id="trim" checked> ตัดขอบว่างรอบงานออกให้พอดี</label>
   <progress id="prog" max="100" value="0" hidden></progress>
   <p class="msg" id="msg2"></p>
   <div class="stage" id="stage2" style="margin-top:10px" hidden></div>
   <p class="note" id="cap2" style="margin:6px 0 0" hidden>ภาพที่ตัดพื้นหลังแล้ว (ลายหมากรุก = ส่วนโปร่งใส)</p>
+  <div id="refBox" hidden style="margin-top:12px;border-top:1px dashed var(--line);padding-top:12px">
+    <b style="font-size:15px">ปรับขอบให้เนียน</b>
+    <label for="chk" class="note" style="display:block;margin-top:6px">กินขอบเข้า (ลบคราบพื้นเดิมรอบงาน): <b id="chkV">1</b> px</label>
+    <input type="range" id="chk" min="0" max="6" value="1">
+    <label for="fth" class="note" style="display:block;margin-top:6px">ความนุ่มของขอบ: <b id="fthV">1</b> px</label>
+    <input type="range" id="fth" min="0" max="4" value="1">
+    <label class="r"><input type="checkbox" id="dfr" checked> ล้างสีเปื้อนที่ขอบ (ลดขอบขาว/เรืองแสง)</label>
+  </div>
+
   <button class="btn" id="bgUndo" type="button" hidden style="margin-top:8px">ยกเลิก ใช้รูปต้นฉบับ</button>
 </section>
 
@@ -137,7 +146,7 @@ progress{width:100%;height:10px;margin-top:8px}
       if (w * h > MAX_PIX) throw new Error('รูปใหญ่เกินไป (' + w + ' × ' + h + ' px เกิน 60 ล้านพิกเซล) ลองย่อรูปก่อน');
       var c = mk(w, h); im.draw(c);
       src = {canvas: c, name: (f.name || 'image').replace(/\.[^.]+$/, '')};
-      showCur(c, 'ต้นฉบับ'); $('bgUndo').hidden = true;
+      rawCut = null; $('refBox').hidden = true; showCur(c, 'ต้นฉบับ'); $('bgUndo').hidden = true;
       ['sec2', 'sec3'].forEach(function (i) { $(i).hidden = false; }); $('sec4').hidden = true;
       msg('msg2', ''); msg('msg3', ''); msg('msg1', 'เปิดรูปแล้ว: ' + (f.name || '') + ' (' + w + ' × ' + h + ' px)', 'ok');
     } catch (e) {
@@ -200,12 +209,62 @@ progress{width:100%;height:10px;margin-top:8px}
     $('bgUndo').hidden = false; upd3();
   }
 
+
+  // ---------- ปรับขอบให้เนียน ----------
+  var rawCut = null, rawNote = '', refTimer = 0;
+  function boxMin(a, w, h, r) { // erode alpha (min filter สี่เหลี่ยม แยกแกน)
+    var t = new Float32Array(a.length), o = new Float32Array(a.length), x, y, k, m, i;
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) { m = 1; for (k = -r; k <= r; k++) { var xx = x + k; if (xx < 0 || xx >= w) { m = 0; break; } var v = a[y * w + xx]; if (v < m) m = v; } t[y * w + x] = m; }
+    for (x = 0; x < w; x++) for (y = 0; y < h; y++) { m = 1; for (k = -r; k <= r; k++) { var yy = y + k; if (yy < 0 || yy >= h) { m = 0; break; } var v2 = t[yy * w + x]; if (v2 < m) m = v2; } o[y * w + x] = m; }
+    return o;
+  }
+  function boxBlur(a, w, h, r) {
+    if (r < 1) return a; var t = new Float32Array(a.length), o = new Float32Array(a.length), n = 2 * r + 1, x, y, k, sum;
+    for (y = 0; y < h; y++) { sum = 0; for (k = -r; k <= r; k++) sum += a[y * w + Math.min(w - 1, Math.max(0, k))]; for (x = 0; x < w; x++) { t[y * w + x] = sum / n; sum += a[y * w + Math.min(w - 1, x + r + 1)] - a[y * w + Math.max(0, x - r)]; } }
+    for (x = 0; x < w; x++) { sum = 0; for (k = -r; k <= r; k++) sum += t[Math.min(h - 1, Math.max(0, k)) * w + x]; for (y = 0; y < h; y++) { o[y * w + x] = sum / n; sum += t[Math.min(h - 1, y + r + 1) * w + x] - t[Math.max(0, y - r) * w + x]; } }
+    return o;
+  }
+  function refine(canvas, choke, feather, defringe) {
+    var w = canvas.width, h = canvas.height, cx = canvas.getContext('2d'), img = cx.getImageData(0, 0, w, h), d = img.data, n = w * h, i;
+    var a = new Float32Array(n); for (i = 0; i < n; i++) { var v = d[i * 4 + 3] / 255; a[i] = Math.min(1, Math.max(0, (v - 0.1) / 0.8)); } // ตัดฝ้าโปร่งจางๆ
+    var hard = a;
+    if (choke > 0) hard = boxMin(a, w, h, choke);
+    var soft = feather > 0 ? boxBlur(boxBlur(hard, w, h, feather), w, h, Math.max(1, Math.round(feather / 2))) : hard;
+    if (defringe) { // ดึงสีจากพิกเซลทึบข้างใน มาแทนสีที่ขอบ
+      var known = new Uint8Array(n), col = new Float32Array(n * 3), p, k;
+      for (i = 0; i < n; i++) if (hard[i] > 0.98) { known[i] = 1; col[i * 3] = d[i * 4]; col[i * 3 + 1] = d[i * 4 + 1]; col[i * 3 + 2] = d[i * 4 + 2]; }
+      for (var pass = 0; pass < Math.max(2, choke + feather + 2); pass++) {
+        var add = [];
+        for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
+          p = y * w + x; if (known[p] || soft[p] <= 0.001) continue;
+          var sr = 0, sg = 0, sb = 0, c = 0;
+          for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) { var xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue; k = yy * w + xx; if (known[k]) { sr += col[k * 3]; sg += col[k * 3 + 1]; sb += col[k * 3 + 2]; c++; } }
+          if (c) add.push(p, sr / c, sg / c, sb / c);
+        }
+        for (var q = 0; q < add.length; q += 4) { p = add[q]; known[p] = 1; col[p * 3] = add[q + 1]; col[p * 3 + 1] = add[q + 2]; col[p * 3 + 2] = add[q + 3]; }
+        if (!add.length) break;
+      }
+      for (i = 0; i < n; i++) if (soft[i] < 0.999 && known[i]) { d[i * 4] = col[i * 3]; d[i * 4 + 1] = col[i * 3 + 1]; d[i * 4 + 2] = col[i * 3 + 2]; }
+    }
+    for (i = 0; i < n; i++) d[i * 4 + 3] = Math.round(soft[i] * 255);
+    var out = mk(w, h); out.getContext('2d').putImageData(img, 0, 0); return out;
+  }
+  function applyRefine(note) {
+    if (!rawCut) return;
+    var c = refine(rawCut, +$('chk').value, +$('fth').value, $('dfr').checked);
+    if ($('trim').checked) c = trimCanvas(c);
+    showCur(c, note || rawNote);
+  }
+  ['chk', 'fth'].forEach(function (id) { $(id).oninput = function () { $(id + 'V').textContent = $(id).value; clearTimeout(refTimer); refTimer = setTimeout(applyRefine, 180); }; });
+  $('dfr').onchange = function () { applyRefine(); };
+  $('trim').onchange = function () { if (rawCut) applyRefine(); };
+
   $('bgFlat').onclick = async function () {
     if (!src) return; msg('msg2', 'กำลังตัดพื้นหลัง…'); await tick();
-    try { var c = removeFlat(src.canvas, +$('tol').value); if ($('trim').checked) c = trimCanvas(c); showCur(c, 'ตัดพื้นแล้ว'); msg('msg2', 'เสร็จแล้ว ถ้ายังเหลือพื้นให้เพิ่มความไว ถ้างานโดนกินให้ลดความไว', 'ok'); }
+    try { rawCut = removeFlat(src.canvas, +$('tol').value); rawNote = 'ตัดพื้นแล้ว'; $('refBox').hidden = false; applyRefine(); msg('msg2', 'เสร็จแล้ว ถ้ายังเหลือพื้นให้เพิ่มความไว ถ้างานโดนกินให้ลดความไว', 'ok'); }
     catch (e) { msg('msg2', 'ตัดไม่สำเร็จ: ' + e.message, 'bad'); }
   };
-  $('bgUndo').onclick = function () { if (!src) return; showCur(src.canvas, 'ต้นฉบับ'); $('bgUndo').hidden = true; msg('msg2', ''); };
+  $('bgUndo').onclick = function () { if (!src) return; rawCut = null; $('refBox').hidden = true; showCur(src.canvas, 'ต้นฉบับ'); $('bgUndo').hidden = true; msg('msg2', ''); };
 
   // ---------- ตัดพื้นหลังด้วย AI (โหลดโมเดลจาก CDN ครั้งแรก) ----------
   var aiMod = null;
@@ -227,8 +286,7 @@ progress{width:100%;height:10px;margin-top:8px}
         progress: function (key, cur2, total) { if (total) { p.max = total; p.value = cur2; } msg('msg2', 'กำลังประมวลผล… ' + (key || '')); }
       });
       var im = await createImageBitmap(out); var c = mk(im.width, im.height); c.getContext('2d').drawImage(im, 0, 0);
-      if ($('trim').checked) c = trimCanvas(c);
-      showCur(c, 'ตัดพื้นด้วย AI'); msg('msg2', 'เสร็จแล้ว', 'ok');
+      rawCut = c; rawNote = 'ตัดพื้นด้วย AI'; $('refBox').hidden = false; applyRefine(); msg('msg2', 'เสร็จแล้ว', 'ok');
     } catch (e) {
       msg('msg2', 'ใช้ AI ไม่ได้ในตอนนี้ (' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ') + ') ลองกด "ตัดแบบพื้นเรียบ" แทน', 'bad');
     } finally { p.hidden = true; }
