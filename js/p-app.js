@@ -904,15 +904,44 @@ function bahtText(value) {
       : diff < 0 ? 'สูงกว่าราคาระบบ <b>' + baht(-diff) + '</b> บาท'
       : 'เท่ากับราคาระบบ');
   }
+  // หน่วยของขนาดสติ๊กเกอร์ (ภายในคำนวณเป็น ซม. เสมอ)
+  const SUNITS = {mm: {f: 0.1, t: 'มม.'}, cm: {f: 1, t: 'ซม.'}, in: {f: 2.54, t: 'นิ้ว'}, ft: {f: 30.48, t: 'ฟุต'}, yd: {f: 91.44, t: 'หลา'}};
+  let sUnit = 'cm';
+  try { const u = localStorage.getItem('bs_sunit'); if (SUNITS[u]) sUnit = u; } catch (e) {}
+  function setSUnit(u, convert) {
+    if (!SUNITS[u]) return;
+    const old = SUNITS[sUnit].f, nf = SUNITS[u].f;
+    if (convert) ['sw', 'sh'].forEach(id => {
+      const el = $(id), v = parseFloat(el.value);
+      if (isFinite(v)) { const cm = el._cm != null ? el._cm : v * old; el._cm = cm; el.value = String(Math.round(cm / nf * 1000000) / 1000000); }
+    });
+    sUnit = u;
+    try { localStorage.setItem('bs_sunit', u); } catch (e) {}
+    document.querySelectorAll('#sunit button').forEach(b => b.classList.toggle('on', b.dataset.u === u));
+    document.querySelectorAll('.su').forEach(e => { e.textContent = SUNITS[u].t; });
+    const step = u === 'mm' ? '1' : 'any'; $('sw').step = step; $('sh').step = step;
+  }
+  function updUnitHint() {
+    const h = $('sunitHint'); if (!h) return;
+    if (sUnit === 'cm') { h.hidden = true; return; }
+    const f = SUNITS[sUnit].f, w = $('sw')._cm != null ? $('sw')._cm : num($('sw').value) * f, hh = $('sh')._cm != null ? $('sh')._cm : num($('sh').value) * f;
+    h.textContent = '= ' + fmt(Math.round(w * 100) / 100) + ' × ' + fmt(Math.round(hh * 100) / 100) + ' ซม. (ใช้ค่านี้คำนวณ)';
+    h.hidden = false;
+  }
+  document.querySelectorAll('#sunit button').forEach(b => b.addEventListener('click', () => { setSUnit(b.dataset.u, true); renderCalc(); }));
+  ['sw', 'sh'].forEach(id => $(id).addEventListener('input', () => { $(id)._cm = null; }));
+  setSUnit(sUnit, false);
+
   let lastLayout = null;
 
   function readLayout() {
-    return computeLayout(num($('sw').value), num($('sh').value), Math.max(0, num($('gap').value)),
+    const uf = SUNITS[sUnit].f;
+    return computeLayout(($('sw')._cm != null ? $('sw')._cm : num($('sw').value) * uf), ($('sh')._cm != null ? $('sh')._cm : num($('sh').value) * uf), Math.max(0, num($('gap').value)),
       Math.max(0, num($('margin').value)), num($('pw').value), num($('ph').value));
   }
 
   function renderCalc() {
-    const r = readLayout(); lastLayout = r;
+    const r = readLayout(); lastLayout = r; updUnitHint();
     $('count').textContent = r.count.toLocaleString('en-US');
     $('cols').textContent = r.cols; $('rows').textContent = r.rows;
     $('used').textContent = r.count ? fmt(r.usedW) + ' × ' + fmt(r.usedH) + ' ซม.' : '—';
