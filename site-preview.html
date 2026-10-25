@@ -43,7 +43,7 @@ h1,h2,h3,h4{font-family:var(--display);font-weight:600;margin:0;letter-spacing:-
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:0 24px;border-radius:8px;border:1px solid transparent;font:600 15.5px/1 var(--display);text-decoration:none;cursor:pointer;transition:background-color .2s,border-color .2s,color .2s;white-space:nowrap}
 .btn svg{width:19px;height:19px;flex:none}
 .btn.gold{background:var(--gold);color:var(--ink)}
-.btn.gold:hover{background:#ffd54d}
+.btn.gold:hover{background:var(--gold)}
 .btn.dark{background:var(--ink);color:#fff}
 .btn.dark:hover{background:var(--navy)}
 .btn.line{background:var(--green);color:#fff}
@@ -248,7 +248,7 @@ body{padding-bottom:84px}
 /* ===== มือถือ: ฮีโร่ใหม่ เห็นผลงานเด่นชัด ===== */
 .hero-show{display:none}
 @media (max-width:860px){
-.hero{background:radial-gradient(120% 60% at 50% 0%,#1d3354 0%,var(--ink) 70%)}
+.hero{background:radial-gradient(120% 60% at 50% 0%,var(--ink-2) 0%,var(--ink) 70%)}
 .hero-bg{display:none}
 .hero .wrap{padding-top:22px;padding-bottom:36px}
 .hero-show{display:block;overflow:hidden;margin:0 -20px 26px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
@@ -268,6 +268,11 @@ body{padding-bottom:84px}
 }
 @media (prefers-reduced-motion:reduce){.hero-show .tr{animation:none}}
 .preview-tag{position:fixed;left:12px;top:78px;z-index:60;background:#ffefc2;color:#6b4e00;border:1px solid #f0cf6b;border-radius:10px;padding:4px 10px;font-size:12px;pointer-events:none}
+.thm{position:fixed;left:8px;right:8px;bottom:96px;z-index:70;display:flex;gap:6px;overflow-x:auto;padding:6px;background:rgba(255,255,255,.96);border:1px solid #ddd;border-radius:14px;box-shadow:0 8px 24px -8px rgba(0,0,0,.4);scrollbar-width:none}
+.thm button{flex:none;display:flex;align-items:center;gap:7px;border:2px solid transparent;background:#f3f3f3;border-radius:10px;padding:7px 11px;font:600 13px/1 var(--display);color:#222;cursor:pointer}
+.thm button[aria-pressed=true]{border-color:#222;background:#fff}
+.thm i{display:inline-flex;width:30px;height:16px;border-radius:5px;overflow:hidden}.thm i b{flex:1}
+@media (min-width:861px){.thm{left:auto;right:16px;bottom:16px;max-width:90vw}}
 </style>
 </head>
 <body>
@@ -508,5 +513,16 @@ const LINE_ID = '@bk25';
   });
 </script>
 <script>(function(){var b=document.getElementById('burger'),m=document.getElementById('mmenu');if(!b||!m)return;function c(){m.classList.remove('open');b.setAttribute('aria-expanded','false')}b.addEventListener('click',function(){var o=m.classList.toggle('open');b.setAttribute('aria-expanded',o)});m.addEventListener('click',function(e){if(e.target.tagName==='A')c()});})();</script>
+<div class="thm" id="thm"></div>
+<script>(function(){var T=[
+["1 กรมท่า-ทอง (เดิม)",{ink:"#0d1624",ink2:"#152238",navy:"#10305c",gold:"#f2c230",bone:"#f6f4ef"}],
+["2 ดำ-ส้ม",{ink:"#121212",ink2:"#1e1e1e",navy:"#2a2a2a",gold:"#ff6a13",bone:"#f7f4f0"}],
+["3 เขียวป่า-เขียวมะนาว",{ink:"#0b1f17",ink2:"#12301f",navy:"#14452c",gold:"#b9e82e",bone:"#f2f6ee"}],
+["4 ม่วง-ชมพู",{ink:"#1a1030",ink2:"#251847",navy:"#3a2478",gold:"#ff5aa5",bone:"#f8f3fa"}],
+["5 น้ำเงินสด-เหลืองมะนาว",{ink:"#071a3d",ink2:"#0c2a66",navy:"#1246b8",gold:"#ffe14d",bone:"#f1f5fc"}]];
+var box=document.getElementById("thm"),r=document.documentElement.style;
+function ap(i){var c=T[i][1];r.setProperty("--ink",c.ink);r.setProperty("--ink-2",c.ink2);r.setProperty("--navy",c.navy);r.setProperty("--gold",c.gold);r.setProperty("--bone",c.bone);[].forEach.call(box.children,function(b,k){b.setAttribute("aria-pressed",k==i)});try{history.replaceState(null,"","#t"+(i+1))}catch(e){}}
+T.forEach(function(t,i){var b=document.createElement("button");b.innerHTML="<i><b style='background:"+t[1].ink+"'></b><b style='background:"+t[1].navy+"'></b><b style='background:"+t[1].gold+"'></b></i>"+t[0];b.onclick=function(){ap(i)};box.appendChild(b)});
+var m=/^#t([1-5])$/.exec(location.hash);ap(m?m[1]-1:0)})();</script>
 </body>
 </html>
