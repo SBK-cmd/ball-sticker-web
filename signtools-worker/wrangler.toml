@@ -1,0 +1,13 @@
+name = "signtools"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+workers_dev = true
+
+[vars]
+# sha256 ของ SETUP_CODE (ใช้ตั้งรหัสผ่านแอดมินครั้งแรกเท่านั้น) — ตัวรหัสจริงไม่ได้อยู่ในไฟล์นี้
+SETUP_HASH = "1fc594472299c84ca592c94c17089f9d2ce80400e0ec3defaa7d7ae131fd046f"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "signtools"
+database_id = "2476a353-4d62-48f8-91a9-702697680410"
