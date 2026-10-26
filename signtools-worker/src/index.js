@@ -2,7 +2,7 @@
 // Same protocol as the PHP version, so the Illustrator panel is unchanged.
 import { unzipSync } from 'fflate';
 
-const TOKEN_DAYS = 14;
+const TOKEN_DAYS = 3;
 const enc = new TextEncoder(), dec = new TextDecoder();
 
 // ---------- helpers ----------
