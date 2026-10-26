@@ -1,6 +1,6 @@
 // Service Worker สำหรับ Ball Sticker — ทำให้ "เพิ่มลงหน้าจอโฮม" แล้วเปิดได้เหมือนแอป
 // และเปิดได้แม้เน็ตหลุดชั่วคราว (ใช้เวอร์ชันที่เคยโหลดไว้ค้างไว้ในเครื่อง)
-const CACHE_NAME = 'ball-sticker-v4';
+const CACHE_NAME = 'ball-sticker-v5';
 const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './logo.jpg', './logo-160.webp'];
 // หน้าแอปเปิดจากแคชทันที (เร็ว) แล้วค่อยเช็กเวอร์ชันใหม่เบื้องหลัง ถ้ามีของใหม่จะขึ้นปุ่มให้แตะโหลด
 const FAST_PAGES = /(^\/$|\/index\.html$|\/ball-sticker\.html$|\/preview\.html$)/;
@@ -26,15 +26,16 @@ self.addEventListener('fetch', event => {
   const isHTML = event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html');
   if (isHTML) {
     const url = new URL(event.request.url);
+    const key = url.origin + url.pathname; // เก็บ/อ่านหน้าแอปด้วย URL ไม่มี ?query กันแคชซ้ำหลายชุด
     if (FAST_PAGES.test(url.pathname)) {
       // เปิดจากแคชทันที + โหลดเวอร์ชันล่าสุดเบื้องหลัง ถ้าเปลี่ยนจะบอกหน้าเว็บให้ขึ้นปุ่ม "โหลดเวอร์ชันใหม่"
       event.respondWith(caches.open(CACHE_NAME).then(async cache => {
-        const cached = await cache.match(event.request, {ignoreSearch: true});
+        const cached = await cache.match(key);
         const net = fetch(event.request, {cache: 'no-cache'}).then(async res => {
           if (res && res.ok) {
             const tag = r => r && (r.headers.get('etag') || r.headers.get('last-modified') || '');
             const changed = cached && tag(cached) && tag(res) && tag(cached) !== tag(res);
-            await cache.put(event.request, res.clone());
+            await cache.put(key, res.clone());
             if (changed) self.clients.matchAll({type: 'window'}).then(list => list.forEach(c => c.postMessage({bsUpdated: true})));
           }
           return res;
