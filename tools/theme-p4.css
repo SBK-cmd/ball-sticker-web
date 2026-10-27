@@ -1,85 +1,93 @@
-/* ===== แบบ 4: แอปนุ่ม การ์ดโค้งมนลอยบนพื้นมุก (อ้างอิงหน้าตาแอปมือถือสมัยใหม่) =====
-   พื้นหลังไล่สีมุกขาวอมเทา การ์ดขาวโค้ง 28px เงานุ่มสองชั้น ปุ่มทรงแคปซูล
-   ป้ายกำกับขอบสี ตัวเลขใหญ่หนา เมนูล่างวงกลมไอคอน สีเน้นเหลืองร้าน + หมึกดำ */
+/* ===== แบบ 4 (คลีน): พื้นเรียบ การ์ดขาวขอบบาง แบ่งส่วนชัด =====
+   ไม่มีไล่สี/แสงฟุ้ง เงาแทบไม่มี ใช้เส้นและช่องไฟแบ่งสัดส่วน
+   ลำดับตัวอักษรชัด: หัวหน้า 28 · หัวการ์ด 17 · ป้ายช่อง 13 · เนื้อหา 16
+   สีเน้นเหลืองร้านใช้เฉพาะสิ่งที่ "เลือกอยู่" และปุ่มสำคัญ */
 :root[data-theme]{
-  --bg:#eeeeef; --surface:#ffffff; --ink:#15171a; --muted:#6c727c; --line:#ececee;
-  --field:#f5f5f6; --field-line:#ececee;
-  --accent:#ffc300; --accent-ink:#15171a; --magenta:#d9261c; --hero-bg:#15171a;
-  --sticker:#ffc300; --sticker-line:#15171a; --mat:#f5f5f6; --mat-line:#ececee;
-  --blue-bg:#fff4cc; --blue-ink:#7a5a00; --warn-bg:#fdecea; --warn-ink:#b3261e;
-  --shadow-1:0 1px 2px rgba(20,22,26,.05),0 6px 16px -8px rgba(20,22,26,.12);
-  --shadow-2:0 2px 4px rgba(20,22,26,.04),0 22px 40px -22px rgba(20,22,26,.28);
+  --bg:#f2f2f0; --surface:#ffffff; --ink:#16181b; --muted:#666c75; --line:#e3e3df;
+  --field:#f6f6f4; --field-line:#dcdcd7;
+  --accent:#ffc300; --accent-ink:#16181b; --magenta:#d9261c; --hero-bg:#16181b;
+  --sticker:#ffc300; --sticker-line:#16181b; --mat:#f6f6f4; --mat-line:#e3e3df;
+  --blue-bg:#fff4cc; --blue-ink:#6b4f00; --warn-bg:#fdecea; --warn-ink:#b3261e;
+  --shadow-1:none; --shadow-2:0 1px 2px rgba(20,22,26,.05);
 }
-html{background:#eeeeef}
-body{background:radial-gradient(120% 60% at 0% 0%,#fff 0,rgba(255,255,255,0) 60%),radial-gradient(90% 50% at 100% 12%,#fff6d6 0,rgba(255,246,214,0) 70%),linear-gradient(180deg,#f4f4f5 0,#e9e9eb 100%);background-attachment:fixed;color:var(--ink)}
-:focus-visible{outline:3px solid #15171a;outline-offset:2px}
+html,body{background:#f2f2f0}
+body{color:var(--ink);font-size:16px;line-height:1.6}
+:focus-visible{outline:3px solid #16181b;outline-offset:2px}
 
-/* หัวหน้า */
-.page-head{padding:22px 0 14px}
-.page-head h1{font-weight:800;letter-spacing:-.01em}
-.page-head p{color:var(--muted)}
+/* หัวหน้า: ชัด แยกจากเนื้อหาด้วยช่องไฟ */
+.page-head{padding:26px 0 18px}
+.page-head h1{font-weight:800;font-size:clamp(26px,4vw,32px);letter-spacing:-.01em;line-height:1.25}
+.page-head p{color:var(--muted);font-size:15px;margin-top:6px;max-width:62ch}
 
-/* การ์ด */
-.card,.dash-stat-card{background:linear-gradient(180deg,#fff 0,#fbfbfb 100%);border:1px solid rgba(255,255,255,.9);border-radius:28px;box-shadow:var(--shadow-2);padding:22px}
-.card h2{font-weight:800;font-size:18px;border-bottom:0;padding-bottom:0;margin-bottom:14px}
-.card h2::before{content:"";flex:none;width:14px;height:4px;border-radius:2px;background:var(--accent);margin-right:2px}
-fieldset+fieldset{border-top:1px solid var(--line)}
-legend{font-weight:700}
-.f>span{font-weight:600;color:var(--muted)}
-.in,select,.txt,textarea{background:var(--field);border:1.5px solid transparent;border-radius:18px;box-shadow:inset 0 1px 2px rgba(20,22,26,.05)}
-.in:focus-within,select:focus-visible,.txt:focus-visible,textarea:focus-visible{background:#fff;border-color:var(--ink);box-shadow:0 0 0 4px rgba(255,195,0,.35)}
+/* การ์ด: ขาว ขอบบาง หัวการ์ดมีเส้นคั่นชัด */
+.card,.dash-stat-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow-2);padding:22px}
+.card h2{font-weight:800;font-size:17px;margin:0 0 16px;padding:0;border-bottom:0;display:flex;align-items:center;gap:10px}
+.card h2::before{content:"";flex:none;width:4px;height:18px;border-radius:2px;background:var(--accent);margin:0}
+.card+.card,.card+section,.panel>.card+.card{margin-top:16px}
+fieldset{border:0;padding:0;margin:0}
+fieldset+fieldset{border-top:1px solid var(--line);margin-top:18px;padding-top:18px}
+legend{font-weight:700;font-size:14.5px;color:var(--ink);margin-bottom:12px}
+.f>span{font-weight:600;font-size:13px;color:var(--muted);margin-bottom:6px}
+.fields{gap:16px}.row2{gap:14px}
 
-/* ปุ่มแคปซูล: หลักเป็นหมึกดำ รองเป็นขอบ มีปุ่มเน้นสีเหลือง */
-.btn{border-radius:999px;font-weight:700;background:#fff;border:1.5px solid #e1e1e4;color:var(--ink);box-shadow:0 1px 0 rgba(255,255,255,.8) inset}
+/* ช่องกรอก: เรียบ ขอบชัด */
+.in,select,.txt,textarea{background:#fff;border:1.5px solid var(--field-line);border-radius:12px;box-shadow:none}
+.in:focus-within,select:focus-visible,.txt:focus-visible,textarea:focus-visible{border-color:var(--ink);box-shadow:0 0 0 3px rgba(255,195,0,.45)}
+
+/* ปุ่ม: เรียบ ไม่ไล่สี */
+.btn{border-radius:999px;font-weight:700;background:#fff;border:1.5px solid var(--field-line);color:var(--ink);box-shadow:none}
 .btn:hover{transform:none;background:var(--field)}
-.btn.primary{background:linear-gradient(180deg,#2a2d31 0,#111315 100%);border-color:#111315;color:#fff;box-shadow:0 10px 18px -10px rgba(17,19,21,.7)}
-.btn.primary:hover{filter:brightness(1.15);background:linear-gradient(180deg,#2a2d31 0,#111315 100%)}
-.btn.accent,.btn.warn,.btn.danger{background:linear-gradient(180deg,#ffd43b 0,#ffc300 100%);border-color:#e8b100;color:#15171a;box-shadow:0 10px 18px -10px rgba(232,177,0,.9)}
-.unit-seg{background:var(--field);border-radius:999px;padding:4px;box-shadow:inset 0 1px 3px rgba(20,22,26,.08)}
-.unit-seg button{border:0;border-radius:999px;background:transparent;font-weight:700;color:var(--muted)}
-.unit-seg button.on{background:linear-gradient(180deg,#ffd43b 0,#ffc300 100%);color:#15171a;box-shadow:0 6px 12px -6px rgba(232,177,0,.9)}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.primary:hover{background:#2c3035}
+.btn.accent,.btn.warn{background:var(--accent);border-color:var(--accent);color:var(--ink)}
+.unit-seg{background:var(--field);border:1px solid var(--line);border-radius:999px;padding:3px;box-shadow:none}
+.unit-seg button{border:0;border-radius:999px;background:transparent;font-weight:600;color:var(--muted)}
+.unit-seg button.on{background:var(--accent);color:var(--ink);font-weight:800;box-shadow:none}
 
-/* ป้ายกำกับขอบสี และชิป */
-.badge,.chip,.tag,.pill{border-radius:999px;border:1.5px solid #f2c94c;background:#fffaf0;color:#7a5a00;font-weight:700;letter-spacing:.04em}
+/* ป้ายกำกับ */
+.badge,.chip,.tag,.pill{border-radius:999px;border:1.5px solid var(--line);background:#fff;color:var(--ink);font-weight:700}
 
-/* ผลลัพธ์: การ์ดมืดตัดกับพื้นมุก ตัวเลขใหญ่หนา */
-.result{background:linear-gradient(160deg,#25282c 0,#111315 100%);color:#fff;border-radius:28px;box-shadow:var(--shadow-2);padding:26px}
+/* ผลลัพธ์/ตัวเลขสำคัญ: บล็อกดำทึบ แยกชัดจากช่องกรอก */
+.result{background:var(--ink);background-image:none;color:#fff;border-radius:18px;box-shadow:none;padding:24px}
 .result .r-label{opacity:.7}
-.r-num #count{color:#ffc300;font-weight:800;letter-spacing:-.02em}
+.r-num #count{color:var(--accent);font-weight:800;letter-spacing:-.02em}
 .r-num span:last-child{opacity:.75;font-weight:500}
-.r-meta{border-top:1px solid rgba(255,255,255,.14)}
-.result .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.35);box-shadow:none}
-.result .btn.primary{background:#ffc300;color:#15171a;border-color:#ffc300;box-shadow:none}
-.dash-stat-card.hero{background:linear-gradient(160deg,#25282c 0,#111315 100%);color:#fff}
-.ps,.price-out{border-radius:22px;border-color:var(--line);background:#fafafa}
+.r-meta{border-top:1px solid rgba(255,255,255,.16)}
+.result .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.35)}
+.result .btn.primary{background:var(--accent);color:var(--ink);border-color:var(--accent)}
+.dash-stat-card.hero{background:var(--ink);background-image:none;color:#fff;border-color:var(--ink)}
+.ps,.price-out{border-radius:14px;border:1px solid var(--line);background:var(--field)}
 
-/* เมนูข้าง (เดสก์ท็อป) */
+/* เมนูข้าง (เดสก์ท็อป): ขาวทึบ ขีดคั่นขวา */
 @media (min-width:561px){
   .wrap{padding-left:268px}
-  header.top{width:244px;background:rgba(255,255,255,.7);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-right:1px solid rgba(255,255,255,.9);box-shadow:20px 0 40px -34px rgba(20,22,26,.4);padding:26px 14px 18px}
-  .sidebar-cta{background:linear-gradient(180deg,#ffd43b 0,#ffc300 100%);border:0;border-radius:999px;box-shadow:0 12px 20px -12px rgba(232,177,0,.95);font-weight:800}
-  header.top .tabs button,header.top .tabs a{border-radius:999px;color:var(--muted);font-weight:600;border:0}
-  header.top .tabs button:hover{background:#fff;color:var(--ink)}
-  header.top .tabs button[aria-selected="true"],header.top .tab-dropdown button[aria-selected="true"]{background:#fff;color:var(--ink);font-weight:800;box-shadow:var(--shadow-1);border:0}
-  header.top .tabs .tab-trigger{text-transform:none;letter-spacing:0;font-size:12.5px;color:#9a9fa8!important}
+  header.top{width:244px;background:#fff;border-right:1px solid var(--line);box-shadow:none;padding:24px 14px 18px}
+  .sidebar-cta{background:var(--accent);border:0;border-radius:999px;box-shadow:none;font-weight:800}
+  .sidebar-cta:hover{transform:none;filter:brightness(.96)}
+  header.top .tabs button,header.top .tabs a{border-radius:10px;color:var(--muted);font-weight:600;border:0;padding:10px 12px}
+  header.top .tabs button:hover{background:var(--field);color:var(--ink)}
+  header.top .tabs button[aria-selected="true"],header.top .tab-dropdown button[aria-selected="true"]{background:var(--accent);color:var(--ink);font-weight:800;box-shadow:none;border:0}
+  header.top .tabs .tab-trigger{text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:700;color:#9a9fa8!important;border-top:1px solid var(--line)!important;border-radius:0;margin-top:10px;padding:14px 12px 4px}
 }
 
-/* มือถือ: แถบหัวมุก เมนูล่างลอยโค้ง ไอคอนในวงกลม จุดแดง/เหลืองใต้เมนูที่เลือก */
+/* มือถือ */
 @media (max-width:560px){
-  .top{padding:16px 0 12px;border-bottom:0}
-  .card{border-radius:26px;padding:18px;box-shadow:var(--shadow-2)}
+  .top{padding:14px 0 10px;border-bottom:1px solid var(--line);margin-bottom:0}
+  .page-head{padding:18px 0 14px}
+  .page-head h1{font-size:26px}
+  .card{border-radius:16px;padding:16px;box-shadow:none}
+  .card h2{margin:0 0 14px;font-size:16.5px}
+  .btn,select,.txt,.in,textarea{border-radius:12px}
   .btn{border-radius:999px}
-  select,.txt,.in,textarea{border-radius:16px}
-  .bnav::after{background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:0;border-radius:28px 28px 0 0;box-shadow:0 -16px 40px -22px rgba(20,22,26,.45)}
-  .btab{color:#8b9099;font-weight:600}
-  .btab-ico{width:48px;height:48px;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff 0,#f1f1f2 100%);box-shadow:0 6px 14px -8px rgba(20,22,26,.35)}
-  .btab:active .btab-ico,.btab[aria-expanded="true"] .btab-ico{background:#f1f1f2}
-  .btab.active{color:var(--ink);font-weight:800;position:relative}
-  .btab.active .btab-ico{background:linear-gradient(180deg,#ffe27a 0,#ffc300 100%);color:#15171a;box-shadow:0 10px 18px -10px rgba(232,177,0,.95)}
-  .btab.active::after{content:"";width:5px;height:5px;border-radius:50%;background:#d9261c;margin-top:1px}
+  .bnav::after{background:#fff;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none}
+  .btab{color:#8a8f98;font-weight:600}
+  .btab-ico{width:44px;height:32px;border-radius:16px;background:transparent;box-shadow:none}
+  .btab:active .btab-ico{background:var(--field)}
+  .btab.active{color:var(--ink);font-weight:800}
+  .btab.active .btab-ico{background:var(--accent);color:var(--ink);box-shadow:none}
   .btab-fab::before{display:none}
-  .btab-fab-circle{background:linear-gradient(180deg,#2a2d31 0,#111315 100%);color:#ffc300;box-shadow:0 14px 22px -10px rgba(17,19,21,.8);margin:-22px 0 4px}
-  .btab-fab.active .btab-fab-circle{box-shadow:0 0 0 3px #ffc300,0 14px 22px -10px rgba(17,19,21,.8)}
-  .wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+  .btab-fab-circle{background:var(--ink);color:var(--accent);box-shadow:0 0 0 4px #fff;margin:-24px 0 4px}
+  .btab-fab.active .btab-fab-circle{box-shadow:0 0 0 4px #fff,0 0 0 7px var(--accent)}
+  .wrap{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 }
-.card+.card,.card+section,.panel>.card+.card{margin-top:16px}
+.bkc{background:var(--field)!important;background-image:none!important;border:1px solid var(--line)!important;box-shadow:none!important}
