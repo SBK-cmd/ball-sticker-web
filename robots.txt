@@ -6,6 +6,11 @@ Disallow: /preview.html
 Disallow: /site-preview.html
 Disallow: /designer-preview.html
 Disallow: /contact-preview.html
+Disallow: /products-preview.html
+Disallow: /work-preview.html
+Disallow: /order-preview.html
+Disallow: /about-preview.html
+Disallow: /contact-us-preview.html
 Disallow: /js/
 
 Sitemap: https://www.ballsticker.co.th/sitemap.xml
