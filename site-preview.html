@@ -25,161 +25,177 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <meta name="theme-color" content="#ffffff">
 <style>
-:root{--y:#ffc300;--y2:#f0b800;--ink:#111315;--text:#1b2433;--muted:#5f6878;--soft:#f6f6f2;--line:#e8e6df;--green:#06c755;--blue:#0866ff;--r:10px}
+:root{--y:#ffc300;--y2:#f0b800;--ink:#111315;--text:#1b2433;--muted:#5f6878;--soft:#f6f6f2;--line:#e8e6df;--green:#06c755;--blue:#0866ff;--r:14px}
 *{box-sizing:border-box}html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-body{margin:0;background:#fff;color:var(--text);font:400 16px/1.75 'Noto Sans Thai',system-ui,sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:84px}
-img{max-width:100%;display:block}a{color:inherit}h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.01em;line-height:1.3}
+body{margin:0;background:#fff;color:var(--text);font:400 16px/1.7 'Noto Sans Thai',system-ui,sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:78px}
+img{max-width:100%;display:block}a{color:inherit}h1,h2,h3,h4{margin:0;font-weight:700;line-height:1.3;letter-spacing:-.01em}p{margin:0}
 :focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:4px}
-.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
-.top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px}
-.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;font-size:17px}
-.brand img{width:38px;height:38px;border-radius:50%}
-.menu{display:none;gap:26px;font-size:15px}.menu a{text-decoration:none;color:var(--muted);font-weight:500}.menu a:hover{color:var(--ink)}
-.rt{display:flex;align-items:center;gap:10px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+.top{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
+.top .wrap{display:flex;align-items:center;gap:14px;min-height:62px;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;font-size:17px;white-space:nowrap}
+.brand img{width:40px;height:40px;border-radius:50%}
+.tag{padding:0 9px;border:1px solid #b9892b;color:#b9892b;border-radius:20px;font-size:12px;font-weight:600}
+.menu{display:none;gap:22px;font-size:14px;margin:0 auto}.menu a{text-decoration:none;color:var(--muted);font-weight:500;white-space:nowrap}.menu a:hover{color:var(--ink)}
+.rt{display:flex;align-items:center;gap:8px}
+.tel{display:none;text-decoration:none;text-align:right;line-height:1.2}.tel small{display:block;font-size:12px;color:var(--muted)}.tel b{font-size:17px}
+.soc{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;color:#fff;text-decoration:none}.soc svg{width:18px;height:18px}.soc.f{background:var(--blue)}.soc.l{background:var(--green)}
 .lang{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.lang button{min-height:36px;min-width:44px;padding:0 10px;border:0;background:#fff;font:600 13.5px 'Noto Sans Thai';cursor:pointer}
+.lang button{min-height:34px;min-width:42px;padding:0 9px;border:0;background:#fff;font:600 13px 'Noto Sans Thai';cursor:pointer}
 .lang button[aria-pressed=true]{background:var(--ink);color:#fff}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 26px;border-radius:8px;border:1px solid transparent;font:700 16.5px/1 'Noto Sans Thai';text-decoration:none;cursor:pointer}
-.btn.y{background:var(--y);color:var(--ink)}.btn.y:hover{background:var(--y2)}
-.btn.o{background:#fff;border-color:#cfcbc0;color:var(--text)}.btn.o:hover{border-color:var(--ink)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:0 24px;border-radius:999px;border:1px solid transparent;font:700 16px/1 'Noto Sans Thai';text-decoration:none;cursor:pointer}
 .btn svg{width:20px;height:20px}
-.hero{padding:40px 0 44px}
-.hero .wrap{display:grid;gap:28px}
-.hero h1{font-size:clamp(32px,7vw,54px);max-width:16ch}
-.hero p.sub{margin:14px 0 0;font-size:17px;color:var(--muted);max-width:46ch}
-.hero .ctas{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
-.hero .ctas .btn{flex:1 1 200px}
-.hero .nt{margin:12px 0 0;font-size:14.5px;color:var(--muted)}
-.shot{position:relative;border-radius:14px;overflow:hidden;background:var(--soft);border:1px solid var(--line);aspect-ratio:4/3}
-.shot img{width:100%;height:100%;object-fit:cover}
-.sec{padding:44px 0;border-top:1px solid var(--line)}
-.sec.soft{background:var(--soft)}
-.sh{margin-bottom:22px}.sh h2{font-size:clamp(24px,4.5vw,34px)}.sh p{margin:6px 0 0;color:var(--muted);max-width:56ch}
-.mats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.mat{display:grid;gap:4px;padding:18px 16px;background:#fff;border:1px solid var(--line);border-radius:var(--r);text-decoration:none;align-content:start}
-.mat:hover{border-color:var(--ink)}
-.mat b{font-size:16.5px;line-height:1.35}.mat span{font-size:14px;color:var(--muted);line-height:1.5}
-.mat em{font-style:normal;margin-top:8px;font-weight:700;font-size:14.5px;border-bottom:2px solid var(--y);justify-self:start}
-.sw{width:56px;height:56px;border-radius:50%;border:1px solid rgba(0,0,0,.14);margin-bottom:8px}
-.sw.pvc{background:radial-gradient(circle at 30% 25%,#fff 0,#f4f4f2 40%,#dcdcd6 100%)}
+.btn.dk{background:var(--ink);color:#fff}.btn.dk:hover{background:#2a2d31}
+.btn.lt{background:#fff;color:var(--ink)}.btn.lt:hover{background:#f4f4f0}
+.btn.fbb{background:var(--blue);color:#fff}
+.ctas{display:flex;gap:10px;flex-wrap:wrap}
+.hero{padding:18px 0 0}
+.panel{position:relative;background:var(--y);border-radius:22px;padding:28px 22px 74px;display:grid;gap:22px;overflow:hidden}
+.panel h1{font-size:clamp(30px,8vw,52px);line-height:1.2}.panel h1 .s{display:block;font-size:.62em;font-weight:600}.panel h1 .b{display:block;font-size:1.1em}
+.hb{list-style:none;margin:14px 0 20px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:14px}
+.hb li::before{content:"✓ ";font-weight:700}
+.pimg{position:relative;height:210px}
+.pimg img{position:absolute;border-radius:14px;border:3px solid #fff;object-fit:cover;box-shadow:0 8px 22px rgba(0,0,0,.18);background:#fff}
+.pimg .a{left:0;top:6px;width:52%;height:170px;transform:rotate(-4deg)}
+.pimg .b{right:4%;top:0;width:48%;height:150px;transform:rotate(3deg)}
+.pimg .c{right:0;bottom:0;width:46%;height:110px;transform:rotate(-2deg)}
+.quick{list-style:none;margin:-52px 14px 0;padding:14px;position:relative;z-index:2;background:#fff;border:1px solid var(--line);border-radius:var(--r);display:grid;grid-template-columns:1fr 1fr;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+.quick li,.wl li{display:flex;gap:10px;align-items:center}
+.ic{flex:none;width:40px;height:40px;border-radius:50%;background:#fff3c4;color:var(--ink);display:grid;place-items:center}.ic svg{width:21px;height:21px}
+.quick b,.wl b{display:block;font-size:14.5px;line-height:1.3}.quick small,.wl small{display:block;font-size:12.5px;color:var(--muted);line-height:1.35}
+.intro{padding:46px 0 10px}.intro .wrap{display:grid;gap:24px}
+.coll{display:grid;grid-template-columns:1fr 1fr;gap:8px}.coll img,.gal img{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:12px;border:1px solid var(--line);background:var(--soft)}
+.intro h2{font-size:clamp(22px,4.6vw,30px);margin-bottom:10px}.intro p{color:var(--muted);margin-bottom:10px}.intro .btn{margin-top:8px}
+.sec{padding:44px 0}.ct{text-align:center;font-size:clamp(22px,4.6vw,30px);margin-bottom:24px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{display:grid;justify-items:center;gap:8px;padding:22px 10px 18px;background:var(--soft);border:1px solid var(--line);border-radius:var(--r);text-decoration:none;text-align:center}
+.tile:hover{border-color:var(--ink)}.tile b{font-size:15.5px;line-height:1.35}.tile em{font-style:normal;font-size:14px;font-weight:700;border-bottom:2px solid var(--y)}
+.sw{width:92px;height:92px;border-radius:50%;border:1px solid rgba(0,0,0,.12);display:block}
+.sw.pvc{background:radial-gradient(circle at 30% 25%,#fff 0,#f4f4f2 40%,#d9d9d3 100%);box-shadow:inset 0 -8px 14px rgba(0,0,0,.07)}
 .sw.holo{background:conic-gradient(from 20deg,#ff6ec7,#ffd36e,#7dffb2,#6ec9ff,#a98bff,#ff6ec7)}
 .sw.refl{background:radial-gradient(circle at 35% 30%,#fff 0,#c9cdd2 45%,#868b92 100%)}
-.sw.uv{background:linear-gradient(135deg,#fff 0,#eee 40%,#fff 48%,#e0e0da 55%,#fff 100%)}
-.more{margin:18px 0 0;font-size:14.5px;color:var(--muted)}
-.gal{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.gal figure{margin:0}.gal img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:var(--r);border:1px solid var(--line);background:var(--soft)}
-.gal figcaption{padding:8px 2px 0;font-size:14px;line-height:1.45}.gal figcaption b{display:block;font-size:14.5px}.gal figcaption span{color:var(--muted)}
-.steps{list-style:none;margin:0;padding:0;display:grid;gap:14px}
-.steps li{display:grid;grid-template-columns:44px 1fr;gap:2px 14px;align-items:start}
-.steps b{grid-row:span 2;width:44px;height:44px;border-radius:50%;background:var(--y);color:var(--ink);display:grid;place-items:center;font-size:18px}
-.steps h3{font-size:17px;padding-top:2px}.steps p{margin:0;color:var(--muted);font-size:15px}
-.visit{display:grid;gap:18px}
-.info{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:20px}
-.info dl{margin:0;display:grid;gap:12px}.info dl div{display:grid;gap:0}
-.info dt{font-size:13px;color:var(--muted)}.info dd{margin:0;font-weight:500}
-.info a{text-underline-offset:3px}
-.qr{display:flex;align-items:center;gap:14px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line);font-size:14.5px}.qr img{width:88px;height:88px;border-radius:8px}
-.map iframe{width:100%;height:280px;border:1px solid var(--line);border-radius:var(--r);display:block}
-.ib{display:grid;gap:8px;margin-top:16px}
-.foot{border-top:1px solid var(--line);padding:30px 0 20px;font-size:14.5px;color:var(--muted)}
-.foot .wrap{display:grid;gap:16px}.foot nav{display:flex;gap:18px;flex-wrap:wrap}
-.mbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
-.mbar a{display:grid;justify-items:center;gap:2px;padding:6px 2px;text-decoration:none;font-size:12.5px;font-weight:600;color:var(--ink);border-radius:8px}
-.mbar a svg{width:24px;height:24px}
-.mbar .l svg{color:var(--green)}.mbar .f svg{color:var(--blue)}
-.mbar a:active{background:var(--soft)}
-.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;font-size:14.5px;z-index:60}
-.tag{display:inline-block;margin-left:8px;padding:0 9px;border:1px solid #b9892b;color:#b9892b;border-radius:20px;font-size:12px;font-weight:600;vertical-align:middle}
-@media(min-width:760px){
-  body{padding-bottom:0}.mbar{display:none}.menu{display:flex}
-  .hero{padding:64px 0 72px}.hero .wrap{grid-template-columns:1.05fr 1fr;align-items:center;gap:48px}
-  .hero .ctas .btn{flex:0 0 auto}
-  .mats{grid-template-columns:repeat(4,1fr)}.gal{grid-template-columns:repeat(4,1fr)}
-  .steps{grid-template-columns:repeat(4,1fr);gap:22px}.steps li{grid-template-columns:1fr}.steps b{grid-row:auto;margin-bottom:8px}
-  .visit{grid-template-columns:1fr 1fr}.map iframe{height:100%;min-height:380px}
-  .sec{padding:64px 0}
+.sw.uv{background:linear-gradient(135deg,#fff 0,#eee 40%,#fff 48%,#dcdcd6 55%,#fff 100%)}
+.more{margin-top:16px;text-align:center;font-size:14.5px;color:var(--muted)}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.steps li{display:flex;align-items:center;gap:12px;background:var(--y);border-radius:12px;padding:12px 16px}
+.steps .n{flex:none;width:38px;height:38px;border-radius:50%;background:#fff;display:grid;place-items:center;font-weight:700;font-size:18px}
+.steps b{display:block;font-size:17px;line-height:1.25}.steps small{font-size:13px;line-height:1.3;display:block}
+.big{padding:40px 0;border-top:1px solid var(--line)}.big .wrap{display:grid;gap:18px}
+.big h2{font-size:clamp(28px,7vw,46px);line-height:1.2}.big p{color:var(--muted);margin-bottom:10px}
+.dots{margin:0;padding:0;list-style:none;display:grid;gap:6px}.dots li{padding-left:20px;position:relative;font-size:15px}.dots li::before{content:"";position:absolute;left:2px;top:.7em;width:8px;height:8px;border-radius:50%;background:var(--y)}
+.big img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:var(--r);border:1px solid var(--line)}
+.why{background:var(--soft);padding:46px 0 40px}
+.wg{display:grid;gap:18px}.wl{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.mid{display:none}.mid img{width:200px;height:200px;border-radius:50%;margin:0 auto;border:6px solid var(--y);background:#fff}
+.cbox{margin:30px auto 0;max-width:560px;background:var(--y);border-radius:var(--r);padding:22px 18px;text-align:center}
+.cbox h3{font-size:20px}.cbox p{margin:6px 0 14px;font-size:14.5px}.cbox .ctas{justify-content:center}
+.narrow{max-width:760px}
+.faq details{border-bottom:1px solid var(--line);padding:14px 2px}
+.faq summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:12px}
+.faq summary::after{content:"+";font-size:22px;line-height:1;color:var(--muted)}.faq details[open] summary::after{content:"–"}
+.faq summary::-webkit-details-marker{display:none}.faq p{margin-top:8px;color:var(--muted);font-size:15px}
+.gal{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cl{padding:10px 0 46px}
+.panel2{background:var(--y);border-radius:22px;padding:26px 20px;display:grid;gap:18px;overflow:hidden}
+.panel2 h2{font-size:clamp(24px,5.5vw,34px)}.panel2 p{margin:6px 0 16px}
+.c3{display:grid;grid-template-columns:1fr 1fr;gap:10px}.c3 img{width:100%;height:150px;object-fit:cover;border-radius:12px;border:3px solid #fff}
+.foot{border-top:1px solid var(--line);padding:38px 0 10px;font-size:14.5px}
+.fg{display:grid;gap:26px}.fl{display:flex;align-items:center;gap:10px;margin-bottom:8px}.fl img{border-radius:50%}.fl b{font-size:19px}
+.foot p{color:var(--muted)}.foot dl{margin:12px 0 0}.foot dt{font-size:12.5px;color:var(--muted);margin-top:8px}.foot dd{margin:0;font-weight:500}
+.foot h4{font-size:16px;margin-bottom:10px}
+.cl2{list-style:none;margin:0;padding:0;display:grid;gap:8px}.cl2 li{display:flex;gap:10px;align-items:center}.cl2 svg{width:18px;height:18px;flex:none;color:var(--muted)}.cl2 a{text-underline-offset:3px}
+.qr{display:flex;align-items:center;gap:12px;margin-top:14px}.qr img{width:92px;height:92px;border-radius:8px}
+.map iframe{width:100%;height:230px;border:1px solid var(--line);border-radius:12px;display:block}
+.cp{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13.5px}.cp nav{display:flex;gap:16px}
+.mbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+.mbar a{display:grid;justify-items:center;gap:2px;padding:6px 2px;text-decoration:none;font-size:12.5px;font-weight:600;border-radius:8px}.mbar svg{width:24px;height:24px}
+.mbar .l svg{color:var(--green)}.mbar .f svg{color:var(--blue)}.mbar a:active{background:var(--soft)}
+@media(min-width:820px){
+  body{padding-bottom:0}.mbar{display:none}.menu{display:flex}.tel{display:block}
+  .hero{padding-top:22px}.panel{grid-template-columns:1.1fr 1fr;align-items:center;padding:44px 44px 92px;gap:30px}
+  .pimg{height:300px}.pimg .a{height:230px;width:50%}.pimg .b{height:190px}.pimg .c{height:140px}
+  .quick{grid-template-columns:repeat(4,1fr);margin:-62px 40px 0;padding:18px 22px}
+  .hb{grid-template-columns:1fr 1fr}
+  .intro{padding-top:64px}.intro .wrap{grid-template-columns:1fr 1fr;align-items:center;gap:44px}
+  .sec{padding:60px 0}.tiles{grid-template-columns:repeat(4,1fr)}
+  .steps{grid-template-columns:repeat(4,1fr);gap:0}.steps li{border-radius:0;padding:16px 22px 16px 30px;clip-path:polygon(0 0,calc(100% - 18px) 0,100% 50%,calc(100% - 18px) 100%,0 100%,18px 50%)}
+  .steps li:first-child{clip-path:polygon(0 0,calc(100% - 18px) 0,100% 50%,calc(100% - 18px) 100%,0 100%);border-radius:12px 0 0 12px}.steps li:last-child{clip-path:polygon(0 0,100% 0,100% 100%,0 100%,18px 50%);border-radius:0 12px 12px 0}
+  .big .wrap{grid-template-columns:1fr 1fr;gap:34px 44px;align-items:start}.big img{grid-column:1/-1}
+  .why{padding:64px 0 52px}.wg{grid-template-columns:1fr 220px 1fr;align-items:center;gap:26px}.mid{display:block}.wl.r li{flex-direction:row-reverse;text-align:right}
+  .gal{grid-template-columns:repeat(4,1fr)}.panel2{grid-template-columns:1.2fr 1fr;align-items:center;padding:38px 44px}.c3 img{height:190px}
+  .fg{grid-template-columns:1.1fr 1fr 1fr;gap:40px}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
 <header class="top"><div class="wrap">
-<a class="brand" href="/"><img src="icon-192.png" width="38" height="38" alt=""><span data-i="brand">บอลสติ๊กเกอร์</span><span class="tag" data-i="prev">พรีวิว</span></a>
-<nav class="menu" aria-label="เมนูหลัก"><a href="designer-preview.html" data-i="nav1">ออกแบบสติ๊กเกอร์</a><a href="#materials" data-i="nav2">วัสดุ</a><a href="#work" data-i="nav3">ผลงาน</a><a href="#how" data-i="nav4">ขั้นตอน</a><a href="#visit" data-i="nav5">ติดต่อ</a></nav>
-<div class="rt"><span class="lang" role="group" aria-label="Language"><button type="button" id="lgTh" aria-pressed="true">ไทย</button><button type="button" id="lgEn" aria-pressed="false">EN</button></span></div>
+<a class="brand" href="/"><img src="icon-192.png" width="44" height="44" alt=""><span><span data-i="brand">บอลสติ๊กเกอร์</span></span><span class="tag"><span data-i="prev">พรีวิว</span></span></a>
+<nav class="menu" aria-label="เมนูหลัก"><a href="designer-preview.html"><span data-i="nav1">ออกแบบสติ๊กเกอร์</span></a><a href="#materials"><span data-i="nav2">วัสดุ</span></a><a href="#work"><span data-i="nav3">ผลงาน</span></a><a href="#how"><span data-i="nav4">ขั้นตอน</span></a><a href="#faq"><span data-i="nav5">คำถามที่พบบ่อย</span></a><a href="#visit"><span data-i="nav6">ติดต่อ</span></a></nav>
+<div class="rt"><a class="tel" href="tel:0935353555"><small><span data-i="call">โทรสอบถาม</span></small><b>093-535-3555</b></a><a class="soc f" href="https://m.me/108503502205863" target="_blank" rel="noopener" aria-label="Facebook"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.4 3.7 7.1V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.5 0 10-4.1 10-9.2S17.5 2 12 2zm1 12.4-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg></a><a class="soc l" data-line href="#visit" aria-label="LINE"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.4 5.9-3.5 8-6C21.4 14.3 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg></a>
+<span class="lang" role="group" aria-label="Language"><button type="button" id="lgTh" aria-pressed="true">ไทย</button><button type="button" id="lgEn" aria-pressed="false">EN</button></span></div>
 </div></header>
 <main>
-<section class="hero"><div class="wrap">
-<div>
-<h1 data-i="h1">ออกแบบสติ๊กเกอร์เอง ดูตัวอย่างก่อนสั่ง</h1>
-<p class="sub" data-i="sub">ใส่โลโก้หรือรูป เลือกวัสดุ แล้วดูตัวอย่างไดคัททันที ร้านตรวจแบบก่อนพิมพ์ทุกงาน ส่งทั่วประเทศ</p>
-<div class="ctas"><a class="btn y" href="designer-preview.html" data-i="cta1">เริ่มออกแบบ</a><a class="btn o" data-line href="#visit"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.4 5.9-3.5 8-6C21.4 14.3 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg><span data-i="cta2">ทักแชทร้าน</span></a></div>
-<p class="nt" data-i="note">ไม่มีไฟล์งานก็สั่งได้ ร้านช่วยจัดแบบให้</p>
+<section class="hero"><div class="wrap"><div class="panel">
+<div class="ptx"><h1><span class="s"><span data-i="h1a">สติ๊กเกอร์ไดคัท</span></span><span class="b"><span data-i="h1b">ออกแบบเอง</span></span><span class="s"><span data-i="h1c">ดูตัวอย่างก่อนสั่ง</span></span></h1>
+<ul class="hb"><li><span data-i="hb1">ตรวจแบบก่อนพิมพ์ทุกงาน</span></li><li><span data-i="hb2">เลือกได้ 4 วัสดุ</span></li><li><span data-i="hb3">ไม่มีไฟล์งานก็สั่งได้</span></li><li><span data-i="hb4">ส่งทั่วประเทศ</span></li></ul>
+<div class="ctas"><a class="btn dk" href="designer-preview.html"><span data-i="cta1">เริ่มออกแบบ</span></a><a class="btn lt" data-line href="#visit"><span data-i="cta2">ทักแชทร้าน</span></a></div></div>
+<div class="pimg"><img class="a" src="work/fb02.webp" alt="สติ๊กเกอร์ไดคัทวงกลมลายไทย" width="640" height="480" fetchpriority="high"><img class="b" src="work/fb03.webp" alt="สติ๊กเกอร์โฮโลแกรมวงกลม" width="640" height="480"><img class="c" src="work/fb07.webp" alt="สติ๊กเกอร์โฮโลแกรมแผ่น" width="640" height="480"></div>
 </div>
-<div class="shot"><img src="work/w01.webp" alt="ตัวอย่างสติ๊กเกอร์ไดคัทจากร้านบอลสติ๊กเกอร์" width="960" height="720" fetchpriority="high"></div>
+<ul class="quick"><li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg></span><span><b><span data-i="q1">ออกแบบเอง</span></b><small><span data-i="q1d">ดูตัวอย่างไดคัททันที</span></small></span></li><li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5zM3 13l9 5 9-5"/></svg></span><span><b><span data-i="q2">4 วัสดุ</span></b><small><span data-i="q2d">PVC โฮโลแกรม สะท้อนแสง UV</span></small></span></li><li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v10H3zM14 9h4l3 3v4h-7M7 19a1.7 1.7 0 1 0 0-.01M17 19a1.7 1.7 0 1 0 0-.01"/></svg></span><span><b><span data-i="q3">ส่งทั่วประเทศ</span></b><small><span data-i="q3d">พร้อมเลขพัสดุในแชท</span></small></span></li><li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></span><span><b><span data-i="q4">สอบถามเลย</span></b><small><span data-i="q4d">LINE @bk25</span></small></span></li></ul>
 </div></section>
 
-<section class="sec soft" id="materials"><div class="wrap">
-<div class="sh"><h2 data-i="mt">เลือกวัสดุ</h2><p data-i="ms">ลองแต่ละแบบในหน้าออกแบบได้เลย ลากนิ้วดูแสงสะท้อนได้</p></div>
-<div class="mats"><a class="mat" href="designer-preview.html?m=pvc"><i class="sw pvc"></i><b data-i="m1">PVC ไดคัท</b><span data-i="m1d">ฟิล์ม PVC ตัดตามรูปทรง สีพิมพ์สด</span><em data-i="try">ลองออกแบบ</em></a><a class="mat" href="designer-preview.html?m=holo"><i class="sw holo"></i><b data-i="m2">โฮโลแกรมไดคัท</b><span data-i="m2d">ฟิล์มสีรุ้ง เปลี่ยนสีตามมุมมอง</span><em data-i="try">ลองออกแบบ</em></a><a class="mat" href="designer-preview.html?m=refl"><i class="sw refl"></i><b data-i="m3">สติ๊กเกอร์สะท้อนแสง</b><span data-i="m3d">เห็นชัดเมื่อโดนไฟ</span><em data-i="try">ลองออกแบบ</em></a><a class="mat" href="designer-preview.html?m=uv"><i class="sw uv"></i><b data-i="m4">พิมพ์ UV วานิช</b><span data-i="m4d">เคลือบวานิชเงานูนบนลาย</span><em data-i="try">ลองออกแบบ</em></a></div>
-<p class="more" data-i="more">ฉลากสินค้า วงกลม/สี่เหลี่ยม สติ๊กเกอร์ใส และสติ๊กเกอร์แผ่น ทักแชทสอบถามได้เลย</p>
+<section class="intro"><div class="wrap">
+<div class="coll"><figure><img src="work/fb01.webp" alt="KEN Clutch — ไดคัทโลโก้" width="640" height="480" loading="lazy" decoding="async"></figure><figure><img src="work/fb02.webp" alt="ธิดาคำไหล — วงกลม ลายไทย" width="640" height="480" loading="lazy" decoding="async"></figure><figure><img src="work/fb04.webp" alt="Ride Together — ไดคัทตัวอักษร 5 แบบ" width="640" height="480" loading="lazy" decoding="async"></figure><figure><img src="work/fb05.webp" alt="ส.เหน่ง สัมผัส 8 — ไดคัทลายการ์ตูน" width="640" height="480" loading="lazy" decoding="async"></figure></div>
+<div><h2><span data-i="it">บอลสติ๊กเกอร์ ร้านสติ๊กเกอร์ไดคัท พิษณุโลก</span></h2><p><span data-i="ip1">รับผลิตสติ๊กเกอร์ไดคัทตามรูปทรงโลโก้และภาพของคุณ ฉลากสินค้า โฮโลแกรม สะท้อนแสง และงานพิมพ์ UV ทุกงานตรวจไฟล์และส่งแบบให้ยืนยันก่อนพิมพ์</span></p><p><span data-i="ip2">ตอนนี้ลูกค้าออกแบบเองบนเว็บได้ เลือกวัสดุ ดูไดคัท แล้วส่งแบบให้ร้านต่อในแชทได้เลย</span></p><a class="btn dk" href="designer-preview.html"><span data-i="cta1">เริ่มออกแบบ</span></a></div>
 </div></section>
 
-<section class="sec" id="work"><div class="wrap">
-<div class="sh"><h2 data-i="wt">งานจริงจากหน้าร้าน</h2><p data-i="ws">ตัวอย่างสติ๊กเกอร์ที่ร้านผลิตให้ลูกค้า</p></div>
-<div class="gal">
-<figure><img src="work/fb01.webp" alt="KEN Clutch — ไดคัทโลโก้" width="640" height="480" loading="lazy" decoding="async"><figcaption><b>KEN Clutch</b><span>ไดคัทโลโก้</span></figcaption></figure>
-<figure><img src="work/fb02.webp" alt="ธิดาคำไหล — วงกลม ลายไทย" width="640" height="480" loading="lazy" decoding="async"><figcaption><b>ธิดาคำไหล</b><span>วงกลม ลายไทย</span></figcaption></figure>
-<figure><img src="work/fb03.webp" alt="Sarah Big Bike — วงกลม ลายโฮโลแกรม" width="640" height="480" loading="lazy" decoding="async"><figcaption><b>Sarah Big Bike</b><span>วงกลม ลายโฮโลแกรม</span></figcaption></figure>
-<figure><img src="work/fb04.webp" alt="Ride Together — ไดคัทตัวอักษร 5 แบบ" width="640" height="480" loading="lazy" decoding="async"><figcaption><b>Ride Together</b><span>ไดคัทตัวอักษร 5 แบบ</span></figcaption></figure>
-<figure><img src="work/fb05.webp" alt="ส.เหน่ง สัมผัส 8 — ไดคัทลายการ์ตูน" width="640" height="480" loading="lazy" decoding="async"><figcaption><b>ส.เหน่ง สัมผัส 8</b><span>ไดคัทลายการ์ตูน</span></figcaption></figure>
-<figure><img src="work/fb06.webp" alt="SN Shop — ไดคัทตัวอักษร" width="640" height="480" loading="lazy" decoding="async"><figcaption><b>SN Shop</b><span>ไดคัทตัวอักษร</span></figcaption></figure>
-<figure><img src="work/fb07.webp" alt="KEN — สติ๊กเกอร์โฮโลแกรม" width="640" height="480" loading="lazy" decoding="async"><figcaption><b>KEN</b><span>สติ๊กเกอร์โฮโลแกรม</span></figcaption></figure>
-<figure><img src="work/fb08.webp" alt="JJA100 — ไดคัทตามรูป" width="640" height="480" loading="lazy" decoding="async"><figcaption><b>JJA100</b><span>ไดคัทตามรูป</span></figcaption></figure>
-<figure><img src="work/fb09.webp" alt="BOSS Service — ไดคัทโลโก้" width="640" height="480" loading="lazy" decoding="async"><figcaption><b>BOSS Service</b><span>ไดคัทโลโก้</span></figcaption></figure>
-<figure><img src="work/fb10.webp" alt="ธนสารปูเป็น — วงกลม สีทอง" width="640" height="480" loading="lazy" decoding="async"><figcaption><b>ธนสารปูเป็น</b><span>วงกลม สีทอง</span></figcaption></figure>
-<figure><img src="work/fb11.webp" alt="สะพานมอญ — วงกลม ภาพถ่าย" width="640" height="480" loading="lazy" decoding="async"><figcaption><b>สะพานมอญ</b><span>วงกลม ภาพถ่าย</span></figcaption></figure>
-<figure><img src="work/fb12.webp" alt="Kit อะไหล่แต่ง — ไดคัทตัวอักษร" width="640" height="480" loading="lazy" decoding="async"><figcaption><b>Kit อะไหล่แต่ง</b><span>ไดคัทตัวอักษร</span></figcaption></figure>
-</div>
+<section class="sec" id="materials"><div class="wrap"><h2 class="ct"><span data-i="mt">วัสดุของเรา</span></h2>
+<div class="tiles"><a class="tile" href="designer-preview.html?m=pvc"><i class="sw pvc"></i><b><span data-i="m1">PVC ไดคัท</span></b><em><span data-i="try">ลองออกแบบ</span></em></a><a class="tile" href="designer-preview.html?m=holo"><i class="sw holo"></i><b><span data-i="m2">โฮโลแกรมไดคัท</span></b><em><span data-i="try">ลองออกแบบ</span></em></a><a class="tile" href="designer-preview.html?m=refl"><i class="sw refl"></i><b><span data-i="m3">สติ๊กเกอร์สะท้อนแสง</span></b><em><span data-i="try">ลองออกแบบ</span></em></a><a class="tile" href="designer-preview.html?m=uv"><i class="sw uv"></i><b><span data-i="m4">พิมพ์ UV วานิช</span></b><em><span data-i="try">ลองออกแบบ</span></em></a></div><p class="more"><span data-i="more">ฉลากสินค้า วงกลม/สี่เหลี่ยม สติ๊กเกอร์ใส และสติ๊กเกอร์แผ่น ทักแชทสอบถามได้เลย</span></p></div></section>
+
+<section class="sec" id="how"><div class="wrap"><h2 class="ct"><span data-i="ht">สั่งงานง่าย 4 ขั้นตอน</span></h2><ol class="steps"><li><span class="n">1</span><span class="tx"><b><span data-i="s1">ออกแบบ</span></b><small><span data-i="s1d">หรือส่งไฟล์ทางแชท</span></small></span></li><li><span class="n">2</span><span class="tx"><b><span data-i="s2">ตรวจแบบ</span></b><small><span data-i="s2d">ดูแบบก่อนพิมพ์</span></small></span></li><li><span class="n">3</span><span class="tx"><b><span data-i="s3">ชำระเงิน</span></b><small><span data-i="s3d">QR พร้อมเพย์</span></small></span></li><li><span class="n">4</span><span class="tx"><b><span data-i="s4">ผลิตและส่ง</span></b><small><span data-i="s4d">พร้อมเลขพัสดุ</span></small></span></li></ol></div></section>
+
+<section class="big"><div class="wrap">
+<div><h2><span data-i="bt">ไม่มีไฟล์งานก็ทำได้ ร้านช่วยจัดแบบให้</span></h2></div>
+<div><p><span data-i="bp">ส่งโลโก้ รูป หรือไอเดียคร่าวๆ มาทางแชท ร้านจัดแบบให้ดูก่อนพิมพ์ แก้ได้จนพอใจ เหมาะกับ</span></p><ul class="dots"><li><span data-i="bl1">ร้านค้าและแบรนด์ที่อยากมีสติ๊กเกอร์ของตัวเอง</span></li><li><span data-i="bl2">ทีมรถ กลุ่มกิจกรรม และงานอีเวนต์</span></li><li><span data-i="bl3">ของแจก ของที่ระลึก และงานแพ็กเกจ</span></li><li><span data-i="bl4">ฉลากติดสินค้า กล่อง ขวด ถุง</span></li></ul></div>
+<img src="work/fb04.webp" alt="ตัวอย่างสติ๊กเกอร์ไดคัทตัวอักษร" width="640" height="480" loading="lazy">
 </div></section>
 
-<section class="sec soft" id="how"><div class="wrap">
-<div class="sh"><h2 data-i="ht">สั่งงานง่าย 4 ขั้นตอน</h2></div>
-<ol class="steps"><li><b>1</b><h3 data-i="s1">ออกแบบหรือส่งไฟล์</h3><p data-i="s1d">ใช้หน้าออกแบบ หรือทักแชทส่งโลโก้และไอเดีย</p></li><li><b>2</b><h3 data-i="s2">ร้านตรวจแบบ</h3><p data-i="s2d">แจ้งราคาและส่งแบบให้ดูก่อนพิมพ์ แก้ได้จนพอใจ</p></li><li><b>3</b><h3 data-i="s3">ยืนยันและชำระเงิน</h3><p data-i="s3d">ชำระด้วย QR พร้อมเพย์ตามยอดที่ร้านส่งให้</p></li><li><b>4</b><h3 data-i="s4">ผลิตและจัดส่ง</h3><p data-i="s4d">ร้านส่งเลขพัสดุให้ในแชท ติดตามได้ตลอดทาง</p></li></ol>
+<section class="why"><div class="wrap"><h2 class="ct"><span data-i="wt">ทำไมต้องเลือกบอลสติ๊กเกอร์</span></h2>
+<div class="wg"><ul class="wl"><li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span><b><span data-i="w1">ตรวจแบบก่อนพิมพ์</span></b><small><span data-i="w1d">ทุกงานส่งแบบให้ยืนยันก่อนผลิต</span></small></span></li><li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><span><b><span data-i="w2">ดูตัวอย่างไดคัทก่อนสั่ง</span></b><small><span data-i="w2d">เห็นขอบตัดและวัสดุบนหน้าเว็บ</span></small></span></li><li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5zM3 13l9 5 9-5"/></svg></span><span><b><span data-i="w3">เลือกวัสดุได้หลายแบบ</span></b><small><span data-i="w3d">PVC โฮโลแกรม สะท้อนแสง UV</span></small></span></li></ul><div class="mid"><img src="icon-512.png" alt="โลโก้บอลสติ๊กเกอร์" width="200" height="200" loading="lazy"></div><ul class="wl r"><li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v10H3zM14 9h4l3 3v4h-7M7 19a1.7 1.7 0 1 0 0-.01M17 19a1.7 1.7 0 1 0 0-.01"/></svg></span><span><b><span data-i="w4">ส่งทั่วประเทศ</span></b><small><span data-i="w4d">มีเลขพัสดุให้ติดตาม</span></small></span></li><li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></span><span><b><span data-i="w5">คุยง่ายผ่านแชท</span></b><small><span data-i="w5d">LINE และ Facebook ตอบในเวลาทำการ</span></small></span></li><li><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3 6.6 7 .7-5.3 4.8 1.6 7L12 17.4 5.7 21l1.6-7L2 9.3l7-.7z"/></svg></span><span><b><span data-i="w6">รีวิว Google 4.8</span></b><small><span data-i="w6d">จาก 17 รีวิว</span></small></span></li></ul></div>
+<div class="cbox"><h3><span data-i="ct">แชทกับทีมงานได้เลยวันนี้</span></h3><p><span data-i="cs">ส่งโลโก้หรือไอเดีย ร้านแนะนำวัสดุและแจ้งราคาให้</span></p><div class="ctas"><a class="btn dk" data-line href="#visit"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.4 5.9-3.5 8-6C21.4 14.3 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg>LINE</a><a class="btn fbb" href="https://m.me/108503502205863" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.4 3.7 7.1V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.5 0 10-4.1 10-9.2S17.5 2 12 2zm1 12.4-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg>Facebook</a></div></div>
 </div></section>
 
-<section class="sec" id="visit"><div class="wrap">
-<div class="sh"><h2 data-i="vt">แวะมาคุยงานที่ร้าน</h2></div>
-<div class="visit">
-<div class="map"><iframe title="แผนที่ร้านบอลสติ๊กเกอร์" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=%E0%B8%9A%E0%B8%AD%E0%B8%A5%E0%B8%AA%E0%B8%95%E0%B8%B4%E0%B9%8A%E0%B8%81%E0%B9%80%E0%B8%81%E0%B8%AD%E0%B8%A3%E0%B9%8C%20%E0%B8%9E%E0%B8%B4%E0%B8%A9%E0%B8%93%E0%B8%B8%E0%B9%82%E0%B8%A5%E0%B8%81%20%E0%B8%9A%E0%B8%B2%E0%B8%87%E0%B8%A3%E0%B8%B0%E0%B8%81%E0%B8%B3&hl=th&z=16&output=embed"></iframe></div>
-<div class="info">
-<dl>
-<div><dt data-i="addr">ที่อยู่</dt><dd data-i="addrv">8 หมู่ 19 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140</dd></div>
-<div><dt data-i="hrs">เวลาทำการ</dt><dd data-i="hrsv">จันทร์ – เสาร์ 09:00 – 17:00 น. หยุดวันอาทิตย์</dd></div>
-<div><dt data-i="rev">รีวิว Google</dt><dd><a href="https://maps.app.goo.gl/d8F8hY2ko8PbT1Hv8" target="_blank" rel="noopener"><b>4.8</b> ★★★★★ <span data-i="revv">จาก 17 รีวิว</span></a></dd></div>
-<div><dt data-i="tel">โทร</dt><dd><a href="tel:0935353555">093-535-3555</a> · <a href="tel:0966697495">096-669-7495</a></dd></div>
-<div><dt>Email</dt><dd><a href="mailto:info@ballsticker.co.th">info@ballsticker.co.th</a></dd></div>
-</dl>
-<div class="qr"><img src="line-qr.png" width="88" height="88" alt="QR code เพิ่มเพื่อน LINE @bk25" loading="lazy"><span><span data-i="lnk">เพิ่มเพื่อน LINE</span><br><b>@bk25</b></span></div>
-<div class="ib">
-<a class="btn y" href="designer-preview.html" data-i="cta1">เริ่มออกแบบ</a>
-<a class="btn o" href="https://ball-sticker-tracking.nutty-hill-4377.chatgpt.site/" target="_blank" rel="noopener" data-i="trk">ติดตามงาน</a>
-<a class="btn o" href="contact-preview.html" data-i="save">บันทึกเบอร์ร้านลงมือถือ</a>
-</div>
-</div>
-</div>
-</div></section>
+<section class="sec" id="faq"><div class="wrap narrow"><h2 class="ct"><span data-i="ft">คำถามที่พบบ่อย</span></h2><div class="faq"><details><summary><span data-i="f1">สั่งอย่างไร</span></summary><p><span data-i="f1a">กดเริ่มออกแบบ ใส่รูปหรือข้อความ เลือกวัสดุและขนาด แล้วกดสั่งงาน ร้านจะรับแบบทางแชท หรือทักแชทส่งไฟล์มาก็ได้</span></p></details><details><summary><span data-i="f2">ไม่มีไฟล์งานทำได้ไหม</span></summary><p><span data-i="f2a">ได้ ส่งโลโก้ รูป หรือไอเดียคร่าวๆ มา ร้านช่วยจัดแบบให้ดูก่อนพิมพ์</span></p></details><details><summary><span data-i="f3">ราคาเท่าไร</span></summary><p><span data-i="f3a">ราคาขึ้นกับวัสดุ ขนาด และจำนวน ส่งรายละเอียดมาทางแชท ร้านประเมินและแจ้งราคาให้</span></p></details><details><summary><span data-i="f4">ชำระเงินอย่างไร</span></summary><p><span data-i="f4a">ชำระด้วย QR พร้อมเพย์ตามยอดที่ร้านส่งให้ หลังยืนยันแบบแล้ว</span></p></details><details><summary><span data-i="f5">ส่งทั่วประเทศไหม</span></summary><p><span data-i="f5a">ส่งทั่วประเทศ ร้านส่งเลขพัสดุให้ในแชท</span></p></details></div></div></section>
+
+<section class="sec" id="work"><div class="wrap"><h2 class="ct"><span data-i="wk">ผลงานจริงจากหน้าร้าน</span></h2><div class="gal"><figure><img src="work/fb01.webp" alt="KEN Clutch — ไดคัทโลโก้" width="640" height="480" loading="lazy" decoding="async"></figure><figure><img src="work/fb02.webp" alt="ธิดาคำไหล — วงกลม ลายไทย" width="640" height="480" loading="lazy" decoding="async"></figure><figure><img src="work/fb03.webp" alt="Sarah Big Bike — วงกลม ลายโฮโลแกรม" width="640" height="480" loading="lazy" decoding="async"></figure><figure><img src="work/fb04.webp" alt="Ride Together — ไดคัทตัวอักษร 5 แบบ" width="640" height="480" loading="lazy" decoding="async"></figure><figure><img src="work/fb05.webp" alt="ส.เหน่ง สัมผัส 8 — ไดคัทลายการ์ตูน" width="640" height="480" loading="lazy" decoding="async"></figure><figure><img src="work/fb06.webp" alt="SN Shop — ไดคัทตัวอักษร" width="640" height="480" loading="lazy" decoding="async"></figure><figure><img src="work/fb07.webp" alt="KEN — สติ๊กเกอร์โฮโลแกรม" width="640" height="480" loading="lazy" decoding="async"></figure><figure><img src="work/fb08.webp" alt="JJA100 — ไดคัทตามรูป" width="640" height="480" loading="lazy" decoding="async"></figure><figure><img src="work/fb09.webp" alt="BOSS Service — ไดคัทโลโก้" width="640" height="480" loading="lazy" decoding="async"></figure><figure><img src="work/fb10.webp" alt="ธนสารปูเป็น — วงกลม สีทอง" width="640" height="480" loading="lazy" decoding="async"></figure><figure><img src="work/fb11.webp" alt="สะพานมอญ — วงกลม ภาพถ่าย" width="640" height="480" loading="lazy" decoding="async"></figure><figure><img src="work/fb12.webp" alt="Kit อะไหล่แต่ง — ไดคัทตัวอักษร" width="640" height="480" loading="lazy" decoding="async"></figure></div></div></section>
+
+<section class="cl"><div class="wrap"><div class="panel2">
+<div><h2><span data-i="cb">ทีมงานพร้อมดูแลทุกงาน</span></h2><p><span data-i="cbs">เริ่มออกแบบเอง หรือทักแชทให้ร้านช่วยก็ได้</span></p><div class="ctas"><a class="btn dk" href="designer-preview.html"><span data-i="cta1">เริ่มออกแบบ</span></a><a class="btn lt" data-line href="#visit"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.4 5.9-3.5 8-6C21.4 14.3 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg>LINE</a></div></div>
+<div class="c3"><img src="work/fb01.webp" alt="" width="640" height="480" loading="lazy"><img src="work/fb05.webp" alt="" width="640" height="480" loading="lazy"></div>
+</div></div></section>
 </main>
 
-<footer class="foot"><div class="wrap">
-<p data-i="ft">รับทำสติ๊กเกอร์สั่งทำ ไดคัทตามรูป ฉลากสินค้า โฮโลแกรม และงาน UV ส่งทั่วประเทศ</p>
-<nav><a href="privacy.html" data-i="pv">นโยบายความเป็นส่วนตัว</a><a href="terms.html" data-i="tm">ข้อกำหนดการใช้บริการ</a></nav>
-</div></footer>
-
+<footer class="foot" id="visit"><div class="wrap fg">
+<div><div class="fl"><img src="icon-192.png" width="48" height="48" alt=""><b><span data-i="brand">บอลสติ๊กเกอร์</span></b></div><p><span data-i="about">รับทำสติ๊กเกอร์สั่งทำ ไดคัทตามรูป ฉลากสินค้า โฮโลแกรม และงาน UV ส่งทั่วประเทศ</span></p>
+<dl><dt><span data-i="fa">ที่อยู่</span></dt><dd><span data-i="fav">8 หมู่ 19 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140</span></dd><dt><span data-i="fh">เวลาทำการ</span></dt><dd><span data-i="fhv">จันทร์ – เสาร์ 09:00 – 17:00 น. หยุดวันอาทิตย์</span></dd></dl></div>
+<div><h4><span data-i="fc">ติดต่อเรา</span></h4><ul class="cl2">
+<li><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg><a href="tel:0935353555">093-535-3555</a></li>
+<li><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg><a href="tel:0966697495">096-669-7495</a></li>
+<li><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.4 5.9-3.5 8-6C21.4 14.3 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg><a data-line href="#visit">LINE @bk25</a></li>
+<li><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.4 3.7 7.1V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.5 0 10-4.1 10-9.2S17.5 2 12 2zm1 12.4-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg><a href="https://m.me/108503502205863" target="_blank" rel="noopener">Facebook</a></li>
+<li><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg><a href="https://maps.app.goo.gl/d8F8hY2ko8PbT1Hv8" target="_blank" rel="noopener">Google Maps ★ 4.8</a></li>
+<li><a href="mailto:info@ballsticker.co.th">info@ballsticker.co.th</a></li>
+<li><a href="https://ball-sticker-tracking.nutty-hill-4377.chatgpt.site/" target="_blank" rel="noopener"><span data-i="trk">ติดตามงาน</span></a></li>
+<li><a href="contact-preview.html"><span data-i="save">บันทึกเบอร์ร้านลงมือถือ</span></a></li></ul>
+<div class="qr"><img src="line-qr.png" width="92" height="92" alt="QR code เพิ่มเพื่อน LINE @bk25" loading="lazy"><span><span data-i="lnk">เพิ่มเพื่อน LINE</span><br><b>@bk25</b></span></div></div>
+<div><h4><span data-i="fm">แผนที่</span></h4><div class="map"><iframe title="แผนที่ร้านบอลสติ๊กเกอร์" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=%E0%B8%9A%E0%B8%AD%E0%B8%A5%E0%B8%AA%E0%B8%95%E0%B8%B4%E0%B9%8A%E0%B8%81%E0%B9%80%E0%B8%81%E0%B8%AD%E0%B8%A3%E0%B9%8C%20%E0%B8%9E%E0%B8%B4%E0%B8%A9%E0%B8%93%E0%B8%B8%E0%B9%82%E0%B8%A5%E0%B8%81%20%E0%B8%9A%E0%B8%B2%E0%B8%87%E0%B8%A3%E0%B8%B0%E0%B8%81%E0%B8%B3&hl=th&z=16&output=embed"></iframe></div></div>
+</div>
+<div class="wrap cp"><span>© 2026 Ball Sticker</span><nav><a href="privacy.html"><span data-i="pv">นโยบายความเป็นส่วนตัว</span></a><a href="terms.html"><span data-i="tm">ข้อกำหนดการใช้บริการ</span></a></nav></div>
+</footer>
 <div class="mbar">
-<a href="tel:0935353555"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg><span data-i="bc">โทร</span></a>
-<a href="https://maps.app.goo.gl/d8F8hY2ko8PbT1Hv8" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg><span data-i="bm">แผนที่</span></a>
+<a href="tel:0935353555"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg><span><span data-i="bc">โทร</span></span></a>
+<a href="https://maps.app.goo.gl/d8F8hY2ko8PbT1Hv8" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg><span><span data-i="bm">แผนที่</span></span></a>
 <a class="f" href="https://m.me/108503502205863" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.4 3.7 7.1V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.5 0 10-4.1 10-9.2S17.5 2 12 2zm1 12.4-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg><span>Facebook</span></a>
 <a class="l" data-line href="#visit"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.4 5.9-3.5 8-6C21.4 14.3 22 12.7 22 11c0-4.4-4.5-8-10-8z"/></svg><span>LINE</span></a>
 </div>
@@ -188,7 +204,7 @@ img{max-width:100%;display:block}a{color:inherit}h1,h2,h3{margin:0;font-weight:7
 var LINE_ID='@bk25',ADD_URL='https://lin.ee/5WdXssc';
 var MOB=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform));
 document.querySelectorAll('[data-line]').forEach(function(a){a.href=MOB?'https://line.me/R/oaMessage/'+encodeURIComponent(LINE_ID)+'/':ADD_URL;a.target='_blank';a.rel='noopener'});
-var D={"nav1": ["ออกแบบสติ๊กเกอร์", "Design"], "nav2": ["วัสดุ", "Materials"], "nav3": ["ผลงาน", "Work"], "nav4": ["ขั้นตอน", "How it works"], "nav5": ["ติดต่อ", "Contact"], "h1": ["ออกแบบสติ๊กเกอร์เอง ดูตัวอย่างก่อนสั่ง", "Design your own stickers. Preview before you order."], "sub": ["ใส่โลโก้หรือรูป เลือกวัสดุ แล้วดูตัวอย่างไดคัททันที ร้านตรวจแบบก่อนพิมพ์ทุกงาน ส่งทั่วประเทศ", "Add your logo or image, pick a material and see the die-cut instantly. We check every design before printing and ship nationwide."], "cta1": ["เริ่มออกแบบ", "Start designing"], "cta2": ["ทักแชทร้าน", "Chat with us"], "note": ["ไม่มีไฟล์งานก็สั่งได้ ร้านช่วยจัดแบบให้", "No artwork? We can design it for you."], "mt": ["เลือกวัสดุ", "Choose a material"], "ms": ["ลองแต่ละแบบในหน้าออกแบบได้เลย ลากนิ้วดูแสงสะท้อนได้", "Try each one in the designer. Drag to see how it catches the light."], "m1": ["PVC ไดคัท", "Die-cut PVC"], "m1d": ["ฟิล์ม PVC ตัดตามรูปทรง สีพิมพ์สด", "PVC film cut to shape, vivid print"], "m2": ["โฮโลแกรมไดคัท", "Die-cut hologram"], "m2d": ["ฟิล์มสีรุ้ง เปลี่ยนสีตามมุมมอง", "Rainbow film that shifts colour with the angle"], "m3": ["สติ๊กเกอร์สะท้อนแสง", "Reflective sticker"], "m3d": ["เห็นชัดเมื่อโดนไฟ", "Stands out when light hits it"], "m4": ["พิมพ์ UV วานิช", "UV varnish print"], "m4d": ["เคลือบวานิชเงานูนบนลาย", "Glossy raised varnish on the artwork"], "try": ["ลองออกแบบ", "Try it"], "more": ["ฉลากสินค้า วงกลม/สี่เหลี่ยม สติ๊กเกอร์ใส และสติ๊กเกอร์แผ่น ทักแชทสอบถามได้เลย", "Product labels, circle/square stickers, clear stickers and sticker sheets: just message us."], "wt": ["งานจริงจากหน้าร้าน", "Real work from our shop"], "ws": ["ตัวอย่างสติ๊กเกอร์ที่ร้านผลิตให้ลูกค้า", "Stickers we have made for our customers"], "ht": ["สั่งงานง่าย 4 ขั้นตอน", "Order in 4 simple steps"], "s1": ["ออกแบบหรือส่งไฟล์", "Design or send your file"], "s1d": ["ใช้หน้าออกแบบ หรือทักแชทส่งโลโก้และไอเดีย", "Use the designer, or message us your logo and ideas"], "s2": ["ร้านตรวจแบบ", "We check the design"], "s2d": ["แจ้งราคาและส่งแบบให้ดูก่อนพิมพ์ แก้ได้จนพอใจ", "We quote the price and send a proof. Changes until you are happy."], "s3": ["ยืนยันและชำระเงิน", "Confirm and pay"], "s3d": ["ชำระด้วย QR พร้อมเพย์ตามยอดที่ร้านส่งให้", "Pay by PromptPay QR for the amount we send you"], "s4": ["ผลิตและจัดส่ง", "Production and shipping"], "s4d": ["ร้านส่งเลขพัสดุให้ในแชท ติดตามได้ตลอดทาง", "We send the tracking number in chat"], "vt": ["แวะมาคุยงานที่ร้าน", "Visit the shop"], "addr": ["ที่อยู่", "Address"], "addrv": ["8 หมู่ 19 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140", "8 Moo 19, Bang Rakam, Bang Rakam District, Phitsanulok 65140"], "hrs": ["เวลาทำการ", "Opening hours"], "hrsv": ["จันทร์ – เสาร์ 09:00 – 17:00 น. หยุดวันอาทิตย์", "Mon – Sat 09:00 – 17:00. Closed on Sundays."], "rev": ["รีวิว Google", "Google reviews"], "revv": ["จาก 17 รีวิว", "from 17 reviews"], "tel": ["โทร", "Phone"], "trk": ["ติดตามงาน", "Track your order"], "save": ["บันทึกเบอร์ร้านลงมือถือ", "Save our contact"], "bc": ["โทร", "Call"], "bm": ["แผนที่", "Map"], "bf": ["Facebook", "Facebook"], "bl": ["LINE", "LINE"], "lnk": ["เพิ่มเพื่อน LINE", "Add us on LINE"], "ft": ["รับทำสติ๊กเกอร์สั่งทำ ไดคัทตามรูป ฉลากสินค้า โฮโลแกรม และงาน UV ส่งทั่วประเทศ", "Custom die-cut stickers, product labels, hologram and UV prints. Shipping nationwide."], "pv": ["นโยบายความเป็นส่วนตัว", "Privacy policy"], "tm": ["ข้อกำหนดการใช้บริการ", "Terms of service"], "ttl": ["บอลสติ๊กเกอร์ พิษณุโลก · สติ๊กเกอร์สั่งทำ ไดคัทตามรูป", "Ball Sticker Phitsanulok · Custom die-cut stickers"], "prev": ["พรีวิว", "Preview"]};
+var D={"nav1": ["ออกแบบสติ๊กเกอร์", "Design"], "nav2": ["วัสดุ", "Materials"], "nav3": ["ผลงาน", "Work"], "nav4": ["ขั้นตอน", "How it works"], "nav5": ["คำถามที่พบบ่อย", "FAQ"], "nav6": ["ติดต่อ", "Contact"], "call": ["โทรสอบถาม", "Call us"], "h1a": ["สติ๊กเกอร์ไดคัท", "Die-cut stickers"], "h1b": ["ออกแบบเอง", "design them yourself"], "h1c": ["ดูตัวอย่างก่อนสั่ง", "preview before you order"], "hb1": ["ตรวจแบบก่อนพิมพ์ทุกงาน", "Every design checked before printing"], "hb2": ["เลือกได้ 4 วัสดุ", "4 materials to choose from"], "hb3": ["ไม่มีไฟล์งานก็สั่งได้", "No artwork? We can help"], "hb4": ["ส่งทั่วประเทศ", "Shipping nationwide"], "cta1": ["เริ่มออกแบบ", "Start designing"], "cta2": ["ทักแชทร้าน", "Chat with us"], "q1": ["ออกแบบเอง", "Design it"], "q1d": ["ดูตัวอย่างไดคัททันที", "See the die-cut instantly"], "q2": ["4 วัสดุ", "4 materials"], "q2d": ["PVC โฮโลแกรม สะท้อนแสง UV", "PVC, hologram, reflective, UV"], "q3": ["ส่งทั่วประเทศ", "Nationwide"], "q3d": ["พร้อมเลขพัสดุในแชท", "Tracking number in chat"], "q4": ["สอบถามเลย", "Ask us"], "q4d": ["LINE @bk25", "LINE @bk25"], "it": ["บอลสติ๊กเกอร์ ร้านสติ๊กเกอร์ไดคัท พิษณุโลก", "Ball Sticker, die-cut sticker shop in Phitsanulok"], "ip1": ["รับผลิตสติ๊กเกอร์ไดคัทตามรูปทรงโลโก้และภาพของคุณ ฉลากสินค้า โฮโลแกรม สะท้อนแสง และงานพิมพ์ UV ทุกงานตรวจไฟล์และส่งแบบให้ยืนยันก่อนพิมพ์", "We make die-cut stickers cut to your logo or artwork, plus product labels, hologram, reflective and UV prints. Every job is checked and you approve a proof before printing."], "ip2": ["ตอนนี้ลูกค้าออกแบบเองบนเว็บได้ เลือกวัสดุ ดูไดคัท แล้วส่งแบบให้ร้านต่อในแชทได้เลย", "You can now design on this site: choose a material, see the die-cut and send it to us in chat."], "mt": ["วัสดุของเรา", "Our materials"], "m1": ["PVC ไดคัท", "Die-cut PVC"], "m2": ["โฮโลแกรมไดคัท", "Die-cut hologram"], "m3": ["สติ๊กเกอร์สะท้อนแสง", "Reflective sticker"], "m4": ["พิมพ์ UV วานิช", "UV varnish print"], "try": ["ลองออกแบบ", "Try it"], "more": ["ฉลากสินค้า วงกลม/สี่เหลี่ยม สติ๊กเกอร์ใส และสติ๊กเกอร์แผ่น ทักแชทสอบถามได้เลย", "Product labels, circle/square stickers, clear stickers and sticker sheets: just message us."], "ht": ["สั่งงานง่าย 4 ขั้นตอน", "Order in 4 simple steps"], "s1": ["ออกแบบ", "Design"], "s1d": ["หรือส่งไฟล์ทางแชท", "or send your file"], "s2": ["ตรวจแบบ", "Proof"], "s2d": ["ดูแบบก่อนพิมพ์", "approve before print"], "s3": ["ชำระเงิน", "Pay"], "s3d": ["QR พร้อมเพย์", "PromptPay QR"], "s4": ["ผลิตและส่ง", "Made & shipped"], "s4d": ["พร้อมเลขพัสดุ", "with tracking"], "bt": ["ไม่มีไฟล์งานก็ทำได้ ร้านช่วยจัดแบบให้", "No artwork? We will lay it out for you"], "bp": ["ส่งโลโก้ รูป หรือไอเดียคร่าวๆ มาทางแชท ร้านจัดแบบให้ดูก่อนพิมพ์ แก้ได้จนพอใจ เหมาะกับ", "Send a logo, a photo or a rough idea in chat. We lay it out and show you a proof, with changes until you are happy. Great for"], "bl1": ["ร้านค้าและแบรนด์ที่อยากมีสติ๊กเกอร์ของตัวเอง", "Shops and brands that want their own stickers"], "bl2": ["ทีมรถ กลุ่มกิจกรรม และงานอีเวนต์", "Car clubs, groups and events"], "bl3": ["ของแจก ของที่ระลึก และงานแพ็กเกจ", "Giveaways, souvenirs and packaging"], "bl4": ["ฉลากติดสินค้า กล่อง ขวด ถุง", "Labels for products, boxes, bottles and bags"], "wt": ["ทำไมต้องเลือกบอลสติ๊กเกอร์", "Why Ball Sticker"], "w1": ["ตรวจแบบก่อนพิมพ์", "Checked before print"], "w1d": ["ทุกงานส่งแบบให้ยืนยันก่อนผลิต", "You approve a proof for every job"], "w2": ["ดูตัวอย่างไดคัทก่อนสั่ง", "Preview the die-cut"], "w2d": ["เห็นขอบตัดและวัสดุบนหน้าเว็บ", "See the cut line and material on screen"], "w3": ["เลือกวัสดุได้หลายแบบ", "Several materials"], "w3d": ["PVC โฮโลแกรม สะท้อนแสง UV", "PVC, hologram, reflective, UV"], "w4": ["ส่งทั่วประเทศ", "Ships nationwide"], "w4d": ["มีเลขพัสดุให้ติดตาม", "Tracking number provided"], "w5": ["คุยง่ายผ่านแชท", "Easy to talk to"], "w5d": ["LINE และ Facebook ตอบในเวลาทำการ", "LINE and Facebook during opening hours"], "w6": ["รีวิว Google 4.8", "Google rating 4.8"], "w6d": ["จาก 17 รีวิว", "from 17 reviews"], "ct": ["แชทกับทีมงานได้เลยวันนี้", "Chat with our team today"], "cs": ["ส่งโลโก้หรือไอเดีย ร้านแนะนำวัสดุและแจ้งราคาให้", "Send your logo or idea. We will recommend a material and quote the price."], "wk": ["ผลงานจริงจากหน้าร้าน", "Real work from our shop"], "ft": ["คำถามที่พบบ่อย", "Frequently asked questions"], "f1": ["สั่งอย่างไร", "How do I order?"], "f1a": ["กดเริ่มออกแบบ ใส่รูปหรือข้อความ เลือกวัสดุและขนาด แล้วกดสั่งงาน ร้านจะรับแบบทางแชท หรือทักแชทส่งไฟล์มาก็ได้", "Tap Start designing, add an image or text, pick a material and size, then place the order. We receive it in chat, or you can simply message us your file."], "f2": ["ไม่มีไฟล์งานทำได้ไหม", "Can I order without artwork?"], "f2a": ["ได้ ส่งโลโก้ รูป หรือไอเดียคร่าวๆ มา ร้านช่วยจัดแบบให้ดูก่อนพิมพ์", "Yes. Send a logo, a photo or a rough idea and we will lay it out and show you a proof."], "f3": ["ราคาเท่าไร", "How much does it cost?"], "f3a": ["ราคาขึ้นกับวัสดุ ขนาด และจำนวน ส่งรายละเอียดมาทางแชท ร้านประเมินและแจ้งราคาให้", "Price depends on material, size and quantity. Send us the details in chat and we will quote you."], "f4": ["ชำระเงินอย่างไร", "How do I pay?"], "f4a": ["ชำระด้วย QR พร้อมเพย์ตามยอดที่ร้านส่งให้ หลังยืนยันแบบแล้ว", "Pay by PromptPay QR for the amount we send you, after you approve the proof."], "f5": ["ส่งทั่วประเทศไหม", "Do you ship nationwide?"], "f5a": ["ส่งทั่วประเทศ ร้านส่งเลขพัสดุให้ในแชท", "Yes, nationwide. We send the tracking number in chat."], "cb": ["ทีมงานพร้อมดูแลทุกงาน", "Our team is ready to help"], "cbs": ["เริ่มออกแบบเอง หรือทักแชทให้ร้านช่วยก็ได้", "Start designing yourself, or chat and let us help."], "fa": ["ที่อยู่", "Address"], "fav": ["8 หมู่ 19 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140", "8 Moo 19, Bang Rakam, Bang Rakam District, Phitsanulok 65140"], "fh": ["เวลาทำการ", "Opening hours"], "fhv": ["จันทร์ – เสาร์ 09:00 – 17:00 น. หยุดวันอาทิตย์", "Mon – Sat 09:00 – 17:00. Closed on Sundays."], "fc": ["ติดต่อเรา", "Contact"], "fm": ["แผนที่", "Map"], "about": ["รับทำสติ๊กเกอร์สั่งทำ ไดคัทตามรูป ฉลากสินค้า โฮโลแกรม และงาน UV ส่งทั่วประเทศ", "Custom die-cut stickers, product labels, hologram and UV prints. Shipping nationwide."], "trk": ["ติดตามงาน", "Track your order"], "save": ["บันทึกเบอร์ร้านลงมือถือ", "Save our contact"], "lnk": ["เพิ่มเพื่อน LINE", "Add us on LINE"], "bc": ["โทร", "Call"], "bm": ["แผนที่", "Map"], "pv": ["นโยบายความเป็นส่วนตัว", "Privacy policy"], "tm": ["ข้อกำหนดการใช้บริการ", "Terms of service"], "ttl": ["บอลสติ๊กเกอร์ พิษณุโลก · สติ๊กเกอร์สั่งทำ ไดคัทตามรูป", "Ball Sticker Phitsanulok · Custom die-cut stickers"], "prev": ["พรีวิว", "Preview"], "brand": ["บอลสติ๊กเกอร์", "Ball Sticker"]};
 var lang='th';try{lang=localStorage.getItem('bs_lang')==='en'?'en':'th'}catch(e){}
 function apply(){
   document.documentElement.lang=lang;document.title=D.ttl[lang==='en'?1:0];
@@ -197,7 +213,6 @@ function apply(){
 }
 function set(l){lang=l;try{localStorage.setItem('bs_lang',l)}catch(e){}apply()}
 document.getElementById('lgTh').onclick=function(){set('th')};document.getElementById('lgEn').onclick=function(){set('en')};
-D.brand=['บอลสติ๊กเกอร์','Ball Sticker'];
 apply();
 })();
 </script>
