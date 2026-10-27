@@ -145,15 +145,17 @@ input[type=color]{width:46px;height:46px;border:1px solid #cfcbc0;border-radius:
 <button type="button" data-v="round" aria-pressed="false">สี่เหลี่ยมมน</button>
 </div>
 <div class="chips" id="borders" role="group" aria-label="ขอบขาวรอบลาย" style="margin-bottom:12px">
+<button type="button" data-v="0" aria-pressed="false">ไม่เพิ่มขอบ</button>
 <button type="button" data-v="0.2" aria-pressed="true">ขอบ 0.2 มม.</button>
 <button type="button" data-v="1" aria-pressed="false">1 มม.</button>
 <button type="button" data-v="2" aria-pressed="false">2 มม.</button>
 <button type="button" data-v="3" aria-pressed="false">3 มม.</button>
 </div>
 <div class="two">
-<label class="f"><span>ความกว้าง (ซม.)</span><input type="number" id="wcm" value="6" min="1" max="100" step="0.5" inputmode="decimal"></label>
+<label class="f"><span>ความกว้างสำเร็จรูป รวมขอบ (ซม.)</span><input type="number" id="wcm" value="6" min="1" max="100" step="0.5" inputmode="decimal"></label>
 <label class="f"><span>จำนวน (ชิ้น)</span><input type="number" id="qty" value="100" min="1" step="1" inputmode="numeric"></label>
 </div>
+<p class="hint" id="bdInfo" style="display:block;padding:0 0 8px"></p>
 <div class="chips" id="qchips" role="group" aria-label="จำนวนที่นิยม">
 <button type="button" data-v="50" aria-pressed="false">50</button>
 <button type="button" data-v="100" aria-pressed="true">100</button>
@@ -256,6 +258,17 @@ function dilate(solid,r){
   for(var i=0;i<d.length;i+=4){var v=d[i+3]>110?255:0;d[i]=d[i+1]=d[i+2]=0;d[i+3]=v}
   tx.putImageData(im,0,0);return t;
 }
+function smooth(s){
+  var w=s.width,hh=s.height,t=mk(w,hh),tx=t.getContext('2d');tx.filter='blur(1px)';tx.drawImage(s,0,0);tx.filter='none';
+  var im=tx.getImageData(0,0,w,hh),d=im.data;for(var i=0;i<d.length;i+=4){d[i]=d[i+1]=d[i+2]=0;d[i+3]=d[i+3]>110?255:0}
+  tx.putImageData(im,0,0);return t;
+}
+function hasWhiteEdge(c){
+  var w=c.width,hh=c.height,d=c.getContext('2d').getImageData(0,0,w,hh).data,n=0,wh=0;
+  for(var y=1;y<hh-1;y++)for(var x=1;x<w-1;x++){var k=(y*w+x)*4;
+    if(d[k+3]>=200&&(d[k-1]<200||d[k+7]<200||d[k-w*4+3]<200||d[k+w*4+3]<200)){n++;if(d[k]>218&&d[k+1]>218&&d[k+2]>218)wh++}}
+  return n>40&&wh/n>.6;
+}
 function solidOf(c){
   var s=mk(c.width,c.height),x=s.getContext('2d');x.drawImage(c,0,0);
   var im=x.getImageData(0,0,s.width,s.height),d=im.data;
@@ -265,7 +278,7 @@ function solidOf(c){
 function roundRect(x,px,py,w,h,r){x.beginPath();x.moveTo(px+r,py);x.arcTo(px+w,py,px+w,py+h,r);x.arcTo(px+w,py+h,px,py+h,r);x.arcTo(px,py+h,px,py,r);x.arcTo(px,py,px+w,py,r);x.closePath()}
 
 function bpx(len){ // ขอบจริง (มม.) แปลงเป็นพิกเซลตามความกว้างที่ลูกค้าตั้ง
-  var wmm=(parseFloat($('wcm').value)||6)*10,mm=st.border;
+  var wmm=(parseFloat($('wcm').value)||6)*10,mm=st.border;if(mm<=0)return 0;
   return Math.max(1.5,mm*len/Math.max(5,wmm-2*mm));
 }
 function farthest(c){
@@ -281,8 +294,8 @@ function buildSticker(){
     var b=bpx(base.width);
     var solid=solidOf(base);
     // ตัดตามรูป: ให้ชื่อขอบเป็นสัดส่วนของด้านยาว
-    sil=dilate(solid,b);
-    art=mk(sil.width,sil.height);art.getContext('2d').drawImage(base,b,b);
+    if(b<=0){sil=smooth(solid);art=mk(base.width,base.height);art.getContext('2d').drawImage(base,0,0)}
+    else{sil=dilate(solid,b);art=mk(sil.width,sil.height);art.getContext('2d').drawImage(base,b,b)}
   }else{
     var pad=bpx(m);
     var side=m+pad*2,W=side,H=st.shape==='circle'?side:Math.round(Math.max(base.height,base.width*.62)+pad*2);
@@ -365,6 +378,8 @@ function updateDim(){
   if(!sil){$('dimTxt').textContent='กว้าง – × สูง – ซม.';return}
   var w=parseFloat($('wcm').value)||0,h=w*sil.height/sil.width;
   $('dimTxt').innerHTML='กว้าง <b>'+fmt(w)+'</b> × สูง <b>'+fmt(h)+'</b> ซม.';
+  var bm=st.border>0&&st.shape==='follow'?st.border:0;
+  $('bdInfo').textContent=bm?('ลายกว้าง '+fmt(w-bm/5)+' ซม. + ขอบข้างละ '+(Math.round(bm*10)/10)+' มม. = '+fmt(w)+' ซม.'):'ใช้ขอบตามรูปที่อัปโหลด (ไม่เพิ่มขอบ)';
 }
 function fmt(n){return (Math.round(n*10)/10).toString()}
 var MAT={pvc:'PVC ไดคัท',holo:'โฮโลแกรมไดคัท',refl:'สติ๊กเกอร์สะท้อนแสง'};
@@ -408,7 +423,10 @@ function applyBg(){
   var c=mk(imgOrig.width,imgOrig.height);c.getContext('2d').drawImage(imgOrig,0,0);
   if($('rmbg').checked)c=removeBg(c);
   imgCut=trim(c)||imgOrig;
-  st.orig=imgOrig;st.cut=imgCut;buildSticker();
+  st.orig=imgOrig;st.cut=imgCut;
+  if(st.src==='img'&&hasWhiteEdge(imgCut)&&!userBorder){setBorder(0);toast('พบขอบขาวไดคัทในรูปแล้ว ใช้ขอบนี้ ไม่เพิ่มขอบซ้ำ')}
+  else if(st.src==='img'&&!userBorder&&st.border===0)setBorder(0.2);
+  buildSticker();
 }
 $('file').addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];if(f)loadImg(f)});
 $('rmbg').addEventListener('change',applyBg);
@@ -417,7 +435,9 @@ $('fill').addEventListener('change',buildSticker);
   if(document.fonts&&document.fonts.load){document.fonts.load('500 40px "'+$('tf').value+'"').then(prepare,prepare)}else prepare()})});
 Array.prototype.forEach.call(document.querySelectorAll('input[name=m]'),function(r){r.addEventListener('change',function(){if(r.checked)setMat(r.value)})});
 pressGroup('shapes',function(v){st.shape=v;buildSticker()});
-pressGroup('borders',function(v){st.border=parseFloat(v);buildSticker()});
+var userBorder=false;
+function setBorder(v){st.border=v;Array.prototype.forEach.call($('borders').children,function(c){c.setAttribute('aria-pressed',parseFloat(c.dataset.v)===v?'true':'false')})}
+pressGroup('borders',function(v){userBorder=true;st.border=parseFloat(v);buildSticker()});
 pressGroup('qchips',function(v){$('qty').value=v});
 $('qty').addEventListener('input',function(){var v=$('qty').value;Array.prototype.forEach.call($('qchips').children,function(c){c.setAttribute('aria-pressed',c.dataset.v===v?'true':'false')})});
 $('wcm').addEventListener('input',function(){buildSticker()});
