@@ -1504,6 +1504,7 @@ svg{stroke-linecap:round;stroke-linejoin:round}
 }
 .theme-toggle{display:none!important}
 </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
 <style id="bs-theme-p5">
 /* ===== แบบ 5: ต่อจากแบบ 4 — หัวแอปกึ่งกลางและเมนู "เพิ่มเติม" เป็นช่องไอคอน (แบบหน้า Profile ในตัวอย่าง) ===== */
 @media (max-width:560px){
@@ -1525,6 +1526,31 @@ svg{stroke-linecap:round;stroke-linejoin:round}
 .tax-sheet-item.active{background:#fffaf0;border-color:#f0b400;color:var(--ink);font-weight:600}
 .tax-sheet-item.active .tsi{background:#ffc300;color:#1a1c20}
 .tax-sheet-item{justify-content:flex-start}
+
+/* ===== ฟอนต์ใหม่: IBM Plex Sans Thai — ไทยโปร่ง อ่านสบาย ไม่อัดแน่น ===== */
+:where(body *){font-family:'IBM Plex Sans Thai','Sarabun',system-ui,sans-serif!important}
+body{font-family:'IBM Plex Sans Thai','Sarabun',sans-serif;font-size:16px;line-height:1.8;letter-spacing:0}
+h1,h2,h3,legend,.brand b{line-height:1.45}
+.page-head h1{line-height:1.4}
+.page-head p{line-height:1.75}
+.card h2{line-height:1.5}
+.f>span,legend{line-height:1.6;margin-bottom:8px}
+.btn,.tax-sheet-item,.btab{line-height:1.5}
+.in input,.txt,select,textarea{line-height:1.5;padding-top:10px;padding-bottom:10px}
+.hint,small{line-height:1.7}
+@media (max-width:560px){
+  body{font-size:16.5px}
+  .page-head h1{font-size:25px}
+  .page-head p{font-size:15px}
+  .card h2{font-size:17.5px}
+  .f>span{font-size:14px}
+  .in input,.txt,select,textarea{font-size:16.5px}
+  .btn{font-size:15.5px}
+  .btab{font-size:12.5px}
+  .card{padding:20px}
+  .fields{gap:20px}.row2{gap:14px}
+  fieldset+fieldset{margin-top:28px}
+}
 </style>
 </head>
 <body>
