@@ -599,7 +599,7 @@ function setLang(l){lang=l;try{localStorage.setItem('bs_lang',l)}catch(e){}apply
 $('lgTh').onclick=function(){setLang('th')};$('lgEn').onclick=function(){setLang('en')};
 
 /* ---------- เริ่มต้น ---------- */
-makeTex();setMat('pvc');
+makeTex();var qm=(new URLSearchParams(location.search)).get('m');if(!MAT[qm])qm='pvc';var qr=document.querySelector('input[name=m][value="'+qm+'"]');if(qr)qr.checked=true;setMat(qm);
 // ตัวอย่างเริ่มต้น: โลโก้ร้าน
 var lg=new Image();lg.onload=function(){makeWm(lg);imgOrig=fitCanvas(lg,640);applyBg()};lg.src='logo.jpg';
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){if(st.src==='text')prepare()});
