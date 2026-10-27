@@ -190,7 +190,7 @@ input[type=color]{width:46px;height:46px;border:1px solid #cfcbc0;border-radius:
 <a class="btn ln" id="lnk" href="https://lin.ee/5WdXssc" target="_blank" rel="noopener">เปิดแชท LINE ของร้าน</a>
 <a class="btn fb" href="https://m.me/108503502205863" target="_blank" rel="noopener">เปิดแชท Facebook</a>
 </div>
-<p class="note">ภาพบนจอเป็นตัวอย่างเท่านั้น สีและประกายของโฮโลแกรมหรือสะท้อนแสงจริงจะต่างจากหน้าจอ ภาพตัวอย่างมีลายน้ำ งานจริงไม่มีลายน้ำ ร้านจะเช็กไฟล์และส่งแบบยืนยันก่อนพิมพ์</p>
+<p class="note">ภาพบนจอเป็นตัวอย่างเท่านั้น สีและประกายของโฮโลแกรมหรือสะท้อนแสงจริงจะต่างจากหน้าจอ ภาพตัวอย่างมีลายน้ำโลโก้ร้าน งานจริงไม่มีลายน้ำ ร้านจะเช็กไฟล์และส่งแบบยืนยันก่อนพิมพ์</p>
 </section>
 </div>
 </div>
@@ -365,13 +365,18 @@ function uvMask(){
   }
   m._art=art;uvCache=m;uvKey=key;return m;
 }
+var wmLogo=null,wmWhite=null;
+function makeWm(img){
+  var c=removeBg(fitCanvas(img,260)),t=trim(c)||c;wmLogo=t;
+  var w=mk(t.width,t.height),wx=w.getContext('2d');wx.drawImage(t,0,0);wx.globalCompositeOperation='source-in';wx.fillStyle='#fff';wx.fillRect(0,0,w.width,w.height);wmWhite=w;
+}
 function wm(x,W,H){
-  x.save();x.globalCompositeOperation='source-over';x.translate(W/2,H/2);x.rotate(-Math.PI/7);
-  var fs=Math.max(14,W/12),tw=fs*8.5,th=fs*3;
-  x.font='700 '+fs+'px "Noto Sans Thai",sans-serif';x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';x.lineWidth=fs*.14;
-  for(var r=-Math.ceil(H/th)-2,k=0;r<Math.ceil(H/th)+2;r++,k++){var yy=r*th;
-    for(var c=-Math.ceil(W/tw)-2;c<Math.ceil(W/tw)+2;c++){var xx=c*tw+((r&1)?tw/2:0);
-      x.strokeStyle='rgba(0,0,0,.2)';x.strokeText('BALL STICKER',xx,yy);x.fillStyle='rgba(255,255,255,.55)';x.fillText('BALL STICKER',xx,yy)}}
+  if(!wmLogo)return;
+  x.save();x.globalCompositeOperation='source-over';x.translate(W/2,H/2);x.rotate(-Math.PI/9);
+  var lw=Math.max(40,W/5.2),lh=lw*wmLogo.height/wmLogo.width,gx=lw*1.55,gy=lh*1.75;
+  for(var r=-Math.ceil(H/gy)-2;r<Math.ceil(H/gy)+2;r++){
+    for(var c=-Math.ceil(W/gx)-2;c<Math.ceil(W/gx)+2;c++){var xx=c*gx+((r&1)?gx/2:0)-lw/2,yy=r*gy-lh/2;
+      x.globalAlpha=.3;x.drawImage(wmWhite,xx,yy,lw,lh);x.globalAlpha=.26;x.drawImage(wmLogo,xx,yy,lw,lh)}}
   x.restore();
 }
 function draw(){
@@ -444,7 +449,6 @@ function draw(){
   x.globalCompositeOperation='destination-in';x.drawImage(sil,0,0);
   ctx.save();ctx.shadowColor='rgba(20,20,20,.35)';ctx.shadowBlur=22;ctx.shadowOffsetY=12;
   ctx.drawImage(L,(S-dw)/2,(S-dh)/2,dw,dh);ctx.restore();
-  ctx.fillStyle='rgba(60,60,55,.55)';ctx.font='500 22px "Noto Sans Thai",sans-serif';ctx.textAlign='center';ctx.fillText('ภาพตัวอย่าง · ballsticker.co.th',S/2,S-22);ctx.textAlign='left';
   // เส้นขอบบางๆ ให้เห็นรอยตัด
   ctx.save();ctx.globalAlpha=.9;ctx.drawImage(L,(S-dw)/2,(S-dh)/2,dw,dh);ctx.restore();
 }
@@ -565,7 +569,7 @@ $('send').onclick=function(){
 /* ---------- เริ่มต้น ---------- */
 makeTex();setMat('pvc');
 // ตัวอย่างเริ่มต้น: โลโก้ร้าน
-var lg=new Image();lg.onload=function(){imgOrig=fitCanvas(lg,640);applyBg()};lg.src='logo.jpg';
+var lg=new Image();lg.onload=function(){makeWm(lg);imgOrig=fitCanvas(lg,640);applyBg()};lg.src='logo.jpg';
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){if(st.src==='text')prepare()});
 draw();requestAnimationFrame(tick);
 window.__sum=refreshSum;refreshSum();
