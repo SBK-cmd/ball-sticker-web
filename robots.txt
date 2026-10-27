@@ -3,6 +3,7 @@ Allow: /
 Disallow: /index.html
 Disallow: /ball-sticker.html
 Disallow: /preview.html
+Disallow: /preview4.html
 Disallow: /site-preview.html
 Disallow: /designer-preview.html
 Disallow: /contact-preview.html

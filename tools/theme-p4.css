@@ -1,0 +1,85 @@
+/* ===== แบบ 4: แอปนุ่ม การ์ดโค้งมนลอยบนพื้นมุก (อ้างอิงหน้าตาแอปมือถือสมัยใหม่) =====
+   พื้นหลังไล่สีมุกขาวอมเทา การ์ดขาวโค้ง 28px เงานุ่มสองชั้น ปุ่มทรงแคปซูล
+   ป้ายกำกับขอบสี ตัวเลขใหญ่หนา เมนูล่างวงกลมไอคอน สีเน้นเหลืองร้าน + หมึกดำ */
+:root[data-theme]{
+  --bg:#eeeeef; --surface:#ffffff; --ink:#15171a; --muted:#6c727c; --line:#ececee;
+  --field:#f5f5f6; --field-line:#ececee;
+  --accent:#ffc300; --accent-ink:#15171a; --magenta:#d9261c; --hero-bg:#15171a;
+  --sticker:#ffc300; --sticker-line:#15171a; --mat:#f5f5f6; --mat-line:#ececee;
+  --blue-bg:#fff4cc; --blue-ink:#7a5a00; --warn-bg:#fdecea; --warn-ink:#b3261e;
+  --shadow-1:0 1px 2px rgba(20,22,26,.05),0 6px 16px -8px rgba(20,22,26,.12);
+  --shadow-2:0 2px 4px rgba(20,22,26,.04),0 22px 40px -22px rgba(20,22,26,.28);
+}
+html{background:#eeeeef}
+body{background:radial-gradient(120% 60% at 0% 0%,#fff 0,rgba(255,255,255,0) 60%),radial-gradient(90% 50% at 100% 12%,#fff6d6 0,rgba(255,246,214,0) 70%),linear-gradient(180deg,#f4f4f5 0,#e9e9eb 100%);background-attachment:fixed;color:var(--ink)}
+:focus-visible{outline:3px solid #15171a;outline-offset:2px}
+
+/* หัวหน้า */
+.page-head{padding:22px 0 14px}
+.page-head h1{font-weight:800;letter-spacing:-.01em}
+.page-head p{color:var(--muted)}
+
+/* การ์ด */
+.card,.dash-stat-card{background:linear-gradient(180deg,#fff 0,#fbfbfb 100%);border:1px solid rgba(255,255,255,.9);border-radius:28px;box-shadow:var(--shadow-2);padding:22px}
+.card h2{font-weight:800;font-size:18px;border-bottom:0;padding-bottom:0;margin-bottom:14px}
+.card h2::before{content:"";flex:none;width:14px;height:4px;border-radius:2px;background:var(--accent);margin-right:2px}
+fieldset+fieldset{border-top:1px solid var(--line)}
+legend{font-weight:700}
+.f>span{font-weight:600;color:var(--muted)}
+.in,select,.txt,textarea{background:var(--field);border:1.5px solid transparent;border-radius:18px;box-shadow:inset 0 1px 2px rgba(20,22,26,.05)}
+.in:focus-within,select:focus-visible,.txt:focus-visible,textarea:focus-visible{background:#fff;border-color:var(--ink);box-shadow:0 0 0 4px rgba(255,195,0,.35)}
+
+/* ปุ่มแคปซูล: หลักเป็นหมึกดำ รองเป็นขอบ มีปุ่มเน้นสีเหลือง */
+.btn{border-radius:999px;font-weight:700;background:#fff;border:1.5px solid #e1e1e4;color:var(--ink);box-shadow:0 1px 0 rgba(255,255,255,.8) inset}
+.btn:hover{transform:none;background:var(--field)}
+.btn.primary{background:linear-gradient(180deg,#2a2d31 0,#111315 100%);border-color:#111315;color:#fff;box-shadow:0 10px 18px -10px rgba(17,19,21,.7)}
+.btn.primary:hover{filter:brightness(1.15);background:linear-gradient(180deg,#2a2d31 0,#111315 100%)}
+.btn.accent,.btn.warn,.btn.danger{background:linear-gradient(180deg,#ffd43b 0,#ffc300 100%);border-color:#e8b100;color:#15171a;box-shadow:0 10px 18px -10px rgba(232,177,0,.9)}
+.unit-seg{background:var(--field);border-radius:999px;padding:4px;box-shadow:inset 0 1px 3px rgba(20,22,26,.08)}
+.unit-seg button{border:0;border-radius:999px;background:transparent;font-weight:700;color:var(--muted)}
+.unit-seg button.on{background:linear-gradient(180deg,#ffd43b 0,#ffc300 100%);color:#15171a;box-shadow:0 6px 12px -6px rgba(232,177,0,.9)}
+
+/* ป้ายกำกับขอบสี และชิป */
+.badge,.chip,.tag,.pill{border-radius:999px;border:1.5px solid #f2c94c;background:#fffaf0;color:#7a5a00;font-weight:700;letter-spacing:.04em}
+
+/* ผลลัพธ์: การ์ดมืดตัดกับพื้นมุก ตัวเลขใหญ่หนา */
+.result{background:linear-gradient(160deg,#25282c 0,#111315 100%);color:#fff;border-radius:28px;box-shadow:var(--shadow-2);padding:26px}
+.result .r-label{opacity:.7}
+.r-num #count{color:#ffc300;font-weight:800;letter-spacing:-.02em}
+.r-num span:last-child{opacity:.75;font-weight:500}
+.r-meta{border-top:1px solid rgba(255,255,255,.14)}
+.result .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.35);box-shadow:none}
+.result .btn.primary{background:#ffc300;color:#15171a;border-color:#ffc300;box-shadow:none}
+.dash-stat-card.hero{background:linear-gradient(160deg,#25282c 0,#111315 100%);color:#fff}
+.ps,.price-out{border-radius:22px;border-color:var(--line);background:#fafafa}
+
+/* เมนูข้าง (เดสก์ท็อป) */
+@media (min-width:561px){
+  .wrap{padding-left:268px}
+  header.top{width:244px;background:rgba(255,255,255,.7);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-right:1px solid rgba(255,255,255,.9);box-shadow:20px 0 40px -34px rgba(20,22,26,.4);padding:26px 14px 18px}
+  .sidebar-cta{background:linear-gradient(180deg,#ffd43b 0,#ffc300 100%);border:0;border-radius:999px;box-shadow:0 12px 20px -12px rgba(232,177,0,.95);font-weight:800}
+  header.top .tabs button,header.top .tabs a{border-radius:999px;color:var(--muted);font-weight:600;border:0}
+  header.top .tabs button:hover{background:#fff;color:var(--ink)}
+  header.top .tabs button[aria-selected="true"],header.top .tab-dropdown button[aria-selected="true"]{background:#fff;color:var(--ink);font-weight:800;box-shadow:var(--shadow-1);border:0}
+  header.top .tabs .tab-trigger{text-transform:none;letter-spacing:0;font-size:12.5px;color:#9a9fa8!important}
+}
+
+/* มือถือ: แถบหัวมุก เมนูล่างลอยโค้ง ไอคอนในวงกลม จุดแดง/เหลืองใต้เมนูที่เลือก */
+@media (max-width:560px){
+  .top{padding:16px 0 12px;border-bottom:0}
+  .card{border-radius:26px;padding:18px;box-shadow:var(--shadow-2)}
+  .btn{border-radius:999px}
+  select,.txt,.in,textarea{border-radius:16px}
+  .bnav::after{background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:0;border-radius:28px 28px 0 0;box-shadow:0 -16px 40px -22px rgba(20,22,26,.45)}
+  .btab{color:#8b9099;font-weight:600}
+  .btab-ico{width:48px;height:48px;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff 0,#f1f1f2 100%);box-shadow:0 6px 14px -8px rgba(20,22,26,.35)}
+  .btab:active .btab-ico,.btab[aria-expanded="true"] .btab-ico{background:#f1f1f2}
+  .btab.active{color:var(--ink);font-weight:800;position:relative}
+  .btab.active .btab-ico{background:linear-gradient(180deg,#ffe27a 0,#ffc300 100%);color:#15171a;box-shadow:0 10px 18px -10px rgba(232,177,0,.95)}
+  .btab.active::after{content:"";width:5px;height:5px;border-radius:50%;background:#d9261c;margin-top:1px}
+  .btab-fab::before{display:none}
+  .btab-fab-circle{background:linear-gradient(180deg,#2a2d31 0,#111315 100%);color:#ffc300;box-shadow:0 14px 22px -10px rgba(17,19,21,.8);margin:-22px 0 4px}
+  .btab-fab.active .btab-fab-circle{box-shadow:0 0 0 3px #ffc300,0 14px 22px -10px rgba(17,19,21,.8)}
+  .wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+}
+.card+.card,.card+section,.panel>.card+.card{margin-top:16px}
