@@ -78,6 +78,7 @@ input[type=color]{width:46px;height:46px;border:1px solid #cfcbc0;border-radius:
 .btn.o{background:#fff;border:1px solid #cfcbc0;color:var(--text);margin-top:8px;font-weight:600}
 .btn.fb{background:#0866ff;color:#fff;margin-top:8px}
 .btn.ln{background:var(--green);color:#fff;margin-top:8px}
+.ordsum{margin:0 0 12px;padding:10px 12px;border:1px dashed #b9b5a8;border-radius:8px;font-size:14px;line-height:1.6;white-space:pre-line;color:var(--text)}
 .fallback{margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--bone);font-size:14.5px}
 .fallback ol{margin:6px 0 10px;padding-left:20px}
 .note{font-size:13px;color:var(--muted);margin:10px 0 0}
@@ -172,18 +173,24 @@ input[type=color]{width:46px;height:46px;border:1px solid #cfcbc0;border-radius:
 </section>
 
 <section class="step">
-<h2><span>4</span>ส่งแบบให้ร้าน</h2>
-<p class="price">ราคาขึ้นกับวัสดุ ขนาด และจำนวน ร้านประเมินให้หลังรับแบบ และส่งแบบยืนยันให้ดูก่อนพิมพ์ทุกงาน</p>
-<button class="btn y" id="send" type="button">ส่งแบบให้ร้าน</button>
+<h2><span>4</span>สั่งงาน</h2>
+<p class="price">ราคาขึ้นกับวัสดุ ขนาด และจำนวน ร้านประเมินราคาและส่งแบบยืนยันให้ดูก่อนพิมพ์ทุกงาน ยังไม่ต้องจ่ายเงินตอนนี้</p>
+<div class="two">
+<label class="f"><span>ชื่อผู้สั่ง</span><input type="text" id="oName" autocomplete="name" maxlength="60"></label>
+<label class="f"><span>เบอร์โทร</span><input type="text" id="oTel" inputmode="tel" autocomplete="tel" maxlength="20"></label>
+</div>
+<label class="f"><span>หมายเหตุถึงร้าน (ไม่ใส่ก็ได้)</span><input type="text" id="oNote" maxlength="200" placeholder="เช่น ติดบนกล่อง ต้องการกันน้ำ"></label>
+<div class="ordsum" id="ordSum" aria-live="polite"></div>
+<button class="btn y" id="send" type="button">สั่งงานนี้</button>
 <button class="btn o" id="save" type="button">บันทึกภาพตัวอย่าง</button>
 <div class="fallback" id="fb" hidden>
-<b>ส่งแบบเอง 3 ขั้นตอน</b>
+<b>เกือบเสร็จแล้ว ส่งแบบให้ร้านใน 3 ขั้นตอน</b>
 <ol><li>กด "บันทึกภาพตัวอย่าง"</li><li>กด "คัดลอกข้อความสั่งงาน"</li><li>เปิดแชทร้าน แนบภาพและวางข้อความ</li></ol>
 <button class="btn o" id="copy" type="button" style="margin-top:0">คัดลอกข้อความสั่งงาน</button>
+<a class="btn ln" id="lnk" href="https://lin.ee/5WdXssc" target="_blank" rel="noopener">เปิดแชท LINE ของร้าน</a>
 <a class="btn fb" href="https://m.me/108503502205863" target="_blank" rel="noopener">เปิดแชท Facebook</a>
-<a class="btn ln" href="https://lin.ee/5WdXssc" target="_blank" rel="noopener">เปิดแชท LINE</a>
 </div>
-<p class="note">ภาพบนจอเป็นตัวอย่างเท่านั้น สีและประกายของโฮโลแกรมหรือสะท้อนแสงจริงจะต่างจากหน้าจอ ร้านจะเช็กไฟล์และส่งแบบยืนยันก่อนพิมพ์</p>
+<p class="note">ภาพบนจอเป็นตัวอย่างเท่านั้น สีและประกายของโฮโลแกรมหรือสะท้อนแสงจริงจะต่างจากหน้าจอ ภาพตัวอย่างมีลายน้ำ งานจริงไม่มีลายน้ำ ร้านจะเช็กไฟล์และส่งแบบยืนยันก่อนพิมพ์</p>
 </section>
 </div>
 </div>
@@ -358,6 +365,15 @@ function uvMask(){
   }
   m._art=art;uvCache=m;uvKey=key;return m;
 }
+function wm(x,W,H){
+  x.save();x.globalCompositeOperation='source-over';x.translate(W/2,H/2);x.rotate(-Math.PI/7);
+  var fs=Math.max(14,W/12),tw=fs*8.5,th=fs*3;
+  x.font='700 '+fs+'px "Noto Sans Thai",sans-serif';x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';x.lineWidth=fs*.14;
+  for(var r=-Math.ceil(H/th)-2,k=0;r<Math.ceil(H/th)+2;r++,k++){var yy=r*th;
+    for(var c=-Math.ceil(W/tw)-2;c<Math.ceil(W/tw)+2;c++){var xx=c*tw+((r&1)?tw/2:0);
+      x.strokeStyle='rgba(0,0,0,.2)';x.strokeText('BALL STICKER',xx,yy);x.fillStyle='rgba(255,255,255,.55)';x.fillText('BALL STICKER',xx,yy)}}
+  x.restore();
+}
 function draw(){
   drawMat();
   if(!sil){ctx.fillStyle='#8a8f98';ctx.font='500 28px "Noto Sans Thai",sans-serif';ctx.textAlign='center';
@@ -424,13 +440,16 @@ function draw(){
     var bl=x.createRadialGradient(lx,ly,0,lx,ly,R*.42);bl.addColorStop(0,'rgba(255,255,255,.75)');bl.addColorStop(1,'rgba(255,255,255,0)');
     x.fillStyle=bl;x.fillRect(0,0,W,H);x.globalCompositeOperation='source-over';
   }
+  wm(x,W,H);
   x.globalCompositeOperation='destination-in';x.drawImage(sil,0,0);
   ctx.save();ctx.shadowColor='rgba(20,20,20,.35)';ctx.shadowBlur=22;ctx.shadowOffsetY=12;
   ctx.drawImage(L,(S-dw)/2,(S-dh)/2,dw,dh);ctx.restore();
+  ctx.fillStyle='rgba(60,60,55,.55)';ctx.font='500 22px "Noto Sans Thai",sans-serif';ctx.textAlign='center';ctx.fillText('ภาพตัวอย่าง · ballsticker.co.th',S/2,S-22);ctx.textAlign='left';
   // เส้นขอบบางๆ ให้เห็นรอยตัด
   ctx.save();ctx.globalAlpha=.9;ctx.drawImage(L,(S-dw)/2,(S-dh)/2,dw,dh);ctx.restore();
 }
 function updateDim(){
+  if(window.__sum)window.__sum();
   if(!sil){$('dimTxt').textContent='กว้าง – × สูง – ซม.';return}
   var w=parseFloat($('wcm').value)||0,h=w*sil.height/sil.width;
   $('dimTxt').innerHTML='กว้าง <b>'+fmt(w)+'</b> × สูง <b>'+fmt(h)+'</b> ซม.';
@@ -440,7 +459,7 @@ function updateDim(){
 function fmt(n){return (Math.round(n*10)/10).toString()}
 var MAT={pvc:'PVC ไดคัท',holo:'โฮโลแกรมไดคัท',refl:'สติ๊กเกอร์สะท้อนแสง',uv:'พิมพ์ UV วานิช'};
 var HINT={uv:'ลากนิ้วบนภาพ ดูเงาสะท้อนของวานิชที่นูนขึ้นมา',pvc:'ลากนิ้วบนภาพเพื่อดูเงาสะท้อนของฟิล์ม',holo:'ลากนิ้วบนภาพ สีรุ้งจะเปลี่ยนตามมุมมอง',refl:'ลากนิ้วบนภาพเพื่อส่องไฟ ตรงที่โดนไฟจะสว่างจ้าและสีสดขึ้น'};
-function setMat(v){st.mat=v;$('uvOpt').hidden=v!=='uv';$('matTxt').textContent=MAT[v];$('hint').textContent=HINT[v];draw()}
+function setMat(v){st.mat=v;if(window.__sum)window.__sum();$('uvOpt').hidden=v!=='uv';$('matTxt').textContent=MAT[v];$('hint').textContent=HINT[v];draw()}
 
 /* ---------- แสง: ลากนิ้ว / เลื่อนอัตโนมัติ ---------- */
 function setLight(e){var r=cv.getBoundingClientRect();
@@ -490,41 +509,58 @@ $('fill').addEventListener('change',buildSticker);
 ['t1','t2','tf','tc'].forEach(function(i){$(i).addEventListener('input',function(){
   if(document.fonts&&document.fonts.load){document.fonts.load('500 40px "'+$('tf').value+'"').then(prepare,prepare)}else prepare()})});
 Array.prototype.forEach.call(document.querySelectorAll('input[name=m]'),function(r){r.addEventListener('change',function(){if(r.checked)setMat(r.value)})});
-pressGroup('uvOpt',function(v){st.uv=v;draw()});
+pressGroup('uvOpt',function(v){st.uv=v;draw();refreshSum()});
 pressGroup('shapes',function(v){st.shape=v;buildSticker()});
 var userBorder=false;
 function setBorder(v){st.border=v;Array.prototype.forEach.call($('borders').children,function(c){c.setAttribute('aria-pressed',parseFloat(c.dataset.v)===v?'true':'false')})}
 pressGroup('borders',function(v){userBorder=true;st.border=parseFloat(v);buildSticker()});
-pressGroup('qchips',function(v){$('qty').value=v});
+pressGroup('qchips',function(v){$('qty').value=v;refreshSum()});
 $('qty').addEventListener('input',function(){var v=$('qty').value;Array.prototype.forEach.call($('qchips').children,function(c){c.setAttribute('aria-pressed',c.dataset.v===v?'true':'false')})});
 $('wcm').addEventListener('input',function(){buildSticker()});
 
-/* ---------- ส่งแบบ ---------- */
-function summary(){
-  var w=parseFloat($('wcm').value)||0,h=sil?w*sil.height/sil.width:0;
-  var shape={follow:'ตัดตามรูป',circle:'วงกลม',round:'สี่เหลี่ยมมน'}[st.shape];
-  var txt=st.src==='text'?('\nข้อความ: '+[$('t1').value,$('t2').value].filter(Boolean).join(' / ')):'';
-  return 'สั่งสติ๊กเกอร์ (ออกแบบจากเว็บ)\nวัสดุ: '+MAT[st.mat]+(st.mat==='uv'?(st.uv==='all'?' (วานิชทั้งชิ้น)':' (วานิชเฉพาะส่วนที่มีสี)'):'')+'\nรูปทรง: '+shape+'\nขนาด: กว้าง '+fmt(w)+' ซม. สูงประมาณ '+fmt(h)+' ซม.\nจำนวน: '+($('qty').value||'-')+' ชิ้น'+txt;
+/* ---------- สั่งงาน ---------- */
+var LINE_ID='@bk25',ADD_URL='https://lin.ee/5WdXssc';
+var IS_MOBILE=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform));
+function lineUrl(t){return 'https://line.me/R/oaMessage/'+encodeURIComponent(LINE_ID)+'/'+(t?'?'+encodeURIComponent(t):'')}
+function sizeInfo(){var w=parseFloat($('wcm').value)||0;return {w:w,h:sil?w*sil.height/sil.width:0}}
+function orderBody(){
+  var s=sizeInfo(),shape={follow:'ตัดตามรูป',circle:'วงกลม',round:'สี่เหลี่ยมมน'}[st.shape];
+  var txt=st.src==='text'?('\nข้อความบนสติ๊กเกอร์: '+[$('t1').value,$('t2').value].filter(Boolean).join(' / ')):'';
+  var uv=st.mat==='uv'?(st.uv==='all'?' (วานิชทั้งชิ้น)':' (วานิชเฉพาะส่วนที่มีสี)'):'';
+  var bd=st.shape==='follow'?(st.border>0?('\nขอบขาว: '+st.border+' มม.'):'\nขอบ: ตามไฟล์'):'';
+  return 'วัสดุ: '+MAT[st.mat]+uv+'\nรูปทรง: '+shape+bd+'\nขนาดสำเร็จรูป: กว้าง '+fmt(s.w)+' ซม. สูงประมาณ '+fmt(s.h)+' ซม.\nจำนวน: '+($('qty').value||'-')+' ชิ้น'+txt;
 }
+function orderText(){
+  var nm=$('oName').value.trim(),tel=$('oTel').value.trim(),nt=$('oNote').value.trim();
+  return 'สั่งสติ๊กเกอร์ (ออกแบบจากเว็บ)\n'+orderBody()+'\nชื่อ: '+(nm||'-')+'\nโทร: '+(tel||'-')+(nt?'\nหมายเหตุ: '+nt:'')+'\n(แนบภาพตัวอย่างมาในแชท)';
+}
+function refreshSum(){$('ordSum').textContent=sil?orderBody():'เลือกรูปหรือพิมพ์ข้อความก่อน ระบบจะสรุปรายการสั่งงานตรงนี้'}
 function blobPng(cb){draw();cv.toBlob(cb,'image/png')}
-$('save').onclick=function(){
+function saveImg(){
   if(!sil){toast('ยังไม่มีลายให้บันทึก');return}
   blobPng(function(b){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='ball-sticker-preview.png';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},2000);toast('บันทึกภาพแล้ว')});
-};
-$('copy').onclick=function(){
-  var t=summary();
-  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){toast('คัดลอกข้อความแล้ว')},function(){
-    var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('คัดลอกข้อความแล้ว')}catch(e){toast('คัดลอกไม่สำเร็จ')}ta.remove()});
-};
+}
+function copyTxt(t,ok){
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){toast(ok)},function(){
+    var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast(ok)}catch(e){toast('คัดลอกไม่สำเร็จ')}ta.remove()});
+}
+$('save').onclick=saveImg;
+$('copy').onclick=function(){copyTxt(orderText(),'คัดลอกข้อความแล้ว')};
 $('send').onclick=function(){
   if(!sil){toast('เลือกรูปหรือพิมพ์ข้อความก่อน');return}
+  var nm=$('oName').value.trim(),tel=$('oTel').value.replace(/\D/g,'');
+  if(!nm){toast('ใส่ชื่อผู้สั่งก่อน');$('oName').focus();return}
+  if(tel.length<9){toast('ใส่เบอร์โทรให้ครบ ร้านจะได้โทรกลับ');$('oTel').focus();return}
+  var text=orderText();
+  $('lnk').href=IS_MOBILE?lineUrl(text):ADD_URL;
   blobPng(function(b){
     var file=new File([b],'ball-sticker-preview.png',{type:'image/png'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
-      navigator.share({files:[file],text:summary(),title:'ออกแบบสติ๊กเกอร์'}).catch(function(){});
+      navigator.share({files:[file],text:text,title:'สั่งสติ๊กเกอร์'}).catch(function(){$('fb').hidden=false});
     }else{$('fb').hidden=false;$('fb').scrollIntoView({behavior:'smooth',block:'nearest'})}
   });
 };
+['qty','wcm'].forEach(function(i){$(i).addEventListener('input',refreshSum)});
 
 /* ---------- เริ่มต้น ---------- */
 makeTex();setMat('pvc');
@@ -532,6 +568,7 @@ makeTex();setMat('pvc');
 var lg=new Image();lg.onload=function(){imgOrig=fitCanvas(lg,640);applyBg()};lg.src='logo.jpg';
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){if(st.src==='text')prepare()});
 draw();requestAnimationFrame(tick);
+window.__sum=refreshSum;refreshSum();
 window.__bs={st:st,get sil(){return sil}};
 })();
 </script>
