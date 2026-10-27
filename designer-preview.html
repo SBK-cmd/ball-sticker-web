@@ -144,10 +144,11 @@ input[type=color]{width:46px;height:46px;border:1px solid #cfcbc0;border-radius:
 <button type="button" data-v="circle" aria-pressed="false">วงกลม</button>
 <button type="button" data-v="round" aria-pressed="false">สี่เหลี่ยมมน</button>
 </div>
-<div class="chips" id="borders" role="group" aria-label="ขอบขาว" style="margin-bottom:12px">
-<button type="button" data-v="0.03" aria-pressed="false">ขอบบาง</button>
-<button type="button" data-v="0.055" aria-pressed="true">ขอบกลาง</button>
-<button type="button" data-v="0.09" aria-pressed="false">ขอบหนา</button>
+<div class="chips" id="borders" role="group" aria-label="ขอบขาวรอบลาย" style="margin-bottom:12px">
+<button type="button" data-v="0.2" aria-pressed="true">ขอบ 0.2 มม.</button>
+<button type="button" data-v="1" aria-pressed="false">1 มม.</button>
+<button type="button" data-v="2" aria-pressed="false">2 มม.</button>
+<button type="button" data-v="3" aria-pressed="false">3 มม.</button>
 </div>
 <div class="two">
 <label class="f"><span>ความกว้าง (ซม.)</span><input type="number" id="wcm" value="6" min="1" max="100" step="0.5" inputmode="decimal"></label>
@@ -187,7 +188,7 @@ input[type=color]{width:46px;height:46px;border:1px solid #cfcbc0;border-radius:
 var $=function(i){return document.getElementById(i)};
 var cv=$('cv'),ctx=cv.getContext('2d'),S=cv.width;
 var reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
-var st={src:'img',mat:'pvc',shape:'follow',border:0.055,orig:null,cut:null};
+var st={src:'img',mat:'pvc',shape:'follow',border:0.2,orig:null,cut:null};
 var sil=null,art=null,texHolo=null,texRefl=null,mats={};
 var light={x:.35,y:.3,user:false,t:0};
 
@@ -250,7 +251,7 @@ function dilate(solid,r){
   for(k=0;k<n;k++){a=k/n*Math.PI*2;x.drawImage(solid,r+Math.cos(a)*r*.55,r+Math.sin(a)*r*.55)}
   x.drawImage(solid,r,r);
   // ทำขอบให้เรียบ: เบลอแล้วตัดที่ครึ่งหนึ่ง
-  var t=mk(w,h),tx=t.getContext('2d');tx.filter='blur('+Math.max(2,r*.28)+'px)';tx.drawImage(o,0,0);tx.filter='none';
+  var t=mk(w,h),tx=t.getContext('2d');tx.filter='blur('+Math.max(1,r*.28)+'px)';tx.drawImage(o,0,0);tx.filter='none';
   var im=tx.getImageData(0,0,w,h),d=im.data;
   for(var i=0;i<d.length;i+=4){var v=d[i+3]>110?255:0;d[i]=d[i+1]=d[i+2]=0;d[i+3]=v}
   tx.putImageData(im,0,0);return t;
@@ -263,6 +264,10 @@ function solidOf(c){
 }
 function roundRect(x,px,py,w,h,r){x.beginPath();x.moveTo(px+r,py);x.arcTo(px+w,py,px+w,py+h,r);x.arcTo(px+w,py+h,px,py+h,r);x.arcTo(px,py+h,px,py,r);x.arcTo(px,py,px+w,py,r);x.closePath()}
 
+function bpx(len){ // ขอบจริง (มม.) แปลงเป็นพิกเซลตามความกว้างที่ลูกค้าตั้ง
+  var wmm=(parseFloat($('wcm').value)||6)*10,mm=st.border;
+  return Math.max(1.5,mm*len/Math.max(5,wmm-2*mm));
+}
 function farthest(c){
   var w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data,cx=w/2,cy=h/2,r2=1;
   for(var y=0;y<h;y+=2)for(var x=0;x<w;x+=2){if(d[(y*w+x)*4+3]>32){var q=(x-cx)*(x-cx)+(y-cy)*(y-cy);if(q>r2)r2=q}}
@@ -273,13 +278,13 @@ function buildSticker(){
   if(!base){sil=null;art=null;draw();return}
   var m=Math.max(base.width,base.height);
   if(st.shape==='follow'){
-    var b=Math.round(m*st.border*1.0);
+    var b=bpx(base.width);
     var solid=solidOf(base);
     // ตัดตามรูป: ให้ชื่อขอบเป็นสัดส่วนของด้านยาว
     sil=dilate(solid,b);
     art=mk(sil.width,sil.height);art.getContext('2d').drawImage(base,b,b);
   }else{
-    var pad=Math.round(m*st.border);
+    var pad=bpx(m);
     var side=m+pad*2,W=side,H=st.shape==='circle'?side:Math.round(Math.max(base.height,base.width*.62)+pad*2);
     if(st.shape==='round'){W=Math.round(base.width+pad*2);H=Math.round(base.height+pad*2);if(W<H*.5)W=Math.round(H*.5)}
     sil=mk(W,H);var sx=sil.getContext('2d');sx.fillStyle='#000';
@@ -415,7 +420,7 @@ pressGroup('shapes',function(v){st.shape=v;buildSticker()});
 pressGroup('borders',function(v){st.border=parseFloat(v);buildSticker()});
 pressGroup('qchips',function(v){$('qty').value=v});
 $('qty').addEventListener('input',function(){var v=$('qty').value;Array.prototype.forEach.call($('qchips').children,function(c){c.setAttribute('aria-pressed',c.dataset.v===v?'true':'false')})});
-$('wcm').addEventListener('input',updateDim);
+$('wcm').addEventListener('input',function(){buildSticker()});
 
 /* ---------- ส่งแบบ ---------- */
 function summary(){
