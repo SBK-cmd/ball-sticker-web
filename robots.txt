@@ -4,6 +4,8 @@ Disallow: /index.html
 Disallow: /ball-sticker.html
 Disallow: /preview.html
 Disallow: /site-preview.html
+Disallow: /designer-preview.html
+Disallow: /contact-preview.html
 Disallow: /js/
 
 Sitemap: https://www.ballsticker.co.th/sitemap.xml
