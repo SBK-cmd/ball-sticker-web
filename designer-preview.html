@@ -116,6 +116,7 @@ input[type=color]{width:46px;height:46px;border:1px solid #cfcbc0;border-radius:
 <div id="boxImg">
 <label class="drop"><input type="file" id="file" accept="image/*"><b>เลือกรูปจากอัลบั้ม</b><small>โลโก้หรือภาพ PNG พื้นใสจะตัดตามขอบได้แม่นที่สุด</small></label>
 <div class="row"><label class="chk"><input type="checkbox" id="rmbg" checked><span>ลบพื้นหลังสีเดียวรอบรูป (เช่น พื้นขาว)</span></label></div>
+<div class="row"><label class="chk"><input type="checkbox" id="fill"><span>ขยายรูปเต็มกรอบวงกลม/สี่เหลี่ยม (อาจตัดขอบรูป)</span></label></div>
 </div>
 <div id="boxTxt" hidden>
 <label class="f"><span>บรรทัดที่ 1</span><input type="text" id="t1" value="บอลสติ๊กเกอร์" maxlength="24" autocomplete="off"></label>
@@ -262,6 +263,11 @@ function solidOf(c){
 }
 function roundRect(x,px,py,w,h,r){x.beginPath();x.moveTo(px+r,py);x.arcTo(px+w,py,px+w,py+h,r);x.arcTo(px+w,py+h,px,py+h,r);x.arcTo(px,py+h,px,py,r);x.arcTo(px,py,px+w,py,r);x.closePath()}
 
+function farthest(c){
+  var w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data,cx=w/2,cy=h/2,r2=1;
+  for(var y=0;y<h;y+=2)for(var x=0;x<w;x+=2){if(d[(y*w+x)*4+3]>32){var q=(x-cx)*(x-cx)+(y-cy)*(y-cy);if(q>r2)r2=q}}
+  return Math.sqrt(r2);
+}
 function buildSticker(){
   var base=st.cut||st.orig;
   if(!base){sil=null;art=null;draw();return}
@@ -280,16 +286,13 @@ function buildSticker(){
     if(st.shape==='circle'){sx.beginPath();sx.arc(W/2,H/2,Math.min(W,H)/2,0,7);sx.fill()}
     else{roundRect(sx,0,0,W,H,Math.min(W,H)*.14);sx.fill()}
     art=mk(W,H);var ax=art.getContext('2d');
-    var src=(st.src==='img'&&st.orig)?st.orig:base;
-    var avail=st.shape==='circle'?Math.min(W,H)*.74:Math.min(W,H)-pad*1.2;
-    var cover=(st.src==='img');
-    var sc=cover?Math.max(W/src.width,H/src.height):Math.min((W*.78)/src.width,(H*.78)/src.height);
-    if(st.shape==='circle'&&!cover)sc=Math.min(avail/src.width,avail/src.height);
-    var dw=src.width*sc,dh=src.height*sc;
-    ax.save();
-    if(cover){ax.drawImage(sil,0,0);ax.globalCompositeOperation='source-in'}
-    ax.drawImage(src,(W-dw)/2,(H-dh)/2,dw,dh);ax.restore();
-    if(cover){/* ภาพเต็มกรอบ ไม่มีขอบเพิ่ม */}
+    var src=base,sw=src.width,sh=src.height,cover=$('fill').checked&&st.src==='img',sc;
+    if(cover)sc=Math.max(W/sw,H/sh);
+    else if(st.shape==='circle')sc=Math.min(W,H)*.46/farthest(src);
+    else sc=Math.min((W-pad*1.2)/sw,(H-pad*1.2)/sh);
+    var dw=sw*sc,dh=sh*sc;
+    ax.drawImage(src,(W-dw)/2,(H-dh)/2,dw,dh);
+    if(cover){ax.globalCompositeOperation='destination-in';ax.drawImage(sil,0,0)}
   }
   draw();updateDim();
 }
@@ -404,6 +407,7 @@ function applyBg(){
 }
 $('file').addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];if(f)loadImg(f)});
 $('rmbg').addEventListener('change',applyBg);
+$('fill').addEventListener('change',buildSticker);
 ['t1','t2','tf','tc'].forEach(function(i){$(i).addEventListener('input',function(){
   if(document.fonts&&document.fonts.load){document.fonts.load('500 40px "'+$('tf').value+'"').then(prepare,prepare)}else prepare()})});
 Array.prototype.forEach.call(document.querySelectorAll('input[name=m]'),function(r){r.addEventListener('change',function(){if(r.checked)setMat(r.value)})});
