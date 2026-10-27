@@ -78,3 +78,42 @@ legend{font-size:13px;margin-bottom:10px}
 }
 .rlock,.rlock span,#rimgBtn,.ratio-row button,label:has(>input[type=checkbox]) span{font-size:14px!important;font-weight:500}
 @media (max-width:560px){.top{padding:10px 0 8px}.top .brand .mark{width:40px}}
+
+/* ===== ระบบสเปซ (ฐาน 4px): ป้าย→ช่อง 6 · ช่อง→ช่อง 16 · หัวกลุ่ม→ช่อง 12 · กลุ่ม→กลุ่ม 28 ===== */
+.f>span{display:block;line-height:1.4;margin:0 0 6px}
+legend{line-height:1.4;margin:0 0 12px;padding:0;font-weight:600;color:var(--ink);font-size:14px}
+fieldset{margin:0}
+fieldset+fieldset{margin-top:28px;padding-top:24px;border-top:1px solid var(--line)}
+.card h2{margin:0 0 16px}
+.fields{display:grid;gap:16px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;align-items:start}
+.row2+.row2,.row2+label.f,label.f+.row2,label.f+label.f{margin-top:16px!important}
+.row2[style*="margin-top"]{margin-top:16px!important}
+.unit-seg{margin:0 0 16px}
+.ratio-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px 12px;margin:0 0 16px}
+.ratio-row .rlock{display:inline-flex;align-items:center;gap:10px;margin:0}
+.rthumb-wrap{margin:0 0 12px}
+.hint,.actions-note{margin:12px 0 0;line-height:1.6;color:var(--muted)}
+.in{display:flex;align-items:center;gap:8px;padding:0 14px}
+.in input{padding:0;min-height:42px;flex:1;min-width:0}
+.in em{flex:none}
+.txt,select,textarea{padding:10px 14px}
+select{padding-right:36px}
+.actions{margin-top:20px;gap:10px}
+.card .card{padding:16px}
+.card+.card,.card+section,.panel>.card+.card{margin-top:16px}
+@media (max-width:560px){
+  .card{padding:18px}
+  .row2{gap:16px 12px}
+  fieldset+fieldset{margin-top:24px;padding-top:20px}
+}
+.row2>label.f,.row2>.f{margin:0!important}
+.row2+.row2,.row2+label.f,label.f+.row2{margin-top:16px!important}
+label.f+label.f{margin-top:0}
+.fields>label.f+label.f{margin-top:0!important}
+legend{display:block;width:100%;float:none}
+legend::after,legend::before{display:none!important}
+legend+*{margin-top:0}
+.row2>label.f+label.f,.row2>label.f:first-child,.row2>label.f:last-child{margin-top:0!important}
+fieldset+fieldset{padding-top:0!important;border-top:0!important;margin-top:28px!important}
+@media (max-width:560px){fieldset+fieldset{padding-top:0!important;margin-top:26px!important}}
