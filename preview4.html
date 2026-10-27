@@ -1299,170 +1299,120 @@ legend{font-size:15px}
   @keyframes bsPeel{from{transform:translateY(6px) rotate(-.6deg);opacity:0}to{transform:none;opacity:1}}
 }
 </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap">
 <style id="bs-theme-p4">
-/* ===== แบบ 4 (คลีน): พื้นเรียบ การ์ดขาวขอบบาง แบ่งส่วนชัด =====
-   ไม่มีไล่สี/แสงฟุ้ง เงาแทบไม่มี ใช้เส้นและช่องไฟแบ่งสัดส่วน
-   ลำดับตัวอักษรชัด: หัวหน้า 28 · หัวการ์ด 17 · ป้ายช่อง 13 · เนื้อหา 16
-   สีเน้นเหลืองร้านใช้เฉพาะสิ่งที่ "เลือกอยู่" และปุ่มสำคัญ */
+/* ===== แบบ 4: ตามแอปตัวอย่าง (Profender) — พื้นมุก การ์ดโค้งใหญ่ การ์ดย่อยมีขอบบาง ปุ่มแคปซูลเงา ไอคอนวงกลม =====
+   ฟอนต์เดียว Prompt น้ำหนัก 400/500/600 เท่านั้น (ไม่ใช้ตัวหนาพิเศษ กันตัวเอียง/เบลอ)
+   ขนาดตัวอักษร: หัวหน้า 28 · หัวการ์ด 18 · ป้ายช่อง 13 · เนื้อหา 16 · ตัวเลขเด่น 44+
+   รัศมีมุก: การ์ด 28 · การ์ดย่อย 20 · ช่องกรอก 16 · ปุ่ม/ป้าย แคปซูล */
 :root[data-theme]{
-  --bg:#f2f2f0; --surface:#ffffff; --ink:#16181b; --muted:#666c75; --line:#e3e3df;
-  --field:#f6f6f4; --field-line:#dcdcd7;
-  --accent:#ffc300; --accent-ink:#16181b; --magenta:#d9261c; --hero-bg:#16181b;
-  --sticker:#ffc300; --sticker-line:#16181b; --mat:#f6f6f4; --mat-line:#e3e3df;
-  --blue-bg:#fff4cc; --blue-ink:#6b4f00; --warn-bg:#fdecea; --warn-ink:#b3261e;
-  --shadow-1:none; --shadow-2:0 1px 2px rgba(20,22,26,.05);
+  --bg:#efeff0; --surface:#ffffff; --ink:#1a1c20; --muted:#6f747d; --line:#e9e9ec;
+  --field:#f7f7f8; --field-line:#e9e9ec;
+  --accent:#ffc300; --accent-ink:#1a1c20; --magenta:#e0301e; --hero-bg:#1a1c20;
+  --sticker:#ffc300; --sticker-line:#1a1c20; --mat:#f7f7f8; --mat-line:#e9e9ec;
+  --blue-bg:#fff3c4; --blue-ink:#6b4f00; --warn-bg:#fdecea; --warn-ink:#b3261e;
+  --shadow-1:0 1px 2px rgba(20,22,26,.05); --shadow-2:0 1px 0 #fff inset,0 2px 6px rgba(20,22,26,.04),0 22px 44px -26px rgba(20,22,26,.3);
+  --r-card:28px; --r-in:20px; --r-field:16px;
 }
-html,body{background:#f2f2f0}
-body{color:var(--ink);font-size:16px;line-height:1.6}
-:focus-visible{outline:3px solid #16181b;outline-offset:2px}
+:where(body *){font-family:'Prompt','Sarabun',system-ui,sans-serif!important}
+html{background:#efeff0}
+body{font-family:'Prompt','Sarabun',sans-serif;font-size:16px;line-height:1.6;color:var(--ink);font-weight:400;
+  background:radial-gradient(90% 40% at 0% 0%,#fff 0,rgba(255,255,255,0) 70%),radial-gradient(70% 36% at 100% 6%,#f3f0e6 0,rgba(243,240,230,0) 70%),linear-gradient(180deg,#f5f5f6 0,#ebebed 100%);background-attachment:fixed}
+b,strong,th{font-weight:600}
+h1,h2,h3,legend,.brand b{font-weight:600}
+:focus-visible{outline:3px solid #1a1c20;outline-offset:2px}
 
-/* หัวหน้า: ชัด แยกจากเนื้อหาด้วยช่องไฟ */
+/* หัวหน้า */
 .page-head{padding:26px 0 18px}
-.page-head h1{font-weight:800;font-size:clamp(26px,4vw,32px);letter-spacing:-.01em;line-height:1.25}
+.page-head h1{font-weight:600;font-size:clamp(26px,4vw,30px);line-height:1.3;letter-spacing:0}
 .page-head p{color:var(--muted);font-size:15px;margin-top:6px;max-width:62ch}
 
-/* การ์ด: ขาว ขอบบาง หัวการ์ดมีเส้นคั่นชัด */
-.card,.dash-stat-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow-2);padding:22px}
-.card h2{font-weight:800;font-size:17px;margin:0 0 16px;padding:0;border-bottom:0;display:flex;align-items:center;gap:10px}
-.card h2::before{content:"";flex:none;width:4px;height:18px;border-radius:2px;background:var(--accent);margin:0}
-.card+.card,.card+section,.panel>.card+.card{margin-top:16px}
+/* การ์ดใหญ่ */
+.card,.dash-stat-card{background:linear-gradient(180deg,#fff 0,#fcfcfc 100%);border:1px solid #fff;border-radius:var(--r-card);box-shadow:var(--shadow-2);padding:24px}
+.card+.card,.card+section,.panel>.card+.card{margin-top:18px}
+.card h2{font-weight:600;font-size:18px;line-height:1.35;margin:0 0 18px;padding:0;border:0;display:flex;align-items:center;gap:10px}
+.card h2::before{display:none}
+/* การ์ดย่อย: ขอบบางอ่อน พื้นอ่อนมาก (เหมือนกล่อง "รุ่นรถ" ในตัวอย่าง) */
+.card .card,.card .ps,.card .price-out,.card .bkc,.card .bk-add{background:linear-gradient(180deg,#fff 0,#f9f9fa 100%)!important;border:1px solid var(--line)!important;border-radius:var(--r-in)!important;box-shadow:none!important}
 fieldset{border:0;padding:0;margin:0}
-fieldset+fieldset{border-top:1px solid var(--line);margin-top:18px;padding-top:18px}
-legend{font-weight:700;font-size:14.5px;color:var(--ink);margin-bottom:12px}
-.f>span{font-weight:600;font-size:13px;color:var(--muted);margin-bottom:6px}
+fieldset+fieldset{border-top:0;margin-top:24px;padding-top:0}
+legend{font-size:14px;color:var(--muted);margin-bottom:12px;padding:0}
+.f>span{font-size:13px;font-weight:500;color:var(--muted);margin-bottom:6px}
 .fields{gap:16px}.row2{gap:14px}
 
-/* ช่องกรอก: เรียบ ขอบชัด */
-.in,select,.txt,textarea{background:#fff;border:1.5px solid var(--field-line);border-radius:12px;box-shadow:none}
-.in:focus-within,select:focus-visible,.txt:focus-visible,textarea:focus-visible{border-color:var(--ink);box-shadow:0 0 0 3px rgba(255,195,0,.45)}
+/* ช่องกรอก: สูงเท่ากัน มุกเดียวกัน ขอบบางอ่อน */
+.in,select,.txt,textarea{background:#fff;border:1px solid #dcdce0;border-radius:var(--r-field);box-shadow:none;min-height:48px;font-size:16px;font-weight:500}
+.in input{font-size:16px;font-weight:500}
+.in em{font-style:normal;color:var(--muted);font-weight:400;font-size:13px}
+textarea{min-height:88px}
+.in:focus-within,select:focus-visible,.txt:focus-visible,textarea:focus-visible{border-color:var(--ink);box-shadow:0 0 0 4px rgba(255,195,0,.3)}
+input[type=checkbox],input[type=radio]{accent-color:#1a1c20}
 
-/* ปุ่ม: เรียบ ไม่ไล่สี */
-.btn{border-radius:999px;font-weight:700;background:#fff;border:1.5px solid var(--field-line);color:var(--ink);box-shadow:none}
-.btn:hover{transform:none;background:var(--field)}
-.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
-.btn.primary:hover{background:#2c3035}
-.btn.accent,.btn.warn{background:var(--accent);border-color:var(--accent);color:var(--ink)}
-.unit-seg{background:var(--field);border:1px solid var(--line);border-radius:999px;padding:3px;box-shadow:none}
-.unit-seg button{border:0;border-radius:999px;background:transparent;font-weight:600;color:var(--muted)}
-.unit-seg button.on{background:var(--accent);color:var(--ink);font-weight:800;box-shadow:none}
+/* ปุ่ม: ปกติ = แคปซูลขอบ · หลัก = ดำเงา · เน้น = เหลืองเงา */
+.btn{border-radius:999px;font-weight:500;font-size:15px;min-height:46px;padding:0 22px;background:#fff;border:1.5px solid #d9d9dd;color:var(--ink);box-shadow:none}
+.btn:hover{background:#f7f7f8;transform:none}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(180deg,#34373c 0,#16181b 100%);border-color:#16181b;color:#fff;font-weight:600;box-shadow:0 8px 16px -8px rgba(22,24,27,.65)}
+.btn.primary:hover{background:linear-gradient(180deg,#3d4146 0,#1c1e22 100%)}
+.btn.accent,.btn.warn{background:linear-gradient(180deg,#ffd84a 0,#ffc300 100%);border-color:#f2b800;color:#1a1c20;font-weight:600;box-shadow:0 8px 16px -8px rgba(230,170,0,.8)}
+.btn.small{min-height:36px;padding:0 14px;font-size:13.5px}
+.unit-seg{background:#f1f1f3;border:0;border-radius:999px;padding:4px;box-shadow:none}
+.unit-seg button{border:0;border-radius:999px;background:transparent;color:var(--muted);font-weight:500;min-height:40px}
+.unit-seg button.on{background:linear-gradient(180deg,#ffd84a 0,#ffc300 100%);color:#1a1c20;font-weight:600;box-shadow:0 4px 10px -4px rgba(230,170,0,.8)}
 
-/* ป้ายกำกับ */
-.badge,.chip,.tag,.pill{border-radius:999px;border:1.5px solid var(--line);background:#fff;color:var(--ink);font-weight:700}
+/* ป้ายกำกับขอบสี (เหมือน TYPE 4 ในตัวอย่าง) */
+.badge,.chip,.tag,.pill{border-radius:999px;border:1px solid #f0b400;background:#fffaf0;color:#8a6200;font-weight:600;letter-spacing:.03em;box-shadow:none}
 
-/* ผลลัพธ์/ตัวเลขสำคัญ: บล็อกดำทึบ แยกชัดจากช่องกรอก */
-.result{background:var(--ink);background-image:none;color:#fff;border-radius:18px;box-shadow:none;padding:24px}
-.result .r-label{opacity:.7}
-.r-num #count{color:var(--accent);font-weight:800;letter-spacing:-.02em}
-.r-num span:last-child{opacity:.75;font-weight:500}
-.r-meta{border-top:1px solid rgba(255,255,255,.16)}
-.result .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.35)}
-.result .btn.primary{background:var(--accent);color:var(--ink);border-color:var(--accent)}
-.dash-stat-card.hero{background:var(--ink);background-image:none;color:#fff;border-color:var(--ink)}
-.ps,.price-out{border-radius:14px;border:1px solid var(--line);background:var(--field)}
+/* ผลลัพธ์/ตัวเลขเด่น */
+.result{background:linear-gradient(165deg,#2a2d32 0,#15171a 100%);color:#fff;border:0;border-radius:var(--r-card);box-shadow:0 2px 6px rgba(20,22,26,.2),0 26px 46px -24px rgba(20,22,26,.6);padding:28px}
+.result .r-label{opacity:.7;font-weight:400}
+.r-num #count{color:#ffc300;font-weight:600;letter-spacing:-.02em}
+.r-num span:last-child{opacity:.7;font-weight:400}
+.r-meta{border-top:1px solid rgba(255,255,255,.14)}
+.r-meta dd{font-weight:500}
+.result .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.35);box-shadow:none}
+.result .btn.primary{background:linear-gradient(180deg,#ffd84a 0,#ffc300 100%);color:#1a1c20;border-color:#ffc300}
+.dash-stat-card.hero{background:linear-gradient(165deg,#2a2d32 0,#15171a 100%);border:0;color:#fff}
 
-/* เมนูข้าง (เดสก์ท็อป): ขาวทึบ ขีดคั่นขวา */
+/* เมนูข้าง (เดสก์ท็อป): ไอคอนสีอ่อน รายการสูงเท่ากัน ตัวที่เลือกเป็นแคปซูลเหลืองอ่อน */
 @media (min-width:561px){
-  .wrap{padding-left:268px}
-  header.top{width:244px;background:#fff;border-right:1px solid var(--line);box-shadow:none;padding:24px 14px 18px}
-  .sidebar-cta{background:var(--accent);border:0;border-radius:999px;box-shadow:none;font-weight:800}
-  .sidebar-cta:hover{transform:none;filter:brightness(.96)}
-  header.top .tabs button,header.top .tabs a{border-radius:10px;color:var(--muted);font-weight:600;border:0;padding:10px 12px}
-  header.top .tabs button:hover{background:var(--field);color:var(--ink)}
-  header.top .tabs button[aria-selected="true"],header.top .tab-dropdown button[aria-selected="true"]{background:var(--accent);color:var(--ink);font-weight:800;box-shadow:none;border:0}
-  header.top .tabs .tab-trigger{text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:700;color:#9a9fa8!important;border-top:1px solid var(--line)!important;border-radius:0;margin-top:10px;padding:14px 12px 4px}
+  .wrap{padding-left:276px}
+  header.top{width:252px;background:rgba(255,255,255,.78);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-right:1px solid #fff;box-shadow:18px 0 40px -34px rgba(20,22,26,.35);padding:24px 14px 18px}
+  header.top .brand b{font-weight:600}
+  .sidebar-cta{background:linear-gradient(180deg,#34373c 0,#16181b 100%);color:#fff;border:0;border-radius:999px;min-height:48px;font-weight:600;box-shadow:0 8px 16px -8px rgba(22,24,27,.65)}
+  .sidebar-cta svg{color:#ffc300}
+  .sidebar-cta:hover{transform:none;filter:brightness(1.15)}
+  header.top .tabs button,header.top .tabs a{border-radius:999px;min-height:44px;padding:0 14px;color:var(--muted);font-weight:500;font-size:15px;border:0;gap:12px}
+  header.top .tabs button:hover{background:#f3f3f5;color:var(--ink)}
+  header.top .tabs button[aria-selected="true"],header.top .tab-dropdown button[aria-selected="true"]{background:#fff3c4;color:var(--ink);font-weight:600;box-shadow:inset 0 0 0 1px #f5d36a}
+  header.top .tabs button[aria-selected="true"] svg{color:#b88a00}
+  header.top .tabs .tab-trigger{text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:500;color:#9a9fa8!important;margin-top:14px;padding:10px 14px 4px;border:0!important;min-height:0}
+  header.top .theme-toggle,header.top .user-chip-btn{background:#fff;border:1px solid #dcdce0;box-shadow:none}
 }
 
-/* มือถือ */
+/* มือถือ: เมนูล่างไอคอนวงกลมแบบตัวอย่าง */
 @media (max-width:560px){
-  .top{padding:14px 0 10px;border-bottom:1px solid var(--line);margin-bottom:0}
-  .page-head{padding:18px 0 14px}
+  .top{padding:14px 0 10px;border:0;box-shadow:none}
+  .page-head{padding:16px 0 14px}
   .page-head h1{font-size:26px}
-  .card{border-radius:16px;padding:16px;box-shadow:none}
-  .card h2{margin:0 0 14px;font-size:16.5px}
-  .btn,select,.txt,.in,textarea{border-radius:12px}
-  .btn{border-radius:999px}
-  .bnav::after{background:#fff;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none}
-  .btab{color:#8a8f98;font-weight:600}
-  .btab-ico{width:44px;height:32px;border-radius:16px;background:transparent;box-shadow:none}
-  .btab:active .btab-ico{background:var(--field)}
-  .btab.active{color:var(--ink);font-weight:800}
-  .btab.active .btab-ico{background:var(--accent);color:var(--ink);box-shadow:none}
+  .card{padding:18px;border-radius:26px}
+  .card h2{font-size:17px;margin-bottom:14px}
+  .btn{min-height:46px;border-radius:999px;font-size:15px}
+  .in,select,.txt,textarea{border-radius:var(--r-field)}
+  .bnav::after{background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:0;border-radius:28px 28px 0 0;box-shadow:0 -14px 36px -22px rgba(20,22,26,.4)}
+  .btab{color:#8d929b;font-weight:500;font-size:11.5px}
+  .btab-ico{width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff 0,#f2f2f4 100%);box-shadow:0 6px 12px -8px rgba(20,22,26,.4)}
+  .btab:active .btab-ico{background:#ececef}
+  .btab.active{color:var(--ink);font-weight:600}
+  .btab.active .btab-ico{background:linear-gradient(180deg,#ffe27a 0,#ffc300 100%);color:#1a1c20;box-shadow:0 8px 14px -8px rgba(230,170,0,.9)}
+  .btab.active::after{content:"";width:5px;height:5px;border-radius:50%;background:#e0301e;margin-top:2px}
   .btab-fab::before{display:none}
-  .btab-fab-circle{background:var(--ink);color:var(--accent);box-shadow:0 0 0 4px #fff;margin:-24px 0 4px}
-  .btab-fab.active .btab-fab-circle{box-shadow:0 0 0 4px #fff,0 0 0 7px var(--accent)}
-  .wrap{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+  .btab-fab-circle{background:linear-gradient(180deg,#34373c 0,#16181b 100%);color:#ffc300;margin:-20px 0 4px;box-shadow:0 0 0 4px rgba(255,255,255,.94),0 10px 18px -8px rgba(22,24,27,.7)}
+  .btab-fab.active .btab-fab-circle{box-shadow:0 0 0 4px rgba(255,255,255,.94),0 0 0 7px #ffc300,0 10px 18px -8px rgba(22,24,27,.7)}
+  .wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 }
-.bkc{background:var(--field)!important;background-image:none!important;border:1px solid var(--line)!important;box-shadow:none!important}
-
-/* ===== เพิ่มมิติ: เงาซ้อนชั้นแบบนุ่ม (ยังเรียบ ไม่ฟุ้ง) ===== */
-:root[data-theme]{
-  --depth:0 1px 0 rgba(255,255,255,.9) inset,0 1px 2px rgba(20,22,26,.06),0 4px 10px -2px rgba(20,22,26,.07),0 16px 32px -14px rgba(20,22,26,.2);
-  --depth-sm:0 1px 0 rgba(255,255,255,.9) inset,0 1px 2px rgba(20,22,26,.08),0 3px 8px -3px rgba(20,22,26,.14);
-}
-.card,.dash-stat-card{box-shadow:var(--depth);border-color:#e6e6e2}
-.result,.dash-stat-card.hero{box-shadow:0 1px 2px rgba(20,22,26,.2),0 10px 18px -6px rgba(20,22,26,.35),0 24px 40px -18px rgba(20,22,26,.45)}
-.bkc,.ps,.price-out{box-shadow:inset 0 1px 3px rgba(20,22,26,.08)!important}
-.in,select,.txt,textarea{box-shadow:inset 0 1px 3px rgba(20,22,26,.09)}
-.in:focus-within,select:focus-visible,.txt:focus-visible,textarea:focus-visible{box-shadow:inset 0 1px 3px rgba(20,22,26,.06),0 0 0 3px rgba(255,195,0,.5)}
-.btn{box-shadow:var(--depth-sm)}
-.btn:hover{box-shadow:var(--depth-sm)}
-.btn:active{box-shadow:inset 0 2px 4px rgba(20,22,26,.18);transform:translateY(1px)}
-.btn.primary{box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 4px rgba(20,22,26,.3),0 8px 14px -6px rgba(20,22,26,.5)}
-.btn.accent,.btn.warn{box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 2px 4px rgba(180,130,0,.35),0 8px 14px -6px rgba(200,150,0,.6)}
-.unit-seg{box-shadow:inset 0 1px 3px rgba(20,22,26,.1)}
-.unit-seg button.on{box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 2px 6px -1px rgba(180,130,0,.5)}
-.badge,.chip,.tag,.pill{box-shadow:var(--depth-sm)}
-@media (min-width:561px){
-  header.top{box-shadow:6px 0 24px -12px rgba(20,22,26,.18)}
-  .sidebar-cta{box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 2px 4px rgba(180,130,0,.35),0 10px 18px -8px rgba(200,150,0,.7)}
-  header.top .tabs button[aria-selected="true"],header.top .tab-dropdown button[aria-selected="true"]{box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 2px 6px -1px rgba(180,130,0,.5)}
-}
-@media (max-width:560px){
-  .card{box-shadow:var(--depth)}
-  .top{box-shadow:0 6px 14px -12px rgba(20,22,26,.25)}
-  .bnav::after{box-shadow:0 -8px 24px -10px rgba(20,22,26,.25)}
-  .btab.active .btab-ico{box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 3px 8px -2px rgba(180,130,0,.55)}
-  .btab-fab-circle{box-shadow:0 0 0 4px #fff,0 8px 16px -4px rgba(20,22,26,.55)}
-  .btab-fab.active .btab-fab-circle{box-shadow:0 0 0 4px #fff,0 0 0 7px var(--accent),0 8px 16px -4px rgba(20,22,26,.55)}
-}
-
-/* ===== ลดความรก: เงาเฉพาะการ์ดหลัก ที่เหลือเรียบ ลดเส้น ลดกรอบซ้อนกรอบ เพิ่มช่องไฟ ===== */
-:root[data-theme]{--depth:0 1px 2px rgba(20,22,26,.05),0 12px 28px -14px rgba(20,22,26,.2)}
-.card,.dash-stat-card{border-color:transparent;padding:26px}
-.card+.card,.card+section,.panel>.card+.card{margin-top:20px}
-.card h2{margin-bottom:20px}
-.card h2::before{display:none}
-/* ช่องกรอก: พื้นเทาอ่อน ไม่มีเส้นขอบ ไม่มีเงา */
-.in,select,.txt,textarea{background:var(--field);border:1.5px solid transparent;box-shadow:none}
-.in:focus-within,select:focus-visible,.txt:focus-visible,textarea:focus-visible{background:#fff;border-color:var(--ink);box-shadow:0 0 0 3px rgba(255,195,0,.45)}
-/* ปุ่ม: เรียบ ไม่มีเงา (ยกเว้นปุ่มหลัก) */
-.btn{box-shadow:none;border-color:#dcdcd7}
-.btn:hover,.btn:active{box-shadow:none;transform:none}
-.btn.primary,.btn.accent,.btn.warn{box-shadow:none}
-.btn.accent,.btn.warn{border-color:var(--accent)}
-.badge,.chip,.tag,.pill{box-shadow:none}
-.unit-seg{box-shadow:none;border:0}
-.unit-seg button.on{box-shadow:none}
-/* กรอบซ้อนในการ์ด: ไม่มีเส้น ไม่มีเงา เหลือแค่พื้นอ่อน */
-.card .card,.card .ps,.card .price-out,.card .bkc,.card [class*="stat"],.card .bk-add{box-shadow:none!important;border:0!important;background:var(--field)!important;background-image:none!important}
-.card .bk-add{border:0!important}
-.bkc .in,.bkc [class*="box"]{box-shadow:none}
-/* เส้นคั่นหัวข้อย่อยเบาลง */
-legend{font-size:14px}
-fieldset+fieldset{border-top:0;margin-top:26px;padding-top:0}
-.fields{gap:18px}
-/* เมนูข้าง: ไม่มีเงา/เรืองแสง */
-@media (min-width:561px){
-  header.top{box-shadow:none;border-right:1px solid var(--line)}
-  .sidebar-cta,header.top .tabs button[aria-selected="true"],header.top .tab-dropdown button[aria-selected="true"]{box-shadow:none}
-  header.top .tabs .tab-trigger{border-top:0!important;margin-top:14px}
-  header.top .theme-toggle,header.top .user-chip-btn{box-shadow:none}
-}
-@media (max-width:560px){
-  .card{padding:18px}
-  .top{box-shadow:none;border-bottom:0}
-  .btab.active .btab-ico{box-shadow:none}
-}
+label.check,label:has(>input[type=checkbox]){font-weight:500;font-size:15px}
+.btn.dashed,.btn[style*="dashed"],button.ghost{font-size:14.5px;font-weight:500;border-style:dashed}
 </style>
 </head>
 <body>
