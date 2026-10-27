@@ -360,13 +360,25 @@ function draw(){
     x.globalAlpha=1;x.globalCompositeOperation='multiply';x.drawImage(art,0,0);
     x.globalCompositeOperation='source-over';
   }else{
-    var gr=x.createRadialGradient(lx,ly,0,lx,ly,R*.62);
-    gr.addColorStop(0,'#f6f8fa');gr.addColorStop(.35,'#c9cdd2');gr.addColorStop(1,'#565b62');
+    // สะท้อนแสง: ปกติเป็นเงินสว่างๆ มีลายเม็ดแก้วละเอียด พอโดนไฟตรงจุดนั้นจะสว่างจ้า สีหมึกสดขึ้น และเม็ดแก้วระยิบ
+    var gr=x.createRadialGradient(lx,ly,0,lx,ly,R*.75);
+    gr.addColorStop(0,'#ffffff');gr.addColorStop(.4,'#eceff2');gr.addColorStop(1,'#d3d7dc');
     x.fillStyle=gr;x.fillRect(0,0,W,H);
-    x.globalAlpha=.8;x.fillStyle=x.createPattern(texRefl,'repeat');x.fillRect(0,0,W,H);x.globalAlpha=1;
-    x.globalAlpha=.9;x.drawImage(art,0,0);x.globalAlpha=1;
-    var gs=x.createRadialGradient(lx,ly,0,lx,ly,R*.5);gs.addColorStop(0,'rgba(255,255,255,.6)');gs.addColorStop(1,'rgba(255,255,255,0)');
-    x.fillStyle=gs;x.fillRect(0,0,W,H);
+    x.globalAlpha=.45;x.fillStyle=x.createPattern(texRefl,'repeat');x.fillRect(0,0,W,H);x.globalAlpha=1;
+    x.drawImage(art,0,0);
+    function spot(r,a0,a1){var m=mk(W,H),mx=m.getContext('2d');var g=mx.createRadialGradient(lx,ly,0,lx,ly,r);
+      g.addColorStop(0,'rgba(0,0,0,'+a0+')');g.addColorStop(1,'rgba(0,0,0,'+a1+')');mx.fillStyle=g;mx.fillRect(0,0,W,H);return m}
+    // หมึกสว่างขึ้นในวงไฟ
+    var lit=mk(W,H),lx2=lit.getContext('2d');lx2.drawImage(art,0,0);lx2.globalCompositeOperation='destination-in';lx2.drawImage(spot(R*.5,1,0),0,0);
+    x.globalCompositeOperation='lighter';x.globalAlpha=.7;x.drawImage(lit,0,0);x.globalAlpha=1;
+    // เม็ดแก้วระยิบในวงไฟ
+    var gl=mk(W,H),gx=gl.getContext('2d');gx.fillStyle=gx.createPattern(texHolo,'repeat');gx.fillRect(0,0,W,H);
+    gx.globalCompositeOperation='destination-in';gx.drawImage(spot(R*.45,1,0),0,0);
+    x.globalAlpha=.9;x.drawImage(gl,0,0);x.globalAlpha=1;
+    // แสงฟุ้ง
+    x.globalCompositeOperation='screen';
+    var bl=x.createRadialGradient(lx,ly,0,lx,ly,R*.42);bl.addColorStop(0,'rgba(255,255,255,.75)');bl.addColorStop(1,'rgba(255,255,255,0)');
+    x.fillStyle=bl;x.fillRect(0,0,W,H);x.globalCompositeOperation='source-over';
   }
   x.globalCompositeOperation='destination-in';x.drawImage(sil,0,0);
   ctx.save();ctx.shadowColor='rgba(20,20,20,.35)';ctx.shadowBlur=22;ctx.shadowOffsetY=12;
@@ -383,7 +395,7 @@ function updateDim(){
 }
 function fmt(n){return (Math.round(n*10)/10).toString()}
 var MAT={pvc:'PVC ไดคัท',holo:'โฮโลแกรมไดคัท',refl:'สติ๊กเกอร์สะท้อนแสง'};
-var HINT={pvc:'ลากนิ้วบนภาพเพื่อดูเงาสะท้อนของฟิล์ม',holo:'ลากนิ้วบนภาพ สีรุ้งจะเปลี่ยนตามมุมมอง',refl:'ลากนิ้วบนภาพเพื่อส่องไฟ ดูตอนโดนแสงเทียบกับตอนมืด'};
+var HINT={pvc:'ลากนิ้วบนภาพเพื่อดูเงาสะท้อนของฟิล์ม',holo:'ลากนิ้วบนภาพ สีรุ้งจะเปลี่ยนตามมุมมอง',refl:'ลากนิ้วบนภาพเพื่อส่องไฟ ตรงที่โดนไฟจะสว่างจ้าและสีสดขึ้น'};
 function setMat(v){st.mat=v;$('matTxt').textContent=MAT[v];$('hint').textContent=HINT[v];draw()}
 
 /* ---------- แสง: ลากนิ้ว / เลื่อนอัตโนมัติ ---------- */
