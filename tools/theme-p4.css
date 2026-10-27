@@ -123,3 +123,41 @@ legend{font-weight:700;font-size:14.5px;color:var(--ink);margin-bottom:12px}
   .btab-fab-circle{box-shadow:0 0 0 4px #fff,0 8px 16px -4px rgba(20,22,26,.55)}
   .btab-fab.active .btab-fab-circle{box-shadow:0 0 0 4px #fff,0 0 0 7px var(--accent),0 8px 16px -4px rgba(20,22,26,.55)}
 }
+
+/* ===== ลดความรก: เงาเฉพาะการ์ดหลัก ที่เหลือเรียบ ลดเส้น ลดกรอบซ้อนกรอบ เพิ่มช่องไฟ ===== */
+:root[data-theme]{--depth:0 1px 2px rgba(20,22,26,.05),0 12px 28px -14px rgba(20,22,26,.2)}
+.card,.dash-stat-card{border-color:transparent;padding:26px}
+.card+.card,.card+section,.panel>.card+.card{margin-top:20px}
+.card h2{margin-bottom:20px}
+.card h2::before{display:none}
+/* ช่องกรอก: พื้นเทาอ่อน ไม่มีเส้นขอบ ไม่มีเงา */
+.in,select,.txt,textarea{background:var(--field);border:1.5px solid transparent;box-shadow:none}
+.in:focus-within,select:focus-visible,.txt:focus-visible,textarea:focus-visible{background:#fff;border-color:var(--ink);box-shadow:0 0 0 3px rgba(255,195,0,.45)}
+/* ปุ่ม: เรียบ ไม่มีเงา (ยกเว้นปุ่มหลัก) */
+.btn{box-shadow:none;border-color:#dcdcd7}
+.btn:hover,.btn:active{box-shadow:none;transform:none}
+.btn.primary,.btn.accent,.btn.warn{box-shadow:none}
+.btn.accent,.btn.warn{border-color:var(--accent)}
+.badge,.chip,.tag,.pill{box-shadow:none}
+.unit-seg{box-shadow:none;border:0}
+.unit-seg button.on{box-shadow:none}
+/* กรอบซ้อนในการ์ด: ไม่มีเส้น ไม่มีเงา เหลือแค่พื้นอ่อน */
+.card .card,.card .ps,.card .price-out,.card .bkc,.card [class*="stat"],.card .bk-add{box-shadow:none!important;border:0!important;background:var(--field)!important;background-image:none!important}
+.card .bk-add{border:0!important}
+.bkc .in,.bkc [class*="box"]{box-shadow:none}
+/* เส้นคั่นหัวข้อย่อยเบาลง */
+legend{font-size:14px}
+fieldset+fieldset{border-top:0;margin-top:26px;padding-top:0}
+.fields{gap:18px}
+/* เมนูข้าง: ไม่มีเงา/เรืองแสง */
+@media (min-width:561px){
+  header.top{box-shadow:none;border-right:1px solid var(--line)}
+  .sidebar-cta,header.top .tabs button[aria-selected="true"],header.top .tab-dropdown button[aria-selected="true"]{box-shadow:none}
+  header.top .tabs .tab-trigger{border-top:0!important;margin-top:14px}
+  header.top .theme-toggle,header.top .user-chip-btn{box-shadow:none}
+}
+@media (max-width:560px){
+  .card{padding:18px}
+  .top{box-shadow:none;border-bottom:0}
+  .btab.active .btab-ico{box-shadow:none}
+}
