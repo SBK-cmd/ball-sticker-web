@@ -110,3 +110,92 @@ input[type=checkbox],input[type=radio]{accent-color:#1a1c20}
 }
 label.check,label:has(>input[type=checkbox]){font-weight:500;font-size:15px}
 .btn.dashed,.btn[style*="dashed"],button.ghost{font-size:14.5px;font-weight:500;border-style:dashed}
+
+/* ===== ไอคอนมินิมอล: เส้นบาง 1.5 สีเทา ขนาดเท่ากัน ===== */
+svg{stroke-linecap:round;stroke-linejoin:round}
+.tabs svg,.btab svg,.btn svg,.sidebar-cta svg,.card h2 svg,.user-chip svg,.theme-toggle svg,.bell-btn svg,header svg{stroke-width:1.5!important}
+.tabs svg *,.btab svg *,.btn svg *,.sidebar-cta svg *,.card h2 svg *,header svg *{stroke-width:1.5!important}
+.tabs svg{width:20px;height:20px;opacity:.75}
+.tabs button[aria-selected="true"] svg{opacity:1}
+.btab-ico svg{width:22px;height:22px}
+@media (max-width:560px){
+  .btab-ico{background:transparent!important;box-shadow:none!important}
+  .btab.active .btab-ico{background:#ffc300!important}
+  .btab-fab-circle{box-shadow:0 0 0 4px rgba(255,255,255,.94)}
+}
+
+/* ===== มือถือ: ขนาดฟอนต์สบายตา (พื้นต่ำสุด 13px, เนื้อหา 16px, ปุ่ม 15px) ===== */
+@media (max-width:560px){
+  body{font-size:16px;line-height:1.65}
+  .page-head h1{font-size:24px;line-height:1.3}
+  .page-head p{font-size:14.5px;line-height:1.6;-webkit-line-clamp:3}
+  .card h2{font-size:17px}
+  legend{font-size:14.5px}
+  .f>span{font-size:14px}
+  .hint,.actions-note,.foot,.foot-note,small{font-size:13.5px;line-height:1.55}
+  .in input,.txt,select,textarea{font-size:16px}
+  .btn{font-size:15px}.btn.small{font-size:14px}
+  .btab{font-size:12px}
+  #trackHistory .meta small,
+  #trackHistory li .live-status,
+  .actions-note,
+  .bar-label,
+  .bar-val,
+  .bell-main small,
+  .bil-mid small,
+  .bil-time,
+  .bis .bis-out,
+  .bis small,
+  .bis-bal,
+  .bk-add-head small,
+  .bk-manual,
+  .bkc-bal small,
+  .bkc-bal span,
+  .bkc-chip small,
+  .bkc-chip span,
+  .bkc-month,
+  .bkc-when,
+  .bko-foot,
+  .dash-cat-link,
+  .dash-donut small,
+  .dash-legend,
+  .dash-mini-label,
+  .dash-sec-head span,
+  .dash-tile-label,
+  .dsc-label,
+  .dsc-trend,
+  .foot,
+  .foot-note,
+  .hint,
+  .history li .live-status,
+  .history li .live-status .live-when,
+  .history li .live-status .refresh-one,
+  .history li .sender-info,
+  .item-head,
+  .job-queue-badge,
+  .job-queue-main small,
+  .job-status-select,
+  .pay-row small,
+  .pay-st,
+  .ps small,
+  .ps-l,
+  .push-status,
+  .sh-copy,
+  .sh-lines,
+  .sign-date,
+  .split-table td small,
+  .split-table thead th,
+  .status-pill,
+  .top-track,
+  .track-day li small,
+  .track-status-select,
+  .user-chip-info b,
+  .user-chip-info small,
+  .user-row .meta .user-perm-sum,
+  .user-row .meta small,
+  .user-row .role-pill,
+  table.dash-tbl td:nth-child(3),
+  table.dash-tbl th,
+  td.dname small{font-size:13px!important;line-height:1.5}
+  .btab-badge,.tab-badge,.tax-tag,.role-pill{font-size:11.5px}
+}
