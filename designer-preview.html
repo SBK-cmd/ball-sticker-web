@@ -23,6 +23,10 @@ a{color:inherit}
 .top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:60px}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700}
 .brand img{width:36px;height:36px;border-radius:50%}
+.hd{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:flex-end}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.lang button{min-height:34px;min-width:44px;padding:0 10px;border:0;background:#fff;font:600 13.5px 'Noto Sans Thai';cursor:pointer}
+.lang button[aria-pressed=true]{background:var(--ink);color:#fff}
 .back{font-size:14.5px;color:var(--muted);text-decoration:none}
 .back:hover{color:var(--ink)}
 .tag{display:inline-block;margin:0 0 0 10px;padding:1px 9px;border:1px solid var(--gold);color:var(--gold);border-radius:20px;font-size:12.5px;font-weight:600;vertical-align:middle}
@@ -92,7 +96,7 @@ input[type=color]{width:46px;height:46px;border:1px solid #cfcbc0;border-radius:
 <body>
 <header class="top"><div class="wrap">
 <a class="brand" href="site-preview.html"><img src="icon-192.png" alt=""><span>บอลสติ๊กเกอร์</span></a>
-<a class="back" href="site-preview.html">กลับหน้าร้าน</a>
+<span class="hd"><a class="back" href="contact-preview.html">ติดต่อร้าน</a><a class="back" href="site-preview.html">กลับหน้าร้าน</a><span class="lang" role="group" aria-label="Language"><button type="button" id="lgTh" aria-pressed="true">ไทย</button><button type="button" id="lgEn" aria-pressed="false">EN</button></span></span>
 </div></header>
 
 <main class="wrap">
@@ -200,6 +204,9 @@ input[type=color]{width:46px;height:46px;border:1px solid #cfcbc0;border-radius:
 <script>
 (function(){
 'use strict';
+var EN={"1 มม.": "1 mm", "2 มม.": "2 mm", "3 มม.": "3 mm", "ขอบ 0.2 มม.": "0.2 mm border", "ไม่เพิ่มขอบ": "No extra border", "ขอบขาวรอบลาย": "White border", "จำนวนที่นิยม": "Popular quantities", "ตัวอย่างสติ๊กเกอร์": "Sticker preview", "ตัวอย่างสติ๊กเกอร์ที่ออกแบบ": "Your sticker design preview", "ตำแหน่งวานิช": "Varnish area", "รูปทรง": "Shape", "วัสดุ": "Material", "แหล่งลาย": "Artwork source", "เช่น ติดบนกล่อง ต้องการกันน้ำ": "e.g. for a box, waterproof", "PVC ไดคัท": "Die-cut PVC", "กด \"คัดลอกข้อความสั่งงาน\"": "Tap \"Copy order text\"", "กด \"บันทึกภาพตัวอย่าง\"": "Tap \"Save preview image\"", "กลับหน้าร้าน": "Back to shop", "กว้าง – × สูง – ซม.": "Width – × Height – cm", "ขยายรูปเต็มกรอบวงกลม/สี่เหลี่ยม (อาจตัดขอบรูป)": "Fill the circle / rounded shape (may crop the image edges)", "ความกว้างสำเร็จรูป รวมขอบ (ซม.)": "Finished width incl. border (cm)", "คัดลอกข้อความสั่งงาน": "Copy order text", "จำนวน (ชิ้น)": "Quantity (pcs)", "ชื่อผู้สั่ง": "Your name", "ตัดตามรูป": "Cut to shape", "บรรทัดที่ 1": "Line 1", "บรรทัดที่ 2 (ไม่ใส่ก็ได้)": "Line 2 (optional)", "บอลสติ๊กเกอร์": "Ball Sticker", "บันทึกภาพตัวอย่าง": "Save preview image", "พรีวิว": "Preview", "พิมพ์ UV วานิช": "UV varnish print", "พิมพ์ข้อความ": "Type text", "ฟิล์ม PVC ตัดตามรูปทรง สีพิมพ์สด": "PVC film cut to shape, vivid print", "ฟิล์มสะท้อนสีรุ้ง เปลี่ยนสีตามมุมมอง": "Rainbow holographic film that shifts colour with the viewing angle", "ภาพบนจอเป็นตัวอย่างเท่านั้น สีและประกายของโฮโลแกรมหรือสะท้อนแสงจริงจะต่างจากหน้าจอ ภาพตัวอย่างมีลายน้ำโลโก้ร้าน งานจริงไม่มีลายน้ำ ร้านจะเช็กไฟล์และส่งแบบยืนยันก่อนพิมพ์": "The image is a preview only. Real hologram and reflective films look different from a screen. The preview carries the shop logo as a watermark; the real sticker has none. We check your file and send a proof before printing.", "ราคาขึ้นกับวัสดุ ขนาด และจำนวน ร้านประเมินราคาและส่งแบบยืนยันให้ดูก่อนพิมพ์ทุกงาน ยังไม่ต้องจ่ายเงินตอนนี้": "Price depends on material, size and quantity. We quote after receiving your design and send a proof before every print job. No payment needed now.", "รูปทรงและขนาด": "Shape & size", "ลบพื้นหลังสีเดียวรอบรูป (เช่น พื้นขาว)": "Remove the single-colour background (e.g. white)", "ลากนิ้วบนภาพเพื่อเปลี่ยนมุมแสง": "Drag on the image to change the light angle", "ลายมือ": "Handwritten", "ลายสติ๊กเกอร์": "Artwork", "วงกลม": "Circle", "วานิชทั้งชิ้น": "Varnish everything", "วานิชเฉพาะส่วนที่มีสี": "Varnish coloured areas only", "สติ๊กเกอร์สะท้อนแสง": "Reflective sticker", "สั่งงาน": "Order", "สั่งงานนี้": "Place this order", "สีตัวอักษร": "Text colour", "สี่เหลี่ยมมน": "Rounded square", "หนาเรียบ": "Bold, plain", "หนาโค้งมน": "Bold, rounded", "หมายเหตุถึงร้าน (ไม่ใส่ก็ได้)": "Note to the shop (optional)", "ออกแบบสติ๊กเกอร์ของคุณ": "Design your sticker", "อัปโหลดรูป": "Upload image", "เกือบเสร็จแล้ว ส่งแบบให้ร้านใน 3 ขั้นตอน": "Almost done. Send your design to the shop in 3 steps", "เคลือบวานิชเงานูนบนลาย ให้ลายเด่นขึ้น": "Glossy raised varnish on the artwork so it stands out", "เบอร์โทร": "Phone", "เปิดแชท Facebook": "Open Facebook chat", "เปิดแชท LINE ของร้าน": "Open the shop's LINE chat", "เปิดแชทร้าน แนบภาพและวางข้อความ": "Open the shop chat, attach the image and paste the text", "เลือกรูปจากอัลบั้ม": "Choose a photo from your album", "เหลี่ยมทันสมัย": "Modern angular", "เห็นชัดเมื่อโดนไฟ ลองลากนิ้วบนภาพเพื่อส่องไฟ": "Stands out when light hits it. Drag on the image to shine a light", "แบบตัวอักษร": "Font style", "โลโก้หรือภาพ PNG พื้นใสจะตัดตามขอบได้แม่นที่สุด": "Logos and transparent PNGs give the most accurate cut line", "โฮโลแกรมไดคัท": "Die-cut hologram", "ใส่รูปหรือพิมพ์ข้อความ เลือกวัสดุ ดูตัวอย่างไดคัททันที แล้วส่งแบบให้ร้านตรวจก่อนพิมพ์": "Add an image or type text, pick a material, see the die-cut instantly, then send it to the shop to check before printing.", "ติดต่อร้าน": "Contact", "เลือกรูปเพื่อดูตัวอย่าง": "Choose an image to preview", "พิมพ์ข้อความเพื่อดูตัวอย่าง": "Type text to preview", "ลากนิ้วบนภาพ ดูเงาสะท้อนของวานิชที่นูนขึ้นมา": "Drag on the image to see the raised varnish catch the light", "ลากนิ้วบนภาพ สีรุ้งจะเปลี่ยนตามมุมมอง": "Drag on the image and the rainbow shifts with the angle", "ลากนิ้วบนภาพเพื่อดูเงาสะท้อนของฟิล์ม": "Drag on the image to see the film catch the light", "ลากนิ้วบนภาพเพื่อส่องไฟ ตรงที่โดนไฟจะสว่างจ้าและสีสดขึ้น": "Drag on the image to shine a light. Where it hits, the sticker glows and colours pop", "คัดลอกข้อความแล้ว": "Order text copied", "คัดลอกไม่สำเร็จ": "Could not copy", "บันทึกภาพแล้ว": "Image saved", "พบขอบขาวไดคัทในรูปแล้ว ใช้ขอบนี้ ไม่เพิ่มขอบซ้ำ": "Found a white die-cut edge in your image. Using it, no extra border added", "ยังไม่มีลายให้บันทึก": "Nothing to save yet", "เปิดรูปนี้ไม่ได้ ลองบันทึกเป็น JPG หรือ PNG": "Cannot open this image. Try saving it as JPG or PNG", "เลือกรูปหรือพิมพ์ข้อความก่อน": "Choose an image or type text first", "เลือกรูปหรือพิมพ์ข้อความก่อน ระบบจะสรุปรายการสั่งงานตรงนี้": "Choose an image or type text first. Your order summary will appear here.", "ใช้ขอบตามรูปที่อัปโหลด (ไม่เพิ่มขอบ)": "Using the border from your uploaded file (no extra border)", "ใส่ชื่อผู้สั่งก่อน": "Please enter your name", "ใส่เบอร์โทรให้ครบ ร้านจะได้โทรกลับ": "Please enter a full phone number so we can call you back"};
+var lang='th';try{lang=localStorage.getItem('bs_lang')==='en'?'en':'th'}catch(e){}
+function t(s){return lang==='en'&&EN[s]?EN[s]:s}
 var $=function(i){return document.getElementById(i)};
 var cv=$('cv'),ctx=cv.getContext('2d'),S=cv.width;
 var reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -382,7 +389,7 @@ function wm(x,W,H){
 function draw(){
   drawMat();
   if(!sil){ctx.fillStyle='#8a8f98';ctx.font='500 28px "Noto Sans Thai",sans-serif';ctx.textAlign='center';
-    ctx.fillText(st.src==='img'?'เลือกรูปเพื่อดูตัวอย่าง':'พิมพ์ข้อความเพื่อดูตัวอย่าง',S/2,S/2);ctx.textAlign='left';return}
+    ctx.fillText(t(st.src==='img'?'เลือกรูปเพื่อดูตัวอย่าง':'พิมพ์ข้อความเพื่อดูตัวอย่าง'),S/2,S/2);ctx.textAlign='left';return}
   var W=sil.width,H=sil.height,k=Math.min((S*.74)/W,(S*.74)/H),dw=W*k,dh=H*k;
   var L=mk(W,H),x=L.getContext('2d'),lx=light.x*W,ly=light.y*H,R=Math.max(W,H);
   var m=st.mat;
@@ -456,14 +463,15 @@ function updateDim(){
   if(window.__sum)window.__sum();
   if(!sil){$('dimTxt').textContent='กว้าง – × สูง – ซม.';return}
   var w=parseFloat($('wcm').value)||0,h=w*sil.height/sil.width;
-  $('dimTxt').innerHTML='กว้าง <b>'+fmt(w)+'</b> × สูง <b>'+fmt(h)+'</b> ซม.';
+  $('dimTxt').innerHTML=lang==='en'?('Width <b>'+fmt(w)+'</b> × Height <b>'+fmt(h)+'</b> cm'):('กว้าง <b>'+fmt(w)+'</b> × สูง <b>'+fmt(h)+'</b> ซม.');
   var bm=st.border>0&&st.shape==='follow'?st.border:0;
-  $('bdInfo').textContent=bm?('ลายกว้าง '+fmt(w-bm/5)+' ซม. + ขอบข้างละ '+(Math.round(bm*10)/10)+' มม. = '+fmt(w)+' ซม.'):'ใช้ขอบตามรูปที่อัปโหลด (ไม่เพิ่มขอบ)';
+  $('bdInfo').textContent=bm?(lang==='en'?('Artwork '+fmt(w-bm/5)+' cm + '+(Math.round(bm*10)/10)+' mm border per side = '+fmt(w)+' cm'):'ลายกว้าง '+fmt(w-bm/5)+' ซม. + ขอบข้างละ '+(Math.round(bm*10)/10)+' มม. = '+fmt(w)+' ซม.'):t('ใช้ขอบตามรูปที่อัปโหลด (ไม่เพิ่มขอบ)');
 }
 function fmt(n){return (Math.round(n*10)/10).toString()}
+var MATEN={pvc:'Die-cut PVC',holo:'Die-cut hologram',refl:'Reflective sticker',uv:'UV varnish print'};
 var MAT={pvc:'PVC ไดคัท',holo:'โฮโลแกรมไดคัท',refl:'สติ๊กเกอร์สะท้อนแสง',uv:'พิมพ์ UV วานิช'};
 var HINT={uv:'ลากนิ้วบนภาพ ดูเงาสะท้อนของวานิชที่นูนขึ้นมา',pvc:'ลากนิ้วบนภาพเพื่อดูเงาสะท้อนของฟิล์ม',holo:'ลากนิ้วบนภาพ สีรุ้งจะเปลี่ยนตามมุมมอง',refl:'ลากนิ้วบนภาพเพื่อส่องไฟ ตรงที่โดนไฟจะสว่างจ้าและสีสดขึ้น'};
-function setMat(v){st.mat=v;if(window.__sum)window.__sum();$('uvOpt').hidden=v!=='uv';$('matTxt').textContent=MAT[v];$('hint').textContent=HINT[v];draw()}
+function setMat(v){st.mat=v;if(window.__sum)window.__sum();$('uvOpt').hidden=v!=='uv';$('matTxt').textContent=lang==='en'?MATEN[v]:MAT[v];$('hint').textContent=t(HINT[v]);draw()}
 
 /* ---------- แสง: ลากนิ้ว / เลื่อนอัตโนมัติ ---------- */
 function setLight(e){var r=cv.getBoundingClientRect();
@@ -494,7 +502,7 @@ function loadImg(f){
     URL.revokeObjectURL(u);
     var o=fitCanvas(im,640);imgOrig=o;applyBg();
   };
-  im.onerror=function(){toast('เปิดรูปนี้ไม่ได้ ลองบันทึกเป็น JPG หรือ PNG')};
+  im.onerror=function(){toast(t('เปิดรูปนี้ไม่ได้ ลองบันทึกเป็น JPG หรือ PNG'))};
   im.src=u;
 }
 function applyBg(){
@@ -503,7 +511,7 @@ function applyBg(){
   if($('rmbg').checked)c=removeBg(c);
   imgCut=trim(c)||imgOrig;
   st.orig=imgOrig;st.cut=imgCut;
-  if(st.src==='img'&&hasWhiteEdge(imgCut)&&!userBorder){setBorder(0);toast('พบขอบขาวไดคัทในรูปแล้ว ใช้ขอบนี้ ไม่เพิ่มขอบซ้ำ')}
+  if(st.src==='img'&&hasWhiteEdge(imgCut)&&!userBorder){setBorder(0);toast(t('พบขอบขาวไดคัทในรูปแล้ว ใช้ขอบนี้ ไม่เพิ่มขอบซ้ำ'))}
   else if(st.src==='img'&&!userBorder&&st.border===0)setBorder(0.2);
   buildSticker();
 }
@@ -538,23 +546,30 @@ function orderText(){
   var nm=$('oName').value.trim(),tel=$('oTel').value.trim(),nt=$('oNote').value.trim();
   return 'สั่งสติ๊กเกอร์ (ออกแบบจากเว็บ)\n'+orderBody()+'\nชื่อ: '+(nm||'-')+'\nโทร: '+(tel||'-')+(nt?'\nหมายเหตุ: '+nt:'')+'\n(แนบภาพตัวอย่างมาในแชท)';
 }
-function refreshSum(){$('ordSum').textContent=sil?orderBody():'เลือกรูปหรือพิมพ์ข้อความก่อน ระบบจะสรุปรายการสั่งงานตรงนี้'}
+function orderBodyEn(){
+  var s=sizeInfo(),shape={follow:'Cut to shape',circle:'Circle',round:'Rounded square'}[st.shape];
+  var uv=st.mat==='uv'?(st.uv==='all'?' (varnish everything)':' (varnish coloured areas)'):'';
+  var bd=st.shape==='follow'?(st.border>0?('\nWhite border: '+st.border+' mm'):'\nBorder: as in your file'):'';
+  var txt=st.src==='text'?('\nText: '+[$('t1').value,$('t2').value].filter(Boolean).join(' / ')):'';
+  return 'Material: '+MATEN[st.mat]+uv+'\nShape: '+shape+bd+'\nFinished size: width '+fmt(s.w)+' cm, height about '+fmt(s.h)+' cm\nQuantity: '+($('qty').value||'-')+' pcs'+txt;
+}
+function refreshSum(){$('ordSum').textContent=sil?(lang==='en'?orderBodyEn():orderBody()):t('เลือกรูปหรือพิมพ์ข้อความก่อน ระบบจะสรุปรายการสั่งงานตรงนี้')}
 function blobPng(cb){draw();cv.toBlob(cb,'image/png')}
 function saveImg(){
-  if(!sil){toast('ยังไม่มีลายให้บันทึก');return}
-  blobPng(function(b){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='ball-sticker-preview.png';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},2000);toast('บันทึกภาพแล้ว')});
+  if(!sil){toast(t('ยังไม่มีลายให้บันทึก'));return}
+  blobPng(function(b){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='ball-sticker-preview.png';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},2000);toast(t('บันทึกภาพแล้ว'))});
 }
 function copyTxt(t,ok){
   (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){toast(ok)},function(){
-    var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast(ok)}catch(e){toast('คัดลอกไม่สำเร็จ')}ta.remove()});
+    var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast(ok)}catch(e){toast(t('คัดลอกไม่สำเร็จ'))}ta.remove()});
 }
 $('save').onclick=saveImg;
-$('copy').onclick=function(){copyTxt(orderText(),'คัดลอกข้อความแล้ว')};
+$('copy').onclick=function(){copyTxt(orderText(),t('คัดลอกข้อความแล้ว'))};
 $('send').onclick=function(){
-  if(!sil){toast('เลือกรูปหรือพิมพ์ข้อความก่อน');return}
+  if(!sil){toast(t('เลือกรูปหรือพิมพ์ข้อความก่อน'));return}
   var nm=$('oName').value.trim(),tel=$('oTel').value.replace(/\D/g,'');
-  if(!nm){toast('ใส่ชื่อผู้สั่งก่อน');$('oName').focus();return}
-  if(tel.length<9){toast('ใส่เบอร์โทรให้ครบ ร้านจะได้โทรกลับ');$('oTel').focus();return}
+  if(!nm){toast(t('ใส่ชื่อผู้สั่งก่อน'));$('oName').focus();return}
+  if(tel.length<9){toast(t('ใส่เบอร์โทรให้ครบ ร้านจะได้โทรกลับ'));$('oTel').focus();return}
   var text=orderText();
   $('lnk').href=IS_MOBILE?lineUrl(text):ADD_URL;
   blobPng(function(b){
@@ -566,13 +581,30 @@ $('send').onclick=function(){
 };
 ['qty','wcm'].forEach(function(i){$(i).addEventListener('input',refreshSum)});
 
+/* ---------- ภาษา TH / EN ---------- */
+function applyLang(){
+  document.documentElement.lang=lang;
+  document.title=lang==='en'?'Design your sticker · Ball Sticker Phitsanulok':'ออกแบบสติ๊กเกอร์ · บอลสติ๊กเกอร์ พิษณุโลก';
+  var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),n,list=[];
+  while((n=w.nextNode())){var pn=n.parentNode.nodeName;if(pn==='SCRIPT'||pn==='STYLE')continue;list.push(n)}
+  list.forEach(function(n){var key=n.__th!==undefined?n.__th:n.nodeValue.trim();
+    if(n.__th===undefined){if(!EN[key])return;n.__th=key}
+    var m=n.nodeValue.match(/^(\s*)[\s\S]*?(\s*)$/);n.nodeValue=m[1]+(lang==='en'?EN[key]:key)+m[2]});
+  ['placeholder','aria-label'].forEach(function(a){Array.prototype.forEach.call(document.querySelectorAll('['+a+']'),function(el){
+    var k='data-th-'+a,key=el.getAttribute(k)||el.getAttribute(a);if(!el.getAttribute(k)){if(!EN[key])return;el.setAttribute(k,key)}el.setAttribute(a,lang==='en'?EN[key]:key)})});
+  $('lgTh').setAttribute('aria-pressed',lang==='th');$('lgEn').setAttribute('aria-pressed',lang==='en');
+  setMat(st.mat);updateDim();refreshSum();draw();
+}
+function setLang(l){lang=l;try{localStorage.setItem('bs_lang',l)}catch(e){}applyLang()}
+$('lgTh').onclick=function(){setLang('th')};$('lgEn').onclick=function(){setLang('en')};
+
 /* ---------- เริ่มต้น ---------- */
 makeTex();setMat('pvc');
 // ตัวอย่างเริ่มต้น: โลโก้ร้าน
 var lg=new Image();lg.onload=function(){makeWm(lg);imgOrig=fitCanvas(lg,640);applyBg()};lg.src='logo.jpg';
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){if(st.src==='text')prepare()});
 draw();requestAnimationFrame(tick);
-window.__sum=refreshSum;refreshSum();
+window.__sum=refreshSum;refreshSum();if(lang==='en')applyLang();
 window.__bs={st:st,get sil(){return sil}};
 })();
 </script>
