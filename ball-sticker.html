@@ -444,10 +444,13 @@ textarea{resize:vertical;min-height:72px}
 .sv-paper{fill:#fff;stroke:var(--ink)}
 .sv-margin{fill:none;stroke:var(--magenta);stroke-dasharray:1.2 .8}
 .sv-st{fill:var(--sticker);stroke:var(--sticker-line)}
+.sv-st2{fill:color-mix(in srgb,var(--sticker) 55%,#fff);stroke:var(--sticker-line)}
+.sv-lb{fill:var(--ink);font-family:'Sarabun',sans-serif;font-weight:700;text-anchor:middle;dominant-baseline:central;pointer-events:none}
 .sv-t{fill:var(--muted);font-family:'Sarabun',sans-serif;font-weight:600}
 .legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:12px 0 0;font-size:13.5px;color:var(--muted)}
 .legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;border:1.5px solid var(--sticker-line);background:var(--sticker)}
 .legend i.m{background:transparent;border:1.5px dashed var(--magenta)}
+.legend i.f{background:color-mix(in srgb,var(--sticker) 55%,#fff)}
 
 /* ---------- billing ---------- */
 .bill-grid{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:20px;align-items:start}
@@ -1878,6 +1881,15 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
               </div>
               <p class="hint">ช่องไฟ 0.1 ซม. = 1 มม. ขอบเท่ากันทั้ง 4 ด้าน คำนวณอัตโนมัติเมื่อเปลี่ยนขนาด</p>
             </fieldset>
+            <fieldset style="margin-bottom:0">
+              <legend>เติมพื้นที่ที่เหลือ (ไม่บังคับ)</legend>
+              <label class="rlock"><input type="checkbox" id="fillOn"><span>เรียงขนาดอื่นเพิ่มในพื้นที่ว่าง</span></label>
+              <div class="row2" id="fillBox" hidden>
+                <label class="f"><span>กว้าง</span><div class="in"><input id="fw" type="number" inputmode="decimal" step="any" min="0" value="9"><em>ซม.</em></div></label>
+                <label class="f"><span>สูง</span><div class="in"><input id="fh" type="number" inputmode="decimal" step="any" min="0" value="9"><em>ซม.</em></div></label>
+              </div>
+              <p class="hint" id="fillHint" hidden></p>
+            </fieldset>
           </div>
 
           <div class="right">
@@ -1943,7 +1955,7 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
                 <span id="viz-cap"></span>
               </div>
               <div class="mat" id="viz"></div>
-              <p class="legend"><span><i></i>สติ๊กเกอร์</span><span><i class="m"></i>แนวขอบ</span><span>พื้นที่ขาวที่เหลือคือพื้นที่ว่าง</span></p>
+              <p class="legend"><span><i></i>สติ๊กเกอร์</span><span id="legFill" hidden><i class="f"></i>ขนาดเสริม</span><span><i class="m"></i>แนวขอบ</span><span>พื้นที่ขาวที่เหลือคือพื้นที่ว่าง</span></p>
             </div>
           </div>
         </div>
@@ -2927,7 +2939,7 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=7272b5d3c4"],app="js/app.js?v=2130b4011e",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=7272b5d3c4"],app="js/app.js?v=43c5d0387d",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
