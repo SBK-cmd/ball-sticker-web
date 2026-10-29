@@ -444,10 +444,13 @@ textarea{resize:vertical;min-height:72px}
 .sv-paper{fill:#fff;stroke:var(--ink)}
 .sv-margin{fill:none;stroke:var(--magenta);stroke-dasharray:1.2 .8}
 .sv-st{fill:var(--sticker);stroke:var(--sticker-line)}
+.sv-st2{fill:color-mix(in srgb,var(--sticker) 55%,#fff);stroke:var(--sticker-line)}
+.sv-lb{fill:var(--ink);font-family:'Sarabun',sans-serif;font-weight:700;text-anchor:middle;dominant-baseline:central;pointer-events:none}
 .sv-t{fill:var(--muted);font-family:'Sarabun',sans-serif;font-weight:600}
 .legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:12px 0 0;font-size:13.5px;color:var(--muted)}
 .legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;border:1.5px solid var(--sticker-line);background:var(--sticker)}
 .legend i.m{background:transparent;border:1.5px dashed var(--magenta)}
+.legend i.f{background:color-mix(in srgb,var(--sticker) 55%,#fff)}
 
 /* ---------- billing ---------- */
 .bill-grid{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:20px;align-items:start}
@@ -1759,6 +1762,15 @@ tr{break-inside:avoid}
               </div>
               <p class="hint">ช่องไฟ 0.1 ซม. = 1 มม. ขอบเท่ากันทั้ง 4 ด้าน คำนวณอัตโนมัติเมื่อเปลี่ยนขนาด</p>
             </fieldset>
+            <fieldset style="margin-bottom:0">
+              <legend>เติมพื้นที่ที่เหลือ (ไม่บังคับ)</legend>
+              <label class="rlock"><input type="checkbox" id="fillOn"><span>เรียงขนาดอื่นเพิ่มในพื้นที่ว่าง</span></label>
+              <div class="row2" id="fillBox" hidden>
+                <label class="f"><span>กว้าง</span><div class="in"><input id="fw" type="number" inputmode="decimal" step="any" min="0" value="9"><em>ซม.</em></div></label>
+                <label class="f"><span>สูง</span><div class="in"><input id="fh" type="number" inputmode="decimal" step="any" min="0" value="9"><em>ซม.</em></div></label>
+              </div>
+              <p class="hint" id="fillHint" hidden></p>
+            </fieldset>
           </div>
 
           <div class="right">
@@ -1824,7 +1836,7 @@ tr{break-inside:avoid}
                 <span id="viz-cap"></span>
               </div>
               <div class="mat" id="viz"></div>
-              <p class="legend"><span><i></i>สติ๊กเกอร์</span><span><i class="m"></i>แนวขอบ</span><span>พื้นที่ขาวที่เหลือคือพื้นที่ว่าง</span></p>
+              <p class="legend"><span><i></i>สติ๊กเกอร์</span><span id="legFill" hidden><i class="f"></i>ขนาดเสริม</span><span><i class="m"></i>แนวขอบ</span><span>พื้นที่ขาวที่เหลือคือพื้นที่ว่าง</span></p>
             </div>
           </div>
         </div>
@@ -2826,6 +2838,28 @@ function computeLayout(sw, sh, gap, m, pw, ph) {
           usedW, usedH, leftW: aw - usedW, leftH: ah - usedH};
 }
 
+// เติมพื้นที่เหลือด้วยขนาดอื่น: ลองแบ่งพื้นที่ที่เหลือ 2 แบบ (ขวาเต็มความสูง / ล่างเต็มความกว้าง) และลองหมุนชิ้น เลือกแบบที่ได้มากสุด
+function computeFill(r, fw, fh) {
+  const out = {items: [], count: 0, fw, fh};
+  if (!(r.count > 0 && fw > 0 && fh > 0)) return out;
+  const g = r.gap, m = r.m, E = 1e-9;
+  const grid = (x0, y0, W, H) => {
+    let best = {n: 0, items: []};
+    [[fw, fh], [fh, fw]].forEach(([w, h]) => {
+      if (W < w - E || H < h - E) return;
+      const c = Math.floor((W + g) / (w + g) + E), rr = Math.floor((H + g) / (h + g) + E), items = [];
+      for (let i = 0; i < c; i++) for (let j = 0; j < rr; j++) items.push({x: x0 + i * (w + g), y: y0 + j * (h + g), w, h});
+      if (items.length > best.n) best = {n: items.length, items};
+    });
+    return best.items;
+  };
+  const rx = m + r.usedW + g, ry = m + r.usedH + g, rw = r.aw - r.usedW - g, bh = r.ah - r.usedH - g;
+  const A = grid(rx, m, rw, r.ah).concat(grid(m, ry, r.usedW, bh));
+  const B = grid(rx, m, rw, r.usedH).concat(grid(m, ry, r.aw, bh));
+  out.items = B.length > A.length ? B : A; out.count = out.items.length;
+  return out;
+}
+
 function bahtText(value) {
   const n = Math.round((value + Number.EPSILON) * 100) / 100;
   if (!isFinite(n) || n <= 0) return 'ศูนย์บาทถ้วน';
@@ -3259,6 +3293,18 @@ function bahtText(value) {
         '" patternUnits="userSpaceOnUse"><rect class="sv-st" fill="#7fd3ef" stroke="#0d6f92" x="' + sk / 2 + '" y="' + sk / 2 + '" width="' + (sw - sk) + '" height="' + (sh - sk) +
         '" rx="' + rx + '" stroke-width="' + sk + '"/></pattern></defs>';
       s += '<rect x="' + m + '" y="' + m + '" width="' + usedW + '" height="' + usedH + '" fill="url(#pt-' + uid + ')"/>';
+    }
+    if (r.fill && r.fill.count > 0) {
+      const lab = (w, h) => w === h ? fmt(w) + ' ซม.' : fmt(w) + '×' + fmt(h);
+      const bigLb = lab(sw, sh), smLb = lab(r.fill.fw, r.fill.fh);
+      const lfs = Math.min(sh * 0.3, sw / 4.2);
+      for (let i = 0; i < r.cols; i++) for (let j = 0; j < r.rows; j++)
+        s += '<text class="sv-lb" font-size="' + lfs + '" x="' + (m + i * (sw + gap) + sw / 2) + '" y="' + (m + j * (sh + gap) + sh / 2) + '">' + bigLb + '</text>';
+      r.fill.items.forEach(it => {
+        const k = Math.min(it.w, it.h) * 0.05, f2 = Math.min(it.h * 0.3, it.w / 4.2);
+        s += '<rect class="sv-st2" fill="#ffe48a" stroke="#10233f" x="' + (it.x + k / 2) + '" y="' + (it.y + k / 2) + '" width="' + (it.w - k) + '" height="' + (it.h - k) + '" rx="' + Math.min(it.w, it.h) * 0.1 + '" stroke-width="' + k + '"/>' +
+          '<text class="sv-lb" font-size="' + f2 + '" x="' + (it.x + it.w / 2) + '" y="' + (it.y + it.h / 2) + '">' + smLb + '</text>';
+      });
     }
     s += '<text class="sv-t" fill="#4a5a72" font-family="Sarabun, sans-serif" font-weight="600" x="' + pw / 2 + '" y="' + (-pad * 0.35) + '" text-anchor="middle" font-size="' + fs + '">กว้าง ' + fmt(pw) + ' ซม.</text>';
     s += '<text class="sv-t" fill="#4a5a72" font-family="Sarabun, sans-serif" font-weight="600" transform="translate(' + (-pad * 0.35) + ' ' + ph / 2 + ') rotate(-90)" text-anchor="middle" font-size="' + fs + '">ยาว ' + fmt(ph) + ' ซม.</text>';
@@ -3816,11 +3862,16 @@ function bahtText(value) {
 
   function renderCalc() {
     const r = readLayout(); lastLayout = r; updUnitHint();
+    const fOn = $('fillOn') && $('fillOn').checked; $('fillBox').hidden = !fOn;
+    r.fill = fOn ? computeFill(r, num($('fw').value), num($('fh').value)) : null;
+    $('legFill').hidden = !(r.fill && r.fill.count > 0);
+    const fh_ = $('fillHint');
+    if (fOn) { fh_.hidden = false; fh_.textContent = !r.count ? 'ต้องเรียงขนาดหลักได้ก่อน' : r.fill.count ? 'เรียงเพิ่มได้ ' + r.fill.count + ' ชิ้น (' + fmt(r.fill.fw) + ' × ' + fmt(r.fill.fh) + ' ซม.) ในพื้นที่ที่เหลือ' : 'พื้นที่ที่เหลือไม่พอสำหรับขนาดนี้'; } else fh_.hidden = true;
     $('count').textContent = r.count.toLocaleString('en-US');
     $('cols').textContent = r.cols; $('rows').textContent = r.rows;
     $('used').textContent = r.count ? fmt(r.usedW) + ' × ' + fmt(r.usedH) + ' ซม.' : '—';
     $('left').textContent = r.count ? fmt(r.leftW) + ' / ' + fmt(r.leftH) + ' ซม.' : '—';
-    $('viz-cap').textContent = fmt(r.pw) + ' × ' + fmt(r.ph) + ' ซม. · สติ๊กเกอร์ ' + fmt(r.sw) + ' × ' + fmt(r.sh) + ' ซม.';
+    $('viz-cap').textContent = fmt(r.pw) + ' × ' + fmt(r.ph) + ' ซม. · สติ๊กเกอร์ ' + fmt(r.sw) + ' × ' + fmt(r.sh) + ' ซม.' + (r.fill && r.fill.count ? ' + ' + fmt(r.fill.fw) + ' × ' + fmt(r.fill.fh) + ' ซม. อีก ' + r.fill.count + ' ชิ้น' : '');
 
     const w = $('warn');
     if (!(r.sw > 0 && r.sh > 0)) { w.textContent = 'ใส่ขนาดสติ๊กเกอร์ให้มากกว่า 0'; w.hidden = false; }
@@ -3842,6 +3893,7 @@ function bahtText(value) {
       '<tr class="big"><th>จำนวนที่เรียงได้ต่อแผ่น</th><td>' + r.count.toLocaleString('en-US') + ' ชิ้น</td></tr>' +
       '<tr><th>การเรียง</th><td>' + r.cols + ' ชิ้นต่อแถว × ' + r.rows + ' แถว</td></tr>' +
       '<tr><th>พื้นที่ใช้เรียง</th><td>' + (r.count ? fmt(r.usedW) + ' × ' + fmt(r.usedH) + ' ซม.' : '—') + '</td></tr>' +
+      (r.fill && r.fill.count ? '<tr><th>เรียงเสริมในพื้นที่ว่าง</th><td>' + fmt(r.fill.fw) + ' × ' + fmt(r.fill.fh) + ' ซม. จำนวน ' + r.fill.count + ' ชิ้น</td></tr>' : '') +
       '<tr><th>เหลือ กว้าง / ยาว</th><td>' + (r.count ? fmt(r.leftW) + ' / ' + fmt(r.leftH) + ' ซม.' : '—') + '</td></tr>' +
       '</tbody></table>' +
       '<div class="sheet-viz">' + ((r.pw > 0 && r.ph > 0) ? layoutSVG(r, 'p') : '') + '</div>' +
@@ -7539,7 +7591,8 @@ function bahtText(value) {
   $('taxSheetBackdrop').addEventListener('click', closeTaxMenus);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTaxMenus(); });
 
-  ['sw', 'sh', 'gap', 'margin', 'pw', 'ph'].forEach(id => $(id).addEventListener('input', renderCalc));
+  ['sw', 'sh', 'gap', 'margin', 'pw', 'ph', 'fw', 'fh'].forEach(id => $(id).addEventListener('input', renderCalc));
+  $('fillOn').addEventListener('change', renderCalc);
   ['vatAmount', 'vatRateCalc'].forEach(id => $(id).addEventListener('input', renderVatCalc));
   $('vatMode').addEventListener('change', renderVatCalc);
   $('vat-copy').addEventListener('click', copyVatResult);

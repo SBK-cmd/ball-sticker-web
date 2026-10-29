@@ -67,7 +67,7 @@ try { if (!localStorage.getItem('bs_session')) document.documentElement.classLis
 <script>
 // ตั้งโหมดมืด/สว่างจากค่าที่จำไว้ทันทีตั้งแต่ก่อนวาดหน้าจอ กันไฟกะพริบสลับธีมตอนโหลด
 // ค่าเริ่มต้นของระบบตอนนี้คือโหมดมืด เว้นแต่ผู้ใช้เคยกดเลือกโหมดสว่างไว้เอง (จำไว้ใน localStorage)
-(function(){try{var t=localStorage.getItem('bs_theme');document.documentElement.setAttribute('data-theme','light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();
+(function(){try{var t=localStorage.getItem('bs_theme');document.documentElement.setAttribute('data-theme','light');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
 // ลงทะเบียน Service Worker (ทำให้ติดตั้งเป็นแอปได้ + เปิดได้แม้เน็ตหลุดชั่วคราว)
 // ทำแบบเงียบๆ เบื้องหลัง ถ้าเบราว์เซอร์ไม่รองรับหรือโหลดไม่ได้ก็ไม่กระทบการใช้งานอื่นเลย
 if ('serviceWorker' in navigator) {
@@ -444,10 +444,13 @@ textarea{resize:vertical;min-height:72px}
 .sv-paper{fill:#fff;stroke:var(--ink)}
 .sv-margin{fill:none;stroke:var(--magenta);stroke-dasharray:1.2 .8}
 .sv-st{fill:var(--sticker);stroke:var(--sticker-line)}
+.sv-st2{fill:color-mix(in srgb,var(--sticker) 55%,#fff);stroke:var(--sticker-line)}
+.sv-lb{fill:var(--ink);font-family:'Sarabun',sans-serif;font-weight:700;text-anchor:middle;dominant-baseline:central;pointer-events:none}
 .sv-t{fill:var(--muted);font-family:'Sarabun',sans-serif;font-weight:600}
 .legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:12px 0 0;font-size:13.5px;color:var(--muted)}
 .legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;border:1.5px solid var(--sticker-line);background:var(--sticker)}
 .legend i.m{background:transparent;border:1.5px dashed var(--magenta)}
+.legend i.f{background:color-mix(in srgb,var(--sticker) 55%,#fff)}
 
 /* ---------- billing ---------- */
 .bill-grid{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:20px;align-items:start}
@@ -1229,76 +1232,6 @@ tr{break-inside:avoid}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
-<style id="bs-theme-v10">
-/* ===== ธีม "แผ่นรองไดคัท" v10 — สว่าง สะอาด อ่านง่าย =====
-   สีพื้นอิงแผ่นรองตัดสีเทาอมฟ้า หมึกน้ำเงินเข้มของแบรนด์ และเหลืองจากโลโก้
-   จุดเด่นจุดเดียว: การ์ดผลลัพธ์เป็น "สติ๊กเกอร์เหลือง" มีเส้นไดคัทรอบ ที่เหลือเงียบ */
-:root[data-theme="light"]{
-  --bg:#eef2f5; --surface:#ffffff; --ink:#13233a; --muted:#53627a; --line:#d9e0e8;
-  --field:#f7f9fb; --field-line:#cbd5e0;
-  --accent:#ffcc1a; --accent-ink:#13233a; --magenta:#d81f66; --hero-bg:#13233a;
-  --sticker:#ffcc1a; --sticker-line:#13233a; --mat:#e4eaf0; --mat-line:#d3dce5;
-  --blue-bg:#e6f3fa; --blue-ink:#075a85;
-  --shadow-1:0 1px 0 rgba(19,35,58,.04); --shadow-2:0 12px 32px -18px rgba(19,35,58,.35);
-}
-:root{--die:#13233a}
-:root[data-theme="dark"]{--die:#13233a}
-body{font-size:16.5px;line-height:1.65}
-:focus-visible{outline:3px solid #0a8fd0;outline-offset:2px}
-
-/* แถบเมนูข้าง: พื้นขาวเรียบ กลุ่มเมนูเป็นตัวพิมพ์ปกติ ไม่ใช่ตัวใหญ่เว้นห่าง */
-@media (min-width:561px){
-  header.top{background:var(--surface);border-right:1px solid var(--line);padding:20px 12px 16px}
-  header.top .brand{padding:0 8px 18px}
-  .sidebar-cta{background:var(--accent);border:0;color:var(--accent-ink);border-radius:10px;box-shadow:none;font-size:15px}
-  .sidebar-cta:hover{transform:none;filter:brightness(.97)}
-  header.top .tabs button,header.top .tabs a{border-radius:8px;padding:9px 12px;font-weight:500;color:var(--ink)}
-  header.top .tabs button:hover{background:var(--field)}
-  header.top .tabs button[aria-selected="true"],header.top .tab-dropdown button[aria-selected="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink);box-shadow:none;font-weight:600}
-  header.top .tabs .tab-trigger{text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;padding:14px 12px 4px;border-radius:0;margin-top:6px;border:0!important;border-top:1px solid var(--line)!important}
-}
-
-/* หัวหน้า */
-.page-head{padding:28px 0 20px}
-.page-head h1{font-weight:600;letter-spacing:-.01em}
-.page-head p{font-size:16px}
-
-/* การ์ด: เส้นขอบบาง ไม่มีเงาลอย หัวการ์ดไม่มีจุดตกแต่ง */
-.card{border-radius:14px;box-shadow:none;border-color:var(--line)}
-.card h2{font-size:17px;font-weight:600;border-bottom:0;padding-bottom:0;margin-bottom:14px}
-.card h2::before{display:none}
-fieldset+fieldset{border-top:1px solid var(--line)}
-legend{font-size:15px}
-.f>span{font-size:14px;font-weight:500;color:var(--muted)}
-
-/* ช่องกรอก: ตัวเลขใหญ่ อ่านง่าย กรอบชัด */
-.in,select,.txt,textarea{background:var(--surface);border:1.5px solid var(--field-line);border-radius:10px}
-.in input{font-size:19px;padding:12px 12px}
-.in:focus-within,select:focus-visible,.txt:focus-visible,textarea:focus-visible{border-color:#0a8fd0;box-shadow:0 0 0 3px rgba(10,143,208,.18)}
-
-/* ปุ่ม: มุมโค้งน้อยลง ปุ่มหลักน้ำเงินเข้ม */
-.btn{border-radius:10px;box-shadow:none;font-weight:600}
-.btn:hover{transform:none}
-.btn.primary{background:var(--ink);border-color:var(--ink);color:var(--surface)}
-.btn.primary:hover{background:var(--ink);filter:brightness(1.15)}
-.unit-seg button{border-radius:10px;background:var(--surface)}
-.unit-seg button.on{background:var(--ink);border-color:var(--ink)}
-
-/* จุดเด่น: ผลลัพธ์เป็นสติ๊กเกอร์เหลือง มีเส้นไดคัทประรอบใน */
-.result{position:relative;background:var(--accent);background-image:none;color:var(--die);border-radius:20px;box-shadow:var(--shadow-2);padding:26px 28px}
-.result::before{content:"";position:absolute;inset:9px;border:2px dashed rgba(19,35,58,.38);border-radius:13px;pointer-events:none}
-.result .r-label{opacity:1;font-weight:600}
-.r-num #count{color:var(--die);font-weight:700}
-.r-meta{border-top:1.5px solid rgba(19,35,58,.2)}
-.r-meta dt{opacity:.75}
-.result .btn{border-color:var(--die);color:var(--die);background:rgba(255,255,255,.55)}
-.result .btn.primary{background:var(--die);color:#fff}
-.dash-stat-card.hero{background:var(--ink);background-image:none}
-@media (prefers-reduced-motion:no-preference){
-  .result{animation:bsPeel .5s cubic-bezier(.2,.8,.2,1) both}
-  @keyframes bsPeel{from{transform:translateY(6px) rotate(-.6deg);opacity:0}to{transform:none;opacity:1}}
-}
-</style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap">
 <style id="bs-theme-p4">
 /* ===== แบบ 4: ตามแอปตัวอย่าง (Profender) — พื้นมุก การ์ดโค้งใหญ่ การ์ดย่อยมีขอบบาง ปุ่มแคปซูลเงา ไอคอนวงกลม =====
@@ -1949,6 +1882,15 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
               </div>
               <p class="hint">ช่องไฟ 0.1 ซม. = 1 มม. ขอบเท่ากันทั้ง 4 ด้าน คำนวณอัตโนมัติเมื่อเปลี่ยนขนาด</p>
             </fieldset>
+            <fieldset style="margin-bottom:0">
+              <legend>เติมพื้นที่ที่เหลือ (ไม่บังคับ)</legend>
+              <label class="rlock"><input type="checkbox" id="fillOn"><span>เรียงขนาดอื่นเพิ่มในพื้นที่ว่าง</span></label>
+              <div class="row2" id="fillBox" hidden>
+                <label class="f"><span>กว้าง</span><div class="in"><input id="fw" type="number" inputmode="decimal" step="any" min="0" value="9"><em>ซม.</em></div></label>
+                <label class="f"><span>สูง</span><div class="in"><input id="fh" type="number" inputmode="decimal" step="any" min="0" value="9"><em>ซม.</em></div></label>
+              </div>
+              <p class="hint" id="fillHint" hidden></p>
+            </fieldset>
           </div>
 
           <div class="right">
@@ -2014,7 +1956,7 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
                 <span id="viz-cap"></span>
               </div>
               <div class="mat" id="viz"></div>
-              <p class="legend"><span><i></i>สติ๊กเกอร์</span><span><i class="m"></i>แนวขอบ</span><span>พื้นที่ขาวที่เหลือคือพื้นที่ว่าง</span></p>
+              <p class="legend"><span><i></i>สติ๊กเกอร์</span><span id="legFill" hidden><i class="f"></i>ขนาดเสริม</span><span><i class="m"></i>แนวขอบ</span><span>พื้นที่ขาวที่เหลือคือพื้นที่ว่าง</span></p>
             </div>
           </div>
         </div>
@@ -2998,7 +2940,7 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=7272b5d3c4"],app="js/p-app.js?v=2130b4011e",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=7272b5d3c4"],app="js/p-app.js?v=43c5d0387d",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
