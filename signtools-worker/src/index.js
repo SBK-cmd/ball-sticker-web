@@ -855,6 +855,7 @@ async function member(req, env) {
     const st = r.status !== 'active' ? '<b class="bad">ปิดอยู่</b>' : expired ? '<b class="bad">หมดอายุแล้ว</b>' : '<b class="ok">ใช้งานได้</b>';
     return `<div class="plan" style="gap:8px"><div class="row" style="align-items:center"><b>เครื่องที่ ${i + 1}</b><span style="text-align:right">${st}</span></div>
       <div class="kv small"><span class="mut">เครื่อง</span><span>${r.machine ? h(r.machine_name) : '<span class="mut">ว่าง · เข้าสู่ระบบในโปรแกรมได้เลย</span>'}</span>
+      <span class="mut">คีย์</span><span><code class="mono" style="user-select:all">${h(r.key)}</code> <button type="button" class="ghost sm cp" data-k="${h(r.key)}" style="padding:2px 8px">คัดลอก</button></span>
       <span class="mut">แพ็กเกจ</span><span>${planLabel(r.plan)}</span>
       <span class="mut">ใช้ได้ถึง</span><span>${life ? 'ตลอดชีพ' : dtD(r.expires_at) + (expired ? '' : ` <span class="mut">(อีก ${Math.ceil((r.expires_at - now()) / 86400)} วัน)</span>`)}</span></div>
       ${r.machine ? `<form method="post" onsubmit="return confirm('ปลดเครื่องนี้ เพื่อใช้กับเครื่องใหม่?')"><input type="hidden" name="key" value="${h(r.key)}"><button name="do" value="move" class="ghost sm" style="width:100%">ย้ายไปเครื่องใหม่</button></form>` : ''}
@@ -864,6 +865,7 @@ async function member(req, env) {
     <div class="card"><h2>สวัสดี ${h(u.name || u.phone)}</h2><p class="small mut">${h(u.phone)}${u.shop ? ' · ' + h(u.shop) : ''}</p>
       ${pendO ? `<p class="msg">มีสลิปรอร้านตรวจ · <a href="/member/pay?o=${pendO.id}" style="color:var(--acc)">ดูสถานะ</a></p>` : ''}
       <h2 style="margin-top:4px">เครื่องของฉัน <span class="mut small">${ks.length} เครื่อง</span></h2>
+      <p class="small mut">ในโปรแกรมเข้าสู่ระบบด้วย <b>เบอร์ + รหัสผ่าน</b> ได้เลย ระบบเลือกเครื่องที่ว่างให้เอง · หรือกด "ใช้คีย์แทน" แล้วใส่คีย์ด้านล่าง</p>
       <div class="plans" style="grid-template-columns:1fr">${ks.map(keyCard).join('') || '<p class="mut">ยังไม่มีเครื่อง</p>'}</div>
       <details><summary style="cursor:pointer"><b>+ เพิ่มเครื่อง</b> <span class="mut small">ใช้ Sign Tools อีกเครื่องด้วยบัญชีเดียวกัน</span></summary><div class="plans" style="margin-top:10px">${planCards('add', null, 'ซื้อเพิ่ม')}</div></details>
       <a class="btn ghost" href="/download">ดาวน์โหลดโปรแกรม</a></div>
@@ -876,7 +878,8 @@ async function member(req, env) {
     <details class="card"><summary style="cursor:pointer"><b>${u.pw_hash ? 'เปลี่ยนรหัสผ่าน' : 'ตั้งรหัสผ่าน (เข้าโปรแกรมด้วยเบอร์ + รหัสผ่าน)'}</b></summary>
       <form method="post" style="display:flex;flex-direction:column;gap:10px;margin-top:10px">${u.pw_hash ? '<label>รหัสผ่านเดิม<input name="old" type="password" autocomplete="current-password" required></label>' : ''}
       <label>รหัสผ่านใหม่ (6 ตัวขึ้นไป)<input name="pw" type="password" autocomplete="new-password" required></label><button name="do" value="pw">บันทึกรหัสผ่าน</button></form></details>
-    <form method="post"><button name="do" value="logout" class="ghost sm">ออกจากระบบ</button></form>`);
+    <form method="post"><button name="do" value="logout" class="ghost sm">ออกจากระบบ</button></form>
+    <script>document.querySelectorAll('.cp').forEach(function(b){b.onclick=function(){var k=b.dataset.k,ok=function(){b.textContent='คัดลอกแล้ว';setTimeout(function(){b.textContent='คัดลอก';},1500);};if(navigator.clipboard)navigator.clipboard.writeText(k).then(ok,function(){});};});</script>`);
 }
 
 // สลิปสำหรับแอดมินดู
