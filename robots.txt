@@ -5,6 +5,7 @@ Disallow: /ball-sticker.html
 Disallow: /preview.html
 Disallow: /preview4.html
 Disallow: /preview5.html
+Disallow: /preview6.html
 Disallow: /site-preview.html
 Disallow: /designer-preview.html
 Disallow: /contact-preview.html
