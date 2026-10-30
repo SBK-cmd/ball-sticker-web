@@ -1698,6 +1698,23 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
   #panel-calc fieldset .acc-body{display:block!important}
   #panel-calc fieldset legend .acc-sum,#panel-calc fieldset legend .acc-chev{display:none!important}
 }
+
+/* ===== UX audit (touch target ≥44px, อ่านง่าย, ปุ่มหลัก/รอง) ===== */
+.btn,.btn.small,#rimgBtn,#jSplit,#add-jobitem{min-height:44px!important}
+.btn.small,#rimgBtn,#jSplit{font-size:14.5px!important}
+.item .del{min-width:44px!important;min-height:44px!important}
+.rlock{min-height:44px!important}
+.bk-seg button,.dash-cat-link,.hist-search+*{min-height:44px}
+.dash-cat-link{padding:0 8px;display:inline-flex;align-items:center}
+input[type=file]{min-height:44px;font-size:14px;line-height:1.6}
+input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border:1.5px solid #d9d9d9;background:#fff;padding:0 14px;margin-right:10px;font:inherit;font-weight:600;color:#222;cursor:pointer}
+.sheet h3{font-size:12.5px}
+/* ปุ่มหลักเด่นกว่าปุ่มรองเสมอ */
+.btn.primary{font-weight:700!important;box-shadow:0 2px 0 rgba(0,0,0,.12)}
+.btn:not(.primary):not(.good):not(.danger){background:#fff;border:1.5px solid #d8d8d8;color:#222}
+/* ข้อความอธิบายรอง: เข้มขึ้นเพื่อให้อ่านชัด (คอนทราสต์) */
+.hint,.actions-note,.f>span{color:#4a4a4a!important}
+.unit-seg button{min-height:44px!important}
 </style>
 </head>
 <body>
