@@ -143,6 +143,7 @@ async function api(req, env) {
   const action = inp.action || '';
 
   if (action === 'latest') {
+    await log('', 'latest', String(req.headers.get('User-Agent') || '-').slice(0, 140));
     const r = await db.prepare('SELECT manifest, sig FROM releases ORDER BY created_at DESC, rowid DESC LIMIT 1').first();
     return json({ ok: true, release: r ? { manifest: r.manifest, sig: r.sig } : null });
   }
@@ -909,7 +910,7 @@ export default {
       if (url.pathname === '/admin/slip') return await adminSlip(req, env);
       if (url.pathname === '/admin/log') {
         if (!(await validSession(env.DB, req))) return new Response('login required', { status: 401 });
-        const rs = await env.DB.prepare("SELECT t, action, result, substr(key,1,8) k FROM log WHERE action IN ('member_link','member_auto') ORDER BY t DESC LIMIT 30").all();
+        const rs = await env.DB.prepare("SELECT t, action, result, substr(key,1,8) k FROM log WHERE action IN ('member_link','member_auto','latest') ORDER BY t DESC LIMIT 30").all();
         return new Response(JSON.stringify(rs.results), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
       }
       if (url.pathname === '/member' || url.pathname.startsWith('/member/')) return await member(req, env);
