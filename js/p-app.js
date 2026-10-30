@@ -4836,6 +4836,96 @@ function bahtText(value) {
   });
   $('pdf-job').addEventListener('click', () => { markJobPrinted(); exportDoc('confirm', $('pdf-job')); });
   $('save-job').addEventListener('click', saveJob);
+
+  /* ===== ข้อความ/รูปคอนเฟริมงาน สำหรับส่งลูกค้าทางแชทหรือโพสต์ (ไม่มีราคา ไม่มีบัญชี/ยอดสลิป) ===== */
+  function confirmLines() {
+    const L = [];
+    jobItems.filter(i => i.name.trim()).forEach(i => {
+      L.push({t: i.name.trim() + (num(i.qty) ? ' ' + fmt(num(i.qty)) + 'ชิ้น' : ''), s: 'b'});
+      if (i.note && i.note.trim()) L.push({t: i.note.trim(), s: 'n'});
+    });
+    const jn = $('jobNote').value.trim();
+    if (jn) { L.push({gap: 1}); L.push({t: jn, s: 'n'}); }
+    const c = [$('jName').value.trim(), $('jPhone').value.trim(), $('jAddr').value.trim()].filter(Boolean);
+    if (c.length) { L.push({gap: 1}); c.forEach(t => L.push({t, s: 'c'})); }
+    return L;
+  }
+  function confirmText() {
+    return 'คอนเฟริมงาน\n' + confirmLines().map(l => l.gap ? '' : l.t).join('\n');
+  }
+  async function confirmCanvas() {
+    const W = 1080, P = 56, FF = "'IBM Plex Sans Thai','Prompt',sans-serif";
+    const ST = {b: ['600 46px ', 68], n: ['400 36px ', 54], c: ['500 40px ', 60]};
+    try { await document.fonts.load('600 46px "IBM Plex Sans Thai"'); await document.fonts.load('400 36px "IBM Plex Sans Thai"'); } catch (e) {}
+    const probe = document.createElement('canvas').getContext('2d');
+    const seg = window.Intl && Intl.Segmenter ? new Intl.Segmenter('th', {granularity: 'word'}) : null;
+    const pieces = t => seg ? Array.from(seg.segment(t), x => x.segment) : Array.from(t);
+    const wrap = (t, f) => {
+      probe.font = f + FF; const out = [];
+      t.split('\n').forEach(par => {
+        let cur = '';
+        pieces(par).forEach(w => { if (cur && probe.measureText(cur + w).width > W - 2 * P) { out.push(cur.trimEnd()); cur = w.trimStart(); } else cur += w; });
+        out.push(cur);
+      });
+      return out;
+    };
+    const imgs = await Promise.all(jobPhotos.map(src => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; })));
+    const ph = imgs.filter(Boolean);
+    const cols = ph.length <= 1 ? 1 : ph.length <= 4 ? 2 : 3, gap = 16;
+    let size = (W - 2 * P - (cols - 1) * gap) / cols; if (cols === 1) size = Math.min(size, 760);
+    const rows = Math.ceil(ph.length / cols);
+    const gridH = ph.length ? rows * size + (rows - 1) * gap + 40 : 0;
+    const draw = [];
+    confirmLines().forEach(l => {
+      if (l.gap) { draw.push({gap: 36}); return; }
+      wrap(l.t, ST[l.s][0]).forEach(x => draw.push({t: x, s: l.s}));
+    });
+    let textH = 40; draw.forEach(d => { textH += d.gap || ST[d.s][1]; });
+    const HEAD = 140, FOOT = 110, H = HEAD + gridH + textH + FOOT;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#ffc300'; g.fillRect(0, 0, W, HEAD);
+    g.fillStyle = '#1b1b1b'; g.textBaseline = 'middle';
+    g.font = '600 60px ' + FF; g.textAlign = 'left'; g.fillText('คอนเฟริมงาน', P, HEAD / 2);
+    g.font = '400 30px ' + FF; g.textAlign = 'right'; g.fillText($('jobNo').value || '', W - P, HEAD / 2);
+    let y = HEAD + 20;
+    ph.forEach((im, i) => {
+      const x = P + (i % cols) * (size + gap), yy = y + Math.floor(i / cols) * (size + gap);
+      const k = Math.min(size / im.width, size / im.height), w = im.width * k, h = im.height * k;
+      g.drawImage(im, x + (size - w) / 2, yy + (size - h) / 2, w, h);
+    });
+    y += gridH ? gridH - 20 : 0; y += 20;
+    g.textAlign = 'left'; g.fillStyle = '#111';
+    draw.forEach(d => {
+      if (d.gap) { y += d.gap; return; }
+      const [f, lh] = ST[d.s]; g.font = f + FF; g.fillStyle = d.s === 'n' ? '#444' : '#111';
+      g.fillText(d.t, P, y + lh / 2); y += lh;
+    });
+    g.fillStyle = '#888'; g.font = '400 28px ' + FF; g.textAlign = 'center';
+    g.fillText(shop.name || 'บอล สติ๊กเกอร์', W / 2, H - FOOT / 2);
+    return cv;
+  }
+  async function copyConfirm() {
+    const t = confirmText();
+    try { await navigator.clipboard.writeText(t); }
+    catch (e) { const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e2) {} ta.remove(); }
+    toast('คัดลอกข้อความยืนยันแล้ว');
+  }
+  async function imgConfirm() {
+    const cv = await confirmCanvas();
+    cv.toBlob(async b => {
+      if (!b) { toast('สร้างรูปไม่สำเร็จ'); return; }
+      const name = 'confirm-' + ($('jobNo').value || 'job') + '.png';
+      const file = new File([b], name, {type: 'image/png'});
+      try { if (navigator.canShare && navigator.canShare({files: [file]})) { await navigator.share({files: [file]}); return; } }
+      catch (e) { if (e && e.name === 'AbortError') return; }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000); toast('บันทึกรูปแล้ว');
+    }, 'image/png');
+  }
+  $('copy-confirm').addEventListener('click', copyConfirm);
+  $('img-confirm').addEventListener('click', imgConfirm);
   document.addEventListener('pointerdown', unlockAudio, {once: true});
   $('bibClose').addEventListener('click', () => { $('bankInBanner').hidden = true; });
   $('bibView').addEventListener('click', goBankInCard);
