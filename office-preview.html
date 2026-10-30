@@ -21,14 +21,14 @@ html,body{height:100%;overflow:hidden;background:#fff6d6;font-family:'IBM Plex S
 #panel p{font-size:13px;color:#555;margin:6px 0}
 #panel ul{font-size:13px;padding-left:18px;margin:4px 0 8px}
 #panel code{display:block;background:#fff6d6;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit}
-#panel button{position:absolute;right:10px;top:8px;border:0;background:#eee;border-radius:50%;width:28px;height:28px;font-size:15px}
+#panel .cl{position:absolute;right:10px;top:8px;border:0;background:#eee;border-radius:50%;width:28px;height:28px;font-size:15px}#panel .ask{display:flex;gap:6px;margin-top:8px}#panel .ask input{flex:1;min-width:0;border:1.5px solid #ddd;border-radius:10px;padding:8px 10px;font:inherit;font-size:13px}#panel .go{border:0;border-radius:10px;background:#ffc300;padding:0 14px;font:inherit;font-size:13px;font-weight:600}#rep{font-size:13px;background:#f6f6f6;border-radius:10px;padding:8px 10px;margin-top:8px;white-space:pre-wrap;max-height:28vh;overflow:auto;display:none}#mode{font-size:11px;color:#b45309;margin-top:6px}
 .hint{position:fixed;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom));text-align:center;font-size:12px;color:#8a6d00;pointer-events:none;transition:opacity .3s}
 </style></head><body>
 <canvas id="c"></canvas>
 <div class="top"><b>ออฟฟิศ AI · บอลสติ๊กเกอร์</b><span>พรีวิว</span></div>
 <div id="tags"></div><div id="bub"></div>
 <div class="hint" id="hint">แตะที่น้องๆ เพื่อดูหน้าที่ · ลากเพื่อหมุนห้อง</div>
-<div id="panel"><button id="x" aria-label="ปิด">×</button><h2><span id="pn"></span><em id="pr"></em></h2><p id="pd"></p><ul id="pl"></ul><code id="pc"></code></div>
+<div id="panel"><button id="x" class="cl" aria-label="ปิด">×</button><h2><span id="pn"></span><em id="pr"></em></h2><p id="pd"></p><ul id="pl"></ul><code id="pc"></code><div class="ask"><input id="q" placeholder="พิมพ์สั่งงาน…" autocomplete="off"><button class="go" id="go">ส่ง</button></div><div id="rep"></div><div id="mode"></div></div>
 <script src="js/three.min.js"></script>
 <script>
 const AG=[
@@ -106,9 +106,25 @@ cv.addEventListener('wheel',e=>{tDist=Math.max(9,Math.min(26,tDist+e.deltaY*.01)
 const ray=new THREE.Raycaster(),mv=new THREE.Vector2();let sel=null;
 function tap(e){mv.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ray.setFromCamera(mv,cam);const h=ray.intersectObjects(pick)[0];h?choose(h.object.userData.a):choose(null)}
 const $=id=>document.getElementById(id);
-function choose(a){sel=a;const p=$('panel');if(!a){p.classList.remove('on');return}
+function choose(a){sel=a;$('rep').style.display='none';$('q').value='';const p=$('panel');if(!a){p.classList.remove('on');return}
  $('pn').textContent=a.name;$('pr').textContent=a.role;$('pd').textContent=a.d;$('pl').innerHTML=a.l.map(t=>'<li>'+t+'</li>').join('');$('pc').textContent='ลองสั่ง: '+a.c;p.classList.add('on');$('hint').style.opacity=0}
 $('x').onclick=()=>choose(null);
+// ===== เชื่อม AI: ใส่ URL ของ Worker (worker/office-agent.js) ที่นี่ ถ้าว่างจะเป็นโหมดตัวอย่าง =====
+const ENDPOINT='';
+const DEMO={'programmer':'(ตัวอย่าง) รับทราบครับ จะแก้ใน preview ก่อน ทดสอบที่จอ 360–390px แล้วส่งลิงก์ให้ดู ขึ้นของจริงเมื่อพิมพ์ "อัพ"',
+ 'sticker-designer':'(ตัวอย่าง) รับทราบค่ะ จะเรียงบนแผ่น HP 121×81 ซม. ช่องไฟ 0.45 ซม. แล้วสรุปจำนวนต่อแผ่นกับของเสีย (%) ให้',
+ 'chat-replier':'(ตัวอย่าง) สวัสดีค่ะ ขอทราบขนาด จำนวน และมีไฟล์แบบแล้วหรือยังคะ แล้วจะเช็กราคาแจ้งให้นะคะ [ต้องให้เจ้าของร้านตัดสินใจ: ราคา]',
+ 'accountant':'(ตัวอย่าง) รับทราบครับ ขอไฟล์ส่งออกหรือตัวเลขรายการมา จะคำนวณ VAT 7% ด้วยโค้ดและเทียบยอดรวมให้'};
+$('mode').textContent=ENDPOINT?'':'โหมดตัวอย่าง: ยังไม่ได้เชื่อม AI จริง คำตอบเป็นข้อความสำเร็จรูป';
+async function send(){const a=sel;const m=$('q').value.trim();if(!a||!m)return;const r=$('rep');r.style.display='block';
+ if(!ENDPOINT){r.textContent=DEMO[a.id];return}
+ let pin='';try{pin=sessionStorage.getItem('opin')||''}catch(e){}
+ if(!pin){pin=prompt('รหัสใช้งานออฟฟิศ AI')||'';try{sessionStorage.setItem('opin',pin)}catch(e){}}
+ r.textContent='กำลังคิด…';$('go').disabled=true;
+ try{const x=await fetch(ENDPOINT,{method:'POST',headers:{'content-type':'application/json','x-office-pin':pin},body:JSON.stringify({agent:a.id,message:m})});
+  const j=await x.json();if(x.status===401){try{sessionStorage.removeItem('opin')}catch(e){}r.textContent='รหัสไม่ถูกต้อง';}else r.textContent=j.reply||('ผิดพลาด: '+(j.error||x.status))}
+ catch(e){r.textContent='เชื่อมต่อไม่ได้'}$('go').disabled=false}
+$('go').onclick=send;$('q').addEventListener('keydown',e=>{if(e.key==='Enter')send()});
 const V=new THREE.Vector3();
 function proj(o,y,el){o.getWorldPosition(V);V.y+=y;V.project(cam);el.style.left=(V.x*.5+.5)*innerWidth+'px';el.style.top=(-V.y*.5+.5)*innerHeight+'px'}
 const bub=$('bub');let bi=0,bt=0;
