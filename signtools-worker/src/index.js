@@ -183,9 +183,11 @@ async function api(req, env) {
   }
   if (action === 'member_link') {                         // ปุ่ม "หน้าสมาชิก" ในโปรแกรม → ลิงก์เข้าระบบอัตโนมัติ (ใช้ได้ 5 นาที)
     const t = await readToken(db, inp.token), base = new URL(req.url).origin + '/member';
-    if (!t) return json({ ok: true, url: base });
+    if (!t) { await log('', 'member_link', 'bad_token'); return json({ ok: true, url: base, why: 'bad_token' }); }
     const r = await db.prepare('SELECT user_id, machine FROM keys WHERE key=?').bind(t.k).first();
-    if (!r || !r.user_id || r.machine !== t.m) return json({ ok: true, url: base });
+    const why = !r ? 'no_key' : !r.user_id ? 'no_user' : r.machine !== t.m ? 'machine' : '';
+    await log(t.k, 'member_link', why || 'ok');
+    if (why) return json({ ok: true, url: base, why });
     const p = b64u(enc.encode(JSON.stringify({ u: r.user_id, exp: now() + 300 })));
     const sig = b64u(new Uint8Array(await crypto.subtle.sign('HMAC', await hmacKey(db), enc.encode('ml:' + p))));
     return json({ ok: true, url: base + '/auto?t=' + p + '.' + sig });
@@ -487,7 +489,7 @@ function page(title, body) {
 header{display:flex;justify-content:space-between;align-items:center}h1{font-size:20px}h1 small,h3 small{color:var(--mut);font-weight:400;font-size:13px}
 .card{background:var(--card);border-radius:12px;padding:16px;margin:12px 0;display:flex;flex-direction:column;gap:10px}.narrow{max-width:380px;margin:60px auto}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid2 .card{margin:0}@media(max-width:720px){.grid2{grid-template-columns:1fr}}
-label{display:flex;flex-direction:column;gap:4px;color:var(--mut);font-size:12.5px}
+label{display:flex;flex-direction:column;gap:4px;color:var(--mut);font-size:12.5px}[hidden]{display:none!important}
 input,textarea{background:var(--in);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;width:100%}
 button{background:var(--acc);color:#0d1f10;border:0;border-radius:8px;padding:9px 14px;font:inherit;font-weight:700;cursor:pointer}
 .ghost{background:var(--in);color:var(--tx);border:1px solid var(--line)}.danger{background:#5a2026;color:#ffb3b8}.sm{padding:4px 9px;font-size:12px;font-weight:600}
@@ -633,6 +635,7 @@ async function checkSlip(env, db, buf, type, amount) {
 }
 
 // ----- session ลูกค้า -----
+const mlog = (db, req, who, res) => db.prepare('INSERT INTO log VALUES (?,?,?,?,?)').bind(now(), req.headers.get('CF-Connecting-IP') || '', who, 'member_auto', res + ' ' + String(req.headers.get('User-Agent') || '').slice(0, 120)).run();
 async function memSession(db, userId) {
   const p = b64u(enc.encode(JSON.stringify({ u: userId, exp: now() + 7 * 86400 })));
   return p + '.' + b64u(new Uint8Array(await crypto.subtle.sign('HMAC', await hmacKey(db), enc.encode('m:' + p))));
@@ -660,6 +663,7 @@ function mPage(title, body, extraHead = '') {
 h1{margin:0;font-size:21px;line-height:1.2}h2{margin:0;font-size:16px}.sub{color:var(--mut);font-size:13px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px}
 label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--mut)}
+[hidden]{display:none!important}
 input{background:#0c1c33;color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit;font-size:16px;width:100%}
 input:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 button,.btn{display:inline-flex;align-items:center;justify-content:center;background:var(--acc);color:var(--ink);border:0;border-radius:10px;padding:12px 16px;font:inherit;font-weight:700;cursor:pointer;text-decoration:none}
@@ -700,9 +704,9 @@ async function member(req, env) {
     if (p && sig) {
       const want = b64u(new Uint8Array(await crypto.subtle.sign('HMAC', await hmacKey(db), enc.encode('ml:' + p))));
       if (timingSafeEq(want, sig)) {
-        try { const o = JSON.parse(dec.decode(unb64u(p))); if (o.exp > now() && o.u) return redirect('/member', { 'Set-Cookie': memCookie(await memSession(db, o.u), 7 * 86400) }); } catch (e) {}
-      }
-    }
+        try { const o = JSON.parse(dec.decode(unb64u(p))); if (o.exp > now() && o.u) { await mlog(db, req, 'u' + o.u, 'ok'); return redirect('/member', { 'Set-Cookie': memCookie(await memSession(db, o.u), 7 * 86400) }); } await mlog(db, req, 'u' + o.u, 'expired'); } catch (e) {}
+      } else await mlog(db, req, '', 'bad_sig');
+    } else await mlog(db, req, '', 'no_t');
     return redirect('/member');
   }
 
@@ -900,6 +904,11 @@ export default {
       }
       if (url.pathname === '/admin') return await admin(req, env);
       if (url.pathname === '/admin/slip') return await adminSlip(req, env);
+      if (url.pathname === '/admin/log') {
+        if (!(await validSession(env.DB, req))) return new Response('login required', { status: 401 });
+        const rs = await env.DB.prepare("SELECT t, action, result, substr(key,1,8) k FROM log WHERE action IN ('member_link','member_auto') ORDER BY t DESC LIMIT 30").all();
+        return new Response(JSON.stringify(rs.results), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+      }
       if (url.pathname === '/member' || url.pathname.startsWith('/member/')) return await member(req, env);
       if (url.pathname === '/download' || url.pathname === '/download/') return await downloadPage(env, url);
       if (url.pathname === '/download/latest.zip') {
