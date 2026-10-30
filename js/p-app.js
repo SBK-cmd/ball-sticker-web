@@ -4932,6 +4932,7 @@ function bahtText(value) {
   function splitCustomer(raw) {
     let t = String(raw || '').replace(/\r/g, '').trim();
     t = t.replace(/(ชื่อ(?:-นามสกุล)?|ผู้รับ|เบอร์(?:โทร)?|โทร|tel|ที่อยู่)\s*[:：]\s*/gi, '\n').replace(/(^|\n)\s*(ชื่อ(?:-นามสกุล)?|ผู้รับ|เบอร์(?:โทร)?|ที่อยู่)\s+/g, '$1');
+    t = t.replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '');
     let L = t.split(/\n+/).map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean);
     let phone = '';
     L = L.map(l => {
@@ -4944,9 +4945,10 @@ function bahtText(value) {
     }).map(l => l.replace(/^(t|tel|โทร|เบอร์|phone|mobile)\.?:?$/i, '').trim()).filter(Boolean);
     if (/^0\d{9}$/.test(phone)) phone = phone.replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3');
     else if (/^0\d{8}$/.test(phone)) phone = phone.replace(/^(\d{2})(\d{3})(\d{4})$/, '$1-$2-$3');
-    let name = '', shop = '', item = null, size = ''; const addr = [], note = [];
+    let name = '', shop = '', item = null, size = '', firstAddr = -1; const addr = [], note = [], free = [];
     const QTY = /(\d[\d,]*(?:\.\d+)?)\s*(ชิ้น|ดวง|แผ่น|ใบ|ชุด|pcs)/i, SIZE = /^\d+(?:\.\d+)?\s*(?:x|×|\*)?\s*\d*(?:\.\d+)?\s*(?:cm|ซม\.?|เซน(?:ติเมตร)?|mm|มม\.?)$/i;
-    L.forEach(l => {
+    const JOBKW = /(UV|ด้าน|เงา|PVC|โฮโลแกรม|ฮอโลแกรม|สะท้อน|ไดคัท|ไดคัต|ลามิเนต|วานิช|โปร่งใส|งาน|ตัวอย่าง|ปรู๊ฟ)/i;
+    L.forEach((l, idx) => {
       let m;
       if ((m = l.match(/^[(（](.+)[)）]$/))) { shop = m[1].trim(); return; }
       if ((m = l.match(QTY)) && !ADDR_MK.test(l) && !/^(แบบ|ละ|ต่อ|อัน)/.test(l) && !item) { item = {name: l.replace(m[0], '').trim(), qty: parseFloat(m[1].replace(/,/g, ''))}; return; }
@@ -4956,13 +4958,21 @@ function bahtText(value) {
         if (k > 2 && ADDR_MK.test(l.slice(k))) { name = l.slice(0, k).trim(); addr.push(l.slice(k).trim()); } else name = l;
         return;
       }
-      if (ADDR_MK.test(l)) { addr.push(l); return; }
-      if (!name && !/\d/.test(l)) { name = l; return; }
+      if (ADDR_MK.test(l)) { if (firstAddr < 0) firstAddr = idx; addr.push(l.replace(/^[,\s]+|[,\s]+$/g, '')); return; }
+      if (JOBKW.test(l)) { note.push(l); return; }
+      if (!/\d/.test(l)) { free.push({l, idx}); return; }
       note.push(l);
     });
+    // ชื่อที่ไม่มีคำนำหน้า: บรรทัดข้อความล้วนที่อยู่ก่อนที่อยู่ติดกันที่สุด (ถ้าไม่มีที่อยู่ ใช้บรรทัดแรก)
+    if (!name && free.length) {
+      const before = firstAddr >= 0 ? free.filter(f => f.idx < firstAddr) : free;
+      const pick = firstAddr >= 0 ? before[before.length - 1] : before[0];
+      if (pick) { name = pick.l; free.splice(free.indexOf(pick), 1); }
+    }
+    free.forEach(f => note.push(f.l));
     name = name.replace(/^(นางสาว|นาง|นาย)\.(?=\S)/, '$1 ');
     if (shop) name = name ? name + ' (' + shop + ')' : shop;
-    if (item) item.name = (size ? size + ' ' : '') + item.name; else if (size) note.unshift(size);
+    if (item) item.name = ((size ? size + ' ' : '') + item.name).trim(); else if (size) note.unshift(size);
     if (item && !item.name) item.name = 'สติ๊กเกอร์';
     return {name, phone, addr: addr.join(' '), item, note: note.join('\n')};
   }
