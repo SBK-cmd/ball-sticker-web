@@ -289,6 +289,43 @@ h2,h3{margin:0}.mut{color:var(--mut)}.small{font-size:12px}.ok{background:#1d3a2
 </style></head><body>${body}</body></html>`, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Cache-Control': 'no-store' } });
 }
 
+// หน้าดาวน์โหลดสำหรับลูกค้า (สาธารณะ) — เวอร์ชันล่าสุดเสมอ
+async function downloadPage(env, url) {
+  const r = await env.DB.prepare('SELECT version, size, notes, created_at FROM releases ORDER BY created_at DESC, rowid DESC LIMIT 1').first();
+  const ver = r ? h(r.version) : '-', size = r ? (r.size / 1024).toFixed(0) + ' KB' : '';
+  const date = r ? new Date(r.created_at * (r.created_at < 1e12 ? 1000 : 1)).toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  const html = `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ดาวน์โหลด Sign Tools · บอลสติ๊กเกอร์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#10233f;--card:#16304f;--line:#2a4a72;--tx:#eef3fa;--mut:#a9bbd3;--acc:#ffd23f;--ink:#10233f}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.6 "IBM Plex Sans Thai",system-ui,sans-serif;padding:28px max(16px,env(safe-area-inset-left)) 48px}
+.w{max-width:620px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.brand{display:flex;align-items:center;gap:12px}.logo{width:44px;height:44px;border-radius:11px;background:var(--acc);color:var(--ink);display:grid;place-items:center;font-weight:700;font-size:26px}
+h1{margin:0;font-size:24px;line-height:1.2}.sub{color:var(--mut);font-size:13.5px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.dl{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--acc);color:var(--ink);text-decoration:none;font-weight:700;font-size:18px;border-radius:12px;padding:15px}
+.dl:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.meta{color:var(--mut);font-size:13px;text-align:center}
+h2{margin:0;font-size:15px}ol{margin:0;padding-left:20px}li{margin:3px 0}code{background:#0c1c33;border-radius:5px;padding:1px 6px;font-size:13px;white-space:nowrap}
+.note{color:var(--mut);font-size:13px}
+</style></head><body><div class="w">
+<div class="brand"><div class="logo">B</div><div><h1>Sign Tools</h1><div class="sub">เครื่องมือร้านป้าย/สติ๊กเกอร์ สำหรับ Adobe Illustrator · บอลสติ๊กเกอร์</div></div></div>
+<div class="card"><a class="dl" href="/download/latest.zip">⬇ ดาวน์โหลด Sign Tools v${ver}</a>
+<div class="meta">${size}${date ? ' · อัปเดต ' + h(date) : ''} · Windows และ Mac · Illustrator 2018 ขึ้นไป</div>
+${r && r.notes ? '<div class="note">ใหม่: ' + h(r.notes) + '</div>' : ''}</div>
+<div class="card"><h2>วิธีติดตั้ง</h2><ol>
+<li>ปิด Illustrator ก่อน</li>
+<li>แตกไฟล์ zip (Windows: คลิกขวา › Extract All)</li>
+<li><b>Windows:</b> ดับเบิลคลิก <code>install-windows.bat</code><br><b>Mac:</b> ดับเบิลคลิก <code>install-mac.command</code> (ถ้าเปิดไม่ได้: คลิกขวา › Open › Open)</li>
+<li>เปิด Illustrator › Window › Extensions › <b>Sign Tools</b></li>
+<li>ใส่คีย์ที่ได้รับจากร้าน (ST-XXXX-XXXX-XXXX-XXXX) · 1 คีย์ ใช้ได้ 1 เครื่อง</li></ol>
+<div class="note">ติดตั้งแล้ว อัปเดตครั้งต่อไปกด "เช็คอัปเดต" ในแผงได้เลย ไม่ต้องโหลดใหม่</div></div>
+<div class="card"><h2>ยังไม่มีคีย์ / ติดปัญหา</h2><div class="note">ติดต่อร้านบอลสติ๊กเกอร์ · <a href="https://ballsticker.co.th" style="color:var(--acc)">ballsticker.co.th</a></div></div>
+</div></body></html>`;
+  return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -305,7 +342,13 @@ export default {
         return new Response(new Uint8Array(r.zip), { headers: { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="${rm[1]}"`, 'Access-Control-Allow-Origin': '*' } });
       }
       if (url.pathname === '/admin') return await admin(req, env);
-      if (url.pathname === '/') return redirect('/admin');
+      if (url.pathname === '/download' || url.pathname === '/download/') return await downloadPage(env, url);
+      if (url.pathname === '/download/latest.zip') {
+        const r = await env.DB.prepare('SELECT name, zip FROM releases ORDER BY created_at DESC, rowid DESC LIMIT 1').first();
+        if (!r) return new Response('not found', { status: 404 });
+        return new Response(new Uint8Array(r.zip), { headers: { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="${r.name}"`, 'Cache-Control': 'no-store' } });
+      }
+      if (url.pathname === '/') return redirect('/download');
       return new Response('not found', { status: 404 });
     } catch (e) {
       console.error(e);
