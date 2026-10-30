@@ -42,6 +42,14 @@ async function init(db) {
     await db.prepare('CREATE INDEX IF NOT EXISTS orders_ref ON orders(trans_ref)').run();
     await setSetting(db, 'schema_v', '2');
   }
+  // v3: บัญชีเบอร์ + รหัสผ่าน (คีย์ยังอยู่เบื้องหลัง)
+  if ((await getSetting(db, 'schema_v')) !== '3') {
+    for (const q of ['ALTER TABLE keys ADD COLUMN pw_salt TEXT', 'ALTER TABLE keys ADD COLUMN pw_hash TEXT', 'ALTER TABLE orders ADD COLUMN pw_salt TEXT', 'ALTER TABLE orders ADD COLUMN pw_hash TEXT']) {
+      try { await db.prepare(q).run(); } catch (e) { /* มีอยู่แล้ว */ }
+    }
+    await db.prepare('CREATE INDEX IF NOT EXISTS keys_phone ON keys(phone)').run();
+    await setSetting(db, 'schema_v', '3');
+  }
   ready = true;
 }
 const getSetting = async (db, k) => (await db.prepare('SELECT v FROM settings WHERE k=?').bind(k).first())?.v ?? null;
@@ -119,8 +127,17 @@ async function api(req, env) {
     return json({ ok: true, release: r ? { manifest: r.manifest, sig: r.sig } : null });
   }
   if (action === 'activate') {
-    const key = normKey(inp.key), machine = String(inp.machine || ''), mname = String(inp.name || '').slice(0, 80);
+    let key = normKey(inp.key);
+    const machine = String(inp.machine || ''), mname = String(inp.name || '').slice(0, 80);
     if (!/^[0-9a-f]{64}$/.test(machine)) return fail('bad_request', 'ข้อมูลเครื่องไม่ถูกต้อง');
+    if (inp.phone !== undefined) {                       // เข้าด้วยเบอร์ + รหัสผ่าน
+      const phone = normPhone(inp.phone);
+      if (!phone) return fail('bad_login', 'ใส่เบอร์มือถือ 10 หลัก');
+      if (await tooMany(db, 'tel:' + phone)) return fail('locked', 'ใส่รหัสผิดหลายครั้ง — รอ 15 นาทีแล้วลองใหม่');
+      const acc = await accountByPhone(db, phone);
+      if (!acc || !(await checkPw(acc, inp.password))) { await log('tel:' + phone, 'activate', 'bad_pw'); return fail('bad_login', 'เบอร์หรือรหัสผ่านไม่ถูกต้อง'); }
+      key = acc.key;
+    }
     const r = await db.prepare('SELECT * FROM keys WHERE key=?').bind(key).first();
     if (!r) { await log(key, 'activate', 'not_found'); return fail('not_found', 'ไม่พบคีย์นี้ — ตรวจตัวสะกดอีกครั้ง'); }
     if (r.status !== 'active') { await log(key, 'activate', 'revoked'); return fail('revoked', 'คีย์นี้ถูกระงับแล้ว — ติดต่อผู้ขาย'); }
@@ -132,7 +149,7 @@ async function api(req, env) {
     await db.prepare('UPDATE keys SET machine=?, machine_name=?, activated_at=COALESCE(activated_at,?), last_seen=? WHERE key=?')
       .bind(machine, mname, now(), now(), key).run();
     await log(key, 'activate', 'ok');
-    return json({ ok: true, token: await makeToken(db, key, machine, r.expires_at) });
+    return json({ ok: true, token: await makeToken(db, key, machine, r.expires_at), phone: r.phone || null });
   }
   if (action === 'refresh' || action === 'deactivate') {
     const t = await readToken(db, inp.token);
@@ -237,7 +254,26 @@ async function admin(req, env) {
     } else if (d === 'extend') {
       const plan = PLANS[f('plan')] ? f('plan') : 'month', row = await db.prepare('SELECT * FROM keys WHERE key=?').bind(key).first();
       if (row) { const ex = extendTo(row, plan); await db.prepare('UPDATE keys SET plan=?, expires_at=? WHERE key=?').bind(ex.plan, ex.expires_at, key).run(); msg = `${key}: ${plan === 'life' ? 'เปลี่ยนเป็นตลอดชีพ' : 'ต่ออายุ' + planLabel(plan) + ' ถึง ' + dtD(ex.expires_at)} แล้ว`; }
-    } else if (d === 'phone') { await db.prepare('UPDATE keys SET phone=? WHERE key=?').bind(normPhone(f('phone')) || null, key).run(); msg = 'บันทึกเบอร์แล้ว'; }
+    } else if (d === 'member') {
+      const phone = normPhone(f('phone')), plan = PLANS[f('plan')] ? f('plan') : 'life';
+      if (!phone) err = 'ใส่เบอร์มือถือ 10 หลัก';
+      else if (!pwOk(f('pw'))) err = 'รหัสผ่านต้องยาวอย่างน้อย 6 ตัว';
+      else if (await accountByPhone(db, phone)) err = `เบอร์ ${phone} มีบัญชีอยู่แล้ว — ใช้ปุ่มต่ออายุ / ตั้งรหัสใหม่ในตาราง`;
+      else {
+        const k = newKey(), ex = extendTo(null, plan), pw = await hashPw(f('pw'));
+        await db.prepare('INSERT INTO keys (key, note, created_at, plan, expires_at, phone, pw_salt, pw_hash) VALUES (?,?,?,?,?,?,?,?)').bind(k, f('note'), now(), ex.plan, ex.expires_at, phone, pw.salt, pw.hash).run();
+        msg = `เพิ่มสมาชิก ${phone} (${planLabel(plan)}${ex.expires_at ? ' ถึง ' + dtD(ex.expires_at) : ''}) แล้ว — ลูกค้าเข้าโปรแกรมด้วยเบอร์ + รหัสผ่านนี้ได้เลย`;
+      }
+    } else if (d === 'setpw') {
+      if (!pwOk(f('pw'))) err = 'รหัสผ่านต้องยาวอย่างน้อย 6 ตัว';
+      else { const row = await db.prepare('SELECT phone FROM keys WHERE key=?').bind(key).first();
+        if (!row || !row.phone) err = 'ใส่เบอร์ให้คีย์นี้ก่อน แล้วค่อยตั้งรหัสผ่าน';
+        else { const pw = await hashPw(f('pw')); await db.prepare('UPDATE keys SET pw_salt=?, pw_hash=? WHERE key=?').bind(pw.salt, pw.hash, key).run(); msg = `ตั้งรหัสผ่านใหม่ให้ ${row.phone} แล้ว`; } }
+    } else if (d === 'phone') {
+      const ph = normPhone(f('phone')) || null, other = ph ? await db.prepare('SELECT key FROM keys WHERE phone=? AND key!=? AND pw_hash IS NOT NULL').bind(ph, key).first() : null;
+      if (other) err = `เบอร์ ${ph} เป็นบัญชีของ ${other.key} อยู่แล้ว`;
+      else { await db.prepare('UPDATE keys SET phone=? WHERE key=?').bind(ph, key).run(); msg = 'บันทึกเบอร์แล้ว'; }
+    }
     else if (d === 'settings') {
       for (const k of ['price_month', 'price_year', 'price_life', 'pp_id', 'pp_name', 'contact']) await setSetting(db, k, f(k).trim());
       msg = 'บันทึกการตั้งค่าร้านแล้ว';
@@ -293,8 +329,13 @@ async function admin(req, env) {
 <header><h1>Sign Tools <small>แอดมิน</small></h1><form method="post"><button name="do" value="logout" class="ghost">ออกจากระบบ</button></form></header>
 ${msg ? `<p class="ok">${h(msg)}</p>` : ''}${err ? `<p class="err">${h(err)}</p>` : ''}
 ${created.length ? `<div class="card"><h3>คีย์ใหม่ (ก็อปส่งให้ลูกค้า)</h3><textarea rows="${Math.min(10, created.length)}" readonly onclick="this.select()">${h(created.join('\n'))}</textarea></div>` : ''}
+<form method="post" class="card hlg"><h3>เพิ่มสมาชิก <small>ลูกค้าเข้าโปรแกรมและหน้าสมาชิกด้วยเบอร์ + รหัสผ่าน ไม่ต้องใช้คีย์</small></h3><input type="hidden" name="do" value="member">
+  <div class="grid3"><label>เบอร์มือถือ<input name="phone" inputmode="tel" required></label>
+  <label>รหัสผ่าน (6 ตัวขึ้นไป · แจ้งลูกค้า)<input name="pw" required autocomplete="off"></label>
+  <label>แพ็กเกจ<select name="plan"><option value="life">ตลอดชีพ</option><option value="year">รายปี (365 วัน)</option><option value="month">รายเดือน (30 วัน)</option></select></label></div>
+  <label>โน้ต (ชื่อลูกค้า / ร้าน)<input name="note"></label><button>เพิ่มสมาชิก</button></form>
 <div class="grid2">
-  <form method="post" class="card"><h3>สร้างคีย์</h3><input type="hidden" name="do" value="create">
+  <form method="post" class="card"><h3>สร้างคีย์ <small>(แบบเดิม)</small></h3><input type="hidden" name="do" value="create">
     <label>จำนวน<input name="n" type="number" value="1" min="1" max="200"></label>
     <label>แพ็กเกจ<select name="plan"><option value="life">ตลอดชีพ</option><option value="year">รายปี (365 วัน)</option><option value="month">รายเดือน (30 วัน)</option></select></label>
     <label>เบอร์ลูกค้า (ใช้ล็อกอินหน้าสมาชิก · ไม่ใส่ก็ได้ ลูกค้าล็อกอินครั้งแรกจะผูกเอง)<input name="phone" inputmode="tel"></label>
@@ -323,10 +364,11 @@ ${pend.length ? `<div class="card hl"><h3>รอตรวจสลิป <small>
 <div class="card">
   <div class="bar"><h3>คีย์ทั้งหมด <small>${stats.n || 0} อัน · ใช้งาน ${stats.used || 0} · ระงับ ${stats.rev || 0}</small></h3>
     <form><input name="q" value="${h(q)}" placeholder="ค้นหาคีย์ / โน้ต / ชื่อเครื่อง"></form></div>
-  <div class="tw"><table><tr><th>คีย์</th><th>โน้ต</th><th>เบอร์</th><th>แพ็กเกจ</th><th>เครื่อง</th><th>เปิดใช้</th><th>ล่าสุด</th><th>สถานะ</th><th></th></tr>
+  <div class="tw"><table><tr><th>คีย์</th><th>โน้ต</th><th>เบอร์ / รหัสผ่าน</th><th>แพ็กเกจ</th><th>เครื่อง</th><th>เปิดใช้</th><th>ล่าสุด</th><th>สถานะ</th><th></th></tr>
   ${rows.map((r) => `<tr class="${r.status === 'revoked' ? 'rev' : ''}"><td class="mono">${h(r.key)}</td>
     <td><form method="post" class="inl"><input type="hidden" name="key" value="${h(r.key)}"><input name="note" value="${h(r.note)}"><button name="do" value="note" class="ghost sm">บันทึก</button></form></td>
-    <td><form method="post" class="inl"><input type="hidden" name="key" value="${h(r.key)}"><input name="phone" value="${h(r.phone || '')}" style="min-width:105px" inputmode="tel"><button name="do" value="phone" class="ghost sm">บันทึก</button></form></td>
+    <td><form method="post" class="inl"><input type="hidden" name="key" value="${h(r.key)}"><input name="phone" value="${h(r.phone || '')}" style="min-width:105px" inputmode="tel"><button name="do" value="phone" class="ghost sm">บันทึก</button></form>
+      <form method="post" class="inl" style="margin-top:3px"><input type="hidden" name="key" value="${h(r.key)}"><input name="pw" placeholder="${r.pw_hash ? 'มีรหัสแล้ว · ตั้งใหม่' : 'ตั้งรหัสผ่าน'}" style="min-width:105px" autocomplete="off"><button name="do" value="setpw" class="ghost sm">ตั้ง</button></form></td>
     <td>${planLabel(r.plan)}${r.expires_at ? `<br><span class="${r.expires_at < now() ? 'exp' : 'mut'}">${r.expires_at < now() ? 'หมดแล้ว ' : 'ถึง '}${dtD(r.expires_at)}</span>` : ''}
       <form method="post" class="inl" style="margin-top:3px"><input type="hidden" name="key" value="${h(r.key)}"><select name="plan" class="sm"><option value="month">+30 วัน</option><option value="year">+1 ปี</option><option value="life">ตลอดชีพ</option></select><button name="do" value="extend" class="ghost sm">ต่อ</button></form></td>
     <td>${r.machine ? h(r.machine_name) : '<span class="mut">ยังไม่ผูก</span>'}${r.moves ? ` <span class="mut">(ย้าย ${r.moves})</span>` : ''}</td>
@@ -360,7 +402,7 @@ h2,h3{margin:0}.mut{color:var(--mut)}.small{font-size:12px}.ok{background:#1d3a2
 .mono{font-family:Consolas,Menlo,monospace}tr.rev td{opacity:.5}.inl{display:flex;gap:4px}.inl input{padding:4px 6px;min-width:140px}.act{display:flex;gap:4px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}@media(max-width:720px){.grid3{grid-template-columns:1fr}}
 select{background:var(--in);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit}select.sm{padding:3px 4px;font-size:12px}
-.hl{border:1px solid #c9a227}.exp{color:#ff8d95}td.wrap{white-space:normal;max-width:260px}
+.hl{border:1px solid #c9a227}.hlg{border:1px solid #2f6b45}.exp{color:#ff8d95}td.wrap{white-space:normal;max-width:260px}
 .tag{padding:2px 8px;border-radius:10px;font-size:12px}.tag.on{background:#1d3a24;color:#9ff0ae}.tag.off{background:#3d1d21;color:#ffb3b8}
 </style></head><body>${body}</body></html>`, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY', 'Cache-Control': 'no-store' } });
 }
@@ -402,6 +444,16 @@ ${r && r.notes ? '<div class="note">ใหม่: ' + h(r.notes) + '</div>' : ''
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 }
 
+// ----- รหัสผ่านสมาชิก -----
+async function hashPw(pw) { const salt = b64(crypto.getRandomValues(new Uint8Array(16))); return { salt, hash: await pbkdf2('m:' + pw, salt) }; }
+async function checkPw(row, pw) { if (!row || !row.pw_hash || !row.pw_salt) return false; return timingSafeEq(row.pw_hash, await pbkdf2('m:' + String(pw || ''), row.pw_salt)); }
+const pwOk = (pw) => String(pw || '').length >= 6;
+async function tooMany(db, who) {     // กันเดารหัส: ผิดเกิน 8 ครั้งใน 15 นาที
+  const r = await db.prepare("SELECT COUNT(*) n FROM log WHERE key=? AND result='bad_pw' AND t>?").bind(who, now() - 900).first();
+  return (r && r.n) >= 8;
+}
+async function accountByPhone(db, phone) { return phone ? db.prepare('SELECT * FROM keys WHERE phone=? AND pw_hash IS NOT NULL ORDER BY created_at DESC LIMIT 1').bind(phone).first() : null; }
+
 // =====================================================================
 //  ระบบสมาชิก: ล็อกอินด้วยเบอร์ + คีย์ · ซื้อ/ต่ออายุด้วยพร้อมเพย์ + สลิป
 // =====================================================================
@@ -423,7 +475,8 @@ async function fulfill(db, o) {
   let key = o.key;
   if (o.kind === 'new') {
     key = newKey(); const ex = extendTo(null, o.plan);
-    await db.prepare('INSERT INTO keys (key, note, created_at, plan, expires_at, phone) VALUES (?,?,?,?,?,?)').bind(key, 'ซื้อออนไลน์', now(), ex.plan, ex.expires_at, o.phone).run();
+    const pw = await db.prepare('SELECT pw_salt, pw_hash FROM orders WHERE id=?').bind(o.id).first();
+    await db.prepare('INSERT INTO keys (key, note, created_at, plan, expires_at, phone, pw_salt, pw_hash) VALUES (?,?,?,?,?,?,?,?)').bind(key, 'ซื้อออนไลน์', now(), ex.plan, ex.expires_at, o.phone, pw && pw.pw_salt, pw && pw.pw_hash).run();
   } else {
     const row = await db.prepare('SELECT * FROM keys WHERE key=?').bind(key).first();
     const ex = extendTo(row, o.plan);
@@ -518,7 +571,7 @@ async function member(req, env) {
   const planCards = (kind, key) => Object.keys(PLANS).filter((p) => P[p]).map((p) => `<form method="post" action="/member/order" class="plan">
       <input type="hidden" name="kind" value="${kind}"><input type="hidden" name="plan" value="${p}">${key ? `<input type="hidden" name="key" value="${h(key)}">` : ''}
       <b>${planLabel(p)}</b><span class="p">฿${P[p].toLocaleString('th-TH')}</span><span class="mut small">${p === 'life' ? 'จ่ายครั้งเดียว ใช้ได้ตลอด' : p === 'year' ? '365 วัน' : '30 วัน'}</span>
-      ${kind === 'new' ? '' : ''}<button class="sm">${kind === 'new' ? 'ซื้อ' : 'ต่ออายุ'}</button></form>`).join('') || '<p class="mut">ยังไม่เปิดขายออนไลน์ — ติดต่อ ' + h(contact) + '</p>';
+      ${kind === 'new' ? '' : ''}<button class="sm">${kind === 'new' ? 'สมัคร' : 'ต่ออายุ'}</button></form>`).join('') || '<p class="mut">ยังไม่เปิดขายออนไลน์ — ติดต่อ ' + h(contact) + '</p>';
 
   // ----- สร้างรายการชำระเงิน -----
   if (path === '/member/order' && form) {
@@ -526,9 +579,14 @@ async function member(req, env) {
     if (!plan) return redirect('/member');
     let key = null, phone = normPhone(f('phone'));
     if (kind === 'renew') { key = await memKey(db, req); if (!key) return redirect('/member'); phone = (await db.prepare('SELECT phone FROM keys WHERE key=?').bind(key).first())?.phone || ''; }
-    else if (!phone) return mPage('ซื้อคีย์', `<div class="card"><p class="msg bad">ใส่เบอร์มือถือ 10 หลักให้ถูกต้อง</p><a class="btn ghost" href="/member/buy">ย้อนกลับ</a></div>`);
-    const id = rid();
-    await db.prepare("INSERT INTO orders (id, kind, key, phone, plan, amount, status, created_at) VALUES (?,?,?,?,?,?,'new',?)").bind(id, kind, key, phone, plan, P[plan], now()).run();
+    else {
+      const back = (t) => mPage('สมัครสมาชิก', `<div class="card"><p class="msg bad">${t}</p><a class="btn ghost" href="/member/buy">ย้อนกลับ</a></div>`);
+      if (!phone) return back('ใส่เบอร์มือถือ 10 หลักให้ถูกต้อง');
+      if (!pwOk(f('pw'))) return back('ตั้งรหัสผ่านอย่างน้อย 6 ตัว');
+      if (await accountByPhone(db, phone)) return back('เบอร์นี้เป็นสมาชิกอยู่แล้ว — <a href="/member" style="color:var(--acc)">เข้าสู่ระบบ</a> แล้วต่ออายุได้เลย');
+    }
+    const id = rid(), pw = kind === 'new' ? await hashPw(f('pw')) : { salt: null, hash: null };
+    await db.prepare("INSERT INTO orders (id, kind, key, phone, plan, amount, status, created_at, pw_salt, pw_hash) VALUES (?,?,?,?,?,?,'new',?,?,?)").bind(id, kind, key, phone, plan, P[plan], now(), pw.salt, pw.hash).run();
     return redirect('/member/pay?o=' + id);
   }
 
@@ -557,16 +615,16 @@ async function member(req, env) {
         o = await db.prepare('SELECT id, kind, key, phone, plan, amount, status, reason FROM orders WHERE id=?').bind(id).first();
       }
     }
-    const head = `<div class="kv"><span class="mut">รายการ</span><b>${o.kind === 'new' ? 'ซื้อคีย์ใหม่' : 'ต่ออายุคีย์ ' + h(o.key)}</b>
+    const head = `<div class="kv"><span class="mut">รายการ</span><b>${o.kind === 'new' ? 'สมัครสมาชิกใหม่' : 'ต่ออายุสมาชิก'}</b>
       <span class="mut">แพ็กเกจ</span><b>${planLabel(o.plan)}</b><span class="mut">ยอดชำระ</span><b>฿${Number(o.amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</b>
       <span class="mut">เบอร์</span><b>${h(o.phone || '-')}</b></div>`;
     if (o.status === 'paid') {
       const k = await db.prepare('SELECT key, plan, expires_at FROM keys WHERE key=?').bind(o.key).first();
       const sess = await memSession(db, o.key);
       return new Response((await mPage('ชำระเงินสำเร็จ', `<div class="card"><h2 class="ok">✓ ชำระเงินสำเร็จ</h2>${head}
-        <div class="msg ok">${o.kind === 'new' ? 'คีย์ของคุณ' : 'ต่ออายุแล้ว'}<div class="mono" style="font-size:19px;margin-top:4px">${h(o.key)}</div>
+        <div class="msg ok">${o.kind === 'new' ? 'สมัครสมาชิกแล้ว · เบอร์ <b>' + h(o.phone) + '</b>' : 'ต่ออายุแล้ว'}
         <div class="small mut">${k && k.expires_at ? 'ใช้ได้ถึง ' + dtD(k.expires_at) : 'ใช้ได้ตลอดชีพ'}</div></div>
-        ${o.kind === 'new' ? '<p class="small">เก็บคีย์นี้ไว้ ใช้ใส่ในโปรแกรม และใช้คู่กับเบอร์ ' + h(o.phone) + ' เพื่อเข้าหน้าสมาชิก</p><a class="btn" href="/download">ดาวน์โหลดโปรแกรม</a>' : '<p class="small">เปิดแผง Sign Tools ใหม่ ระบบจะใช้ได้ทันที</p>'}
+        ${o.kind === 'new' ? '<p class="small">เปิดโปรแกรม Sign Tools แล้วเข้าสู่ระบบด้วย <b>เบอร์ + รหัสผ่าน</b> ที่ตั้งไว้</p><a class="btn" href="/download">ดาวน์โหลดโปรแกรม</a>' : '<p class="small">เปิดแผง Sign Tools ใหม่ ระบบจะใช้ได้ทันที</p>'}
         <a class="btn ghost" href="/member">ไปหน้าสมาชิก</a></div>`)).body, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Set-Cookie': memCookie(sess, 7 * 86400) } });
     }
     if (o.status === 'pending') return mPage('รอตรวจสอบ', `<div class="card"><h2>⏳ ได้รับสลิปแล้ว · รอร้านตรวจสอบ</h2>${head}
@@ -586,43 +644,61 @@ async function member(req, env) {
 
   // ----- ซื้อคีย์ใหม่ -----
   if (path === '/member/buy') {
-    return mPage('ซื้อคีย์', `<div class="card"><h2>ซื้อคีย์ Sign Tools</h2>
-      <label>เบอร์มือถือ (ใช้คู่กับคีย์เพื่อเข้าหน้าสมาชิก)<input id="ph" inputmode="tel" placeholder="08x-xxx-xxxx" autocomplete="tel"></label>
+    return mPage('ซื้อคีย์', `<div class="card"><h2>สมัครสมาชิก Sign Tools</h2>
+      <label>เบอร์มือถือ<input id="ph" inputmode="tel" placeholder="08x-xxx-xxxx" autocomplete="tel"></label>
+      <label>ตั้งรหัสผ่าน (6 ตัวขึ้นไป · ใช้เข้าโปรแกรมและหน้าสมาชิก)<input id="pw" type="password" autocomplete="new-password"></label>
       <div class="plans">${planCards('new')}</div>
-      <p class="small mut">1 คีย์ ใช้ได้ 1 เครื่อง · ย้ายเครื่องได้เองจากหน้าสมาชิก</p></div>
-      <script>document.querySelectorAll('form.plan').forEach(function(fm){fm.addEventListener('submit',function(){var i=document.createElement('input');i.type='hidden';i.name='phone';i.value=document.getElementById('ph').value;fm.appendChild(i);});});</script>`);
+      <p class="small mut">1 บัญชี ใช้ได้ 1 เครื่อง · ย้ายเครื่องได้เองจากหน้าสมาชิก</p></div>
+      <script>document.querySelectorAll('form.plan').forEach(function(fm){fm.addEventListener('submit',function(){var i=document.createElement('input');i.type='hidden';i.name='phone';i.value=document.getElementById('ph').value;fm.appendChild(i);var j=document.createElement('input');j.type='hidden';j.name='pw';j.value=document.getElementById('pw').value;fm.appendChild(j);});});</script>`);
   }
 
   // ----- ล็อกอิน / หน้าสมาชิก -----
   if (form && f('do') === 'logout') return redirect('/member', { 'Set-Cookie': memCookie('', 0) });
   let key = await memKey(db, req), err = '';
   if (form && f('do') === 'login') {
-    const k = normKey(f('key')), phone = normPhone(f('phone')), r = await db.prepare('SELECT * FROM keys WHERE key=?').bind(k).first();
+    const phone = normPhone(f('phone')), ip = req.headers.get('CF-Connecting-IP') || '';
+    const bad = async (t) => { await db.prepare('INSERT INTO log VALUES (?,?,?,?,?)').bind(now(), ip, 'tel:' + phone, 'member', 'bad_pw').run(); await sleep(800); return t; };
     if (!phone) err = 'ใส่เบอร์มือถือ 10 หลัก';
-    else if (!r || (r.phone && r.phone !== phone)) { await sleep(800); err = 'เบอร์หรือคีย์ไม่ถูกต้อง'; }
-    else {
-      if (!r.phone) await db.prepare('UPDATE keys SET phone=? WHERE key=?').bind(phone, k).run();     // ล็อกอินครั้งแรก = ผูกเบอร์
-      return redirect('/member', { 'Set-Cookie': memCookie(await memSession(db, k), 7 * 86400) });
+    else if (await tooMany(db, 'tel:' + phone)) err = 'ใส่รหัสผิดหลายครั้ง — รอ 15 นาทีแล้วลองใหม่';
+    else if (f('key')) {                                   // ลูกค้าเดิมที่มีแต่คีย์
+      const k = normKey(f('key')), r = await db.prepare('SELECT * FROM keys WHERE key=?').bind(k).first();
+      if (!r || (r.phone && r.phone !== phone)) err = await bad('เบอร์หรือคีย์ไม่ถูกต้อง');
+      else { if (!r.phone) await db.prepare('UPDATE keys SET phone=? WHERE key=?').bind(phone, k).run(); return redirect('/member', { 'Set-Cookie': memCookie(await memSession(db, k), 7 * 86400) }); }
+    } else {
+      const acc = await accountByPhone(db, phone);
+      if (!acc || !(await checkPw(acc, f('pw')))) err = await bad('เบอร์หรือรหัสผ่านไม่ถูกต้อง');
+      else return redirect('/member', { 'Set-Cookie': memCookie(await memSession(db, acc.key), 7 * 86400) });
     }
   }
   if (!key) {
     return mPage('เข้าสู่ระบบ', `<form method="post" class="card"><h2>เข้าสู่ระบบสมาชิก</h2>${err ? `<p class="msg bad">${h(err)}</p>` : ''}
       <input type="hidden" name="do" value="login">
       <label>เบอร์มือถือ<input name="phone" inputmode="tel" placeholder="08x-xxx-xxxx" autocomplete="tel" required></label>
-      <label>คีย์ (ST-XXXX-XXXX-XXXX-XXXX)<input name="key" class="mono" autocapitalize="characters" spellcheck="false" required></label>
-      <button>เข้าสู่ระบบ</button></form>
-      <div class="card"><h2>ยังไม่มีคีย์?</h2><a class="btn" href="/member/buy">ซื้อคีย์</a></div>`);
+      <label id="pwBox">รหัสผ่าน<input name="pw" type="password" autocomplete="current-password"></label>
+      <label id="keyBox" hidden>คีย์ (ST-XXXX-XXXX-XXXX-XXXX)<input name="key" class="mono" autocapitalize="characters" spellcheck="false"></label>
+      <button>เข้าสู่ระบบ</button>
+      <a href="#" id="useKey" class="small mut">ลูกค้าเดิมที่มีคีย์ ST-… ? เข้าด้วยคีย์</a>
+      <span class="small mut">ลืมรหัสผ่าน: ติดต่อ ${h(contact)}</span></form>
+      <div class="card"><h2>ยังไม่เป็นสมาชิก?</h2><a class="btn" href="/member/buy">สมัครสมาชิก</a></div>
+      <script>document.getElementById('useKey').onclick=function(e){e.preventDefault();document.getElementById('keyBox').hidden=false;document.getElementById('pwBox').hidden=true;this.hidden=true;};</script>`);
   }
   const r = await db.prepare('SELECT * FROM keys WHERE key=?').bind(key).first();
   if (!r) return redirect('/member', { 'Set-Cookie': memCookie('', 0) });
   let msg = '';
+  if (form && f('do') === 'pw') {
+    if (r.pw_hash && !(await checkPw(r, f('old')))) msg = '!รหัสผ่านเดิมไม่ถูกต้อง';
+    else if (!pwOk(f('pw'))) msg = '!รหัสผ่านใหม่ต้องยาวอย่างน้อย 6 ตัว';
+    else if (!r.phone) msg = '!ยังไม่มีเบอร์ในบัญชี — ติดต่อร้าน';
+    else { const pw = await hashPw(f('pw')); await db.prepare('UPDATE keys SET pw_salt=?, pw_hash=? WHERE key=?').bind(pw.salt, pw.hash, key).run(); r.pw_hash = pw.hash; msg = 'เปลี่ยนรหัสผ่านแล้ว — ใช้รหัสใหม่เข้าโปรแกรมครั้งถัดไป'; }
+  }
   if (form && f('do') === 'move') { await db.prepare('UPDATE keys SET machine=NULL, machine_name=NULL, moves=moves+1 WHERE key=?').bind(key).run(); msg = 'ปลดเครื่องแล้ว — เปิด Sign Tools ที่เครื่องใหม่แล้วใส่คีย์ได้เลย'; r.machine = null; }
   const expired = r.expires_at && r.expires_at < now(), days = r.expires_at ? Math.ceil((r.expires_at - now()) / 86400) : null;
   const status = r.status !== 'active' ? '<b class="bad">ถูกระงับ</b>' : expired ? '<b class="bad">หมดอายุแล้ว</b>' : '<b class="ok">ใช้งานได้</b>';
   const pendO = await db.prepare("SELECT id FROM orders WHERE key=? AND status='pending' ORDER BY created_at DESC LIMIT 1").bind(key).first();
-  return mPage('สมาชิก', `${msg ? `<p class="msg ok">${h(msg)}</p>` : ''}
-    <div class="card"><h2>คีย์ของคุณ</h2><div class="kv">
-      <span class="mut">คีย์</span><b class="mono">${h(r.key)}</b><span class="mut">เบอร์</span><b>${h(r.phone || '-')}</b>
+  const msgHtml = msg ? (msg[0] === '!' ? `<p class="msg bad">${h(msg.slice(1))}</p>` : `<p class="msg ok">${h(msg)}</p>`) : '';
+  return mPage('สมาชิก', `${msgHtml}
+    <div class="card"><h2>บัญชีของคุณ</h2><div class="kv">
+      <span class="mut">เบอร์</span><b>${h(r.phone || '-')}</b><span class="mut">รหัสอ้างอิง</span><b class="mono small">${h(r.key)}</b>
       <span class="mut">แพ็กเกจ</span><b>${planLabel(r.plan)}</b>
       <span class="mut">ใช้ได้ถึง</span><b>${r.expires_at ? dtD(r.expires_at) + (expired ? '' : ` <span class="mut small">(อีก ${days} วัน)</span>`) : 'ตลอดชีพ'}</b>
       <span class="mut">สถานะ</span>${status}
@@ -632,6 +708,9 @@ async function member(req, env) {
       <a class="btn ghost" href="/download">ดาวน์โหลดโปรแกรม</a></div></div>
     ${r.plan === 'life' || !r.plan ? '' : `<div class="card"><h2>${expired ? 'ต่ออายุเพื่อใช้งานต่อ' : 'ต่ออายุ / อัปเกรด'}</h2><div class="plans">${planCards('renew', r.key)}</div>
       <p class="small mut">ต่ออายุแล้วนับต่อจากวันหมดเดิม ไม่เสียวันที่เหลือ</p></div>`}
+    <details class="card"><summary style="cursor:pointer"><b>${r.pw_hash ? 'เปลี่ยนรหัสผ่าน' : 'ตั้งรหัสผ่าน (เข้าโปรแกรมด้วยเบอร์ + รหัสผ่านแทนคีย์)'}</b></summary>
+      <form method="post" style="display:flex;flex-direction:column;gap:10px;margin-top:10px">${r.pw_hash ? '<label>รหัสผ่านเดิม<input name="old" type="password" autocomplete="current-password" required></label>' : ''}
+      <label>รหัสผ่านใหม่ (6 ตัวขึ้นไป)<input name="pw" type="password" autocomplete="new-password" required></label><button name="do" value="pw">บันทึกรหัสผ่าน</button></form></details>
     <form method="post"><button name="do" value="logout" class="ghost sm">ออกจากระบบ</button></form>`);
 }
 
