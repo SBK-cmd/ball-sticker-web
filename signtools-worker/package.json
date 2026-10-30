@@ -10,7 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "fflate": "^0.8.2"
+    "fflate": "^0.8.2",
+    "qrcode-generator": "^1.4.4"
   },
   "devDependencies": {
     "wrangler": "^4.152.0"
