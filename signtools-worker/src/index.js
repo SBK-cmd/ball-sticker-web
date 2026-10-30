@@ -181,6 +181,15 @@ async function api(req, env) {
     const owner = r.user_id ? await db.prepare('SELECT phone FROM users WHERE id=?').bind(r.user_id).first() : null;
     return json({ ok: true, token: await makeToken(db, key, machine, r.expires_at), phone: (owner && owner.phone) || null });
   }
+  if (action === 'member_link') {                         // ปุ่ม "หน้าสมาชิก" ในโปรแกรม → ลิงก์เข้าระบบอัตโนมัติ (ใช้ได้ 5 นาที)
+    const t = await readToken(db, inp.token), base = new URL(req.url).origin + '/member';
+    if (!t) return json({ ok: true, url: base });
+    const r = await db.prepare('SELECT user_id, machine FROM keys WHERE key=?').bind(t.k).first();
+    if (!r || !r.user_id || r.machine !== t.m) return json({ ok: true, url: base });
+    const p = b64u(enc.encode(JSON.stringify({ u: r.user_id, exp: now() + 300 })));
+    const sig = b64u(new Uint8Array(await crypto.subtle.sign('HMAC', await hmacKey(db), enc.encode('ml:' + p))));
+    return json({ ok: true, url: base + '/auto?t=' + p + '.' + sig });
+  }
   if (action === 'refresh' || action === 'deactivate') {
     const t = await readToken(db, inp.token);
     if (!t) return fail('bad_token', 'ไลเซนส์ไม่ถูกต้อง');
@@ -684,6 +693,18 @@ async function member(req, env) {
       <input type="hidden" name="kind" value="${kind}"><input type="hidden" name="plan" value="${p}">${key ? `<input type="hidden" name="key" value="${h(key)}">` : ''}
       <b>${planLabel(p)}</b><span class="p">฿${P[p].toLocaleString('th-TH')}</span><span class="mut small">${p === 'life' ? 'จ่ายครั้งเดียว ใช้ได้ตลอด' : p === 'year' ? '365 วัน' : '30 วัน'}</span>
       <button class="sm">${btnTxt}</button></form>`).join('') || '<p class="mut">ยังไม่เปิดขายออนไลน์ — ติดต่อ ' + h(contact) + '</p>';
+
+  // ----- เข้าระบบอัตโนมัติจากโปรแกรม -----
+  if (path === '/member/auto') {
+    const [p, sig] = String(url.searchParams.get('t') || '').split('.');
+    if (p && sig) {
+      const want = b64u(new Uint8Array(await crypto.subtle.sign('HMAC', await hmacKey(db), enc.encode('ml:' + p))));
+      if (timingSafeEq(want, sig)) {
+        try { const o = JSON.parse(dec.decode(unb64u(p))); if (o.exp > now() && o.u) return redirect('/member', { 'Set-Cookie': memCookie(await memSession(db, o.u), 7 * 86400) }); } catch (e) {}
+      }
+    }
+    return redirect('/member');
+  }
 
   // ----- สร้างรายการชำระเงิน: new = สมัคร · add = เพิ่มเครื่อง · renew = ต่ออายุคีย์ -----
   if (path === '/member/order' && form) {
