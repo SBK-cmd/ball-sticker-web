@@ -4924,6 +4924,56 @@ function bahtText(value) {
       setTimeout(() => URL.revokeObjectURL(a.href), 4000); toast('บันทึกรูปแล้ว');
     }, 'image/png');
   }
+
+  /* แยกข้อความที่วางมาทั้งก้อน → รายการงาน(ขนาด/จำนวน) / หมายเหตุ / ชื่อ / เบอร์ / ที่อยู่ (ตรวจผลแล้วแก้เองได้ทุกช่อง) */
+  function nameAddrSplit(one) {
+    one = one.replace(/\s+/g, ' ').trim();
+    const k = one.search(/\s(?=\d|หมู่|ม\.|ซ\.|ซอย|ถ\.|ถนน|ต\.|ตำบล|อ\.|อำเภอ|บ้าน|หมู่บ้าน)/);
+    return k > 2 ? {name: one.slice(0, k).trim(), addr: one.slice(k).trim()} : {name: one, addr: ''};
+  }
+  function splitCustomer(raw) {
+    let t = String(raw || '').replace(/\r/g, '').trim();
+    t = t.replace(/(ชื่อ(?:-นามสกุล)?|ผู้รับ|เบอร์(?:โทร)?|โทร|tel|ที่อยู่)\s*[:：]\s*/gi, '\n').replace(/(^|\n)\s*(ชื่อ(?:-นามสกุล)?|ผู้รับ|เบอร์(?:โทร)?|ที่อยู่)\s+/g, '$1');
+    const L = t.split(/\n+/).map(x => x.trim()).filter(Boolean);
+    let pi = -1, phone = '';
+    for (let i = 0; i < L.length && pi < 0; i++) {
+      let m = L[i].match(/(?:\+66|\b66)[\s-]?([689](?:[\s-]?\d){8})(?!\d)/);
+      if (m) { phone = '0' + m[1].replace(/\D/g, ''); }
+      else { m = L[i].match(/(?:^|[^\d])(0\d(?:[\s-]?\d){7,9})(?!\d)/); if (m) { phone = m[1].replace(/\D/g, ''); m = [m[1]]; } }
+      if (m) { pi = i; L[i] = L[i].replace(m[0], ' ').replace(/\s+/g, ' ').trim(); }
+    }
+    if (/^0\d{9}$/.test(phone)) phone = phone.replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3');
+    else if (/^0\d{8}$/.test(phone)) phone = phone.replace(/^(\d{2})(\d{3})(\d{4})$/, '$1-$2-$3');
+    let jobLines = [], name = '', addr = '';
+    if (pi >= 0) {
+      const before = L.slice(0, pi), after = L.slice(pi + 1);
+      if (L[pi]) { const r = nameAddrSplit(L[pi]); name = r.name; addr = [r.addr].concat(after).filter(Boolean).join(' '); jobLines = before; }
+      else if (before.length) { name = before[before.length - 1]; jobLines = before.slice(0, -1); addr = after.join(' '); }
+      else addr = after.join(' ');
+    } else if (L.length >= 2) { name = L[0]; addr = L.slice(1).join(' '); }
+    else if (L.length === 1) { const r = nameAddrSplit(L[0]); name = r.name; addr = r.addr; }
+    // งาน: บรรทัดแรกที่มี "จำนวน + ชิ้น/ดวง/แผ่น…" = รายการ (ชื่อ/ขนาด + จำนวน) ที่เหลือ = หมายเหตุ
+    let item = null; const noteL = [];
+    jobLines.forEach(l => {
+      const q = l.match(/(\d[\d,]*(?:\.\d+)?)\s*(ชิ้น|ดวง|แผ่น|ใบ|ชุด|pcs)/i);
+      if (q && !item) item = {name: (l.replace(q[0], '').replace(/\s+/g, ' ').trim() || l), qty: parseFloat(q[1].replace(/,/g, ''))};
+      else noteL.push(l);
+    });
+    return {name, phone, addr, item, note: noteL.join('\n')};
+  }
+  $('jSplit').addEventListener('click', () => {
+    const r = splitCustomer($('jPaste').value);
+    if (!r.name && !r.phone && !r.addr && !r.item) { toast('วางข้อมูลก่อน'); return; }
+    $('jName').value = r.name; $('jPhone').value = r.phone; $('jAddr').value = r.addr;
+    if (r.item) {
+      const k = jobItems.findIndex(x => !x.name.trim());
+      if (k >= 0) jobItems[k] = {name: r.item.name, qty: r.item.qty, note: jobItems[k].note || ''}; else jobItems.push({name: r.item.name, qty: r.item.qty, note: ''});
+      renderJobItems();
+    }
+    if (r.note) { const cur = $('jobNote').value.trim(); $('jobNote').value = cur ? cur + '\n' + r.note : r.note; }
+    ['jName', 'jPhone', 'jAddr', 'jobNote'].forEach(id => $(id).dispatchEvent(new Event('input', {bubbles: true})));
+    renderJob(); toast('แยกให้แล้ว ตรวจรายการงาน ชื่อ เบอร์ ที่อยู่ อีกครั้ง');
+  });
   $('copy-confirm').addEventListener('click', copyConfirm);
   $('img-confirm').addEventListener('click', imgConfirm);
   document.addEventListener('pointerdown', unlockAudio, {once: true});
