@@ -7752,40 +7752,45 @@ function bahtText(value) {
   }
 
   /* แยกข้อความที่วางมาทั้งก้อน → รายการงาน(ขนาด/จำนวน) / หมายเหตุ / ชื่อ / เบอร์ / ที่อยู่ (ตรวจผลแล้วแก้เองได้ทุกช่อง) */
-  function nameAddrSplit(one) {
-    one = one.replace(/\s+/g, ' ').trim();
-    const k = one.search(/\s(?=\d|หมู่|ม\.|ซ\.|ซอย|ถ\.|ถนน|ต\.|ตำบล|อ\.|อำเภอ|บ้าน|หมู่บ้าน)/);
-    return k > 2 ? {name: one.slice(0, k).trim(), addr: one.slice(k).trim()} : {name: one, addr: ''};
-  }
+  /* ดูเนื้อหาแต่ละบรรทัด ไม่ดูตำแหน่ง: เบอร์ / จำนวน+ชิ้น / ขนาด / ที่อยู่ / ชื่อ(คำนำหน้า) / (ชื่อร้าน) / ที่เหลือ→หมายเหตุ */
+  const NAME_PFX = /^(นางสาว|นาง|นาย|น\.ส\.|นส\.|คุณ|ร้าน|หจก\.?|บจก\.?|บริษัท|พี่|น้อง|เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|Mr|Mrs|Ms)\.?/i;
+  const ADDR_MK = /(\d+\/\d+|(?:^|\s)ม\.?\s?\d+|หมู่|ต\.|ตำบล|อ\.|อำเภอ|จ\.|จังหวัด|ซ\.|ซอย|ถ\.|ถนน|แขวง|เขต|บ้านเลขที่|(?:^|\D)\d{5}(?!\d)|กรุงเทพ)/;
   function splitCustomer(raw) {
     let t = String(raw || '').replace(/\r/g, '').trim();
     t = t.replace(/(ชื่อ(?:-นามสกุล)?|ผู้รับ|เบอร์(?:โทร)?|โทร|tel|ที่อยู่)\s*[:：]\s*/gi, '\n').replace(/(^|\n)\s*(ชื่อ(?:-นามสกุล)?|ผู้รับ|เบอร์(?:โทร)?|ที่อยู่)\s+/g, '$1');
-    const L = t.split(/\n+/).map(x => x.trim()).filter(Boolean);
-    let pi = -1, phone = '';
-    for (let i = 0; i < L.length && pi < 0; i++) {
-      let m = L[i].match(/(?:\+66|\b66)[\s-]?([689](?:[\s-]?\d){8})(?!\d)/);
-      if (m) { phone = '0' + m[1].replace(/\D/g, ''); }
-      else { m = L[i].match(/(?:^|[^\d])(0\d(?:[\s-]?\d){7,9})(?!\d)/); if (m) { phone = m[1].replace(/\D/g, ''); m = [m[1]]; } }
-      if (m) { pi = i; L[i] = L[i].replace(m[0], ' ').replace(/\s+/g, ' ').trim(); }
-    }
+    let L = t.split(/\n+/).map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean);
+    let phone = '';
+    L = L.map(l => {
+      if (phone) return l;
+      let m = l.match(/(?:\+66|(?:^|[^\d])66)[\s-]?([689](?:[\s-]?\d){8})(?!\d)/);
+      if (m) { phone = '0' + m[1].replace(/\D/g, ''); return l.replace(m[0], ' ').replace(/\s+/g, ' ').trim(); }
+      m = l.match(/(?:^|[^\d])(0\d(?:[\s-]?\d){7,9})(?!\d)/);
+      if (m) { phone = m[1].replace(/\D/g, ''); return l.replace(m[1], ' ').replace(/\s+/g, ' ').trim(); }
+      return l;
+    }).map(l => l.replace(/^(t|tel|โทร|เบอร์|phone|mobile)\.?:?$/i, '').trim()).filter(Boolean);
     if (/^0\d{9}$/.test(phone)) phone = phone.replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3');
     else if (/^0\d{8}$/.test(phone)) phone = phone.replace(/^(\d{2})(\d{3})(\d{4})$/, '$1-$2-$3');
-    let jobLines = [], name = '', addr = '';
-    if (pi >= 0) {
-      const before = L.slice(0, pi), after = L.slice(pi + 1);
-      if (L[pi]) { const r = nameAddrSplit(L[pi]); name = r.name; addr = [r.addr].concat(after).filter(Boolean).join(' '); jobLines = before; }
-      else if (before.length) { name = before[before.length - 1]; jobLines = before.slice(0, -1); addr = after.join(' '); }
-      else addr = after.join(' ');
-    } else if (L.length >= 2) { name = L[0]; addr = L.slice(1).join(' '); }
-    else if (L.length === 1) { const r = nameAddrSplit(L[0]); name = r.name; addr = r.addr; }
-    // งาน: บรรทัดแรกที่มี "จำนวน + ชิ้น/ดวง/แผ่น…" = รายการ (ชื่อ/ขนาด + จำนวน) ที่เหลือ = หมายเหตุ
-    let item = null; const noteL = [];
-    jobLines.forEach(l => {
-      const q = l.match(/(\d[\d,]*(?:\.\d+)?)\s*(ชิ้น|ดวง|แผ่น|ใบ|ชุด|pcs)/i);
-      if (q && !item) item = {name: (l.replace(q[0], '').replace(/\s+/g, ' ').trim() || l), qty: parseFloat(q[1].replace(/,/g, ''))};
-      else noteL.push(l);
+    let name = '', shop = '', item = null, size = ''; const addr = [], note = [];
+    const QTY = /(\d[\d,]*(?:\.\d+)?)\s*(ชิ้น|ดวง|แผ่น|ใบ|ชุด|pcs)/i, SIZE = /^\d+(?:\.\d+)?\s*(?:x|×|\*)?\s*\d*(?:\.\d+)?\s*(?:cm|ซม\.?|เซน(?:ติเมตร)?|mm|มม\.?)$/i;
+    L.forEach(l => {
+      let m;
+      if ((m = l.match(/^[(（](.+)[)）]$/))) { shop = m[1].trim(); return; }
+      if ((m = l.match(QTY)) && !ADDR_MK.test(l) && !/^(แบบ|ละ|ต่อ|อัน)/.test(l) && !item) { item = {name: l.replace(m[0], '').trim(), qty: parseFloat(m[1].replace(/,/g, ''))}; return; }
+      if (SIZE.test(l)) { size = l; return; }
+      if (NAME_PFX.test(l) && !name) {
+        const k = l.search(/\s(?=\d|หมู่|ม\.|ซ\.|ซอย|ถ\.|ถนน|ต\.|ตำบล|อ\.|อำเภอ|บ้าน|หมู่บ้าน)/);
+        if (k > 2 && ADDR_MK.test(l.slice(k))) { name = l.slice(0, k).trim(); addr.push(l.slice(k).trim()); } else name = l;
+        return;
+      }
+      if (ADDR_MK.test(l)) { addr.push(l); return; }
+      if (!name && !/\d/.test(l)) { name = l; return; }
+      note.push(l);
     });
-    return {name, phone, addr, item, note: noteL.join('\n')};
+    name = name.replace(/^(นางสาว|นาง|นาย)\.(?=\S)/, '$1 ');
+    if (shop) name = name ? name + ' (' + shop + ')' : shop;
+    if (item) item.name = (size ? size + ' ' : '') + item.name; else if (size) note.unshift(size);
+    if (item && !item.name) item.name = 'สติ๊กเกอร์';
+    return {name, phone, addr: addr.join(' '), item, note: note.join('\n')};
   }
   $('jSplit').addEventListener('click', () => {
     const r = splitCustomer($('jPaste').value);
