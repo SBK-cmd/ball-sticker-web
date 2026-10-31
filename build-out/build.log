@@ -1,0 +1,50 @@
+== 2026-10-31T15:51:54.6775559+00:00 e7afc70bdc858dfdebe6b7302b3a89e54c6f2515
+  Determining projects to restore...
+  Restored D:\a\ball-sticker-web\ball-sticker-web\signtools-corel\src\Host\SignToolsHost.csproj (in 94 ms).
+  SignToolsHost -> D:\a\ball-sticker-web\ball-sticker-web\obj-host\SignToolsHost.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:11.61
+  Determining projects to restore...
+  Restored D:\a\ball-sticker-web\ball-sticker-web\signtools-corel\src\Loader\SignToolsCorel.csproj (in 1.32 sec).
+  SignToolsCorel -> D:\a\ball-sticker-web\ball-sticker-web\obj-loader\SignToolsCorel.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.69
+host=0 loader=0
+
+FullName                                                                                       Length
+--------                                                                                       ------
+D:\a\ball-sticker-web\ball-sticker-web\obj-loader\runtimes                                     
+D:\a\ball-sticker-web\ball-sticker-web\obj-loader\Microsoft.Web.WebView2.Core.dll              603712
+D:\a\ball-sticker-web\ball-sticker-web\obj-loader\Microsoft.Web.WebView2.WinForms.dll          38488
+D:\a\ball-sticker-web\ball-sticker-web\obj-loader\Microsoft.Web.WebView2.Wpf.dll               83008
+D:\a\ball-sticker-web\ball-sticker-web\obj-loader\SignToolsCorel.dll                           13312
+D:\a\ball-sticker-web\ball-sticker-web\obj-loader\SignToolsCorel.pdb                           4400
+D:\a\ball-sticker-web\ball-sticker-web\obj-loader\runtimes\win-arm64                           
+D:\a\ball-sticker-web\ball-sticker-web\obj-loader\runtimes\win-x64                             
+D:\a\ball-sticker-web\ball-sticker-web\obj-loader\runtimes\win-x86                             
+D:\a\ball-sticker-web\ball-sticker-web\obj-loader\runtimes\win-arm64\native                    
+D:\a\ball-sticker-web\ball-sticker-web\obj-loader\runtimes\win-arm64\native\WebView2Loader.dll 139856
+D:\a\ball-sticker-web\ball-sticker-web\obj-loader\runtimes\win-x64\native                      
+D:\a\ball-sticker-web\ball-sticker-web\obj-loader\runtimes\win-x64\native\WebView2Loader.dll   165968
+D:\a\ball-sticker-web\ball-sticker-web\obj-loader\runtimes\win-x86\native                      
+D:\a\ball-sticker-web\ball-sticker-web\obj-loader\runtimes\win-x86\native\WebView2Loader.dll   116288
+
+
+FullName
+--------
+C:\Users\runneradmin\.nuget\packages\microsoft.web.webview2\1.0.2903.40\build\native\arm64\WebView2Loader.dll
+C:\Users\runneradmin\.nuget\packages\microsoft.web.webview2\1.0.2903.40\build\native\x64\WebView2Loader.dll
+C:\Users\runneradmin\.nuget\packages\microsoft.web.webview2\1.0.2903.40\build\native\x86\WebView2Loader.dll
+C:\Users\runneradmin\.nuget\packages\microsoft.web.webview2\1.0.2903.40\runtimes\win-arm64\native\WebView2Loader.dll
+C:\Users\runneradmin\.nuget\packages\microsoft.web.webview2\1.0.2903.40\runtimes\win-x64\native\WebView2Loader.dll
+C:\Users\runneradmin\.nuget\packages\microsoft.web.webview2\1.0.2903.40\runtimes\win-x86\native\WebView2Loader.dll
+
+zip ok v1.0.0 491830
