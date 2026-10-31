@@ -76,9 +76,19 @@ async function init(db) {
     if (!(await getSetting(db, 'beta_phones'))) await setSetting(db, 'beta_phones', '0935353555');
     await setSetting(db, 'schema_v', '5');
   }
+  // v6: แยกโปรแกรม ai (Illustrator) / cdr (CorelDRAW) — คีย์แยกกัน · รุ่นแยกกัน
+  if ((await sv()) < 6) {
+    for (const q of ["ALTER TABLE keys ADD COLUMN product TEXT DEFAULT 'ai'", "ALTER TABLE releases ADD COLUMN product TEXT DEFAULT 'ai'"]) { try { await db.prepare(q).run(); } catch (e) { /* มีแล้ว */ } }
+    await setSetting(db, 'schema_v', '6');
+  }
   ready = true;
 }
 const STABLE = "COALESCE(channel,'stable')='stable'";
+const PROD = (p) => `COALESCE(product,'ai')='${p === 'cdr' ? 'cdr' : 'ai'}'`;
+const PNAME = { ai: 'Illustrator', cdr: 'CorelDRAW' };
+const prodOf = (x) => (x === 'cdr' ? 'cdr' : 'ai');
+const prodTag = (p) => `<span class="tag ${prodOf(p) === 'cdr' ? 'warn' : 'on'}">${PNAME[prodOf(p)]}</span>`;
+const prodSel = (name = 'product') => `<select name="${name}"><option value="ai">Illustrator</option><option value="cdr">CorelDRAW</option></select>`;
 async function isBetaUser(db, userId) {
   if (!userId) return false;
   const u = await db.prepare('SELECT phone FROM users WHERE id=?').bind(userId).first();
@@ -153,7 +163,7 @@ async function api(req, env) {
   let inp = {};
   if (req.method === 'POST') { try { inp = await req.json(); } catch { inp = {}; } }
   else inp = Object.fromEntries(new URL(req.url).searchParams);
-  const action = inp.action || '';
+  const action = inp.action || '', product = prodOf(inp.product);
 
   if (action === 'diag') {                               // ผลทดสอบการเชื่อมต่อจากแผง (ปุ่ม 🔑 › ทดสอบการเชื่อมต่อ)
     await log('', 'diag', String(inp.text || '').slice(0, 900));
@@ -170,7 +180,7 @@ async function api(req, env) {
         beta = !!hit;
       }
     }
-    const r = await db.prepare(`SELECT manifest, sig, channel FROM releases ${beta ? '' : 'WHERE ' + STABLE} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
+    const r = await db.prepare(`SELECT manifest, sig, channel FROM releases WHERE ${PROD(product)} ${beta ? '' : 'AND ' + STABLE} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
     if (r && r.channel === 'beta') return json({ ok: true, release: { manifest: r.manifest, sig: r.sig }, beta: true });
     return json({ ok: true, release: r ? { manifest: r.manifest, sig: r.sig } : null });
   }
@@ -186,7 +196,9 @@ async function api(req, env) {
       const u = await userByPhone(db, phone);
       if (!u || !(await checkPw(u, inp.password))) { await log('tel:' + phone, 'activate', 'bad_pw'); return fail('bad_login', 'เบอร์หรือรหัสผ่านไม่ถูกต้อง'); }
       if (u.status !== 'active') return fail('revoked', 'บัญชีนี้ถูกปิดใช้งาน — ติดต่อผู้ขาย');
-      const ks = (await db.prepare('SELECT * FROM keys WHERE user_id=? ORDER BY created_at').bind(u.id).all()).results;
+      let ks = (await db.prepare('SELECT * FROM keys WHERE user_id=? ORDER BY created_at').bind(u.id).all()).results;
+      const ksAll = ks; ks = ks.filter((k) => prodOf(k.product) === product);
+      if (!ks.length && ksAll.length) return fail('no_key', `บัญชีนี้ยังไม่มีคีย์สำหรับ ${PNAME[product]} (คีย์ ${PNAME[product === 'ai' ? 'cdr' : 'ai']} ใช้แทนกันไม่ได้) — ซื้อเพิ่มหรือติดต่อผู้ขาย`);
       const live = ks.filter((k) => k.status === 'active' && !(k.expires_at && k.expires_at < now()));
       const pick = live.find((k) => k.machine === machine) || live.find((k) => !k.machine);
       if (!pick) {
@@ -199,6 +211,7 @@ async function api(req, env) {
     const r = await db.prepare('SELECT * FROM keys WHERE key=?').bind(key).first();
     if (!r) { await log(key, 'activate', 'not_found'); return fail('not_found', 'ไม่พบคีย์นี้ — ตรวจตัวสะกดอีกครั้ง'); }
     if (r.status !== 'active' || !(await userActive(db, r))) { await log(key, 'activate', 'revoked'); return fail('revoked', 'คีย์นี้ถูกระงับแล้ว — ติดต่อผู้ขาย'); }
+    if (prodOf(r.product) !== product) { await log(key, 'activate', 'wrong_product'); return fail('wrong_product', `คีย์นี้สำหรับ ${PNAME[prodOf(r.product)]} — ใช้กับ ${PNAME[product]} ไม่ได้`); }
     if (r.expires_at && r.expires_at < now()) { await log(key, 'activate', 'expired'); return fail('expired', EXPIRED_MSG(req)); }
     if (r.machine && r.machine !== machine) {
       await log(key, 'activate', 'in_use');
@@ -226,6 +239,7 @@ async function api(req, env) {
     if (!t) return fail('bad_token', 'ไลเซนส์ไม่ถูกต้อง');
     const r = await db.prepare('SELECT * FROM keys WHERE key=?').bind(t.k).first();
     if (!r || r.status !== 'active' || (action === 'refresh' && !(await userActive(db, r)))) { await log(t.k, action, 'revoked'); return fail('revoked', 'คีย์นี้ถูกระงับแล้ว — ติดต่อผู้ขาย'); }
+    if (inp.product && prodOf(r.product) !== product) { await log(t.k, action, 'wrong_product'); return fail('revoked', `คีย์นี้สำหรับ ${PNAME[prodOf(r.product)]}`); }
     if (r.machine !== t.m) { await log(t.k, action, 'moved'); return fail('moved', 'คีย์นี้ถูกย้ายไปใช้เครื่องอื่นแล้ว'); }
     if (action === 'deactivate') {
       await db.prepare('UPDATE keys SET machine=NULL, machine_name=NULL, moves=moves+1 WHERE key=?').bind(t.k).run();
@@ -319,10 +333,10 @@ async function admin(req, env) {
     const keyRow = key ? await db.prepare('SELECT * FROM keys WHERE key=?').bind(key).first() : null;
     if (d === 'create') {                                   // คีย์ลอย (แบบเดิม ไม่มีเจ้าของ)
       const n = Math.max(1, Math.min(200, parseInt(f('n'), 10) || 1)), plan = PLANS[f('plan')] ? f('plan') : 'life', ex = extendTo(null, plan);
-      const st = db.prepare('INSERT INTO keys (key, note, created_at, plan, expires_at) VALUES (?,?,?,?,?)');
+      const st = db.prepare('INSERT INTO keys (key, note, created_at, plan, expires_at, product) VALUES (?,?,?,?,?,?)'), pr = prodOf(f('product'));
       for (let i = 0; i < n; i++) created.push(newKey());
-      await db.batch(created.map((k) => st.bind(k, f('note'), now(), ex.plan, ex.expires_at)));
-      msg = `สร้างคีย์ ${planLabel(plan)} ${n} อันแล้ว`;
+      await db.batch(created.map((k) => st.bind(k, f('note'), now(), ex.plan, ex.expires_at, pr)));
+      msg = `สร้างคีย์ ${PNAME[pr]} ${planLabel(plan)} ${n} อันแล้ว`;
     } else if (d === 'member') {                            // เพิ่มสมาชิก + คีย์แรก
       const phone = normPhone(f('phone')), plan = PLANS[f('plan')] ? f('plan') : 'life';
       if (!phone) err = 'ใส่เบอร์มือถือ 10 หลัก';
@@ -331,8 +345,8 @@ async function admin(req, env) {
       else {
         const u = await createUser(db, { phone, name: f('name'), shop: f('shop'), pw: f('pw') });
         const n = Math.max(1, Math.min(20, parseInt(f('n'), 10) || 1));
-        for (let i = 0; i < n; i++) await addKey(db, u.id, plan);
-        msg = `เพิ่มสมาชิก ${f('name') || phone} · ${n} เครื่อง (${planLabel(plan)}) แล้ว`; go = '/admin?u=' + u.id;
+        for (let i = 0; i < n; i++) await addKey(db, u.id, plan, '', f('product'));
+        msg = `เพิ่มสมาชิก ${f('name') || phone} · ${PNAME[prodOf(f('product'))]} ${n} เครื่อง (${planLabel(plan)}) แล้ว`; go = '/admin?u=' + u.id;
       }
     } else if (d === 'user_save' && uid) {
       const phone = normPhone(f('phone')), other = phone ? await db.prepare('SELECT id FROM users WHERE phone=? AND id!=?').bind(phone, uid).first() : null;
@@ -349,8 +363,8 @@ async function admin(req, env) {
       msg = 'ลบสมาชิกและคีย์ทั้งหมดของสมาชิกนี้แล้ว'; go = '/admin';
     } else if (d === 'key_add' && uid) {
       const plan = PLANS[f('plan')] ? f('plan') : 'life', n = Math.max(1, Math.min(20, parseInt(f('n'), 10) || 1));
-      for (let i = 0; i < n; i++) await addKey(db, uid, plan, f('note'));
-      msg = `เพิ่ม ${n} เครื่อง (${planLabel(plan)}) แล้ว`;
+      for (let i = 0; i < n; i++) await addKey(db, uid, plan, f('note'), f('product'));
+      msg = `เพิ่ม ${PNAME[prodOf(f('product'))]} ${n} เครื่อง (${planLabel(plan)}) แล้ว`;
     } else if (keyRow && d === 'extend') {
       const plan = PLANS[f('plan')] ? f('plan') : 'month', ex = extendTo(keyRow, plan);
       await db.prepare('UPDATE keys SET plan=?, expires_at=? WHERE key=?').bind(ex.plan, ex.expires_at, key).run();
@@ -380,8 +394,8 @@ async function admin(req, env) {
         else { await db.prepare("UPDATE orders SET status='rejected', reason=?, decided_at=? WHERE id=?").bind(f('reason') || 'ร้านตรวจแล้วไม่ผ่าน', now(), o.id).run(); msg = 'ปฏิเสธรายการแล้ว'; }
       }
     } else if (d === 'promote') {
-      const r = await db.prepare("SELECT version FROM releases WHERE version=? AND channel='beta'").bind(f('version')).first();
-      if (r) { await db.prepare("UPDATE releases SET channel='stable', created_at=? WHERE version=?").bind(now(), r.version).run(); msg = `ปล่อย ${r.version} ให้ลูกค้าทุกคนแล้ว`; }
+      const r = await db.prepare("SELECT version, product FROM releases WHERE version=? AND channel='beta'").bind(f('version')).first();
+      if (r) { await db.prepare("UPDATE releases SET channel='stable', created_at=? WHERE version=?").bind(now(), r.version).run(); msg = `ปล่อย ${PNAME[prodOf(r.product)]} ${r.version.replace(/^cdr-/, '')} ให้ลูกค้าทุกคนแล้ว`; }
     } else if (d === 'beta_phones') {
       const list = f('phones').split(/[\s,]+/).map(normPhone).filter(Boolean);
       await setSetting(db, 'beta_phones', list.join(',')); msg = 'บันทึกเบอร์ทดสอบเบต้าแล้ว';
@@ -398,12 +412,12 @@ async function admin(req, env) {
         if (!err && !man) err = 'ใน zip ไม่มี SignTools/CSXS/manifest.xml';
         else if (!err && !man.includes(`ExtensionBundleVersion="${ver}"`)) err = `เวอร์ชันใน manifest ไม่ตรงกับ ${ver}`;
         else if (!err) {
-          const name = `SignTools-v${ver}.zip`, sha = await sha256(buf);
+          const pr = prodOf(f('product')), name = `${pr === 'cdr' ? 'SignToolsCorel' : 'SignTools'}-v${ver}.zip`, sha = await sha256(buf);
           const manifest = JSON.stringify({ version: ver, url: `${url.origin}/releases/${name}`, sha256: sha, size: buf.length, notes: f('notes'), date: new Date().toISOString().slice(0, 10) });
           const sig = b64(await sign(db, enc.encode(manifest)));
           const ch = f('beta') ? 'beta' : 'stable';
-          await db.prepare('INSERT OR REPLACE INTO releases (version, name, zip, sha256, size, notes, manifest, sig, created_at, channel) VALUES (?,?,?,?,?,?,?,?,?,?)').bind(ver, name, buf, sha, buf.length, f('notes'), manifest, sig, now(), ch).run();
-          msg = ch === 'beta' ? `ปล่อยเบต้า ${ver} แล้ว — เห็นเฉพาะเบอร์ทดสอบ (${await getSetting(db, 'beta_phones')})` : `ปล่อยเวอร์ชัน ${ver} แล้ว — ลูกค้าจะเห็นปุ่มอัปเดตเมื่อเปิดแผงครั้งถัดไป`;
+          await db.prepare('INSERT OR REPLACE INTO releases (version, name, zip, sha256, size, notes, manifest, sig, created_at, channel, product) VALUES (?,?,?,?,?,?,?,?,?,?,?)').bind(pr === 'cdr' ? 'cdr-' + ver : ver, name, buf, sha, buf.length, f('notes'), manifest, sig, now(), ch, pr).run();
+          msg = (pr === 'cdr' ? 'CorelDRAW: ' : '') + (ch === 'beta' ? `ปล่อยเบต้า ${ver} แล้ว — เห็นเฉพาะเบอร์ทดสอบ (${await getSetting(db, 'beta_phones')})` : `ปล่อยเวอร์ชัน ${ver} แล้ว — ลูกค้าจะเห็นปุ่มอัปเดตเมื่อเปิดแผงครั้งถัดไป`);
         }
       }
     }
@@ -417,7 +431,7 @@ async function admin(req, env) {
   const ymd = (t) => t ? new Date((t + 7 * 3600) * 1000).toISOString().slice(0, 10) : '';
   const expTag = (r) => r.plan === 'life' || !r.plan || !r.expires_at ? '<span class="tag on">ตลอดชีพ</span>'
     : r.expires_at < now() ? `<span class="tag off">หมด ${dtD(r.expires_at)}</span>` : `<span class="tag ${r.expires_at - now() < 7 * 86400 ? 'warn' : 'on'}">ถึง ${dtD(r.expires_at)} · อีก ${Math.ceil((r.expires_at - now()) / 86400)} วัน</span>`;
-  const keyRows = (rows, owned) => rows.map((r) => `<tr class="${r.status !== 'active' ? 'rev' : ''}"><td class="mono">${h(r.key)}<br>
+  const keyRows = (rows, owned) => rows.map((r) => `<tr class="${r.status !== 'active' ? 'rev' : ''}"><td class="mono">${prodTag(r.product)} ${h(r.key)}<br>
       <form method="post" class="inl">${uIn}${hid('key', r.key)}<input name="note" value="${h(r.note)}" placeholder="โน้ต"><button name="do" value="note" class="ghost sm">บันทึก</button></form></td>
     <td>${r.machine ? h(r.machine_name) + `<br><span class="mut small">ล่าสุด ${dt(r.last_seen)}</span>` : '<span class="mut">ยังไม่ผูกเครื่อง</span>'}${r.moves ? ` <span class="mut small">(ย้าย ${r.moves})</span>` : ''}</td>
     <td>${planLabel(r.plan)}<br>${expTag(r)}</td>
@@ -455,7 +469,7 @@ ${msg ? `<p class="ok">${h(msg)}</p>` : ''}${err ? `<p class="err">${h(err)}</p>
   <label>ตั้งรหัสใหม่ (6 ตัวขึ้นไป)<input name="pw" autocomplete="off"></label><button name="do" value="user_pw" class="ghost">ตั้งรหัสผ่าน</button></form>
 </div>
 <div class="card"><div class="bar"><h3>คีย์ / เครื่อง <small>${ks.length} อัน · 1 คีย์ = 1 เครื่อง</small></h3>
-  <form method="post" class="inl">${uIn}<input name="n" type="number" value="1" min="1" max="20" style="width:64px;min-width:0"><select name="plan"><option value="life">ตลอดชีพ</option><option value="year">รายปี</option><option value="month">รายเดือน</option></select><button name="do" value="key_add" class="sm" style="white-space:nowrap">+ เพิ่มเครื่อง</button></form></div>
+  <form method="post" class="inl">${uIn}<input name="n" type="number" value="1" min="1" max="20" style="width:64px;min-width:0">${prodSel()}<select name="plan"><option value="life">ตลอดชีพ</option><option value="year">รายปี</option><option value="month">รายเดือน</option></select><button name="do" value="key_add" class="sm" style="white-space:nowrap">+ เพิ่มเครื่อง</button></form></div>
   <div class="tw"><table>${keyHead}${keyRows(ks, true) || '<tr><td colspan="6" class="mut">ยังไม่มีคีย์ — กด "+ เพิ่มเครื่อง"</td></tr>'}</table></div></div>
 ${os.length ? `<div class="card"><h3>ประวัติการชำระเงิน</h3><div class="tw"><table><tr><th>เวลา</th><th>รายการ</th><th>ยอด</th><th>สถานะ</th></tr>${os.map((o) => `<tr><td>${dt(o.created_at)}</td><td>${o.kind === 'renew' ? 'ต่ออายุ' : o.kind === 'add' ? 'เพิ่มเครื่อง' : 'สมัคร'} · ${planLabel(o.plan)}</td><td>${o.amount}</td><td>${o.status === 'paid' ? '<span class="tag on">ชำระแล้ว</span>' : o.status === 'pending' ? '<span class="tag warn">รอตรวจ</span>' : '<span class="tag off">ปฏิเสธ</span>'}</td></tr>`).join('')}</table></div></div>` : ''}`);
   }
@@ -467,9 +481,13 @@ ${os.length ? `<div class="card"><h3>ประวัติการชำระ�
     FROM users u LEFT JOIN keys k ON k.user_id=u.id ${q ? 'WHERE u.name LIKE ?1 OR u.phone LIKE ?1 OR u.shop LIKE ?1 OR k.key LIKE ?1' : ''}
     GROUP BY u.id ORDER BY u.created_at DESC LIMIT 500`).bind(...(q ? [like] : [])).all()).results;
   const loose = (await db.prepare(`SELECT * FROM keys WHERE user_id IS NULL ${q ? 'AND (key LIKE ?1 OR note LIKE ?1 OR machine_name LIKE ?1)' : ''} ORDER BY created_at DESC LIMIT 300`).bind(...(q ? [like] : [])).all()).results;
-  const latest = await db.prepare(`SELECT version, created_at FROM releases WHERE ${STABLE} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
-  const latestBeta = await db.prepare("SELECT version, created_at FROM releases WHERE channel='beta' ORDER BY created_at DESC, rowid DESC LIMIT 1").first();
+  const latest = await db.prepare(`SELECT version, created_at FROM releases WHERE ${STABLE} AND ${PROD('ai')} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
+  const latestBeta = await db.prepare(`SELECT version, created_at FROM releases WHERE channel='beta' AND ${PROD('ai')} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
   const showBeta = latestBeta && (!latest || latestBeta.created_at >= latest.created_at) ? latestBeta : null;
+  const cLatest = await db.prepare(`SELECT version, created_at FROM releases WHERE ${STABLE} AND ${PROD('cdr')} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
+  const cBeta0 = await db.prepare(`SELECT version, created_at FROM releases WHERE channel='beta' AND ${PROD('cdr')} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
+  const cBeta = cBeta0 && (!cLatest || cBeta0.created_at >= cLatest.created_at) ? cBeta0 : null;
+  const cv = (r) => r ? h(r.version.replace(/^cdr-/, '')) : '';
   const betaPhones = (await getSetting(db, 'beta_phones')) || '';
   const pub = (await keys(db)).pub;
   const pend = (await db.prepare("SELECT o.id, o.kind, o.key, o.phone, o.plan, o.amount, o.reason, o.created_at, u.name FROM orders o LEFT JOIN users u ON u.id=o.user_id WHERE o.status='pending' ORDER BY o.created_at DESC LIMIT 50").all()).results;
@@ -488,7 +506,7 @@ ${pend.length ? `<div class="card hl"><h3>รอตรวจสลิป <small>
 <form method="post" class="card hlg"><h3>เพิ่มสมาชิก <small>ลูกค้าเข้าโปรแกรมด้วยเบอร์ + รหัสผ่าน</small></h3><input type="hidden" name="do" value="member">
   <div class="grid3"><label>ชื่อลูกค้า<input name="name"></label><label>เบอร์มือถือ<input name="phone" inputmode="tel" required></label><label>รหัสผ่าน (6 ตัวขึ้นไป)<input name="pw" required autocomplete="off"></label></div>
   <div class="grid3"><label>ชื่อร้าน<input name="shop"></label><label>แพ็กเกจ<select name="plan"><option value="life">ตลอดชีพ</option><option value="year">รายปี (365 วัน)</option><option value="month">รายเดือน (30 วัน)</option></select></label>
-  <label>จำนวนเครื่อง<input name="n" type="number" value="1" min="1" max="20"></label></div><button>เพิ่มสมาชิก</button></form>
+  <label>จำนวนเครื่อง<input name="n" type="number" value="1" min="1" max="20"></label></div><label>โปรแกรม${prodSel()}</label><button>เพิ่มสมาชิก</button></form>
 <div class="card">
   <div class="bar"><h3>สมาชิก <small>${users.length} คน</small></h3><form class="srch"><input name="q" value="${h(q)}" placeholder="ค้นหาชื่อ / เบอร์ / ร้าน / คีย์"></form></div>
   <div class="tw"><table><tr><th>ชื่อ</th><th>เบอร์</th><th>ร้าน</th><th>เครื่อง</th><th>หมดอายุ</th><th>บัญชี</th></tr>
@@ -507,19 +525,22 @@ ${loose.length ? `<details class="card"><summary><b>คีย์ที่ยั�
   <form method="post" enctype="multipart/form-data" class="card"><h3>ปล่อยอัปเดต</h3>
     <p class="mut">เวอร์ชันล่าสุด (ทุกคน): <b>${latest ? h(latest.version) + '</b> (' + dt(latest.created_at) + ')' : 'ยังไม่มี</b>'}</p>
     ${showBeta ? `<p class="mut">เบต้า: <b style="color:#ffd979">${h(showBeta.version)}</b> (${dt(showBeta.created_at)}) · <a href="/member/beta.zip">โหลด zip</a></p>` : ''}
-    <input type="hidden" name="do" value="release"><label>เวอร์ชัน<input name="version" placeholder="1.2.0" required></label>
+    <p class="mut">CorelDRAW: <b>${cLatest ? cv(cLatest) + '</b> (' + dt(cLatest.created_at) + ')' : 'ยังไม่มี</b>'}${cBeta ? ` · เบต้า <b style="color:#ffd979">${cv(cBeta)}</b> (${dt(cBeta.created_at)}) · <a href="/member/beta.zip?p=cdr">โหลด zip</a>` : ''}</p>
+    <input type="hidden" name="do" value="release"><label>โปรแกรม${prodSel()}</label><label>เวอร์ชัน<input name="version" placeholder="1.2.0" required></label>
     <label>มีอะไรใหม่<textarea name="notes" rows="2"></textarea></label>
     <label>ไฟล์ SignTools-vX.zip<input name="zip" type="file" accept=".zip" required></label>
     <label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" name="beta" value="1" style="width:auto"> เบต้า — เห็นเฉพาะเบอร์ทดสอบ (${h(betaPhones)})</label>
     <button>อัปโหลด + ปล่อย</button></form>
   ${showBeta ? `<form method="post" class="card"><h3>เบต้า ${h(showBeta.version)}</h3><p class="mut">ทดสอบเรียบร้อยแล้ว → ปล่อยให้ลูกค้าทุกคน (ใช้ไฟล์เดิม ไม่ต้องอัปโหลดใหม่)</p>
     <input type="hidden" name="do" value="promote"><input type="hidden" name="version" value="${h(showBeta.version)}"><button>ปล่อย ${h(showBeta.version)} ให้ทุกคน</button></form>` : ''}
+  ${cBeta ? `<form method="post" class="card"><h3>เบต้า CorelDRAW ${cv(cBeta)}</h3><p class="mut">ทดสอบเรียบร้อยแล้ว → ปล่อยให้ลูกค้า CorelDRAW ทุกคน</p>
+    <input type="hidden" name="do" value="promote"><input type="hidden" name="version" value="${h(cBeta.version)}"><button>ปล่อย CorelDRAW ${cv(cBeta)} ให้ทุกคน</button></form>` : ''}
   <form method="post" class="card"><h3>เบอร์ทดสอบเบต้า</h3><input type="hidden" name="do" value="beta_phones">
     <label>เบอร์ (คั่นด้วย ,)<input name="phones" value="${h(betaPhones)}"></label><button>บันทึก</button></form>
   <form method="post" class="card"><h3>สร้างคีย์ลอย <small>(แบบเดิม ไม่ผูกสมาชิก)</small></h3><input type="hidden" name="do" value="create">
     <label>จำนวน<input name="n" type="number" value="1" min="1" max="200"></label>
     <label>แพ็กเกจ<select name="plan"><option value="life">ตลอดชีพ</option><option value="year">รายปี</option><option value="month">รายเดือน</option></select></label>
-    <label>โน้ต<input name="note"></label><button>สร้าง</button></form>
+    <label>โปรแกรม${prodSel()}</label><label>โน้ต<input name="note"></label><button>สร้าง</button></form>
 </div>
 ${recent.length ? `<div class="card"><h3>รายการชำระเงินล่าสุด</h3><div class="tw"><table><tr><th>เวลา</th><th>สมาชิก</th><th>รายการ</th><th>ยอด</th><th>สถานะ</th></tr>
   ${recent.map((o) => `<tr><td>${dt(o.created_at)}</td><td>${o.user_id ? `<a href="/admin?u=${o.user_id}">${h(o.name || o.phone)}</a>` : h(o.phone)}</td><td>${kindTxt(o.kind)} · ${planLabel(o.plan)}</td><td>${o.amount}</td>
@@ -552,7 +573,7 @@ select{background:var(--in);color:var(--tx);border:1px solid var(--line);border-
 
 // หน้าดาวน์โหลดสำหรับลูกค้า (สาธารณะ) — เวอร์ชันล่าสุดเสมอ
 async function downloadPage(env, url) {
-  const r = await env.DB.prepare(`SELECT version, size, notes, created_at FROM releases WHERE ${STABLE} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
+  const r = await env.DB.prepare(`SELECT version, size, notes, created_at FROM releases WHERE ${STABLE} AND ${PROD('ai')} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
   const ver = r ? h(r.version) : '-', size = r ? (r.size / 1024).toFixed(0) + ' KB' : '';
   const date = r ? new Date(r.created_at * (r.created_at < 1e12 ? 1000 : 1)).toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short', year: 'numeric' }) : '';
   const html = `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -612,9 +633,9 @@ async function createUser(db, o) {
   if (o.pw) await setUserPw(db, u.id, o.pw);
   return u;
 }
-async function addKey(db, userId, plan, note) {
+async function addKey(db, userId, plan, note, product) {
   const k = newKey(), ex = extendTo(null, plan);
-  await db.prepare('INSERT INTO keys (key, note, created_at, plan, expires_at, user_id) VALUES (?,?,?,?,?,?)').bind(k, note || '', now(), ex.plan, ex.expires_at, userId).run();
+  await db.prepare('INSERT INTO keys (key, note, created_at, plan, expires_at, user_id, product) VALUES (?,?,?,?,?,?,?)').bind(k, note || '', now(), ex.plan, ex.expires_at, userId, prodOf(product)).run();
   return k;
 }
 
@@ -747,7 +768,7 @@ async function member(req, env) {
   // ----- เข้าระบบอัตโนมัติจากโปรแกรม -----
   if (path === '/member/beta.zip') {
     if (!((uid && await isBetaUser(db, uid)) || await validSession(db, req))) return new Response('เฉพาะสมาชิกทดสอบเบต้า', { status: 403 });
-    const r = await db.prepare("SELECT name, zip FROM releases WHERE channel='beta' ORDER BY created_at DESC, rowid DESC LIMIT 1").first();
+    const r = await db.prepare(`SELECT name, zip FROM releases WHERE channel='beta' AND ${PROD(url.searchParams.get('p'))} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
     if (!r) return new Response('ยังไม่มีเบต้า', { status: 404 });
     return new Response(new Uint8Array(r.zip), { headers: { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="${r.name.replace('.zip', '-beta.zip')}"`, 'Cache-Control': 'no-store' } });
   }
@@ -900,13 +921,13 @@ async function member(req, env) {
     }
   }
   const ks = (await db.prepare('SELECT * FROM keys WHERE user_id=? ORDER BY created_at').bind(uid).all()).results;
-  const betaRel = (await isBetaUser(db, uid)) ? await db.prepare("SELECT version, created_at FROM releases WHERE channel='beta' AND created_at >= COALESCE((SELECT MAX(created_at) FROM releases WHERE COALESCE(channel,'stable')='stable'),0) ORDER BY created_at DESC LIMIT 1").first() : null;
+  const betaRel = (await isBetaUser(db, uid)) ? await db.prepare("SELECT version, created_at FROM releases WHERE channel='beta' AND COALESCE(product,'ai')='ai' AND created_at >= COALESCE((SELECT MAX(created_at) FROM releases WHERE COALESCE(channel,'stable')='stable' AND COALESCE(product,'ai')='ai'),0) ORDER BY created_at DESC LIMIT 1").first() : null;
   const pendO = await db.prepare("SELECT id FROM orders WHERE user_id=? AND status='pending' ORDER BY created_at DESC LIMIT 1").bind(uid).first();
   const msgHtml = msg ? (msg[0] === '!' ? `<p class="msg bad">${h(msg.slice(1))}</p>` : `<p class="msg ok">${h(msg)}</p>`) : '';
   const keyCard = (r, i) => {
     const expired = r.expires_at && r.expires_at < now(), life = r.plan === 'life' || !r.plan || !r.expires_at;
     const st = r.status !== 'active' ? '<b class="bad">ปิดอยู่</b>' : expired ? '<b class="bad">หมดอายุแล้ว</b>' : '<b class="ok">ใช้งานได้</b>';
-    return `<div class="plan" style="gap:8px"><div class="row" style="align-items:center"><b>เครื่องที่ ${i + 1}</b><span style="text-align:right">${st}</span></div>
+    return `<div class="plan" style="gap:8px"><div class="row" style="align-items:center"><b>เครื่องที่ ${i + 1} · ${PNAME[prodOf(r.product)]}</b><span style="text-align:right">${st}</span></div>
       <div class="kv small"><span class="mut">เครื่อง</span><span>${r.machine ? h(r.machine_name) : '<span class="mut">ว่าง · เข้าสู่ระบบในโปรแกรมได้เลย</span>'}</span>
       <span class="mut">คีย์</span><span><code class="mono" style="user-select:all">${h(r.key)}</code> <button type="button" class="ghost sm cp" data-k="${h(r.key)}" style="padding:2px 8px">คัดลอก</button></span>
       <span class="mut">แพ็กเกจ</span><span>${planLabel(r.plan)}</span>
@@ -968,7 +989,7 @@ export default {
       if (url.pathname === '/member' || url.pathname.startsWith('/member/')) return await member(req, env);
       if (url.pathname === '/download' || url.pathname === '/download/') return await downloadPage(env, url);
       if (url.pathname === '/download/latest.zip') {
-        const r = await env.DB.prepare(`SELECT name, zip FROM releases WHERE ${STABLE} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
+        const r = await env.DB.prepare(`SELECT name, zip FROM releases WHERE ${STABLE} AND ${PROD('ai')} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
         if (!r) return new Response('not found', { status: 404 });
         return new Response(new Uint8Array(r.zip), { headers: { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="${r.name}"`, 'Cache-Control': 'no-store' } });
       }
