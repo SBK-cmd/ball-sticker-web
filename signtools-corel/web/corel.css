@@ -1,0 +1,5 @@
+/* Sign Tools for CorelDRAW — ซ่อนเครื่องมือที่ยังไม่รองรับใน Corel (ทยอยเปิดทีละเฟส) */
+.corel .tab.tool:not([data-tab="cut"]) { display: none !important; }
+.corel .card:has(#capGo) { display: none !important; }
+.corel .corelsoon { display: block; }
+.corelsoon { display: none; margin: 10px 12px; padding: 8px 10px; border: 1px dashed rgba(255,255,255,.2); border-radius: 8px; font-size: 12px; opacity: .8; }

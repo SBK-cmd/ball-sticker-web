@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Sign Tools</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="corel/corel.css">
+</head>
+<body>
+<header class="topbar" id="topbar">
+  <button class="tab back" data-tab="home" title="กลับเมนู"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>เมนู</button>
+  <span id="toolTitle"></span>
+  <button id="updBadge" class="updbadge">● มีอัปเดต</button>
+</header>
+
+<section id="tab-home" class="pane active">
+  <div class="corelsoon">CorelDRAW เวอร์ชันแรก: ใช้ได้เฉพาะ <b>ส่งตัด</b> ก่อน · เครื่องมืออื่นกำลังทยอยเปิด</div>
+  <div class="brand"><img src="icons/icon_normal@2x.png" alt=""><div><b>Sign Tools</b><span>เครื่องมือร้านป้าย · บอลสติ๊กเกอร์</span></div></div>
+  <div class="tools">
+    <button class="tab tool" data-tab="stk"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="3.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="3.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="2" stroke-dasharray="2 1.6"/></svg><b>เรียงสติ๊กเกอร์</b><span>จัดลงแผ่น + เส้น kiss cut</span></button>
+    <button class="tab tool" data-tab="cut"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6.5" r="2.5"/><circle cx="6" cy="17.5" r="2.5"/><path d="M8 8l12 9M8 16l12-9"/></svg><b>ส่งตัด</b><span>ส่งเส้นตัดเข้า Graphtec (LAN)</span></button>
+    <button class="tab tool" data-tab="sep"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="5"/><circle cx="15" cy="9" r="5"/><circle cx="12" cy="15" r="5"/></svg><b>แยกสีงานตัด</b><span>สติ๊กเกอร์ตัดหลายสี 1 สี = 1 เลเยอร์</span></button>
+    <button class="tab tool" data-tab="shd"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 10 5h1.5l5 14M7 14.5h8"/><path d="M8.5 21h9.5l-1.6-4.5" opacity=".55"/></svg><b>ทำเงา / ขอบ</b><span>Drop · Box · Perspective · Cast · Edge</span></button>
+    <button class="tab tool" data-tab="fonts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19 9.5 5h1L16 19M6.3 14h7.4"/><path d="M17.5 12.5c0-1.5 1-2.5 2.6-2.5 1.5 0 2.4.9 2.4 2.4V19m0-3.2c-.5 1.9-1.8 3.3-3.4 3.3-1.4 0-2.3-.8-2.3-2 0-1.5 1.4-2.2 5.7-2.3"/></svg><b>ฟอนต์</b><span>ดูตัวอย่าง คลิกเปลี่ยนฟอนต์</span></button>
+    <button class="tab tool hidden" data-tab="glyphs"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1.2-4.6L16.6 4a2 2 0 0 1 2.8 0l.6.6a2 2 0 0 1 0 2.8L8.6 18.8z"/><path d="M14.5 6.1l3.4 3.4"/></svg><b>วาดเอง</b><span>ทดสอบตัวอักษรที่วาด</span></button>
+    <button class="tab tool" data-tab="name"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v4h4"/><path d="M9 12.5h6M9 16h4"/></svg><b>ตั้งชื่อไฟล์</b><span>อ่านข้อความในงาน → ชื่อไฟล์</span></button>
+    <button class="tab tool" data-tab="run"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 7 20M17 4l-2 16M4.5 9h16M3.5 15h16"/></svg><b>รันเลข</b><span>ใส่เลขเรียง 001, 002…</span></button>
+    <button class="tab tool hidden" data-tab="dup"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg><b>ก็อป Artboard</b><span>วางตำแหน่งเดิมทุกหน้า</span></button>
+    <button class="tab tool" data-tab="qr"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 14h2M14 18v2M17 17h3v3h-3"/></svg><b>QR Code</b><span>QR เวกเตอร์ขนาดจริง</span></button>
+    <button class="tab tool" data-tab="dim"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h18M3 8v3M21 8v3M3 16h18"/><path d="M7 16v-2.5M11 16v-4M15 16v-2.5M19 16v-4"/></svg><b>บอกขนาด</b><span>เส้นวัด กว้าง × สูง</span></button>
+    <button class="tab tool" data-tab="prev"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M3.5 15l4.5-4 4 3.5 3-2.5 5 4"/><circle cx="15.5" cy="9" r="1.5"/></svg><b>ภาพตัวอย่าง / ไฟล์พิมพ์</b><span>JPG ลายน้ำ · TIFF ไม่มีเส้นตัด</span></button>
+    <button class="tab tool hidden" data-tab="slug"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M6.5 17.5h7M6.5 15h4"/></svg><b>ข้อความขอบแผ่น</b><span>ชื่อไฟล์ วันที่ ลูกค้า แผ่นที่</span></button>
+    <button class="tab tool hidden" data-tab="queue"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg><b>คิวงาน</b><span>รอพิมพ์ รอตัด พร้อมส่ง</span></button>
+  </div>
+  <button class="tool memlink" id="memberBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c.8-3.8 3.9-6 7.5-6s6.7 2.2 7.5 6"/></svg><b>หน้าสมาชิก</b><span>เครื่องของฉัน · ต่ออายุ · ข้อมูลส่วนตัว</span></button>
+  <div class="updrow">
+    <button id="updStatus" class="updstat"><span class="dot"></span><span id="updStatusText">กำลังเช็คอัปเดต…</span></button>
+    <button id="updCheck" class="btn ghost sm">เช็คอัปเดต</button>
+  </div>
+</section>
+
+<section id="tab-fonts" class="pane">
+  <div class="card">
+    <textarea id="fSample" rows="2">สวัสดีครับ ภาษาไทย กขคง ๑๒๓ Aa</textarea>
+    <div class="row">
+      <input id="fSearch" type="search" placeholder="ค้นหาฟอนต์…">
+      <label class="chk"><input id="fFav" type="checkbox"> ★</label>
+    </div>
+    <div class="row">
+      <span class="lbl">ขนาด</span><input id="fSize" type="range" min="12" max="96" value="32"><span id="fSizeV" class="val">32</span>
+      <button id="fReload" class="btn ghost" title="โหลดรายชื่อฟอนต์ใหม่">⟳</button>
+    </div>
+    <div class="hint">เลือกข้อความใน CorelDRAW แล้ว<b>คลิกฟอนต์ = เปลี่ยนทันที</b> · ปุ่ม ↑ ↓ = ลองฟอนต์ถัดไป · ★ = ติดดาว</div>
+  </div>
+  <div class="meta"><span id="fCount">กำลังโหลด…</span></div>
+  <div id="fList" class="flist"></div>
+</section>
+
+<section id="tab-glyphs" class="pane">
+  <div class="card">
+    <textarea id="gText" rows="3">สวัสดีครับ
+ภาษาไทยสวยงาม</textarea>
+    <div class="row">
+      <span class="lbl">ขนาด</span><input id="gSize" type="range" min="24" max="200" value="72"><span id="gSizeV" class="val">72</span>
+    </div>
+    <div class="row">
+      <span class="lbl">ระยะห่าง</span><input id="gTrack" type="range" min="-30" max="60" value="0"><span id="gTrackV" class="val">0</span>
+    </div>
+    <div class="row">
+      <span class="lbl">บรรทัด</span><input id="gLead" type="range" min="80" max="250" value="140"><span id="gLeadV" class="val">140%</span>
+    </div>
+    <div class="row">
+      <button id="gLoad" class="btn">⟳ ดึงตัวอักษรจาก Artboards</button>
+      <button id="gBg" class="btn ghost" title="สลับพื้นหลัง">ขาว/ดำ</button>
+    </div>
+    <div class="row quick">
+      <button class="chip" data-t="สวัสดีครับ ภาษาไทยสวยงาม">ประโยค</button>
+      <button class="chip" data-t="กขฃคฅฆงจฉชซฌญฎฏฐฑฒณดตถทธนบปผฝพฟภมยรลวศษสหฬอฮ">พยัญชนะ</button>
+      <button class="chip" data-t="กิ กี กึ กื กุ กู กั ก็ ก่ ก้ ก๊ ก๋ กำ เก แก โก ใก ไก">สระ/วรรณยุกต์</button>
+      <button class="chip" data-t="๐๑๒๓๔๕๖๗๘๙">เลขไทย</button>
+      <button class="chip" data-t="The quick brown fox jumps over the lazy dog">English</button>
+      <button class="chip" data-t="ABCDEFGHIJKLMNOPQRSTUVWXYZ">A–Z</button>
+      <button class="chip" data-t="abcdefghijklmnopqrstuvwxyz">a–z</button>
+      <button class="chip" data-t="0123456789 .,:;!?&amp;@#()-">0–9 !?</button>
+      <button class="chip" data-t="Hamburgefonstiv ไทย Thai">ผสม</button>
+    </div>
+    <div class="hint" id="gStatus">กด "ดึงตัวอักษร" เพื่ออ่าน artboard ของเอกสารที่เปิดอยู่</div>
+  </div>
+  <div id="gStage" class="stage light"></div>
+  <details class="card" id="gMissingBox">
+    <summary>ตัวที่ยังไม่มี / artboard ที่อ่านชื่อไม่ออก</summary>
+    <div id="gMissing" class="hint"></div>
+  </details>
+</section>
+
+<section id="tab-run" class="pane st">
+  <div class="card">
+    <div class="seg" data-name="runMode">
+      <button data-v="sel" class="on">กล่องที่เลือก</button>
+      <button data-v="ab">ทุก Artboard</button>
+    </div>
+    <div class="grid">
+      <label>เริ่มที่<input id="runStart" type="number" value="1"></label>
+      <label>เพิ่มทีละ<input id="runStep" type="number" value="1"></label>
+      <label>จำนวนหลัก<input id="runDigits" type="number" value="3" min="1" max="10"></label>
+      <label>คำนำหน้า<input id="runPrefix" type="text" placeholder="เช่น No."></label>
+      <label>คำต่อท้าย<input id="runSuffix" type="text"></label>
+      <label class="onlySel">เรียงตาม<select id="runOrder">
+        <option value="lr">แถว: ซ้าย→ขวา, บน→ล่าง</option>
+        <option value="tb">คอลัมน์: บน→ล่าง, ซ้าย→ขวา</option>
+        <option value="sel">ลำดับเลเยอร์</option>
+      </select></label>
+      <label class="onlyAb">Artboard<input id="runRange" type="text" value="ทั้งหมด" placeholder="ทั้งหมด หรือ 1-10, 15"></label>
+    </div>
+    <div class="preview" id="runPrev"></div>
+    <div class="hint onlySel">เลือกกล่องข้อความหลายกล่อง แล้วกดใส่เลข</div>
+    <div class="hint onlyAb">เลือกกล่องข้อความต้นแบบ 1 กล่อง จะก็อปไปทุก artboard ที่ตำแหน่งเดิมพร้อมเลขเรียง</div>
+    <button class="btn" id="runGo">ใส่เลข</button>
+  </div>
+</section>
+
+<section id="tab-dup" class="pane st">
+  <div class="card">
+    <div class="grid">
+      <label>Artboard ปลายทาง<input id="dupRange" type="text" value="ทั้งหมด" placeholder="ทั้งหมด หรือ 2-10, 15"></label>
+    </div>
+    <div class="hint">เลือกวัตถุบน artboard ต้นฉบับ แล้วกดก็อป — วัตถุจะไปอยู่ตำแหน่งเดียวกันในทุก artboard ที่เลือก (ข้าม artboard ต้นฉบับให้อัตโนมัติ)</div>
+    <div class="hint" id="dupInfo"></div>
+    <button class="btn" id="dupGo">ก็อปไปทุก Artboard</button>
+  </div>
+</section>
+
+<section id="tab-qr" class="pane st">
+  <div class="card">
+    <div class="seg" data-name="qrMode">
+      <button data-v="text" class="on">ลิงก์ / ข้อความ</button>
+      <button data-v="pp">พร้อมเพย์</button>
+    </div>
+    <textarea id="qrText" class="onlyText" rows="3" placeholder="ลิงก์ หรือข้อความ">https://</textarea>
+    <div class="grid onlyPP">
+      <label>เบอร์ / เลขบัตร<input id="qrPpId" type="text" inputmode="numeric" placeholder="08x-xxx-xxxx" spellcheck="false"></label>
+      <label>ยอดเงิน (บาท)<input id="qrPpAmt" type="number" min="0" step="0.01" placeholder="ไม่ระบุ = ลูกค้าใส่เอง"></label>
+      <label>ชื่อบัญชี (แสดงใต้ QR)<input id="qrPpName" type="text" placeholder="เช่น ร้านบอลสติ๊กเกอร์"></label>
+      <label class="chk"><input id="qrPpCap" type="checkbox" checked> ใส่ข้อความใต้ QR</label>
+    </div>
+    <div class="grid">
+      <label>ขนาด (มม.)<input id="qrSize" type="number" value="30" min="5" step="1"></label>
+      <label>กันเสีย<select id="qrEc">
+        <option value="L">L – 7%</option>
+        <option value="M" selected>M – 15%</option>
+        <option value="Q">Q – 25%</option>
+        <option value="H">H – 30%</option>
+      </select></label>
+      <label>ขอบขาว (ช่อง)<input id="qrQuiet" type="number" value="4" min="0" max="10"></label>
+      <label class="chk"><input id="qrBg" type="checkbox" checked> ใส่พื้นขาว</label>
+    </div>
+    <canvas id="qrCanvas" width="220" height="220"></canvas>
+    <div class="hint" id="qrInfo"></div>
+    <button class="btn" id="qrGo">วาง QR ลง Artboard</button>
+  </div>
+</section>
+
+<section id="tab-shd" class="pane st">
+  <div class="card">
+    <div class="seg shtype" data-name="shType">
+      <button data-v="drop" class="on"><i class="shi">A</i>Drop</button>
+      <button data-v="box"><i class="shi">A</i>Box</button>
+      <button data-v="persp"><i class="shi">A</i>มุมมอง</button>
+      <button data-v="cast"><i class="shi">A</i>ทอดเงา</button>
+      <button data-v="edge"><i class="shi">A</i>ขอบ</button>
+    </div>
+    <div class="hint" id="shTypeHint"></div>
+    <div class="grid onlyShMove">
+      <label>เลื่อนขวา<div class="inu"><input id="shDx" type="number" value="3" step="0.5"><span class="u">มม.</span></div></label>
+      <label>เลื่อนลง<div class="inu"><input id="shDy" type="number" value="3" step="0.5"><span class="u">มม.</span></div></label>
+    </div>
+    <label class="onlyShPersp">ขนาดด้านไกล<div class="inu"><input id="shScale" type="number" value="70" min="5" max="300" step="5"><span class="u">%</span></div></label>
+    <div class="grid onlyShCast">
+      <label>มุมล้ม<div class="inu"><input id="shAngle" type="number" value="30" step="5"><span class="u">°</span></div></label>
+      <label>ความยาว<div class="inu"><input id="shLen" type="number" value="80" min="5" step="5"><span class="u">%</span></div></label>
+    </div>
+    <div class="hint onlyShCast">30° = ล้มไปขวา · 150° = ล้มไปซ้าย · ติดลบ = ล้มมาด้านหน้า</div>
+    <div class="grid onlyShEdge">
+      <label>ความหนาขอบ<div class="inu"><input id="shWidth" type="number" value="3" min="0.1" step="0.5"><span class="u">มม.</span></div></label>
+      <label>มุมขอบ<select id="shJoin"><option value="round">มน</option><option value="miter">แหลม</option></select></label>
+    </div>
+    <div class="swbox">
+      <div class="swhead"><span>สีเงา</span><span id="shColName" class="swname"></span></div>
+      <div id="shSw" class="swgrid"></div>
+      <input type="hidden" id="shColor" value="blk">
+    </div>
+  </div>
+  <div class="card">
+    <label class="chk head"><input id="shKnock" type="checkbox"> <b>หักส่วนที่ทับตัวงานออก</b><span class="mut">ตัดสติ๊กเกอร์ไม่ต้องติดซ้อน 2 ชั้น</span></label>
+    <label class="onlyShKnock">เว้นช่องจากตัวงาน<div class="inu"><input id="shGap" type="number" value="0" min="0" step="0.5"><span class="u">มม.</span></div></label>
+    <label class="chk head"><input id="shHoles" type="checkbox"> <b>ปิดรูในตัวอักษร</b><span class="mut">ช่องใน O A ก ถูกเติมเต็ม</span></label>
+    <label class="chk head"><input id="shLayer" type="checkbox"> <b>ไว้เลเยอร์ "เงา" แยก</b><span class="mut">อยู่ใต้เลเยอร์ของงาน · ซ่อน/ตัดแยกง่าย</span></label>
+    <button class="btn" id="shGo">ทำเงา</button>
+    <div class="hint warn" id="shWarn"></div>
+    <div class="hint">เลือกตัวหนังสือหรืองานเวกเตอร์แล้วกด · งานเดิมไม่ถูกแก้ · เงาเป็นรูปทรงเดียว วางใต้งาน ตัดได้เลย</div>
+  </div>
+</section>
+
+<section id="tab-name" class="pane st">
+  <div class="card">
+    <div class="seg" data-name="nmWhich">
+      <button data-v="active" class="on">artboard ที่เปิดอยู่</button>
+      <button data-v="all">ทั้งไฟล์</button>
+    </div>
+    <button class="btn" id="nmScan">① สแกนข้อความในงาน</button>
+    <div class="hint" id="nmHint">อ่านข้อความทุกกล่องในงาน เรียงจากตัวใหญ่ไปเล็ก · กดคำเพื่อเพิ่มลงชื่อไฟล์</div>
+    <div id="nmChips" class="nmchips"></div>
+  </div>
+  <div class="card">
+    <label class="full">ชื่อไฟล์<div class="pr"><input id="nmName" type="text" spellcheck="false" placeholder="กดคำด้านบน หรือพิมพ์เอง"><button class="btn ghost sm" id="nmClear">ล้าง</button></div></label>
+    <div class="grid">
+      <label class="chk"><input id="nmSize" type="checkbox"> + ขนาดงาน</label>
+      <label class="chk"><input id="nmDate" type="checkbox"> + วันที่</label>
+    </div>
+    <div class="hint" id="nmPreview"></div>
+    <button class="btn" id="nmSave" disabled>② บันทึกไฟล์ .ai ชื่อนี้</button>
+    <div class="hint" id="nmMsg">บันทึกเป็นไฟล์ใหม่ในโฟลเดอร์เดิม (ไฟล์เดิมยังอยู่) · ไฟล์พิมพ์ / ภาพตัวอย่างจะใช้ชื่อนี้ต่อ · ข้อความที่แปลงเป็นเส้นแล้วอ่านไม่ได้</div>
+  </div>
+</section>
+
+<section id="tab-dim" class="pane st">
+  <div class="card">
+    <div class="seg" data-name="dimWhich">
+      <button data-v="both" class="on">กว้าง + สูง</button>
+      <button data-v="w">กว้าง</button>
+      <button data-v="h">สูง</button>
+    </div>
+    <div class="grid">
+      <label>หน่วย<select id="dimUnit"><option value="mm">มม.</option><option value="cm">ซม.</option><option value="in">นิ้ว</option><option value="m">ม.</option></select></label>
+      <label>ตัวหน่วย<select id="dimUnitLang"><option value="en">อังกฤษ · cm</option><option value="th">ไทย · ซม.</option></select></label>
+      <label>สเกล 1 :<input id="dimScale" type="number" value="1" min="0.0001" step="any"></label>
+      <label>ทศนิยม<input id="dimDec" type="number" value="0" min="0" max="4"></label>
+      <label>ระยะห่าง (มม.)<input id="dimOff" type="number" value="8" step="any"></label>
+      <label>ขนาดตัวเลข (pt)<input id="dimText" type="number" value="10" min="2" step="any"></label>
+      <label>เส้นหนา (pt)<input id="dimLine" type="number" value="0.5" min="0.1" step="0.1"></label>
+      <label class="chk"><input id="dimUnitShow" type="checkbox" checked> แสดงหน่วย</label>
+      <label class="chk"><input id="dimEach" type="checkbox" checked> แยกทีละชิ้น</label>
+    </div>
+    <div class="swbox">
+      <div class="swhead"><span>สี</span><span id="dimSwName" class="swname"></span><button id="dimSwLoad" class="btn ghost sm" title="ดึงสวอตช์จากไฟล์ที่เปิดอยู่">⟳ สวอตช์ในไฟล์</button></div>
+      <div id="dimSw" class="swgrid"></div>
+      <input type="hidden" id="dimColor" value="p:mag">
+    </div>
+    <div class="hint">สเกล 1:10 = งานในไฟล์ย่อ 10 เท่า ตัวเลขจะแสดงขนาดจริง · วัดจากขอบรูปทรง (ไม่รวมความหนาเส้น)</div>
+    <button class="btn" id="dimGo">ใส่เส้นบอกขนาด</button>
+  </div>
+</section>
+
+
+<!-- เรียงสติ๊กเกอร์ -->
+<section id="tab-cut" class="pane st">
+  <div class="card">
+    <div class="chead"><b>เครื่องตัด</b><span class="mut">Graphtec · LAN</span></div>
+    <div class="mcrow"><select id="cutMachine"></select><button class="btn ghost sm" id="cutAddM" title="เพิ่มเครื่อง">+ เครื่อง</button><button class="btn ghost sm" id="cutDelM" title="ลบเครื่องนี้">ลบ</button></div>
+    <label>ชื่อเครื่อง<input id="cutMName" type="text" placeholder="เช่น CE7000-130 หน้าร้าน"></label>
+    <div class="grid">
+      <label>IP เครื่อง<input id="cutIp" type="text" placeholder="192.168.1.50" inputmode="decimal" spellcheck="false"></label>
+      <label>พอร์ต<div class="pr"><input id="cutPort" type="number" value="" min="1" max="65535" placeholder="—"><button class="btn ghost sm" id="cutProbe">ตรวจหา</button></div></label>
+    </div>
+    <button class="btn ghost sm" id="cutScan">ค้นหาเครื่องตัดในวง LAN</button>
+    <div id="cutFound" class="nmchips"></div>
+    <div class="row2"><span class="lbl">ภาษาคำสั่ง</span>
+      <div class="seg mini" data-name="cutLang"><button data-v="gpgl" class="on">GP-GL</button><button data-v="hpgl">HP-GL</button></div>
+    </div>
+    <label class="onlyGpgl">ขนาดสเต็ป GP-GL<select id="cutStep"><option value="0.1">0.1 มม.</option><option value="0.05">0.05 มม.</option><option value="0.025">0.025 มม.</option><option value="0.01">0.01 มม.</option></select></label>
+    <div class="hint">ตั้งให้ตรงกับเครื่อง: MENU › I/F › COMMAND (และ GP-GL STEP) · ปิด Cutting Master ก่อนส่ง</div>
+  </div>
+
+  <div class="card">
+    <div class="chead"><b>งานที่จะตัด</b></div>
+    <div class="grid">
+      <button class="btn" id="cutRead">อ่านเส้นตัด</button>
+      <button class="btn ghost" id="cutTest">ชิ้นทดสอบ</button>
+    </div>
+    <div class="hint">เลือกเส้นที่จะตัด หรือไม่เลือกอะไร = เส้น Kiss Cut / Die Cut ทั้งหมดใน artboard ที่เปิดอยู่</div>
+    <div class="grid">
+      <label class="chk"><input id="cutRot" type="checkbox"> หมุน 90°</label>
+      <label class="chk"><input id="cutMirror" type="checkbox"> กลับซ้าย-ขวา</label>
+    </div>
+    <label>ตัดเกิน (เส้นปิด)<div class="inu"><input id="cutOver" type="number" value="0" min="0" max="3" step="0.1"><span class="u">มม.</span></div></label>
+    <label class="chk"><input id="cutDrv" type="checkbox"> <b>ตั้งความเร็ว / แรงกดแยกตามเส้น</b> <span class="mut">(แบบ By Layer ใน CM5)</span></label>
+    <div id="cutDrvBox" class="hidden">
+      <div class="drvgrid">
+        <span></span><span class="mut">ความเร็ว cm/s</span><span class="mut">อัตราเร่ง</span><span class="mut">แรงกด</span>
+        <b class="lbKiss">Kiss Cut</b><input id="dKisS" type="number" value="71" min="1" max="100"><input id="dKisA" type="number" value="2" min="1" max="3"><input id="dKisF" type="number" value="38" min="1" max="60">
+        <b class="lbDie">Die Cut</b><input id="dDieS" type="number" value="50" min="1" max="100"><input id="dDieA" type="number" value="2" min="1" max="3"><input id="dDieF" type="number" value="25" min="1" max="60">
+      </div>
+      <label>ลำดับตัด<select id="cutFirst"><option value="kiss">Kiss Cut ทั้งแผ่นก่อน แล้ว Die Cut</option><option value="die">Die Cut ทั้งแผ่นก่อน แล้ว Kiss Cut</option><option value="piece">ทีละดวง: Kiss Cut แล้ว Die Cut ของดวงเดียวกัน</option></select></label>
+      <div class="hint">ค่าเริ่มต้นตามที่ตั้งใน CM5 ของร้าน · ใช้ Condition No. เดียวกันด้านล่าง</div>
+    </div>
+    <label id="cutCondRow">Condition No. (เหมือนใน CM5)<select id="cutCond"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
+    <div id="cutMkRow" class="hidden">
+      <label class="chk"><input id="cutUseMk" type="checkbox" checked> <b>อ่านมาร์คก่อนตัด</b></label>
+      <div class="hint" id="cutMkInfo"></div>
+    </div>
+    <div id="cutNmBox" class="nmbox">
+      <b>ตัดแบบไม่อ่านมาร์ค</b> <span class="mut">(แบบ Media Size + Matrix Copy ใน CM5)</span>
+      <div class="grid">
+        <label>หน้ากว้างวัสดุ<div class="inu"><input id="nmW" type="number" value="60" min="0" step="0.1"><span class="u">ซม.</span></div></label>
+        <label>จำนวนชุด<input id="nmN" type="number" value="1" min="1" max="500"></label>
+        <label>ตำแหน่ง X (ทางป้อน)<div class="inu"><input id="nmX" type="number" value="0" min="0" step="0.1"><span class="u">ซม.</span></div></label>
+        <label>ตำแหน่ง Y<div class="inu"><input id="nmY" type="number" value="0" min="0" step="0.1"><span class="u">ซม.</span></div></label>
+        <label>ระยะห่าง X<div class="inu"><input id="nmGX" type="number" value="1" min="0" step="0.01"><span class="u">ซม.</span></div></label>
+        <label>ระยะห่าง Y<div class="inu"><input id="nmGY" type="number" value="1" min="0" step="0.01"><span class="u">ซม.</span></div></label>
+      </div>
+      <div class="hint">จุดเริ่ม = มุมขวาล่างของงาน (ตรงหัวมีดที่ตั้ง origin ไว้) · เรียงชุดไปทางซ้ายจนเต็มหน้ากว้าง แล้วขึ้นแถวใหม่ · หน้ากว้าง 0 = ไม่จำกัด</div>
+      <div class="hint warn" id="cutNmWarn"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="stkres" id="cutRes">ยังไม่ได้อ่านงาน</div>
+    <div class="hint warn" id="cutWarn"></div>
+    <canvas id="cutCanvas" class="stkcanvas" width="300" height="220"></canvas>
+    <div class="cutlegend"><span class="lk">━ Kiss Cut</span><span class="ld">━ Die Cut</span><span class="mut">┄ ยกมีด</span><button class="btn ghost sm" id="cutPlay" disabled>▶ จำลองการตัด</button></div>
+    <button class="btn" id="cutGo" disabled>ส่งตัด</button>
+    <div class="hint" id="cutStatus">จุดเหลือง = จุดเริ่มตัด (origin ที่ตั้งไว้บนเครื่อง) </div>
+  </div>
+
+  <div class="card">
+    <div class="chead"><b>ดักคำสั่งจาก Cutting Master</b><span class="mut">เพื่อศึกษาการอ่านมาร์ค</span></div>
+    <div class="hint">แผงจะเป็นทางผ่าน: CM5 → แผง → เครื่องตัด (ใช้ IP/พอร์ตด้านบน) · งานตัดปกติ แต่แผงจดทุกคำสั่งทั้งไปและกลับลงไฟล์บนเดสก์ท็อป</div>
+    <div class="grid">
+      <label>พอร์ตรับจาก CM5<input id="capPort" type="number" value="9100" min="1" max="65535"></label>
+      <button class="btn" id="capGo">เริ่มดัก</button>
+    </div>
+    <div class="hint" id="capMsg">ใน CM5 ให้ตั้งพอร์ตเครื่องตัดเป็น IP 127.0.0.1 พอร์ตเดียวกับช่องนี้</div>
+  </div>
+</section>
+
+<section id="tab-prev" class="pane st">
+  <div class="card">
+    <div class="chead"><b>ภาพตัวอย่างให้ลูกค้า</b></div>
+    <div class="seg" data-name="prevWhich">
+      <button data-v="active" class="on">artboard ที่เปิดอยู่</button>
+      <button data-v="all">ทุก artboard</button>
+    </div>
+    <label class="full">ข้อความลายน้ำ<input id="prevText" type="text" value="ตัวอย่าง · บอลสติ๊กเกอร์"></label>
+    <div class="grid">
+      <label>ความเข้มลายน้ำ<div class="inu"><input id="prevOp" type="number" value="25" min="5" max="100" step="5"><span class="u">%</span></div></label>
+      <label>ขนาดภาพ (ด้านยาว)<select id="prevPx"><option value="1200">1200 px</option><option value="1600" selected>1600 px</option><option value="2400">2400 px</option></select></label>
+    </div>
+    <label class="chk"><input id="prevSize" type="checkbox" checked> ใส่ป้ายขนาดงานมุมขวาล่าง</label>
+    <label class="chk"><input id="prevOpen" type="checkbox" checked> เปิดโฟลเดอร์หลังบันทึก</label>
+    <button class="btn" id="prevGo">บันทึกภาพตัวอย่าง (JPG)</button>
+    <div class="hint" id="prevMsg">บันทึกในโฟลเดอร์ "ตัวอย่างลูกค้า" ข้างไฟล์งาน (ไฟล์ยังไม่ได้บันทึก → บนเดสก์ท็อป) · ไม่แก้ไฟล์งาน</div>
+  </div>
+  <div class="card">
+    <div class="chead"><b>ไฟล์พิมพ์ TIFF / JPG</b><span class="mut">ไม่มีเส้นตัด</span></div>
+    <div class="seg" data-name="expWhich">
+      <button data-v="active" class="on">artboard ที่เปิดอยู่</button>
+      <button data-v="all">ทุก artboard</button>
+    </div>
+    <div class="grid">
+      <label>ชนิดไฟล์<select id="expFmt"><option value="tif">TIFF (LZW)</option><option value="jpg">JPG คุณภาพสูงสุด</option></select></label>
+      <label>ความละเอียด<select id="expPpi"><option value="150">150 ppi</option><option value="200">200 ppi</option><option value="300" selected>300 ppi</option><option value="360">360 ppi</option><option value="720">720 ppi</option></select></label>
+      <label class="onlyTif">สี<select id="expCmyk"><option value="1">CMYK</option><option value="0">RGB</option></select></label>
+    </div>
+    <label class="chk"><input id="expOpen" type="checkbox" checked> เปิดโฟลเดอร์หลังบันทึก</label>
+    <button class="btn" id="expGo">บันทึกไฟล์พิมพ์</button>
+    <div class="hint" id="expMsg">ซ่อนเลเยอร์ Kiss Cut / Die Cut / เลเยอร์ไม่พิมพ์ และเส้นตัดสีชมพูในงานให้ชั่วคราว แล้วคืนค่าเดิม · มาร์ค Cutting Master ยังพิมพ์ออก · บันทึกในโฟลเดอร์ "ไฟล์พิมพ์" ข้างไฟล์งาน</div>
+  </div>
+</section>
+
+<section id="tab-slug" class="pane st">
+  <div class="card">
+    <div class="chead"><b>ข้อความขอบแผ่น</b></div>
+    <div class="grid">
+      <label>ลูกค้า<input id="slugCust" type="text" placeholder="ชื่อลูกค้า"></label>
+      <label>งาน / มีเดีย<input id="slugJob" type="text" placeholder="เช่น PVC ขาวด้าน"></label>
+    </div>
+    <div class="chips" id="slugFields">
+      <label class="chk"><input id="slugFile" type="checkbox" checked> ชื่อไฟล์</label>
+      <label class="chk"><input id="slugDate" type="checkbox" checked> วันที่</label>
+      <label class="chk"><input id="slugSheet" type="checkbox" checked> แผ่นที่ / ทั้งหมด</label>
+      <label class="chk"><input id="slugDim" type="checkbox"> ขนาดแผ่น</label>
+    </div>
+    <div class="grid">
+      <label>ตำแหน่ง<select id="slugPos"><option value="bottom">ขอบล่าง</option><option value="top">ขอบบน</option></select></label>
+      <label>ห่างขอบ<div class="inu"><input id="slugOff" type="number" value="3" min="0" step="0.5"><span class="u">มม.</span></div></label>
+      <label>ขนาดตัวอักษร<div class="inu"><input id="slugPt" type="number" value="7" min="4" max="48" step="0.5"><span class="u">pt</span></div></label>
+      <label>ใส่ที่<select id="slugWhich"><option value="all">ทุก artboard</option><option value="active">artboard ที่เปิดอยู่</option></select></label>
+    </div>
+    <div class="slugprev" id="slugPrev">—</div>
+    <button class="btn" id="slugGo">ใส่ข้อความขอบแผ่น</button>
+    <div class="hint">วางในเลเยอร์ Slug ด้านในขอบ artboard ให้พิมพ์ออกมาด้วย · กดซ้ำ = แทนที่ข้อความเดิม</div>
+  </div>
+</section>
+
+<section id="tab-queue" class="pane">
+  <div class="qsum" id="qSum"></div>
+  <div class="seg" data-name="qFilter">
+    <button data-v="open" class="on">ยังไม่ส่ง</button>
+    <button data-v="done">ส่งแล้ว</button>
+    <button data-v="all">ทั้งหมด</button>
+  </div>
+  <details class="card" id="qAddBox">
+    <summary><b>+ เพิ่มงาน</b></summary>
+    <button class="btn ghost sm" id="qFromDoc">ดึงชื่อ + ขนาดจากไฟล์ที่เปิดอยู่</button>
+    <div class="grid">
+      <label>ลูกค้า<input id="qCust" type="text"></label>
+      <label>งาน<input id="qJob" type="text"></label>
+      <label>ขนาด / จำนวน<input id="qSize" type="text" placeholder="60×90 ซม. × 2"></label>
+      <label>ส่งวันที่<input id="qDue" type="date"></label>
+    </div>
+    <label class="full">หมายเหตุ<input id="qNote" type="text"></label>
+    <input type="hidden" id="qFile">
+    <div class="hint" id="qFileHint"></div>
+    <button class="btn" id="qAdd">เพิ่มเข้าคิว</button>
+  </details>
+  <div id="qList" class="qlist"></div>
+  <div class="hint">เก็บในเครื่องนี้ · กดป้ายสถานะเพื่อเลื่อนขั้น รอพิมพ์ → รอตัด → พร้อมส่ง → ส่งแล้ว</div>
+</section>
+
+<section id="tab-sep" class="pane st">
+  <div class="card">
+    <div class="chead"><b>สีในงาน</b></div>
+    <button class="btn" id="sepRead">① อ่านสีจากงานที่เลือก</button>
+    <div class="hint" id="sepHint">เลือกงานตัด (เวกเตอร์) แล้วกดอ่าน · ติ๊กเฉพาะสีที่จะตัด</div>
+    <div id="sepList" class="seplist"></div>
+  </div>
+  <div class="card">
+    <div class="chead"><b>วิธีแยก</b></div>
+    <div class="seg seg3" data-name="sepMode">
+      <button data-v="base" class="on">พื้นเต็ม</button>
+      <button data-v="knock">ตัดชิดกัน</button>
+      <button data-v="stack">เต็มรูปทุกสี</button>
+    </div>
+    <div class="hint" id="sepModeHint"></div>
+    <label class="full">วางผลลัพธ์<select id="sepLayout"><option value="side">เรียงทีละสี ทางขวาของงาน</option><option value="place">ซ้อนที่ตำแหน่งเดิม (แยกเลเยอร์)</option></select></label>
+    <label class="chk head"><input id="sepMarks" type="checkbox" checked> <b>มาร์คจัดตำแหน่ง (+)</b><span class="mut">ตัดไปกับทุกสี ไว้วางทับให้ตรงกัน</span></label>
+    <div class="grid onlySepMarks">
+      <label>ขนาดมาร์ค<div class="inu"><input id="sepMkLen" type="number" value="10" min="3" step="1"><span class="u">มม.</span></div></label>
+      <label>ห่างจากงาน<div class="inu"><input id="sepMkOff" type="number" value="5" min="0" step="1"><span class="u">มม.</span></div></label>
+    </div>
+    <label class="full onlySepSide">ระยะระหว่างสี<div class="inu"><input id="sepGap" type="number" value="20" min="0" step="1"><span class="u">มม.</span></div></label>
+    <button class="btn" id="sepGo" disabled>② แยกสี</button>
+    <div class="hint warn" id="sepWarn"></div>
+    <div class="hint">งานต้นฉบับไม่ถูกแก้ · ตัวอักษรแปลงเป็นเส้นให้ · เส้นขอบแปลงเป็นพื้น · คลิปปิ้งมาสก์ตัดส่วนเกินทิ้ง</div>
+  </div>
+</section>
+
+<section id="tab-stk" class="pane st">
+  <div class="card">
+    <div class="chead"><b>สติ๊กเกอร์</b>
+      <div class="seg mini" data-name="stkUnitSeg" title="หน่วย">
+        <button data-v="mm" class="on">มม.</button><button data-v="cm">ซม.</button><button data-v="in">นิ้ว</button><button data-v="m">ม.</button>
+      </div><input type="hidden" id="stkUnit" value="mm">
+    </div>
+    <div class="seg" data-name="stkMode">
+      <button data-v="fill" class="on">ลายเดียว เต็มแผ่น</button>
+      <button data-v="multi">หลายลาย</button>
+    </div>
+    <div class="needrow onlyFill">
+      <label>จำนวนที่ต้องการ<div class="inu"><input id="stkNeed" type="number" min="0" step="1" placeholder="เต็ม 1 แผ่น"><span class="u2">ดวง</span></div></label>
+      <label class="chk"><input id="stkFullRow" type="checkbox" checked> เติมแถวสุดท้ายให้เต็ม</label>
+    </div>
+    <button class="btn" id="stkRead">① อ่านสติ๊กเกอร์ที่เลือก</button>
+    <div class="hint" id="stkHint">เลือกสติ๊กเกอร์บน artboard (แต่ละลายเป็น 1 กลุ่ม) แล้วกดอ่าน</div>
+    <div id="stkList" class="stklist"></div>
+  </div>
+
+  <div class="card">
+    <div class="chead"><b>เส้นตัด</b></div>
+    <label class="full">แบบ<select id="stkCut">
+      <option value="contour">ไดคัทตามรูป</option>
+      <option value="rect">สี่เหลี่ยมมุมมน</option>
+      <option value="ellipse">วงรี (พอดีกรอบ)</option>
+      <option value="circle">วงกลม</option>
+      <option value="own">ใช้เส้นที่วาดเอง (เส้นชมพู / เลเยอร์ Cut)</option>
+    </select></label>
+    <div class="grid3">
+      <label title="ติดลบ = หดเส้นตัดเข้าในงาน">ขยายออก <span class="mut">(− = เข้าใน)</span><div class="inu"><input id="stkOff" type="number" value="2" min="-10" step="0.5"><span class="u">มม.</span></div></label>
+      <label class="onlyRect">มุมมน<div class="inu"><input id="stkRad" type="number" value="3" min="0" step="0.5"><span class="u">มม.</span></div></label>
+      <label>ห่างกัน<div class="inu"><input id="stkGap" type="number" value="3" min="0" step="0.5"><span class="u">มม.</span></div></label>
+    </div>
+    <label class="chk head"><input id="stkDie" type="checkbox"> <b>เพิ่มเส้นไดคัท (ตัดขาด)</b><span class="mut">เส้นนอกสีเขียว · เลเยอร์ DieCut · เส้นเดิม = kiss cut</span></label>
+    <div class="grid3 onlyDie">
+      <label>รูปทรง<select id="stkDieShape"><option value="rect">สี่เหลี่ยมมุมมน</option><option value="same">ตามเส้น kiss</option></select></label>
+      <label>ห่างจาก kiss<div class="inu"><input id="stkDieOff" type="number" value="3" min="0" step="0.5"><span class="u">มม.</span></div></label>
+      <label class="onlyDieRect">มุมมน<div class="inu"><input id="stkDieRad" type="number" value="5" min="0" step="0.5"><span class="u">มม.</span></div></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <label class="chk head"><input id="stkCredit" type="checkbox"> <b>เครดิตร้าน</b><span class="mut">โลโก้ร้านเล็กๆ บนทุกดวง · แนะนำใช้คู่กับเส้นไดคัท</span></label>
+    <div class="onlyCredit crbox">
+      <div class="crfile"><button class="btn ghost sm" id="stkCrPick">เลือกโลโก้…</button><span id="stkCrName" class="mut">ยังไม่ได้เลือก · ใช้ข้อความแทน</span><button class="btn ghost sm hidden" id="stkCrClear" title="เลิกใช้ไฟล์">✕</button></div>
+      <input type="hidden" id="stkCrFile">
+      <label class="full crtext">ข้อความ (เมื่อไม่มีไฟล์)<input id="stkCrText" type="text" value="บอล สติ๊กเกอร์ พิษณุโลก"></label>
+      <div class="grid3">
+        <label>ตำแหน่ง<select id="stkCrPos"><option value="tl">บนซ้าย</option><option value="tr">บนขวา</option><option value="tc">บนกลาง</option><option value="bl">ล่างซ้าย</option><option value="br">ล่างขวา</option><option value="bc">ล่างกลาง</option></select></label>
+        <label>กว้าง<div class="inu"><input id="stkCrW" type="number" value="20" min="3" step="1"><span class="u">มม.</span></div></label>
+        <label>ห่างขอบ<div class="inu"><input id="stkCrIn" type="number" value="2" min="0" step="0.5"><span class="u">มม.</span></div></label>
+      </div>
+      <div class="hint">วางในขอบเส้นไดคัท (ถ้าไม่มีไดคัท = ขอบเส้น kiss) · ไฟล์ที่ใช้ได้: .ai .pdf .eps .svg .png .jpg</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="chead"><b>แผ่นงาน</b></div>
+    <div class="grid">
+      <label>ขนาด<select id="stkSheet">
+        <option value="210x297">A4 · 210×297</option>
+        <option value="297x420">A3 · 297×420</option>
+        <option value="320x450">SRA3 · 320×450</option>
+        <option value="330x480">330×480</option>
+        <option value="custom">กำหนดเอง</option>
+      </select></label>
+      <label>แนว<select id="stkOrient"><option value="p">ตั้ง</option><option value="l">นอน</option></select></label>
+    </div>
+    <div class="wh onlyCustom">
+      <label>กว้าง<div class="inu"><input id="stkW" type="number" value="210" min="0" step="1"><span class="u">มม.</span></div></label><span class="x">×</span><label>สูง<div class="inu"><input id="stkH" type="number" value="297" min="0" step="1"><span class="u">มม.</span></div></label>
+    </div>
+    <div class="grid">
+      <label>ขอบกระดาษ<div class="inu"><input id="stkMargin" type="number" value="5" min="0" step="0.5"><span class="u">มม.</span></div></label>
+      <label class="chk sw2"><input id="stkRot" type="checkbox" checked> หมุน 90° ได้</label>
+    </div>
+    <label class="full">ลำดับตัด<select id="stkOrder"><option value="zz">ล่างขึ้นบน ซิกแซก (เร็วสุด)</option><option value="bu">ล่างขึ้นบน ทีละแถว</option><option value="td">บนลงล่าง</option></select></label>
+    <label class="chk"><input id="stkSym" type="checkbox" checked> วางภาพเป็น Symbol <span class="mut">(ไฟล์เบา ไม่ค้าง · แนะนำ)</span></label>
+    <label class="chk"><input id="stkTrim" type="checkbox" checked> ตัดแผ่นให้พอดีงาน <span class="mut">(ลบส่วนว่างด้านล่าง เตรียมใส่มาร์ค)</span></label>
+    <label class="chk"><input id="stkDelAB" type="checkbox" checked> ลบ artboard เดิมที่ว่าง <span class="mut">(งานต้นฉบับไม่ถูกลบ)</span></label>
+  </div>
+
+  <div class="card">
+    <label class="chk head"><input id="stkCm5" type="checkbox" checked> <b>ใส่มาร์ค Cutting Master 5 อัตโนมัติ</b><span class="mut">ยาวไม่เกิน 50 ซม. = 4 Points Type1 · เกิน 50 ซม. = Segment Area Type1 ทุก 25 ซม. · ห่างงาน 0.3 หนา 0.1 ยาว 1.5 ซม. · artboard พอดีมาร์ค (เบต้า)</span></label>
+    <label class="chk head"><input id="stkMarks" type="checkbox"> <b>มาร์คอ่านตำแหน่ง</b><span class="mut">ตัว L 4 มุม · Graphtec ARMS</span></label>
+    <div class="grid onlyMarks">
+      <label>ห่างขอบกระดาษ<div class="inu"><input id="stkMkIn" type="number" value="10" min="0" step="0.5"><span class="u">มม.</span></div></label>
+      <label>ความยาว<div class="inu"><input id="stkMkLen" type="number" value="10" min="0" step="0.5"><span class="u">มม.</span></div></label>
+      <label>ความหนา<div class="inu"><input id="stkMkW" type="number" value="0.5" min="0" step="0.1"><span class="u">มม.</span></div></label>
+      <label>เว้นจากมาร์ค<div class="inu"><input id="stkMkGap" type="number" value="3" min="0" step="0.5"><span class="u">มม.</span></div></label>
+    </div>
+    <div class="hint onlyMarks">สติ๊กเกอร์จะวางห่างจากมาร์คเสมอ · ตั้งชนิดมาร์คในเครื่องตัดให้เป็นแบบตัว L (เมนู ARMS)</div>
+  </div>
+
+  <div class="card">
+    <div class="stkres" id="stkRes">ยังไม่มีสติ๊กเกอร์</div>
+    <div class="hint warn" id="stkWarn"></div>
+    <canvas id="stkCanvas" class="stkcanvas" width="300" height="420"></canvas>
+    <div class="stknav hidden" id="stkNav"><button class="btn ghost sm" id="stkPrev">‹</button><span id="stkPage"></span><button class="btn ghost sm" id="stkNext">›</button></div>
+    <div class="pvrow"><button class="btn ghost" id="stkPv">ดูเส้นตัดบนงานก่อน</button><button class="btn ghost sm hidden" id="stkPvClear" title="ลบตัวอย่าง">ลบ</button></div>
+    <div class="hint" id="stkPvMsg">วาดเส้นตัดจริงรอบงานที่เลือก (เลเยอร์ "ตัวอย่างเส้นตัด" ไม่พิมพ์) ให้ดูก่อน · แก้ค่าแล้วกดใหม่ได้ · สร้างแผ่นงานแล้วตัวอย่างจะถูกลบเอง</div>
+    <button class="btn" id="stkGo" disabled>② สร้างแผ่นงาน</button>
+    <div class="hint">สร้าง artboard ใหม่แผ่นละ 1 อัน · งาน → เลเยอร์ Print · เส้นตัด → เลเยอร์ Kiss Cut</div>
+  </div>
+</section>
+
+<div id="upd" class="modal"><div class="mbox">
+  <b id="updTitle">พบเวอร์ชันใหม่</b>
+  <span id="updText"></span>
+  <div class="updb"><button id="updLater" class="btn ghost">ไม่ตอนนี้</button><button id="updGo" class="btn">ตกลง อัปเดต</button></div>
+</div></div>
+
+<div id="lic" class="lic">
+  <div class="licbox">
+    <div class="licB"><img src="icons/icon_normal@2x.png" alt=""></div>
+    <h2>Sign Tools</h2>
+    <p class="mut" id="licHint">เข้าสู่ระบบด้วยเบอร์และรหัสผ่านสมาชิก</p>
+    <div id="licAcc" class="licacc">
+      <input id="licPhone" type="tel" placeholder="เบอร์มือถือ" autocomplete="off" inputmode="tel">
+      <input id="licPw" type="password" placeholder="รหัสผ่าน" autocomplete="off">
+    </div>
+    <input id="licKey" class="hidden" type="text" placeholder="ST-XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false">
+    <button id="licGo" class="btn">เข้าสู่ระบบ</button>
+    <div id="licMsg" class="licmsg"></div>
+    <button id="licMode" class="linkbtn">มีคีย์ ST-… ? ใช้คีย์แทน</button>
+    <p class="mut small">1 บัญชี ใช้ได้ 1 เครื่อง · ย้ายเครื่องได้เองจากเมนู 🔑<br>ยังไม่เป็นสมาชิก / ลืมรหัส: signtools.ballsticker.co.th/member</p>
+  </div>
+</div>
+<div id="licInfo" class="licinfo"><div id="licInfoText"></div><button id="licMove" class="btn ghost">ย้ายไปเครื่องอื่น</button><button id="licDiag" class="btn ghost sm">ทดสอบการเชื่อมต่อ</button></div>
+<button id="licInfoBtn" class="licbtn" title="ไลเซนส์">🔑</button>
+<div id="ver"></div>
+<div id="toast"></div>
+<script src="corel/buffer.js"></script>
+<script src="corel/shim.js"></script>
+<script src="js/config.js"></script>
+<script>ST_CONFIG.product = 'cdr'; ST_CONFIG.dataSub = '\\Corel';</script>
+<script src="js/lib/qrcode.js"></script>
+<script src="js/fonts.js"></script>
+<script src="js/promptpay.js"></script>
+<script src="js/tools.js"></script>
+<script src="js/pack.js"></script>
+<script src="js/sticker.js"></script>
+<script src="js/cutjob.js"></script>
+<script src="js/cut.js"></script>
+<script src="js/extra.js"></script>
+<script src="js/sep.js"></script>
+<script src="js/shadow.js"></script>
+<script src="js/name.js"></script>
+<script src="js/license.js"></script>
+<script src="js/home.js"></script>
+</body>
+</html>

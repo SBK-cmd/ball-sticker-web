@@ -10,18 +10,46 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: probe
+      - name: build
         shell: pwsh
+        continue-on-error: true
         run: |
-          mkdir -Force build-out | Out-Null
-          "ok $(Get-Date -Format o)" | Out-File build-out/probe.txt
-          & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -find MSBuild\**\Bin\MSBuild.exe | Out-File -Append build-out/probe.txt
-          dotnet --list-sdks | Out-File -Append build-out/probe.txt
+          $ErrorActionPreference = 'Continue'
+          New-Item -ItemType Directory -Force build-out | Out-Null
+          $log = "build-out/build.log"
+          "== $(Get-Date -Format o) $env:GITHUB_SHA" | Out-File $log
+          cd signtools-corel
+          dotnet build src/Host/SignToolsHost.csproj -c Release -o ../obj-host 2>&1 | Out-File -Append ../$log
+          $h = $LASTEXITCODE
+          dotnet build src/Loader/SignToolsCorel.csproj -c Release -o ../obj-loader 2>&1 | Out-File -Append ../$log
+          $l = $LASTEXITCODE
+          "host=$h loader=$l" | Out-File -Append ../$log
+          if ($h -ne 0 -or $l -ne 0) { exit 0 }
+          $ver = ([regex]'ExtensionBundleVersion="([^"]+)"').Match((Get-Content app/CSXS/manifest.xml -Raw)).Groups[1].Value
+          $pk = "../pkg/SignTools"; New-Item -ItemType Directory -Force $pk, "$pk/_addon/x64", "$pk/_addon/x86" | Out-Null
+          Copy-Item app/* $pk -Recurse -Force
+          Copy-Item ../obj-host/SignToolsHost.dll $pk
+          Copy-Item addon/* "$pk/_addon"
+          Copy-Item installer/install-corel.ps1 "$pk/_addon"
+          Copy-Item installer/install-corel.bat $pk
+          foreach ($f in 'SignToolsCorel.dll', 'Microsoft.Web.WebView2.Core.dll', 'Microsoft.Web.WebView2.Wpf.dll') { Copy-Item "../obj-loader/$f" "$pk/_addon" }
+          Get-ChildItem ../obj-loader -Recurse | Select-Object FullName, Length | Out-File -Append ../$log
+          $nuget = "$env:USERPROFILE/.nuget/packages/microsoft.web.webview2"
+          $wl = Get-ChildItem $nuget -Recurse -Filter WebView2Loader.dll
+          $wl | Select-Object FullName | Out-File -Append ../$log
+          Copy-Item ($wl | Where-Object { $_.FullName -match 'win-x64' } | Select-Object -First 1).FullName "$pk/_addon/x64"
+          Copy-Item ($wl | Where-Object { $_.FullName -match 'win-x86' } | Select-Object -First 1).FullName "$pk/_addon/x86"
+          Compress-Archive -Path $pk -DestinationPath "../build-out/SignToolsCorel-v$ver.zip" -Force
+          "zip ok v$ver $((Get-Item ../build-out/SignToolsCorel-v$ver.zip).Length)" | Out-File -Append ../$log
       - name: publish
         shell: pwsh
         run: |
           git config user.name ci; git config user.email ci@users.noreply.github.com
-          git fetch origin corel-out 2>$null
-          git checkout -B corel-out
-          git add -f build-out
-          git commit -m "build $env:GITHUB_SHA" ; git push -f origin corel-out
+          Copy-Item -Recurse build-out $env:RUNNER_TEMP/out
+          git fetch origin corel-out
+          git checkout -B corel-out origin/corel-out
+          Remove-Item build-out -Recurse -Force -ErrorAction SilentlyContinue
+          Copy-Item -Recurse $env:RUNNER_TEMP/out build-out
+          git add -A build-out
+          git commit -m "build $env:GITHUB_SHA"
+          git push origin corel-out
