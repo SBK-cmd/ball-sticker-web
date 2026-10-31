@@ -486,6 +486,16 @@ details.shop .fields{margin-top:12px}
 .history li{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:13px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);transition:box-shadow .15s,border-color .15s}
 .history li:hover{box-shadow:var(--shadow-1);border-color:var(--field-line)}
 .history li .meta{flex:1 1 220px;min-width:0}
+#jobHistory li{cursor:pointer}
+#jobHistory li.open{border-color:var(--field-line);box-shadow:var(--shadow-1)}
+#jobHistory .jd{flex:1 1 100%;order:9;cursor:default;border-top:1px dashed var(--line);margin-top:6px;padding-top:10px;display:grid;gap:8px;font-size:14.5px;line-height:1.6}
+#jobHistory .jd .jd-k{display:block;font-size:12.5px;color:var(--muted);font-weight:600}
+#jobHistory .jd ol{margin:2px 0 0;padding-left:20px}
+#jobHistory .jd ol small{display:inline;color:var(--muted)}
+#jobHistory .jd .jd-ph{display:flex;flex-wrap:wrap;gap:8px}
+#jobHistory .jd .jd-ph img{width:84px;height:84px;object-fit:contain;border:1px solid var(--line);border-radius:10px;background:#fff}
+#jobHistory .jd a{color:inherit;font-weight:600}
+#jobHistory .tap-hint{flex:1 1 100%;order:8;font-size:12.5px;color:var(--muted);margin:0}
 .history li b{font-family:'Prompt',sans-serif;font-weight:600}
 .history li small{display:block;color:var(--muted)}
 .history li .amt{font-weight:700;font-variant-numeric:tabular-nums}
@@ -6613,6 +6623,18 @@ function bahtText(value) {
     renderJob();
     renderJobEditState();
   }
+  let jobOpenIds = {};
+  function jobDetailHTML(j) {
+    const its = (j.items || []).filter(i => (i.name || '').trim());
+    const cust = [j.jName, j.jPhone ? '<a href="tel:' + esc(String(j.jPhone).replace(/[^\d+]/g, '')) + '">' + esc(j.jPhone) + '</a>' : ''].filter(Boolean).join(' · ');
+    return '<div class="jd">' +
+      (cust || j.jAddr ? '<div><span class="jd-k">ลูกค้า</span>' + (cust ? cust : '') + (j.jAddr ? '<br>' + esc(j.jAddr) : '') + '</div>' : '') +
+      '<div><span class="jd-k">รายการงาน</span>' + (its.length ? '<ol>' + its.map(i => '<li style="display:list-item;padding:0;border:0;background:none">' + esc(i.name) + ' × ' + esc(fmt(num(i.qty))) + (i.note && i.note.trim() ? ' <small>(' + esc(i.note) + ')</small>' : '') + '</li>').join('') + '</ol>' : '—') + '</div>' +
+      (j.note && j.note.trim() ? '<div><span class="jd-k">หมายเหตุ</span>' + esc(j.note).replace(/\n/g, '<br>') + '</div>' : '') +
+      (j.due ? '<div><span class="jd-k">กำหนดส่ง</span>' + esc(thDate(j.due)) + '</div>' : '') +
+      ((j.photos && j.photos.length) ? '<div class="jd-ph">' + j.photos.map(src => '<img src="' + src + '" alt="รูปงาน">').join('') + '</div>' : '') +
+      '</div>';
+  }
   function renderJobHistory() {
     const list = store.get('bs_jobs', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
     const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้ ควรดาวน์โหลด PDF เก็บไว้ทุกครั้ง</p>');
@@ -6622,15 +6644,16 @@ function bahtText(value) {
     if (!shown.length) { $('jobHistory').innerHTML = notice + '<p class="empty">ไม่พบใบคอนเฟิร์มงานของลูกค้าชื่อ “' + esc(q) + '”</p>'; return; }
     $('jobHistory').innerHTML = notice + '<ul>' + shown.map(j => {
       const st = j.status || 'pending';
-      return '<li data-id="' + esc(j.id) + '">' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '') +
+      return '<li data-id="' + esc(j.id) + '"' + (jobOpenIds[j.id] ? ' class="open"' : '') + '>' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '') +
       '<div class="meta"><b>' + esc(j.no) + '</b><small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[j.page] ? ' · ' + esc(PAGE_LABEL[j.page]) : '') + (j.account ? ' · บัญชี ' + esc(j.account) : '') + (num(j.slipAmount) > 0 ? ' · สลิป ' + money(num(j.slipAmount)) + ' บาท' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
       '<select class="job-status-select status-pill ' + st + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
       '</select>' +
       '<span class="amt">' + (j.items || []).filter(i => (i.name || '').trim()).length + ' รายการ</span>' +
       '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
-      '<button class="btn small del" data-act="del" type="button">ลบ</button></li>';
-    }).join('') + '</ul>';
+      '<button class="btn small del" data-act="del" type="button">ลบ</button>' +
+      (jobOpenIds[j.id] ? jobDetailHTML(j) : '') + '</li>';
+    }).join('') + '</ul><p class="hint" style="margin:10px 2px 0">แตะที่ใบเพื่อดูรายละเอียด ไม่ต้องกดแก้ไข</p>';
   }
   function saveJob() {
     const list = store.get('bs_jobs', []);
@@ -8036,7 +8059,12 @@ function bahtText(value) {
   });
 
   $('jobHistory').addEventListener('click', e => {
-    const btn = e.target.closest('button[data-act]'); if (!btn) return;
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) {
+      const li = e.target.closest('li[data-id]');
+      if (!li || e.target.closest('select,a,.jd')) return;
+      const id = li.dataset.id; jobOpenIds[id] = !jobOpenIds[id]; renderJobHistory(); return;
+    }
     const id = btn.closest('li').dataset.id;
     const list = store.get('bs_jobs', []);
     if (btn.dataset.act === 'open') {
