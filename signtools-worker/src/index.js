@@ -70,7 +70,20 @@ async function init(db) {
     await db.prepare('CREATE INDEX IF NOT EXISTS keys_user ON keys(user_id)').run();
     await setSetting(db, 'schema_v', '4');
   }
+  // v5: ช่องทางรุ่น stable / beta (beta เห็นเฉพาะเบอร์ใน beta_phones)
+  if ((await sv()) < 5) {
+    try { await db.prepare("ALTER TABLE releases ADD COLUMN channel TEXT DEFAULT 'stable'").run(); } catch (e) { /* มีแล้ว */ }
+    if (!(await getSetting(db, 'beta_phones'))) await setSetting(db, 'beta_phones', '0935353555');
+    await setSetting(db, 'schema_v', '5');
+  }
   ready = true;
+}
+const STABLE = "COALESCE(channel,'stable')='stable'";
+async function isBetaUser(db, userId) {
+  if (!userId) return false;
+  const u = await db.prepare('SELECT phone FROM users WHERE id=?').bind(userId).first();
+  const list = String((await getSetting(db, 'beta_phones')) || '').split(/[\s,]+/).filter(Boolean);
+  return !!(u && list.includes(u.phone));
 }
 const getSetting = async (db, k) => (await db.prepare('SELECT v FROM settings WHERE k=?').bind(k).first())?.v ?? null;
 const setSetting = (db, k, v) => db.prepare('INSERT INTO settings (k,v) VALUES (?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v').bind(k, v).run();
@@ -148,7 +161,10 @@ async function api(req, env) {
   }
   if (action === 'latest') {
     await log('', 'latest', String(req.headers.get('User-Agent') || '-').slice(0, 140));
-    const r = await db.prepare('SELECT manifest, sig FROM releases ORDER BY created_at DESC, rowid DESC LIMIT 1').first();
+    let beta = false;
+    if (inp.token) { const t = await readToken(db, inp.token); if (t) { const k = await db.prepare('SELECT user_id FROM keys WHERE key=?').bind(t.k).first(); beta = !!(k && await isBetaUser(db, k.user_id)); } }
+    const r = await db.prepare(`SELECT manifest, sig, channel FROM releases ${beta ? '' : 'WHERE ' + STABLE} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
+    if (r && r.channel === 'beta') return json({ ok: true, release: { manifest: r.manifest, sig: r.sig }, beta: true });
     return json({ ok: true, release: r ? { manifest: r.manifest, sig: r.sig } : null });
   }
   if (action === 'activate') {
@@ -355,6 +371,12 @@ async function admin(req, env) {
         if (d === 'approve') { await fulfill(db, o); msg = 'อนุมัติแล้ว'; }
         else { await db.prepare("UPDATE orders SET status='rejected', reason=?, decided_at=? WHERE id=?").bind(f('reason') || 'ร้านตรวจแล้วไม่ผ่าน', now(), o.id).run(); msg = 'ปฏิเสธรายการแล้ว'; }
       }
+    } else if (d === 'promote') {
+      const r = await db.prepare("SELECT version FROM releases WHERE version=? AND channel='beta'").bind(f('version')).first();
+      if (r) { await db.prepare("UPDATE releases SET channel='stable', created_at=? WHERE version=?").bind(now(), r.version).run(); msg = `ปล่อย ${r.version} ให้ลูกค้าทุกคนแล้ว`; }
+    } else if (d === 'beta_phones') {
+      const list = f('phones').split(/[\s,]+/).map(normPhone).filter(Boolean);
+      await setSetting(db, 'beta_phones', list.join(',')); msg = 'บันทึกเบอร์ทดสอบเบต้าแล้ว';
     } else if (d === 'release') {
       const ver = f('version').trim(), file = form.get('zip');
       if (!/^\d+\.\d+\.\d+$/.test(ver)) err = 'เวอร์ชันต้องเป็นรูปแบบ 1.2.3';
@@ -371,8 +393,9 @@ async function admin(req, env) {
           const name = `SignTools-v${ver}.zip`, sha = await sha256(buf);
           const manifest = JSON.stringify({ version: ver, url: `${url.origin}/releases/${name}`, sha256: sha, size: buf.length, notes: f('notes'), date: new Date().toISOString().slice(0, 10) });
           const sig = b64(await sign(db, enc.encode(manifest)));
-          await db.prepare('INSERT OR REPLACE INTO releases VALUES (?,?,?,?,?,?,?,?,?)').bind(ver, name, buf, sha, buf.length, f('notes'), manifest, sig, now()).run();
-          msg = `ปล่อยเวอร์ชัน ${ver} แล้ว — ลูกค้าจะเห็นปุ่มอัปเดตเมื่อเปิดแผงครั้งถัดไป`;
+          const ch = f('beta') ? 'beta' : 'stable';
+          await db.prepare('INSERT OR REPLACE INTO releases (version, name, zip, sha256, size, notes, manifest, sig, created_at, channel) VALUES (?,?,?,?,?,?,?,?,?,?)').bind(ver, name, buf, sha, buf.length, f('notes'), manifest, sig, now(), ch).run();
+          msg = ch === 'beta' ? `ปล่อยเบต้า ${ver} แล้ว — เห็นเฉพาะเบอร์ทดสอบ (${await getSetting(db, 'beta_phones')})` : `ปล่อยเวอร์ชัน ${ver} แล้ว — ลูกค้าจะเห็นปุ่มอัปเดตเมื่อเปิดแผงครั้งถัดไป`;
         }
       }
     }
@@ -436,7 +459,10 @@ ${os.length ? `<div class="card"><h3>ประวัติการชำระ�
     FROM users u LEFT JOIN keys k ON k.user_id=u.id ${q ? 'WHERE u.name LIKE ?1 OR u.phone LIKE ?1 OR u.shop LIKE ?1 OR k.key LIKE ?1' : ''}
     GROUP BY u.id ORDER BY u.created_at DESC LIMIT 500`).bind(...(q ? [like] : [])).all()).results;
   const loose = (await db.prepare(`SELECT * FROM keys WHERE user_id IS NULL ${q ? 'AND (key LIKE ?1 OR note LIKE ?1 OR machine_name LIKE ?1)' : ''} ORDER BY created_at DESC LIMIT 300`).bind(...(q ? [like] : [])).all()).results;
-  const latest = await db.prepare('SELECT version, created_at FROM releases ORDER BY created_at DESC, rowid DESC LIMIT 1').first();
+  const latest = await db.prepare(`SELECT version, created_at FROM releases WHERE ${STABLE} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
+  const latestBeta = await db.prepare("SELECT version, created_at FROM releases WHERE channel='beta' ORDER BY created_at DESC, rowid DESC LIMIT 1").first();
+  const showBeta = latestBeta && (!latest || latestBeta.created_at >= latest.created_at) ? latestBeta : null;
+  const betaPhones = (await getSetting(db, 'beta_phones')) || '';
   const pub = (await keys(db)).pub;
   const pend = (await db.prepare("SELECT o.id, o.kind, o.key, o.phone, o.plan, o.amount, o.reason, o.created_at, u.name FROM orders o LEFT JOIN users u ON u.id=o.user_id WHERE o.status='pending' ORDER BY o.created_at DESC LIMIT 50").all()).results;
   const recent = (await db.prepare("SELECT o.kind, o.phone, o.plan, o.amount, o.status, o.created_at, o.user_id, u.name FROM orders o LEFT JOIN users u ON u.id=o.user_id WHERE o.status IN ('paid','rejected') ORDER BY o.created_at DESC LIMIT 15").all()).results;
@@ -471,10 +497,17 @@ ${loose.length ? `<details class="card"><summary><b>คีย์ที่ยั�
   <p class="mut small">ตรวจสลิปอัตโนมัติ: ${env.EASYSLIP_KEY ? '<b style="color:#9ff0ae">เปิดอยู่ (EasySlip)</b>' : '<b>ปิด</b> — ทุกสลิปรอคุณอนุมัติ · เปิดได้โดยใส่ Secret ชื่อ <code>EASYSLIP_KEY</code> ใน Cloudflare › Workers › signtools › Settings › Variables'}</p><button>บันทึก</button></form>
 <div class="grid2">
   <form method="post" enctype="multipart/form-data" class="card"><h3>ปล่อยอัปเดต</h3>
-    <p class="mut">เวอร์ชันล่าสุด: <b>${latest ? h(latest.version) + '</b> (' + dt(latest.created_at) + ')' : 'ยังไม่มี</b>'}</p>
+    <p class="mut">เวอร์ชันล่าสุด (ทุกคน): <b>${latest ? h(latest.version) + '</b> (' + dt(latest.created_at) + ')' : 'ยังไม่มี</b>'}</p>
+    ${showBeta ? `<p class="mut">เบต้า: <b style="color:#ffd979">${h(showBeta.version)}</b> (${dt(showBeta.created_at)}) · <a href="/member/beta.zip">โหลด zip</a></p>` : ''}
     <input type="hidden" name="do" value="release"><label>เวอร์ชัน<input name="version" placeholder="1.2.0" required></label>
     <label>มีอะไรใหม่<textarea name="notes" rows="2"></textarea></label>
-    <label>ไฟล์ SignTools-vX.zip<input name="zip" type="file" accept=".zip" required></label><button>อัปโหลด + ปล่อย</button></form>
+    <label>ไฟล์ SignTools-vX.zip<input name="zip" type="file" accept=".zip" required></label>
+    <label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" name="beta" value="1" style="width:auto"> เบต้า — เห็นเฉพาะเบอร์ทดสอบ (${h(betaPhones)})</label>
+    <button>อัปโหลด + ปล่อย</button></form>
+  ${showBeta ? `<form method="post" class="card"><h3>เบต้า ${h(showBeta.version)}</h3><p class="mut">ทดสอบเรียบร้อยแล้ว → ปล่อยให้ลูกค้าทุกคน (ใช้ไฟล์เดิม ไม่ต้องอัปโหลดใหม่)</p>
+    <input type="hidden" name="do" value="promote"><input type="hidden" name="version" value="${h(showBeta.version)}"><button>ปล่อย ${h(showBeta.version)} ให้ทุกคน</button></form>` : ''}
+  <form method="post" class="card"><h3>เบอร์ทดสอบเบต้า</h3><input type="hidden" name="do" value="beta_phones">
+    <label>เบอร์ (คั่นด้วย ,)<input name="phones" value="${h(betaPhones)}"></label><button>บันทึก</button></form>
   <form method="post" class="card"><h3>สร้างคีย์ลอย <small>(แบบเดิม ไม่ผูกสมาชิก)</small></h3><input type="hidden" name="do" value="create">
     <label>จำนวน<input name="n" type="number" value="1" min="1" max="200"></label>
     <label>แพ็กเกจ<select name="plan"><option value="life">ตลอดชีพ</option><option value="year">รายปี</option><option value="month">รายเดือน</option></select></label>
@@ -511,7 +544,7 @@ select{background:var(--in);color:var(--tx);border:1px solid var(--line);border-
 
 // หน้าดาวน์โหลดสำหรับลูกค้า (สาธารณะ) — เวอร์ชันล่าสุดเสมอ
 async function downloadPage(env, url) {
-  const r = await env.DB.prepare('SELECT version, size, notes, created_at FROM releases ORDER BY created_at DESC, rowid DESC LIMIT 1').first();
+  const r = await env.DB.prepare(`SELECT version, size, notes, created_at FROM releases WHERE ${STABLE} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
   const ver = r ? h(r.version) : '-', size = r ? (r.size / 1024).toFixed(0) + ' KB' : '';
   const date = r ? new Date(r.created_at * (r.created_at < 1e12 ? 1000 : 1)).toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short', year: 'numeric' }) : '';
   const html = `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -704,6 +737,12 @@ async function member(req, env) {
       <button class="sm">${btnTxt}</button></form>`).join('') || '<p class="mut">ยังไม่เปิดขายออนไลน์ — ติดต่อ ' + h(contact) + '</p>';
 
   // ----- เข้าระบบอัตโนมัติจากโปรแกรม -----
+  if (path === '/member/beta.zip') {
+    if (!((uid && await isBetaUser(db, uid)) || await validSession(db, req))) return new Response('เฉพาะสมาชิกทดสอบเบต้า', { status: 403 });
+    const r = await db.prepare("SELECT name, zip FROM releases WHERE channel='beta' ORDER BY created_at DESC, rowid DESC LIMIT 1").first();
+    if (!r) return new Response('ยังไม่มีเบต้า', { status: 404 });
+    return new Response(new Uint8Array(r.zip), { headers: { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="${r.name.replace('.zip', '-beta.zip')}"`, 'Cache-Control': 'no-store' } });
+  }
   if (path === '/member/auto') {
     const [p, sig] = String(url.searchParams.get('t') || '').split('.');
     if (p && sig) {
@@ -853,6 +892,7 @@ async function member(req, env) {
     }
   }
   const ks = (await db.prepare('SELECT * FROM keys WHERE user_id=? ORDER BY created_at').bind(uid).all()).results;
+  const betaRel = (await isBetaUser(db, uid)) ? await db.prepare("SELECT version, created_at FROM releases WHERE channel='beta' AND created_at >= COALESCE((SELECT MAX(created_at) FROM releases WHERE COALESCE(channel,'stable')='stable'),0) ORDER BY created_at DESC LIMIT 1").first() : null;
   const pendO = await db.prepare("SELECT id FROM orders WHERE user_id=? AND status='pending' ORDER BY created_at DESC LIMIT 1").bind(uid).first();
   const msgHtml = msg ? (msg[0] === '!' ? `<p class="msg bad">${h(msg.slice(1))}</p>` : `<p class="msg ok">${h(msg)}</p>`) : '';
   const keyCard = (r, i) => {
@@ -873,7 +913,7 @@ async function member(req, env) {
       <p class="small mut">ในโปรแกรมเข้าสู่ระบบด้วย <b>เบอร์ + รหัสผ่าน</b> ได้เลย ระบบเลือกเครื่องที่ว่างให้เอง · หรือกด "ใช้คีย์แทน" แล้วใส่คีย์ด้านล่าง</p>
       <div class="plans" style="grid-template-columns:1fr">${ks.map(keyCard).join('') || '<p class="mut">ยังไม่มีเครื่อง</p>'}</div>
       <details><summary style="cursor:pointer"><b>+ เพิ่มเครื่อง</b> <span class="mut small">ใช้ Sign Tools อีกเครื่องด้วยบัญชีเดียวกัน</span></summary><div class="plans" style="margin-top:10px">${planCards('add', null, 'ซื้อเพิ่ม')}</div></details>
-      <a class="btn ghost" href="/download">ดาวน์โหลดโปรแกรม</a></div>
+      <a class="btn ghost" href="/download">ดาวน์โหลดโปรแกรม</a>${betaRel ? `<a class="btn ghost" href="/member/beta.zip" style="margin-top:8px;border-color:#c9a227;color:#ffd979">ดาวน์โหลดเบต้า v${h(betaRel.version)} (เฉพาะคุณ)</a>` : ''}</div>
     <details class="card"><summary style="cursor:pointer"><b>ข้อมูลของฉัน</b></summary>
       <form method="post" style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
       <label>ชื่อ<input name="name" value="${h(u.name)}"></label><label>ชื่อร้าน<input name="shop" value="${h(u.shop)}"></label>
@@ -920,7 +960,7 @@ export default {
       if (url.pathname === '/member' || url.pathname.startsWith('/member/')) return await member(req, env);
       if (url.pathname === '/download' || url.pathname === '/download/') return await downloadPage(env, url);
       if (url.pathname === '/download/latest.zip') {
-        const r = await env.DB.prepare('SELECT name, zip FROM releases ORDER BY created_at DESC, rowid DESC LIMIT 1').first();
+        const r = await env.DB.prepare(`SELECT name, zip FROM releases WHERE ${STABLE} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
         if (!r) return new Response('not found', { status: 404 });
         return new Response(new Uint8Array(r.zip), { headers: { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="${r.name}"`, 'Cache-Control': 'no-store' } });
       }
