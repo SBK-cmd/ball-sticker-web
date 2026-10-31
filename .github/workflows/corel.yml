@@ -1,0 +1,27 @@
+name: corel-build
+on:
+  push:
+    branches: [signtools-corel]
+    paths: ['signtools-corel/**', '.github/workflows/corel.yml']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: probe
+        shell: pwsh
+        run: |
+          mkdir -Force build-out | Out-Null
+          "ok $(Get-Date -Format o)" | Out-File build-out/probe.txt
+          & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -find MSBuild\**\Bin\MSBuild.exe | Out-File -Append build-out/probe.txt
+          dotnet --list-sdks | Out-File -Append build-out/probe.txt
+      - name: publish
+        shell: pwsh
+        run: |
+          git config user.name ci; git config user.email ci@users.noreply.github.com
+          git fetch origin corel-out 2>$null
+          git checkout -B corel-out
+          git add -f build-out
+          git commit -m "build $env:GITHUB_SHA" ; git push -f origin corel-out
