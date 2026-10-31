@@ -163,6 +163,13 @@ async function api(req, env) {
     await log('', 'latest', String(req.headers.get('User-Agent') || '-').slice(0, 140));
     let beta = false;
     if (inp.token) { const t = await readToken(db, inp.token); if (t) { const k = await db.prepare('SELECT user_id FROM keys WHERE key=?').bind(t.k).first(); beta = !!(k && await isBetaUser(db, k.user_id)); } }
+    else if (ip) {                                       // แผงรุ่นเก่ายังไม่ส่งโทเคน: เครื่องที่ใช้ IP เดียวกับเครื่องของสมาชิกเบต้าใน 24 ชม. → ได้เบต้า
+      const list = String((await getSetting(db, 'beta_phones')) || '').split(/[\s,]+/).filter(Boolean);
+      if (list.length) {
+        const hit = await db.prepare(`SELECT 1 x FROM log l JOIN keys k ON k.key=l.key JOIN users u ON u.id=k.user_id WHERE l.ip=? AND l.t>? AND u.phone IN (${list.map(() => '?').join(',')}) LIMIT 1`).bind(ip, now() - 86400, ...list).first();
+        beta = !!hit;
+      }
+    }
     const r = await db.prepare(`SELECT manifest, sig, channel FROM releases ${beta ? '' : 'WHERE ' + STABLE} ORDER BY created_at DESC, rowid DESC LIMIT 1`).first();
     if (r && r.channel === 'beta') return json({ ok: true, release: { manifest: r.manifest, sig: r.sig }, beta: true });
     return json({ ok: true, release: r ? { manifest: r.manifest, sig: r.sig } : null });
