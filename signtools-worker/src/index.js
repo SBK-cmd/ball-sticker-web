@@ -174,6 +174,7 @@ async function api(req, env) {
     if (r && r.channel === 'beta') return json({ ok: true, release: { manifest: r.manifest, sig: r.sig }, beta: true });
     return json({ ok: true, release: r ? { manifest: r.manifest, sig: r.sig } : null });
   }
+  if (action === 'activate' || action === 'refresh') await log('', 'ua_' + action, String(req.headers.get('User-Agent') || '-').slice(0, 140));
   if (action === 'activate') {
     let key = normKey(inp.key);
     const machine = String(inp.machine || ''), mname = String(inp.name || '').slice(0, 80);
@@ -961,7 +962,7 @@ export default {
       if (url.pathname === '/admin/slip') return await adminSlip(req, env);
       if (url.pathname === '/admin/log') {
         if (!(await validSession(env.DB, req))) return new Response('login required', { status: 401 });
-        const rs = await env.DB.prepare("SELECT t, action, result, substr(key,1,8) k FROM log WHERE action IN ('member_link','member_auto','latest','diag','deactivate','refresh') ORDER BY t DESC LIMIT 30").all();
+        const rs = await env.DB.prepare("SELECT t, action, result, substr(key,1,8) k FROM log WHERE action IN ('member_link','member_auto','latest','diag','deactivate','refresh','activate','ua_activate','ua_refresh') ORDER BY t DESC LIMIT 30").all();
         return new Response(JSON.stringify(rs.results), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
       }
       if (url.pathname === '/member' || url.pathname.startsWith('/member/')) return await member(req, env);
