@@ -1232,7 +1232,7 @@ tr{break-inside:avoid}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap">
 <style id="bs-theme-p4">
 /* ===== แบบ 4: ตามแอปตัวอย่าง (Profender) — พื้นมุก การ์ดโค้งใหญ่ การ์ดย่อยมีขอบบาง ปุ่มแคปซูลเงา ไอคอนวงกลม =====
    ฟอนต์เดียว Prompt น้ำหนัก 400/500/600 เท่านั้น (ไม่ใช้ตัวหนาพิเศษ กันตัวเอียง/เบลอ)
@@ -1445,6 +1445,7 @@ svg{stroke-linecap:round;stroke-linejoin:round}
 .bkc-chip small{font-size:11.5px!important;line-height:1.4;white-space:nowrap}
 .bkc-flow{gap:10px}
 </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
 <style id="bs-theme-p5">
 /* ===== แบบ 5: ต่อจากแบบ 4 — หัวแอปกึ่งกลางและเมนู "เพิ่มเติม" เป็นช่องไอคอน (แบบหน้า Profile ในตัวอย่าง) ===== */
 @media (max-width:560px){
@@ -1632,6 +1633,88 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
 .bkc-chip b{font-size:18px!important;line-height:1.3;min-height:0!important}
 .bkc-chip small{font-size:11.5px!important;line-height:1.4;white-space:nowrap}
 .bkc-flow{gap:10px}
+</style>
+<style id="bs-theme-p6">
+/* ===== แบบ 6: ใช้บนมือถือง่ายขึ้น — หน้าคำนวณสั้นลง (พับเป็นหัวข้อ), แถบผลลัพธ์ติดบน, ปุ่ม/ตัวหนังสือใหญ่พอแตะ ===== */
+.acc-sum,.calc-bar{display:none}
+.acc-chev{display:none}
+@media (max-width:560px){
+  /* หัวหน้าและการ์ด */
+  .page-head{padding:6px 0 10px!important}
+  .page-head h1{font-size:22px!important}
+  .page-head p{display:none!important}
+  .card{padding:16px!important;border-radius:24px!important}
+  .card+.card,.card+section,.panel>.card+.card,.right>.card{margin-top:14px!important}
+  .right>.result{margin-top:14px!important}
+  /* ตัวหนังสือและช่องกรอก: ใหญ่พอแตะ */
+  body{font-size:16px!important}
+  .f>span{font-size:13.5px!important;font-weight:500!important;margin-bottom:6px!important}
+  .in,select,.txt{min-height:48px!important;border-radius:14px!important}
+  .in input{min-height:46px!important;font-size:17px!important}
+  .txt,select,textarea{font-size:16px!important;padding:10px 14px!important}
+  .btn{min-height:48px!important;font-size:16px!important;padding:0 20px!important}
+  .btn.small{min-height:40px!important;font-size:14.5px!important}
+  .unit-seg button{min-height:40px!important;font-size:15px!important}
+  .hint,.actions-note,p.hint{font-size:12.5px!important;color:var(--muted)!important}
+  .row2{gap:12px!important}
+  .fields{gap:14px!important}
+
+  /* หน้าคำนวณ: หัวข้อพับได้ */
+  #panel-calc .calc-grid>.card>fieldset{margin:0!important;padding:0!important;border:0!important}
+  #panel-calc .calc-grid>.card>fieldset+fieldset{border-top:1px solid var(--line)!important;margin-top:0!important}
+  #panel-calc fieldset legend{display:flex!important;align-items:center;gap:10px;width:100%;min-height:56px;margin:0!important;padding:0!important;font-size:16px!important;font-weight:600!important;color:var(--ink)!important;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  #panel-calc fieldset legend .acc-title{flex:none}
+  #panel-calc fieldset legend .acc-sum{display:block;flex:1;min-width:0;text-align:right;font-size:14px;font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #panel-calc fieldset legend .acc-chev{display:block;flex:none;width:20px;height:20px;color:#9a9fa8;transition:transform .2s}
+  #panel-calc fieldset.open legend .acc-chev{transform:rotate(180deg)}
+  #panel-calc fieldset.open legend .acc-sum{display:none}
+  #panel-calc fieldset .acc-body{display:none;padding:2px 0 16px}
+  #panel-calc fieldset.open .acc-body{display:block}
+
+  /* การ์ดผลลัพธ์กะทัดรัด */
+  .result{padding:18px!important;border-radius:24px!important}
+  .r-num #count{font-size:56px!important}
+  .r-meta{margin-top:10px!important;padding-top:10px!important}
+
+  /* ตัวอย่างการเรียง: พับได้ */
+  #viz-card .viz-head{cursor:pointer;min-height:44px;align-items:center}
+  #viz-card.collapsed #viz,#viz-card.collapsed .legend{display:none}
+  #viz-card .viz-head::after{content:"";width:10px;height:10px;border-right:2px solid #9a9fa8;border-bottom:2px solid #9a9fa8;transform:rotate(45deg);margin-left:8px;flex:none;transition:transform .2s}
+  #viz-card:not(.collapsed) .viz-head::after{transform:rotate(-135deg)}
+  #viz-card.collapsed .viz-head{margin-bottom:0}
+
+  /* แถบผลลัพธ์ติดบน (โผล่เมื่อเลื่อนผ่านการ์ดผลลัพธ์) */
+  .calc-bar{position:fixed;top:0;left:0;right:0;z-index:850;align-items:center;gap:10px;padding:calc(8px + env(safe-area-inset-top,0px)) 14px 10px;background:rgba(255,255,255,.96);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 8px 24px -14px rgba(20,22,26,.4);transform:translateY(-110%);transition:transform .2s;pointer-events:none}
+  .calc-bar.show{display:flex;transform:none;pointer-events:auto}
+  .calc-bar.show{display:flex}
+  .calc-bar .cb-n{font-size:26px;font-weight:600;line-height:1.1;color:var(--ink)}
+  .calc-bar .cb-n small{font-size:13px;font-weight:500;color:var(--muted);margin-left:4px}
+  .calc-bar .cb-s{font-size:12.5px;color:var(--muted);line-height:1.3}
+  .calc-bar .cb-t{flex:1;min-width:0}
+  .calc-bar button{flex:none;min-height:42px;padding:0 16px;border-radius:999px;border:1.5px solid #d9d9dd;background:#fff;font:500 14.5px 'IBM Plex Sans Thai','Sarabun',sans-serif;color:var(--ink)}
+  .calc-bar button.go{background:#16181b;border-color:#16181b;color:#fff}
+}
+@media (min-width:561px){
+  #panel-calc fieldset .acc-body{display:block!important}
+  #panel-calc fieldset legend .acc-sum,#panel-calc fieldset legend .acc-chev{display:none!important}
+}
+
+/* ===== UX audit (touch target ≥44px, อ่านง่าย, ปุ่มหลัก/รอง) ===== */
+.btn,.btn.small,#rimgBtn,#jSplit,#add-jobitem{min-height:44px!important}
+.btn.small,#rimgBtn,#jSplit{font-size:14.5px!important}
+.item .del{min-width:44px!important;min-height:44px!important}
+.rlock{min-height:44px!important}
+.bk-seg button,.dash-cat-link,.hist-search+*{min-height:44px}
+.dash-cat-link{padding:0 8px;display:inline-flex;align-items:center}
+input[type=file]{min-height:44px;font-size:14px;line-height:1.6}
+input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border:1.5px solid #d9d9d9;background:#fff;padding:0 14px;margin-right:10px;font:inherit;font-weight:600;color:#222;cursor:pointer}
+.sheet h3{font-size:12.5px}
+/* ปุ่มหลักเด่นกว่าปุ่มรองเสมอ */
+.btn.primary{font-weight:700!important;box-shadow:0 2px 0 rgba(0,0,0,.12)}
+.btn:not(.primary):not(.good):not(.danger){background:#fff;border:1.5px solid #d8d8d8;color:#222}
+/* ข้อความอธิบายรอง: เข้มขึ้นเพื่อให้อ่านชัด (คอนทราสต์) */
+.hint,.actions-note,.f>span{color:#4a4a4a!important}
+.unit-seg button{min-height:44px!important}
 </style>
 </head>
 <body>
@@ -1876,10 +1959,10 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
             <fieldset style="margin-bottom:0">
               <legend>ระยะเผื่อ</legend>
               <div class="row2">
-                <label class="f"><span>ช่องไฟระหว่างชิ้น</span><div class="in"><input id="gap" type="number" inputmode="decimal" step="any" min="0" value="0.1"><em>ซม.</em></div></label>
+                <label class="f"><span>ช่องไฟระหว่างชิ้น</span><div class="in"><input id="gap" type="number" inputmode="decimal" step="any" min="0" value="0.45" readonly tabindex="-1" aria-readonly="true"><em>ซม.</em></div></label>
                 <label class="f"><span>ขอบแต่ละด้าน</span><div class="in"><input id="margin" type="number" inputmode="decimal" step="any" min="0" value="0"><em>ซม.</em></div></label>
               </div>
-              <p class="hint">ช่องไฟ 0.1 ซม. = 1 มม. ขอบเท่ากันทั้ง 4 ด้าน คำนวณอัตโนมัติเมื่อเปลี่ยนขนาด</p>
+              <p class="hint">ช่องไฟระหว่างชิ้นคงที่ 0.45 ซม. (4.5 มม.) ขอบเท่ากันทั้ง 4 ด้าน คำนวณอัตโนมัติเมื่อเปลี่ยนขนาด</p>
             </fieldset>
             <fieldset style="margin-bottom:0">
               <legend>เติมพื้นที่ที่เหลือ (ไม่บังคับ)</legend>
@@ -2051,6 +2134,8 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
                 </div>
                 <div id="jobBankInList" hidden></div>
               </div>
+              <label class="f"><span>วางข้อความทั้งก้อน (งาน + ชื่อ เบอร์ ที่อยู่) แล้วกดแยก</span><textarea id="jPaste" placeholder="วางข้อความทั้งก้อน เช่น&#10;7cm 140ชิ้น&#10;แบบละ70ชิ้น&#10;นาย สมชาย ใจดี&#10;081-234-5678&#10;99 หมู่ 1 ต.ในเมือง อ.เมือง จ.พิษณุโลก 65000"></textarea></label>
+              <button class="btn small" id="jSplit" type="button">แยกงาน / ชื่อ / เบอร์ / ที่อยู่ อัตโนมัติ</button>
               <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="jName" type="text" autocomplete="off" list="customerNames"></label>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="jPhone" type="tel" autocomplete="off"></label>
               <label class="f"><span>ที่อยู่ลูกค้า (ถ้ามี)</span><textarea id="jAddr"></textarea></label>
@@ -2082,6 +2167,8 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
                 พิมพ์ใบคอนเฟิร์มงาน
               </button>
               <button class="btn" id="pdf-job" type="button">ดาวน์โหลด PDF</button>
+              <button class="btn" id="copy-confirm" type="button">คัดลอกข้อความยืนยัน</button>
+              <button class="btn" id="img-confirm" type="button">บันทึกเป็นรูปส่งแชท</button>
               <button class="btn good" id="save-job" type="button">บันทึกลงประวัติ</button>
               <button class="btn" id="job-to-bill" type="button">ใช้ข้อมูลนี้ออกบิล</button>
               <button class="btn" id="job-to-wholesale" type="button">ย้ายไปใบราคาส่ง</button>
@@ -2939,12 +3026,57 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=7272b5d3c4"],app="js/app.js?v=43c5d0387d",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=7272b5d3c4"],app="js/app.js?v=9b61a88ba4",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
 function go(){clean(document.body)}document.addEventListener('DOMContentLoaded',function(){go();var q;new MutationObserver(function(){clearTimeout(q);q=setTimeout(go,60)}).observe(document.body,{childList:true,subtree:true,characterData:true})})})();</script>
 <script>(function(){function ic(){document.querySelectorAll('.tax-sheet-item[data-tab]').forEach(function(b){if(b.querySelector('.tsi'))return;var s=document.querySelector('header.top .tabs button[data-tab="'+b.dataset.tab+'"] svg');if(!s)return;var w=document.createElement('span');w.className='tsi';w.setAttribute('aria-hidden','true');w.appendChild(s.cloneNode(true));b.insertBefore(w,b.firstChild)})}
 document.addEventListener('DOMContentLoaded',function(){ic();setTimeout(ic,800)})})();</script>
+<script>(function(){
+  var $=function(i){return document.getElementById(i)};
+  function init(){
+    var panel=$('panel-calc');if(!panel||panel.dataset.p6)return;panel.dataset.p6='1';
+    var fs=panel.querySelectorAll('.calc-grid>.card>fieldset');
+    var chev='<svg class="acc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+    fs.forEach(function(f,i){
+      var lg=f.querySelector('legend');if(!lg)return;
+      var t=lg.textContent.replace(/\s*\(ไม่บังคับ\)\s*$/,'');
+      lg.innerHTML='<span class="acc-title"></span><span class="acc-sum"></span>'+chev;lg.querySelector('.acc-title').textContent=t;
+      var body=document.createElement('div');body.className='acc-body';
+      while(lg.nextSibling)body.appendChild(lg.nextSibling);f.appendChild(body);
+      if(i===0)f.classList.add('open');
+      lg.addEventListener('click',function(){f.classList.toggle('open')});
+    });
+    function unit(){var b=document.querySelector('#sunit button.on');return b?b.textContent.trim():'ซม.'}
+    function sums(){
+      var s=fs[0]&&fs[0].querySelector('.acc-sum');if(s)s.textContent=$('sw').value+' × '+$('sh').value+' '+unit();
+      s=fs[1]&&fs[1].querySelector('.acc-sum');if(s){var o=$('paper');s.textContent=o.options[o.selectedIndex].text.replace(/ เซนติเมตร/,'')}
+      s=fs[2]&&fs[2].querySelector('.acc-sum');if(s)s.textContent='ช่องไฟ '+$('gap').value+' · ขอบ '+$('margin').value+' ซม.';
+      s=fs[3]&&fs[3].querySelector('.acc-sum');if(s)s.textContent=$('fillOn').checked?$('fw').value+' × '+$('fh').value+' ซม.':'ปิดอยู่';
+    }
+    panel.addEventListener('input',sums);panel.addEventListener('change',sums);panel.addEventListener('click',function(){setTimeout(sums,0)});
+    sums();
+    // ตัวอย่างการเรียง พับได้
+    var vc=$('viz')&&$('viz').closest('.card');var vh=vc&&vc.querySelector('.viz-head');
+    if(vc){vc.id='viz-card';vc.classList.add('collapsed');vh.addEventListener('click',function(){vc.classList.toggle('collapsed')})}
+    // แถบผลลัพธ์ติดบน
+    var bar=document.createElement('div');bar.className='calc-bar no-print';
+    bar.innerHTML='<div class="cb-t"><div class="cb-n"><span id="cbN">0</span><small>ชิ้น</small></div><div class="cb-s" id="cbS"></div></div><button type="button" id="cbPrice">คิดราคา</button><button type="button" class="go" id="cbGo">สั่งงาน</button>';
+    document.body.appendChild(bar);
+    function upd(){$('cbN').textContent=$('count').textContent;$('cbS').textContent=($('cols').textContent||'0')+' ต่อแถว × '+($('rows').textContent||'0')+' แถว'}
+    new MutationObserver(upd).observe($('count'),{childList:true,characterData:true,subtree:true});upd();
+    var res=panel.querySelector('.result');
+    function vis(show){bar.classList.toggle('show',show&&panel.classList.contains('active'))}
+    if('IntersectionObserver'in window&&res){
+      var io=new IntersectionObserver(function(e){var r=e[0];vis(!r.isIntersecting&&r.boundingClientRect.top<0)},{threshold:0});io.observe(res);
+    }
+    new MutationObserver(function(){if(!panel.classList.contains('active'))bar.classList.remove('show')}).observe(panel,{attributes:true,attributeFilter:['class']});
+    $('cbPrice').addEventListener('click',function(){var p=$('priceCard');if(p)p.scrollIntoView({behavior:'smooth',block:'start'})});
+    $('cbGo').addEventListener('click',function(){var b=document.querySelector('.btab[data-tab="confirm"]');if(b)b.click();window.scrollTo(0,0)});
+  }
+  if(document.readyState!=='loading')init();else document.addEventListener('DOMContentLoaded',init);
+})();
+</script>
 </body>
 </html>
