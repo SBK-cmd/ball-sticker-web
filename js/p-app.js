@@ -5225,6 +5225,8 @@ function bahtText(value) {
   $('jobHistory').addEventListener('click', e => {
     const btn = e.target.closest('button[data-act]');
     if (!btn) {
+      const zi = e.target.closest('.jd-ph img');
+      if (zi) { const z = document.createElement('div'); z.className = 'job-zoom'; z.innerHTML = '<img alt="รูปงาน">'; z.firstChild.src = zi.src; z.addEventListener('click', () => z.remove()); document.body.appendChild(z); return; }
       const li = e.target.closest('li[data-id]');
       if (!li || e.target.closest('select,a,.jd')) return;
       const id = li.dataset.id; jobOpenIds[id] = !jobOpenIds[id]; renderJobHistory(); return;
