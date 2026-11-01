@@ -397,6 +397,7 @@ textarea{resize:vertical;min-height:72px}
 #trackHistory li:has(.printed)::before{background:#2b7cc4}
 #trackHistory li:has(.shipped)::before{background:#2fa860}
 #trackHistory li:has(.pending)::before{background:#d59a10}
+#trackHistory li:has(.filed)::before{background:#e6b800}
 #trackHistory li:has(.trk-issue)::before{background:#e5484d}
 #trackHistory .meta{flex-basis:100%;display:flex;flex-direction:column;gap:3px;min-width:0}
 #trackHistory .meta b{font-size:16px;letter-spacing:.03em;font-variant-numeric:tabular-nums;color:var(--ink);word-break:break-all}
@@ -530,6 +531,7 @@ button.status-pill:hover{filter:brightness(0.95)}
 button.status-pill:active{filter:brightness(0.9)}
 .status-pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
 .status-pill.pending{background:var(--warn-bg);color:var(--warn-ink)}
+.status-pill.filed{background:#fff3c4;color:#6b4f00}
 .status-pill.printed{background:var(--blue-bg);color:var(--blue-ink)}
 .status-pill.shipped{background:#e6f6ea;color:#1a6b3a}
 .status-pill.trk-issue{background:#fdeaea;color:#b3261e}
@@ -2895,6 +2897,7 @@ html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!importa
           </div>
           <div class="dash-cat-list">
             <div class="dash-cat-item"><span>● รอทำ</span><b id="catJobPending">0 งาน</b></div>
+            <div class="dash-cat-item"><span>● ทำไฟล์แล้ว</span><b id="catJobFiled">0 งาน</b></div>
             <div class="dash-cat-item"><span>● ผลิตแล้ว</span><b id="catJobPrinted">0 งาน</b></div>
             <div class="dash-cat-item"><span>● จัดส่งแล้ว</span><b id="catJobShipped">0 งาน</b></div>
           </div>
@@ -3153,7 +3156,7 @@ html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!importa
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=7272b5d3c4"],app="js/p-app.js?v=35f6ee94ef",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=7272b5d3c4"],app="js/p-app.js?v=6409fe8066",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

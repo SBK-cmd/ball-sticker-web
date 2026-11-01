@@ -1572,6 +1572,7 @@ function bahtText(value) {
     }
     if ($('catJobPending')) {
       $('catJobPending').textContent = jobsAll.filter(j => (j.status || 'pending') === 'pending').length + ' งาน';
+      if ($('catJobFiled')) $('catJobFiled').textContent = jobsAll.filter(j => j.status === 'filed').length + ' งาน';
       $('catJobPrinted').textContent = jobsAll.filter(j => j.status === 'printed').length + ' งาน';
       $('catJobShipped').textContent = jobsAll.filter(j => j.status === 'shipped').length + ' งาน';
     }
@@ -3643,14 +3644,14 @@ function bahtText(value) {
   let currentJobId = null;
   let jobPhotos = [];
   let jobStatus = 'pending';
-  const JOB_STATUS_LABEL = {pending: 'รอทำ', printed: 'ผลิตแล้ว', shipped: 'จัดส่ง'};
+  const JOB_STATUS_LABEL = {pending: 'รอทำ', filed: 'ทำไฟล์แล้ว', printed: 'ผลิตแล้ว', shipped: 'จัดส่ง'};
   function renderJobStatusBadge() {
     const el = $('jobStatusBadge'); if (!el) return;
     el.className = 'status-pill ' + jobStatus;
     el.textContent = JOB_STATUS_LABEL[jobStatus] || JOB_STATUS_LABEL.pending;
   }
   function markJobPrinted() {
-    if (jobStatus !== 'pending') return;
+    if (jobStatus !== 'pending' && jobStatus !== 'filed') return;
     jobStatus = 'printed';
     renderJobStatusBadge();
     if (currentJobId) updateJobStatus(currentJobId, 'printed', {silent: true});
