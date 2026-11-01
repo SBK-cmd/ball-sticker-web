@@ -10,6 +10,7 @@ if (-not $me.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
   exit
 }
 $pkg = Split-Path -Parent (Split-Path -Parent $PSCommandPath)     # โฟลเดอร์ SignTools ที่แตกจาก zip
+Get-ChildItem $pkg -Recurse -File | Unblock-File -ErrorAction SilentlyContinue
 $addon = Join-Path $pkg '_addon'
 
 if (Get-Process -Name CorelDRW, CorelDRW64 -ErrorAction SilentlyContinue) {
@@ -50,6 +51,8 @@ foreach ($t in $targets) {
   if (Test-Path $app) { Remove-Item $app -Recurse -Force }
   New-Item -ItemType Directory -Force -Path $app | Out-Null
   Get-ChildItem $pkg -Force | Where-Object { $_.Name -notin '_addon', 'install-corel.bat' } | ForEach-Object { Copy-Item $_.FullName -Destination $app -Recurse -Force }
+  # ไฟล์จาก zip ที่โหลดจากเน็ตติดป้าย "มาจากอินเทอร์เน็ต" → .NET ใน Corel ไม่ยอมโหลด DLL → ปลดป้ายออก
+  Get-ChildItem $dst -Recurse -File | Unblock-File -ErrorAction SilentlyContinue
   $done += $t
 }
 

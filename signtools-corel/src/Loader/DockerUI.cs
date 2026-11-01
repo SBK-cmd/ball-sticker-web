@@ -19,12 +19,13 @@ namespace SignToolsCorel
         readonly object app;
         object host;
         MethodInfo hCall, hMsg;
-        WebView2 wv;
+        object wv;   // ไม่ใช้ชนิด WebView2 ตรงนี้ → โหลดคลาสได้แม้ยังหา DLL ของ WebView2 ไม่เจอ (ให้ AssemblyResolve ช่วยก่อน)
         static string addonDir;
 
         static DockerUI()
         {
-            addonDir = Path.GetDirectoryName(typeof(DockerUI).Assembly.Location);
+            try { addonDir = FindAddonDir(); } catch (Exception ex) { addonDir = ""; Log(ex); }
+            Trace("static ctor · addonDir=" + addonDir + " · clr=" + Environment.Version + " · x64=" + Environment.Is64BitProcess);
             AppDomain.CurrentDomain.AssemblyResolve += (s, e) =>
             {
                 try
@@ -39,14 +40,30 @@ namespace SignToolsCorel
             };
         }
 
+        static string FindAddonDir()
+        {
+            var a = typeof(DockerUI).Assembly; string d = null;
+            try { if (!string.IsNullOrEmpty(a.Location)) d = Path.GetDirectoryName(a.Location); } catch { }
+            if (string.IsNullOrEmpty(d)) try { d = Path.GetDirectoryName(new Uri(a.CodeBase).LocalPath); } catch { }
+            if (string.IsNullOrEmpty(d) || !File.Exists(Path.Combine(d, "AppUI.xslt"))) d = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Addons", "SignTools");
+            return d;
+        }
+
         public DockerUI() : this(null) { }
         public DockerUI(object app)
         {
+            Trace("ctor · app=" + (app == null ? "null" : app.GetType().FullName));
             this.app = app;
-            Background = new SolidColorBrush(Color.FromRgb(0x26, 0x26, 0x2b));
-            Say("กำลังเปิด Sign Tools…");
-            Loaded += (s, e) => { if (wv == null) Start(); };
+            try
+            {
+                Background = new SolidColorBrush(Color.FromRgb(0x26, 0x26, 0x2b));
+                Say("กำลังเปิด Sign Tools…");
+                Loaded += (s, e) => { if (!started) { started = true; Start(); } };
+                Dispatcher.BeginInvoke(new Action(() => { if (!started) { started = true; Start(); } }), System.Windows.Threading.DispatcherPriority.Background);
+            }
+            catch (Exception ex) { Log(ex); }
         }
+        bool started;
 
         void Say(string t)
         {
@@ -73,6 +90,7 @@ namespace SignToolsCorel
         async void Start()
         {
             string step = "เตรียมไฟล์";
+            Trace("start");
             try
             {
                 var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -96,10 +114,10 @@ namespace SignToolsCorel
                 try { rt = CoreWebView2Environment.GetAvailableBrowserVersionString(); } catch { }
                 if (string.IsNullOrEmpty(rt)) throw new Exception("เครื่องนี้ยังไม่มี Microsoft Edge WebView2 Runtime — ติดตั้งจาก https://go.microsoft.com/fwlink/p/?LinkId=2124703 แล้วเปิด CorelDRAW ใหม่");
                 var env = await CoreWebView2Environment.CreateAsync(null, Path.Combine(root, "WebView2"));
-                wv = new WebView2();
-                Content = wv;
-                await wv.EnsureCoreWebView2Async(env);
-                var core = wv.CoreWebView2;
+                var w2 = new WebView2(); wv = w2;
+                Content = w2;
+                await w2.EnsureCoreWebView2Async(env);
+                var core = w2.CoreWebView2;
                 core.Settings.AreDefaultContextMenusEnabled = true;
                 core.Settings.IsStatusBarEnabled = false;
                 core.Settings.IsZoomControlEnabled = false;
@@ -115,7 +133,9 @@ namespace SignToolsCorel
                     if (j != null) try { hMsg.Invoke(host, new object[] { j }); } catch (Exception ex) { Log(ex); }
                 };
                 core.NewWindowRequested += (s, e) => { e.Handled = true; try { System.Diagnostics.Process.Start(e.Uri); } catch { } };
+                core.NavigationCompleted += (s, e) => Trace("nav " + e.IsSuccess + " " + e.WebErrorStatus);
                 core.Navigate("https://signtools.corel/index.html");
+                Trace("navigate");
             }
             catch (Exception ex)
             {
@@ -132,8 +152,14 @@ namespace SignToolsCorel
         }
 
         static string Q(string s) { return "\"" + (s ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", " ").Replace("\n", " ") + "\""; }
+        static void Trace(string t)
+        {
+            foreach (var d in new[] { Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SignTools", "Corel"), Path.GetTempPath() })
+                try { Directory.CreateDirectory(d); File.AppendAllText(Path.Combine(d, "signtools-corel.log"), DateTime.Now.ToString("s") + " " + t + "\r\n"); } catch { }
+        }
         static void Log(Exception ex)
         {
+            Trace("ERROR " + ex);
             try
             {
                 var d = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SignTools", "Corel");
