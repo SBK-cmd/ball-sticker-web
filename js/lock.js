@@ -122,6 +122,26 @@
     card.classList.add('shake');
     setTimeout(function () { card.classList.remove('shake'); }, 400);
   }
+  function setLoginBusy(busy) {
+    var btn = document.getElementById('loginSubmitBtn');
+    var status = document.getElementById('loginStatus');
+    if (!btn || !status) return;
+    btn.disabled = busy;
+    btn.textContent = busy ? 'กำลังตรวจสอบ...' : 'เข้าสู่ระบบ';
+    status.textContent = busy ? 'กำลังตรวจสอบข้อมูลบัญชีของคุณ' : '';
+    status.hidden = !busy;
+  }
+  document.querySelectorAll('[data-password-target]').forEach(function (toggle) {
+    toggle.addEventListener('click', function () {
+      var input = document.getElementById(toggle.getAttribute('data-password-target'));
+      if (!input) return;
+      var visible = input.type === 'text';
+      input.type = visible ? 'password' : 'text';
+      toggle.textContent = visible ? 'แสดง' : 'ซ่อน';
+      toggle.setAttribute('aria-pressed', String(!visible));
+      input.focus();
+    });
+  });
 
   // แสดงข้อความระหว่างรอเช็กคลาวด์ ก่อนตัดสินใจว่าจะขึ้นหน้าตั้งค่าบัญชีเจ้าของร้าน หรือหน้าเข้าสู่ระบบ
   var loadingMsg = document.getElementById('lockLoading'); // อยู่ใน HTML เลย — ขึ้นจอได้ทันทีไม่ต้องรอโหลดสคริปต์
@@ -200,6 +220,7 @@
     var pass = document.getElementById('loginPass').value;
     var err = document.getElementById('loginErr');
     err.hidden = true;
+    setLoginBusy(true);
     function findAndCheck(list) {
       var user = list.find(function (u) { return u.username.toLowerCase() === uname.toLowerCase(); });
       if (!user) return Promise.resolve(null);
@@ -214,7 +235,7 @@
       }
       // ไม่เจอในแคชเครื่องนี้ หรือรหัสผ่านไม่ตรง — ถ้ามีคลาวด์ ลองดึงข้อมูลล่าสุดมาเช็กอีกที
       // เผื่อเพิ่งสมัคร/แก้รหัสผ่านจากเครื่องอื่นมา แล้วเครื่องนี้ยังไม่เคยซิงค์
-      if (!usersDocRef) { err.hidden = false; shake(); document.getElementById('loginPass').value = ''; document.getElementById('loginPass').focus(); return; }
+      if (!usersDocRef) { setLoginBusy(false); err.hidden = false; shake(); document.getElementById('loginPass').value = ''; document.getElementById('loginPass').focus(); return; }
       fetchCloudUsers().then(function (cloudList) {
         if (!cloudList) return null;
         saveUsersLocal(cloudList);
@@ -225,10 +246,11 @@
           location.reload();
         } else {
           err.hidden = false; shake();
+          setLoginBusy(false);
           document.getElementById('loginPass').value = '';
           document.getElementById('loginPass').focus();
         }
-      }).catch(function () { err.hidden = false; shake(); });
+      }).catch(function () { setLoginBusy(false); err.textContent = 'เชื่อมต่อระบบบัญชีไม่ได้ กรุณาลองใหม่'; err.hidden = false; shake(); });
     });
   });
 

@@ -176,7 +176,7 @@ a{color:inherit}
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;padding:18px 0 14px;margin-bottom:6px;border-bottom:1px solid var(--line)}
 .brand{display:flex;align-items:center;gap:12px;text-decoration:none}
 .mark{width:44px;height:44px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font:700 22px 'Prompt',sans-serif;box-shadow:inset -6px -6px 0 rgba(16,35,63,.14),0 4px 10px -4px rgba(16,35,63,.35);flex:none}
-.mark.img{background:#000;object-fit:cover;box-shadow:0 4px 10px -4px rgba(16,35,63,.35)}
+.mark.img{background:transparent;object-fit:contain;box-shadow:none}
 .brand b{display:block;font:700 18px/1.1 'Prompt',sans-serif}
 .brand small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
 .top-track{display:none}
@@ -324,21 +324,35 @@ a{color:inherit}
 .lock-card,.lock-card *{font-family:system-ui,-apple-system,'Segoe UI','Noto Sans Thai',Tahoma,sans-serif!important}
 /* ระหว่างยังล็อกอยู่ ซ่อนเนื้อหาแอปด้านหลังไว้ (กันหน้าจอขยับ และไม่ต้องวาดสิ่งที่มองไม่เห็น) */
 #lockScreen:not([hidden]) ~ *{visibility:hidden}
-.lock-card{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:30px 26px;max-width:360px;width:100%;text-align:center;box-shadow:var(--shadow-2);margin:auto}
-.lock-card h2{font-size:19px;margin:0 0 4px}
-.lock-card p{color:var(--muted);font-size:14px;margin:0 0 22px}
+.lock-card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:32px 28px 26px;max-width:400px;width:100%;text-align:center;box-shadow:var(--shadow-2);margin:auto}
+.lock-card h2{font-size:21px;line-height:1.3;margin:0 0 6px;letter-spacing:-.01em}
+.lock-card p{color:var(--muted);font-size:14px;line-height:1.55;margin:0 0 22px}
+.lock-card .mark.img{width:76px;height:65px;object-fit:contain;margin-bottom:12px!important}
 .lock-card.shake{animation:lockShake .4s}
 @keyframes lockShake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-8px)}40%,60%{transform:translateX(8px)}}
-.lock-form{display:flex;flex-direction:column;gap:14px;text-align:left;margin-top:4px}
-.lock-form .f span{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:5px;display:block}
-.lock-link{margin-top:16px;background:none;border:0;color:var(--sticker-line);font-weight:600;font-size:13.5px;cursor:pointer;text-decoration:underline;padding:4px}
-.lock-err{color:#c2261f;font-weight:600;font-size:13.5px;min-height:18px;text-align:left;margin:0}
+.lock-form{display:flex;flex-direction:column;gap:16px;text-align:left;margin-top:6px}
+.lock-form .f>span:first-child{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:6px;display:block}
+.lock-form .f>span.lock-input{display:flex;align-items:center;gap:8px;background:var(--field);border:1.5px solid var(--field-line);border-radius:14px;padding-right:10px;margin-bottom:0;transition:border-color .15s,box-shadow .15s}
+.lock-input:focus-within{border-color:var(--sticker-line);box-shadow:0 0 0 3px color-mix(in srgb,var(--sticker-line) 18%,transparent)}
+.lock-input .txt{flex:1;min-width:0;border:0!important;background:transparent!important;box-shadow:none!important;border-radius:14px!important}
+.lock-password-toggle{border:0;background:transparent;color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;padding:8px 2px;white-space:nowrap}
+.lock-password-toggle:hover{color:var(--ink)}
+.lock-submit{position:relative}
+.lock-submit[disabled]{cursor:wait;opacity:.72}
+.lock-status{color:var(--muted)!important;font-size:13px!important;min-height:20px;text-align:center;margin:0!important}
+.lock-link{margin-top:14px;background:none;border:0;color:var(--sticker-line);font-weight:600;font-size:13.5px;cursor:pointer;text-decoration:underline;padding:6px 8px;min-height:36px}
+.lock-secondary{background:transparent!important;border-color:var(--line)!important;color:var(--ink)!important}
+.lock-err{color:#c2261f;font-weight:600;font-size:13.5px;min-height:20px;text-align:left;margin:0}
 @media (max-height:560px){
-  .lock-card{padding:18px 20px;max-width:320px}
-  .lock-card h2{font-size:16px;margin-bottom:2px}
+  .lock-card{padding:20px 20px;max-width:360px}
+  .lock-card h2{font-size:18px;margin-bottom:2px}
   .lock-card p{font-size:12.5px;margin-bottom:14px}
-  .lock-card .mark{margin:0 auto 8px!important}
-  .lock-form{gap:10px}
+  .lock-card .mark.img{margin:0 auto 8px!important}
+  .lock-form{gap:11px}
+}
+@media (max-width:420px){
+  .lock-screen{padding:12px}
+  .lock-card{padding:26px 20px 22px;border-radius:20px}
 }
 
 /* ---------- page ---------- */
@@ -1257,12 +1271,12 @@ tr{break-inside:avoid}
 <div id="lockScreen" class="lock-screen no-print">
   <div class="lock-card" id="lockCard">
     <div id="lockLoading" style="text-align:center;padding:8px 0 4px">
-      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp" width="90" height="77">
+      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
       <p style="color:#7a7f8a;margin:0;padding:8px 0 16px">กำลังตรวจสอบบัญชี...</p>
     </div>
 
     <div id="lockSetupView" hidden>
-      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp" width="90" height="77">
+      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
       <h2>ตั้งค่าบัญชีเจ้าของร้าน</h2>
       <p>สร้างบัญชีแรกสำหรับเข้าใช้งานระบบ — เป็นบัญชี “เจ้าของร้าน” ที่มีสิทธิ์เต็ม เพิ่มบัญชีพนักงานได้ภายหลัง</p>
       <form id="lockSetupForm" class="lock-form" onsubmit="return window.bsLockSubmit ? bsLockSubmit(this) : false">
@@ -1276,21 +1290,22 @@ tr{break-inside:avoid}
     </div>
 
     <div id="lockLoginView" hidden>
-      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp" width="90" height="77">
+      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
       <h2>เข้าสู่ระบบ</h2>
       <p>ระบบภายในร้านบอลสติ๊กเกอร์ พิษณุโลก</p>
       <form id="lockLoginForm" class="lock-form" onsubmit="return window.bsLockSubmit ? bsLockSubmit(this) : false">
         <label class="f"><span>ชื่อผู้ใช้</span><input class="txt" id="loginUser" type="text" autocomplete="username" autocapitalize="off" required></label>
-        <label class="f"><span>รหัสผ่าน</span><input class="txt" id="loginPass" type="password" autocomplete="current-password" required></label>
-        <p class="lock-err" id="loginErr" hidden>ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</p>
-        <button class="btn primary" type="submit" style="width:100%">เข้าสู่ระบบ</button>
+        <label class="f"><span>รหัสผ่าน</span><span class="lock-input"><input class="txt" id="loginPass" type="password" autocomplete="current-password" required><button type="button" class="lock-password-toggle" data-password-target="loginPass" aria-pressed="false">แสดง</button></span></label>
+        <p class="lock-err" id="loginErr" hidden aria-live="polite">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</p>
+        <p class="lock-status" id="loginStatus" hidden aria-live="polite"></p>
+        <button class="btn primary lock-submit" id="loginSubmitBtn" type="submit" style="width:100%">เข้าสู่ระบบ</button>
       </form>
-      <button type="button" class="btn" id="lockRegisterBtn" style="width:100%;margin-top:10px">สมัครสมาชิก</button>
+      <button type="button" class="btn lock-secondary" id="lockRegisterBtn" style="width:100%;margin-top:10px">สมัครสมาชิก</button>
       <button type="button" class="lock-link" id="lockForgotBtn">ลืมรหัสผ่าน?</button>
     </div>
 
     <div id="lockRegisterView" hidden>
-      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp" width="90" height="77">
+      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
       <h2>สมัครสมาชิกใหม่</h2>
       <p>สร้างบัญชีผู้ใช้งาน (สิทธิ์ “พนักงาน”) สำหรับเข้าใช้งานระบบร้านบอลสติ๊กเกอร์ พิษณุโลก</p>
       <form id="lockRegisterForm" class="lock-form" onsubmit="return window.bsLockSubmit ? bsLockSubmit(this) : false">
@@ -1305,7 +1320,7 @@ tr{break-inside:avoid}
     </div>
 
     <div id="lockResetView" hidden>
-      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp" width="90" height="77">
+      <img class="mark img" style="margin:0 auto 14px" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
       <h2>ลืมรหัสผ่าน</h2>
       <p>ให้ผู้ดูแลระบบ (บัญชี <b>@ball</b>) ตั้งรหัสผ่านใหม่ให้ ที่เมนู <b>จัดการผู้ใช้งานและสิทธิ์</b> → ปุ่ม <b>รหัสผ่าน</b> ข้างชื่อของคุณ แล้วกลับมาเข้าสู่ระบบด้วยรหัสใหม่</p>
       <p class="hint" style="margin:0 0 10px">ร้าน <span id="resetShopName"></span> · ระบบนี้ไม่มีปุ่มล้างบัญชีจากหน้าเข้าสู่ระบบแล้ว เพื่อไม่ให้ใครตั้งตัวเองเป็นเจ้าของร้านได้</p>
@@ -1441,6 +1456,26 @@ tr{break-inside:avoid}
     card.classList.add('shake');
     setTimeout(function () { card.classList.remove('shake'); }, 400);
   }
+  function setLoginBusy(busy) {
+    var btn = document.getElementById('loginSubmitBtn');
+    var status = document.getElementById('loginStatus');
+    if (!btn || !status) return;
+    btn.disabled = busy;
+    btn.textContent = busy ? 'กำลังตรวจสอบ...' : 'เข้าสู่ระบบ';
+    status.textContent = busy ? 'กำลังตรวจสอบข้อมูลบัญชีของคุณ' : '';
+    status.hidden = !busy;
+  }
+  document.querySelectorAll('[data-password-target]').forEach(function (toggle) {
+    toggle.addEventListener('click', function () {
+      var input = document.getElementById(toggle.getAttribute('data-password-target'));
+      if (!input) return;
+      var visible = input.type === 'text';
+      input.type = visible ? 'password' : 'text';
+      toggle.textContent = visible ? 'แสดง' : 'ซ่อน';
+      toggle.setAttribute('aria-pressed', String(!visible));
+      input.focus();
+    });
+  });
 
   // แสดงข้อความระหว่างรอเช็กคลาวด์ ก่อนตัดสินใจว่าจะขึ้นหน้าตั้งค่าบัญชีเจ้าของร้าน หรือหน้าเข้าสู่ระบบ
   var loadingMsg = document.getElementById('lockLoading'); // อยู่ใน HTML เลย — ขึ้นจอได้ทันทีไม่ต้องรอโหลดสคริปต์
@@ -1519,6 +1554,7 @@ tr{break-inside:avoid}
     var pass = document.getElementById('loginPass').value;
     var err = document.getElementById('loginErr');
     err.hidden = true;
+    setLoginBusy(true);
     function findAndCheck(list) {
       var user = list.find(function (u) { return u.username.toLowerCase() === uname.toLowerCase(); });
       if (!user) return Promise.resolve(null);
@@ -1533,7 +1569,7 @@ tr{break-inside:avoid}
       }
       // ไม่เจอในแคชเครื่องนี้ หรือรหัสผ่านไม่ตรง — ถ้ามีคลาวด์ ลองดึงข้อมูลล่าสุดมาเช็กอีกที
       // เผื่อเพิ่งสมัคร/แก้รหัสผ่านจากเครื่องอื่นมา แล้วเครื่องนี้ยังไม่เคยซิงค์
-      if (!usersDocRef) { err.hidden = false; shake(); document.getElementById('loginPass').value = ''; document.getElementById('loginPass').focus(); return; }
+      if (!usersDocRef) { setLoginBusy(false); err.hidden = false; shake(); document.getElementById('loginPass').value = ''; document.getElementById('loginPass').focus(); return; }
       fetchCloudUsers().then(function (cloudList) {
         if (!cloudList) return null;
         saveUsersLocal(cloudList);
@@ -1544,10 +1580,11 @@ tr{break-inside:avoid}
           location.reload();
         } else {
           err.hidden = false; shake();
+          setLoginBusy(false);
           document.getElementById('loginPass').value = '';
           document.getElementById('loginPass').focus();
         }
-      }).catch(function () { err.hidden = false; shake(); });
+      }).catch(function () { setLoginBusy(false); err.textContent = 'เชื่อมต่อระบบบัญชีไม่ได้ กรุณาลองใหม่'; err.hidden = false; shake(); });
     });
   });
 
@@ -1601,7 +1638,7 @@ tr{break-inside:avoid}
 
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
-      <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160.webp" width="90" height="77">
+      <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
       <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์ · เวอร์ชัน 9</small></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
