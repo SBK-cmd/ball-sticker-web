@@ -18,3 +18,5 @@ Disallow: /js/
 
 Sitemap: https://www.ballsticker.co.th/sitemap.xml
 Disallow: /office-preview.html
+Disallow: /preview6.html
+Disallow: /preview7.html
