@@ -88,3 +88,20 @@ html body .history li.open{border-color:#f3d36b;box-shadow:none}
   html body .card{padding:20px;border-radius:24px}
 }
 html body .in input,html body .in select{border:0!important;background:transparent!important;border-radius:0!important;box-shadow:none!important;min-height:0!important;padding-left:0}
+
+/* ===== ไม่มีขอบสีเหลือง: ช่องกรอกเป็นพื้นเทาอ่อนไร้ขอบ การ์ดใช้เงาเทาบางๆ แทนเส้นขอบ ===== */
+:root[data-theme]{--line:#ececf0;--field-line:#ececf0;--yline:transparent}
+html body .card,html body .dash-stat-card,html body .lock-card,html body .history li,html body .history li.open{border:0;box-shadow:0 2px 16px rgba(25,25,50,.07)}
+html body .in,html body select,html body .txt,html body textarea,html body input[type=text],html body input[type=tel],html body input[type=number],html body input[type=date],html body input[type=search],html body input[type=password],html body input[type=email]{border:1.5px solid transparent;background:#f4f4f7}
+html body .in[readonly],html body input[readonly]{background:#ebebef;border-color:transparent}
+html body .in:focus-within,html body select:focus-visible,html body .txt:focus-visible,html body textarea:focus-visible{border-color:var(--navy);box-shadow:0 0 0 3px rgba(27,27,47,.10);background:#fff}
+html body .btn{border:0;background:#f4f4f7;color:var(--navy)}
+html body .btn.primary{background:#ffc300}
+html body .btn.good,html body .btn.dark{background:var(--navy);color:#fff}
+html body .btn.danger{background:#fdecea;color:#b3261e}
+html body .btn[style*=dashed],html body #new-job,html body #rimgBtn{border:1.5px dashed #d6d6de;background:#fff}
+html body .bk-seg,html body .unit-seg{background:#f4f4f7;border:0}
+html body .notice,html body .edit-state,html body .info-pill{background:#fff6d6;border:0;color:#5d4500}
+@media (max-width:560px){html body header.top,html body .bnav{border:0}}
+html body .dash-tile,html body .dash-tile.blue-tile,html body .dash-tile.warn-tile{border:0}
+html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!important;outline:0!important;box-shadow:0 8px 20px -6px rgba(20,20,40,.45)!important}
