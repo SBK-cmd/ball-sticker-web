@@ -274,8 +274,8 @@
     host('st_stkRead').then(function (r) {
       if (r.error) { toast('⚠ ' + r.error); return; }
       items = r.items; qty = {};
-      MM = MM0 / (r.sf || 1);
-      $('stkHint').textContent = 'อ่านได้ ' + items.length + ' ลาย' + (r.sf > 1 ? ' · ไฟล์ Large Canvas (สเกล 1:' + r.sf + ')' : '') + (items.length > 1 && mode() === 'fill' ? ' — เลือก "หลายลาย" เพื่อใส่จำนวนแต่ละลาย' : '');
+      MM = r.unit === 'mm' ? 1 : MM0 / (r.sf || 1);   // CorelDRAW ส่งค่าเป็น มม. อยู่แล้ว
+      $('stkHint').textContent = 'อ่านได้ ' + items.length + ' ลาย' + (r.sf > 1 && r.unit !== 'mm' ? ' · ไฟล์ Large Canvas (สเกล 1:' + r.sf + ')' : '') + (items.length > 1 && mode() === 'fill' ? ' — เลือก "หลายลาย" เพื่อใส่จำนวนแต่ละลาย' : '');
       $('stkWarn').textContent = '';
       recalc();
     });

@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 
 namespace SignTools
 {
-    public class CorelOps
+    public partial class CorelOps
     {
         const int cdrMillimeter = 3;
         const int cdrTextShape = 6, cdrBitmapShape = 5, cdrGroupShape = 7, cdrGuidelineShape = 9;

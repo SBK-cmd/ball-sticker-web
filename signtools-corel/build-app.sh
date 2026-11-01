@@ -20,7 +20,7 @@ s = s.replace('<script src="js/config.js"></script>',
   '<script src="corel/buffer.js"></script>\n<script src="corel/shim.js"></script>\n<script src="js/config.js"></script>\n'
   '<script>ST_CONFIG.product = \'cdr\'; ST_CONFIG.dataSub = \'\\\\Corel\';</script>', 1)
 s = s.replace('</head>', '<link rel="stylesheet" href="corel/corel.css">\n</head>', 1)
-s = s.replace('<section id="tab-home" class="pane active">', '<section id="tab-home" class="pane active">\n  <div class="corelsoon">CorelDRAW เวอร์ชันแรก: ใช้ได้เฉพาะ <b>ส่งตัด</b> ก่อน · เครื่องมืออื่นกำลังทยอยเปิด</div>', 1)
+s = s.replace('<section id="tab-home" class="pane active">', '<section id="tab-home" class="pane active">\n  <div class="corelsoon">CorelDRAW: ใช้ได้ <b>ส่งตัด</b> และ <b>เรียงสติ๊กเกอร์</b> · เครื่องมืออื่นกำลังทยอยเปิด</div>', 1)
 assert 'corel/shim.js' in s
 for f in [p] + glob.glob(os.path.join(out, 'js', '*.js')):
     t = s if f == p else open(f, encoding='utf8').read()
