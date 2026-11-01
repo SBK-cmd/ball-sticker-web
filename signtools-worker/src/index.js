@@ -973,7 +973,7 @@ export default {
         if (req.method === 'OPTIONS') return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' } });
         return await api(req, env);
       }
-      const rm = url.pathname.match(/^\/releases\/(SignTools-v\d+\.\d+\.\d+\.zip)$/);
+      const rm = url.pathname.match(/^\/releases\/(SignTools(?:Corel)?-v\d+\.\d+\.\d+\.zip)$/);
       if (rm) {
         const r = await env.DB.prepare('SELECT zip FROM releases WHERE name=?').bind(rm[1]).first();
         if (!r) return new Response('not found', { status: 404 });
