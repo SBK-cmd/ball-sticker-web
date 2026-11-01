@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080f1d">
+  <title>Ball Sticker — Mobile Preview</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans Thai", sans-serif; background: #080f1d; color: #eef3fa; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at 50% 0%, #1e3558 0, #080f1d 48%, #050a12 100%); }
+    .stage { width: min(100%, 430px); display: grid; gap: 14px; justify-items: center; }
+    .note { text-align: center; color: #b8c7de; font-size: 14px; line-height: 1.5; }
+    .phone { width: min(100%, 390px); padding: 12px; border: 1px solid #536784; border-radius: 42px; background: #111b2c; box-shadow: 0 26px 70px rgba(0,0,0,.55), inset 0 0 0 5px #070c15; }
+    .phone-top { height: 24px; display: grid; place-items: center; }
+    .notch { width: 108px; height: 22px; border-radius: 0 0 16px 16px; background: #070c15; }
+    .screen { position: relative; overflow: hidden; border-radius: 28px; background: #0b1220; aspect-ratio: 390 / 844; }
+    iframe { display: block; width: 100%; height: 100%; border: 0; background: #0b1220; }
+    .phone-bottom { height: 22px; display: grid; place-items: center; }
+    .home-bar { width: 112px; height: 4px; border-radius: 99px; background: #8797ad; opacity: .8; }
+    .open-link { color: #ffd23f; font-weight: 700; text-decoration: none; font-size: 13px; }
+    .open-link:hover { text-decoration: underline; }
+    @media (max-width: 460px) {
+      body { padding: 12px; }
+      .phone { border-radius: 32px; padding: 8px; }
+      .screen { border-radius: 24px; }
+      .phone-top, .phone-bottom { height: 18px; }
+      .notch { height: 17px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <div class="note">Mobile Preview — กดปุ่มและกรอกข้อมูลในหน้าจอได้</div>
+    <section class="phone" aria-label="ตัวอย่างหน้าจอโทรศัพท์">
+      <div class="phone-top"><div class="notch" aria-hidden="true"></div></div>
+      <div class="screen"><iframe src="/?from=mobile-preview" title="Ball Sticker App จริงบนมือถือ"></iframe></div>
+      <div class="phone-bottom"><div class="home-bar" aria-hidden="true"></div></div>
+    </section>
+    <a class="open-link" href="/">เปิด App จริงเต็มจอ</a>
+  </main>
+</body>
+</html>
