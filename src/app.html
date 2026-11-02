@@ -2846,7 +2846,7 @@ tr{break-inside:avoid}
       <p class="lock-err" id="addUserErr" hidden></p>
       <button class="btn primary" type="submit">เพิ่มบัญชี</button>
     </form>
-    <p class="hint">“แบบพนักงาน” เปิดได้ คำนวณสติ๊กเกอร์ · คำนวณ VAT · ใบคอนเฟิร์มงาน · ติดตามพัสดุ (ไม่เห็นราคาและเงินเข้า-ออก) — กดปุ่ม “สิทธิ์” ข้างชื่อเพื่อเลือกเองทีละหน้า เครื่องที่เขาเปิดอยู่จะอัปเดตเองทันที</p>
+    <p class="hint">“แบบพนักงาน” เปิดได้เฉพาะ ใบคอนเฟิร์มงาน (ไม่เห็นราคาและเงินเข้า-ออก) — กดปุ่ม “สิทธิ์” ข้างชื่อเพื่อเลือกเองทีละหน้า เครื่องที่เขาเปิดอยู่จะอัปเดตเองทันที</p>
   </div>
 </div>
 
@@ -2973,7 +2973,7 @@ function bahtText(value) {
   ];
   const PAGE_KEYS = PERM_GROUPS[0].items.map(x => x[0]);
   const PERM_KEYS = PERM_GROUPS.reduce((a, g) => a.concat(g.items.map(x => x[0])), []);
-  const STAFF_PERMS = ['calc', 'vat', 'confirm', 'track'];
+  const STAFF_PERMS = ['confirm'];
   const isSuperUser = u => !!u && String(u.username || '').trim().toLowerCase() === SUPER_ADMIN;
   function permsOf(u) {
     const o = {};

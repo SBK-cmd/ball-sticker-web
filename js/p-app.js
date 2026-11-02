@@ -89,7 +89,7 @@ function bahtText(value) {
   ];
   const PAGE_KEYS = PERM_GROUPS[0].items.map(x => x[0]);
   const PERM_KEYS = PERM_GROUPS.reduce((a, g) => a.concat(g.items.map(x => x[0])), []);
-  const STAFF_PERMS = ['calc', 'vat', 'confirm', 'track'];
+  const STAFF_PERMS = ['confirm'];
   const isSuperUser = u => !!u && String(u.username || '').trim().toLowerCase() === SUPER_ADMIN;
   function permsOf(u) {
     const o = {};
