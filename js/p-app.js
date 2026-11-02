@@ -3645,6 +3645,11 @@ function bahtText(value) {
   let jobPhotos = [];
   let jobStatus = 'pending';
   const JOB_STATUS_LABEL = {pending: 'รอทำ', filed: 'ทำไฟล์แล้ว', printed: 'ผลิตแล้ว', shipped: 'จัดส่ง'};
+  // ไม่มีสิทธิ์เห็นเงิน (เช่น พนักงาน): ซ่อนช่องบัญชี/ยอดสลิป/คำอธิบายในใบคอนเฟิร์มงาน (ค่าที่บันทึกไว้เดิมยังอยู่ ไม่ถูกลบ)
+  if (!canBank) {
+    const acc = $('jobAccount'), row = acc && acc.closest('.row2');
+    if (row) { row.hidden = true; const h = row.nextElementSibling; if (h && h.classList.contains('hint')) h.hidden = true; }
+  }
   function renderJobStatusBadge() {
     const el = $('jobStatusBadge'); if (!el) return;
     el.className = 'status-pill ' + jobStatus;
@@ -3810,7 +3815,7 @@ function bahtText(value) {
     $('jobHistory').innerHTML = notice + '<ul>' + shown.map(j => {
       const st = j.status || 'pending';
       return '<li data-id="' + esc(j.id) + '"' + (jobOpenIds[j.id] ? ' class="open"' : '') + '>' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '') +
-      '<div class="meta"><b>' + esc(j.no) + '</b><small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[j.page] ? ' · ' + esc(PAGE_LABEL[j.page]) : '') + (j.account ? ' · บัญชี ' + esc(j.account) : '') + (num(j.slipAmount) > 0 ? ' · สลิป ' + money(num(j.slipAmount)) + ' บาท' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
+      '<div class="meta"><b>' + esc(j.no) + '</b><small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[j.page] ? ' · ' + esc(PAGE_LABEL[j.page]) : '') + (canBank && j.account ? ' · บัญชี ' + esc(j.account) : '') + (canBank && num(j.slipAmount) > 0 ? ' · สลิป ' + money(num(j.slipAmount)) + ' บาท' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
       '<select class="job-status-select status-pill ' + st + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
       '</select>' +
