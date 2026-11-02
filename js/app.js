@@ -205,6 +205,8 @@ function bahtText(value) {
         if (prev) {
           if ((rec.photos == null || (Array.isArray(rec.photos) && !rec.photos.length)) && prev.photos && prev.photos.length) rec.photos = prev.photos;
           if (rec.photo == null && prev.photo) rec.photo = prev.photo;
+          if ((rec.donePhotos == null || (Array.isArray(rec.donePhotos) && !rec.donePhotos.length)) && prev.donePhotos && prev.donePhotos.length) rec.donePhotos = prev.donePhotos;
+          if (rec.boxPhoto == null && prev.boxPhoto) rec.boxPhoto = prev.boxPhoto;
         }
         list.push(rec);
       });
@@ -261,6 +263,8 @@ function bahtText(value) {
     const hasDataUri = v => Array.isArray(v) ? v.some(p => typeof p === 'string' && p.indexOf('data:') === 0) : (typeof v === 'string' && v.indexOf('data:') === 0);
     if (hasDataUri(safeRec.photos)) delete safeRec.photos;
     if (hasDataUri(safeRec.photo)) delete safeRec.photo;
+    if (hasDataUri(safeRec.donePhotos)) delete safeRec.donePhotos;
+    if (hasDataUri(safeRec.boxPhoto)) delete safeRec.boxPhoto;
     (window.__bsAuthReady || Promise.resolve()).then(() => {
       cloudDb.collection(col).doc(String(rec.id)).set(safeRec, {merge: true}).catch(e => console.error(col + ' save error', e));
     });
@@ -279,7 +283,8 @@ function bahtText(value) {
       const idx = list.findIndex(r => r.id === id);
       if (idx < 0) return;
       const rec = list[idx];
-      const arr = field === 'photos' ? (Array.isArray(rec.photos) ? rec.photos : []) : (rec.photo ? [rec.photo] : []);
+      const multi = field === 'photos' || field === 'donePhotos';
+      const arr = multi ? (Array.isArray(rec[field]) ? rec[field] : []) : (rec[field] ? [rec[field]] : []);
       const needUpload = arr.some(p => typeof p === 'string' && p.indexOf('data:') === 0);
       if (!needUpload) return;
       const uploaded = await Promise.all(arr.map(p =>
@@ -288,12 +293,12 @@ function bahtText(value) {
       const freshList = store.get(key, []);
       const freshIdx = freshList.findIndex(r => r.id === id);
       if (freshIdx >= 0) {
-        freshList[freshIdx] = Object.assign({}, freshList[freshIdx], field === 'photos' ? {photos: finalArr} : {photo: finalArr[0]});
+        freshList[freshIdx] = Object.assign({}, freshList[freshIdx], multi ? {[field]: finalArr} : {[field]: finalArr[0]});
         store.set(key, freshList);
       }
       if (cloudDb && uploaded.some(Boolean)) {
         await (window.__bsAuthReady || Promise.resolve());
-        cloudDb.collection(cloudCol).doc(String(id)).set(field === 'photos' ? {photos: finalArr} : {photo: finalArr[0]}, {merge: true})
+        cloudDb.collection(cloudCol).doc(String(id)).set(multi ? {[field]: finalArr} : {[field]: finalArr[0]}, {merge: true})
           .catch(e => console.error(cloudCol + ' save photo url error', e));
       }
       if (renderFn) renderFn();
@@ -3474,6 +3479,7 @@ function bahtText(value) {
     const list = store.get('bs_tracking', []), idx = list.findIndex(t => t.id === rec.id);
     list[idx].boxPhoto = it.photo; list[idx].boxAt = Date.now();
     store.set('bs_tracking', list); cloudSave('tracking', list[idx]);
+    syncRecordPhotosToCloud('bs_tracking', 'tracking', list[idx].id, 'boxPhoto', renderTrackingHistory);
     it.matched = {id: rec.id, code: rec.code, customer: rec.customer || '', carrier: rec.carrier || ''};
     renderTrackingHistory();
     return true;
@@ -3490,7 +3496,7 @@ function bahtText(value) {
       '<div class="sc-row"><button class="btn small del" data-sa="rm" type="button">เอาออก</button></div></div></li>').join('');
   }
   async function scanBoxFiles(files) {
-    const fl = Array.from(files || []).filter(f => /^image\//.test(f.type));
+    const fl = Array.from(files || []);
     for (const f of fl) {
       const it = {sid: 's' + Date.now() + Math.random().toString(36).slice(2, 6), photo: '', code: '', busy: true, matched: null};
       scanItems.unshift(it); renderScanList();
@@ -3498,7 +3504,7 @@ function bahtText(value) {
         const big = await fileToJpeg(f, 1600, 0.85);
         it.photo = await fileToJpeg(f, 800, 0.7);
         it.code = (await decodeBox(f, big) || '').trim();
-      } catch (e) {}
+      } catch (e) { it.err = (e && e.message) || ''; }
       it.busy = false;
       if (it.code) attachBox(it);
       renderScanList();
@@ -3518,7 +3524,7 @@ function bahtText(value) {
     if (b.dataset.sa === 'new') {
       const carrier = $('trackCarrier').value, code = it.code;
       const rec = {id: 't' + Date.now(), code, carrier, customer: '', message: buildTrackingMessage(code, carrier, ''), status: 'transit', savedAt: Date.now(), boxPhoto: it.photo, boxAt: Date.now()};
-      const list = store.get('bs_tracking', []); list.unshift(rec); store.set('bs_tracking', list); cloudSave('tracking', rec);
+      const list = store.get('bs_tracking', []); list.unshift(rec); store.set('bs_tracking', list); cloudSave('tracking', rec); syncRecordPhotosToCloud('bs_tracking', 'tracking', rec.id, 'boxPhoto', renderTrackingHistory);
       it.matched = {id: rec.id, code, customer: '', carrier}; renderTrackingHistory(); renderScanList(); toast('สร้างรายการใหม่ (ขนส่ง ' + carrier + ') พร้อมรูปกล่องแล้ว');
     }
   });
@@ -3783,24 +3789,21 @@ function bahtText(value) {
     if (!opts.silent) toast('อัปเดตสถานะเป็น "' + (JOB_STATUS_LABEL[status] || status) + '" แล้ว');
   }
 
-  function fileToJpeg(file, maxDim, q) {
-    return new Promise((res, rej) => {
-      const reader = new FileReader();
-      reader.onerror = () => rej(new Error('read'));
-      reader.onload = () => {
-        const img = new Image();
-        img.onerror = () => rej(new Error('img'));
-        img.onload = () => {
-          let w = img.width, h = img.height;
-          if (w > maxDim || h > maxDim) { const k = maxDim / Math.max(w, h); w = Math.round(w * k); h = Math.round(h * k); }
-          const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          res(canvas.toDataURL('image/jpeg', q));
-        };
-        img.src = reader.result;
-      };
-      reader.readAsDataURL(file);
-    });
+  async function fileToJpeg(file, maxDim, q) {
+    let src, w, h, urlToFree = null;
+    try { if (window.createImageBitmap) { src = await createImageBitmap(file); w = src.width; h = src.height; } } catch (e) { src = null; }
+    if (!src) {
+      src = await new Promise((res, rej) => {
+        const u = URL.createObjectURL(file); urlToFree = u;
+        const img = new Image(); img.onload = () => res(img); img.onerror = () => rej(new Error('เปิดไฟล์รูปนี้ไม่ได้ (ชนิดไฟล์ไม่รองรับ)')); img.src = u;
+      });
+      w = src.width; h = src.height;
+    }
+    if (w > maxDim || h > maxDim) { const k = maxDim / Math.max(w, h); w = Math.round(w * k); h = Math.round(h * k); }
+    const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(src, 0, 0, w, h);
+    if (urlToFree) URL.revokeObjectURL(urlToFree);
+    return canvas.toDataURL('image/jpeg', q);
   }
   function readJobPhotos(files) {
     Array.from(files || []).forEach(file => {
@@ -5398,7 +5401,7 @@ function bahtText(value) {
   $('jobHistory').addEventListener('change', async e => {
     const sj = e.target.closest('input[data-scanjob]');
     if (sj) {
-      const f = (sj.files || [])[0]; if (!f || !/^image\//.test(f.type)) return;
+      const f = (sj.files || [])[0]; if (!f) return;
       const id = sj.dataset.scanjob; toast('กำลังอ่านบาร์โค้ด…');
       try {
         const big = await fileToJpeg(f, 1600, 0.85), small = await fileToJpeg(f, 800, 0.7);
@@ -5409,30 +5412,41 @@ function bahtText(value) {
         let note = '';
         if (!attachBox(it)) {
           const carrier = $('trackCarrier').value, rec = {id: 't' + Date.now(), code, carrier, customer: jl[ji].jName || '', message: buildTrackingMessage(code, carrier, jl[ji].jName || ''), status: 'transit', savedAt: Date.now(), boxPhoto: small, boxAt: Date.now()};
-          const tl = store.get('bs_tracking', []); tl.unshift(rec); store.set('bs_tracking', tl); cloudSave('tracking', rec); renderTrackingHistory();
+          const tl = store.get('bs_tracking', []); tl.unshift(rec); store.set('bs_tracking', tl); cloudSave('tracking', rec); syncRecordPhotosToCloud('bs_tracking', 'tracking', rec.id, 'boxPhoto', renderTrackingHistory); renderTrackingHistory();
           note = ' (ยังไม่มีในหน้าติดตาม สร้างรายการใหม่ให้แล้ว)';
         }
         jl[ji].trackCode = code; jl[ji].savedAt = Date.now(); store.set('bs_jobs', jl); cloudSave('jobs', jl[ji]);
         advanceJobStatus(id, 'shipped');
         renderJobHistory(); toast('สแกนได้ ' + code + ' ผูกกับใบ ' + (jl[ji].no || '') + ' แล้ว สถานะ: จัดส่งแล้ว' + note);
-      } catch (err) { toast('สแกนไม่สำเร็จ ลองใหม่อีกครั้ง'); }
+      } catch (err) { toast('สแกนไม่สำเร็จ: ' + ((err && err.message) || err)); }
       return;
     }
     const fi = e.target.closest('input[data-addphoto]');
     if (fi) {
-      const id = fi.dataset.addphoto, files = Array.from(fi.files || []).filter(f => /^image\//.test(f.type));
+      const id = fi.dataset.addphoto, files = Array.from(fi.files || []);
+      fi.value = '';
       if (!files.length) return;
-      try {
-        const urls = [];
-        for (const f of files) urls.push(await fileToJpeg(f, 1000, 0.75));
-        const list = store.get('bs_jobs', []), idx = list.findIndex(x => x.id === id);
-        if (idx < 0) return;
-        list[idx].donePhotos = (list[idx].donePhotos || []).concat(urls);
-        list[idx].savedAt = Date.now();
-        store.set('bs_jobs', list); cloudSave('jobs', list[idx]);
-                const adv = advanceJobStatus(id, 'printed');
-        renderJobHistory(); toast('เพิ่มรูปงานเสร็จ ' + urls.length + ' รูปเข้าใบ ' + (list[idx].no || '') + ' แล้ว' + (adv ? ' สถานะ: ผลิตแล้ว' : ''));
-      } catch (err) { toast('เพิ่มรูปไม่สำเร็จ ลองใหม่อีกครั้ง'); }
+      let done = 0, fail = 0, lastErr = '';
+      // ทีละรูป: ย่อ → อัปขึ้น Cloudinary (ถ้าได้) → บันทึกเข้าใบทันที รูปแรกๆ จึงไม่หายถ้ารูปหลังมีปัญหา
+      for (let i = 0; i < files.length; i++) {
+        toast('กำลังอัพรูปที่ ' + (i + 1) + '/' + files.length + '…');
+        try {
+          let url = await fileToJpeg(files[i], 900, 0.72);
+          if (cloudDb) { const u = await uploadPhotoToCloudinary(url); if (u) url = u; }
+          const list = store.get('bs_jobs', []), idx = list.findIndex(x => x.id === id);
+          if (idx < 0) { fail++; lastErr = 'ไม่พบใบงานนี้'; continue; }
+          list[idx].donePhotos = (list[idx].donePhotos || []).concat([url]);
+          list[idx].savedAt = Date.now();
+          const ok = store.set('bs_jobs', list);
+          cloudSave('jobs', list[idx]);
+          done++;
+          if (!ok) { lastErr = 'พื้นที่เก็บข้อมูลในเครื่องเต็ม'; }
+          advanceJobStatus(id, 'printed');
+          renderJobHistory();
+        } catch (err) { fail++; lastErr = (err && err.message) || String(err); }
+      }
+      if (done) syncRecordPhotosToCloud('bs_jobs', 'jobs', id, 'donePhotos', renderJobHistory);
+      toast('อัพรูปงานเสร็จสำเร็จ ' + done + ' รูป' + (fail ? ' · ไม่สำเร็จ ' + fail + ' รูป (' + lastErr + ')' : '') + (done ? ' · สถานะ: ผลิตแล้ว' : ''));
       return;
     }
     const sel = e.target.closest('select.job-status-select'); if (!sel) return;
