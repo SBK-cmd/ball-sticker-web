@@ -3511,6 +3511,8 @@ function bahtText(value) {
     }
     if (fl.length) { const m = scanItems.slice(0, fl.length).filter(x => x.matched).length; toast('อ่านแล้ว ' + fl.length + ' รูป · จับคู่ได้ ' + m + ' รูป'); }
   }
+  $('scanLiveBtn').addEventListener('click', () => openLiveScan({title: 'สแกนเลขพัสดุ', onFallbackFile: f => scanBoxFiles([f]),
+    onCode: (code, photo) => { const it = {sid: 's' + Date.now(), photo: photo || '', code, busy: false, matched: null}; scanItems.unshift(it); if (attachBox(it)) toast('จับคู่แล้ว ' + code); else toast('ไม่พบเลข ' + code + ' ในหน้าติดตาม'); renderScanList(); }}));
   $('scanInput').addEventListener('change', e => { scanBoxFiles(e.target.files); e.target.value = ''; });
   $('scanList').addEventListener('click', e => {
     const zi = e.target.closest('img');
@@ -3528,6 +3530,79 @@ function bahtText(value) {
       it.matched = {id: rec.id, code, customer: '', carrier}; renderTrackingHistory(); renderScanList(); toast('สร้างรายการใหม่ (ขนส่ง ' + carrier + ') พร้อมรูปกล่องแล้ว');
     }
   });
+  function applyJobScan(id, code, small) {
+    const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === id); if (ji < 0) return;
+    const it = {code, photo: small};
+    let note = '';
+    if (!attachBox(it)) {
+      const carrier = $('trackCarrier').value, rec = {id: 't' + Date.now(), code, carrier, customer: jl[ji].jName || '', message: buildTrackingMessage(code, carrier, jl[ji].jName || ''), status: 'transit', savedAt: Date.now(), boxPhoto: small, boxAt: Date.now()};
+      const tl = store.get('bs_tracking', []); tl.unshift(rec); store.set('bs_tracking', tl); cloudSave('tracking', rec); syncRecordPhotosToCloud('bs_tracking', 'tracking', rec.id, 'boxPhoto', renderTrackingHistory); renderTrackingHistory();
+      note = ' (ยังไม่มีในหน้าติดตาม สร้างรายการใหม่ให้แล้ว)';
+    }
+    jl[ji].trackCode = code; jl[ji].savedAt = Date.now(); store.set('bs_jobs', jl); cloudSave('jobs', jl[ji]);
+    advanceJobStatus(id, 'shipped');
+    renderJobHistory(); toast('สแกนได้ ' + code + ' ผูกกับใบ ' + (jl[ji].no || '') + ' แล้ว สถานะ: จัดส่งแล้ว' + note);
+  }
+  /* ---------------- สแกนสด: เปิดกล้อง เล็งบาร์โค้ด อ่านได้เองทันที (มีเสียงปี๊บ + สั่น + กรอบเขียว) ---------------- */
+  function beepOk() {
+    try { const AC = window.AudioContext || window.webkitAudioContext, ac = new AC(), o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'square'; o.frequency.value = 1500; g.gain.value = 0.15; o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime + 0.14); setTimeout(() => ac.close(), 400); } catch (e) {}
+    try { if (navigator.vibrate) navigator.vibrate(80); } catch (e) {}
+  }
+  async function openLiveScan(opts) {
+    // opts: {title, onCode(code, photoDataUrl), onFallbackFile(file)}
+    if (document.getElementById('liveScanOv')) return;
+    const ov = document.createElement('div'); ov.id = 'liveScanOv'; ov.className = 'live-scan no-print';
+    ov.innerHTML = '<div class="ls-top"><b>' + esc(opts.title || 'สแกนบาร์โค้ด') + '</b><button type="button" class="ls-x" aria-label="ปิด">✕</button></div>' +
+      '<div class="ls-view"><video id="lsVideo" playsinline muted autoplay></video><div class="ls-frame" id="lsFrame"><i></i></div></div>' +
+      '<div class="ls-msg" id="lsMsg">เล็งบาร์โค้ดบนใบปะหน้าให้อยู่ในกรอบ — อ่านเองอัตโนมัติ</div>' +
+      '<div class="ls-bot"><label class="btn small">📷 ถ่ายรูปแทน<input type="file" accept="image/*" capture="environment" hidden id="lsFile"></label></div>';
+    document.body.appendChild(ov);
+    let stream = null, stopped = false, finished = false, timer = null;
+    const close = () => { stopped = true; clearTimeout(timer); try { if (stream) stream.getTracks().forEach(t => t.stop()); } catch (e) {} ov.remove(); };
+    ov.querySelector('.ls-x').addEventListener('click', close);
+    ov.querySelector('#lsFile').addEventListener('change', e => { const f = (e.target.files || [])[0]; close(); if (f && opts.onFallbackFile) opts.onFallbackFile(f); });
+    const msg = ov.querySelector('#lsMsg');
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('เบราว์เซอร์นี้ไม่รองรับกล้อง');
+      stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: {ideal: 'environment'}, width: {ideal: 1920}, height: {ideal: 1080}}, audio: false});
+      const vid = ov.querySelector('#lsVideo'); vid.srcObject = stream; await vid.play().catch(() => {});
+      try { const tr = stream.getVideoTracks()[0], cap = tr.getCapabilities ? tr.getCapabilities() : {}; if (cap.focusMode && cap.focusMode.indexOf('continuous') >= 0) await tr.applyConstraints({advanced: [{focusMode: 'continuous'}]}); } catch (e) {}
+      const native = ('BarcodeDetector' in window) ? new BarcodeDetector() : null;
+      let h = null; if (!native) { await loadScanLib(); h = new window.Html5Qrcode('scanTmp', {verbose: false}); }
+      const cv = document.createElement('canvas'); let tick = 0;
+      const finish = code => {
+        if (finished) return; finished = true;
+        let photo = '';
+        try { const c = document.createElement('canvas'), k = Math.min(1, 800 / Math.max(vid.videoWidth, vid.videoHeight)); c.width = Math.round(vid.videoWidth * k); c.height = Math.round(vid.videoHeight * k); c.getContext('2d').drawImage(vid, 0, 0, c.width, c.height); photo = c.toDataURL('image/jpeg', 0.7); } catch (e) {}
+        beepOk(); ov.classList.add('ok');
+        msg.innerHTML = '✅ สแกนสำเร็จ<br><b>' + esc(code) + '</b>';
+        setTimeout(() => { close(); opts.onCode(code, photo); }, 900);
+      };
+      const loop = async () => {
+        if (stopped || finished) return;
+        try {
+          if (vid.videoWidth) {
+            // ครอบเฉพาะแถบกลางภาพที่ความละเอียดจริงของกล้อง (บาร์โค้ดจะคมกว่าอ่านทั้งภาพที่ย่อลง) สลับอ่านทั้งภาพทุกรอบที่ 3
+            const full = (tick++ % 3 === 2), W = vid.videoWidth, H = vid.videoHeight, y0 = full ? 0 : Math.round(H * 0.2), hh = full ? H : Math.round(H * 0.6);
+            cv.width = W; cv.height = hh; cv.getContext('2d').drawImage(vid, 0, y0, W, hh, 0, 0, W, hh);
+            let code = '';
+            if (native) { const r = await native.detect(cv); const hit = r.find(x => x.rawValue && x.format !== 'qr_code') || r[0]; code = hit ? hit.rawValue : ''; }
+            else {
+              const blob = await new Promise(res => cv.toBlob(res, 'image/jpeg', 0.85));
+              try { code = await h.scanFile(new File([blob], 'f.jpg', {type: 'image/jpeg'}), false); } catch (e) { code = ''; }
+            }
+            code = String(code || '').trim();
+            if (code) { finish(code); return; }
+          }
+        } catch (e) {}
+        timer = setTimeout(loop, 120);
+      };
+      loop();
+    } catch (err) {
+      msg.innerHTML = '⚠️ เปิดกล้องไม่ได้ (' + esc((err && err.message) || err) + ')<br>กด “ถ่ายรูปแทน” หรืออนุญาตให้ใช้กล้องในเบราว์เซอร์';
+    }
+  }
   function saveTracking() {
     const code = $('trackCode').value.trim();
     if (!code) { toast('ใส่เลขพัสดุก่อนสร้างข้อความ'); $('trackCode').focus(); return; }
@@ -3943,7 +4018,8 @@ function bahtText(value) {
       '<div><span class="jd-k">รูปงานเสร็จ</span>' + ((j.donePhotos && j.donePhotos.length) ? '' : '<small style="color:var(--muted,#888)">ยังไม่มี</small>') + '</div>' +
       ((j.donePhotos && j.donePhotos.length) ? '<div class="jd-ph">' + j.donePhotos.map(src => '<img src="' + src + '" alt="รูปงานเสร็จ">').join('') + '</div>' : '') +
       '<div class="jd-add"><label class="btn small primary">📷 ถ่าย/เพิ่มรูปงานเสร็จ<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '"></label> ' +
-      '<label class="btn small">📦 สแกนบาร์โค้ดพัสดุ<input type="file" accept="image/*" capture="environment" hidden data-scanjob="' + esc(j.id) + '"></label>' +
+      '<button class="btn small primary" data-act="livescan" type="button">📦 สแกนเลขพัสดุ</button>' +
+      '<input type="file" accept="image/*" hidden data-scanjob="' + esc(j.id) + '">' +
       (j.trackCode ? '<div class="jd-trk">📦 เลขพัสดุ: <b>' + esc(j.trackCode) + '</b></div>' : '') +
       (j.trackCode && j.status === 'shipped' ? '<button class="btn small good" data-act="sendtrk" type="button" style="margin-top:8px">📤 ส่งเลขพัสดุให้ลูกค้า</button>' : '') + '</div>' +
       '</div>';
@@ -5382,6 +5458,13 @@ function bahtText(value) {
     }
     const id = btn.closest('li').dataset.id;
     const list = store.get('bs_jobs', []);
+    if (btn.dataset.act === 'livescan') {
+      const sjInp = btn.closest('li').querySelector('input[data-scanjob]');
+      openLiveScan({title: 'สแกนเลขพัสดุ · ' + ((list.find(x => x.id === id) || {}).no || ''),
+        onCode: (code, photo) => applyJobScan(id, code, photo),
+        onFallbackFile: f => { const dt = new DataTransfer(); dt.items.add(f); sjInp.files = dt.files; sjInp.dispatchEvent(new Event('change', {bubbles: true})); }});
+      return;
+    }
     if (btn.dataset.act === 'sendtrk') {
       const j = list.find(x => x.id === id); if (!j || !j.trackCode) return;
       const tr = store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(j.trackCode));
@@ -5420,17 +5503,7 @@ function bahtText(value) {
         const big = await fileToJpeg(f, 1600, 0.85), small = await fileToJpeg(f, 800, 0.7);
         const code = ((await decodeBox(f, big)) || '').trim();
         if (!code) { toast('อ่านบาร์โค้ดไม่ออก ถ่ายใหม่ให้เห็นบาร์โค้ดเต็มและชัด หรือพิมพ์เลขที่แท็บติดตาม'); return; }
-        const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === id); if (ji < 0) return;
-        const it = {code, photo: small};
-        let note = '';
-        if (!attachBox(it)) {
-          const carrier = $('trackCarrier').value, rec = {id: 't' + Date.now(), code, carrier, customer: jl[ji].jName || '', message: buildTrackingMessage(code, carrier, jl[ji].jName || ''), status: 'transit', savedAt: Date.now(), boxPhoto: small, boxAt: Date.now()};
-          const tl = store.get('bs_tracking', []); tl.unshift(rec); store.set('bs_tracking', tl); cloudSave('tracking', rec); syncRecordPhotosToCloud('bs_tracking', 'tracking', rec.id, 'boxPhoto', renderTrackingHistory); renderTrackingHistory();
-          note = ' (ยังไม่มีในหน้าติดตาม สร้างรายการใหม่ให้แล้ว)';
-        }
-        jl[ji].trackCode = code; jl[ji].savedAt = Date.now(); store.set('bs_jobs', jl); cloudSave('jobs', jl[ji]);
-        advanceJobStatus(id, 'shipped');
-        renderJobHistory(); toast('สแกนได้ ' + code + ' ผูกกับใบ ' + (jl[ji].no || '') + ' แล้ว สถานะ: จัดส่งแล้ว' + note);
+        applyJobScan(id, code, small);
       } catch (err) { toast('สแกนไม่สำเร็จ: ' + ((err && err.message) || err)); }
       return;
     }
