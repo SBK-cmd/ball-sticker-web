@@ -1797,7 +1797,7 @@ function bahtText(value) {
     const purchases = store.get('bs_purchases', []);
     const rows = [];
     bills.forEach(b => { const c = billCalc(b); rows.push({type: 'bill', no: b.no, name: b.cName || 'ไม่ระบุชื่อลูกค้า', date: b.date, savedAt: b.savedAt || 0, amount: c.total, statusLabel: 'ออกบิลแล้ว', statusClass: 'billdone'}); });
-    jobs.forEach(j => { rows.push({type: 'job', no: j.no, name: j.jName || 'ไม่ระบุชื่อลูกค้า', date: j.date, savedAt: j.savedAt || 0, amount: null, statusLabel: JOB_STATUS_LABEL[j.status] || 'รอทำ', statusClass: j.status || 'pending'}); });
+    jobs.forEach(j => { rows.push({type: 'job', no: j.no, name: j.jName || 'ไม่ระบุชื่อลูกค้า', date: j.date, savedAt: j.savedAt || 0, amount: null, photo: (j.donePhotos && j.donePhotos[0]) || (j.photos && j.photos[0]) || '', statusLabel: JOB_STATUS_LABEL[j.status] || 'รอทำ', statusClass: j.status || 'pending'}); });
     purchases.forEach(p => { const amt = num(p.amount) || num(p.vat) || null; rows.push({type: 'purch', no: p.invoiceNo || '—', name: p.vendor || 'ไม่ระบุร้านค้า', date: p.date, savedAt: p.savedAt || 0, amount: amt, statusLabel: 'บันทึกภาษีซื้อ', statusClass: 'purch'}); });
     rows.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0) || String(b.date || '').localeCompare(String(a.date || '')));
     const top = rows.slice(0, 8);
@@ -1808,7 +1808,7 @@ function bahtText(value) {
       '<th>ประเภท</th><th>เลขที่ / ชื่อ</th><th>วันที่</th><th>ยอดเงิน</th><th>สถานะ</th>' +
       '</tr></thead><tbody>' + top.map(r =>
       '<tr>' +
-        '<td><span class="dtype"><span class="dtype-ic dt-' + esc(r.type) + '" aria-hidden="true">' + typeIcon[r.type] + '</span><b>' + esc(typeLabel[r.type]) + '</b></span></td>' +
+        '<td><span class="dtype">' + (r.photo ? '<img class="dtype-img" src="' + esc(r.photo) + '" alt="" loading="lazy">' : '<span class="dtype-ic dt-' + esc(r.type) + '" aria-hidden="true">' + typeIcon[r.type] + '</span>') + '<b>' + esc(typeLabel[r.type]) + '</b></span></td>' +
         '<td class="dname"><b>' + esc(r.no || '—') + '</b><small>' + esc(r.name) + '</small></td>' +
         '<td>' + esc(thDate(r.date)) + '</td>' +
         '<td class="damt">' + (r.amount != null ? money(r.amount) + ' บาท' : '—') + '</td>' +
