@@ -3604,7 +3604,7 @@ function bahtText(value) {
       '<div class="wh-hint">ติ๊กแบบที่ต้องการ ใส่จำนวนและราคาส่งต่อหน่วยของแต่ละแบบ (ไม่ใส่ราคา = 0 ไว้ไปใส่ในใบราคาส่ง)</div>' +
       rows.map(r => { const k = jobItemKey(r.i, r.idx), was = done[k];
         return '<div class="wh-row' + (was ? ' was' : '') + '" data-k="' + esc(k) + '"><label class="wh-nm"><input type="checkbox" class="wh-ck"' + (was ? '' : ' checked') + '> <span>' + esc(String(r.i.name).trim()) + ((r.i.note || '').trim() ? ' <small>(' + esc(String(r.i.note).trim()) + ')</small>' : '') + (was ? ' <em>✔ ใส่แล้ว</em>' : '') + '</span></label>' +
-        '<div class="wh-in"><label>จำนวน<input class="txt wh-q" type="number" inputmode="decimal" step="any" min="0" value="' + esc(r.i.qty) + '"></label><label>ราคาส่ง/หน่วย<input class="txt wh-p" type="number" inputmode="decimal" step="any" min="0" placeholder="0"></label></div></div>'; }).join('') +
+        '<div class="wh-in"><label>จำนวน<input class="txt wh-q" type="number" inputmode="decimal" step="any" min="0" value="' + esc(r.i.qty) + '"></label><label>ราคาส่ง/หน่วย<input class="txt wh-p" type="number" inputmode="decimal" step="any" min="0" placeholder="0" value="' + esc(r.i.price == null ? '' : r.i.price) + '"></label></div></div>'; }).join('') +
       '<button type="button" class="btn good" data-wh="ok">ใส่ในใบราคาส่ง</button><button type="button" class="btn small" data-wh="x">ยกเลิก</button></div>';
     ov.addEventListener('click', ev => {
       const b = ev.target.closest('[data-wh]');
@@ -4031,12 +4031,15 @@ function bahtText(value) {
   }
 
   function renderJobItems() {
+    const whOn = !!($('jobWholesale') && $('jobWholesale').checked);
     $('jobItems').innerHTML = jobItems.map((it, i) =>
-      '<div class="item job" data-i="' + i + '">' +
+      '<div class="item job' + (whOn ? ' wh' : '') + '" data-i="' + i + '">' +
       '<input class="txt i-name" type="text" placeholder="ชื่องาน / สเปก" aria-label="ชื่องาน" value="' + esc(it.name) + '">' +
       '<input class="num i-qty" type="number" inputmode="decimal" step="any" min="0" placeholder="จำนวน" aria-label="จำนวน" value="' + esc(it.qty) + '">' +
       '<input class="txt i-note" type="text" placeholder="หมายเหตุ" aria-label="หมายเหตุ" value="' + esc(it.note || '') + '">' +
+      (whOn ? '<input class="num i-wprice" type="number" inputmode="decimal" step="any" min="0" placeholder="ราคาส่ง/หน่วย" aria-label="ราคาส่งต่อหน่วย" value="' + esc(it.price == null ? '' : it.price) + '">' : '') +
       '<button class="del" type="button" aria-label="ลบรายการ">✕</button></div>').join('');
+    const hd = document.querySelector('.item-head.job'); if (hd) { hd.classList.toggle('wh', whOn); hd.innerHTML = '<span>ชื่องาน / สเปก</span><span>จำนวน</span><span>หมายเหตุ</span>' + (whOn ? '<span>ราคาส่ง/หน่วย</span>' : '') + '<span></span>'; }
   }
 
   function renderJob() {
@@ -4093,7 +4096,7 @@ function bahtText(value) {
 
   function collectJob() {
     return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, account: $('jobAccount').value, page: $('jobPage').value, bankInIds: jobBankInIds.slice(), bankInId: jobBankInIds[0] || '', slipAmount: $('jobSlipAmount').value, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
-      items: jobItems.map(i => ({name: i.name, qty: i.qty, note: i.note})), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus, wholesale: $('jobWholesale').checked};
+      items: jobItems.map(i => { const o = {name: i.name, qty: i.qty, note: i.note}; if (i.price !== '' && i.price != null) o.price = i.price; return o; }), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus, wholesale: $('jobWholesale').checked};
   }
   function applyJob(j) {
     $('jobNo').value = j.no || ''; $('jobDate').value = j.date || todayISO(); $('jobDue').value = j.due || '';
@@ -4101,7 +4104,7 @@ function bahtText(value) {
     $('jobPage').value = PAGE_LABEL[j.page] ? j.page : 'ball';
     jobBankInIds = jobBankIdsOf(j); if ($('jobBankInList')) { $('jobBankInList').hidden = true; $('jobBankInBtn').setAttribute('aria-expanded', 'false'); }
     $('jName').value = j.jName || ''; $('jPhone').value = j.jPhone || ''; $('jAddr').value = j.jAddr || '';
-    jobItems = (j.items && j.items.length) ? j.items.map(i => ({name: i.name || '', qty: i.qty, note: i.note || ''})) : [{name: '', qty: 1, note: ''}];
+    jobItems = (j.items && j.items.length) ? j.items.map(i => ({name: i.name || '', qty: i.qty, note: i.note || '', price: i.price})) : [{name: '', qty: 1, note: ''}];
     $('jobNote').value = j.note || '';
     jobPhotos = (j.photos && j.photos.length) ? j.photos.slice() : [];
     jobStatus = j.status || 'pending';
@@ -4120,7 +4123,7 @@ function bahtText(value) {
     const t = $('jobFormTop'); if (t) t.scrollIntoView({behavior: 'smooth', block: 'start'});
     const n = $('jName'); if (n) setTimeout(() => n.focus({preventScroll: true}), 350);
   });
-  $('jobWholesale').addEventListener('change', syncJobWholesaleBtn);
+  $('jobWholesale').addEventListener('change', () => { syncJobWholesaleBtn(); renderJobItems(); });
   $('jobToWholesale').addEventListener('click', () => {
     if (!$('jName').value.trim()) { toast('ใส่ชื่อลูกค้าก่อน'); $('jName').focus(); return; }
     saveJob();
@@ -5173,6 +5176,7 @@ function bahtText(value) {
     if (e.target.classList.contains('i-name')) it.name = e.target.value;
     if (e.target.classList.contains('i-qty')) it.qty = e.target.value;
     if (e.target.classList.contains('i-note')) it.note = e.target.value;
+    if (e.target.classList.contains('i-wprice')) it.price = e.target.value;
     renderJob();
   });
   $('jobItems').addEventListener('click', e => {

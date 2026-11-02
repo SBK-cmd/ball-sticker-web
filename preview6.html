@@ -1271,6 +1271,13 @@ tr{break-inside:avoid}
 .fab-newjob:active{transform:scale(.97)}
 @media (min-width:900px){.fab-newjob{display:none}}
 @media print{.fab-newjob{display:none}}
+.wh-box{display:grid;gap:10px;margin:4px 0 14px;padding:12px 14px;border:1px solid #f0e3b0;background:#fffbe8;border-radius:16px}
+.wh-box .chk-row{margin:0}
+.item.job.wh,.item-head.job.wh{grid-template-columns:minmax(0,1fr) 72px minmax(0,1fr) 110px 36px}
+@media (max-width:560px){.item.job.wh{grid-template-columns:84px minmax(0,1fr) 42px}.item.job.wh .i-wprice{grid-column:1/3}.item-head.job.wh{display:none}}
+#jNameChips{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+#jNameChips .vchip{flex:none;white-space:nowrap}
+#jNameChips>span{flex:none;white-space:nowrap}
 .wh-hint{font-size:13px;color:#777}
 .wh-row{border:1px solid #eee;border-radius:14px;padding:10px;display:grid;gap:8px}
 .wh-row.was{background:#f6f6f6}
@@ -2198,6 +2205,10 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
               <span class="hint" style="margin:0">สถานะงาน:</span>
               <span class="status-pill" id="jobStatusBadge"></span>
             </div>
+            <div class="wh-box no-print">
+              <label class="chk-row"><input type="checkbox" id="jobWholesale"> <span>🏷️ <b>งานราคาส่ง</b> — ใส่ราคาส่งต่อแบบได้ และรวมเข้าใบราคาส่งที่ยังไม่จ่ายของลูกค้าคนนี้</span></label>
+              <button class="btn good" type="button" id="jobToWholesale" hidden>🧾 บันทึก แล้วใส่ในใบราคาส่งที่ยังไม่จ่ายของลูกค้าคนนี้</button>
+            </div>
             <div class="fields">
               <div class="row2">
                 <label class="f"><span>เลขที่ใบคอนเฟิร์มงาน</span><input class="txt" id="jobNo" type="text" autocomplete="off"></label>
@@ -2229,8 +2240,6 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
               <button class="btn small" id="jSplit" type="button">แยกงาน / ชื่อ / เบอร์ / ที่อยู่ อัตโนมัติ</button>
               <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="jName" type="text" autocomplete="off" list="customerNames"></label>
               <div id="jNameChips" class="vchips no-print" aria-label="ชื่อที่เคยคีย์ไว้"></div>
-              <label class="f chk-row"><input type="checkbox" id="jobWholesale"> <span>🏷️ งานราคาส่ง (รวมเข้าใบราคาส่งที่ยังไม่จ่ายของลูกค้าคนนี้)</span></label>
-              <button class="btn small good" type="button" id="jobToWholesale" hidden>🧾 บันทึก แล้วใส่ในใบราคาส่งที่ยังไม่จ่ายของลูกค้าคนนี้</button>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="jPhone" type="tel" autocomplete="off"></label>
               <label class="f"><span>ที่อยู่ลูกค้า (ถ้ามี)</span><textarea id="jAddr"></textarea></label>
             </div>
@@ -3124,7 +3133,7 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=5202d08d82",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=374235c6c6",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
