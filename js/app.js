@@ -1626,6 +1626,17 @@ function bahtText(value) {
       $('catJobPrinted').textContent = jobsAll.filter(j => j.status === 'printed').length + ' งาน';
       $('catJobShipped').textContent = jobsAll.filter(j => j.status === 'shipped').length + ' งาน';
     }
+    if ($('catWhUnpaidCount')) {
+      // ใบราคาส่ง: แสดงเป็นการ์ดแยก ไม่รวมใน todaySales/monthSales/รายงานภาษี
+      const whAll = store.get('bs_wholesale', []);
+      const whTotal = w => (w.items || []).reduce((t, i) => t + num(i.qty) * num(i.price), 0) - num(w.discount);
+      const whUnpaid = whAll.filter(w => !w.paid);
+      $('catWhUnpaidCount').textContent = whUnpaid.length + ' ใบ';
+      $('catWhUnpaidAmt').textContent = money(round2(whUnpaid.reduce((a, w) => a + whTotal(w), 0))) + ' บาท';
+      $('catWhPaidMonth').textContent = money(round2(whAll.filter(w => w.paid && monthKey(w.date) === curMonthKey).reduce((a, w) => a + whTotal(w), 0))) + ' บาท';
+      $('catWhAllCount').textContent = whAll.length + ' ใบ';
+      const wc = $('dashWholesaleCard'); if (wc) wc.hidden = !can('wholesale');
+    }
     renderJobQueue();
     if ($('catPurchMonthCount')) {
       const purchThisMonth = purchAll.filter(p => monthKey(p.date) === curMonthKey);
@@ -4285,6 +4296,7 @@ function bahtText(value) {
     renderWholesaleEditState();
   }
   function renderWholesaleHistory() {
+    try { renderDash(); } catch (e) {} // อัปเดตการ์ดใบราคาส่งในแดชบอร์ด
     const list = store.get('bs_wholesale', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
     const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้ ควรดาวน์โหลด PDF เก็บไว้ทุกครั้ง</p>');
     if (!list.length) { $('wholesaleHistory').innerHTML = notice + '<p class="empty">ยังไม่มีใบราคาส่งที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; return; }
@@ -6285,6 +6297,7 @@ function bahtText(value) {
   $('dash-go-report').addEventListener('click', () => { $('reportMonth').value = $('dashMonth').value; showTab('report'); });
   if ($('dashCatBillBtn')) $('dashCatBillBtn').addEventListener('click', () => showTab('bill'));
   if ($('dashCatJobBtn')) $('dashCatJobBtn').addEventListener('click', () => showTab('confirm'));
+  if ($('dashCatWholesaleBtn')) $('dashCatWholesaleBtn').addEventListener('click', () => showTab('wholesale'));
   if ($('dashCatPurchBtn')) $('dashCatPurchBtn').addEventListener('click', () => showTab('purchase'));
   if ($('dashCatReportBtn')) $('dashCatReportBtn').addEventListener('click', () => { $('reportMonth').value = $('dashMonth').value; showTab('report'); });
   $('reportMonth').addEventListener('change', renderReport);
