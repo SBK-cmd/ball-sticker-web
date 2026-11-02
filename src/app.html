@@ -6945,6 +6945,7 @@ function bahtText(value) {
       ((j.photos && j.photos.length) ? '<div><span class="jd-k">รูปอ้างอิง</span></div><div class="jd-ph">' + j.photos.map(src => '<img src="' + src + '" alt="รูปอ้างอิง">').join('') + '</div>' : '') +
       '<div><span class="jd-k">รูปงานเสร็จ</span>' + ((j.donePhotos && j.donePhotos.length) ? '' : '<small style="color:var(--muted,#888)">ยังไม่มี</small>') + '</div>' +
       ((j.donePhotos && j.donePhotos.length) ? '<div class="jd-ph">' + j.donePhotos.map(src => '<img src="' + src + '" alt="รูปงานเสร็จ">').join('') + '</div>' : '') +
+      ((j.donePhotos && j.donePhotos.length) ? '<div class="jd-add"><button class="btn small good" data-act="savephotos" type="button">💾 บันทึก/ส่งรูปงานให้ลูกค้า (' + j.donePhotos.length + ' รูป)</button></div>' : '') +
       '<div class="jd-add"><label class="btn small primary">📷 ถ่าย/เพิ่มรูปงานเสร็จ<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '"></label> ' +
       '<button class="btn small primary" data-act="livescan" type="button">📦 สแกนเลขพัสดุ</button>' +
       '<input type="file" accept="image/*" hidden data-scanjob="' + esc(j.id) + '">' +
@@ -8391,6 +8392,26 @@ function bahtText(value) {
       openLiveScan({title: 'สแกนเลขพัสดุ · ' + ((list.find(x => x.id === id) || {}).no || ''),
         onCode: (code, photo) => applyJobScan(id, code, photo),
         onFallbackFile: f => { const dt = new DataTransfer(); dt.items.add(f); sjInp.files = dt.files; sjInp.dispatchEvent(new Event('change', {bubbles: true})); }});
+      return;
+    }
+    if (btn.dataset.act === 'savephotos') {
+      const j = list.find(x => x.id === id); if (!j || !(j.donePhotos || []).length) return;
+      (async () => {
+        try {
+          const base = String(j.no || 'งาน') + (j.jName ? '-' + String(j.jName).replace(/[\\/:*?"<>|\s]+/g, '') : '');
+          const files = [];
+          for (let i = 0; i < j.donePhotos.length; i++) {
+            const blob = await (await fetch(j.donePhotos[i])).blob();
+            files.push(new File([blob], base + '-' + (i + 1) + '.jpg', {type: blob.type || 'image/jpeg'}));
+          }
+          if (navigator.canShare && navigator.canShare({files})) {
+            try { await navigator.share({files, title: 'รูปงานเสร็จ ' + (j.no || '')}); toast('เลือก “บันทึกรูปภาพ” หรือส่งทาง LINE ให้ลูกค้าได้เลย'); return; }
+            catch (e) { if (e && e.name === 'AbortError') return; }
+          }
+          files.forEach((f, i) => setTimeout(() => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }, i * 400));
+          toast('กำลังบันทึกรูป ' + files.length + ' รูปลงเครื่อง');
+        } catch (err) { toast('บันทึกรูปไม่สำเร็จ: ' + ((err && err.message) || err)); }
+      })();
       return;
     }
     if (btn.dataset.act === 'sendtrk') {
