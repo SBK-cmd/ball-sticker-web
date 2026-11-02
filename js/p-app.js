@@ -3786,6 +3786,12 @@ function bahtText(value) {
     if (currentJobId) { el.textContent = 'กำลังแก้ไขใบที่บันทึกไว้ กด “บันทึกลงประวัติ” เพื่อบันทึกทับฉบับเดิม'; el.classList.add('editing'); }
     else { el.textContent = 'ใบใหม่ ยังไม่ได้บันทึกลงประวัติ'; el.classList.remove('editing'); }
   }
+  document.addEventListener('click', e => {
+    if (!e.target.closest || !e.target.closest('#fabNewJob')) return;
+    newJob();
+    const t = $('jobFormTop'); if (t) t.scrollIntoView({behavior: 'smooth', block: 'start'});
+    const n = $('jName'); if (n) setTimeout(() => n.focus({preventScroll: true}), 350);
+  });
   function newJob() {
     currentJobId = null;
     applyJob({date: todayISO()});

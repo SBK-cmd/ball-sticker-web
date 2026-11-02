@@ -1266,6 +1266,12 @@ tr{break-inside:avoid}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
+<style id="fab-newjob-css">
+.fab-newjob{position:fixed;right:14px;bottom:calc(92px + env(safe-area-inset-bottom));z-index:60;border:0;border-radius:999px;padding:13px 20px;min-height:48px;background:#ffc400;color:#1c1c2e;font:inherit;font-weight:700;font-size:15px;box-shadow:0 10px 24px -6px rgba(120,80,0,.5);cursor:pointer}
+.fab-newjob:active{transform:scale(.97)}
+@media (min-width:900px){.fab-newjob{display:none}}
+@media print{.fab-newjob{display:none}}
+</style>
 </head>
 <body>
 <div id="lockScreen" class="lock-screen no-print">
@@ -1962,7 +1968,8 @@ tr{break-inside:avoid}
         <div id="jobHistory"></div>
       </section>
 
-      <div class="bill-grid">
+      <button type="button" class="fab-newjob no-print" id="fabNewJob" aria-label="เพิ่มใบคอนเฟิร์มใหม่">＋ เพิ่มใบคอนเฟิร์ม</button>
+      <div class="bill-grid" id="jobFormTop">
         <div class="stack no-print">
           <div class="card">
             <h2>ข้อมูลงาน</h2>
@@ -6671,6 +6678,12 @@ function bahtText(value) {
     if (currentJobId) { el.textContent = 'กำลังแก้ไขใบที่บันทึกไว้ กด “บันทึกลงประวัติ” เพื่อบันทึกทับฉบับเดิม'; el.classList.add('editing'); }
     else { el.textContent = 'ใบใหม่ ยังไม่ได้บันทึกลงประวัติ'; el.classList.remove('editing'); }
   }
+  document.addEventListener('click', e => {
+    if (!e.target.closest || !e.target.closest('#fabNewJob')) return;
+    newJob();
+    const t = $('jobFormTop'); if (t) t.scrollIntoView({behavior: 'smooth', block: 'start'});
+    const n = $('jName'); if (n) setTimeout(() => n.focus({preventScroll: true}), 350);
+  });
   function newJob() {
     currentJobId = null;
     applyJob({date: todayISO()});
