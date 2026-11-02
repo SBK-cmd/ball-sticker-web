@@ -223,6 +223,13 @@ async function api(req, env) {
     const owner = r.user_id ? await db.prepare('SELECT phone FROM users WHERE id=?').bind(r.user_id).first() : null;
     return json({ ok: true, token: await makeToken(db, key, machine, r.expires_at), phone: (owner && owner.phone) || null });
   }
+  if (action === 'features') {                            // ฟีเจอร์เฉพาะเบอร์ทดสอบ: คิวงานเชื่อมแอปร้าน (app.ballsticker.co.th)
+    const t = await readToken(db, inp.token);
+    if (!t) return json({ ok: true, features: {} });
+    const k = await db.prepare('SELECT user_id, machine FROM keys WHERE key=?').bind(t.k).first();
+    if (!k || k.machine !== t.m || !(await isBetaUser(db, k.user_id))) return json({ ok: true, features: {} });
+    return json({ ok: true, features: { queue: { apiKey: 'AIzaSyDgIyeVed6xnG7A8YLRhbvZfxJOoHYpVco', projectId: 'ball-sticker-d95c2', app: 'https://app.ballsticker.co.th/' } } });
+  }
   if (action === 'member_link') {                         // ปุ่ม "หน้าสมาชิก" ในโปรแกรม → ลิงก์เข้าระบบอัตโนมัติ (ใช้ได้ 5 นาที)
     const t = await readToken(db, inp.token), base = new URL(req.url).origin + '/member';
     if (!t) { await log('', 'member_link', 'bad_token'); return json({ ok: true, url: base, why: 'bad_token' }); }
