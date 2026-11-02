@@ -2051,6 +2051,15 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
         <p>ใบสั่งผลิตภายในร้าน ใช้ยืนยันรายละเอียดงานกับลูกค้าและแจ้งฝ่ายผลิตก่อนพิมพ์บิลจริง ไม่มีราคา</p>
       </div>
 
+      <section class="card history no-print" style="margin:0 0 20px" aria-labelledby="jobhist-h">
+        <div class="viz-head">
+          <h2 id="jobhist-h">ประวัติใบคอนเฟิร์มงาน</h2>
+          <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้</span>
+        </div>
+        <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="jobHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
+        <div id="jobHistory"></div>
+      </section>
+
       <div class="bill-grid">
         <div class="stack no-print">
           <div class="card">
@@ -2137,14 +2146,6 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
         </div>
       </div>
 
-      <section class="card history no-print" style="margin-top:20px" aria-labelledby="jobhist-h">
-        <div class="viz-head">
-          <h2 id="jobhist-h">ประวัติใบคอนเฟิร์มงาน</h2>
-          <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้</span>
-        </div>
-        <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="jobHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
-        <div id="jobHistory"></div>
-      </section>
     </section>
 
     <!-- ================= เปิดบิล ================= -->
