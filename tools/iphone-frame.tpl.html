@@ -1,0 +1,44 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>iPhone — Ball Sticker (เดโมใช้งานได้)</title>
+<style>
+*{box-sizing:border-box;margin:0}html,body{height:100%}
+body{background:#eef0f4;font-family:'IBM Plex Sans Thai','Prompt',system-ui,sans-serif;color:#1b1b2f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:10px;overflow:hidden}
+#slot{position:relative}
+.phone{position:absolute;left:0;top:0;width:412px;height:866px;transform-origin:0 0;padding:11px;background:#15151b;border-radius:58px;box-shadow:0 0 0 2px #3a3a44,0 0 0 5px #0d0d12,0 30px 60px -20px rgba(0,0,0,.55)}
+.phone:before,.phone:after{content:"";position:absolute;width:3px;background:#2b2b34;border-radius:2px}
+.phone:before{left:-5px;top:19%;height:7%;box-shadow:0 52px 0 #2b2b34,0 104px 0 #2b2b34}
+.phone:after{right:-5px;top:27%;height:12%}
+.screen{position:relative;width:390px;height:844px;border-radius:47px;overflow:hidden;background:#fff}
+.sb{position:absolute;left:0;right:0;top:0;height:44px;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:6px 34px 0;font-size:15px;font-weight:600;background:#fff;color:#111}
+.sb svg{height:12px}
+.isl{position:absolute;z-index:4;left:50%;top:11px;transform:translateX(-50%);width:118px;height:34px;background:#000;border-radius:99px}
+iframe{position:absolute;left:0;top:44px;width:390px;height:790px;border:0;background:#fff}
+.home{position:absolute;z-index:4;left:50%;bottom:8px;transform:translateX(-50%);width:134px;height:5px;border-radius:99px;background:#111;opacity:.85;pointer-events:none}
+.bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
+.bar button,.bar a{border:0;border-radius:999px;padding:8px 15px;font:inherit;font-size:13.5px;background:#fff;color:#1b1b2f;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.1);text-decoration:none}
+.bar .on{background:#ffc300;font-weight:600}
+.note{font-size:12.5px;color:#5d5d70;text-align:center;max-width:380px;line-height:1.5}
+</style></head><body>
+<div id="slot"><div class="phone" id="phone"><div class="screen"><div class="isl"></div>
+<div class="sb"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><svg viewBox="0 0 18 11" fill="#111"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="10" y="2.5" width="3" height="8.5" rx="1"/><rect x="15" y="0" width="3" height="11" rx="1"/></svg><svg viewBox="0 0 26 12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="#111" opacity=".5"/><rect x="2" y="2" width="17" height="8" rx="2" fill="#111"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="#111" opacity=".5"/></svg></span></div>
+<iframe id="f" title="Ball Sticker"></iframe><div class="home"></div></div></div></div>
+<div class="bar"><button id="b1" class="on">เดโมเจ้าของ</button><button id="b2">เดโมพนักงาน</button><button id="rl">รีเซ็ต</button></div>
+<p class="note">โหมดเดโม: กดใช้ได้จริงในกรอบนี้ ใช้ข้อมูลตัวอย่าง ไม่ได้เชื่อมกับข้อมูลจริงของร้าน และข้อมูลที่กรอกจะหายเมื่อกดรีเซ็ต</p>
+<script type="text/plain" id="appsrc">__APPSRC__</script>
+<script>
+const SRC=document.getElementById('appsrc').textContent.replace(/<\\\/script/g,'</script');
+function mkp(c,w,h){const k=document.createElement('canvas');k.width=w;k.height=h;const g=k.getContext('2d');g.fillStyle=c;g.fillRect(0,0,w,h);g.fillStyle='#ffc300';g.beginPath();g.arc(w/2,h/2,Math.min(w,h)*.38,0,7);g.fill();g.fillStyle='#1d1d2b';g.beginPath();g.arc(w/2,h/2,Math.min(w,h)*.2,0,7);g.fill();return k.toDataURL('image/jpeg',.8)}
+function seeds(role){
+ const jobs=[{id:'j1',no:'JB261102-001',date:'2026-11-02',due:'2026-11-06',page:'ball',jName:'คุณตัวอย่าง ใจดี',jPhone:'081-234-5678',jAddr:'99 ถนนตัวอย่าง อ.เมือง จ.ตัวอย่าง 10000',account:'กิติพงษ์',slipAmount:650,items:[{name:'7cm',qty:140,note:'แบบละ70ชิ้น'}],note:'UV ด้าน',photos:[mkp('#2878dc',500,500),mkp('#dc4646',500,500)],status:'filed',savedAt:2},
+ {id:'j2',no:'JB261101-002',date:'2026-11-01',page:'roll',jName:'ร้านตัวอย่าง',items:[{name:'15x4cm',qty:100,note:''}],photos:[mkp('#3ca064',500,300)],status:'pending',savedAt:1}];
+ const u=role==='staff'?{id:'u2',username:'staff1',name:'พนักงาน (เดโม)',role:'staff'}:{id:'u1',username:'ball',name:'เจ้าของ (เดโม)',role:'owner'};
+ return {bs_users:JSON.stringify([u]),bs_session:JSON.stringify({id:u.id}),bs_jobs:JSON.stringify(jobs)};
+}
+function shim(role){const s=seeds(role);return '<script>(function(){var d='+JSON.stringify(s).replace(/</g,'\\u003c')+';function mk(i){var m=Object.assign({},i);return{getItem:function(k){return k in m?m[k]:null},setItem:function(k,v){m[k]=String(v)},removeItem:function(k){delete m[k]},clear:function(){m={}},key:function(i){return Object.keys(m)[i]||null},get length(){return Object.keys(m).length}}}try{Object.defineProperty(window,"localStorage",{value:mk(d),configurable:true});Object.defineProperty(window,"sessionStorage",{value:mk({}),configurable:true})}catch(e){}})();<\/script>'}
+let role='owner';
+const f=document.getElementById('f'),phone=document.getElementById('phone'),slot=document.getElementById('slot');
+function fit(){const s=Math.min((innerWidth-20)/412,(innerHeight-120)/866,1.25);phone.style.transform='scale('+s+')';slot.style.width=412*s+'px';slot.style.height=866*s+'px'}
+function load(r){role=r;f.srcdoc=SRC.replace(/<head[^>]*>/,function(m){return m+shim(r)});b1.classList.toggle('on',r==='owner');b2.classList.toggle('on',r==='staff')}
+b1.onclick=()=>load('owner');b2.onclick=()=>load('staff');rl.onclick=()=>load(role);
+addEventListener('resize',fit);fit();load('owner');
+</script>
+</body></html>
