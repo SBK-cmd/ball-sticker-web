@@ -3742,7 +3742,7 @@ function bahtText(value) {
   let currentJobId = null;
   let jobPhotos = [];
   let jobStatus = 'pending';
-  const JOB_STATUS_LABEL = {pending: 'รอทำ', filed: 'ทำไฟล์แล้ว', printed: 'ผลิตแล้ว', shipped: 'จัดส่ง'};
+  const JOB_STATUS_LABEL = {pending: 'รอทำ', filed: 'ทำไฟล์แล้ว', printed: 'ผลิตแล้ว', shipped: 'จัดส่งแล้ว'};
   // ไม่มีสิทธิ์เห็นเงิน (เช่น พนักงาน): ซ่อนช่องบัญชี/ยอดสลิป/คำอธิบายในใบคอนเฟิร์มงาน (ค่าที่บันทึกไว้เดิมยังอยู่ ไม่ถูกลบ)
   if (!canKey) {
     ['fabNewJob', 'jobFormTop'].forEach(id => { const e = $(id); if (e) e.hidden = true; });
@@ -3762,6 +3762,13 @@ function bahtText(value) {
     jobStatus = 'printed';
     renderJobStatusBadge();
     if (currentJobId) updateJobStatus(currentJobId, 'printed', {silent: true});
+  }
+  // เลื่อนสถานะไปข้างหน้าอัตโนมัติ (ไม่ย้อนกลับ): อัปรูปงานเสร็จ → ผลิตแล้ว · สแกนเลขพัสดุ → จัดส่งแล้ว
+  function advanceJobStatus(id, to) {
+    const rank = {pending: 0, filed: 1, printed: 2, shipped: 3};
+    const j = store.get('bs_jobs', []).find(x => x.id === id); if (!j) return false;
+    if ((rank[to] || 0) <= (rank[j.status || 'pending'] || 0)) return false;
+    updateJobStatus(id, to, {silent: true}); return true;
   }
   function updateJobStatus(id, status, opts) {
     opts = opts || {};
@@ -5406,7 +5413,8 @@ function bahtText(value) {
           note = ' (ยังไม่มีในหน้าติดตาม สร้างรายการใหม่ให้แล้ว)';
         }
         jl[ji].trackCode = code; jl[ji].savedAt = Date.now(); store.set('bs_jobs', jl); cloudSave('jobs', jl[ji]);
-        renderJobHistory(); toast('สแกนได้ ' + code + ' ผูกกับใบ ' + (jl[ji].no || '') + ' แล้ว' + note);
+        advanceJobStatus(id, 'shipped');
+        renderJobHistory(); toast('สแกนได้ ' + code + ' ผูกกับใบ ' + (jl[ji].no || '') + ' แล้ว สถานะ: จัดส่งแล้ว' + note);
       } catch (err) { toast('สแกนไม่สำเร็จ ลองใหม่อีกครั้ง'); }
       return;
     }
@@ -5422,7 +5430,8 @@ function bahtText(value) {
         list[idx].donePhotos = (list[idx].donePhotos || []).concat(urls);
         list[idx].savedAt = Date.now();
         store.set('bs_jobs', list); cloudSave('jobs', list[idx]);
-                renderJobHistory(); toast('เพิ่มรูปงานเสร็จ ' + urls.length + ' รูปเข้าใบ ' + (list[idx].no || '') + ' แล้ว');
+                const adv = advanceJobStatus(id, 'printed');
+        renderJobHistory(); toast('เพิ่มรูปงานเสร็จ ' + urls.length + ' รูปเข้าใบ ' + (list[idx].no || '') + ' แล้ว' + (adv ? ' สถานะ: ผลิตแล้ว' : ''));
       } catch (err) { toast('เพิ่มรูปไม่สำเร็จ ลองใหม่อีกครั้ง'); }
       return;
     }
