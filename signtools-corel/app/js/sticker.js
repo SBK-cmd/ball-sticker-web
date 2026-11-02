@@ -47,7 +47,7 @@
   // เส้นตัดหดเข้าในงาน → งานพิมพ์ยื่นเลยกรอบตัด ต้องเว้นห่างพอไม่ให้งานดวงข้างๆ ทับกัน
   function bleedOut() { var d = die(); return Math.max(0, -kissOff() - (d ? d.offMM : 0)); }
   function effGap() { return Math.max(Math.max(0, mmv('stkGap', 3)), 2 * bleedOut()); }
-  function die() { return $('stkDie').checked ? { shape: $('stkDieShape').value, offMM: Math.max(0, mmv('stkDieOff', 3)), radMM: Math.max(0, mmv('stkDieRad', 5)) } : null; }
+  function die() { return $('stkDie').checked ? { shape: $('stkDieShape').value, offMM: Math.max(0, mmv('stkDieOff', 3)), radMM: Math.max(0, mmv('stkDieRad', 5)), only: $('stkDieOnly').checked } : null; }
   function credit() {
     if (!$('stkCredit').checked) return null;
     return { file: $('stkCrFile').value || '', text: $('stkCrText').value.trim() || 'บอล สติ๊กเกอร์', pos: $('stkCrPos').value, wMM: Math.max(3, mmv('stkCrW', 20)), inMM: Math.max(0, mmv('stkCrIn', 2)) };
@@ -353,7 +353,7 @@
     });
   };
   $('stkCrClear').onclick = function () { $('stkCrFile').value = ''; $('stkCrFile').dispatchEvent(new Event('change')); recalc(); };
-  ['stkCut', 'stkOff', 'stkRad', 'stkGap', 'stkSheet', 'stkOrient', 'stkW', 'stkH', 'stkMargin', 'stkRot', 'stkMarks', 'stkCm5', 'stkMkIn', 'stkMkLen', 'stkMkW', 'stkMkGap', 'stkDie', 'stkDieShape', 'stkDieOff', 'stkDieRad', 'stkCredit', 'stkCrPos', 'stkNeed', 'stkFullRow'].forEach(function (id) {
+  ['stkCut', 'stkOff', 'stkRad', 'stkGap', 'stkSheet', 'stkOrient', 'stkW', 'stkH', 'stkMargin', 'stkRot', 'stkMarks', 'stkCm5', 'stkMkIn', 'stkMkLen', 'stkMkW', 'stkMkGap', 'stkDie', 'stkDieShape', 'stkDieOff', 'stkDieRad', 'stkDieOnly', 'stkCredit', 'stkCrPos', 'stkNeed', 'stkFullRow'].forEach(function (id) {
     $(id).addEventListener('input', recalcSoon); $(id).addEventListener('change', recalcSoon);
   });
   document.querySelectorAll('.seg[data-name="stkMode"] button').forEach(function (b) { b.addEventListener('click', function () { setTimeout(recalc, 0); }); });

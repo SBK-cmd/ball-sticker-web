@@ -311,3 +311,22 @@ body.intool .topbar{display:flex}
 
 .cutlegend{display:flex;gap:10px;align-items:center;font-size:11.5px}.cutlegend .lk{color:#ff4fa3}.cutlegend .ld{color:#2fd27a}.cutlegend button{margin-left:auto}
 .nmbox{border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px;margin:6px 0;display:flex;flex-direction:column;gap:6px}.nmbox.hidden{display:none}
+/* คิวงานเชื่อมแอปร้าน */
+.cqbar{display:flex;gap:6px;margin:8px 0}.cqbar input{flex:1;min-width:0}
+.qjob.cq .qtop{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cqst{width:auto!important;flex:none;font-size:12px;font-weight:700;border-radius:999px;padding:3px 8px;border:1px solid rgba(255,255,255,.18);background:#2a2a30;color:#eee}
+.cqst.pending{background:#3b2f12;color:#ffd979;border-color:#7a5d1a}.cqst.filed{background:#13304a;color:#8fd0ff;border-color:#1f5a85}
+.cqst.printed{background:#173a22;color:#9ff0ae;border-color:#2a6b3c}.cqst.shipped{background:#2a2a30;color:#aaa}
+.qs.filed b{color:#8fd0ff}.qs.printed b{color:#9ff0ae}.qs.pending b{color:#ffd979}
+.cqrow{display:flex;gap:8px;align-items:flex-start;margin-top:4px}.cqth{width:44px;height:44px;object-fit:cover;border-radius:6px;flex:none}
+.qjob.cq{cursor:pointer}.qjob.cq:hover{border-color:rgba(255,210,63,.45)}
+.cqmodal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-start;justify-content:center;padding:14px 10px;z-index:9000;overflow:auto}
+.cqmodal.show{display:flex}
+.cqbox{width:100%;max-width:520px;cursor:default;gap:6px!important;padding:12px!important;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.cqhead{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.cqk{font-size:11px;color:var(--mut);margin-top:6px}.cqv{font-size:12.5px;word-break:break-word;line-height:1.5}
+.cqv ol{margin:2px 0 0 18px;padding:0}.cqnote{background:rgba(255,210,63,.07);border-radius:6px;padding:6px 8px}
+.cqph{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px}.cqph img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;cursor:zoom-in}
+.cqv.small{font-size:11px;margin-top:4px}
+.cqv a{color:var(--acc,#ffd23f);font-size:11px;margin-left:4px}
+.cqcut{border-color:rgba(255,79,163,.5)!important;color:#ff9fd0!important}

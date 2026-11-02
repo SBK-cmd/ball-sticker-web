@@ -267,6 +267,11 @@ module.exports = function createCore(opt) {
   }
 
   // ---------- update ----------
+  function features() {                       // ฟีเจอร์พิเศษตามบัญชี (เช่น คิวงานเชื่อมแอปร้าน สำหรับเบอร์ทดสอบ)
+    var lic = readLic();
+    if (!lic || !lic.token) return Promise.resolve({});
+    return api({ action: 'features', token: lic.token }).then(function (j) { return (j && j.features) || {}; }, function () { return {}; });
+  }
   function checkUpdate() {
     var lic = readLic();          // ส่งโทเคนไปด้วย → เครื่องทดสอบเบต้าได้รุ่นเบต้า
     return api(lic && lic.token ? { action: 'latest', token: lic.token } : { action: 'latest' }).then(function (j) {
@@ -328,6 +333,6 @@ module.exports = function createCore(opt) {
 
   return {
     machineId: machineId, machineName: machineName, version: readVersion, localStatus: localStatus,
-    activate: activate, activateAccount: activateAccount, refresh: refresh, via: function () { return via.last; }, deactivate: deactivate, memberLink: memberLink, diag: diag, report: function (t) { return api({ action: 'diag', text: String(t).slice(0, 900) }).catch(function () {}); }, checkUpdate: checkUpdate, applyUpdate: applyUpdate, cmpVer: cmpVer
+    activate: activate, activateAccount: activateAccount, refresh: refresh, via: function () { return via.last; }, deactivate: deactivate, memberLink: memberLink, diag: diag, report: function (t) { return api({ action: 'diag', text: String(t).slice(0, 900) }).catch(function () {}); }, checkUpdate: checkUpdate, applyUpdate: applyUpdate, cmpVer: cmpVer, features: features
   };
 };

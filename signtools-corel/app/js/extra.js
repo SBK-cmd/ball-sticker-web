@@ -97,6 +97,7 @@
   }
   function fmtDue(d) { var p = d.split('-'); return +p[2] + ' ' + TH_M[+p[1] - 1]; }
   function renderQ() {
+    if (!$('qSum') || window.ST_cloudQueue) return;   // คิวงานแบบเชื่อมแอปร้านแทนที่แล้ว (js/queue.js)
     var f = seg('qFilter') || 'open';
     var c = { print: 0, cut: 0, ready: 0, done: 0 }, late = 0, t = today();
     jobs.forEach(function (j) { c[j.status]++; if (j.status !== 'done' && j.due && j.due < t) late++; });

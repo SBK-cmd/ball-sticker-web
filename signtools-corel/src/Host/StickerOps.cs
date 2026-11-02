@@ -267,6 +267,7 @@ namespace SignTools
                 for (int i = 0; i < ds.Count; i++)
                 {
                     object cut, die; MakeCuts((object)doc, (object)PV, ds[i], o, warn, i, out cut, out die);
+                    if (die != null && Str(Obj(o, "die"), "only") == "True") { try { ((dynamic)cut).Delete(); } catch { } }
                     var cb = Box(die ?? cut); sizes.Add(N(Math.Round((cb[2] - cb[0]) * 10) / 10) + "×" + N(Math.Round((cb[3] - cb[1]) * 10) / 10));
                 }
                 if (Obj(o, "credit") != null) warn.Add("เครดิตร้านยังไม่รองรับใน CorelDRAW");
@@ -367,6 +368,7 @@ namespace SignTools
                             var cb = Box(d2 != null ? (object)d2 : (object)c2);
                             double dx = (PL + Dbl(pl, "x", 0)) - cb[0], dy = (PT - Dbl(pl, "y", 0)) - cb[3];
                             foreach (dynamic p in parts) { p.Move(dx, dy); sb = Union(sb, Box((object)p)); }
+                            if (d2 != null && Str(Obj(o, "die"), "only") == "True") { try { c2.Delete(); } catch { } }   // Die Cut อย่างเดียว
                             made++;
                         }
                         if (s < notes.Length && notes[s] != null)
