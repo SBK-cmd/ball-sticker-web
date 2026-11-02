@@ -4139,7 +4139,8 @@ function bahtText(value) {
 
   function collectJob() {
     return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, account: $('jobAccount').value, page: $('jobPage').value, bankInIds: jobBankInIds.slice(), bankInId: jobBankInIds[0] || '', slipAmount: $('jobSlipAmount').value, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
-      items: jobItems.map(i => { const o = {name: i.name, qty: i.qty, note: i.note}; if (i.price !== '' && i.price != null) o.price = i.price; return o; }), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus, wholesale: $('jobWholesale').checked};
+      items: jobItems.map(i => { const o = {name: i.name, qty: i.qty, note: i.note}; if (i.price !== '' && i.price != null) o.price = i.price; return o; }), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus, wholesale: $('jobWholesale').checked,
+      recv: ($('jRName').value.trim() || $('jRPhone').value.trim() || $('jRAddr').value.trim()) ? {name: $('jRName').value.trim(), phone: $('jRPhone').value.trim(), addr: $('jRAddr').value.trim()} : null};
   }
   function applyJob(j) {
     $('jobNo').value = j.no || ''; $('jobDate').value = j.date || todayISO(); $('jobDue').value = j.due || '';
@@ -4152,6 +4153,7 @@ function bahtText(value) {
     jobPhotos = (j.photos && j.photos.length) ? j.photos.slice() : [];
     jobStatus = j.status || 'pending';
     $('jobWholesale').checked = !!j.wholesale; syncJobWholesaleBtn();
+    { const rv = j.recv || {}; $('jRName').value = rv.name || ''; $('jRPhone').value = rv.phone || ''; $('jRAddr').value = rv.addr || ''; }
     renderJobItems(); renderJobPhotos(); renderJobStatusBadge(); renderJob();
   }
   function syncJobWholesaleBtn() { const b = $('jobToWholesale'); if (b) b.hidden = !($('jobWholesale').checked && can('wholesale')); }
@@ -4189,6 +4191,7 @@ function bahtText(value) {
     return '<div class="jd">' +
       (cust || j.jAddr ? '<div><span class="jd-k">ลูกค้า</span><span class="jd-cust">' + (cust ? cust : '') + '</span>' + (j.jAddr ? '<br>' + esc(j.jAddr) : '') + '</div>' : '') +
       '<div><span class="jd-k">รายการงาน</span>' + (its.length ? '<ol>' + its.map(i => '<li style="display:list-item;padding:0;border:0;background:none;box-shadow:none;border-radius:0">' + esc(i.name) + ' × ' + esc(fmt(num(i.qty))) + (i.note && i.note.trim() ? ' <small>(' + esc(i.note) + ')</small>' : '') + ((j.whAdded && j.whAdded[jobItemKey(i, (j.items || []).indexOf(i))]) ? ' <small style="color:#0a7a3b;font-weight:700">✔ ใส่ใบราคาส่งแล้ว</small>' : '') + '</li>').join('') + '</ol>' : '—') + '</div>' +
+      (j.recv && (j.recv.name || j.recv.addr) ? '<div><span class="jd-k">ฝากส่งถึง</span><b>' + esc(j.recv.name || '') + '</b>' + (j.recv.phone ? ' · <a href="tel:' + esc(String(j.recv.phone).replace(/[^\d+]/g, '')) + '">' + esc(j.recv.phone) + '</a>' : '') + (j.recv.addr ? '<br>' + esc(j.recv.addr) : '') + '</div>' : '') +
       (j.note && j.note.trim() ? '<div><span class="jd-k">หมายเหตุ</span>' + esc(j.note).replace(/\n/g, '<br>') + '</div>' : '') +
       (j.due ? '<div><span class="jd-k">กำหนดส่ง</span>' + esc(thDate(j.due)) + '</div>' : '') +
       ((j.photos && j.photos.length) ? '<div><span class="jd-k">รูปอ้างอิง</span></div><div class="jd-ph">' + j.photos.map(src => '<img src="' + src + '" alt="รูปอ้างอิง">').join('') + '</div>' : '') +
@@ -4216,7 +4219,7 @@ function bahtText(value) {
     $('jobHistory').innerHTML = notice + whBanner + '<ul>' + shown.map(j => {
       const st = j.status || 'pending';
       return '<li data-id="' + esc(j.id) + '"' + (jobOpenIds[j.id] ? ' class="open"' : '') + '>' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '') +
-      '<div class="meta"><b>' + esc(j.no) + '</b><small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[j.page] ? ' · ' + esc(PAGE_LABEL[j.page]) : '') + (canBank && j.account ? ' · บัญชี ' + esc(j.account) : '') + (canBank && num(j.slipAmount) > 0 ? ' · สลิป ' + money(num(j.slipAmount)) + ' บาท' : '') + (j.wholesale ? ' · 🏷️ ราคาส่ง' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
+      '<div class="meta"><b>' + esc(j.no) + '</b><small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[j.page] ? ' · ' + esc(PAGE_LABEL[j.page]) : '') + (canBank && j.account ? ' · บัญชี ' + esc(j.account) : '') + (canBank && num(j.slipAmount) > 0 ? ' · สลิป ' + money(num(j.slipAmount)) + ' บาท' : '') + (j.wholesale ? ' · 🏷️ ราคาส่ง' : '') + (j.recv && (j.recv.name || j.recv.addr) ? ' · 📦 ฝากส่ง' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
       '<select class="job-status-select status-pill ' + st + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
       '</select>' +
@@ -5402,7 +5405,34 @@ function bahtText(value) {
     if (item && !item.name) item.name = 'สติ๊กเกอร์';
     return {name, phone, addr: addr.join(' '), item, note: note.join('\n')};
   }
+  // ลูกค้าฝากส่ง: ข้อความมี “ผู้ส่ง” และ “ผู้รับ” → ผู้ส่ง = ลูกค้า (งานราคาส่ง) ผู้รับ = ปลายทาง
+  function splitSenderReceiver(raw) {
+    const t = String(raw || '').replace(/\r/g, '');
+    const m1 = t.match(/(^|\n)\s*ผู้ส่ง\s*[.:：…]*\s*/), m2 = t.match(/(^|\n)\s*ผู้รับ\s*[.:：…]*\s*/);
+    if (!m1 || !m2) return null;
+    const i1 = m1.index + m1[0].length, i2 = m2.index + m2[0].length;
+    const clean = x => x.replace(/^[\s\-–—_=*·.]+$/gm, '').replace(/\n{2,}/g, '\n').trim();
+    let send, recv, pre;
+    if (m1.index < m2.index) { pre = t.slice(0, m1.index); send = t.slice(i1, m2.index); recv = t.slice(i2); }
+    else { pre = t.slice(0, m2.index); recv = t.slice(i2, m1.index); send = t.slice(i1); }
+    const rv = splitCustomer(clean(recv));
+    // ชื่อผู้รับ = ทุกบรรทัดก่อนบรรทัดที่อยู่/เบอร์ (ชื่อคน + ชื่อร้าน)
+    const rl = clean(recv).split('\n').map(x => x.trim()).filter(Boolean), nm = [];
+    for (const ln of rl) { if (/^(เบอร์|โทร|tel)/i.test(ln) || /\d{2,3}[-\s]?\d{3}[-\s]?\d{4}/.test(ln) || /^(บ้านเลขที่|เลขที่|\d+(\/\d+)?\s|หมู่|ม\.|ต\.|ตำบล|ซ\.|ถ\.)/.test(ln)) break; nm.push(ln); }
+    if (nm.length) rv.name = nm.join(' · ');
+    return {send: splitCustomer(clean(send)), recv: rv, pre: clean(pre)};
+  }
   $('jSplit').addEventListener('click', () => {
+    const sr = splitSenderReceiver($('jPaste').value);
+    if (sr && (sr.send.name || sr.send.phone) && (sr.recv.name || sr.recv.phone || sr.recv.addr)) {
+      $('jName').value = sr.send.name; $('jPhone').value = sr.send.phone; $('jAddr').value = sr.send.addr || '';
+      $('jRName').value = sr.recv.name; $('jRPhone').value = sr.recv.phone; $('jRAddr').value = sr.recv.addr;
+      if (!$('jobWholesale').checked) { $('jobWholesale').checked = true; syncJobWholesaleBtn(); renderJobItems(); }
+      const ex = sr.pre ? splitCustomer(sr.pre) : null;
+      if (ex && ex.item) { const k = jobItems.findIndex(x => !x.name.trim()); if (k >= 0) jobItems[k] = {name: ex.item.name, qty: ex.item.qty, note: jobItems[k].note || ''}; else jobItems.push({name: ex.item.name, qty: ex.item.qty, note: ''}); renderJobItems(); }
+      ['jName', 'jPhone', 'jAddr', 'jRName', 'jRPhone', 'jRAddr'].forEach(id => $(id).dispatchEvent(new Event('input', {bubbles: true})));
+      renderJob(); toast('แยกแบบฝากส่งแล้ว: ผู้ส่ง ' + sr.send.name + ' (งานราคาส่ง) → ผู้รับ ' + (sr.recv.name || '') + ' ตรวจอีกครั้ง'); return;
+    }
     const r = splitCustomer($('jPaste').value);
     if (!r.name && !r.phone && !r.addr && !r.item) { toast('วางข้อมูลก่อน'); return; }
     $('jName').value = r.name; $('jPhone').value = r.phone; $('jAddr').value = r.addr;

@@ -1267,6 +1267,8 @@ tr{break-inside:avoid}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 <style id="fab-newjob-css">
+.recv-box{background:#eef6ff;border:1px solid #bcd7f5;border-radius:14px;padding:10px 12px;margin:8px 0}
+.recv-box .f{margin-top:6px}
 .wh-sweep{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#fff3c4;border:1px solid #f0d36b;border-radius:14px;padding:10px 14px;margin:0 0 10px;font-size:14px}
 .fab-newjob{position:fixed;right:12px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:60;border:3px solid #ffc400;border-radius:999px;padding:14px 22px;min-height:54px;background:#1c1c2e;color:#ffc400;font:inherit;font-weight:800;font-size:17px;letter-spacing:.2px;box-shadow:0 0 0 4px rgba(255,196,0,.28),0 14px 30px -6px rgba(20,20,40,.6);cursor:pointer}
 .fab-newjob:active{transform:scale(.97)}
@@ -1759,6 +1761,12 @@ tr{break-inside:avoid}
               <div id="jNameChips" class="vchips no-print" aria-label="ชื่อที่เคยคีย์ไว้"></div>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="jPhone" type="tel" autocomplete="off"></label>
               <label class="f"><span>ที่อยู่ลูกค้า (ถ้ามี)</span><textarea id="jAddr"></textarea></label>
+              <div class="recv-box" id="jRecvBox"><b>📦 ลูกค้าฝากส่ง — ผู้รับปลายทาง</b>
+                <div class="hint" style="margin:2px 0 6px">ถ้าลูกค้าฝากส่งให้คนอื่น วางข้อความที่มี “ผู้ส่ง..” และ “ผู้รับ..” แล้วกดแยก ผู้ส่งจะเป็นชื่อลูกค้า (งานราคาส่ง) ผู้รับอยู่ในช่องนี้</div>
+                <label class="f"><span>ชื่อผู้รับ</span><input class="txt" id="jRName" type="text" autocomplete="off"></label>
+                <label class="f"><span>เบอร์ผู้รับ</span><input class="txt" id="jRPhone" type="tel" autocomplete="off"></label>
+                <label class="f"><span>ที่อยู่ผู้รับ</span><textarea id="jRAddr"></textarea></label>
+              </div>
             </div>
           </div>
 
@@ -2665,7 +2673,7 @@ tr{break-inside:avoid}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=451603c8bc",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=1d47cafceb",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 </body>
