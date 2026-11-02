@@ -1,0 +1,290 @@
+/* Sign Tools — คิวงานเชื่อมแอปร้าน (app.ballsticker.co.th · Firestore คอลเลกชัน jobs) — เฉพาะบัญชีทดสอบ (เซิร์ฟเวอร์เป็นคนเปิดให้)
+ * อ่านใบงานจากแอป เปลี่ยนสถานะ (รอทำ → ทำไฟล์แล้ว → ผลิตแล้ว → จัดส่ง) ผูกไฟล์ Illustrator กับใบงาน แล้วกดเปิดไฟล์จากคิวได้ */
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var ST = ['pending', 'filed', 'printed', 'shipped'];
+  var SN = { pending: 'รอทำ', filed: 'ทำไฟล์แล้ว', printed: 'ผลิตแล้ว', shipped: 'จัดส่ง' };
+  var TH_M = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  var cfg = null, jobs = [], filter = 'open', q = '', loading = false, lastErr = '', loadedAt = 0, openIds = {};
+  function h(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var toastT;
+  function toast(t) { var el = $('toast'); if (!el) return; el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { el.classList.remove('show'); }, 3000); }
+  function host(fn, arg) {
+    return new Promise(function (resolve) {
+      if (!window.__adobe_cep__) return resolve({ error: 'ไม่ได้รันใน Illustrator' });
+      window.__adobe_cep__.evalScript(fn + '(' + (arg === undefined ? '' : JSON.stringify(arg).replace(/[\u007f-￿]/g, function (c) { return '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4); })) + ')', function (r) {
+        try { resolve(JSON.parse(r)); } catch (e) { resolve({ error: String(r).slice(0, 200) }); }
+      });
+    });
+  }
+
+  // ---------- เครือข่าย ----------
+  function xhr(method, url, body, headers) {
+    return new Promise(function (resolve, reject) {
+      var x = new XMLHttpRequest(); x.open(method, url, true); x.timeout = 20000;
+      Object.keys(headers || {}).forEach(function (k) { x.setRequestHeader(k, headers[k]); });
+      x.onload = function () { var j = null; try { j = JSON.parse(x.responseText); } catch (e) {} if (x.status >= 200 && x.status < 300) resolve(j); else { var er = new Error((j && j.error && (j.error.message || j.error.status)) || ('HTTP ' + x.status)); er.status = x.status; reject(er); } };
+      x.onerror = function () { reject(new Error('ต่อเน็ตไม่ได้')); };
+      x.ontimeout = function () { reject(new Error('หมดเวลาเชื่อมต่อ')); };
+      x.send(body == null ? null : typeof body === 'string' ? body : JSON.stringify(body));
+    });
+  }
+  // บัญชีนิรนามของ Firebase (แบบเดียวกับแอปร้าน) · เก็บ refresh token ไว้ใช้ซ้ำ
+  var tok = null, tokExp = 0;
+  function token() {
+    if (tok && Date.now() < tokExp - 60000) return Promise.resolve(tok);
+    var rt = ''; try { rt = localStorage.getItem('st_fb_rt') || ''; } catch (e) {}
+    var p = rt
+      ? xhr('POST', 'https://securetoken.googleapis.com/v1/token?key=' + cfg.apiKey, 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(rt), { 'Content-Type': 'application/x-www-form-urlencoded' })
+          .then(function (j) { return { idToken: j.id_token, refreshToken: j.refresh_token, expiresIn: j.expires_in }; })
+      : Promise.reject(new Error('no rt'));
+    return p.catch(function () {
+      return xhr('POST', 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + cfg.apiKey, { returnSecureToken: true }, { 'Content-Type': 'application/json' });
+    }).then(function (j) {
+      tok = j.idToken; tokExp = Date.now() + (parseInt(j.expiresIn, 10) || 3600) * 1000;
+      try { localStorage.setItem('st_fb_rt', j.refreshToken); } catch (e) {}
+      return tok;
+    });
+  }
+  function base() { return 'https://firestore.googleapis.com/v1/projects/' + cfg.projectId + '/databases/(default)/documents/'; }
+  function fv(v) {                       // ค่าแบบ Firestore → JS
+    if (!v) return null;
+    if ('stringValue' in v) return v.stringValue;
+    if ('integerValue' in v) return +v.integerValue;
+    if ('doubleValue' in v) return v.doubleValue;
+    if ('booleanValue' in v) return v.booleanValue;
+    if ('timestampValue' in v) return v.timestampValue;
+    if ('nullValue' in v) return null;
+    if ('arrayValue' in v) return (v.arrayValue.values || []).map(fv);
+    if ('mapValue' in v) { var o = {}, f = v.mapValue.fields || {}; Object.keys(f).forEach(function (k) { o[k] = fv(f[k]); }); return o; }
+    return null;
+  }
+  var FIELDS = ['no', 'date', 'jName', 'jPhone', 'jAddr', 'page', 'account', 'items', 'note', 'due', 'status', 'savedAt', 'aiFile', 'aiFileName', 'photos', 'createdBy'];
+  function load(quiet) {
+    if (loading) return; loading = true; if (!quiet) render();
+    var all = [];
+    function page(col, fields, pt) {
+      return token().then(function (t) {
+        var u = base() + col + '?pageSize=300' + fields.map(function (f) { return '&mask.fieldPaths=' + f; }).join('') + (pt ? '&pageToken=' + encodeURIComponent(pt) : '');
+        return xhr('GET', u, null, { Authorization: 'Bearer ' + t });
+      }).then(function (j) {
+        (j && j.documents || []).forEach(function (d) {
+          var o = { id: d.name.split('/').pop(), _col: col }, f = d.fields || {};
+          Object.keys(f).forEach(function (k) { o[k] = fv(f[k]); });
+          if (col === 'wholesale') {          // ใบราคาส่ง → แยก 1 รายการ = 1 งาน (คนละลาย คนละไฟล์) · สถานะ/ไฟล์ของแต่ละรายการเก็บในช่อง stq ของใบนั้น (แอปไม่ใช้ช่องนี้)
+            var its = (o.items || []).map(function (it, ix) { return { it: it, ix: ix }; }).filter(function (x) { return x.it && String(x.it.name || '').trim(); });
+            var fresh = Date.now() - (o.savedAt || 0) < 7 * 86400000, stq = o.stq || {};
+            if (!its.length) its = [{ it: { name: '(ไม่มีรายการ)' }, ix: 0 }];
+            its.forEach(function (x, pos) {
+              var q = stq['i' + x.ix] || {};
+              all.push({ id: o.id + '#' + x.ix, _col: col, _doc: o.id, _idx: x.ix, ws: true, wsN: its.length, wsI: pos + 1, jName: o.buyerName, no: o.ref || '', date: o.date, savedAt: o.savedAt, createdBy: o.createdBy,
+                note: o.note, paid: o.paid, items: [x.it], status: q.status || (fresh ? 'pending' : 'shipped'), aiFile: q.aiFile || '', aiFileName: q.aiFileName || '' });   // ใบเก่าที่ยังไม่เคยตั้งสถานะ = ถือว่าส่งแล้ว
+            });
+            return;
+          }
+          all.push(o);
+        });
+        if (j && j.nextPageToken && all.length < 3000) return page(col, fields, j.nextPageToken);
+      });
+    }
+    page('jobs', FIELDS, '').then(function () {
+      return page('wholesale', ['ref', 'date', 'buyerName', 'items', 'discount', 'note', 'paid', 'stq', 'savedAt', 'createdBy'], '').catch(function (e) { lastErr = 'ใบราคาส่ง: ' + e.message; });
+    }).then(function () { jobs = dedupe(all); if (!/ราคาส่ง/.test(lastErr)) lastErr = ''; loadedAt = Date.now(); }, function (e) { lastErr = e.message; })
+      .then(function () { loading = false; render(); });
+  }
+  // รายการในใบราคาส่งที่มีใบคอนเฟิร์มงานของลูกค้าคนเดียวกัน + ชื่องานเดียวกันอยู่แล้ว → ไม่แสดงซ้ำ (ใช้ใบงานแทน)
+  function norm(t) { return String(t || '').toLowerCase().replace(/[\s.,:;()\-_/]+/g, ''); }
+  function dayOf(j) { var m = /^(\d{4})-(\d\d)-(\d\d)/.exec(String(j.date || '')); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : (j.savedAt || 0); }
+  function dedupe(list) {
+    var have = {}, custDays = {};
+    list.forEach(function (j) {
+      if (j.ws) return; var c = norm(j.jName);
+      (custDays[c] = custDays[c] || []).push(dayOf(j));
+      (j.items || []).forEach(function (i) { if (i && i.name) have[c + '|' + norm(i.name)] = true; });
+    });
+    var hidden = 0;
+    var out = list.filter(function (j) {
+      if (!j.ws) return true;
+      var c = norm(j.jName), name = String(j.items && j.items[0] && j.items[0].name || ''), n = norm(name);
+      if (/^\s*(ค่า)?(จัด)?ส่ง|ค่าขนส่ง|ค่าจัดส่ง|ค่าส่ง/.test(name)) { hidden++; return false; }      // ค่าส่ง ไม่ใช่งานผลิต
+      if (n && have[c + '|' + n]) { hidden++; return false; }
+      // ลูกค้าคนนี้มีใบคอนเฟิร์มงานใกล้วันเดียวกัน (±7 วัน) → ใบราคาส่งเป็นแค่ใบราคา งานจริงอยู่ในใบงานแล้ว
+      var d = dayOf(j);
+      if ((custDays[c] || []).some(function (x) { return Math.abs(x - d) <= 7 * 86400000; })) { hidden++; return false; }
+      return true;
+    });
+    dupHidden = hidden;
+    return out;
+  }
+  var dupHidden = 0;
+  function patch(j, fields) {
+    if (j._doc) {                        // รายการในใบราคาส่ง → stq.i<ลำดับ>.<ช่อง>
+      var key = 'i' + j._idx, inner = {};
+      Object.keys(fields).forEach(function (k) { inner[k] = { stringValue: String(fields[k]) }; });
+      var bodyW = { fields: { stq: { mapValue: { fields: {} } } } }; bodyW.fields.stq.mapValue.fields[key] = { mapValue: { fields: inner } };
+      var maskW = Object.keys(fields).map(function (k) { return 'updateMask.fieldPaths=stq.' + key + '.' + k; }).join('&');
+      return token().then(function (t) { return xhr('PATCH', base() + 'wholesale/' + encodeURIComponent(j._doc) + '?' + maskW + '&currentDocument.exists=true', bodyW, { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }); });
+    }
+    var mask = Object.keys(fields).map(function (k) { return 'updateMask.fieldPaths=' + k; }).join('&'), body = { fields: {} };
+    Object.keys(fields).forEach(function (k) { var v = fields[k]; body.fields[k] = typeof v === 'number' ? { integerValue: String(Math.round(v)) } : { stringValue: String(v) }; });
+    return token().then(function (t) { return xhr('PATCH', base() + (j._col || 'jobs') + '/' + encodeURIComponent(j.id) + '?' + mask + '&currentDocument.exists=true', body, { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }); });
+  }
+
+  // ---------- หน้าจอ ----------
+  function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function fmtD(s) { var m = /^(\d{4})-(\d\d)-(\d\d)/.exec(String(s || '')); return m ? +m[3] + ' ' + TH_M[+m[2] - 1] : String(s || ''); }
+  function dueTag(j) {
+    if (!j.due || j.status === 'shipped') return '';
+    var d = String(j.due).slice(0, 10), t = today();
+    if (d < t) return '<span class="due late">เลยกำหนด ' + h(fmtD(d)) + '</span>';
+    if (d === t) return '<span class="due now">ส่งวันนี้</span>';
+    return '<span class="due">ส่ง ' + h(fmtD(d)) + '</span>';
+  }
+  function build() {
+    var pane = $('tab-queue');
+    pane.innerHTML =
+      '<div class="qsum" id="cqSum"></div>' +
+      '<div class="seg" id="cqSeg"><button data-v="open" class="on">ยังไม่ส่ง</button><button data-v="done">จัดส่งแล้ว</button><button data-v="all">ทั้งหมด</button></div>' +
+      '<div class="cqbar"><input id="cqQ" type="text" placeholder="ค้นหา ชื่อลูกค้า / เลขใบ / งาน"><button class="btn ghost sm" id="cqRe">รีเฟรช</button></div>' +
+      '<div id="cqList" class="qlist"></div>' +
+      '<div class="hint" id="cqHint"></div>';
+    $('cqSeg').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; [].forEach.call($('cqSeg').children, function (x) { x.classList.toggle('on', x === b); }); filter = b.dataset.v; render(); });
+    $('cqQ').addEventListener('input', function () { q = this.value.trim().toLowerCase(); render(); });
+    $('cqRe').onclick = function () { load(); };
+    $('cqList').addEventListener('click', onClick);
+    $('cqList').addEventListener('change', onChange);
+  }
+  function render() {
+    if (!$('cqList')) return;
+    setTimeout(refreshDetail, 0);
+    var t = today(), c = { pending: 0, filed: 0, printed: 0 }, late = 0;
+    jobs.forEach(function (j) { var s = j.status || 'pending'; if (c[s] != null) c[s]++; if (s !== 'shipped' && j.due && String(j.due).slice(0, 10) < t) late++; });
+    $('cqSum').innerHTML = ['pending', 'filed', 'printed'].map(function (s) { return '<div class="qs ' + s + '"><b>' + c[s] + '</b><span>' + SN[s] + '</span></div>'; }).join('') +
+      '<div class="qs late' + (late ? ' on' : '') + '"><b>' + late + '</b><span>เลยกำหนด</span></div>';
+    var list = jobs.filter(function (j) {
+      var s = j.status || 'pending';
+      if (filter === 'open' && s === 'shipped') return false;
+      if (filter === 'done' && s !== 'shipped') return false;
+      if (!q) return true;
+      var txt = [j.no, j.jName, j.jPhone, j.note].concat((j.items || []).map(function (i) { return i && i.name; })).join(' ').toLowerCase();
+      return txt.indexOf(q) >= 0;
+    });
+    list.sort(function (a, b) {
+      if (filter !== 'open') return (b.savedAt || 0) - (a.savedAt || 0);
+      var ad = a.due ? String(a.due).slice(0, 10) : '9999', bd = b.due ? String(b.due).slice(0, 10) : '9999';
+      return ad < bd ? -1 : ad > bd ? 1 : (a.savedAt || 0) - (b.savedAt || 0);
+    });
+    var shown = list.slice(0, 150);
+    $('cqList').innerHTML = loading && !jobs.length ? '<div class="qempty">กำลังโหลดคิวจากแอปร้าน…</div>' : shown.length ? shown.map(function (j) {
+      var s = j.status || 'pending', its = (j.items || []).filter(function (i) { return i && String(i.name || '').trim(); });
+      var thumb = (j.photos || []).filter(function (p) { return /^https:/.test(p); })[0];
+      return '<div class="qjob cq" data-id="' + h(j.id) + '">' +
+        '<div class="qtop"><select class="cqst ' + s + '" data-act="st">' + ST.map(function (k) { return '<option value="' + k + '"' + (k === s ? ' selected' : '') + '>' + SN[k] + '</option>'; }).join('') + '</select>' +
+          '<span class="mut">' + h(j.no || (j.ws && j.date ? fmtD(j.date) : '')) + '</span>' + (j.ws ? '<span class="cqws">ราคาส่ง' + (j.wsN > 1 ? ' ' + j.wsI + '/' + j.wsN : '') + '</span>' : '') + dueTag(j) + '</div>' +
+        '<div class="cqrow">' + (thumb ? '<img class="cqth" src="' + h(thumb) + '" alt="">' : '') +
+          '<div><div class="qmain"><b>' + h(j.jName || '(ไม่ระบุลูกค้า)') + '</b></div>' +
+          '<div class="qsub">' + (its.length ? its.slice(0, openIds[j.id] ? 99 : 3).map(function (i) { return h(i.name) + (i.qty ? ' × ' + h(i.qty) : ''); }).join('<br>') + (!openIds[j.id] && its.length > 3 ? '<br><a href="#" data-act="more">+ อีก ' + (its.length - 3) + ' รายการ</a>' : '') : '—') + '</div>' +
+          (j.note && openIds[j.id] ? '<div class="qsub">📝 ' + h(j.note) + '</div>' : '') +
+          (j.aiFile ? '<div class="qsub mut">📄 ' + h(j.aiFileName || String(j.aiFile).split(/[\\/]/).pop()) + '</div>' : '') + '</div></div>' +
+        '<div class="qact">' + (j.aiFile ? '<button class="btn ghost sm" data-act="open">เปิดไฟล์</button>' : '') +
+          '<button class="btn ghost sm" data-act="link">' + (j.aiFile ? 'ผูกไฟล์ใหม่' : 'ผูกไฟล์ที่เปิดอยู่') + '</button>' +
+          (j.aiFile ? '<button class="btn ghost sm cqcut" data-act="cut">✂ สั่งตัด</button>' : '') +
+          (s === 'pending' ? '<button class="btn sm" data-act="filed">✓ ทำไฟล์แล้ว</button>' : '') + '</div></div>';
+    }).join('') : '<div class="qempty">' + (q ? 'ไม่พบงานที่ค้นหา' : filter === 'done' ? 'ยังไม่มีงานที่จัดส่ง' : 'ไม่มีงานค้าง 🎉') + '</div>';
+    $('cqHint').textContent = lastErr ? '⚠ โหลดคิวไม่ได้: ' + lastErr : (loadedAt ? 'เชื่อมแอปร้าน · ' + jobs.length + ' ใบ · อัปเดต ' + new Date(loadedAt).toTimeString().slice(0, 5) + (list.length > shown.length ? ' · แสดง 150 ใบแรก (ใช้ค้นหา)' : '') + (dupHidden ? ' · ซ่อนราคาส่งที่ซ้ำกับใบงาน ' + dupHidden + ' รายการ' : '') : '');
+  }
+  function find(el) { var c = el.closest('.qjob'); if (!c) return null; var id = c.dataset.id; return jobs.filter(function (x) { return x.id === id; })[0] || null; }
+  function setStatus(j, s) {
+    var old = j.status; j.status = s; render();
+    patch(j, { status: s }).then(function () { toast('✓ ' + (j.jName || j.no || 'งาน') + ' → ' + SN[s]); }, function (e) { j.status = old; render(); toast('⚠ อัปเดตไม่ได้: ' + e.message); });
+  }
+  function onChange(e) { var t = e.target; if (t.dataset.act !== 'st') return; var j = find(t); if (j) setStatus(j, t.value); }
+  function openUrl(u) { try { if (window.cep && window.cep.util) return window.cep.util.openURLInDefaultBrowser(u); } catch (e) {} window.open(u); }
+  function onClick(e) {
+    var b = e.target.closest('[data-act]');
+    if (!b) { var card = e.target.closest('#cqList .qjob'); if (card) { var jj = find(card); if (jj) showDetail(jj); } return; }
+    if (b.tagName === 'SELECT') return;
+    var j = find(b); if (!j) return; e.preventDefault();
+    var a = b.dataset.act;
+    if (a === 'more') showDetail(j);
+    else if (a === 'close') hideDetail();
+    else if (a === 'img') openUrl(b.dataset.src);
+    else if (a === 'copy') { try { navigator.clipboard.writeText(b.dataset.t); toast('✓ คัดลอกแล้ว'); } catch (ec) { toast(b.dataset.t); } }
+    else if (a === 'filed') setStatus(j, 'filed');
+    else if (a === 'cut') {          // เปิดไฟล์ที่ผูกไว้ → อ่านเส้นตัด → ไปหน้าส่งตัด พร้อมกดส่ง
+      toast('กำลังเปิดไฟล์และอ่านเส้นตัด…');
+      host('st_openFile', j.aiFile).then(function (r) {
+        if (r.error) return toast('⚠ ' + r.error);
+        hideDetail();
+        var t = document.querySelector('.tab[data-tab="cut"]'); if (t) t.click();
+        setTimeout(function () { var b2 = $('cutRead'); if (b2) b2.click(); var st = $('cutStatus'); if (st) st.textContent = 'งาน ' + (j.no || '') + ' · ' + (j.jName || '') + ' — ตรวจภาพแล้วกด "ส่งตัด"'; }, 400);
+      });
+    }
+    else if (a === 'open') host('st_openFile', j.aiFile).then(function (r) { toast(r.error ? '⚠ ' + r.error : '✓ ' + r.msg); });
+    else if (a === 'link') host('st_docInfo').then(function (r) {
+      if (r.error) return toast('⚠ ' + r.error);
+      if (!r.path) return toast('⚠ บันทึกไฟล์ก่อน แล้วค่อยผูกกับใบงาน');
+      var nm = r.path.split(/[\\/]/).pop();
+      patch(j, { aiFile: r.path, aiFileName: nm }).then(function () { j.aiFile = r.path; j.aiFileName = nm; render(); toast('✓ ผูกไฟล์ ' + nm + ' กับ ' + (j.no || 'ใบงาน')); }, function (er) { toast('⚠ ' + er.message); });
+    });
+  }
+
+  // ---------- รายละเอียดใบงาน (เด้งขึ้นเมื่อคลิกที่งาน) ----------
+  var detailId = null;
+  function thFull(s) { var m = /^(\d{4})-(\d\d)-(\d\d)/.exec(String(s || '')); return m ? +m[3] + ' ' + TH_M[+m[2] - 1] + ' ' + (+m[1] + 543) : h(s); }
+  function money(n) { return (Math.round(n * 100) / 100).toLocaleString('th-TH'); }
+  function showDetail(j) {
+    detailId = j.id;
+    var M = $('cqModal');
+    if (!M) {
+      M = document.createElement('div'); M.id = 'cqModal'; M.className = 'cqmodal';
+      M.addEventListener('click', function (e) { if (e.target === M) hideDetail(); else onClick(e); });
+      M.addEventListener('change', onChange);
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && detailId) { e.stopPropagation(); hideDetail(); } }, true);
+      document.body.appendChild(M);
+    }
+    var s = j.status || 'pending', its = (j.items || []).filter(function (i) { return i && String(i.name || '').trim(); });
+    var ph = (j.photos || []).filter(function (p) { return /^https:/.test(p); });
+    var tel = String(j.jPhone || '').trim();
+    M.innerHTML = '<div class="qjob cqbox" data-id="' + h(j.id) + '">' +
+      '<div class="cqhead"><b>' + h(j.no || (j.ws ? 'ใบราคาส่ง ' + fmtD(j.date) : 'ใบงาน')) + (j.ws ? ' <span class="cqws">ราคาส่ง</span> <span class="mut">' + (j.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</span>' : '') + '</b><button class="btn ghost sm" data-act="close">✕</button></div>' +
+      '<div class="qtop"><select class="cqst ' + s + '" data-act="st">' + ST.map(function (k) { return '<option value="' + k + '"' + (k === s ? ' selected' : '') + '>' + SN[k] + '</option>'; }).join('') + '</select>' + dueTag(j) + '</div>' +
+      '<div class="cqk">ลูกค้า</div><div class="cqv"><b>' + h(j.jName || '(ไม่ระบุ)') + '</b>' +
+        (tel ? ' · ' + h(tel) + ' <a href="#" data-act="copy" data-t="' + h(tel) + '">คัดลอก</a>' : '') +
+        (j.jAddr ? '<div class="mut">' + h(j.jAddr).replace(/\n/g, '<br>') + '</div>' : '') + '</div>' +
+      '<div class="cqk">รายการงาน</div><div class="cqv">' + (its.length ? '<ol>' + its.map(function (i) {
+          return '<li><b>' + h(i.name) + '</b>' + (i.qty ? ' × ' + h(i.qty) : '') + (j.ws && i.price ? ' <span class="mut">@ ' + h(i.price) + ' = ' + money((+i.qty || 0) * (+i.price || 0)) + ' บาท</span>' : '') + (i.note && String(i.note).trim() ? ' <span class="mut">(' + h(i.note) + ')</span>' : '') + '</li>';
+        }).join('') + '</ol>' : '—') + '</div>' +
+      (j.ws ? (function () { var t = (j.items || []).reduce(function (a2, i) { return a2 + (+i.qty || 0) * (+i.price || 0); }, 0) - (+j.discount || 0); return '<div class="cqv"><b>รวม ' + money(t) + ' บาท</b>' + (+j.discount ? ' <span class="mut">(ส่วนลด ' + money(+j.discount) + ')</span>' : '') + '</div>'; })() : '') +
+      (j.note && String(j.note).trim() ? '<div class="cqk">หมายเหตุ</div><div class="cqv cqnote">' + h(j.note).replace(/\n/g, '<br>') + '</div>' : '') +
+      (j.due ? '<div class="cqk">กำหนดส่ง</div><div class="cqv">' + thFull(j.due) + '</div>' : '') +
+      (j.aiFile ? '<div class="cqk">ไฟล์งาน</div><div class="cqv mut">📄 ' + h(j.aiFile) + '</div>' : '') +
+      (ph.length ? '<div class="cqk">รูปอ้างอิง</div><div class="cqph">' + ph.map(function (p) { return '<img src="' + h(p) + '" data-act="img" data-src="' + h(p) + '" alt="">'; }).join('') + '</div>' : '') +
+      '<div class="cqv mut small">' + [j.date ? 'วันที่ ' + thFull(j.date) : '', j.createdBy ? 'โดย ' + h(j.createdBy) : ''].filter(Boolean).join(' · ') + '</div>' +
+      '<div class="qact">' + (j.aiFile ? '<button class="btn ghost sm" data-act="open">เปิดไฟล์</button>' : '') +
+        '<button class="btn ghost sm" data-act="link">' + (j.aiFile ? 'ผูกไฟล์ใหม่' : 'ผูกไฟล์ที่เปิดอยู่') + '</button>' +
+          (j.aiFile ? '<button class="btn ghost sm cqcut" data-act="cut">✂ สั่งตัด</button>' : '') +
+        (s === 'pending' ? '<button class="btn sm" data-act="filed">✓ ทำไฟล์แล้ว</button>' : '') + '</div></div>';
+    M.classList.add('show');
+  }
+  function hideDetail() { detailId = null; var M = $('cqModal'); if (M) M.classList.remove('show'); }
+  function refreshDetail() { if (!detailId) return; var j = jobs.filter(function (x) { return x.id === detailId; })[0]; if (j) showDetail(j); else hideDetail(); }
+
+  // ---------- เปิดใช้เมื่อเซิร์ฟเวอร์อนุญาต ----------
+  function start(f) {
+    if (!f || !f.queue || cfg) return;
+    cfg = f.queue; window.ST_cloudQueue = true;
+    var btn = document.querySelector('.tab[data-tab="queue"]');
+    if (btn) { btn.classList.remove('hidden'); var sp = btn.querySelector('span'); if (sp) sp.textContent = 'ใบงานจากแอปร้าน · เบต้า'; }
+    build(); load();
+    if (btn) btn.addEventListener('click', function () { if (Date.now() - loadedAt > 30000) load(true); });
+    setInterval(function () { var p = $('tab-queue'); if (p && p.classList.contains('active') && !document.hidden) load(true); }, 60000);
+  }
+  var tries = 0;
+  (function wait() {
+    var c = window.ST_core;
+    if (c && c.features && !document.body.classList.contains('locked')) { c.features().then(start); return; }
+    if (++tries < 900) setTimeout(wait, 2000);
+  })();
+})();
