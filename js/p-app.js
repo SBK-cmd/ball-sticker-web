@@ -3582,21 +3582,55 @@ function bahtText(value) {
     const unpaid = wh
       ? store.get('bs_wholesale', []).filter(w => !w.paid && String(w.buyerName || '').trim() === name).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))
       : store.get('bs_bills', []).filter(b => !b.paid && String(b.cName || '').trim() === name).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
-    const go = d => wh ? addJobToWholesale(j, d) : addJobToBill(j, d);
+    if (wh) { pickWholesaleItems(j, picked => chooseDoc(picked)); return; }
+    chooseDoc(null);
+    function chooseDoc(picked) {
+    const go = d => wh ? addJobToWholesale(j, d, picked) : addJobToBill(j, d);
     if (!unpaid.length) { go(null); return; }
     if (unpaid.length === 1) { go(unpaid[0]); return; }
     const ov = document.createElement('div'); ov.className = 'job-zoom pick-ov'; ov.style.cursor = 'default';
     ov.innerHTML = '<div class="pick-box"><b>เลือก' + (wh ? 'ใบราคาส่ง' : 'บิล') + 'ที่ยังไม่จ่ายของ ' + esc(name) + '</b>' + unpaid.map(d => '<button type="button" class="btn" data-bid="' + esc(d.id) + '">' + esc((wh ? (d.ref || 'ใบราคาส่ง') : (d.no || '')) + ' · ' + thDate(d.date) + ' · ' + money(wh ? whTotalOf(d) : num(d.total))) + ' บาท</button>').join('') + '<button type="button" class="btn small" data-bid="">ยกเลิก</button></div>';
     ov.addEventListener('click', ev => { const pb = ev.target.closest('[data-bid]'); if (pb === null && ev.target !== ov) return; ov.remove(); if (pb && pb.dataset.bid) go(unpaid.find(x => x.id === pb.dataset.bid)); });
     document.body.appendChild(ov);
+    }
   }
-  function addJobToWholesale(j, doc) {
-    const add = (j.items || []).filter(i => (i.name || '').trim()).map(i => ({name: String(i.name).trim() + ((i.note || '').trim() ? ' (' + String(i.note).trim() + ')' : ''), qty: i.qty, price: 0}));
+  // งานราคาส่ง: เลือกว่าแบบไหนจะใส่ในใบราคาส่งตอนนี้ + ใส่จำนวนและราคาส่งต่อหน่วยแยกตามแบบ (แบบที่ใส่ไปแล้วจะไม่ติ๊กให้)
+  function jobItemKey(i, idx) { return idx + '|' + String(i.name || '').trim(); }
+  function pickWholesaleItems(j, cb) {
+    const rows = (j.items || []).map((i, idx) => ({i, idx})).filter(r => (r.i.name || '').trim());
+    const done = j.whAdded || {};
+    const ov = document.createElement('div'); ov.className = 'job-zoom pick-ov'; ov.style.cursor = 'default';
+    ov.innerHTML = '<div class="pick-box"><b>เลือกแบบที่จะใส่ในใบราคาส่ง · ' + esc(String(j.jName || '').trim()) + '</b>' +
+      '<div class="wh-hint">ติ๊กแบบที่ต้องการ ใส่จำนวนและราคาส่งต่อหน่วยของแต่ละแบบ (ไม่ใส่ราคา = 0 ไว้ไปใส่ในใบราคาส่ง)</div>' +
+      rows.map(r => { const k = jobItemKey(r.i, r.idx), was = done[k];
+        return '<div class="wh-row' + (was ? ' was' : '') + '" data-k="' + esc(k) + '"><label class="wh-nm"><input type="checkbox" class="wh-ck"' + (was ? '' : ' checked') + '> <span>' + esc(String(r.i.name).trim()) + ((r.i.note || '').trim() ? ' <small>(' + esc(String(r.i.note).trim()) + ')</small>' : '') + (was ? ' <em>✔ ใส่แล้ว</em>' : '') + '</span></label>' +
+        '<div class="wh-in"><label>จำนวน<input class="txt wh-q" type="number" inputmode="decimal" step="any" min="0" value="' + esc(r.i.qty) + '"></label><label>ราคาส่ง/หน่วย<input class="txt wh-p" type="number" inputmode="decimal" step="any" min="0" placeholder="0"></label></div></div>'; }).join('') +
+      '<button type="button" class="btn good" data-wh="ok">ใส่ในใบราคาส่ง</button><button type="button" class="btn small" data-wh="x">ยกเลิก</button></div>';
+    ov.addEventListener('click', ev => {
+      const b = ev.target.closest('[data-wh]');
+      if (!b && ev.target !== ov) return;
+      if (!b || b.dataset.wh === 'x') { ov.remove(); return; }
+      const picked = [];
+      ov.querySelectorAll('.wh-row').forEach(row => {
+        if (!row.querySelector('.wh-ck').checked) return;
+        const r = rows.find(x => jobItemKey(x.i, x.idx) === row.dataset.k); if (!r) return;
+        picked.push({key: row.dataset.k, name: String(r.i.name).trim() + ((r.i.note || '').trim() ? ' (' + String(r.i.note).trim() + ')' : ''), qty: row.querySelector('.wh-q').value || r.i.qty, price: num(row.querySelector('.wh-p').value)});
+      });
+      if (!picked.length) { toast('ติ๊กอย่างน้อย 1 แบบ'); return; }
+      ov.remove(); cb(picked);
+    });
+    document.body.appendChild(ov);
+  }
+  function addJobToWholesale(j, doc, picked) {
+    const add = (picked || []).map(i => ({name: i.name, qty: i.qty, price: i.price}));
     if (doc) { currentWholesaleId = doc.id; applyWholesale(doc); renderWholesaleEditState(); }
     else { newWholesale(); $('whName').value = j.jName || ''; wholesaleItems = [{name: '', qty: 1, price: 0}]; }
     const have = wholesaleItems.filter(i => (i.name || '').trim());
-    const fresh = add.filter(a => !have.some(h => h.name === a.name && String(h.qty) === String(a.qty)));
-    wholesaleItems = have.concat(fresh); if (!wholesaleItems.length) wholesaleItems = [{name: '', qty: 1, price: 0}];
+    const fresh = add;
+    wholesaleItems = have.concat(fresh);
+    // จำไว้ว่าแบบไหนของใบนี้ถูกใส่ในใบราคาส่งแล้ว
+    const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === j.id);
+    if (ji >= 0) { jl[ji].whAdded = Object.assign({}, jl[ji].whAdded || {}); (picked || []).forEach(p => { jl[ji].whAdded[p.key] = {at: Date.now(), doc: doc ? (doc.ref || doc.id) : 'ใหม่'}; }); store.set('bs_jobs', jl); cloudSave('jobs', jl[ji]); renderJobHistory(); } if (!wholesaleItems.length) wholesaleItems = [{name: '', qty: 1, price: 0}];
     renderWholesaleItems(); renderWholesale(); showTab('wholesale'); window.scrollTo({top: 0, behavior: 'smooth'});
     toast(doc ? 'เปิดใบราคาส่งที่ยังไม่จ่าย เพิ่มงาน ' + fresh.length + ' รายการ ใส่ราคาส่งแล้วกด “บันทึกลงประวัติ”' : 'ไม่มีใบราคาส่งค้างของ ' + String(j.jName || '').trim() + ' เปิดใบใหม่ให้ ใส่ราคาส่งแล้วกด “บันทึกลงประวัติ”');
   }
@@ -4105,7 +4139,7 @@ function bahtText(value) {
     const cust = [j.jName, j.jPhone ? '<a href="tel:' + esc(String(j.jPhone).replace(/[^\d+]/g, '')) + '">' + esc(j.jPhone) + '</a>' : ''].filter(Boolean).join(' · ');
     return '<div class="jd">' +
       (cust || j.jAddr ? '<div><span class="jd-k">ลูกค้า</span><span class="jd-cust">' + (cust ? cust : '') + '</span>' + (j.jAddr ? '<br>' + esc(j.jAddr) : '') + '</div>' : '') +
-      '<div><span class="jd-k">รายการงาน</span>' + (its.length ? '<ol>' + its.map(i => '<li style="display:list-item;padding:0;border:0;background:none;box-shadow:none;border-radius:0">' + esc(i.name) + ' × ' + esc(fmt(num(i.qty))) + (i.note && i.note.trim() ? ' <small>(' + esc(i.note) + ')</small>' : '') + '</li>').join('') + '</ol>' : '—') + '</div>' +
+      '<div><span class="jd-k">รายการงาน</span>' + (its.length ? '<ol>' + its.map(i => '<li style="display:list-item;padding:0;border:0;background:none;box-shadow:none;border-radius:0">' + esc(i.name) + ' × ' + esc(fmt(num(i.qty))) + (i.note && i.note.trim() ? ' <small>(' + esc(i.note) + ')</small>' : '') + ((j.whAdded && j.whAdded[jobItemKey(i, (j.items || []).indexOf(i))]) ? ' <small style="color:#0a7a3b;font-weight:700">✔ ใส่ใบราคาส่งแล้ว</small>' : '') + '</li>').join('') + '</ol>' : '—') + '</div>' +
       (j.note && j.note.trim() ? '<div><span class="jd-k">หมายเหตุ</span>' + esc(j.note).replace(/\n/g, '<br>') + '</div>' : '') +
       (j.due ? '<div><span class="jd-k">กำหนดส่ง</span>' + esc(thDate(j.due)) + '</div>' : '') +
       ((j.photos && j.photos.length) ? '<div><span class="jd-k">รูปอ้างอิง</span></div><div class="jd-ph">' + j.photos.map(src => '<img src="' + src + '" alt="รูปอ้างอิง">').join('') + '</div>' : '') +
