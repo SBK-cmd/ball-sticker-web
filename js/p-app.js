@@ -394,15 +394,35 @@ function bahtText(value) {
     cloudSave('vendors', Object.assign({id: vendorCloudId(n)}, rec));
     renderVendorDatalist();
   }
+  // รายชื่อร้านค้า = ที่บันทึกไว้ใน bs_vendors + ร้านที่เคยคีย์ไว้ในประวัติภาษีซื้อเดิมทั้งหมด (ไม่ต้องคีย์ซ้ำ) เรียงใช้ล่าสุดก่อน
+  function allVendors() {
+    const map = {};
+    const put = (name, tax, t) => {
+      const n = String(name || '').trim(); if (!n) return;
+      const cur = map[n] || (map[n] = {name: n, tax: '', lastUsed: 0});
+      if (t >= cur.lastUsed) { cur.lastUsed = t; if (String(tax || '').trim()) cur.tax = String(tax).trim(); }
+      else if (!cur.tax && String(tax || '').trim()) cur.tax = String(tax).trim();
+    };
+    store.get('bs_purchases', []).forEach(r => put(r.vendor, r.vendorTax, r.savedAt || Date.parse(r.date) || 0));
+    store.get('bs_vendors', []).forEach(v => put(v.name, v.tax, v.lastUsed || 0));
+    return Object.keys(map).map(k => map[k]).sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0));
+  }
   function renderVendorDatalist() {
-    const dl = $('vendorNames'); if (!dl) return;
-    const list = store.get('bs_vendors', []).slice().sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0));
-    dl.innerHTML = list.map(v => '<option value="' + esc(v.name) + '">').join('');
+    const dl = $('vendorNames');
+    const ch = $('purchVendorChips');
+    if (ch) { const top = allVendors().slice(0, 8); ch.hidden = !top.length; ch.innerHTML = top.length ? '<span>ร้านที่เคยคีย์ไว้ (แตะเพื่อเลือก):</span>' + top.map(v => '<button type="button" class="vchip" data-v="' + esc(v.name) + '">' + esc(v.name) + '</button>').join('') : ''; }
+    if (dl) dl.innerHTML = allVendors().map(v => '<option value="' + esc(v.name) + '"' + (v.tax ? ' label="เลขผู้เสียภาษี ' + esc(v.tax) + '"' : '') + '>').join('');
   }
   function findVendor(name) {
     const n = String(name || '').trim(); if (!n) return null;
-    return store.get('bs_vendors', []).find(v => String(v.name || '').trim() === n) || null;
+    return allVendors().find(v => v.name === n) || null;
   }
+  window.addEventListener('load', () => { try { renderVendorDatalist(); } catch (e) {} }); // datalist อยู่ท้ายหน้า ต้องวาดซ้ำหลังโหลดเสร็จ
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('#purchVendorChips .vchip'); if (!b) return;
+    const el = $('purchVendor'); el.value = b.dataset.v;
+    el.dispatchEvent(new Event('input', {bubbles: true})); el.dispatchEvent(new Event('change', {bubbles: true}));
+  });
   function wireVendorAutofill(nameId, taxId, renderFn) {
     const nameEl = $(nameId); if (!nameEl) return;
     const fill = () => {
@@ -6121,7 +6141,7 @@ function bahtText(value) {
     watchCloud('jobs', 'bs_jobs', renderJobHistory);
     watchCloud('wholesale', 'bs_wholesale', renderWholesaleHistory);
     watchCloud('quotes', 'bs_quotes', renderQuoteHistory);
-    watchCloud('purchases', 'bs_purchases', renderPurchHistory);
+    watchCloud('purchases', 'bs_purchases', () => { renderPurchHistory(); renderVendorDatalist(); });
     watchCloud('customers', 'bs_customers', renderCustomerDatalist);
     watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
     watchBankIn();
