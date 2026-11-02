@@ -89,7 +89,7 @@ function bahtText(value) {
   ];
   const PAGE_KEYS = PERM_GROUPS[0].items.map(x => x[0]);
   const PERM_KEYS = PERM_GROUPS.reduce((a, g) => a.concat(g.items.map(x => x[0])), []);
-  const STAFF_PERMS = ['calc', 'vat', 'confirm', 'track'];
+  const STAFF_PERMS = ['confirm'];
   const isSuperUser = u => !!u && String(u.username || '').trim().toLowerCase() === SUPER_ADMIN;
   function permsOf(u) {
     const o = {};
@@ -3645,6 +3645,11 @@ function bahtText(value) {
   let jobPhotos = [];
   let jobStatus = 'pending';
   const JOB_STATUS_LABEL = {pending: 'รอทำ', filed: 'ทำไฟล์แล้ว', printed: 'ผลิตแล้ว', shipped: 'จัดส่ง'};
+  // ไม่มีสิทธิ์เห็นเงิน (เช่น พนักงาน): ซ่อนช่องบัญชี/ยอดสลิป/คำอธิบายในใบคอนเฟิร์มงาน (ค่าที่บันทึกไว้เดิมยังอยู่ ไม่ถูกลบ)
+  if (!canBank) {
+    const acc = $('jobAccount'), row = acc && acc.closest('.row2');
+    if (row) { row.hidden = true; const h = row.nextElementSibling; if (h && h.classList.contains('hint')) h.hidden = true; }
+  }
   function renderJobStatusBadge() {
     const el = $('jobStatusBadge'); if (!el) return;
     el.className = 'status-pill ' + jobStatus;
@@ -3794,7 +3799,7 @@ function bahtText(value) {
     const cust = [j.jName, j.jPhone ? '<a href="tel:' + esc(String(j.jPhone).replace(/[^\d+]/g, '')) + '">' + esc(j.jPhone) + '</a>' : ''].filter(Boolean).join(' · ');
     return '<div class="jd">' +
       (cust || j.jAddr ? '<div><span class="jd-k">ลูกค้า</span><span class="jd-cust">' + (cust ? cust : '') + '</span>' + (j.jAddr ? '<br>' + esc(j.jAddr) : '') + '</div>' : '') +
-      '<div><span class="jd-k">รายการงาน</span>' + (its.length ? '<ol>' + its.map(i => '<li style="display:list-item;padding:0;border:0;background:none">' + esc(i.name) + ' × ' + esc(fmt(num(i.qty))) + (i.note && i.note.trim() ? ' <small>(' + esc(i.note) + ')</small>' : '') + '</li>').join('') + '</ol>' : '—') + '</div>' +
+      '<div><span class="jd-k">รายการงาน</span>' + (its.length ? '<ol>' + its.map(i => '<li style="display:list-item;padding:0;border:0;background:none;box-shadow:none;border-radius:0">' + esc(i.name) + ' × ' + esc(fmt(num(i.qty))) + (i.note && i.note.trim() ? ' <small>(' + esc(i.note) + ')</small>' : '') + '</li>').join('') + '</ol>' : '—') + '</div>' +
       (j.note && j.note.trim() ? '<div><span class="jd-k">หมายเหตุ</span>' + esc(j.note).replace(/\n/g, '<br>') + '</div>' : '') +
       (j.due ? '<div><span class="jd-k">กำหนดส่ง</span>' + esc(thDate(j.due)) + '</div>' : '') +
       ((j.photos && j.photos.length) ? '<div class="jd-ph">' + j.photos.map(src => '<img src="' + src + '" alt="รูปงาน">').join('') + '</div>' : '') +
@@ -3810,7 +3815,7 @@ function bahtText(value) {
     $('jobHistory').innerHTML = notice + '<ul>' + shown.map(j => {
       const st = j.status || 'pending';
       return '<li data-id="' + esc(j.id) + '"' + (jobOpenIds[j.id] ? ' class="open"' : '') + '>' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '') +
-      '<div class="meta"><b>' + esc(j.no) + '</b><small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[j.page] ? ' · ' + esc(PAGE_LABEL[j.page]) : '') + (j.account ? ' · บัญชี ' + esc(j.account) : '') + (num(j.slipAmount) > 0 ? ' · สลิป ' + money(num(j.slipAmount)) + ' บาท' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
+      '<div class="meta"><b>' + esc(j.no) + '</b><small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[j.page] ? ' · ' + esc(PAGE_LABEL[j.page]) : '') + (canBank && j.account ? ' · บัญชี ' + esc(j.account) : '') + (canBank && num(j.slipAmount) > 0 ? ' · สลิป ' + money(num(j.slipAmount)) + ' บาท' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
       '<select class="job-status-select status-pill ' + st + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
       '</select>' +
