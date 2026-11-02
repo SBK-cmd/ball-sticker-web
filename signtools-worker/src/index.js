@@ -271,7 +271,7 @@ async function hmacKey(db) {
   return crypto.subtle.importKey('raw', unb64(s), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
 }
 async function makeSession(db) {
-  const p = b64u(enc.encode(JSON.stringify({ exp: now() + 12 * 3600 })));
+  const p = b64u(enc.encode(JSON.stringify({ exp: now() + 30 * 86400 })));
   return p + '.' + b64u(new Uint8Array(await crypto.subtle.sign('HMAC', await hmacKey(db), enc.encode(p))));
 }
 async function validSession(db, req) {
@@ -310,7 +310,7 @@ async function admin(req, env) {
         const salt = b64(crypto.getRandomValues(new Uint8Array(16)));
         await setSetting(db, 'admin_salt', salt); await setSetting(db, 'admin_hash', await pbkdf2(f('pw'), salt));
         await keys(db);
-        return redirect('/admin', { 'Set-Cookie': cookie(await makeSession(db), 43200) });
+        return redirect('/admin', { 'Set-Cookie': cookie(await makeSession(db), 30 * 86400) });
       }
     }
     return page('ตั้งค่าครั้งแรก', `<form method="post" class="card narrow"><h2>ตั้งรหัสผ่านแอดมิน</h2>${err ? `<p class="err">${h(err)}</p>` : ''}
@@ -324,7 +324,7 @@ async function admin(req, env) {
     let err = '';
     if (form && f('do') === 'login') {
       const want = await getSetting(db, 'admin_hash'), got = await pbkdf2(f('pw'), await getSetting(db, 'admin_salt'));
-      if (timingSafeEq(want, got)) return redirect('/admin', { 'Set-Cookie': cookie(await makeSession(db), 43200) });
+      if (timingSafeEq(want, got)) return redirect('/admin', { 'Set-Cookie': cookie(await makeSession(db), 30 * 86400) });
       await sleep(1000); err = 'รหัสผ่านไม่ถูกต้อง';
     }
     return page('เข้าสู่ระบบ', `<form method="post" class="card narrow"><h2>Sign Tools — แอดมิน</h2>${err ? `<p class="err">${h(err)}</p>` : ''}
