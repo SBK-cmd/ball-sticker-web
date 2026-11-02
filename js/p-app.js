@@ -3929,8 +3929,10 @@ function bahtText(value) {
       '<div><span class="jd-k">รายการงาน</span>' + (its.length ? '<ol>' + its.map(i => '<li style="display:list-item;padding:0;border:0;background:none;box-shadow:none;border-radius:0">' + esc(i.name) + ' × ' + esc(fmt(num(i.qty))) + (i.note && i.note.trim() ? ' <small>(' + esc(i.note) + ')</small>' : '') + '</li>').join('') + '</ol>' : '—') + '</div>' +
       (j.note && j.note.trim() ? '<div><span class="jd-k">หมายเหตุ</span>' + esc(j.note).replace(/\n/g, '<br>') + '</div>' : '') +
       (j.due ? '<div><span class="jd-k">กำหนดส่ง</span>' + esc(thDate(j.due)) + '</div>' : '') +
-      ((j.photos && j.photos.length) ? '<div class="jd-ph">' + j.photos.map(src => '<img src="' + src + '" alt="รูปงาน">').join('') + '</div>' : '') +
-      '<div class="jd-add"><label class="btn small">📷 เพิ่มรูปของงานนี้<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '"></label></div>' +
+      ((j.photos && j.photos.length) ? '<div><span class="jd-k">รูปอ้างอิง</span></div><div class="jd-ph">' + j.photos.map(src => '<img src="' + src + '" alt="รูปอ้างอิง">').join('') + '</div>' : '') +
+      '<div><span class="jd-k">รูปงานเสร็จ</span>' + ((j.donePhotos && j.donePhotos.length) ? '' : '<small style="color:var(--muted,#888)">ยังไม่มี</small>') + '</div>' +
+      ((j.donePhotos && j.donePhotos.length) ? '<div class="jd-ph">' + j.donePhotos.map(src => '<img src="' + src + '" alt="รูปงานเสร็จ">').join('') + '</div>' : '') +
+      '<div class="jd-add"><label class="btn small primary">📷 ถ่าย/เพิ่มรูปงานเสร็จ<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '"></label></div>' +
       '</div>';
   }
   function renderJobHistory() {
@@ -5394,11 +5396,10 @@ function bahtText(value) {
         for (const f of files) urls.push(await fileToJpeg(f, 1000, 0.75));
         const list = store.get('bs_jobs', []), idx = list.findIndex(x => x.id === id);
         if (idx < 0) return;
-        list[idx].photos = (list[idx].photos || []).concat(urls);
+        list[idx].donePhotos = (list[idx].donePhotos || []).concat(urls);
         list[idx].savedAt = Date.now();
         store.set('bs_jobs', list); cloudSave('jobs', list[idx]);
-        if (currentJobId === id) { jobPhotos = list[idx].photos.slice(); renderJobPhotos(); renderJob(); }
-        renderJobHistory(); toast('เพิ่มรูป ' + urls.length + ' รูปเข้าใบ ' + (list[idx].no || '') + ' แล้ว');
+                renderJobHistory(); toast('เพิ่มรูปงานเสร็จ ' + urls.length + ' รูปเข้าใบ ' + (list[idx].no || '') + ' แล้ว');
       } catch (err) { toast('เพิ่มรูปไม่สำเร็จ ลองใหม่อีกครั้ง'); }
       return;
     }
