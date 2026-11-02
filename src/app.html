@@ -6859,7 +6859,8 @@ function bahtText(value) {
       ((j.donePhotos && j.donePhotos.length) ? '<div class="jd-ph">' + j.donePhotos.map(src => '<img src="' + src + '" alt="รูปงานเสร็จ">').join('') + '</div>' : '') +
       '<div class="jd-add"><label class="btn small primary">📷 ถ่าย/เพิ่มรูปงานเสร็จ<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '"></label> ' +
       '<label class="btn small">📦 สแกนบาร์โค้ดพัสดุ<input type="file" accept="image/*" capture="environment" hidden data-scanjob="' + esc(j.id) + '"></label>' +
-      (j.trackCode ? '<div class="jd-trk">📦 เลขพัสดุ: <b>' + esc(j.trackCode) + '</b></div>' : '') + '</div>' +
+      (j.trackCode ? '<div class="jd-trk">📦 เลขพัสดุ: <b>' + esc(j.trackCode) + '</b></div>' : '') +
+      (j.trackCode && j.status === 'shipped' ? '<button class="btn small good" data-act="sendtrk" type="button" style="margin-top:8px">📤 ส่งเลขพัสดุให้ลูกค้า</button>' : '') + '</div>' +
       '</div>';
   }
   function renderJobHistory() {
@@ -8296,6 +8297,18 @@ function bahtText(value) {
     }
     const id = btn.closest('li').dataset.id;
     const list = store.get('bs_jobs', []);
+    if (btn.dataset.act === 'sendtrk') {
+      const j = list.find(x => x.id === id); if (!j || !j.trackCode) return;
+      const tr = store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(j.trackCode));
+      const carrier = (tr && tr.carrier) || $('trackCarrier').value;
+      const msg = buildTrackingMessage(j.trackCode, carrier, j.jName || (tr && tr.customer) || '');
+      (async () => {
+        try { if (navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือก LINE / ข้อความ ส่งให้ลูกค้าได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+        try { await navigator.clipboard.writeText(msg); toast('คัดลอกข้อความเลขพัสดุแล้ว นำไปวางส่งให้ลูกค้าได้เลย'); }
+        catch (e) { $('trackMessage').value = msg; toast('คัดลอกอัตโนมัติไม่ได้ ข้อความอยู่ที่แท็บติดตาม คัดลอกเองได้'); }
+      })();
+      return;
+    }
     if (btn.dataset.act === 'open') {
       const j = list.find(x => x.id === id); if (!j) return;
       currentJobId = id; applyJob(j); renderJobEditState(); showTab('confirm');
