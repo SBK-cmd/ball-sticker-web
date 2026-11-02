@@ -1271,6 +1271,7 @@ tr{break-inside:avoid}
 .fab-newjob:active{transform:scale(.97)}
 @media (min-width:900px){.fab-newjob{display:none}}
 @media print{.fab-newjob{display:none}}
+.pick-box{background:#fff;color:#1c1c2e;border-radius:18px;padding:18px;display:grid;gap:10px;width:min(92vw,380px);max-height:80vh;overflow:auto}
 .vchips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:-4px 0 12px;font-size:13px;color:var(--muted,#777)}
 .vchip{border:1px solid var(--line,#ddd);background:#fff;border-radius:999px;padding:7px 14px;min-height:36px;font:inherit;font-size:14px;color:inherit;cursor:pointer}
 .vchip:active{background:#fff3c4}
@@ -2037,6 +2038,7 @@ tr{break-inside:avoid}
               <label class="f"><span>วางข้อความทั้งก้อน (งาน + ชื่อ เบอร์ ที่อยู่) แล้วกดแยก</span><textarea id="jPaste" placeholder="วางข้อความทั้งก้อน เช่น&#10;7cm 140ชิ้น&#10;แบบละ70ชิ้น&#10;นาย สมชาย ใจดี&#10;081-234-5678&#10;99 หมู่ 1 ต.ในเมือง อ.เมือง จ.พิษณุโลก 65000"></textarea></label>
               <button class="btn small" id="jSplit" type="button">แยกงาน / ชื่อ / เบอร์ / ที่อยู่ อัตโนมัติ</button>
               <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="jName" type="text" autocomplete="off" list="customerNames"></label>
+              <div id="jNameChips" class="vchips no-print" aria-label="ชื่อที่เคยคีย์ไว้"></div>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="jPhone" type="tel" autocomplete="off"></label>
               <label class="f"><span>ที่อยู่ลูกค้า (ถ้ามี)</span><textarea id="jAddr"></textarea></label>
             </div>
@@ -3273,14 +3275,37 @@ function bahtText(value) {
     cloudSave('customers', Object.assign({id: customerCloudId(n)}, rec));
     renderCustomerDatalist();
   }
-  function renderCustomerDatalist() {
-    const dl = $('customerNames'); if (!dl) return;
-    const list = store.get('bs_customers', []).slice().sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0));
-    dl.innerHTML = list.map(c => '<option value="' + esc(c.name) + '">').join('');
+  // รายชื่อลูกค้า = ฐานข้อมูลลูกค้า + ชื่อที่เคยพิมพ์ไว้ในใบคอนเฟิร์มงานและบิลเก่าทั้งหมด (เบอร์/ที่อยู่ใช้ของครั้งล่าสุด)
+  function allCustomers() {
+    const map = {};
+    const put = (name, phone, addr, tax, t) => {
+      const n = String(name || '').trim(); if (!n) return;
+      const cur = map[n] || (map[n] = {name: n, phone: '', addr: '', tax: '', lastUsed: 0});
+      const newer = t >= cur.lastUsed;
+      if (newer) cur.lastUsed = t;
+      [['phone', phone], ['addr', addr], ['tax', tax]].forEach(kv => { const v = String(kv[1] || '').trim(); if (v && (newer || !cur[kv[0]])) cur[kv[0]] = v; });
+    };
+    store.get('bs_jobs', []).forEach(j => put(j.jName, j.jPhone, j.jAddr, '', j.savedAt || 0));
+    store.get('bs_bills', []).forEach(b => put(b.cName, b.cPhone, b.cAddr, b.cTax, b.savedAt || 0));
+    store.get('bs_customers', []).forEach(c => put(c.name, c.phone, c.addr, c.tax, c.lastUsed || 0));
+    return Object.keys(map).map(k => map[k]).sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0));
   }
+  function renderCustomerDatalist() {
+    const list = allCustomers();
+    const dl = $('customerNames');
+    if (dl) dl.innerHTML = list.map(c => '<option value="' + esc(c.name) + '">').join('');
+    const ch = $('jNameChips');
+    if (ch) { const top = list.slice(0, 8); ch.hidden = !top.length; ch.innerHTML = top.length ? '<span>ชื่อที่เคยคีย์ไว้ (แตะเพื่อเลือก):</span>' + top.map(c => '<button type="button" class="vchip" data-c="' + esc(c.name) + '">' + esc(c.name) + '</button>').join('') : ''; }
+  }
+  window.addEventListener('load', () => { try { renderCustomerDatalist(); } catch (e) {} }); // datalist อยู่ท้ายหน้า ต้องวาดซ้ำหลังโหลดเสร็จ
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('#jNameChips .vchip'); if (!b) return;
+    const el = $('jName'); el.value = b.dataset.c;
+    el.dispatchEvent(new Event('input', {bubbles: true})); el.dispatchEvent(new Event('change', {bubbles: true}));
+  });
   function findCustomer(name) {
     const n = String(name || '').trim(); if (!n) return null;
-    return store.get('bs_customers', []).find(c => String(c.name || '').trim() === n) || null;
+    return allCustomers().find(c => c.name === n) || null;
   }
   function wireCustomerAutofill(nameId, phoneId, addrId, taxId, renderFn) {
     const nameEl = $(nameId); if (!nameEl) return;
@@ -6482,6 +6507,17 @@ function bahtText(value) {
       it.matched = {id: rec.id, code, customer: '', carrier}; renderTrackingHistory(); renderScanList(); toast('สร้างรายการใหม่ (ขนส่ง ' + carrier + ') พร้อมรูปกล่องแล้ว');
     }
   });
+  // เอารายการงานของใบนี้ไปไว้ในบิลที่ยังไม่จ่าย (เปิดในหน้าบิลให้ใส่ราคา ยังไม่บันทึกทับเอง) ถ้าไม่มีบิลค้าง เปิดบิลใหม่ให้
+  function addJobToBill(j, bill) {
+    const add = (j.items || []).filter(i => (i.name || '').trim()).map(i => ({name: String(i.name).trim() + ((i.note || '').trim() ? ' (' + String(i.note).trim() + ')' : ''), qty: i.qty, price: 0}));
+    if (bill) { currentId = bill.id; apply(bill); renderEditState(); }
+    else { newBill(); $('cName').value = j.jName || ''; $('cPhone').value = j.jPhone || ''; $('cAddr').value = j.jAddr || ''; items = [{name: '', qty: 1, price: 0}]; }
+    const have = items.filter(i => (i.name || '').trim());
+    const fresh = add.filter(a => !have.some(h => h.name === a.name && String(h.qty) === String(a.qty)));
+    items = have.concat(fresh); if (!items.length) items = [{name: '', qty: 1, price: 0}];
+    renderItems(); renderBill(); showTab('bill'); window.scrollTo({top: 0, behavior: 'smooth'});
+    toast(bill ? 'เปิดบิล ' + (bill.no || '') + ' (รอชำระ) เพิ่มงาน ' + fresh.length + ' รายการ ใส่ราคาแล้วกด “บันทึกลงประวัติ”' : 'ไม่มีบิลค้างของ ' + String(j.jName || '').trim() + ' เปิดบิลใหม่ให้ ใส่ราคาแล้วกด “บันทึกลงประวัติ”');
+  }
   function applyJobScan(id, code, small) {
     const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === id); if (ji < 0) return;
     const it = {code, photo: small};
@@ -6980,10 +7016,12 @@ function bahtText(value) {
       '<button class="btn small primary" data-act="livescan" type="button">📦 สแกนเลขพัสดุ</button>' +
       '<input type="file" accept="image/*" hidden data-scanjob="' + esc(j.id) + '">' +
       (j.trackCode ? '<div class="jd-trk">📦 เลขพัสดุ: <b>' + esc(j.trackCode) + '</b></div>' : '') +
+      ((can('bill') && (j.jName || '').trim() && (j.items || []).some(i => (i.name || '').trim())) ? '<button class="btn small good" data-act="tobill" type="button" style="margin-top:8px">🧾 ใส่ในบิลที่ยังไม่จ่ายของ ' + esc(String(j.jName).trim()) + '</button>' : '') +
       (j.trackCode && j.status === 'shipped' ? '<button class="btn small good" data-act="sendtrk" type="button" style="margin-top:8px">📤 ส่งเลขพัสดุให้ลูกค้า</button>' : '') + '</div>' +
       '</div>';
   }
   function renderJobHistory() {
+    try { renderCustomerDatalist(); } catch (e) {}
     const list = store.get('bs_jobs', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
     const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้ ควรดาวน์โหลด PDF เก็บไว้ทุกครั้ง</p>');
     if (!list.length) { $('jobHistory').innerHTML = notice + '<p class="empty">ยังไม่มีใบคอนเฟิร์มงานที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; return; }
@@ -8442,6 +8480,18 @@ function bahtText(value) {
           toast('กำลังบันทึกรูป ' + files.length + ' รูปลงเครื่อง');
         } catch (err) { toast('บันทึกรูปไม่สำเร็จ: ' + ((err && err.message) || err)); }
       })();
+      return;
+    }
+    if (btn.dataset.act === 'tobill') {
+      const j = list.find(x => x.id === id); if (!j) return;
+      const name = String(j.jName || '').trim();
+      const unpaid = store.get('bs_bills', []).filter(b => !b.paid && String(b.cName || '').trim() === name).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+      if (!unpaid.length) { addJobToBill(j, null); return; }
+      if (unpaid.length === 1) { addJobToBill(j, unpaid[0]); return; }
+      const ov = document.createElement('div'); ov.className = 'job-zoom pick-ov'; ov.style.cursor = 'default';
+      ov.innerHTML = '<div class="pick-box"><b>เลือกบิลที่ยังไม่จ่ายของ ' + esc(name) + '</b>' + unpaid.map(b => '<button type="button" class="btn" data-bid="' + esc(b.id) + '">' + esc(b.no || '') + ' · ' + esc(thDate(b.date)) + ' · ' + money(num(b.total)) + ' บาท</button>').join('') + '<button type="button" class="btn small" data-bid="">ยกเลิก</button></div>';
+      ov.addEventListener('click', ev => { const pb = ev.target.closest('[data-bid]'); if (pb === null && ev.target !== ov) return; ov.remove(); if (pb && pb.dataset.bid) addJobToBill(j, unpaid.find(x => x.id === pb.dataset.bid)); });
+      document.body.appendChild(ov);
       return;
     }
     if (btn.dataset.act === 'sendtrk') {
