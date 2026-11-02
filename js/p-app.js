@@ -3932,7 +3932,9 @@ function bahtText(value) {
       ((j.photos && j.photos.length) ? '<div><span class="jd-k">รูปอ้างอิง</span></div><div class="jd-ph">' + j.photos.map(src => '<img src="' + src + '" alt="รูปอ้างอิง">').join('') + '</div>' : '') +
       '<div><span class="jd-k">รูปงานเสร็จ</span>' + ((j.donePhotos && j.donePhotos.length) ? '' : '<small style="color:var(--muted,#888)">ยังไม่มี</small>') + '</div>' +
       ((j.donePhotos && j.donePhotos.length) ? '<div class="jd-ph">' + j.donePhotos.map(src => '<img src="' + src + '" alt="รูปงานเสร็จ">').join('') + '</div>' : '') +
-      '<div class="jd-add"><label class="btn small primary">📷 ถ่าย/เพิ่มรูปงานเสร็จ<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '"></label></div>' +
+      '<div class="jd-add"><label class="btn small primary">📷 ถ่าย/เพิ่มรูปงานเสร็จ<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '"></label> ' +
+      '<label class="btn small">📦 สแกนบาร์โค้ดพัสดุ<input type="file" accept="image/*" capture="environment" hidden data-scanjob="' + esc(j.id) + '"></label>' +
+      (j.trackCode ? '<div class="jd-trk">📦 เลขพัสดุ: <b>' + esc(j.trackCode) + '</b></div>' : '') + '</div>' +
       '</div>';
   }
   function renderJobHistory() {
@@ -5387,6 +5389,27 @@ function bahtText(value) {
     }
   });
   $('jobHistory').addEventListener('change', async e => {
+    const sj = e.target.closest('input[data-scanjob]');
+    if (sj) {
+      const f = (sj.files || [])[0]; if (!f || !/^image\//.test(f.type)) return;
+      const id = sj.dataset.scanjob; toast('กำลังอ่านบาร์โค้ด…');
+      try {
+        const big = await fileToJpeg(f, 1600, 0.85), small = await fileToJpeg(f, 800, 0.7);
+        const code = ((await decodeBox(f, big)) || '').trim();
+        if (!code) { toast('อ่านบาร์โค้ดไม่ออก ถ่ายใหม่ให้เห็นบาร์โค้ดเต็มและชัด หรือพิมพ์เลขที่แท็บติดตาม'); return; }
+        const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === id); if (ji < 0) return;
+        const it = {code, photo: small};
+        let note = '';
+        if (!attachBox(it)) {
+          const carrier = $('trackCarrier').value, rec = {id: 't' + Date.now(), code, carrier, customer: jl[ji].jName || '', message: buildTrackingMessage(code, carrier, jl[ji].jName || ''), status: 'transit', savedAt: Date.now(), boxPhoto: small, boxAt: Date.now()};
+          const tl = store.get('bs_tracking', []); tl.unshift(rec); store.set('bs_tracking', tl); cloudSave('tracking', rec); renderTrackingHistory();
+          note = ' (ยังไม่มีในหน้าติดตาม สร้างรายการใหม่ให้แล้ว)';
+        }
+        jl[ji].trackCode = code; jl[ji].savedAt = Date.now(); store.set('bs_jobs', jl); cloudSave('jobs', jl[ji]);
+        renderJobHistory(); toast('สแกนได้ ' + code + ' ผูกกับใบ ' + (jl[ji].no || '') + ' แล้ว' + note);
+      } catch (err) { toast('สแกนไม่สำเร็จ ลองใหม่อีกครั้ง'); }
+      return;
+    }
     const fi = e.target.closest('input[data-addphoto]');
     if (fi) {
       const id = fi.dataset.addphoto, files = Array.from(fi.files || []).filter(f => /^image\//.test(f.type));
