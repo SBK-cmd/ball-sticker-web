@@ -1844,6 +1844,11 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff6d6;
 @media (max-width:560px){html body header.top,html body .bnav{border:0}}
 html body .dash-tile,html body .dash-tile.blue-tile,html body .dash-tile.warn-tile{border:0}
 html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!important;outline:0!important;box-shadow:0 8px 20px -6px rgba(20,20,40,.45)!important}
+
+/* เมนูล่างมือถือ: ติดขอบล่างเต็มจอ ไม่ลอย */
+@media (max-width:560px){
+  html body .bnav{left:0!important;right:0!important;bottom:0!important;width:100%!important;margin:0!important;border-radius:22px 22px 0 0!important;border:0!important;background:#fff!important;box-shadow:0 -4px 18px rgba(25,25,50,.10)!important;padding-bottom:calc(env(safe-area-inset-bottom) + 6px)!important}
+}
 </style>
 </head>
 <body>
