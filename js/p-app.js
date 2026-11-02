@@ -3549,6 +3549,10 @@ function bahtText(value) {
       o.type = 'square'; o.frequency.value = 1500; g.gain.value = 0.15; o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime + 0.14); setTimeout(() => ac.close(), 400); } catch (e) {}
     try { if (navigator.vibrate) navigator.vibrate(80); } catch (e) {}
   }
+  // เก็บกล้องไว้ใช้ต่อ 5 นาทีหลังปิดหน้าสแกน สแกนพัสดุหลายกล่องติดกันจะไม่ต้องขออนุญาตกล้องซ้ำ (หมดเวลาหรือสลับแอปแล้วปิดกล้องเอง)
+  let camKeep = null, camKeepTimer = null;
+  function releaseCam() { clearTimeout(camKeepTimer); camKeepTimer = null; try { if (camKeep) camKeep.getTracks().forEach(t => t.stop()); } catch (e) {} camKeep = null; }
+  document.addEventListener('visibilitychange', () => { if (document.hidden && !document.getElementById('liveScanOv')) releaseCam(); });
   async function openLiveScan(opts) {
     // opts: {title, onCode(code, photoDataUrl), onFallbackFile(file)}
     if (document.getElementById('liveScanOv')) return;
@@ -3559,13 +3563,15 @@ function bahtText(value) {
       '<div class="ls-bot"><label class="btn small">📷 ถ่ายรูปแทน<input type="file" accept="image/*" capture="environment" hidden id="lsFile"></label></div>';
     document.body.appendChild(ov);
     let stream = null, stopped = false, finished = false, timer = null;
-    const close = () => { stopped = true; clearTimeout(timer); try { if (stream) stream.getTracks().forEach(t => t.stop()); } catch (e) {} ov.remove(); };
+    const close = () => { stopped = true; clearTimeout(timer); clearTimeout(camKeepTimer); camKeepTimer = setTimeout(releaseCam, 300000); ov.remove(); };
     ov.querySelector('.ls-x').addEventListener('click', close);
     ov.querySelector('#lsFile').addEventListener('change', e => { const f = (e.target.files || [])[0]; close(); if (f && opts.onFallbackFile) opts.onFallbackFile(f); });
     const msg = ov.querySelector('#lsMsg');
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('เบราว์เซอร์นี้ไม่รองรับกล้อง');
-      stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: {ideal: 'environment'}, width: {ideal: 1920}, height: {ideal: 1080}}, audio: false});
+      clearTimeout(camKeepTimer);
+      if (camKeep && camKeep.getVideoTracks().some(t => t.readyState === 'live')) stream = camKeep;
+      else { stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: {ideal: 'environment'}, width: {ideal: 1920}, height: {ideal: 1080}}, audio: false}); camKeep = stream; }
       const vid = ov.querySelector('#lsVideo'); vid.srcObject = stream; await vid.play().catch(() => {});
       try { const tr = stream.getVideoTracks()[0], cap = tr.getCapabilities ? tr.getCapabilities() : {}; if (cap.focusMode && cap.focusMode.indexOf('continuous') >= 0) await tr.applyConstraints({advanced: [{focusMode: 'continuous'}]}); } catch (e) {}
       const native = ('BarcodeDetector' in window) ? new BarcodeDetector() : null;
