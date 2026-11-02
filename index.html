@@ -1266,6 +1266,25 @@ tr{break-inside:avoid}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
+<style id="fab-newjob-css">
+.fab-newjob{position:fixed;right:12px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:60;border:3px solid #ffc400;border-radius:999px;padding:14px 22px;min-height:54px;background:#1c1c2e;color:#ffc400;font:inherit;font-weight:800;font-size:17px;letter-spacing:.2px;box-shadow:0 0 0 4px rgba(255,196,0,.28),0 14px 30px -6px rgba(20,20,40,.6);cursor:pointer}
+.fab-newjob:active{transform:scale(.97)}
+@media (min-width:900px){.fab-newjob{display:none}}
+@media print{.fab-newjob{display:none}}
+.jd-add{margin-top:10px}
+.jd-add label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.scan-card label.btn{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+#scanList{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:12px}
+#scanList li{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:14px;background:#fff}
+#scanList img{width:84px;height:84px;object-fit:cover;border-radius:10px;flex:none;cursor:zoom-in}
+#scanList .sc-body{flex:1;min-width:0;display:grid;gap:8px}
+#scanList .sc-code{font-weight:800;word-break:break-all}
+#scanList .sc-ok{color:#0a7a3b;font-weight:700}
+#scanList .sc-warn{color:#a15c00;font-weight:700}
+#scanList .sc-row{display:flex;gap:8px;flex-wrap:wrap}
+#scanList input{min-width:0;flex:1}
+.trk-box{display:block;width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid var(--line);margin-top:8px;cursor:zoom-in}
+</style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap">
 <style id="bs-theme-p4">
 /* ===== แบบ 4: ตามแอปตัวอย่าง (Profender) — พื้นมุก การ์ดโค้งใหญ่ การ์ดย่อยมีขอบบาง ปุ่มแคปซูลเงา ไอคอนวงกลม =====
@@ -2247,7 +2266,17 @@ html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!importa
         <p>ใบสั่งผลิตภายในร้าน ใช้ยืนยันรายละเอียดงานกับลูกค้าและแจ้งฝ่ายผลิตก่อนพิมพ์บิลจริง ไม่มีราคา</p>
       </div>
 
-      <div class="bill-grid">
+      <section class="card history no-print" style="margin:0 0 20px" aria-labelledby="jobhist-h">
+        <div class="viz-head">
+          <h2 id="jobhist-h">ประวัติใบคอนเฟิร์มงาน</h2>
+          <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้</span>
+        </div>
+        <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="jobHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
+        <div id="jobHistory"></div>
+      </section>
+
+      <button type="button" class="fab-newjob no-print" id="fabNewJob" aria-label="เพิ่มใบคอนเฟิร์มใหม่">＋ เพิ่มใบคอนเฟิร์ม</button>
+      <div class="bill-grid" id="jobFormTop">
         <div class="stack no-print">
           <div class="card">
             <h2>ข้อมูลงาน</h2>
@@ -2333,14 +2362,6 @@ html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!importa
         </div>
       </div>
 
-      <section class="card history no-print" style="margin-top:20px" aria-labelledby="jobhist-h">
-        <div class="viz-head">
-          <h2 id="jobhist-h">ประวัติใบคอนเฟิร์มงาน</h2>
-          <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้</span>
-        </div>
-        <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="jobHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
-        <div id="jobHistory"></div>
-      </section>
     </section>
 
     <!-- ================= เปิดบิล ================= -->
@@ -2613,6 +2634,15 @@ html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!importa
         <h1>สร้างข้อความแจ้งลูกค้า.</h1>
         <p>วางเลขพัสดุ เลือกขนส่ง แล้วกดสร้างข้อความพร้อมลิงก์ติดตามให้ลูกค้า คัดลอกไปส่งทาง LINE/SMS ได้ทันที</p>
       </div>
+      <section class="card scan-card no-print" style="margin-bottom:20px" aria-labelledby="scan-h">
+        <h2 id="scan-h">📦 สแกนเลขพัสดุหน้ากล่อง</h2>
+        <p class="hint" style="margin:0">ถ่ายหน้ากล่องที่ติดใบปะหน้าแล้ว ระบบอ่านบาร์โค้ดเลขพัสดุให้ แล้วจับคู่กับรายการในประวัติด้านล่าง (ที่ดึงมาจาก iship) พร้อมแนบรูปกล่องไว้กับรายการนั้น เลือกได้หลายรูปพร้อมกัน</p>
+        <div class="scan-actions">
+          <label class="btn primary">📷 ถ่ายหน้ากล่อง / เลือกรูป<input type="file" accept="image/*" capture="environment" multiple id="scanInput" hidden></label>
+        </div>
+        <ul id="scanList"></ul>
+        <div id="scanTmp" hidden></div>
+      </section>
       <div class="bill-grid">
         <div class="stack no-print">
           <div class="card">
@@ -3176,7 +3206,7 @@ html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!importa
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=9969d34cfa",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=1e7407e51e",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
