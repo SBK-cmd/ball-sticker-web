@@ -1271,6 +1271,19 @@ tr{break-inside:avoid}
 .fab-newjob:active{transform:scale(.97)}
 @media (min-width:900px){.fab-newjob{display:none}}
 @media print{.fab-newjob{display:none}}
+.jd-add{margin-top:10px}
+.jd-add label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.scan-card label.btn{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+#scanList{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:12px}
+#scanList li{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:14px;background:#fff}
+#scanList img{width:84px;height:84px;object-fit:cover;border-radius:10px;flex:none;cursor:zoom-in}
+#scanList .sc-body{flex:1;min-width:0;display:grid;gap:8px}
+#scanList .sc-code{font-weight:800;word-break:break-all}
+#scanList .sc-ok{color:#0a7a3b;font-weight:700}
+#scanList .sc-warn{color:#a15c00;font-weight:700}
+#scanList .sc-row{display:flex;gap:8px;flex-wrap:wrap}
+#scanList input{min-width:0;flex:1}
+.trk-box{display:block;width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid var(--line);margin-top:8px;cursor:zoom-in}
 </style>
 </head>
 <body>
@@ -2327,6 +2340,15 @@ tr{break-inside:avoid}
         <h1>สร้างข้อความแจ้งลูกค้า.</h1>
         <p>วางเลขพัสดุ เลือกขนส่ง แล้วกดสร้างข้อความพร้อมลิงก์ติดตามให้ลูกค้า คัดลอกไปส่งทาง LINE/SMS ได้ทันที</p>
       </div>
+      <section class="card scan-card no-print" style="margin-bottom:20px" aria-labelledby="scan-h">
+        <h2 id="scan-h">📷 ถ่ายรูปกล่อง + สแกนเลขพัสดุ</h2>
+        <p class="hint" style="margin:0">ถ่ายรูปกล่องที่ติดใบปะหน้าแล้ว ระบบอ่านบาร์โค้ดเลขพัสดุให้ แล้วจับคู่กับรายการในประวัติด้านล่าง (ที่ดึงมาจาก iship) พร้อมแนบรูปกล่องไว้กับรายการนั้น เลือกได้หลายรูปพร้อมกัน</p>
+        <div class="scan-actions">
+          <label class="btn primary">📷 ถ่ายรูป / เลือกรูปกล่อง<input type="file" accept="image/*" capture="environment" multiple id="scanInput" hidden></label>
+        </div>
+        <ul id="scanList"></ul>
+        <div id="scanTmp" hidden></div>
+      </section>
       <div class="bill-grid">
         <div class="stack no-print">
           <div class="card">
@@ -6321,6 +6343,99 @@ function bahtText(value) {
     $('trackCarrier').selectedIndex = 0;
     $('trackMessage').value = '';
   }
+  /* ---------------- ถ่ายรูปกล่อง + สแกนบาร์โค้ด → จับคู่เลขพัสดุในหน้าติดตาม ---------------- */
+  let scanItems = [], scanLibP = null;
+  const normCode = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  function loadScanLib() {
+    if (window.Html5Qrcode) return Promise.resolve();
+    if (scanLibP) return scanLibP;
+    scanLibP = new Promise((res, rej) => {
+      const sc = document.createElement('script'); sc.src = 'js/html5-qrcode.min.js';
+      sc.onload = () => res(); sc.onerror = () => { scanLibP = null; rej(new Error('lib')); };
+      document.head.appendChild(sc);
+    });
+    return scanLibP;
+  }
+  function dataUrlToFile(u, name) {
+    const a = u.split(','), bin = atob(a[1]), arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new File([arr], name, {type: 'image/jpeg'});
+  }
+  async function decodeBox(file, bigUrl) {
+    try {
+      if ('BarcodeDetector' in window) {
+        const bd = new BarcodeDetector(), bmp = await createImageBitmap(file);
+        const r = await bd.detect(bmp);
+        const v = (r.find(x => x.rawValue && x.format !== 'qr_code') || r[0] || {}).rawValue;
+        if (v) return v;
+      }
+    } catch (e) {}
+    try {
+      await loadScanLib();
+      const h = new window.Html5Qrcode('scanTmp', {verbose: false});
+      const sizes = [file, dataUrlToFile(bigUrl, 'b.jpg')];
+      for (const f of sizes) { try { const t = await h.scanFile(f, false); if (t) return t; } catch (e) {} }
+    } catch (e) {}
+    return '';
+  }
+  function findTrackByCode(code) {
+    const n = normCode(code); if (n.length < 6) return null;
+    const list = store.get('bs_tracking', []);
+    return list.find(t => normCode(t.code) === n) || list.find(t => { const m = normCode(t.code); return m.length >= 8 && (m.indexOf(n) >= 0 || n.indexOf(m) >= 0); }) || null;
+  }
+  function attachBox(it) {
+    const rec = findTrackByCode(it.code); if (!rec) return false;
+    const list = store.get('bs_tracking', []), idx = list.findIndex(t => t.id === rec.id);
+    list[idx].boxPhoto = it.photo; list[idx].boxAt = Date.now();
+    store.set('bs_tracking', list); cloudSave('tracking', list[idx]);
+    it.matched = {id: rec.id, code: rec.code, customer: rec.customer || '', carrier: rec.carrier || ''};
+    renderTrackingHistory();
+    return true;
+  }
+  function renderScanList() {
+    $('scanList').innerHTML = scanItems.map(it => '<li data-sid="' + it.sid + '"><img src="' + it.photo + '" alt="รูปกล่อง">' +
+      '<div class="sc-body">' +
+      (it.busy ? '<div>⏳ กำลังอ่านบาร์โค้ด…</div>' :
+        it.matched ? '<div class="sc-code">' + esc(it.code) + '</div><div class="sc-ok">✅ จับคู่แล้ว: ' + esc(it.matched.customer || 'ไม่ระบุลูกค้า') + ' · ' + esc(it.matched.carrier) + ' (แนบรูปกล่องไว้กับรายการแล้ว)</div>' :
+        (it.code ? '<div class="sc-code">' + esc(it.code) + '</div><div class="sc-warn">⚠️ ไม่พบเลขนี้ในหน้าติดตาม — ลองกด “ดึงรายการจาก iship” ด้านล่างก่อน แล้วกดจับคู่ใหม่ หรือสร้างรายการใหม่</div>' : '<div class="sc-warn">⚠️ อ่านบาร์โค้ดไม่ออก — พิมพ์เลขพัสดุเองได้ด้านล่าง</div>') +
+        '<div class="sc-row"><input class="txt sc-in" type="text" autocomplete="off" placeholder="เลขพัสดุ" value="' + esc(it.code) + '" aria-label="เลขพัสดุ">' +
+        '<button class="btn small primary" data-sa="match" type="button">จับคู่</button>' +
+        '<button class="btn small" data-sa="new" type="button">สร้างรายการใหม่</button></div>') +
+      '<div class="sc-row"><button class="btn small del" data-sa="rm" type="button">เอาออก</button></div></div></li>').join('');
+  }
+  async function scanBoxFiles(files) {
+    const fl = Array.from(files || []).filter(f => /^image\//.test(f.type));
+    for (const f of fl) {
+      const it = {sid: 's' + Date.now() + Math.random().toString(36).slice(2, 6), photo: '', code: '', busy: true, matched: null};
+      scanItems.unshift(it); renderScanList();
+      try {
+        const big = await fileToJpeg(f, 1600, 0.85);
+        it.photo = await fileToJpeg(f, 800, 0.7);
+        it.code = (await decodeBox(f, big) || '').trim();
+      } catch (e) {}
+      it.busy = false;
+      if (it.code) attachBox(it);
+      renderScanList();
+    }
+    if (fl.length) { const m = scanItems.slice(0, fl.length).filter(x => x.matched).length; toast('อ่านแล้ว ' + fl.length + ' รูป · จับคู่ได้ ' + m + ' รูป'); }
+  }
+  $('scanInput').addEventListener('change', e => { scanBoxFiles(e.target.files); e.target.value = ''; });
+  $('scanList').addEventListener('click', e => {
+    const zi = e.target.closest('img');
+    if (zi) { const z = document.createElement('div'); z.className = 'job-zoom'; z.innerHTML = '<img alt="รูปกล่อง">'; z.firstChild.src = zi.src; z.addEventListener('click', () => z.remove()); document.body.appendChild(z); return; }
+    const b = e.target.closest('button[data-sa]'); if (!b) return;
+    const li = b.closest('li'), it = scanItems.find(x => x.sid === li.dataset.sid); if (!it) return;
+    const inp = li.querySelector('.sc-in'); if (inp) it.code = inp.value.trim();
+    if (b.dataset.sa === 'rm') { scanItems = scanItems.filter(x => x !== it); renderScanList(); return; }
+    if (!it.code) { toast('ใส่เลขพัสดุก่อน'); return; }
+    if (b.dataset.sa === 'match') { if (!attachBox(it)) toast('ยังไม่พบเลขนี้ในหน้าติดตาม'); renderScanList(); return; }
+    if (b.dataset.sa === 'new') {
+      const carrier = $('trackCarrier').value, code = it.code;
+      const rec = {id: 't' + Date.now(), code, carrier, customer: '', message: buildTrackingMessage(code, carrier, ''), status: 'transit', savedAt: Date.now(), boxPhoto: it.photo, boxAt: Date.now()};
+      const list = store.get('bs_tracking', []); list.unshift(rec); store.set('bs_tracking', list); cloudSave('tracking', rec);
+      it.matched = {id: rec.id, code, customer: '', carrier}; renderTrackingHistory(); renderScanList(); toast('สร้างรายการใหม่ (ขนส่ง ' + carrier + ') พร้อมรูปกล่องแล้ว');
+    }
+  });
   function saveTracking() {
     const code = $('trackCode').value.trim();
     if (!code) { toast('ใส่เลขพัสดุก่อนสร้างข้อความ'); $('trackCode').focus(); return; }
@@ -6436,6 +6551,7 @@ function bahtText(value) {
       '<button class="btn small" data-act="copy" type="button">คัดลอก</button>' +
       '<button class="btn small edit" data-act="use" type="button">เปิดดู</button>' +
       '<button class="btn small del" data-act="del" type="button">ลบ</button>' +
+      (t.boxPhoto ? '<img class="trk-box" src="' + t.boxPhoto + '" alt="รูปกล่องพัสดุ">' : '') +
       liveHtml + '</li>';
     }).join('') + '</ul>';
     if (cloudDb && trackLiveOn) {
@@ -6443,6 +6559,8 @@ function bahtText(value) {
     }
   }
   $('trackHistory').addEventListener('click', e => {
+    const bz = e.target.closest('img.trk-box');
+    if (bz) { const z = document.createElement('div'); z.className = 'job-zoom'; z.innerHTML = '<img alt="รูปกล่อง">'; z.firstChild.src = bz.src; z.addEventListener('click', () => z.remove()); document.body.appendChild(z); return; }
     const refreshBtn = e.target.closest('button[data-refresh]');
     if (refreshBtn) {
       const code = refreshBtn.dataset.refresh;
@@ -6572,6 +6690,25 @@ function bahtText(value) {
     if (!opts.silent) toast('อัปเดตสถานะเป็น "' + (JOB_STATUS_LABEL[status] || status) + '" แล้ว');
   }
 
+  function fileToJpeg(file, maxDim, q) {
+    return new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onerror = () => rej(new Error('read'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => rej(new Error('img'));
+        img.onload = () => {
+          let w = img.width, h = img.height;
+          if (w > maxDim || h > maxDim) { const k = maxDim / Math.max(w, h); w = Math.round(w * k); h = Math.round(h * k); }
+          const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          res(canvas.toDataURL('image/jpeg', q));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
   function readJobPhotos(files) {
     Array.from(files || []).forEach(file => {
       if (!file || !/^image\//.test(file.type)) return;
@@ -6707,6 +6844,7 @@ function bahtText(value) {
       (j.note && j.note.trim() ? '<div><span class="jd-k">หมายเหตุ</span>' + esc(j.note).replace(/\n/g, '<br>') + '</div>' : '') +
       (j.due ? '<div><span class="jd-k">กำหนดส่ง</span>' + esc(thDate(j.due)) + '</div>' : '') +
       ((j.photos && j.photos.length) ? '<div class="jd-ph">' + j.photos.map(src => '<img src="' + src + '" alt="รูปงาน">').join('') + '</div>' : '') +
+      '<div class="jd-add"><label class="btn small">📷 เพิ่มรูปของงานนี้<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '"></label></div>' +
       '</div>';
   }
   function renderJobHistory() {
@@ -8160,7 +8298,24 @@ function bahtText(value) {
       renderJobHistory(); toast('ลบใบแล้ว');
     }
   });
-  $('jobHistory').addEventListener('change', e => {
+  $('jobHistory').addEventListener('change', async e => {
+    const fi = e.target.closest('input[data-addphoto]');
+    if (fi) {
+      const id = fi.dataset.addphoto, files = Array.from(fi.files || []).filter(f => /^image\//.test(f.type));
+      if (!files.length) return;
+      try {
+        const urls = [];
+        for (const f of files) urls.push(await fileToJpeg(f, 1000, 0.75));
+        const list = store.get('bs_jobs', []), idx = list.findIndex(x => x.id === id);
+        if (idx < 0) return;
+        list[idx].photos = (list[idx].photos || []).concat(urls);
+        list[idx].savedAt = Date.now();
+        store.set('bs_jobs', list); cloudSave('jobs', list[idx]);
+        if (currentJobId === id) { jobPhotos = list[idx].photos.slice(); renderJobPhotos(); renderJob(); }
+        renderJobHistory(); toast('เพิ่มรูป ' + urls.length + ' รูปเข้าใบ ' + (list[idx].no || '') + ' แล้ว');
+      } catch (err) { toast('เพิ่มรูปไม่สำเร็จ ลองใหม่อีกครั้ง'); }
+      return;
+    }
     const sel = e.target.closest('select.job-status-select'); if (!sel) return;
     updateJobStatus(sel.dataset.id, sel.value);
   });
