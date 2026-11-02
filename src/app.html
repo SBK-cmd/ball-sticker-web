@@ -1267,6 +1267,7 @@ tr{break-inside:avoid}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 <style id="fab-newjob-css">
+.bell-th{width:40px;height:40px;border-radius:8px;object-fit:cover;flex:none;border:1px solid var(--line,#e5e5e5);background:#fff}
 .dtype-img{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid #e5e5e5;background:#fff;flex:none}
 #jobHistory .jd{-webkit-user-select:text;user-select:text}
 .recv-box{background:#eef6ff;border:1px solid #bcd7f5;border-radius:14px;padding:10px 12px;margin:8px 0}
@@ -3830,9 +3831,10 @@ function bahtText(value) {
   }
   function renderBell(ring) {
     const btn = $('bellBtn'); if (!btn) return;
-    btn.hidden = !canBank; if (!canBank) return;
+    btn.hidden = !(canBank || can('confirm')); if (btn.hidden) return;
+    if ($('bellAll')) $('bellAll').hidden = !canBank; // ปุ่มไปการ์ดเงินเข้า เฉพาะคนที่มีสิทธิ์เงินเข้า-ออก
     const seen = bellSeen();
-    const unread = bankInAll().filter(x => (x.createdAt || 0) > seen).length;
+    const unread = (canBank ? bankInAll().filter(x => (x.createdAt || 0) > seen).length : 0) + notifUnread(seen);
     $('bellBadge').hidden = !unread;
     $('bellBadge').textContent = unread > 9 ? '9+' : String(unread);
     btn.setAttribute('aria-label', unread ? 'การแจ้งเตือน มีรายการใหม่ ' + unread + ' รายการ' : 'การแจ้งเตือน');
@@ -3842,14 +3844,21 @@ function bahtText(value) {
   let bellOpenSeen = 0;   // ค่าที่ใช้ไฮไลต์ "ใหม่" ระหว่างที่แผงเปิดอยู่
   function renderBellBal() {
     const el = $('bellBal'); if (!el) return;
+    if (!canBank) { el.hidden = true; el.innerHTML = ''; return; } // ยอดคงเหลือเห็นเฉพาะคนที่มีสิทธิ์เงินเข้า-ออก
     const rows = VISIBLE_ACCOUNTS.map(a => ({a, b: bankBalOf(a)})).filter(r => r.b);
     el.hidden = !rows.length;
     el.innerHTML = rows.map(r => '<div><span>คงเหลือ บัญชี' + esc(r.a) + ' <small>(' + esc(bankBalWhen(r.b)) + ')</small></span><b>' + money(num(r.b.balance)) + ' บาท</b></div>').join('');
   }
   function renderBellList() {
     renderBellBal();
-    const rows = bankInAll().slice(0, 15);
-    $('bellList').innerHTML = rows.length ? rows.map(x => {
+    const items = [];
+    if (canBank) bankInAll().slice(0, 15).forEach(x => items.push({t: x.createdAt || 0, kind: 'bank', x}));
+    notifAll().slice(0, 30).forEach(n => items.push({t: n.at || 0, kind: 'job', x: n}));
+    items.sort((a, b) => b.t - a.t);
+    const rows = items.slice(0, 25);
+    $('bellList').innerHTML = rows.length ? rows.map(it => {
+      if (it.kind === 'job') return notifItemHTML(it.x);
+      const x = it.x;
       const isNew = (x.createdAt || 0) > bellOpenSeen;
       return '<button type="button" class="bell-item' + (isNew ? ' unread' : '') + '" data-bid="' + esc(x.id) + '">' +
         '<span class="bell-ic" aria-hidden="true">💰</span>' +
@@ -3863,7 +3872,7 @@ function bahtText(value) {
     bellOpenSeen = bellSeen();
     renderBellList();
     $('bellPanel').hidden = false; $('bellBtn').setAttribute('aria-expanded', 'true');
-    const newest = bankInAll().length ? (bankInAll()[0].createdAt || 0) : 0;
+    const newest = Math.max(canBank && bankInAll().length ? (bankInAll()[0].createdAt || 0) : 0, notifAll().length ? (notifAll()[0].at || 0) : 0);
     if (newest > bellOpenSeen) { try { localStorage.setItem(BELL_SEEN, String(newest)); } catch (e) {} }
     $('bellBadge').hidden = true;
   }
@@ -3871,6 +3880,51 @@ function bahtText(value) {
     if (!$('bellPanel') || $('bellPanel').hidden) return;
     $('bellPanel').hidden = true; $('bellBtn').setAttribute('aria-expanded', 'false');
     renderBell(false);
+  }
+  /* ---------------- แจ้งเตือนสถานะงานในกระดิ่ง (ทุกคนที่เห็นใบงานได้เห็น) ---------------- */
+  const NOTIF_KEY = 'bs_notifs';
+  const notifAll = () => (store.get(NOTIF_KEY, []) || []).slice().sort((a, b) => (b.at || 0) - (a.at || 0));
+  const notifMine = n => !!(currentUser && n.by && n.by === currentUser.name);
+  function notifUnread(seen) { return notifAll().filter(n => (n.at || 0) > seen && !notifMine(n)).length; }
+  function notifWhen(at) {
+    const d = new Date(at), p = v => String(v).padStart(2, '0');
+    const today = new Date(), same = d.toDateString() === today.toDateString();
+    return (same ? 'วันนี้' : p(d.getDate()) + '/' + p(d.getMonth() + 1)) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  function notifItemHTML(n) {
+    const j = (store.get('bs_jobs', []) || []).find(x => x.id === n.jobId);
+    const src = j ? ((j.donePhotos && j.donePhotos[0]) || (j.photos && j.photos[0]) || '') : '';
+    const isNew = (n.at || 0) > bellOpenSeen && !notifMine(n);
+    return '<button type="button" class="bell-item' + (isNew ? ' unread' : '') + '" data-jid="' + esc(n.jobId || '') + '">' +
+      (src ? '<img class="bell-th" src="' + esc(src) + '" alt="">' : '<span class="bell-ic" aria-hidden="true">📋</span>') +
+      '<span class="bell-main"><b>' + esc(n.no || 'ใบงาน') + ' · ' + esc(n.label || '') + '</b>' +
+      '<small>' + esc(n.name || 'ไม่ระบุชื่อลูกค้า') + '</small>' +
+      '<small>' + (n.by ? 'โดย ' + esc(n.by) + ' · ' : '') + esc(notifWhen(n.at || 0)) + '</small></span>' +
+      (isNew ? '<span class="bell-dot" aria-label="ใหม่"></span>' : '') + '</button>';
+  }
+  const notifKnown = {}; let notifFirst = true;
+  function pushJobNotif(job, kind) {
+    try {
+      const rec = {id: 'n' + Date.now() + Math.floor(Math.random() * 1000), type: 'job', jobId: job.id, no: job.no || '', name: job.jName || '', kind,
+        label: kind === 'new' ? 'เปิดใบงานใหม่' : (JOB_STATUS_LABEL[kind] || kind), by: currentUser ? currentUser.name : '', at: Date.now()};
+      let l = store.get(NOTIF_KEY, []) || [];
+      const cut = Date.now() - 7 * 86400000; // เก็บ 7 วัน ไม่ให้เอกสารบนคลาวด์โตเรื่อยๆ
+      l.filter(n => (n.at || 0) < cut).forEach(n => cloudDelete('notifs', n.id));
+      l = l.filter(n => (n.at || 0) >= cut); l.unshift(rec);
+      store.set(NOTIF_KEY, l.slice(0, 200)); cloudSave('notifs', rec);
+      notifKnown[rec.id] = 1; renderBell(false);
+    } catch (e) { console.error('notif error', e); }
+  }
+  function onNotifsChanged() {
+    const fresh = [];
+    notifAll().forEach(n => { if (!notifKnown[n.id]) { notifKnown[n.id] = 1; if (!notifFirst && !notifMine(n)) fresh.push(n); } });
+    notifFirst = false;
+    renderBell(fresh.length > 0);
+    if (fresh.length) { const n = fresh[0]; toast('🔔 ' + (n.no || 'ใบงาน') + ' · ' + (n.label || '') + (n.name ? ' · ' + n.name : '') + (fresh.length > 1 ? ' (และอีก ' + (fresh.length - 1) + ' รายการ)' : '')); try { beepOk(); } catch (e) {} }
+  }
+  function goJobFromBell(jid) {
+    closeBell(); showTab('confirm'); jobOpenIds[jid] = true; renderJobHistory();
+    setTimeout(() => { const li = document.querySelector('#jobHistory li[data-id="' + (window.CSS && CSS.escape ? CSS.escape(jid) : jid) + '"]'); if (li) li.scrollIntoView({behavior: 'smooth', block: 'start'}); }, 80);
   }
   function goBankInCard() {
     closeBell(); $('bankInBanner').hidden = true; showTab('dash');
@@ -7003,9 +7057,11 @@ function bahtText(value) {
     const list = store.get('bs_jobs', []);
     const idx = list.findIndex(j => j.id === id);
     if (idx < 0) return;
+    const prevStatus = list[idx].status || 'pending';
     list[idx].status = status;
     store.set('bs_jobs', list);
     cloudSave('jobs', list[idx]);
+    if (prevStatus !== status) pushJobNotif(list[idx], status);
     if (currentJobId === id) { jobStatus = status; renderJobStatusBadge(); }
     renderJobHistory();
     if (!opts.silent) toast('อัปเดตสถานะเป็น "' + (JOB_STATUS_LABEL[status] || status) + '" แล้ว');
@@ -7223,6 +7279,7 @@ function bahtText(value) {
     const createdBy = idx >= 0 ? list[idx].createdBy : (currentUser ? currentUser.name : '');
     const prevBankInIds = idx >= 0 ? jobBankIdsOf(list[idx]) : [];
     const rec = Object.assign({id, savedAt: Date.now(), createdBy}, data);
+    const prevJobStatus = idx >= 0 ? (list[idx].status || 'pending') : null;
     // ฟิลด์ที่ไม่ได้อยู่ในฟอร์ม (รูปงานเสร็จ เลขพัสดุ ประวัติใส่ใบราคาส่ง) ต้องไม่หายตอนบันทึกทับ
     if (idx >= 0) ['donePhotos', 'trackCode', 'whAdded'].forEach(k => { if (list[idx][k] != null && rec[k] == null) rec[k] = list[idx][k]; });
     if (idx >= 0) list[idx] = rec; else list.push(rec);
@@ -7234,6 +7291,7 @@ function bahtText(value) {
     upsertCustomer(rec.jName, rec.jPhone, rec.jAddr);
     renderJobHistory(); renderJobEditState();
     syncRecordPhotosToCloud('bs_jobs', 'jobs', rec.id, 'photos', renderJobHistory);
+    if (idx < 0) pushJobNotif(rec, 'new'); else if (prevJobStatus !== (rec.status || 'pending')) pushJobNotif(rec, rec.status || 'pending');
     let whMsg = '';
     if (rec.wholesale && can('wholesale')) { const m = autoMergeWholesale(rec.id); if (m) { lastWhMerge = m.doc; renderJobHistory(); whMsg = ' · รวมเข้าใบราคาส่งของ ' + String(rec.jName).trim() + (m.isNew ? ' (เปิดใบใหม่)' : '') + ' ' + m.n + ' รายการ'; } }
     toast(whMsg ? 'บันทึกใบ ' + rec.no + ' แล้ว' + whMsg : (persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับใบ ' : 'บันทึกใบ ') + rec.no + ' แล้ว'
@@ -8437,7 +8495,10 @@ function bahtText(value) {
   $('bibView').addEventListener('click', goBankInCard);
   $('bellBtn').addEventListener('click', e => { e.stopPropagation(); if ($('bellPanel').hidden) openBell(); else closeBell(); });
   $('bellAll').addEventListener('click', goBankInCard);
-  $('bellList').addEventListener('click', e => { if (e.target.closest('[data-bid]')) goBankInCard(); });
+  $('bellList').addEventListener('click', e => {
+    const jb = e.target.closest('[data-jid]'); if (jb) { goJobFromBell(jb.dataset.jid); return; }
+    if (e.target.closest('[data-bid]')) goBankInCard();
+  });
   document.addEventListener('click', e => { if (!e.target.closest('#bellPanel') && !e.target.closest('#bellBtn')) closeBell(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBell(); });
   renderBell(false);
@@ -9325,6 +9386,7 @@ function bahtText(value) {
   (window.__bsAuthReady || Promise.resolve()).then(function () {
     watchCloud('bills', 'bs_bills', renderHistory);
     watchCloud('jobs', 'bs_jobs', renderJobHistory);
+    watchCloud('notifs', NOTIF_KEY, onNotifsChanged);
     watchCloud('wholesale', 'bs_wholesale', renderWholesaleHistory);
     watchCloud('quotes', 'bs_quotes', renderQuoteHistory);
     watchCloud('purchases', 'bs_purchases', () => { renderPurchHistory(); renderVendorDatalist(); });
