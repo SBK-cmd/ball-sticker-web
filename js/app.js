@@ -4207,6 +4207,7 @@ function bahtText(value) {
       '</div>';
   }
   function renderJobHistory() {
+    try { const sel = window.getSelection && window.getSelection(); if (sel && !sel.isCollapsed && String(sel).trim() && $('jobHistory').contains(sel.anchorNode)) { clearTimeout(renderJobHistory._t); renderJobHistory._t = setTimeout(renderJobHistory, 1500); return; } } catch (e) {}
     try { renderCustomerDatalist(); } catch (e) {}
     const list = store.get('bs_jobs', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
     const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้ ควรดาวน์โหลด PDF เก็บไว้ทุกครั้ง</p>');
@@ -5665,6 +5666,8 @@ function bahtText(value) {
     toast('คัดลอกข้อมูลจากใบคอนเฟิร์มงานมาที่ใบราคาส่งแล้ว ใส่ราคาส่งให้ครบก่อนพิมพ์');
   });
 
+  let jdDownInside = false;
+  $('jobHistory').addEventListener('pointerdown', e => { jdDownInside = !!e.target.closest('.jd'); });
   $('jobHistory').addEventListener('click', e => {
     if (e.target.closest('#whSweepBtn')) { sweepWholesaleJobs(); return; }
     const btn = e.target.closest('button[data-act]');
@@ -5673,6 +5676,7 @@ function bahtText(value) {
       if (zi) { const z = document.createElement('div'); z.className = 'job-zoom'; z.innerHTML = '<img alt="รูปงาน">'; z.firstChild.src = zi.src; z.addEventListener('click', () => z.remove()); document.body.appendChild(z); return; }
       const li = e.target.closest('li[data-id]');
       if (!li || e.target.closest('select,a,.jd')) return;
+      if (jdDownInside || (window.getSelection && String(window.getSelection()).trim())) { jdDownInside = false; return; } // ลากคลุมข้อความในรายละเอียดเพื่อก๊อป ห้ามพับใบ
       const id = li.dataset.id; jobOpenIds[id] = !jobOpenIds[id]; renderJobHistory(); return;
     }
     const id = btn.closest('li').dataset.id;
