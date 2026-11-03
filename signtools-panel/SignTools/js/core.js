@@ -270,7 +270,7 @@ module.exports = function createCore(opt) {
   function features() {                       // ฟีเจอร์พิเศษตามบัญชี (เช่น คิวงานเชื่อมแอปร้าน สำหรับเบอร์ทดสอบ)
     var lic = readLic();
     if (!lic || !lic.token) return Promise.resolve({});
-    return api({ action: 'features', token: lic.token }).then(function (j) { return (j && j.features) || {}; }, function () { return {}; });
+    return api({ action: 'features', token: lic.token }).then(function (j) { var f = (j && j.features) || {}; f.tools_off = (j && j.tools_off) || []; return f; }, function () { return {}; });
   }
   function checkUpdate() {
     var lic = readLic();          // ส่งโทเคนไปด้วย → เครื่องทดสอบเบต้าได้รุ่นเบต้า

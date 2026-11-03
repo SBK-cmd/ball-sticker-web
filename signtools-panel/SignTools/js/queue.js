@@ -274,6 +274,7 @@
   // ---------- เปิดใช้เมื่อเซิร์ฟเวอร์อนุญาต ----------
   function start(f) {
     if (!f || !f.queue || cfg) return;
+    if ((f.tools_off || []).indexOf('queue') >= 0) return;      // แอดมินปิดเครื่องมือนี้ให้สมาชิก
     cfg = f.queue; window.ST_cloudQueue = true;
     var btn = document.querySelector('.tab[data-tab="queue"]');
     if (btn) { btn.classList.remove('hidden'); var sp = btn.querySelector('span'); if (sp) sp.textContent = 'ใบงานจากแอปร้าน · เบต้า'; }
