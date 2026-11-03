@@ -74,3 +74,7 @@ html body .history li:nth-child(4){animation-delay:.12s}html body .history li:nt
 html body .history li:nth-child(n+6){animation-delay:.2s}
 /* ตัวเลขเงินในตาราง/สรุป ใช้ตัวเลขกว้างเท่ากัน อ่านเทียบหลักง่าย */
 html body table td,html body .dash-tile b,html body #count{font-feature-settings:"tnum" 1,"lnum" 1}
+
+/* ไอคอนเส้นแทนอีโมจิ */
+.ic{width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:.4em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic-wrap{display:inline}
