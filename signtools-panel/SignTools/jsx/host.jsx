@@ -714,7 +714,7 @@ function st_contourCut(doc, art, offPt, dest, cutColor, sm) {   // sm = { level,
     if (st_hasRaster(work)) {
         traced = true;
         var vb = work.visibleBounds, longIn = Math.max(vb[2] - vb[0], vb[1] - vb[3]) * ST_SF / 72;
-        var ppi = Math.max(36, Math.min(150, 1500 / Math.max(longIn, 0.1)));
+        var ppi = sm ? Math.max(48, Math.min(300, 3000 / Math.max(longIn, 0.1))) : Math.max(36, Math.min(150, 1500 / Math.max(longIn, 0.1)));   // Extract (มี sm): ละเอียดขึ้นสูงสุด 300 ppi ให้ขอบเนียนใกล้ FineCut
         var ro = new RasterizeOptions();
         ro.resolution = ppi; ro.transparency = false; ro.antiAliasingMethod = AntiAliasingMethod.ARTOPTIMIZED;
         try { ro.padding = P(2); } catch (ep) {}
@@ -736,8 +736,11 @@ function st_contourCut(doc, art, offPt, dest, cutColor, sm) {   // sm = { level,
     app.executeMenuCommand('Live Pathfinder Add');
     app.executeMenuCommand('expandStyle');
     var u = doc.selection[0];
-    if (Math.abs(offPt) > 0.01) {   // ติดลบ = หดเข้าในงาน
-        u.applyEffect('<LiveEffect name="Adobe Offset Path"><Dict data="R mlim 4 R ofst ' + offPt + ' I jntp 0 "/></LiveEffect>');
+    // ขยายแล้วหดกลับ (ปิดมุมเว้า) ตามระดับ Smooth: มุมเว้า/มุมหยักจากการ trace โค้งมนเหมือน FineCut · ทั้งสองขั้นรวมกัน = ระยะ offPt เดิม
+    var rr = (sm && sm.level > 0) ? Math.min(U(1.5), U(sm.level * 0.25)) : 0, steps = rr > 0.01 ? [rr, offPt - rr] : [offPt], si;
+    for (si = 0; si < steps.length; si++) {
+        if (Math.abs(steps[si]) < 0.01) continue;   // ติดลบ = หดเข้าในงาน
+        u.applyEffect('<LiveEffect name="Adobe Offset Path"><Dict data="R mlim 4 R ofst ' + steps[si] + ' I jntp 0 "/></LiveEffect>');
         doc.selection = null; u.selected = true;
         app.executeMenuCommand('expandStyle');
         app.executeMenuCommand('group');
