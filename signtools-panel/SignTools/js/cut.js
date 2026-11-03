@@ -80,6 +80,7 @@
   function draw() {
     if (anim) { cancelAnimationFrame(anim.raf); anim = null; }
     var cv = $('cutCanvas'); cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+    if (markView) { $('cutPlay').disabled = true; drawMarkView(cv); return; }
     $('cutPlay').disabled = !job; $('cutPlay').textContent = '▶ จำลองการตัด';
     if (!job) return;
     var G = geom(); frame(G);
@@ -123,7 +124,55 @@
     anim.raf = requestAnimationFrame(step);
   }
   var raw = null, rawLabel = '', marks = null, blockMk = false;
+  var markView = null;
+  // พรีวิวมาร์ค: มุมมองเดียวกับใน Illustrator (X ขวา · Y ขึ้น) วาดเส้นตัดที่อ่านไว้ + artboard + จุดมาร์คทุกจุด (น้ำเงิน = อยู่ใน artboard · แดง = อยู่นอก)
+  function drawMarkView(cv) {
+    var g = cv.getContext('2d'), v = markView, pad = 14, i;
+    var x0 = Math.min(v.ab[0], v.ab[2]), x1 = Math.max(v.ab[0], v.ab[2]), y0 = Math.min(v.ab[1], v.ab[3]), y1 = Math.max(v.ab[1], v.ab[3]);
+    v.marks.forEach(function (m) { x0 = Math.min(x0, m[0]); x1 = Math.max(x1, m[0]); y0 = Math.min(y0, m[1]); y1 = Math.max(y1, m[1]); });
+    var W = Math.max(x1 - x0, 1), H = Math.max(y1 - y0, 1);
+    var sc = Math.min((cv.width - 2 * pad) / W, (cv.height - 2 * pad) / H);
+    var X = function (x) { return pad + (x - x0) * sc; }, Y = function (y) { return cv.height - pad - (y - y0) * sc; };
+    g.clearRect(0, 0, cv.width, cv.height);
+    g.strokeStyle = 'rgba(255,255,255,.3)'; g.setLineDash([3, 3]);
+    g.strokeRect(X(Math.min(v.ab[0], v.ab[2])), Y(Math.max(v.ab[1], v.ab[3])), Math.abs(v.ab[2] - v.ab[0]) * sc, Math.abs(v.ab[1] - v.ab[3]) * sc); g.setLineDash([]);
+    (raw || []).forEach(function (pt) {   // เส้นตัดที่อ่านไว้ (anchor อย่างเดียวพอดูตำแหน่ง)
+      var a = pt.p || []; if (a.length < 12) return;
+      g.strokeStyle = COL[pt.k || 'kiss']; g.globalAlpha = 0.55; g.lineWidth = 1; g.beginPath();
+      for (var j = 0; j < a.length; j += 6) { if (j) g.lineTo(X(a[j]), Y(a[j + 1])); else g.moveTo(X(a[j]), Y(a[j + 1])); }
+      if (pt.c) g.closePath(); g.stroke(); g.globalAlpha = 1;
+    });
+    for (i = 0; i < v.marks.length; i++) {
+      var m = v.marks[i], inn = m[2] === 1;
+      g.fillStyle = inn ? '#4da3ff' : '#ff5d5d'; g.fillRect(X(m[0]) - 3.5, Y(m[1]) - 3.5, 7, 7);
+    }
+  }
+  function mkWhyText(w) {
+    return { nolayer: 'ไม่พบเลเยอร์ reg_1… ในไฟล์ — ไฟล์นี้ไม่มีมาร์ค CM5 (หรือชื่อเลเยอร์ถูกแก้)', hidden: 'พบเลเยอร์ reg_1… แต่ถูกซ่อนอยู่ — เปิดตาเลเยอร์ (มาร์คต้องพิมพ์ออกมาด้วย)',
+      empty: 'เลเยอร์ reg_1… ไม่มีมาร์คอยู่ข้างใน', outside: 'มีมาร์คแต่อยู่นอก artboard ที่เปิดอยู่ — เลือก artboard ที่มีมาร์ค', few: 'พบมาร์คใน artboard น้อยกว่า 4 จุด — ต้องมีอย่างน้อย 4 จุดถึงอ่านได้' }[w] || '';
+  }
+  $('cutMkCheck').onclick = function () {
+    var b = $('cutMkCheck'); b.disabled = true;
+    host('st_markCheck').then(function (r) {
+      b.disabled = false;
+      var d = $('cutMkDiag'); d.className = 'hint';
+      if (r.error) { d.textContent = '⚠ ' + r.error; d.classList.add('warn'); return; }
+      var unsup = r.why === 'ok' && r.style !== 1 && r.style !== 7;
+      if (r.why === 'ok' && !unsup) {
+        d.textContent = '✓ อ่านมาร์คได้ · ' + r.name.split(' ').slice(0, 2).join(' ') + ' (' + (r.style === 7 ? 'Segment' : '4 Points') + ') · พบ ' + r.inAb + ' จุดใน artboard' + (r.total > r.inAb ? ' (นอก artboard ' + (r.total - r.inAb) + ' จุด สีแดง)' : '') + ' — จุดน้ำเงินในภาพ = มาร์คที่ระบบจับได้';
+      } else {
+        d.classList.add('warn');
+        d.textContent = '✗ ' + (unsup ? 'มาร์คแบบรหัส ' + r.style + ' ยังส่งตัดจากแผงไม่ได้ — ใช้ Cutting Master ไปก่อน' : mkWhyText(r.why)) +
+          (r.why === 'outside' || r.why === 'few' ? ' (พบ ' + r.total + ' จุดทั้งไฟล์ · ใน artboard ' + r.inAb + ')' : '') + (r.direct === 0 && r.total > 0 ? ' · มาร์คอยู่ในกลุ่ม/เลเยอร์ย่อย' : '');
+      }
+      markView = r.marks && r.marks.length ? r : null;
+      if (anim) { cancelAnimationFrame(anim.raf); anim = null; }
+      draw();
+      if (!markView) status('ไม่มีจุดมาร์คให้แสดงในภาพ', 'warn'); else status('ภาพ = มุมมองเดียวกับใน Illustrator · น้ำเงิน = มาร์คที่จับได้ · เส้นชมพู/เขียว = เส้นตัดที่อ่านไว้ (ถ้ากดอ่านแล้ว)', '');
+    });
+  };
   function rebuild() {
+    markView = null;
     if (!raw) { job = null; draw(); $('cutGo').disabled = true; return; }
     var r = STCut.build(raw, opts());
     if (r.error) { job = null; $('cutRes').textContent = r.error; $('cutGo').disabled = true; draw(); return; }
@@ -148,7 +197,8 @@
         return;
       }
       isTest = false; raw = r.paths; rawLabel = r.src === 'sel' ? 'เส้นที่เลือก' : 'เส้นตัด (Kiss Cut / Die Cut) ใน artboard';
-      marks = r.marks || null;
+      marks = r.marks || null; markView = null;
+      if (!marks && r.mkWhy && r.mkWhy !== 'nolayer') w.push('มีเลเยอร์มาร์ค (reg_1) แต่อ่านไม่ได้ — กด "ตรวจมาร์ค" ดูสาเหตุ');
       blockMk = !!(marks && marks.style !== 1 && marks.style !== 7);
       if (blockMk) { w.push('มาร์คแบบนี้ (รหัส ' + marks.style + ') ยังส่งตัดจากแผงไม่ได้ — ใช้ Cutting Master ไปก่อน'); marks = null; }
       $('cutMkRow').classList.toggle('hidden', !marks);

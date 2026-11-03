@@ -1068,24 +1068,71 @@ function st_layerVisible(it) {
     return !it.hidden;
 }
 
-// มาร์ค CM5 ใน artboard ที่เปิดอยู่ (เลเยอร์ "reg_1 …") → จุดกลางมาร์ค (มม.) สำหรับส่งตัดแบบอ่านมาร์ค
+// มาร์ค CM5: หาเลเยอร์ "reg_1 …" แล้วเก็บชิ้นมาร์คทุกชิ้น (รวมที่อยู่ในกลุ่ม/เลเยอร์ย่อย — ไฟล์เก่าอาจจัดไว้แบบนั้น)
+function st_markItems(c, out) {
+    var i, n;
+    try { n = c.pageItems.length; } catch (e) { n = 0; }
+    for (i = 0; i < n; i++) {
+        var it = c.pageItems[i], t = it.typename;
+        if (t === 'GroupItem') st_markItems(it, out);
+        else if (t === 'PathItem' || t === 'CompoundPathItem') { try { if (!it.guides) out.push(it); } catch (e1) { out.push(it); } }
+    }
+    try { for (i = 0; i < c.layers.length; i++) st_markItems(c.layers[i], out); } catch (e2) {}
+    return out;
+}
+// ผลสแกน: why = ok | nolayer | hidden | empty | outside | few
+function st_markScan(doc) {
+    var res = { why: 'nolayer', code: 0, name: '', items: [], inAb: [], direct: 0 }, L = null, hid = null, i;
+    for (i = 0; i < doc.layers.length; i++) {
+        var m = /^reg_1 (\d+) /.exec(doc.layers[i].name);
+        if (!m) continue;
+        if (doc.layers[i].visible) { L = doc.layers[i]; res.code = parseInt(m[1], 10); break; }
+        if (!hid) { hid = doc.layers[i]; res.code = parseInt(m[1], 10); }
+    }
+    if (!L) { if (hid) { res.why = 'hidden'; res.name = hid.name; } return res; }
+    res.name = L.name;
+    try { res.direct = L.pathItems.length; } catch (e) {}
+    st_markItems(L, res.items);
+    if (!res.items.length) { res.why = 'empty'; return res; }
+    var ab = doc.artboards[doc.artboards.getActiveArtboardIndex()].artboardRect;
+    for (i = 0; i < res.items.length; i++) {
+        var b = res.items[i].geometricBounds, cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2;
+        if (cx < ab[0] || cx > ab[2] || cy > ab[1] || cy < ab[3]) continue;
+        res.inAb.push(res.items[i]);
+    }
+    res.why = !res.inAb.length ? 'outside' : (res.inAb.length < 4 ? 'few' : 'ok');
+    return res;
+}
+var st_lastMkWhy = '';
+// มาร์ค CM5 ใน artboard ที่เปิดอยู่ → จุดกลางมาร์ค (มม.) สำหรับส่งตัดแบบอ่านมาร์ค
 function st_cutMarks(doc) {
     try {
-        var L = null, i, code = 0;
-        for (i = 0; i < doc.layers.length; i++) { var m = /^reg_1 (\d+) /.exec(doc.layers[i].name); if (m && doc.layers[i].visible) { L = doc.layers[i]; code = parseInt(m[1], 10); break; } }
-        if (!L) return null;
-        var ab = doc.artboards[doc.artboards.getActiveArtboardIndex()].artboardRect, U0 = null, n = 0;
-        for (i = 0; i < L.pathItems.length; i++) {
-            var b = L.pathItems[i].geometricBounds, cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2;
-            if (cx < ab[0] || cx > ab[2] || cy > ab[1] || cy < ab[3]) continue;
-            n++;
+        var sc = st_markScan(doc), i, U0 = null;
+        st_lastMkWhy = sc.why;
+        if (sc.why !== 'ok') return null;
+        for (i = 0; i < sc.inAb.length; i++) {
+            var b = sc.inAb[i].geometricBounds;
             if (!U0) U0 = [b[0], b[1], b[2], b[3]]; else { U0[0] = Math.min(U0[0], b[0]); U0[1] = Math.max(U0[1], b[1]); U0[2] = Math.max(U0[2], b[2]); U0[3] = Math.min(U0[3], b[3]); }
         }
-        if (n < 4) return null;
+        var code = sc.code, n = sc.inAb.length;
         var k = ST_SF / MM, len = 15;
         var ox = U0[0] * k + len, oy = U0[3] * k + len, rx = U0[2] * k - len, ty = U0[1] * k - len;
         return '{"style":' + code + ',"seg":' + (code === 7 ? 'true' : 'false') + ',"stepMM":250,"n":' + n + ',"ox":' + ox + ',"oy":' + oy + ',"dx":' + (ty - oy) + ',"dy":' + (rx - ox) + ',"lenMM":' + len + '}';
     } catch (e) { return null; }
+}
+// ปุ่ม "ตรวจมาร์ค": ส่งจุดมาร์คทุกจุด + artboard (มม. พิกัดเดียวกับเส้นตัด) ไว้วาดพรีวิว พร้อมสาเหตุถ้าอ่านไม่ได้
+function st_markCheck() {
+    try {
+        var doc = st_doc(), sc = st_markScan(doc), k = ST_SF / MM, i, pts = [];
+        var ab = doc.artboards[doc.artboards.getActiveArtboardIndex()].artboardRect;
+        for (i = 0; i < sc.items.length; i++) {
+            var b = sc.items[i].geometricBounds, cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2;
+            var inn = !(cx < ab[0] || cx > ab[2] || cy > ab[1] || cy < ab[3]);
+            pts.push('[' + Math.round(cx * k * 100) / 100 + ',' + Math.round(cy * k * 100) / 100 + ',' + (inn ? 1 : 0) + ']');
+        }
+        return '{"why":"' + sc.why + '","style":' + sc.code + ',"name":"' + sc.name.replace(/"/g, '') + '","total":' + sc.items.length + ',"inAb":' + sc.inAb.length + ',"direct":' + sc.direct +
+            ',"ab":[' + [ab[0] * k, ab[1] * k, ab[2] * k, ab[3] * k].join(',') + '],"marks":[' + pts.join(',') + ']}';
+    } catch (e) { return st_err(e.message); }
 }
 function st_cutRead() {
     try {
@@ -1122,7 +1169,7 @@ function st_cutRead() {
             out.push('{"c":' + (paths[i].closed ? 1 : 0) + ',"k":"' + kd + '","p":[' + pts.join(',') + ']}');
         }
         var mk = st_cutMarks(doc);
-        return '{"src":"' + src + '","text":' + info.text + ',"other":' + info.other + ',"n":' + out.length + ',"pts":' + npts + ',"paths":[' + out.join(',') + ']' + (mk ? ',"marks":' + mk : '') + '}';
+        return '{"mkWhy":"' + st_lastMkWhy + '","src":"' + src + '","text":' + info.text + ',"other":' + info.other + ',"n":' + out.length + ',"pts":' + npts + ',"paths":[' + out.join(',') + ']' + (mk ? ',"marks":' + mk : '') + '}';
     } catch (e) { return st_err(e.message); }
 }
 
