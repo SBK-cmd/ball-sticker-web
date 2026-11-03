@@ -6,7 +6,7 @@
   function host(fn, arg) {
     return new Promise(function (resolve) {
       if (!window.__adobe_cep__) return resolve({ error: 'ไม่ได้รันใน Illustrator' });
-      window.__adobe_cep__.evalScript(fn + '(' + esc(arg) + ')', function (r) {
+      window.__adobe_cep__.evalScript(fn + '(' + (arg === undefined ? '' : esc(arg)) + ')', function (r) {
         try { resolve(JSON.parse(r)); } catch (e) { resolve({ error: 'สคริปต์ผิดพลาด: ' + String(r).slice(0, 200) }); }
       });
     });
@@ -25,18 +25,27 @@
     return {
       kiss: { on: $('extKiss').checked, shape: $('extKissShape').value, offMM: num('extKissOff', 2), radMM: num('extKissRad', 3) },
       die: { shape: $('extDie').value, offMM: Math.max(0, num('extDieOff', 3)), radMM: Math.max(0, num('extDieRad', 5)) },
-      marks: { on: $('extMarks').checked, thrMM: 500 }
+      marks: { on: $('extMarks').checked, thrMM: 500 },
+      smooth: Math.max(0, Math.min(10, Math.round(num('extSmooth', 4))))
     };
   }
-  $('extGo').onclick = function () {
-    var o = opts(), b = $('extGo');
+  $('extSmooth').addEventListener('input', function () { $('extSmVal').textContent = $('extSmooth').value; });
+  $('extSmVal').textContent = $('extSmooth').value;
+  function run(preview) {
+    var o = opts(), b = preview ? $('extPv') : $('extGo');
+    o.preview = !!preview;
     if (!o.kiss.on && o.die.shape === 'none') { $('extRes').textContent = 'เลือกทำ Kiss Cut หรือ Die Cut อย่างน้อยหนึ่งอย่าง'; return; }
-    b.disabled = true; $('extRes').textContent = 'กำลังสร้างเส้นตัด… (งานเยอะอาจใช้เวลาหลายนาที อย่าแตะ Illustrator)'; $('extWarn').textContent = '';
+    b.disabled = true; $('extRes').textContent = (preview ? 'กำลังทำพรีวิว… ' : 'กำลังสร้างเส้นตัด… ') + ' (งานเยอะอาจใช้เวลาหลายนาที อย่าแตะ Illustrator)'; $('extWarn').textContent = '';
     host('st_extract', o).then(function (r) {
       b.disabled = false;
       if (r.error) { $('extRes').textContent = '⚠ ' + r.error; return; }
       $('extRes').textContent = '✓ ' + r.msg;
       $('extWarn').textContent = (r.warn || []).join(' · ');
     });
+  }
+  $('extGo').onclick = function () { run(false); };
+  $('extPv').onclick = function () { run(true); };
+  $('extPvClear').onclick = function () {
+    host('st_stkPreviewClear', undefined).then(function (r) { $('extRes').textContent = r.error ? '⚠ ' + r.error : r.msg; $('extWarn').textContent = ''; });
   };
 })();

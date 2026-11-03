@@ -659,7 +659,7 @@ function st_findType(x, type, out) {
 // ไดคัทตามรูป: ทำสำเนา → แปลงตัวหนังสือ/ภาพ/เส้นเป็นรูปทรง → รวม → ขยายออก → เหลือแต่ขอบนอก
 
 // เกลาเส้นให้เรียบ: สุ่มจุดตามเส้นจริง → เฉลี่ยลบขั้นบันไดพิกเซล → ลดจุด (Douglas-Peucker) → ใส่มือจับแบบ Catmull-Rom (โค้งต่อเนื่อง)
-function st_smoothPath(p, tol) {
+function st_smoothPath(p, tol, passes) {
     if (p.typename !== 'PathItem' || !p.closed || p.pathPoints.length < 4) return;
     var pp = p.pathPoints, n = pp.length, pts = [], i, j, k;
     for (i = 0; i < n; i++) {
@@ -678,7 +678,7 @@ function st_smoothPath(p, tol) {
     }
     if (rs.length > 8) pts = rs;
     var m = pts.length;
-    for (k = 0; k < 8; k++) {      // เฉลี่ย 1-2-1 แปดรอบ (เรียบในช่วงราว 0.5 มม. — ลบขั้นพิกเซลและรอยหยัก)
+    for (k = 0; k < (passes || 8); k++) {      // เฉลี่ย 1-2-1 (ปกติแปดรอบ; Extract ปรับตามระดับ Smooth) (เรียบในช่วงราว 0.5 มม. — ลบขั้นพิกเซลและรอยหยัก)
         var q = [];
         for (i = 0; i < m; i++) { var L = pts[(i - 1 + m) % m], C = pts[i], R = pts[(i + 1) % m]; q.push([(L[0] + 2 * C[0] + R[0]) / 4, (L[1] + 2 * C[1] + R[1]) / 4]); }
         pts = q;
@@ -704,7 +704,7 @@ function st_smoothPath(p, tol) {
     }
     p.closed = true;
 }
-function st_contourCut(doc, art, offPt, dest, cutColor) {
+function st_contourCut(doc, art, offPt, dest, cutColor, sm) {   // sm = { level, tol, passes } (ไม่ส่ง = เกลาเฉพาะเส้นจากภาพ · level 0 = ไม่เกลา)
     var work = art.duplicate(dest, ElementPlacement.PLACEATEND);
     var i, list, traced = false;
     // ตัวหนังสือ → outline
@@ -756,7 +756,8 @@ function st_contourCut(doc, art, offPt, dest, cutColor) {
     var cut = dest.groupItems.add();
     for (i = 0; i < keep.length; i++) {
         var c = keep[i].duplicate(cut, ElementPlacement.PLACEATEND);
-        if (traced) { try { st_smoothPath(c, P(0.12 * MM)); } catch (esm) {} }   // เส้นจากภาพ → เกลาให้เรียบ ไม่เป็นขั้นบันไดพิกเซล
+        if (sm) { if (sm.level > 0) { try { st_smoothPath(c, sm.tol, sm.passes); } catch (esm0) {} } }
+        else if (traced) { try { st_smoothPath(c, P(0.12 * MM)); } catch (esm) {} }   // เส้นจากภาพ → เกลาให้เรียบ ไม่เป็นขั้นบันไดพิกเซล
         st_styleCut(c, cutColor);
     }
     doc.selection = null;
@@ -1036,13 +1037,14 @@ function st_stkPlace(o) {
 // =====================================================================
 //  Extract: สร้างเส้นตัดจากงานที่เลือกอยู่แล้ว (ไม่ย้ายงาน) — Kiss Cut (สี Spot ชมพู CutContour · เลเยอร์ Kiss Cut · ไม่พิมพ์)
 //  + Die Cut เลือกได้: ตามเส้น Kiss / สี่เหลี่ยม / สี่เหลี่ยมมุมมน (ห่างจาก Kiss กี่ มม.) + มาร์ค CM5 รอบงานทั้งหมด
-//  o = { kiss:{on, shape:'contour'|'rect'|'round', offMM, radMM}, die:{shape:'none'|'same'|'rect'|'round', offMM, radMM}, marks:{on, thrMM} }
+//  o = { kiss:{on, shape:'contour'|'rect'|'round', offMM, radMM}, die:{shape:'none'|'same'|'rect'|'round', offMM, radMM}, marks:{on, thrMM}, smooth: 0–10 (0 = ไม่เกลาเส้น), preview: true = ทำเป็นเลเยอร์ตัวอย่าง (ไม่พิมพ์) ยังไม่สร้างจริง }
 // =====================================================================
 function st_extract(o) {
-    var doc, stage = null, warn = [], step = 'เริ่ม', newLayers = [], madeK = 0, madeD = 0, i, k;
+    var doc, stage = null, warn = [], step = 'เริ่ม', newLayers = [], madeK = 0, madeD = 0, i, k, pv = !!o.preview, PV = null;
     try {
         doc = st_doc();
-        var sel = st_designs(st_selection(doc));
+        var sel = st_designs(st_selection(doc)), raw0 = st_selection(doc);
+        try { var oldPv = doc.layers.getByName(ST_PV); oldPv.locked = false; oldPv.remove(); } catch (e0p) {}
         if (sel.length > 60) return st_err('เลือกงานได้ไม่เกิน 60 ดวงต่อครั้ง (เลือก ' + sel.length + ') — แบ่งทำเป็นชุดๆ');
         var dieOn = o.die && o.die.shape !== 'none', kissOn = !!(o.kiss && o.kiss.on);
         if (!kissOn && !dieOn) return st_err('ต้องเลือกทำ Kiss Cut หรือ Die Cut อย่างน้อยหนึ่งอย่าง');
@@ -1051,9 +1053,15 @@ function st_extract(o) {
         var dieColor = dieOn ? st_spotColor(st_spotSwatch(doc, 'DieCut', [0, 166, 81], [100, 0, 100, 0])) : null;
         stage = doc.layers.add(); stage.name = 'ST_staging';
         var hadK = st_hasLayer(doc, 'Kiss Cut'), dieName = st_hasLayer(doc, 'Die Cut') ? 'Die Cut' : 'DieCut', hadD = st_hasLayer(doc, dieName);
-        var kissL = kissOn ? st_layer(doc, 'Kiss Cut', true) : null, dieL = dieOn ? st_layer(doc, dieName, true) : null;
-        if (kissL && !hadK) newLayers.push(kissL);
-        if (dieL && !hadD) newLayers.push(dieL);
+        var kissL, dieL;
+        if (pv) { PV = doc.layers.add(); PV.name = ST_PV; newLayers.push(PV); kissL = kissOn ? PV : null; dieL = dieOn ? PV : null; }
+        else {
+            kissL = kissOn ? st_layer(doc, 'Kiss Cut', true) : null; dieL = dieOn ? st_layer(doc, dieName, true) : null;
+            if (kissL && !hadK) newLayers.push(kissL);
+            if (dieL && !hadD) newLayers.push(dieL);
+        }
+        var lvl = Math.max(0, Math.min(10, Math.round(o.smooth == null ? 4 : o.smooth)));
+        var sm = { level: lvl, tol: P(lvl * 0.03 * MM), passes: lvl * 2 };
         var kOff = U(o.kiss.offMM || 0), ub = null, oldCuts = 0;
         for (i = 0; i < sel.length; i++) {
             step = 'ทำเส้นตัดดวงที่ ' + (i + 1) + ' จาก ' + sel.length; st_bc(step);
@@ -1067,7 +1075,7 @@ function st_extract(o) {
             }
             var cut = null, vb = art.visibleBounds;
             if (o.kiss.shape === 'contour') {
-                try { cut = st_contourCut(doc, art, kOff, stage, cutColor); }
+                try { cut = st_contourCut(doc, art, kOff, stage, cutColor, sm); }
                 catch (ec) { warn.push((i + 1) + ': ทำเส้นตามรูปไม่ได้ (' + ec.message + ') → ใช้สี่เหลี่ยมมุมมนแทน'); cut = null; }
             }
             if (!cut) cut = st_shapeCut(doc, vb, { cutType: 'rect', offsetMM: o.kiss.offMM || 0, radiusMM: (o.kiss.shape === 'rect' ? 0 : Math.max(o.kiss.radMM || 0, o.kiss.shape === 'contour' ? 2 : 0)) }, stage, cutColor);
@@ -1087,7 +1095,7 @@ function st_extract(o) {
         }
         try { stage.remove(); } catch (es) {} stage = null;
         var mkMsg = '';
-        if (o.marks && o.marks.on && ub) {
+        if (!pv && o.marks && o.marks.on && ub) {
             step = 'ใส่มาร์ค CM5'; st_bc(step);
             var ab = doc.artboards[doc.artboards.getActiveArtboardIndex()];
             var seg = (ub[1] - ub[3]) > U(o.marks.thrMM || 500);
@@ -1096,11 +1104,11 @@ function st_extract(o) {
             for (var ln in cm5L) { try { cm5L[ln].locked = true; } catch (elk) {} }
             mkMsg = ' · มาร์ค CM5 ' + (seg ? 'Segment ' + nseg + ' ช่วง' : '4 Points') + ' (artboard ปรับให้พอดีมาร์ค)';
         }
-        st_orderCutLayers(doc);
-        doc.selection = null;
-        if (oldCuts) warn.push('งานที่เลือกมีเส้นตัดเดิม ' + oldCuts + ' เส้น — ไม่ได้ลบ (ถ้าไม่ใช้ให้ลบเอง ไม่งั้นจะตัดซ้ำ)');
+        if (pv) { st_noPrint(PV); try { PV.zOrder(ZOrderMethod.BRINGTOFRONT); } catch (ez) {} doc.selection = null; for (i = 0; i < raw0.length; i++) { try { raw0[i].selected = true; } catch (es0) {} } }
+        else { st_orderCutLayers(doc); doc.selection = null; }
+        if (oldCuts && !pv) warn.push('งานที่เลือกมีเส้นตัดเดิม ' + oldCuts + ' เส้น — ไม่ได้ลบ (ถ้าไม่ใช้ให้ลบเอง ไม่งั้นจะตัดซ้ำ)');
         st_bcClear();
-        return '{"ok":true,"msg":' + st_q('สร้าง Kiss Cut ' + madeK + ' เส้น' + (dieOn ? ' · Die Cut ' + madeD + ' เส้น' : '') + mkMsg) + ',"warn":[' +
+        return '{"ok":true,"msg":' + st_q((pv ? 'ตัวอย่าง (ยังไม่สร้างจริง · เลเยอร์ "' + ST_PV + '") ' : 'สร้าง ') + 'Kiss Cut ' + madeK + ' เส้น' + (dieOn ? ' · Die Cut ' + madeD + ' เส้น' : '') + ' · Smooth ' + lvl + mkMsg) + ',"warn":[' +
             (function () { var w = []; for (var x = 0; x < warn.length; x++) w.push(st_q(warn[x])); return w.join(','); })() + ']}';
     } catch (e) {
         try { if (stage) stage.remove(); } catch (e2) {}

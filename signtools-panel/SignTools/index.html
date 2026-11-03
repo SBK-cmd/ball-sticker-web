@@ -355,7 +355,13 @@
       <label>ออกจากเส้น Kiss<div class="inu"><input id="extDieOff" type="number" value="3" min="0" step="0.5"><span class="u">มม.</span></div></label>
       <label id="extDieRadRow">มุมมน<div class="inu"><input id="extDieRad" type="number" value="5" min="0" step="0.5"><span class="u">มม.</span></div></label>
     </div>
+    <label class="full" title="0 = ไม่เกลาเส้น (ตามที่คำนวณได้) · เลขมาก = เรียบขึ้น">ความ Smooth ของเส้น <b id="extSmVal">4</b><span class="mut"> (0 = ไม่เกลา · 10 = เรียบสุด)</span>
+      <input id="extSmooth" type="range" min="0" max="10" step="1" value="4"></label>
     <label class="chk head"><input id="extMarks" type="checkbox" checked> <b>ใส่มาร์ค Cutting Master 5</b><span class="mut">รอบงานทั้งหมด · สูงเกิน 50 ซม. = Segment ทุก 25 ซม. · artboard ปรับให้พอดีมาร์ค · แทนมาร์คเดิมในไฟล์</span></label>
+    <div class="grid">
+      <button class="btn ghost" id="extPv">พรีวิวเส้นตัด</button>
+      <button class="btn ghost" id="extPvClear">ล้างพรีวิว</button>
+    </div>
     <button class="btn" id="extGo">สร้างเส้นตัด</button>
     <div class="stkres" id="extRes">ยังไม่ได้สร้าง</div>
     <div class="hint warn" id="extWarn"></div>
