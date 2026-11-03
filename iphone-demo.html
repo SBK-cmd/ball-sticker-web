@@ -2018,8 +2018,8 @@ html body .history{display:grid;gap:12px}
 html body .card,html body .dash-stat-card,html body .history li{box-shadow:0 1px 2px rgba(var(--shadow-tint),.06),0 10px 26px -16px rgba(var(--shadow-tint),.22)}
 html body .btn.primary,html body .btab-fab .btab-fab-circle{box-shadow:0 4px 12px -6px rgba(var(--shadow-tint),.55)!important}
 html body .btn:active{transform:translateY(1px) scale(.985)}
-@keyframes bsRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-html body .history li{animation:bsRise .32s cubic-bezier(.22,.8,.3,1) both}
+@keyframes bsRise{from{opacity:0}to{opacity:1}}
+html body .history li{animation:bsRise .28s ease-out backwards}
 html body .history li:nth-child(2){animation-delay:.04s}html body .history li:nth-child(3){animation-delay:.08s}
 html body .history li:nth-child(4){animation-delay:.12s}html body .history li:nth-child(5){animation-delay:.16s}
 html body .history li:nth-child(n+6){animation-delay:.2s}
