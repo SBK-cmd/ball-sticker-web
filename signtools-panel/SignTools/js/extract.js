@@ -62,31 +62,23 @@
     }
     if (rs.length > 8) pts = rs;
     var m = pts.length;
-    for (k = 0; k < level * 2; k++) {
+    for (k = 0; k < level; k++) {
       var q = [];
       for (i = 0; i < m; i++) { var L = pts[(i - 1 + m) % m], C = pts[i], R = pts[(i + 1) % m]; q.push([(L[0] + 2 * C[0] + R[0]) / 4, (L[1] + 2 * C[1] + R[1]) / 4]); }
       pts = q;
     }
-    var tol = level * 0.03, far = 0, fd = -1;
-    for (i = 1; i < m; i++) { var d0 = Math.pow(pts[i][0] - pts[0][0], 2) + Math.pow(pts[i][1] - pts[0][1], 2); if (d0 > fd) { fd = d0; far = i; } }
-    function dp(a, b, out) {
-      var A = pts[a], B = pts[b % m], dx = B[0] - A[0], dy = B[1] - A[1], len = Math.sqrt(dx * dx + dy * dy) || 1e-9, best = -1, bi = -1;
-      for (var x = a + 1; x < b; x++) { var Q = pts[x % m], dd = Math.abs(dy * (Q[0] - A[0]) - dx * (Q[1] - A[1])) / len; if (dd > best) { best = dd; bi = x; } }
-      if (best > tol) { dp(a, bi, out); dp(bi, b, out); } else out.push(A);
-    }
-    var res = []; dp(0, far, res); dp(far, m, res);
-    if (res.length < 3) return pts;
-    // Catmull-Rom → โค้งเรียบผ่านจุด (วาดเป็นเบซิเยร์ตรงๆ ใน drawSmooth)
-    return { cr: res };
+    // ฟิตเบซิเยร์แบบ Simplify (ชุดเดียวกับฝั่ง Illustrator: js/fitcurve.js) · คงมุมคม · tol = 0.05 มม./ระดับ
+    var ft = window.stFitClosed ? stFitClosed(pts, level * 0.05, 40, Math.max(2, Math.round(1.0 / step))) : null;
+    return ft && ft.length >= 3 ? { an: ft } : pts;
   }
   function trace(ctx, pts, X, Y) {
     ctx.beginPath();
-    if (pts.cr) {
-      var r = pts.cr, N = r.length, i;
-      ctx.moveTo(X(r[0][0]), Y(r[0][1]));
+    if (pts.an) {
+      var r = pts.an, N = r.length, i;
+      ctx.moveTo(X(r[0].a[0]), Y(r[0].a[1]));
       for (i = 0; i < N; i++) {
-        var Pm = r[(i - 1 + N) % N], Pc = r[i], Pn = r[(i + 1) % N], Pq = r[(i + 2) % N];
-        ctx.bezierCurveTo(X(Pc[0] + (Pn[0] - Pm[0]) / 6), Y(Pc[1] + (Pn[1] - Pm[1]) / 6), X(Pn[0] - (Pq[0] - Pc[0]) / 6), Y(Pn[1] - (Pq[1] - Pc[1]) / 6), X(Pn[0]), Y(Pn[1]));
+        var A = r[i], B = r[(i + 1) % N];
+        ctx.bezierCurveTo(X(A.r[0]), Y(A.r[1]), X(B.l[0]), Y(B.l[1]), X(B.a[0]), Y(B.a[1]));
       }
     } else { pts.forEach(function (p, i) { i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1])); }); }
     ctx.closePath();
