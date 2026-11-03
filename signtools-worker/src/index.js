@@ -81,8 +81,18 @@ async function init(db) {
     for (const q of ["ALTER TABLE keys ADD COLUMN product TEXT DEFAULT 'ai'", "ALTER TABLE releases ADD COLUMN product TEXT DEFAULT 'ai'"]) { try { await db.prepare(q).run(); } catch (e) { /* มีแล้ว */ } }
     await setSetting(db, 'schema_v', '6');
   }
+  // v7: เปิด/ปิดเครื่องมือรายสมาชิก — users.tools_off = รหัสเครื่องมือที่ปิด คั่นด้วย , (ว่าง/NULL = เปิดทั้งหมด)
+  if ((await sv()) < 7) {
+    try { await db.prepare('ALTER TABLE users ADD COLUMN tools_off TEXT').run(); } catch (e) { /* มีแล้ว */ }
+    await setSetting(db, 'schema_v', '7');
+  }
   ready = true;
 }
+// เครื่องมือในแผง (รหัสตรงกับ data-tab ในแผง) — ใช้ทำช่องติ๊กเปิด/ปิดรายสมาชิกในหน้าแอดมิน
+const TOOLS = [['stk', 'เรียงสติ๊กเกอร์'], ['cut', 'ส่งตัด'], ['ext', 'Extract เส้นตัด + มาร์ค'], ['sep', 'แยกสีงานตัด'], ['shd', 'ทำเงา / ขอบ'], ['fonts', 'ฟอนต์'],
+  ['name', 'ตั้งชื่อไฟล์'], ['run', 'รันเลข'], ['qr', 'QR Code'], ['dim', 'บอกขนาด'], ['prev', 'ภาพตัวอย่าง / ไฟล์พิมพ์'], ['queue', 'คิวงาน (เบต้า)']];
+const TOOL_IDS = TOOLS.map((t) => t[0]);
+const toolsOffOf = (u) => String((u && u.tools_off) || '').split(',').filter((x) => TOOL_IDS.includes(x));
 const STABLE = "COALESCE(channel,'stable')='stable'";
 const PROD = (p) => `COALESCE(product,'ai')='${p === 'cdr' ? 'cdr' : 'ai'}'`;
 const PNAME = { ai: 'Illustrator', cdr: 'CorelDRAW' };
@@ -225,10 +235,12 @@ async function api(req, env) {
   }
   if (action === 'features') {                            // ฟีเจอร์เฉพาะเบอร์ทดสอบ: คิวงานเชื่อมแอปร้าน (app.ballsticker.co.th)
     const t = await readToken(db, inp.token);
-    if (!t) return json({ ok: true, features: {} });
+    if (!t) return json({ ok: true, features: {}, tools_off: [] });
     const k = await db.prepare('SELECT user_id, machine FROM keys WHERE key=?').bind(t.k).first();
-    if (!k || k.machine !== t.m || !(await isBetaUser(db, k.user_id))) return json({ ok: true, features: {} });
-    return json({ ok: true, features: { queue: { apiKey: 'AIzaSyDgIyeVed6xnG7A8YLRhbvZfxJOoHYpVco', projectId: 'ball-sticker-d95c2', app: 'https://app.ballsticker.co.th/' } } });
+    if (!k || k.machine !== t.m) return json({ ok: true, features: {}, tools_off: [] });
+    const uo = k.user_id ? await db.prepare('SELECT tools_off FROM users WHERE id=?').bind(k.user_id).first() : null, tools_off = toolsOffOf(uo);
+    if (!(await isBetaUser(db, k.user_id))) return json({ ok: true, features: {}, tools_off });
+    return json({ ok: true, tools_off, features: { queue: { apiKey: 'AIzaSyDgIyeVed6xnG7A8YLRhbvZfxJOoHYpVco', projectId: 'ball-sticker-d95c2', app: 'https://app.ballsticker.co.th/' } } });
   }
   if (action === 'member_link') {                         // ปุ่ม "หน้าสมาชิก" ในโปรแกรม → ลิงก์เข้าระบบอัตโนมัติ (ใช้ได้ 5 นาที)
     const t = await readToken(db, inp.token), base = new URL(req.url).origin + '/member';
@@ -360,6 +372,10 @@ async function admin(req, env) {
       if (!phone) err = 'เบอร์ไม่ถูกต้อง';
       else if (other) err = `เบอร์ ${phone} เป็นของสมาชิกคนอื่นอยู่แล้ว`;
       else { await db.prepare('UPDATE users SET phone=?, name=?, shop=?, line=?, email=?, address=?, note=? WHERE id=?').bind(phone, f('name'), f('shop'), f('line'), f('email'), f('address'), f('note'), uid).run(); msg = 'บันทึกข้อมูลสมาชิกแล้ว'; }
+    } else if (d === 'user_tools' && uid) {
+      const on = new Set(form.getAll ? form.getAll('tool') : []), off = TOOL_IDS.filter((id) => !on.has(id));
+      await db.prepare('UPDATE users SET tools_off=? WHERE id=?').bind(off.length ? off.join(',') : null, uid).run();
+      msg = off.length ? `บันทึกแล้ว — ปิด ${off.length} เครื่องมือ (มีผลเมื่อสมาชิกเปิดโปรแกรมครั้งถัดไป)` : 'บันทึกแล้ว — เปิดทุกเครื่องมือ';
     } else if (d === 'user_pw' && uid) {
       if (!pwOk(f('pw'))) err = 'รหัสผ่านต้องยาวอย่างน้อย 6 ตัว'; else { await setUserPw(db, uid, f('pw')); msg = 'ตั้งรหัสผ่านใหม่แล้ว'; }
     } else if (d === 'user_status' && uid) {
@@ -475,6 +491,10 @@ ${msg ? `<p class="ok">${h(msg)}</p>` : ''}${err ? `<p class="err">${h(err)}</p>
   ${pw ? `<details><summary class="mut">แสดงรหัสผ่าน</summary><p class="pw mono">${h(pw)}</p></details>` : `<p class="mut small">${u.pw_hash ? 'รหัสนี้ตั้งก่อนระบบแสดงรหัส — ตั้งใหม่เพื่อให้ดูได้' : 'ยังไม่มีรหัสผ่าน'}</p>`}
   <label>ตั้งรหัสใหม่ (6 ตัวขึ้นไป)<input name="pw" autocomplete="off"></label><button name="do" value="user_pw" class="ghost">ตั้งรหัสผ่าน</button></form>
 </div>
+<form method="post" class="card"><h3>เครื่องมือที่เปิดให้ใช้ <small>ติ๊ก = เปิด · เอาติ๊กออก = ซ่อนในแผงของสมาชิกคนนี้</small></h3>${uIn}
+  <div class="grid2 in" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr))">${TOOLS.map(([id, nm]) => `<label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="tool" value="${id}" style="width:auto;min-width:0"${toolsOffOf(u).includes(id) ? '' : ' checked'}> ${h(nm)}</label>`).join('')}</div>
+  <p class="mut small">มีผลเมื่อสมาชิกเปิดโปรแกรมครั้งถัดไป (ต้องใช้แผงรุ่นที่รองรับ) · เครื่องมือที่ยังไม่มีในรุ่นของสมาชิกอยู่แล้ว (เช่น เบต้า) ไม่ต้องติ๊ก</p>
+  <button name="do" value="user_tools">บันทึกเครื่องมือ</button></form>
 <div class="card"><div class="bar"><h3>คีย์ / เครื่อง <small>${ks.length} อัน · 1 คีย์ = 1 เครื่อง</small></h3>
   <form method="post" class="inl">${uIn}<input name="n" type="number" value="1" min="1" max="20" style="width:64px;min-width:0">${prodSel()}<select name="plan"><option value="life">ตลอดชีพ</option><option value="year">รายปี</option><option value="month">รายเดือน</option></select><button name="do" value="key_add" class="sm" style="white-space:nowrap">+ เพิ่มเครื่อง</button></form></div>
   <div class="tw"><table>${keyHead}${keyRows(ks, true) || '<tr><td colspan="6" class="mut">ยังไม่มีคีย์ — กด "+ เพิ่มเครื่อง"</td></tr>'}</table></div></div>
