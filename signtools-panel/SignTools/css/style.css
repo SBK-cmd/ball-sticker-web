@@ -332,3 +332,9 @@ body.intool .topbar{display:flex}
 .cqcut{border-color:rgba(255,79,163,.5)!important;color:#ff9fd0!important}
 .cqws{font-size:10.5px;font-weight:700;color:#10233f;background:#c9a7ff;border-radius:999px;padding:1px 7px}
 .qsub a{color:var(--acc,#ffd23f)}
+
+/* การ์ดยุบ/ขยายได้ (js/fold.js) */
+.card.foldable>.chead{cursor:pointer;user-select:none}
+.card.foldable>.chead::after{content:"▾";margin-left:8px;color:var(--mut);font-size:12px;transition:transform .15s}
+.card.foldable.folded>.chead::after{transform:rotate(-90deg)}
+.card.foldable.folded>:not(.chead){display:none!important}
