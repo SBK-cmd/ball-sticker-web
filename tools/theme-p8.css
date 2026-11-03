@@ -1,0 +1,63 @@
+/* p8 — ปรับ UX ตามหลักออกแบบ (UI UX Pro Max): ลำดับตัวอักษรชัด · เว้นระยะ 8px · ตัวเลขเงินเรียงหลักตรงกัน · คอนทราสต์พอ · โฟกัสมองเห็นชัด · แตะง่าย 48px · แอนิเมชันเบา (เคารพ reduced-motion) */
+:root[data-theme]{
+  --sp1:8px;--sp2:16px;--sp3:24px;
+  --ink:#1b1b2f;--muted:#565668;           /* muted เข้มขึ้นให้ผ่านคอนทราสต์ 4.5:1 บนพื้นขาว */
+  --focus:#1b1b2f;--ring:rgba(255,195,0,.55);
+  --ok:#14703a;--ok-bg:#e6f6ec;--wait:#7a5a00;--wait-bg:#fff3cd;--bad:#b3261e;--bad-bg:#fdecea;--info:#0c5a86;--info-bg:#e8f4fc;
+}
+html body{font-weight:400;letter-spacing:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+html body p,html body .hint,html body small,html body .page-head p{font-weight:400;color:var(--muted)}
+
+/* ลำดับหัวข้อ: ใหญ่–กลาง–เล็ก ชัด */
+.page-head h1{font-size:26px;line-height:1.25;font-weight:700;letter-spacing:-.01em}
+.card h2{font-size:18px;line-height:1.3;font-weight:600}
+html body label.f>span,html body .f>span{font-size:14.5px;font-weight:600;color:var(--ink)!important;margin-bottom:6px}
+
+/* ตัวเลข/เงิน: เรียงหลักตรง อ่านเทียบกันง่าย */
+html body #count,html body .r-num,html body .dash-tile b,html body .dash-stat-card b,html body .calc-bar .cb-n,
+html body [class*="price"],html body [class*="total"],html body [class*="amt"],html body table td,html body table th{font-variant-numeric:tabular-nums lining-nums}
+html body .dash-tile b,html body .dash-stat-card b{font-weight:700;letter-spacing:-.01em}
+
+/* โฟกัส: เห็นชัดทุกจุดที่กดได้ (คีย์บอร์ด/เมาส์บนคอม) */
+html body :is(a,button,[role=button],summary,.btab,.btn):focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:12px}
+html body .in:focus-within,html body select:focus-visible,html body .txt:focus-visible,html body textarea:focus-visible{border-color:var(--focus);box-shadow:0 0 0 4px var(--ring)}
+
+/* ปุ่ม: ลำดับความสำคัญชัด (หลัก = เหลือง · รอง = เทา · อันตราย = แดงอ่อน) + ตอบสนองตอนกด */
+html body .btn{transition:transform .12s ease,box-shadow .12s ease,background-color .12s ease;cursor:pointer}
+html body .btn:active{transform:scale(.98)}
+html body .btn.primary{background:#ffc300;box-shadow:0 6px 16px -8px rgba(200,140,0,.7)}
+html body .btn:disabled,html body .btn[disabled]{opacity:.5;cursor:not-allowed;box-shadow:none}
+@media (hover:hover){html body .btn:not(:disabled):hover{box-shadow:0 8px 18px -10px rgba(25,25,50,.35)}}
+
+/* การ์ด: เงาบาง เว้นระยะสม่ำเสมอ */
+html body .card,html body .dash-stat-card,html body .history li{box-shadow:0 1px 2px rgba(25,25,50,.05),0 8px 24px -14px rgba(25,25,50,.16)}
+html body .card+.card{margin-top:var(--sp2)}
+
+/* ป้ายสถานะ: ใช้สี+ข้อความคู่กัน (ไม่พึ่งสีอย่างเดียว) */
+html body .badge,html body .tag,html body .status-chip,html body .dupTag,html body .dup-tag{display:inline-flex;align-items:center;gap:4px;min-height:24px;padding:2px 10px;border-radius:999px;font-size:12.5px;font-weight:600;line-height:1.4}
+html body .badge.ok,html body .tag.ok{background:var(--ok-bg);color:var(--ok)}
+html body .badge.wait,html body .tag.wait{background:var(--wait-bg);color:var(--wait)}
+html body .badge.bad,html body .tag.bad{background:var(--bad-bg);color:var(--bad)}
+
+/* รายการประวัติ: แตะง่าย แยกบรรทัดอ่านสบาย */
+html body .history li{padding:4px 2px;transition:box-shadow .15s ease}
+html body .history li summary,html body .history li .h-row{min-height:56px}
+html body .history{display:grid;gap:12px}
+
+/* แท็บล่าง: ป้ายเด่นเฉพาะอันที่เลือก */
+@media (max-width:560px){
+  html body .btab{min-height:56px;-webkit-tap-highlight-color:transparent}
+  html body .btab-label{font-size:12px;font-weight:500;color:var(--muted)}
+  html body .btab.active .btab-label,html body .btab[aria-current] .btab-label{color:var(--ink);font-weight:700}
+  html body .page-head{padding:16px 4px 8px}
+  html body .card{padding:20px}
+}
+
+/* ตัวหนังสือบนปุ่ม/ช่องกรอกบนคอม: ไม่ใหญ่เกินจนเสียสัดส่วน */
+@media (min-width:561px){
+  html body .btn{min-height:48px!important;font-size:16px!important}
+  html body .in,html body select,html body .txt,html body input[type=text],html body input[type=tel],html body input[type=number],html body input[type=date],html body input[type=search]{min-height:48px;font-size:16px}
+}
+
+/* เคารพผู้ใช้ที่ปิดแอนิเมชัน */
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
