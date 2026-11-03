@@ -1992,6 +1992,19 @@ html body .history{display:grid;gap:12px}
 
 /* เคารพผู้ใช้ที่ปิดแอนิเมชัน */
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* ===== เพิ่มจาก taste-design (Stitch Skills): สีเงาเอนตามพื้น · ไม่มีเรืองแสง · รายการค่อยๆ โผล่ทีละใบ · ปุ่มกดแล้วยุบ ===== */
+:root[data-theme]{--shadow-tint:60,50,10}
+html body .card,html body .dash-stat-card,html body .history li{box-shadow:0 1px 2px rgba(var(--shadow-tint),.06),0 10px 26px -16px rgba(var(--shadow-tint),.22)}
+html body .btn.primary,html body .btab-fab .btab-fab-circle{box-shadow:0 4px 12px -6px rgba(var(--shadow-tint),.55)!important}
+html body .btn:active{transform:translateY(1px) scale(.985)}
+@keyframes bsRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+html body .history li{animation:bsRise .32s cubic-bezier(.22,.8,.3,1) both}
+html body .history li:nth-child(2){animation-delay:.04s}html body .history li:nth-child(3){animation-delay:.08s}
+html body .history li:nth-child(4){animation-delay:.12s}html body .history li:nth-child(5){animation-delay:.16s}
+html body .history li:nth-child(n+6){animation-delay:.2s}
+/* ตัวเลขเงินในตาราง/สรุป ใช้ตัวเลขกว้างเท่ากัน อ่านเทียบหลักง่าย */
+html body table td,html body .dash-tile b,html body #count{font-feature-settings:"tnum" 1,"lnum" 1}
 </style>
 </head>
 <body>
