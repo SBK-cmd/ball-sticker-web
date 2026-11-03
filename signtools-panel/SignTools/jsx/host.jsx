@@ -1357,6 +1357,14 @@ function st_cutMarks(doc) {
         }
         var code = sc.code, n = sc.inAb.length;
         var k = ST_SF / MM, len = 15;
+        // ความยาวแขนมาร์คจริง: วัดจากตัว L มุม (ชิ้นที่กว้าง≈สูง) แทนที่จะสมมติ 15 มม. — ไฟล์เก่า/ไฟล์ CM5 ตั้งแขนไม่เท่ากัน (เช่น 10 มม.) ทำให้จุดอ้างอิงเลื่อน
+        var thin = 1e9, sq = 1e9, wi, hi;
+        for (i = 0; i < sc.inAb.length; i++) {
+            var bb = sc.inAb[i].geometricBounds; wi = (bb[2] - bb[0]) * k; hi = (bb[1] - bb[3]) * k;
+            thin = Math.min(thin, wi, hi);
+            if (wi > 3 && Math.abs(wi - hi) < 0.15 * Math.max(wi, hi)) sq = Math.min(sq, wi);
+        }
+        if (sq < 1e9 && thin > 0.05 && thin < 5) { len = sq - thin / 2; if (len < 3 || len > 40) len = 15; }
         var ox = U0[0] * k + len, oy = U0[3] * k + len, rx = U0[2] * k - len, ty = U0[1] * k - len;
         return '{"style":' + code + ',"seg":' + (code === 7 ? 'true' : 'false') + ',"stepMM":250,"n":' + n + ',"ox":' + ox + ',"oy":' + oy + ',"dx":' + (ty - oy) + ',"dy":' + (rx - ox) + ',"lenMM":' + len + '}';
     } catch (e) { return null; }
