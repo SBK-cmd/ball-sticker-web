@@ -358,8 +358,12 @@
     <label class="full" title="0 = ไม่เกลาเส้น (ตามที่คำนวณได้) · เลขมาก = เรียบขึ้น">ความ Smooth ของเส้น <b id="extSmVal">4</b><span class="mut"> (0 = ไม่เกลา · 10 = เรียบสุด)</span>
       <input id="extSmooth" type="range" min="0" max="10" step="1" value="4"></label>
     <label class="chk head"><input id="extMarks" type="checkbox" checked> <b>ใส่มาร์ค Cutting Master 5</b><span class="mut">รอบงานทั้งหมด · สูงเกิน 50 ซม. = Segment ทุก 25 ซม. · artboard ปรับให้พอดีมาร์ค · แทนมาร์คเดิมในไฟล์</span></label>
+    <button class="btn ghost" id="extView">พรีวิวในจอ (ปรับ Smooth ดูสดได้)</button>
+    <canvas id="extCanvas" class="stkcanvas hidden" width="400" height="240"></canvas>
+    <div class="hint hidden" id="extLegend"><span style="color:#ff4fb0">━</span> Kiss Cut · <span style="color:#3ddc84">━</span> Die Cut · <span style="color:#888">┅</span> ขอบงาน · แสดงสูงสุด 8 ดวงแรก</div>
+    <div class="hint warn hidden" id="extStale"></div>
     <div class="grid">
-      <button class="btn ghost" id="extPv">พรีวิวเส้นตัด</button>
+      <button class="btn ghost" id="extPv">วางตัวอย่างในงาน</button>
       <button class="btn ghost" id="extPvClear">ล้างพรีวิว</button>
     </div>
     <button class="btn" id="extGo">สร้างเส้นตัด</button>

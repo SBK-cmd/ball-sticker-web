@@ -1118,6 +1118,56 @@ function st_extract(o) {
     }
 }
 
+// Extract พรีวิวในจอแผง: อ่านเส้น Kiss แบบ "แข็ง" (ยังไม่เกลา) ของงานที่เลือก (ไม่เกิน 8 ดวงแรก) ส่งกลับเป็นพิกัด มม. ให้แผงเกลาเองตามตัวเลื่อน Smooth
+//  ไม่สร้างเลเยอร์/เส้นใดๆ ในไฟล์ (ใช้เลเยอร์ชั่วคราวแล้วลบ) · o = { kiss:{shape, offMM} }
+function st_extractRead(o) {
+    var doc, stage = null, step = 'เริ่ม', warn = [], i, k, kk = ST_SF / MM;
+    try {
+        doc = st_doc();
+        var sel = st_designs(st_selection(doc)), n = Math.min(sel.length, 8), out = [];
+        stage = doc.layers.add(); stage.name = 'ST_staging';
+        var cutColor = st_spotColor(st_cutSwatch(doc));
+        for (i = 0; i < n; i++) {
+            step = 'อ่านเส้นดวงที่ ' + (i + 1); st_bc(step);
+            var art = sel[i].art, work = null, own = st_findCuts(art, []);
+            if (own.length) {
+                work = art.duplicate(stage, ElementPlacement.PLACEATEND);
+                var ow = st_findCuts(work, []);
+                for (k = ow.length - 1; k >= 0; k--) { try { ow[k].remove(); } catch (er) {} }
+                art = work;
+            }
+            var vb = art.visibleBounds, paths = [], cut = null;
+            if (o.kiss && o.kiss.shape === 'contour') {
+                try { cut = st_contourCut(doc, art, U(o.kiss.offMM || 0), stage, cutColor, { level: 0 }); }
+                catch (ec) { warn.push((i + 1) + ': อ่านเส้นตามรูปไม่ได้ (' + ec.message + ')'); cut = null; }
+                if (cut) {
+                    var ps = st_collectPaths(cut, []);
+                    for (k = 0; k < ps.length; k++) {
+                        var pp = ps[k].pathPoints, pts = [], j;
+                        if (pp.length < 3) continue;
+                        for (j = 0; j < pp.length; j++) {
+                            var q = pp[j], a = q.anchor, l = q.leftDirection, r = q.rightDirection;
+                            pts.push(Math.round(a[0] * kk * 1000) / 1000 + ',' + Math.round(a[1] * kk * 1000) / 1000 + ',' + Math.round(l[0] * kk * 1000) / 1000 + ',' + Math.round(l[1] * kk * 1000) / 1000 + ',' + Math.round(r[0] * kk * 1000) / 1000 + ',' + Math.round(r[1] * kk * 1000) / 1000);
+                        }
+                        paths.push('[' + pts.join(',') + ']');
+                    }
+                }
+            }
+            out.push('{"vb":[' + [vb[0] * kk, vb[1] * kk, vb[2] * kk, vb[3] * kk].join(',') + '],"paths":[' + paths.join(',') + ']}');
+            if (cut) { try { cut.remove(); } catch (e1) {} }
+            if (work) { try { work.remove(); } catch (e2) {} }
+        }
+        try { stage.remove(); } catch (es) {} stage = null;
+        doc.selection = null;
+        st_bcClear();
+        return '{"ok":true,"total":' + sel.length + ',"items":[' + out.join(',') + '],"warn":[' + (function () { var w = []; for (var x = 0; x < warn.length; x++) w.push(st_q(warn[x])); return w.join(','); })() + ']}';
+    } catch (e) {
+        try { if (stage) stage.remove(); } catch (e3) {}
+        st_bcClear();
+        return st_err('ขั้น "' + step + '": ' + e.message + (e.line ? ' (บรรทัด ' + e.line + ')' : ''));
+    }
+}
+
 // มาร์คอ่านตำแหน่งตัว L 4 มุม (สไตล์ Graphtec ARMS / Mimaki) — วาดในเลเยอร์ Marks
 // m = { insetMM: ระยะจากขอบกระดาษถึงมุมมาร์ค, lenMM: ความยาวขา, wMM: ความหนา }
 function st_drawMarks(doc, layer, L, T, W, H, m) {
