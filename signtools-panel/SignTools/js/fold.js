@@ -1,15 +1,15 @@
 /* การ์ดที่มีหัว (.chead) ยุบ/ขยายได้ด้วยการกดที่หัว — จำสถานะไว้ในเครื่อง · การ์ดตั้งค่าที่ไม่ค่อยแก้เริ่มต้นแบบยุบ */
 (function () {
-  var KEY = 'st_fold_v1', saved = {};
+  var KEY = 'st_fold_v2', saved = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) {}
   function persist() { try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {} }
   var DEF_FOLD = /^(เครื่องตัด|ดักคำสั่งจาก)/;
   document.querySelectorAll('.pane .card').forEach(function (card) {
     var head = card.querySelector(':scope > .chead');
     if (!head) return;
-    var pane = card.closest('.pane'), idx = Array.prototype.indexOf.call(pane.querySelectorAll('.card'), card);
-    var id = (pane.id || '') + '#' + idx;
+    var pane = card.closest('.pane');
     var title = (head.querySelector('b') || head).textContent.trim();
+    var id = (pane.id || '') + '#' + title;      // จำตามชื่อการ์ด (ย้ายลำดับการ์ดแล้วสถานะไม่เพี้ยน)
     var folded = id in saved ? !!saved[id] : DEF_FOLD.test(title);
     card.classList.add('foldable');
     card.classList.toggle('folded', folded);

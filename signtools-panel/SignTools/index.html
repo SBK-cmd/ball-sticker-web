@@ -253,20 +253,10 @@
 <!-- เรียงสติ๊กเกอร์ -->
 <section id="tab-cut" class="pane st">
   <div class="card">
-    <div class="chead"><b>เครื่องตัด</b><span class="mut">Graphtec · LAN</span></div>
-    <div class="mcrow"><select id="cutMachine"></select><button class="btn ghost sm" id="cutAddM" title="เพิ่มเครื่อง">+ เครื่อง</button><button class="btn ghost sm" id="cutDelM" title="ลบเครื่องนี้">ลบ</button></div>
-    <label>ชื่อเครื่อง<input id="cutMName" type="text" placeholder="เช่น CE7000-130 หน้าร้าน"></label>
-    <div class="grid">
-      <label>IP เครื่อง<input id="cutIp" type="text" placeholder="192.168.1.50" inputmode="decimal" spellcheck="false"></label>
-      <label>พอร์ต<div class="pr"><input id="cutPort" type="number" value="" min="1" max="65535" placeholder="—"><button class="btn ghost sm" id="cutProbe">ตรวจหา</button></div></label>
-    </div>
-    <button class="btn ghost sm" id="cutScan">ค้นหาเครื่องตัดในวง LAN</button>
-    <div id="cutFound" class="nmchips"></div>
-    <div class="row2"><span class="lbl">ภาษาคำสั่ง</span>
-      <div class="seg mini" data-name="cutLang"><button data-v="gpgl" class="on">GP-GL</button><button data-v="hpgl">HP-GL</button></div>
-    </div>
-    <label class="onlyGpgl">ขนาดสเต็ป GP-GL<select id="cutStep"><option value="0.1">0.1 มม.</option><option value="0.05">0.05 มม.</option><option value="0.025">0.025 มม.</option><option value="0.01">0.01 มม.</option></select></label>
-    <div class="hint">ตั้งให้ตรงกับเครื่อง: MENU › I/F › COMMAND (และ GP-GL STEP) · ปิด Cutting Master ก่อนส่ง</div>
+    <canvas id="cutCanvas" class="stkcanvas" width="300" height="220"></canvas>
+    <div class="cutlegend"><span class="lk">━ Kiss Cut</span><span class="ld">━ Die Cut</span><span class="mut">┄ ยกมีด</span><button class="btn ghost sm" id="cutPlay" disabled>▶ จำลองการตัด</button></div>
+    <button class="btn" id="cutGo" disabled>ส่งตัด</button>
+    <div class="hint" id="cutStatus">จุดเหลือง = จุดเริ่มตัด (origin ที่ตั้งไว้บนเครื่อง) </div>
   </div>
 
   <div class="card">
@@ -316,10 +306,20 @@
   </div>
 
   <div class="card">
-    <canvas id="cutCanvas" class="stkcanvas" width="300" height="220"></canvas>
-    <div class="cutlegend"><span class="lk">━ Kiss Cut</span><span class="ld">━ Die Cut</span><span class="mut">┄ ยกมีด</span><button class="btn ghost sm" id="cutPlay" disabled>▶ จำลองการตัด</button></div>
-    <button class="btn" id="cutGo" disabled>ส่งตัด</button>
-    <div class="hint" id="cutStatus">จุดเหลือง = จุดเริ่มตัด (origin ที่ตั้งไว้บนเครื่อง) </div>
+    <div class="chead"><b>เครื่องตัด</b><span class="mut">Graphtec · LAN</span></div>
+    <div class="mcrow"><select id="cutMachine"></select><button class="btn ghost sm" id="cutAddM" title="เพิ่มเครื่อง">+ เครื่อง</button><button class="btn ghost sm" id="cutDelM" title="ลบเครื่องนี้">ลบ</button></div>
+    <label>ชื่อเครื่อง<input id="cutMName" type="text" placeholder="เช่น CE7000-130 หน้าร้าน"></label>
+    <div class="grid">
+      <label>IP เครื่อง<input id="cutIp" type="text" placeholder="192.168.1.50" inputmode="decimal" spellcheck="false"></label>
+      <label>พอร์ต<div class="pr"><input id="cutPort" type="number" value="" min="1" max="65535" placeholder="—"><button class="btn ghost sm" id="cutProbe">ตรวจหา</button></div></label>
+    </div>
+    <button class="btn ghost sm" id="cutScan">ค้นหาเครื่องตัดในวง LAN</button>
+    <div id="cutFound" class="nmchips"></div>
+    <div class="row2"><span class="lbl">ภาษาคำสั่ง</span>
+      <div class="seg mini" data-name="cutLang"><button data-v="gpgl" class="on">GP-GL</button><button data-v="hpgl">HP-GL</button></div>
+    </div>
+    <label class="onlyGpgl">ขนาดสเต็ป GP-GL<select id="cutStep"><option value="0.1">0.1 มม.</option><option value="0.05">0.05 มม.</option><option value="0.025">0.025 มม.</option><option value="0.01">0.01 มม.</option></select></label>
+    <div class="hint">ตั้งให้ตรงกับเครื่อง: MENU › I/F › COMMAND (และ GP-GL STEP) · ปิด Cutting Master ก่อนส่ง</div>
   </div>
 
   <div class="card">
