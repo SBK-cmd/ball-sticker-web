@@ -1,0 +1,45 @@
+/* p9a "Studio" — สว่าง เรียบ เส้นบาง สีเหลืองเป็นสีเน้นเดียว ตัวหนังสือชัด (แนว Linear/Stripe) */
+:root[data-theme]{--ink:#17171c;--navy:#17171c;--muted:#5f6068;--line:#e6e6e1;--field-line:#d8d8d2;--yline:#d8d8d2;--ytint:#fff7d6;--shadow-2:none;--r-card:14px;--r-field:10px}
+html,html body{background:#f5f5f2!important;background-image:none!important;color:var(--ink)}
+html body .page-head{padding:20px 4px 12px}
+html body .page-head h1{font-size:24px;font-weight:700;letter-spacing:-.015em}
+html body .card,html body .dash-stat-card,html body .lock-card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:none;padding:20px}
+html body .card h2{font-size:17px;font-weight:650}
+html body label.f>span,html body .f>span{font-size:13.5px;font-weight:600;color:var(--ink)!important;letter-spacing:.01em}
+html body .in,html body select,html body .txt,html body textarea,html body input[type=text],html body input[type=tel],html body input[type=number],html body input[type=date],html body input[type=search]{background:#fff;border:1px solid var(--field-line);border-radius:10px;min-height:48px;font-size:16px;box-shadow:none}
+html body .in[readonly],html body input[readonly]{background:#f1f1ed;border-color:var(--line)}
+html body .in:focus-within,html body select:focus-visible,html body .txt:focus-visible,html body textarea:focus-visible{border-color:var(--ink);box-shadow:0 0 0 3px rgba(255,195,0,.5)}
+html body .in input,html body .in select{border:0!important;background:transparent!important;box-shadow:none!important}
+/* ปุ่ม */
+html body .btn{background:#fff;border:1px solid var(--field-line);border-radius:10px;min-height:48px!important;font-size:15.5px!important;font-weight:550;color:var(--ink);box-shadow:none}
+html body .btn.primary{background:#ffc300;border-color:#ffc300;color:#17171c;font-weight:650;box-shadow:none}
+html body .btn.good,html body .btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}
+html body .btn.danger{background:#fff;border-color:#f0c4c0;color:#b3261e}
+html body .btn[style*=dashed],html body #new-job,html body #rimgBtn{background:#fff;border:1px dashed #c9c9c2}
+/* สลับหน่วย/แท็บเล็ก */
+html body .bk-seg,html body .unit-seg{background:#ececE7;border:0;border-radius:10px;padding:3px}
+html body .bk-seg button,html body .unit-seg button{border-radius:8px;min-height:42px;font-weight:550;color:var(--muted);background:transparent}
+html body .bk-seg button[aria-pressed=true],html body .unit-seg button.on{background:#fff;color:var(--ink);font-weight:650;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+/* การ์ดผลลัพธ์ */
+html body .result{background:#17171c;border-radius:14px;box-shadow:none}
+html body .r-num #count{color:#ffc300;font-weight:700;letter-spacing:-.02em}
+/* ตัวเลขสรุป */
+html body .dash-tile,html body .dash-tile.blue-tile,html body .dash-tile.warn-tile{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:none}
+html body .dash-tile-val{font-weight:700;letter-spacing:-.01em}
+html body .dash-tile-label{color:var(--muted);font-weight:500}
+html body .history li,html body .history li.open{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:none}
+html body .history li.open{border-color:#c9c9c2}
+html body .notice,html body .edit-state,html body .info-pill{background:#fff7d6;border:1px solid #f0dc88;color:#5d4500;border-radius:10px}
+/* แถบบน/ล่างแบบแบน เต็มความกว้าง */
+@media (max-width:560px){
+  html body header.top{position:sticky;top:0;margin:0;padding:10px 16px;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:0;border-bottom:1px solid var(--line);border-radius:0;box-shadow:none}
+  html body header.top .brand b{font-size:17px;letter-spacing:.04em;font-weight:700}
+  html body .bnav{left:0!important;right:0!important;bottom:0!important;width:100%!important;margin:0!important;border-radius:0!important;border:0!important;border-top:1px solid var(--line)!important;background:rgba(255,255,255,.96)!important;box-shadow:none!important}
+  html body .btab-label{font-size:11.5px;font-weight:500;color:var(--muted)}
+  html body .btab.active .btab-label,html body .btab[aria-current] .btab-label{color:var(--ink);font-weight:700}
+  html body .card{padding:18px;border-radius:14px}
+}
+@media (max-width:560px){
+  html body .bnav::after{background:rgba(255,255,255,.96)!important;border:0!important;border-top:1px solid var(--line)!important;border-radius:0!important;box-shadow:none!important}
+  html body .bnav{background:transparent!important;box-shadow:none!important}
+}

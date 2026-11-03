@@ -6,7 +6,7 @@ import re, base64, io, os, sys
 from PIL import Image
 R = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(R, 'iphone-demo.html')
-h = open(R + '/preview8.html', encoding='utf8').read()
+h = open(R + '/' + os.environ.get('BS_PREVIEW','preview8.html'), encoding='utf8').read()
 lock = open(R + '/js/p-lock.js', encoding='utf8').read(); app = open(R + '/js/p-app.js', encoding='utf8').read()
 m = re.search(r'<script>\(function\(\)\{var ok=true;try\{ok=!!localStorage.getItem\("bs_session"\).*?\}\)\(\);</script>', h, re.S)
 assert m, 'ไม่พบตัวโหลดสคริปต์ใน preview8.html'
