@@ -7244,9 +7244,9 @@ function bahtText(value) {
     const its = (j.items || []).filter(i => (i.name || '').trim());
     const cust = [j.jName, j.jPhone ? '<a href="tel:' + esc(String(j.jPhone).replace(/[^\d+]/g, '')) + '">' + esc(j.jPhone) + '</a>' : ''].filter(Boolean).join(' · ');
     return '<div class="jd"><div class="jd-head"><b>' + esc(j.no || 'ใบงาน') + '</b><button class="btn small" data-act="closejd" type="button">✕ ปิด</button></div>' +
-      (cust || j.jAddr ? '<div><span class="jd-k">ลูกค้า</span><span class="jd-cust">' + (cust ? cust : '') + '</span>' + (j.jAddr ? '<br>' + esc(j.jAddr) + '<br><button class="btn small good" data-act="copyaddr" data-who="cust" type="button" style="margin-top:6px">📋 คัดลอกที่อยู่ (ไปคีย์ iship)</button>' : '') + '</div>' : '') +
+      (cust || j.jAddr ? '<div><span class="jd-k">ลูกค้า</span><span class="jd-cust">' + (cust ? cust : '') + '</span>' + (j.jAddr ? '<br>' + esc(j.jAddr) + '<br><button class="btn small good" data-act="copyaddr" data-who="cust" type="button" style="margin-top:6px">📋 คัดลอกที่อยู่ (ไปคีย์ iship)</button> <button class="btn small" data-act="copyphone" data-who="cust" type="button" style="margin-top:6px">📞 คัดลอกเบอร์</button>' : '') + '</div>' : '') +
       '<div><span class="jd-k">รายการงาน</span>' + (its.length ? '<ol>' + its.map(i => '<li style="display:list-item;padding:0;border:0;background:none;box-shadow:none;border-radius:0">' + esc(i.name) + ' × ' + esc(fmt(num(i.qty))) + (i.note && i.note.trim() ? ' <small>(' + esc(i.note) + ')</small>' : '') + ((j.whAdded && j.whAdded[jobItemKey(i, (j.items || []).indexOf(i))]) ? ' <small style="color:#0a7a3b;font-weight:700">✔ ใส่ใบราคาส่งแล้ว</small>' : '') + '</li>').join('') + '</ol>' : '—') + '</div>' +
-      (j.recv && (j.recv.name || j.recv.addr) ? '<div><span class="jd-k">ฝากส่งถึง</span><b>' + esc(j.recv.name || '') + '</b>' + (j.recv.phone ? ' · <a href="tel:' + esc(String(j.recv.phone).replace(/[^\d+]/g, '')) + '">' + esc(j.recv.phone) + '</a>' : '') + (j.recv.addr ? '<br>' + esc(j.recv.addr) + '<br><button class="btn small good" data-act="copyaddr" data-who="recv" type="button" style="margin-top:6px">📋 คัดลอกที่อยู่ (ไปคีย์ iship)</button>' : '') + '</div>' : '') +
+      (j.recv && (j.recv.name || j.recv.addr) ? '<div><span class="jd-k">ฝากส่งถึง</span><b>' + esc(j.recv.name || '') + '</b>' + (j.recv.phone ? ' · <a href="tel:' + esc(String(j.recv.phone).replace(/[^\d+]/g, '')) + '">' + esc(j.recv.phone) + '</a>' : '') + (j.recv.addr ? '<br>' + esc(j.recv.addr) + '<br><button class="btn small good" data-act="copyaddr" data-who="recv" type="button" style="margin-top:6px">📋 คัดลอกที่อยู่ (ไปคีย์ iship)</button> <button class="btn small" data-act="copyphone" data-who="recv" type="button" style="margin-top:6px">📞 คัดลอกเบอร์</button>' : '') + '</div>' : '') +
       (j.note && j.note.trim() ? '<div><span class="jd-k">หมายเหตุ</span>' + esc(j.note).replace(/\n/g, '<br>') + '</div>' : '') +
       (j.due ? '<div><span class="jd-k">กำหนดส่ง</span>' + esc(thDate(j.due)) + '</div>' : '') +
       ((j.photos && j.photos.length) ? '<div><span class="jd-k">รูปอ้างอิง</span></div><div class="jd-ph">' + j.photos.map(src => '<img src="' + src + '" alt="รูปอ้างอิง">').join('') + '</div>' : '') +
@@ -8792,14 +8792,19 @@ function bahtText(value) {
       })();
       return;
     }
-    if (btn.dataset.act === 'copyaddr') {   // คัดลอก ชื่อ / เบอร์ / ที่อยู่ ไปวางคีย์ใน iship (ถ้ากดจากช่อง "ฝากส่งถึง" ใช้ข้อมูลผู้รับฝากส่ง)
+    if (btn.dataset.act === 'copyaddr' || btn.dataset.act === 'copyphone') {   // คัดลอกไปคีย์ใน iship (ถ้ากดจากช่อง "ฝากส่งถึง" ใช้ข้อมูลผู้รับฝากส่ง)
       const j = list.find(x => x.id === id); if (!j) return;
       const r = btn.dataset.who === 'recv' ? (j.recv || {}) : {name: j.jName, phone: j.jPhone, addr: j.jAddr};
-      const txt = [r.name, r.phone, r.addr].map(v => String(v || '').trim()).filter(Boolean).join('\n');
+      const one = v => String(v || '').replace(/[\r\n,]+/g, ' ').replace(/\s+/g, ' ').trim();
+      // iship "ตัวช่วยแยกที่อยู่" รับบรรทัดเดียว: ชื่อ + ที่อยู่ (ไม่ใส่เบอร์ ไม่ขึ้นบรรทัดใหม่) · เบอร์คัดลอกแยก เป็นตัวเลขล้วน
+      const isPhone = btn.dataset.act === 'copyphone';
+      const txt = isPhone ? String(r.phone || '').replace(/\D/g, '') : [one(r.name), one(r.addr)].filter(Boolean).join(' ');
+      const okMsg = isPhone ? 'คัดลอกเบอร์แล้ว (ตัวเลขล้วน) ไปวางช่องเบอร์โทรใน iship ได้เลย' : 'คัดลอกชื่อ + ที่อยู่ (บรรทัดเดียว) แล้ว ไปวางใน “ตัวช่วยแยกที่อยู่” ของ iship ได้เลย';
+      if (!txt) { toast(isPhone ? 'งานนี้ไม่มีเบอร์โทร' : 'งานนี้ไม่มีที่อยู่'); return; }
       (async () => {
-        try { await navigator.clipboard.writeText(txt); toast('คัดลอกชื่อ เบอร์ ที่อยู่แล้ว ไปวางใน iship ได้เลย'); }
+        try { await navigator.clipboard.writeText(txt); toast(okMsg); }
         catch (e) {
-          try { const ta = document.createElement('textarea'); ta.value = txt; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); toast(ok ? 'คัดลอกชื่อ เบอร์ ที่อยู่แล้ว ไปวางใน iship ได้เลย' : 'คัดลอกอัตโนมัติไม่ได้'); }
+          try { const ta = document.createElement('textarea'); ta.value = txt; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); toast(ok ? okMsg : 'คัดลอกอัตโนมัติไม่ได้'); }
           catch (e2) { toast('คัดลอกอัตโนมัติไม่ได้'); }
         }
       })();
