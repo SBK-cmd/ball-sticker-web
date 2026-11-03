@@ -80,7 +80,7 @@
   function draw() {
     if (anim) { cancelAnimationFrame(anim.raf); anim = null; }
     var cv = $('cutCanvas'); cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
-    if (markView) { $('cutPlay').disabled = true; drawMarkView(cv); return; }
+    if (markView) { $('cutPlay').disabled = !job; $('cutPlay').textContent = '▶ จำลองการตัด'; drawMarkView(cv); return; }
     $('cutPlay').disabled = !job; $('cutPlay').textContent = '▶ จำลองการตัด';
     if (!job) return;
     var G = geom(); frame(G);
@@ -89,6 +89,7 @@
   }
   function play() {
     if (!job) return;
+    markView = null;   // ออกจากภาพตรวจมาร์ค กลับมาดูเส้นตัดตามงาน
     if (anim) { cancelAnimationFrame(anim.raf); anim = null; draw(); return; }
     var G = geom(), segs = [], cur = [0, 0], total = 0;
     job.polys.forEach(function (pl, i) {   // ยกมีดไปจุดเริ่ม แล้วตัดตามเส้น
