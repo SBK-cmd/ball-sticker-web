@@ -3258,7 +3258,16 @@ function bahtText(value) {
     if (hasDataUri(safeRec.boxPhoto)) delete safeRec.boxPhoto;
     (window.__bsAuthReady || Promise.resolve()).then(() => {
       cloudDb.collection(col).doc(String(rec.id)).set(safeRec, {merge: true}).catch(e => console.error(col + ' save error', e));
+      if (col === 'jobs' && rec.trackToken) publicJobMirror(rec);
     });
+  }
+  // หน้า "ติดตามงานของลูกค้า" (track.html) อ่านจากเอกสารนี้เท่านั้น — เก็บเฉพาะเลขใบ/สถานะ/กำหนดส่ง/เลขพัสดุ (ไม่มีชื่อ เบอร์ ที่อยู่ ราคา)
+  function publicJobMirror(rec) {
+    try {
+      const tr = rec.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(rec.trackCode)) || null) : null;
+      const doc = {no: String(rec.no || ''), status: rec.status || 'pending', due: rec.due || '', trackCode: rec.trackCode || '', carrier: (tr && tr.carrier) || '', updatedAt: Date.now()};
+      cloudDb.collection('publicJobs').doc(String(rec.trackToken)).set(doc).catch(e => console.error('publicJobs save error', e));
+    } catch (e) { console.error('publicJobs mirror', e); }
   }
   function cloudDelete(col, id) {
     if (!cloudDb) return;
@@ -7254,7 +7263,7 @@ function bahtText(value) {
       ((j.donePhotos && j.donePhotos.length) ? '<div class="jd-ph">' + j.donePhotos.map(src => '<img src="' + src + '" alt="รูปงานเสร็จ">').join('') + '</div>' : '') +
       ((j.donePhotos && j.donePhotos.length) ? '<div class="jd-add"><button class="btn small good" data-act="savephotos" type="button">💾 บันทึก/ส่งรูปงานให้ลูกค้า (' + j.donePhotos.length + ' รูป)</button></div>' : '') +
       '<div class="jd-add"><label class="btn small primary">📷 ถ่าย/เพิ่มรูปงานเสร็จ<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '"></label> ' +
-      '<button class="btn small primary" data-act="livescan" type="button">📦 สแกนเลขพัสดุ</button>' +
+      '<button class="btn small primary" data-act="livescan" type="button">📦 สแกนเลขพัสดุ</button> <button class="btn small good" data-act="tracklink" type="button">🔗 ส่งลิงก์ติดตามงาน</button>' +
       '<input type="file" accept="image/*" hidden data-scanjob="' + esc(j.id) + '">' +
       (j.trackCode ? '<div class="jd-trk">📦 เลขพัสดุ: <b>' + esc(j.trackCode) + '</b></div>' : '') +
       ((isSuper && (j.jName || '').trim() && (j.items || []).some(i => (i.name || '').trim())) ? '<button class="btn small good" data-act="tobill" type="button" style="margin-top:8px">🧾 ใส่ใน' + (j.wholesale ? 'ใบราคาส่ง' : 'บิล') + 'ที่ยังไม่จ่ายของ ' + esc(String(j.jName).trim()) + '</button>' : '') +
@@ -7296,7 +7305,7 @@ function bahtText(value) {
     const rec = Object.assign({id, savedAt: Date.now(), createdBy}, data);
     const prevJobStatus = idx >= 0 ? (list[idx].status || 'pending') : null;
     // ฟิลด์ที่ไม่ได้อยู่ในฟอร์ม (รูปงานเสร็จ เลขพัสดุ ประวัติใส่ใบราคาส่ง) ต้องไม่หายตอนบันทึกทับ
-    if (idx >= 0) ['donePhotos', 'trackCode', 'whAdded'].forEach(k => { if (list[idx][k] != null && rec[k] == null) rec[k] = list[idx][k]; });
+    if (idx >= 0) ['donePhotos', 'trackCode', 'whAdded', 'trackToken'].forEach(k => { if (list[idx][k] != null && rec[k] == null) rec[k] = list[idx][k]; });
     if (idx >= 0) list[idx] = rec; else list.push(rec);
     const wasEditing = idx >= 0;
     currentJobId = rec.id;
@@ -8792,6 +8801,24 @@ function bahtText(value) {
       })();
       return;
     }
+    if (btn.dataset.act === 'tracklink') {   // ลิงก์ติดตามงานของลูกค้า: รหัสสุ่มต่อใบ (สร้างครั้งแรกที่กด) ไม่ต้องล็อกอิน
+      const li = list.findIndex(x => x.id === id); if (li < 0) return;
+      if (!list[li].trackToken) {
+        const a = new Uint8Array(12); (window.crypto || window.msCrypto).getRandomValues(a);
+        list[li].trackToken = Array.from(a, b => (b % 36).toString(36)).join('') + Date.now().toString(36).slice(-4);
+        store.set('bs_jobs', list);
+      }
+      const jt = list[li];
+      cloudSave('jobs', jt);
+      const url = 'https://www.ballsticker.co.th/track.html?t=' + jt.trackToken;
+      const msg = 'ติดตามสถานะงาน ' + (jt.no || '') + ' ของบอลสติ๊กเกอร์ได้ที่นี่ค่ะ 👇\n' + url;
+      (async () => {
+        try { if (navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือก LINE / ข้อความ ส่งให้ลูกค้าได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+        try { await navigator.clipboard.writeText(msg); toast('คัดลอกลิงก์ติดตามงานแล้ว ไปวางส่งให้ลูกค้าได้เลย'); }
+        catch (e) { try { const ta = document.createElement('textarea'); ta.value = msg; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); toast(ok ? 'คัดลอกลิงก์ติดตามงานแล้ว' : 'คัดลอกอัตโนมัติไม่ได้'); } catch (e2) { toast('คัดลอกอัตโนมัติไม่ได้'); } }
+      })();
+      return;
+    }
     if (btn.dataset.act === 'copyaddr' || btn.dataset.act === 'copyphone') {   // คัดลอกไปคีย์ใน iship (ถ้ากดจากช่อง "ฝากส่งถึง" ใช้ข้อมูลผู้รับฝากส่ง)
       const j = list.find(x => x.id === id); if (!j) return;
       const r = btn.dataset.who === 'recv' ? (j.recv || {}) : {name: j.jName, phone: j.jPhone, addr: j.jAddr};
@@ -8838,8 +8865,10 @@ function bahtText(value) {
         return;
       }
       clearTimeout(delTimer); delArmed = null;
+      const delJob = list.find(x => x.id === id);
       store.set('bs_jobs', list.filter(x => x.id !== id));
       cloudDelete('jobs', id);
+      if (delJob && delJob.trackToken && cloudDb) { (window.__bsAuthReady || Promise.resolve()).then(() => cloudDb.collection('publicJobs').doc(String(delJob.trackToken)).delete().catch(() => {})); }
       if (currentJobId === id) { currentJobId = null; renderJobEditState(); }
       renderJobHistory(); toast('ลบใบแล้ว');
     }
