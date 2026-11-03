@@ -257,6 +257,7 @@ function bahtText(value) {
     keepById.forEach(k => cloudSave('tracking', k));
     toast('รวมรายการพัสดุที่ซ้ำกันแล้ว ' + removeIds.size + ' แถว (สำรองไว้แล้ว)');
   }
+  const PHONE_SHARE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
   function cloudSave(col, rec) {
     if (!cloudDb) return;
     // ถ้า photos/photo ยังเป็น data: URI (รูปที่เพิ่งถ่าย ยังไม่ได้อัปโหลดขึ้น Cloudinary) ให้ตัดออกก่อนส่ง
@@ -5805,7 +5806,7 @@ function bahtText(value) {
             const blob = await (await fetch(j.donePhotos[i])).blob();
             files.push(new File([blob], base + '-' + (i + 1) + '.jpg', {type: blob.type || 'image/jpeg'}));
           }
-          if (navigator.canShare && navigator.canShare({files})) {
+          if (PHONE_SHARE && navigator.canShare && navigator.canShare({files})) {
             try { await navigator.share({files, title: 'รูปงานเสร็จ ' + (j.no || '')}); toast('เลือก “บันทึกรูปภาพ” หรือส่งทาง LINE ให้ลูกค้าได้เลย'); return; }
             catch (e) { if (e && e.name === 'AbortError') return; }
           }
@@ -5827,7 +5828,7 @@ function bahtText(value) {
       const url = 'https://www.ballsticker.co.th/track.html?t=' + jt.trackToken;
       const msg = 'ติดตามสถานะงาน ' + (jt.no || '') + ' ของบอลสติ๊กเกอร์ได้ที่นี่ค่ะ 👇\n' + url;
       (async () => {
-        try { if (navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือก LINE / ข้อความ ส่งให้ลูกค้าได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+        try { if (PHONE_SHARE && navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือก LINE / ข้อความ ส่งให้ลูกค้าได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
         try { await navigator.clipboard.writeText(msg); toast('คัดลอกลิงก์ติดตามงานแล้ว ไปวางส่งให้ลูกค้าได้เลย'); }
         catch (e) { try { const ta = document.createElement('textarea'); ta.value = msg; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); toast(ok ? 'คัดลอกลิงก์ติดตามงานแล้ว' : 'คัดลอกอัตโนมัติไม่ได้'); } catch (e2) { toast('คัดลอกอัตโนมัติไม่ได้'); } }
       })();
@@ -5862,7 +5863,7 @@ function bahtText(value) {
       const carrier = (tr && tr.carrier) || $('trackCarrier').value;
       const msg = buildTrackingMessage(j.trackCode, carrier, j.jName || (tr && tr.customer) || '');
       (async () => {
-        try { if (navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือก LINE / ข้อความ ส่งให้ลูกค้าได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+        try { if (PHONE_SHARE && navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือก LINE / ข้อความ ส่งให้ลูกค้าได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
         try { await navigator.clipboard.writeText(msg); toast('คัดลอกข้อความเลขพัสดุแล้ว นำไปวางส่งให้ลูกค้าได้เลย'); }
         catch (e) { $('trackMessage').value = msg; toast('คัดลอกอัตโนมัติไม่ได้ ข้อความอยู่ที่แท็บติดตาม คัดลอกเองได้'); }
       })();
