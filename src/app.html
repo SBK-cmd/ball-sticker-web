@@ -1267,6 +1267,7 @@ tr{break-inside:avoid}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 <style id="fab-newjob-css">
+.bell-perm{display:flex;flex-direction:column;gap:6px;padding:8px 10px;margin:0 0 6px;border-radius:12px;background:var(--field);font-size:13px}.bell-perm [data-push-status]:empty{display:none}
 .bell-th{width:40px;height:40px;border-radius:8px;object-fit:cover;flex:none;border:1px solid var(--line,#e5e5e5);background:#fff}
 .dtype-img{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid #e5e5e5;background:#fff;flex:none}
 #jobHistory .jd{-webkit-user-select:text;user-select:text}
@@ -1784,6 +1785,7 @@ tr{break-inside:avoid}
 
   <div class="bell-panel no-print" id="bellPanel" role="dialog" aria-labelledby="bellTitle" hidden>
     <div class="bell-head"><b id="bellTitle">การแจ้งเตือน</b><button type="button" class="btn small" id="bellAll">ดูทั้งหมด</button></div>
+    <div class="bell-perm" id="bellPerm" hidden><span data-push-status></span><button type="button" class="btn small good" data-push-enable>🔔 เปิดแจ้งเตือนเด้งบนเครื่องนี้</button></div>
     <div class="bell-bal" id="bellBal" hidden></div>
     <div id="bellList"></div>
   </div>
@@ -3679,7 +3681,7 @@ function bahtText(value) {
   async function savePushSub(sub) {
     if (!cloudDb || !sub) return;
     const j = sub.toJSON(), id = await pushSubId(j.endpoint);
-    await cloudDb.collection('pushSubs').doc(id).set({endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, chat: can('chat'), bank: !!canBank,
+    await cloudDb.collection('pushSubs').doc(id).set({endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, chat: can('chat'), bank: !!canBank, jobs: can('confirm'),
       user: currentUser ? (currentUser.username || currentUser.name || '') : '', device: (isIOS ? 'iPhone' : /Android/.test(navigator.userAgent) ? 'Android' : 'คอม') + (isStandalone() ? ' (แอป)' : ''), updatedAt: Date.now()});
   }
   async function enablePush() {
@@ -3851,6 +3853,7 @@ function bahtText(value) {
   }
   function renderBellList() {
     renderBellBal();
+    try { const bp = $('bellPerm'); if (bp) { bp.hidden = !!pushOn; if (!pushOn) renderBankInNotifyState(); } } catch (e) {}
     const items = [];
     if (canBank) bankInAll().slice(0, 15).forEach(x => items.push({t: x.createdAt || 0, kind: 'bank', x}));
     notifAll().slice(0, 30).forEach(n => items.push({t: n.at || 0, kind: 'job', x: n}));
@@ -3913,7 +3916,15 @@ function bahtText(value) {
       l = l.filter(n => (n.at || 0) >= cut); l.unshift(rec);
       store.set(NOTIF_KEY, l.slice(0, 200)); cloudSave('notifs', rec);
       notifKnown[rec.id] = 1; renderBell(false);
+      if (!canBank) sendJobPush(rec); // พนักงานเปลี่ยนสถานะ → เด้งเข้ามือถือเจ้าของ (เครื่องที่เปิดแจ้งเตือนเด้งไว้)
     } catch (e) { console.error('notif error', e); }
+  }
+  function sendJobPush(rec) {
+    try {
+      if (!cloudDb) return;
+      fetch(LINE_OA_URL + '/notify', {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': LINE_OA_KEY},
+        body: JSON.stringify({perm: 'bank', title: (rec.no || 'ใบงาน') + ' · ' + (rec.label || ''), body: (rec.name || 'ไม่ระบุชื่อลูกค้า') + (rec.by ? ' · โดย ' + rec.by : ''), tag: 'job-' + rec.jobId, url: './?tab=confirm&job=' + encodeURIComponent(rec.jobId || '')})}).catch(() => {});
+    } catch (e) {}
   }
   function onNotifsChanged() {
     const fresh = [];
@@ -8527,11 +8538,34 @@ function bahtText(value) {
     setTimeout(() => { t.disabled = false; }, 3000);
   });
   setTimeout(refreshPushSub, 1500);
+  // ป๊อปอัปถามขออนุญาตแจ้งเตือน (ถามครั้งเดียวต่อเครื่อง กด "ไว้ทีหลัง" แล้วไปเปิดเองได้ที่กระดิ่ง)
+  function maybeAskNotify() {
+    try {
+      if (!(canBank || can('confirm')) || !currentUser) return;
+      if (localStorage.getItem('bs_push_asked')) return;
+      if (pushOn || ($('bellPanel') && !$('bellPanel').hidden)) return;
+      const needHome = isIOS && !isStandalone();
+      if (!needHome && (!pushSupported() || Notification.permission !== 'default')) return;
+      const ov = document.createElement('div'); ov.className = 'job-zoom pick-ov'; ov.style.cursor = 'default';
+      ov.innerHTML = '<div class="pick-box"><b>🔔 เปิดแจ้งเตือนบนเครื่องนี้ไหม</b>' +
+        '<div class="wh-hint">' + (needHome ? 'iPhone: กดปุ่มแชร์ ⬆︎ เลือก “เพิ่มไปยังหน้าจอโฮม” แล้วเปิดแอปจากไอคอนบนหน้าจอ จากนั้นกลับมากดเปิดแจ้งเตือนที่กระดิ่ง' : 'จะเด้งเตือนเมื่อมีงานเปลี่ยนสถานะ เงินเข้า หรือข้อความใหม่ แม้ปิดแอปอยู่ (กดอนุญาตในหน้าต่างถัดไป)') + '</div>' +
+        (needHome ? '' : '<button type="button" class="btn good" data-np="yes">เปิดแจ้งเตือน</button>') +
+        '<button type="button" class="btn small" data-np="later">' + (needHome ? 'รับทราบ' : 'ไว้ทีหลัง') + '</button></div>';
+      ov.addEventListener('click', ev => {
+        const b = ev.target.closest('[data-np]'); if (!b) return;
+        try { localStorage.setItem('bs_push_asked', '1'); } catch (e) {}
+        ov.remove(); if (b.dataset.np === 'yes') enablePush();
+      });
+      document.body.appendChild(ov);
+    } catch (e) {}
+  }
+  setTimeout(maybeAskNotify, 4500);
   // เปิดจากการแตะแจ้งเตือน: ?tab=chat&chat=<id> หรือ ?tab=dash
   function openFromLink(href) {
     try {
       const u = new URL(href, location.href), tab = u.searchParams.get('tab'), chat = u.searchParams.get('chat');
       if (tab && can(tab)) showTab(tab);
+      const jobParam = u.searchParams.get('job'); if (tab === 'confirm' && jobParam) setTimeout(() => goJobFromBell(jobParam), 300);
       if (tab === 'chat' && chat && typeof openChat === 'function') setTimeout(() => openChat(chat), 300);
     } catch (e) {}
   }
