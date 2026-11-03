@@ -277,7 +277,9 @@ function bahtText(value) {
   function publicJobMirror(rec) {
     try {
       const tr = rec.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(rec.trackCode)) || null) : null;
-      const doc = {no: String(rec.no || ''), status: rec.status || 'pending', due: rec.due || '', trackCode: rec.trackCode || '', carrier: (tr && tr.carrier) || '', updatedAt: Date.now()};
+      const carrier = (tr && tr.carrier) || '';
+      const photos = (Array.isArray(rec.donePhotos) ? rec.donePhotos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 8);   // รูปงานเสร็จ (เฉพาะลิงก์ที่อัปโหลดแล้ว)
+      const doc = {no: String(rec.no || ''), status: rec.status || 'pending', due: rec.due || '', trackCode: rec.trackCode || '', carrier, trackUrl: rec.trackCode ? trackingLink(carrier, rec.trackCode) : '', photos, updatedAt: Date.now()};
       cloudDb.collection('publicJobs').doc(String(rec.trackToken)).set(doc).catch(e => console.error('publicJobs save error', e));
     } catch (e) { console.error('publicJobs mirror', e); }
   }
