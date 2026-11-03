@@ -275,6 +275,8 @@
       <button class="btn" id="cutRead">อ่านเส้นตัด</button>
       <button class="btn ghost" id="cutTest">ชิ้นทดสอบ</button>
     </div>
+    <div class="stkres" id="cutRes">ยังไม่ได้อ่านงาน</div>
+    <div class="hint warn" id="cutWarn"></div>
     <div class="hint">เลือกเส้นที่จะตัด หรือไม่เลือกอะไร = เส้น Kiss Cut / Die Cut ทั้งหมดใน artboard ที่เปิดอยู่</div>
     <div class="grid">
       <label class="chk"><input id="cutRot" type="checkbox"> หมุน 90°</label>
@@ -312,8 +314,6 @@
   </div>
 
   <div class="card">
-    <div class="stkres" id="cutRes">ยังไม่ได้อ่านงาน</div>
-    <div class="hint warn" id="cutWarn"></div>
     <canvas id="cutCanvas" class="stkcanvas" width="300" height="220"></canvas>
     <div class="cutlegend"><span class="lk">━ Kiss Cut</span><span class="ld">━ Die Cut</span><span class="mut">┄ ยกมีด</span><button class="btn ghost sm" id="cutPlay" disabled>▶ จำลองการตัด</button></div>
     <button class="btn" id="cutGo" disabled>ส่งตัด</button>
