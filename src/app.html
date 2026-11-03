@@ -1267,6 +1267,10 @@ tr{break-inside:avoid}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 <style id="fab-newjob-css">
+#jobHistory li.open::before{content:'';position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1190}
+#jobHistory li.open .jd{position:fixed;left:10px;right:10px;top:calc(env(safe-area-inset-top,0px) + 48px);bottom:calc(env(safe-area-inset-bottom,0px) + 10px);max-width:560px;margin:0 auto;overflow:auto;z-index:1200;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:0 16px 16px;box-shadow:0 20px 60px rgba(0,0,0,.35);-webkit-overflow-scrolling:touch;align-content:start;flex:none}
+#jobHistory .jd .jd-head{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:2;background:var(--surface);padding:12px 0 8px;margin-bottom:2px;border-bottom:1px solid var(--line)}
+#jobHistory .jd .jd-head b{font-size:17px}
 .bell-perm{display:flex;flex-direction:column;gap:6px;padding:8px 10px;margin:0 0 6px;border-radius:12px;background:var(--field);font-size:13px}.bell-perm [data-push-status]:empty{display:none}
 .bell-th{width:40px;height:40px;border-radius:8px;object-fit:cover;flex:none;border:1px solid var(--line,#e5e5e5);background:#fff}
 .dtype-img{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid #e5e5e5;background:#fff;flex:none}
@@ -7239,7 +7243,7 @@ function bahtText(value) {
   function jobDetailHTML(j) {
     const its = (j.items || []).filter(i => (i.name || '').trim());
     const cust = [j.jName, j.jPhone ? '<a href="tel:' + esc(String(j.jPhone).replace(/[^\d+]/g, '')) + '">' + esc(j.jPhone) + '</a>' : ''].filter(Boolean).join(' · ');
-    return '<div class="jd">' +
+    return '<div class="jd"><div class="jd-head"><b>' + esc(j.no || 'ใบงาน') + '</b><button class="btn small" data-act="closejd" type="button">✕ ปิด</button></div>' +
       (cust || j.jAddr ? '<div><span class="jd-k">ลูกค้า</span><span class="jd-cust">' + (cust ? cust : '') + '</span>' + (j.jAddr ? '<br>' + esc(j.jAddr) : '') + '</div>' : '') +
       '<div><span class="jd-k">รายการงาน</span>' + (its.length ? '<ol>' + its.map(i => '<li style="display:list-item;padding:0;border:0;background:none;box-shadow:none;border-radius:0">' + esc(i.name) + ' × ' + esc(fmt(num(i.qty))) + (i.note && i.note.trim() ? ' <small>(' + esc(i.note) + ')</small>' : '') + ((j.whAdded && j.whAdded[jobItemKey(i, (j.items || []).indexOf(i))]) ? ' <small style="color:#0a7a3b;font-weight:700">✔ ใส่ใบราคาส่งแล้ว</small>' : '') + '</li>').join('') + '</ol>' : '—') + '</div>' +
       (j.recv && (j.recv.name || j.recv.addr) ? '<div><span class="jd-k">ฝากส่งถึง</span><b>' + esc(j.recv.name || '') + '</b>' + (j.recv.phone ? ' · <a href="tel:' + esc(String(j.recv.phone).replace(/[^\d+]/g, '')) + '">' + esc(j.recv.phone) + '</a>' : '') + (j.recv.addr ? '<br>' + esc(j.recv.addr) : '') + '</div>' : '') +
@@ -8759,6 +8763,7 @@ function bahtText(value) {
       const id = li.dataset.id; jobOpenIds[id] = !jobOpenIds[id]; renderJobHistory(); return;
     }
     const id = btn.closest('li').dataset.id;
+    if (btn.dataset.act === 'closejd') { jobOpenIds[id] = false; renderJobHistory(); return; }
     const list = store.get('bs_jobs', []);
     if (btn.dataset.act === 'livescan') {
       const sjInp = btn.closest('li').querySelector('input[data-scanjob]');
