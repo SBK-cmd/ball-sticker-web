@@ -1,6 +1,6 @@
 @echo off
 setlocal
-set "VER=1.13.32"
+set "VER=1.13.33"
 set "SRC=%~dp0SignTools"
 set "EXT=%APPDATA%\Adobe\CEP\extensions"
 set "DEST=%EXT%\SignTools"
