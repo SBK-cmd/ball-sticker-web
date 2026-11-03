@@ -8,6 +8,13 @@
   function nodeReq() { return (window.cep_node && window.cep_node.require) || window.__testRequire || null; }
   function osPath(p) { p = decodeURIComponent(p); if (/^\/[A-Za-z]:/.test(p)) p = p.slice(1); return p; }
   function extDir() { return window.ST_EXTDIR || osPath(location.pathname).replace(/[\\/][^\\/]*$/, ''); }
+  // เปิดแผงทุกครั้ง → โหลด host.jsx จากดิสก์ใหม่ (Illustrator เก็บสคริปต์เก่าไว้จนปิดโปรแกรม) · หลังอัปเดตจึงแค่ปิดแล้วเปิดแผงใหม่ก็ได้ฟังก์ชันใหม่
+  try {
+    if (window.__adobe_cep__) {
+      var hj = (extDir() + '/jsx/host.jsx').replace(/\\/g, '/');
+      window.__adobe_cep__.evalScript('try{$.evalFile(new File(' + JSON.stringify(hj) + '));"ok"}catch(e){"err:"+e.message}', function () {});
+    }
+  } catch (eh) {}
 
   var core = null;
   try {
@@ -234,7 +241,7 @@
         else setTimeout(reload, 300);
         return;
       }
-      $('updText').textContent = 'ปิด Illustrator ทั้งโปรแกรมแล้วเปิดใหม่ 1 ครั้ง เพื่อใช้เวอร์ชันใหม่ (ปิดแค่แผงไม่พอ)';
+      $('updText').textContent = 'ปิดแผง Sign Tools แล้วเปิดใหม่ เพื่อใช้เวอร์ชันใหม่ (ถ้าฟังก์ชันใหม่ยังไม่ทำงาน ค่อยปิด Illustrator ทั้งโปรแกรมแล้วเปิดใหม่)';
       go.classList.add('hidden'); $('updLater').disabled = false; $('updLater').textContent = 'ไว้ทีหลัง';
       if (false && !res.restart && window.__adobe_cep__ && window.__adobe_cep__.closeExtension) {
         go.classList.remove('hidden'); go.disabled = false; go.textContent = 'ปิดแผงตอนนี้';
