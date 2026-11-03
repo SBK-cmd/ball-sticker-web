@@ -56,3 +56,21 @@ var busy=false;function run(){if(busy)return;busy=true;requestAnimationFrame(fun
 function start(){run();new MutationObserver(run).observe(document.body,{childList:true,subtree:true,characterData:true})}
 if(document.body)start();else document.addEventListener('DOMContentLoaded',start);
 })();
+
+/* p8: แตะตัวอย่าง A4 บนมือถือ → เปิดเต็มจอขนาดอ่านได้ (เดิมย่อเหลือ ~45% ตัวหนังสือราว 5–6px) */
+(function(){
+  function mobile(){return window.matchMedia&&matchMedia('(max-width:560px)').matches}
+  function close(){var o=document.getElementById('a4zoom');if(o)o.remove();document.documentElement.style.overflow=''}
+  document.addEventListener('click',function(e){
+    var fr=e.target.closest&&e.target.closest('.a4-frame');
+    if(!fr||!mobile()||document.getElementById('a4zoom'))return;
+    var sh=fr.querySelector('.sheet');if(!sh||!sh.textContent.trim())return;
+    var o=document.createElement('div');o.id='a4zoom';
+    o.innerHTML='<div class="a4z-bar"><b>ตัวอย่างเอกสาร</b><span>เลื่อนดู · ถ่ายหน้าจอเพื่อเก็บ</span><button type="button" class="a4z-x" aria-label="ปิด">ปิด</button></div><div class="a4z-body"></div>';
+    var c=sh.cloneNode(true);c.removeAttribute('id');c.style.transform='none';c.style.zoom='0.85';c.style.width='210mm';
+    o.querySelector('.a4z-body').appendChild(c);
+    o.addEventListener('click',function(ev){if(ev.target.closest('.a4z-x')||ev.target===o)close()});
+    document.addEventListener('keydown',function k(ev){if(ev.key==='Escape'){close();document.removeEventListener('keydown',k)}});
+    document.body.appendChild(o);document.documentElement.style.overflow='hidden';
+  });
+})();
