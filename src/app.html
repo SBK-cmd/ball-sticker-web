@@ -7204,11 +7204,21 @@ function bahtText(value) {
     frame.style.height = Math.ceil(sheet.offsetHeight * k) + 'px';
   }
 
+  // เลขใบงานถัดไป = เลขท้ายสูงสุดของวันนั้น + 1 (เดิมนับจำนวนใบ ทำให้เลขซ้ำเมื่อมีใบถูกลบหรือซิงก์ช้า) และไม่ซ้ำกับใบที่มีอยู่
+  function nextJobNoFor(prefix, skipId) {
+    const used = {}; let max = 0;
+    store.get('bs_jobs', []).forEach(j => {
+      if (skipId && j.id === skipId) return;
+      const no = String(j.no || '').trim(); used[no.toUpperCase()] = 1;
+      if (no.indexOf(prefix + '-') === 0) { const m = /-(\d+)$/.exec(no); if (m) max = Math.max(max, parseInt(m[1], 10)); }
+    });
+    let n = max + 1, out;
+    do { out = prefix + '-' + String(n).padStart(3, '0'); n++; } while (used[out.toUpperCase()]);
+    return out;
+  }
   function nextJobNo() {
     const d = ($('jobDate').value || todayISO()).replace(/-/g, '').slice(2);
-    const prefix = 'JB' + d;
-    const n = store.get('bs_jobs', []).filter(j => String(j.no).indexOf(prefix) === 0).length + 1;
-    return prefix + '-' + String(n).padStart(3, '0');
+    return nextJobNoFor('JB' + d);
   }
 
   function collectJob() {
@@ -7291,10 +7301,12 @@ function bahtText(value) {
     if (!shown.length) { $('jobHistory').innerHTML = notice + '<p class="empty">ไม่พบใบคอนเฟิร์มงานของลูกค้าชื่อ “' + esc(q) + '”</p>'; return; }
     const pendWh = can('wholesale') ? list.filter(j => j.wholesale && String(j.jName || '').trim() && jobPendingWhItems(j).length).length : 0;
     const whBanner = pendWh ? '<div class="wh-sweep"><span>🏷️ มีงานราคาส่ง <b>' + pendWh + '</b> ใบ ที่ยังไม่ได้รวมในใบราคาส่ง</span><button type="button" class="btn small good" id="whSweepBtn">รวมเข้าใบราคาส่งตามชื่อ</button></div>' : '';
+    const noCount = {}; list.forEach(j => { const k = String(j.no || '').trim().toUpperCase(); if (k) noCount[k] = (noCount[k] || 0) + 1; });
     $('jobHistory').innerHTML = notice + whBanner + '<ul>' + shown.map(j => {
       const st = j.status || 'pending';
+      const dupTag = noCount[String(j.no || '').trim().toUpperCase()] > 1 ? ' <span style="color:#b91c1c;font-weight:700">⚠ เลขซ้ำ</span>' : '';
       return '<li data-id="' + esc(j.id) + '"' + (jobOpenIds[j.id] ? ' class="open"' : '') + '>' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '') +
-      '<div class="meta"><b>' + esc(j.no) + '</b><small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[j.page] ? ' · ' + esc(PAGE_LABEL[j.page]) : '') + (canBank && j.account ? ' · บัญชี ' + esc(j.account) : '') + (canBank && num(j.slipAmount) > 0 ? ' · สลิป ' + money(num(j.slipAmount)) + ' บาท' : '') + (j.wholesale ? ' · 🏷️ ราคาส่ง' : '') + (j.recv && (j.recv.name || j.recv.addr) ? ' · 📦 ฝากส่ง' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
+      '<div class="meta"><b>' + esc(j.no) + '</b>' + dupTag + '<small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[j.page] ? ' · ' + esc(PAGE_LABEL[j.page]) : '') + (canBank && j.account ? ' · บัญชี ' + esc(j.account) : '') + (canBank && num(j.slipAmount) > 0 ? ' · สลิป ' + money(num(j.slipAmount)) + ' บาท' : '') + (j.wholesale ? ' · 🏷️ ราคาส่ง' : '') + (j.recv && (j.recv.name || j.recv.addr) ? ' · 📦 ฝากส่ง' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
       '<select class="job-status-select status-pill ' + st + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
       '</select>' +
@@ -7310,6 +7322,12 @@ function bahtText(value) {
     if (!String(data.no).trim()) { toast('ใส่เลขที่ใบก่อนบันทึก'); $('jobNo').focus(); return; }
     const id = currentJobId || ('j' + Date.now());
     const idx = list.findIndex(j => j.id === id);
+    if (idx < 0 && list.some(j => String(j.no || '').trim().toUpperCase() === String(data.no).trim().toUpperCase())) {   // ใบใหม่ เลขชนกับใบเดิม (เช่น 2 เครื่องเปิดพร้อมกัน) → ขยับเลขให้อัตโนมัติ
+      const m = /^(.*?)-?\d+$/.exec(String(data.no).trim()), old = data.no;
+      data.no = nextJobNoFor(m && m[1] ? m[1] : 'JB' + String($('jobDate').value || todayISO()).replace(/-/g, '').slice(2));
+      $('jobNo').value = data.no;
+      toast('เลข ' + old + ' ซ้ำกับใบเดิม เปลี่ยนเป็น ' + data.no + ' ให้แล้ว');
+    }
     const createdBy = idx >= 0 ? list[idx].createdBy : (currentUser ? currentUser.name : '');
     const prevBankInIds = idx >= 0 ? jobBankIdsOf(list[idx]) : [];
     const rec = Object.assign({id, savedAt: Date.now(), createdBy}, data);
