@@ -26,6 +26,10 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
 .copy{margin-left:8px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:2px 9px;font:inherit;font-size:13px;cursor:pointer}
 .err{text-align:center;padding:26px 10px}.err b{display:block;font-size:17px;margin-bottom:6px}
 .ct{margin-top:16px;text-align:center;color:var(--mut);font-size:13.5px;line-height:1.7}.ct a{color:var(--ink);font-weight:600}
+.ph{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}.ph h2{font-size:15px;margin:0 0 4px}.ph p{margin:0 0 10px;color:var(--mut);font-size:13px}
+.pg{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pg figure{margin:0}.pg img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;border:1px solid var(--line);background:#f3f4f6}
+.sv{display:block;margin-top:6px;text-align:center;border:1px solid var(--line);border-radius:10px;padding:7px 0;color:var(--ink);font-weight:600;font-size:14px;text-decoration:none;background:#fff}
+.go{display:block;margin-top:12px;text-align:center;background:var(--y);color:var(--ink);font-weight:700;border-radius:12px;padding:12px 0;text-decoration:none;font-size:15.5px}
 .upd{margin-top:10px;color:var(--mut);font-size:12.5px;text-align:right}
 </style>
 </head>
@@ -55,6 +59,14 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
     var html = '<h1>ใบงานเลขที่</h1><p class="no">' + esc(j.no) + '</p><span class="now' + (done ? ' done' : '') + '">' + esc(STEPS[idx][1]) + '</span><ul class="steps">' + lis + '</ul>';
     if (j.due && !done) html += '<div class="row"><span>กำหนดส่ง</span><b>' + esc(thDate(j.due)) + '</b></div>';
     if (j.trackCode) html += '<div class="row"><span>เลขพัสดุ' + (j.carrier ? ' (' + esc(j.carrier) + ')' : '') + '</span><b>' + esc(j.trackCode) + '<button class="copy" id="cp" type="button">คัดลอก</button></b></div>';
+    if (j.trackUrl && /^https:\/\//.test(j.trackUrl)) html += '<a class="go" href="' + esc(j.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะพัสดุ' + (j.carrier ? ' กับ ' + esc(j.carrier) : '') + '</a>';
+    var ph = (j.photos || []).filter(function (u) { return typeof u === 'string' && /^https:\/\//.test(u); });
+    if (ph.length && idx >= 2) {
+      html += '<div class="ph"><h2>📷 รูปงานของคุณ</h2><p>กดปุ่ม “บันทึกรูป” หรือกดค้างที่รูปเพื่อบันทึกลงเครื่อง</p><div class="pg">' + ph.map(function (u, k) {
+        var dl = u.indexOf('/upload/') > -1 ? u.replace('/upload/', '/upload/fl_attachment/') : u;
+        return '<figure><a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="รูปงาน ' + (k + 1) + '" loading="lazy"></a><a class="sv" href="' + esc(dl) + '" download="' + esc((j.no || 'งาน') + '-' + (k + 1) + '.jpg') + '" target="_blank" rel="noopener">💾 บันทึกรูป</a></figure>';
+      }).join('') + '</div></div>';
+    }
     if (j.updatedAt) { var d = new Date(j.updatedAt); html += '<div class="upd">อัปเดตล่าสุด ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + (d.getFullYear() + 543) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' น.</div>'; }
     box.innerHTML = html;
     var cp = document.getElementById('cp'); if (cp) cp.onclick = function () { try { navigator.clipboard.writeText(j.trackCode); cp.textContent = 'คัดลอกแล้ว'; } catch (e) {} };
