@@ -30,6 +30,7 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
 .pg{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pg figure{margin:0}.pg img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;border:1px solid var(--line);background:#f3f4f6}
 .sv{display:block;margin-top:6px;text-align:center;border:1px solid var(--line);border-radius:10px;padding:7px 0;color:var(--ink);font-weight:600;font-size:14px;text-decoration:none;background:#fff}
 .go{display:block;margin-top:12px;text-align:center;background:var(--y);color:var(--ink);font-weight:700;border-radius:12px;padding:12px 0;text-decoration:none;font-size:15.5px}
+.cn{margin:-2px 0 4px;font-size:15px;color:var(--mut)}.cn b{color:var(--ink)}
 .upd{margin-top:10px;color:var(--mut);font-size:12.5px;text-align:right}
 </style>
 </head>
@@ -56,7 +57,7 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
       var c = k < idx || done ? 'done' : (k === idx ? 'cur' : '');
       return '<li class="' + c + '"><i>' + (c === 'done' ? '✓' : (k + 1)) + '</i>' + esc(s[1]) + '</li>';
     }).join('');
-    var html = '<h1>ใบงานเลขที่</h1><p class="no">' + esc(j.no) + '</p><span class="now' + (done ? ' done' : '') + '">' + esc(STEPS[idx][1]) + '</span><ul class="steps">' + lis + '</ul>';
+    var html = '<h1>ใบงานเลขที่</h1><p class="no">' + esc(j.no) + '</p>' + (j.cname ? '<div class="cn">ลูกค้า: <b>' + esc(j.cname) + '</b></div>' : '') + '<span class="now' + (done ? ' done' : '') + '">' + esc(STEPS[idx][1]) + '</span><ul class="steps">' + lis + '</ul>';
     if (j.due && !done) html += '<div class="row"><span>กำหนดส่ง</span><b>' + esc(thDate(j.due)) + '</b></div>';
     if (j.trackCode) html += '<div class="row"><span>เลขพัสดุ' + (j.carrier ? ' (' + esc(j.carrier) + ')' : '') + '</span><b>' + esc(j.trackCode) + '<button class="copy" id="cp" type="button">คัดลอก</button></b></div>';
     if (j.trackUrl && /^https:\/\//.test(j.trackUrl)) html += '<a class="go" href="' + esc(j.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะพัสดุ' + (j.carrier ? ' กับ ' + esc(j.carrier) : '') + '</a>';

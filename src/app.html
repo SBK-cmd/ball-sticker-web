@@ -3263,12 +3263,19 @@ function bahtText(value) {
     });
   }
   // หน้า "ติดตามงานของลูกค้า" (track.html) อ่านจากเอกสารนี้เท่านั้น — เก็บเฉพาะเลขใบ/สถานะ/กำหนดส่ง/เลขพัสดุ (ไม่มีชื่อ เบอร์ ที่อยู่ ราคา)
+  // ชื่อลูกค้าสำหรับหน้าติดตาม: เฉพาะชื่อแรก ไม่เอานามสกุล (คำนำหน้าที่แยกเป็นคำเดี่ยว เช่น "คุณ ประณต จะแจ้ง" → "คุณ ประณต")
+  const NAME_TITLES = ['คุณ', 'นาย', 'นาง', 'นางสาว', 'น.ส.', 'นส.', 'ด.ช.', 'ด.ญ.', 'พี่', 'น้อง', 'ป้า', 'ลุง', 'อา', 'ครู', 'ดร.'];
+  function firstNameOf(full) {
+    const w = String(full || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+    if (!w.length) return '';
+    return (NAME_TITLES.indexOf(w[0]) >= 0 && w[1]) ? w[0] + ' ' + w[1] : w[0];
+  }
   function publicJobMirror(rec) {
     try {
       const tr = rec.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(rec.trackCode)) || null) : null;
       const carrier = (tr && tr.carrier) || '';
       const photos = (Array.isArray(rec.donePhotos) ? rec.donePhotos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 8);   // รูปงานเสร็จ (เฉพาะลิงก์ที่อัปโหลดแล้ว)
-      const doc = {no: String(rec.no || ''), status: rec.status || 'pending', due: rec.due || '', trackCode: rec.trackCode || '', carrier, trackUrl: rec.trackCode ? trackingLink(carrier, rec.trackCode) : '', photos, updatedAt: Date.now()};
+      const doc = {no: String(rec.no || ''), cname: firstNameOf(rec.jName), status: rec.status || 'pending', due: rec.due || '', trackCode: rec.trackCode || '', carrier, trackUrl: rec.trackCode ? trackingLink(carrier, rec.trackCode) : '', photos, updatedAt: Date.now()};
       cloudDb.collection('publicJobs').doc(String(rec.trackToken)).set(doc).catch(e => console.error('publicJobs save error', e));
     } catch (e) { console.error('publicJobs mirror', e); }
   }
