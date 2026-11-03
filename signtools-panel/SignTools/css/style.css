@@ -338,3 +338,15 @@ body.intool .topbar{display:flex}
 .card.foldable>.chead::after{content:"▾";margin-left:8px;color:var(--mut);font-size:12px;transition:transform .15s}
 .card.foldable.folded>.chead::after{transform:rotate(-90deg)}
 .card.foldable.folded>:not(.chead){display:none!important}
+
+/* Extract (js/extract.js) */
+#tab-ext .chead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+#tab-ext .chead b{font-size:13.5px}
+#tab-ext .chead .mut{font-size:11px;color:var(--mut)}
+#tab-ext label.full{width:100%}
+#tab-ext .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;margin:6px 0}
+#tab-ext label.chk.head{flex-wrap:wrap}
+#tab-ext label.chk.head b{font-size:13.5px}
+#tab-ext label.chk.head .mut{font-size:11px;flex-basis:100%;padding-left:23px}
+#tab-ext .grid.hidden{display:none}
+#tab-ext label.hidden{display:none!important}
