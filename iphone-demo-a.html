@@ -2029,6 +2029,29 @@ html body table td,html body .dash-tile b,html body #count{font-feature-settings
 /* ไอคอนเส้นแทนอีโมจิ */
 .ic{width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:.4em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .ic-wrap{display:inline}
+
+/* ===== แก้จากการตรวจใช้งานจริง (ผลวัดบนจอ 390px) ===== */
+/* 1) ปุ่มลอย "+ เพิ่มใบคอนเฟิร์ม" เคยกว้าง ~190px บังช่องกรอก/ปุ่มบันทึก → ย่อเป็นวงกลม + เด้งหนีเมื่อกำลังพิมพ์ */
+@media (max-width:560px){
+  html body .fab-newjob{width:56px;height:56px;min-height:56px;padding:0;border-width:0;font-size:0;display:flex;align-items:center;justify-content:center;right:14px;bottom:calc(92px + env(safe-area-inset-bottom));box-shadow:0 8px 20px -8px rgba(20,20,40,.55)}
+  html body .fab-newjob::before{content:"+";font-size:32px;line-height:1;font-weight:400;color:#ffc300}
+  html body:has(input:focus,textarea:focus,select:focus) .fab-newjob{opacity:0;pointer-events:none;transform:scale(.8)}
+  html body .fab-newjob{transition:opacity .15s ease,transform .15s ease}
+}
+/* 2) พื้นที่กดเล็กกว่า 44px: โลโก้/ชื่อผู้ใช้/ชิปชื่อลูกค้า/ลิงก์โทรท้ายหน้า */
+html body header.top .brand,html body .user-chip-btn{min-height:44px}
+html body .vchip{min-height:44px}
+html body footer a,html body .foot a,html body a[href^="tel:"]{display:inline-flex;align-items:center;min-height:44px;padding:0 4px}
+/* 3) ตัวหนังสือเล็กเกินอ่าน (12–13.5px) → อย่างน้อย 14px */
+@media (max-width:560px){
+  html body .hint,html body .actions-note,html body small,html body .dash-tile-label,html body .f>span,html body label.f>span,html body .vchips,html body .jd-k{font-size:14px!important}
+  html body .btab-label{font-size:12px}
+}
+/* 4) ปุ่มเลือกไฟล์ของเบราว์เซอร์ (Choose Files / No file chosen) → ปุ่มสไตล์เดียวกับแอป */
+html body input[type=file]{font-size:14px;color:var(--muted);max-width:100%}
+html body input[type=file]::file-selector-button{min-height:44px;margin-right:12px;padding:0 18px;border:1.5px solid #d6d6de;border-radius:999px;background:#fff;color:var(--ink);font:600 14.5px inherit;font-family:inherit;cursor:pointer}
+/* 5) เว้นท้ายหน้าไม่ให้ปุ่มสุดท้ายโดนเมนูล่างทับ */
+@media (max-width:560px){html body main,html body .panel{padding-bottom:calc(120px + env(safe-area-inset-bottom))}}
 </style>
 <style id="bs-theme-p9a">
 /* p9a "Studio" — สว่าง เรียบ เส้นบาง สีเหลืองเป็นสีเน้นเดียว ตัวหนังสือชัด (แนว Linear/Stripe) */
