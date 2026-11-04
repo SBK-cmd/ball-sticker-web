@@ -6831,6 +6831,14 @@ function bahtText(value) {
   }
   // งานราคาส่ง: เลือกว่าแบบไหนจะใส่ในใบราคาส่งตอนนี้ + ใส่จำนวนและราคาส่งต่อหน่วยแยกตามแบบ (แบบที่ใส่ไปแล้วจะไม่ติ๊กให้)
   function jobItemKey(i, idx) { return idx + '|' + String(i.name || '').trim(); }
+  // ราคาส่งต่อหน่วยที่เติมให้อัตโนมัติ: ใบงานที่ใส่จำนวนเงินไว้แล้ว + มีรายการเดียว → จำนวนเงิน ÷ จำนวนชิ้น (หลายรายการแยกไม่ได้ ปล่อยว่างให้ใส่เอง)
+  function jobUnitPrice(j, i) {
+    if (i && i.price !== undefined && i.price !== null && String(i.price).trim() !== '') return i.price;
+    const named = (j.items || []).filter(x => x && String(x.name || '').trim());
+    const slip = num(j.slipAmount);
+    if (slip > 0 && named.length === 1) { const q = num(named[0].qty) > 0 ? num(named[0].qty) : 1; return round2(slip / q); }
+    return '';
+  }
   function pickWholesaleItems(j, cb) {
     const rows = (j.items || []).map((i, idx) => ({i, idx})).filter(r => (r.i.name || '').trim());
     const done = j.whAdded || {};
@@ -6839,7 +6847,7 @@ function bahtText(value) {
       '<div class="wh-hint">ติ๊กแบบที่ต้องการ ใส่จำนวนและราคาส่งต่อหน่วยของแต่ละแบบ (ไม่ใส่ราคา = 0 ไว้ไปใส่ในใบราคาส่ง)</div>' +
       rows.map(r => { const k = jobItemKey(r.i, r.idx), was = done[k];
         return '<div class="wh-row' + (was ? ' was' : '') + '" data-k="' + esc(k) + '"><label class="wh-nm"><input type="checkbox" class="wh-ck"' + (was ? '' : ' checked') + '> <span>' + esc(String(r.i.name).trim()) + ((r.i.note || '').trim() ? ' <small>(' + esc(String(r.i.note).trim()) + ')</small>' : '') + (was ? ' <em>✔ ใส่แล้ว</em>' : '') + '</span></label>' +
-        '<div class="wh-in"><label>จำนวน<input class="txt wh-q" type="number" inputmode="decimal" step="any" min="0" value="' + esc(r.i.qty) + '"></label><label>ราคาส่ง/หน่วย<input class="txt wh-p" type="number" inputmode="decimal" step="any" min="0" placeholder="0" value="' + esc(r.i.price == null ? '' : r.i.price) + '"></label></div></div>'; }).join('') +
+        '<div class="wh-in"><label>จำนวน<input class="txt wh-q" type="number" inputmode="decimal" step="any" min="0" value="' + esc(r.i.qty) + '"></label><label>ราคาส่ง/หน่วย<input class="txt wh-p" type="number" inputmode="decimal" step="any" min="0" placeholder="0" value="' + esc(jobUnitPrice(j, r.i)) + '"></label></div></div>'; }).join('') +
       '<button type="button" class="btn good" data-wh="ok">ใส่ในใบราคาส่ง</button><button type="button" class="btn small" data-wh="x">ยกเลิก</button></div>';
     ov.addEventListener('click', ev => {
       const b = ev.target.closest('[data-wh]');
@@ -6884,7 +6892,7 @@ function bahtText(value) {
     const wl = store.get('bs_wholesale', []);
     let doc = wl.filter(w => !w.paid && String(w.buyerName || '').trim() === name).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0], isNew = false;
     if (!doc) { doc = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: false, no: whNextNo(todayISO()), ref: '', date: todayISO(), buyerName: name, items: [], discount: 0, note: ''}; wl.push(doc); isNew = true; }
-    const add = rows.map(r => ({name: String(r.i.name).trim() + ((r.i.note || '').trim() ? ' (' + String(r.i.note).trim() + ')' : ''), qty: r.i.qty, price: num(r.i.price)}));
+    const add = rows.map(r => ({name: String(r.i.name).trim() + ((r.i.note || '').trim() ? ' (' + String(r.i.note).trim() + ')' : ''), qty: r.i.qty, price: num(jobUnitPrice(j, r.i))}));
     doc.items = (doc.items || []).filter(i => (i.name || '').trim()).concat(add);
     doc.savedAt = Date.now();
     j.whAdded = Object.assign({}, j.whAdded || {}); rows.forEach(r => { j.whAdded[jobItemKey(r.i, r.idx)] = {at: Date.now(), doc: doc.ref || doc.id}; });
