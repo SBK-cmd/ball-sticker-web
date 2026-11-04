@@ -2065,6 +2065,7 @@ tr{break-inside:avoid}
                 </label>
                 <label class="f"><span>จำนวนเงิน (ตามสลิป)</span><div class="in"><input type="number" inputmode="decimal" step="any" min="0" id="jobSlipAmount" placeholder="0.00"></div></label>
               </div>
+              <label class="chk" style="display:flex;gap:8px;align-items:center;margin:0 0 6px"><input type="checkbox" id="jobSlipPending"> <span>ยังไม่ได้รับเงินจริง (ลูกค้าราคาส่งจ่ายทีหลัง) — ใส่ยอดไว้ก่อน ไม่นับเป็นเงินเข้า</span></label>
               <p class="hint" style="margin:-8px 0 0">บัญชีและจำนวนเงินในสลิปจะไม่แสดงในใบคอนเฟิร์มงาน (กันพนักงานเห็น) แต่จะโชว์ในลิสต์ประวัติใบงานเท่านั้น</p>
               <div class="bankin-pick" id="jobBankInPick" hidden>
                 <div class="bankin-pick-row">
@@ -4627,9 +4628,9 @@ function bahtText(value) {
     const pg = x => PAGE_LABEL[x.page] ? x.page : '';
     const ac = x => ACCOUNTS.indexOf(x.account) >= 0 ? x.account : '';
     const cell = (jl, bl) => {
-      const slip = jl.reduce((a, j) => a + num(j.slipAmount), 0);
+      const slip = jl.reduce((a, j) => a + (j.slipPending ? 0 : num(j.slipAmount)), 0), wait = jl.reduce((a, j) => a + (j.slipPending ? num(j.slipAmount) : 0), 0);
       const bt = bl.reduce((a, b) => a + billCalc(b).total, 0);
-      return '<td>' + money(round2(slip)) + '<small>' + jl.length + ' งาน</small></td><td>' + money(round2(bt)) + '<small>' + bl.length + ' ใบ</small></td>';
+      return '<td>' + money(round2(slip)) + '<small>' + jl.length + ' งาน' + (wait > 0 ? ' · รอรับ ' + money(round2(wait)) : '') + '</small></td><td>' + money(round2(bt)) + '<small>' + bl.length + ' ใบ</small></td>';
     };
     const accName = a => a ? esc(a) + (NON_TAX_ACCOUNTS.indexOf(a) >= 0 ? ' <span class="tax-tag off">ไม่ยื่นภาษี</span>' : ' <span class="tax-tag on">ยื่นภาษี</span>') : 'ไม่ระบุบัญชี';
     let body = '';
@@ -7380,13 +7381,13 @@ function bahtText(value) {
   }
 
   function collectJob() {
-    return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, account: $('jobAccount').value, page: $('jobPage').value, bankInIds: jobBankInIds.slice(), bankInId: jobBankInIds[0] || '', slipAmount: $('jobSlipAmount').value, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
+    return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, account: $('jobAccount').value, page: $('jobPage').value, bankInIds: jobBankInIds.slice(), bankInId: jobBankInIds[0] || '', slipAmount: $('jobSlipAmount').value, slipPending: $('jobSlipPending').checked, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
       items: jobItems.map(i => { const o = {name: i.name, qty: i.qty, note: i.note}; if (i.price !== '' && i.price != null) o.price = i.price; return o; }), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus, wholesale: $('jobWholesale').checked,
       recv: ($('jRName').value.trim() || $('jRPhone').value.trim() || $('jRAddr').value.trim()) ? {name: $('jRName').value.trim(), phone: $('jRPhone').value.trim(), addr: $('jRAddr').value.trim()} : null};
   }
   function applyJob(j) {
     $('jobNo').value = j.no || ''; $('jobDate').value = j.date || todayISO(); $('jobDue').value = j.due || '';
-    $('jobAccount').value = j.account || ''; $('jobSlipAmount').value = j.slipAmount || '';
+    $('jobAccount').value = j.account || ''; $('jobSlipAmount').value = j.slipAmount || ''; $('jobSlipPending').checked = !!j.slipPending;
     $('jobPage').value = PAGE_LABEL[j.page] ? j.page : 'ball';
     jobBankInIds = jobBankIdsOf(j); if ($('jobBankInList')) { $('jobBankInList').hidden = true; $('jobBankInBtn').setAttribute('aria-expanded', 'false'); }
     $('jName').value = j.jName || ''; $('jPhone').value = j.jPhone || ''; $('jAddr').value = j.jAddr || '';
@@ -7469,7 +7470,7 @@ function bahtText(value) {
       const st = j.status || 'pending';
       const dupTag = noCount[String(j.no || '').trim().toUpperCase()] > 1 ? ' <span style="color:#b91c1c;font-weight:700">⚠ เลขซ้ำ</span>' : '';
       return '<li data-id="' + esc(j.id) + '"' + (jobOpenIds[j.id] ? ' class="open"' : '') + '>' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '') +
-      '<div class="meta"><b>' + esc(j.no) + '</b>' + dupTag + '<small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[j.page] ? ' · ' + esc(PAGE_LABEL[j.page]) : '') + (canBank && j.account ? ' · บัญชี ' + esc(j.account) : '') + (canBank && num(j.slipAmount) > 0 ? ' · สลิป ' + money(num(j.slipAmount)) + ' บาท' : '') + (j.wholesale ? ' · 🏷️ ราคาส่ง' : '') + (j.recv && (j.recv.name || j.recv.addr) ? ' · 📦 ฝากส่ง' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
+      '<div class="meta"><b>' + esc(j.no) + '</b>' + dupTag + '<small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[j.page] ? ' · ' + esc(PAGE_LABEL[j.page]) : '') + (canBank && j.account ? ' · บัญชี ' + esc(j.account) : '') + (canBank && num(j.slipAmount) > 0 ? (j.slipPending ? ' · ⏳ รอรับเงิน ' : ' · สลิป ') + money(num(j.slipAmount)) + ' บาท' : '') + (j.wholesale ? ' · 🏷️ ราคาส่ง' : '') + (j.recv && (j.recv.name || j.recv.addr) ? ' · 📦 ฝากส่ง' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
       '<select class="job-status-select status-pill ' + st + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
       '</select>' +
@@ -8498,6 +8499,11 @@ function bahtText(value) {
   $('quoteVatMode').addEventListener('change', () => { syncQuoteVat(); renderQuote(); });
   $('quoteDocCopy').addEventListener('change', renderQuote);
 
+  $('jobSlipAmount').addEventListener('input', () => {   // ลูกค้าราคาส่ง/งานส่ง ใส่ยอดไว้ก่อนโดยยังไม่ผูกเงินเข้า → ติ๊ก "ยังไม่ได้รับ" ให้ (เอาออกเองได้)
+    if (jobBankInIds.length) { $('jobSlipPending').checked = false; return; }
+    if (num($('jobSlipAmount').value) > 0 && (($('jobWholesale') && $('jobWholesale').checked) || /^JBS/i.test(String($('jobNo').value || '')))) $('jobSlipPending').checked = true;
+  });
+  $('jobSlipPending').addEventListener('change', () => { try { renderJob(); } catch (e) {} });
   ['jobNo', 'jobDate', 'jobDue', 'jobAccount', 'jobPage', 'jobSlipAmount', 'jName', 'jPhone', 'jAddr', 'jobNote'].forEach(id => $(id).addEventListener((id === 'jobAccount' || id === 'jobPage') ? 'change' : 'input', renderJob));
 
   $('jobItems').addEventListener('input', e => {
@@ -8805,7 +8811,7 @@ function bahtText(value) {
     const sel = jobBankInIds.map(id => bankInAll().find(r => r.id === id)).filter(Boolean);
     if (sel.length) {
       const total = Math.round(sel.reduce((a, r) => a + num(r.amount), 0) * 100) / 100;
-      $('jobSlipAmount').value = total;
+      $('jobSlipAmount').value = total; $('jobSlipPending').checked = false;   // ผูกกับเงินเข้าจริงแล้ว = รับแล้ว
       if (ACCOUNTS.indexOf(sel[0].account) >= 0) $('jobAccount').value = sel[0].account;
       renderJob(); renderJobBankInPick();
       toast((k >= 0 ? 'เอาออกแล้ว · ' : '') + 'รวม ' + sel.length + ' ยอด ' + money(total) + ' บาท — กดบันทึกเพื่อผูกกับใบงานนี้');
