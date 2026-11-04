@@ -350,3 +350,8 @@ body.intool .topbar{display:flex}
 #tab-ext label.chk.head .mut{font-size:11px;flex-basis:100%;padding-left:23px}
 #tab-ext .grid.hidden{display:none}
 #tab-ext label.hidden{display:none!important}
+/* ใบงานที่มีหลายไฟล์: แต่ละไฟล์ 1 แถว มีปุ่มเปิด / สั่งตัด / เอาออก */
+.cqfiles{display:flex;flex-direction:column;gap:6px;margin:8px 0 2px}
+.cqf{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cqf .cqfn{flex:1 1 140px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;color:var(--mut,#9a9aa3)}
+.cqf .btn{padding:3px 9px;font-size:11px}

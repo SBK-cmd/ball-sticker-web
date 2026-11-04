@@ -186,13 +186,37 @@
           '<div><div class="qmain"><b>' + h(j.jName || '(ไม่ระบุลูกค้า)') + '</b></div>' +
           '<div class="qsub">' + (its.length ? its.slice(0, openIds[j.id] ? 99 : 3).map(function (i) { return h(i.name) + (i.qty ? ' × ' + h(i.qty) : ''); }).join('<br>') + (!openIds[j.id] && its.length > 3 ? '<br><a href="#" data-act="more">+ อีก ' + (its.length - 3) + ' รายการ</a>' : '') : '—') + '</div>' +
           (j.note && openIds[j.id] ? '<div class="qsub">📝 ' + h(j.note) + '</div>' : '') +
-          (j.aiFile ? '<div class="qsub mut">📄 ' + h(j.aiFileName || String(j.aiFile).split(/[\\/]/).pop()) + '</div>' : '') + '</div></div>' +
-        '<div class="qact">' + (j.aiFile ? '<button class="btn ghost sm" data-act="open">เปิดไฟล์</button>' : '') +
-          '<button class="btn ghost sm" data-act="link">' + (j.aiFile ? 'ผูกไฟล์ใหม่' : 'ผูกไฟล์ที่เปิดอยู่') + '</button>' +
-          (j.aiFile ? '<button class="btn ghost sm cqcut" data-act="cut">✂ สั่งตัด</button>' : '') +
+          fileBlock(j, false) + '</div></div>' +
+        '<div class="qact">' +
+          '<button class="btn ghost sm" data-act="link">' + linkLabel(j) + '</button>' +
           (s === 'pending' ? '<button class="btn sm" data-act="filed">✓ ทำไฟล์แล้ว</button>' : '') + '</div></div>';
     }).join('') : '<div class="qempty">' + (q ? 'ไม่พบงานที่ค้นหา' : filter === 'done' ? 'ยังไม่มีงานที่จัดส่ง' : 'ไม่มีงานค้าง 🎉') + '</div>';
     $('cqHint').textContent = lastErr ? '⚠ โหลดคิวไม่ได้: ' + lastErr : (loadedAt ? 'เชื่อมแอปร้าน · ' + jobs.length + ' ใบ · อัปเดต ' + new Date(loadedAt).toTimeString().slice(0, 5) + (list.length > shown.length ? ' · แสดง 150 ใบแรก (ใช้ค้นหา)' : '') + (dupHidden ? ' · ซ่อนราคาส่งที่ซ้ำกับใบงาน ' + dupHidden + ' รายการ' : '') : '');
+  }
+  // ไฟล์ที่ผูกกับใบงาน: เก็บเป็น JSON ในช่อง aiFiles (หลายไฟล์) · ช่องเดิม aiFile/aiFileName = ไฟล์แรก (ให้ใบงานเก่ายังใช้ได้)
+  function filesOf(j) {
+    var a = [];
+    try { a = JSON.parse(j.aiFiles || '[]'); } catch (e) { a = []; }
+    a = (Array.isArray(a) ? a : []).filter(function (f) { return f && f.p; });
+    if (!a.length && j.aiFile) a = [{ p: j.aiFile, n: j.aiFileName || String(j.aiFile).split(/[\\/]/).pop() }];
+    return a;
+  }
+  function fileBlock(j, withRemove) {
+    var fs = filesOf(j);
+    if (!fs.length) return '';
+    return '<div class="cqfiles">' + fs.map(function (f, i) {
+      return '<div class="cqf"><span class="cqfn" title="' + h(f.p) + '">📄 ' + h(f.n || String(f.p).split(/[\\/]/).pop()) + '</span>' +
+        '<button class="btn ghost sm" data-act="open" data-i="' + i + '">เปิด</button>' +
+        '<button class="btn ghost sm cqcut" data-act="cut" data-i="' + i + '">✂ สั่งตัด</button>' +
+        (withRemove ? '<button class="btn ghost sm" data-act="unlink" data-i="' + i + '" aria-label="เอาไฟล์นี้ออก">✕</button>' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+  function linkLabel(j) { return filesOf(j).length ? '+ ผูกไฟล์เพิ่ม' : 'ผูกไฟล์ที่เปิดอยู่'; }
+  function saveFiles(j, arr) {
+    var first = arr[0] || null;
+    return patch(j, { aiFiles: JSON.stringify(arr), aiFile: first ? first.p : '', aiFileName: first ? first.n : '' }).then(function () {
+      j.aiFiles = JSON.stringify(arr); j.aiFile = first ? first.p : ''; j.aiFileName = first ? first.n : '';
+    });
   }
   function find(el) { var c = el.closest('.qjob'); if (!c) return null; var id = c.dataset.id; return jobs.filter(function (x) { return x.id === id; })[0] || null; }
   function setStatus(j, s) {
@@ -212,21 +236,29 @@
     else if (a === 'img') openUrl(b.dataset.src);
     else if (a === 'copy') { try { navigator.clipboard.writeText(b.dataset.t); toast('✓ คัดลอกแล้ว'); } catch (ec) { toast(b.dataset.t); } }
     else if (a === 'filed') setStatus(j, 'filed');
-    else if (a === 'cut') {          // เปิดไฟล์ที่ผูกไว้ → อ่านเส้นตัด → ไปหน้าส่งตัด พร้อมกดส่ง
+    else if (a === 'cut') {          // เปิดไฟล์ที่ผูกไว้ (ไฟล์ที่เลือก) → อ่านเส้นตัด → ไปหน้าส่งตัด พร้อมกดส่ง
+      var cf = filesOf(j)[+b.dataset.i || 0]; if (!cf) return toast('⚠ ไม่พบไฟล์ที่ผูกไว้');
       toast('กำลังเปิดไฟล์และอ่านเส้นตัด…');
-      host('st_openFile', j.aiFile).then(function (r) {
+      host('st_openFile', cf.p).then(function (r) {
         if (r.error) return toast('⚠ ' + r.error);
         hideDetail();
         var t = document.querySelector('.tab[data-tab="cut"]'); if (t) t.click();
-        setTimeout(function () { var b2 = $('cutRead'); if (b2) b2.click(); var st = $('cutStatus'); if (st) st.textContent = 'งาน ' + (j.no || '') + ' · ' + (j.jName || '') + ' — ตรวจภาพแล้วกด "ส่งตัด"'; }, 400);
+        setTimeout(function () { var b2 = $('cutRead'); if (b2) b2.click(); var st = $('cutStatus'); if (st) st.textContent = 'งาน ' + (j.no || '') + ' · ' + (j.jName || '') + ' · ไฟล์ ' + (cf.n || '') + ' — ตรวจภาพแล้วกด "ส่งตัด"'; }, 400);
       });
     }
-    else if (a === 'open') host('st_openFile', j.aiFile).then(function (r) { toast(r.error ? '⚠ ' + r.error : '✓ ' + r.msg); });
+    else if (a === 'open') { var of = filesOf(j)[+b.dataset.i || 0]; if (!of) return toast('⚠ ไม่พบไฟล์ที่ผูกไว้'); host('st_openFile', of.p).then(function (r) { toast(r.error ? '⚠ ' + r.error : '✓ ' + r.msg); }); }
+    else if (a === 'unlink') {
+      var ul = filesOf(j), ui = +b.dataset.i, gone = ul[ui]; if (!gone) return;
+      ul.splice(ui, 1);
+      saveFiles(j, ul).then(function () { render(); refreshDetail(); toast('✓ เอาไฟล์ ' + (gone.n || '') + ' ออกจาก ' + (j.no || 'ใบงาน') + ' แล้ว (ไม่ได้ลบไฟล์จริง)'); }, function (er) { toast('⚠ ' + er.message); });
+    }
     else if (a === 'link') host('st_docInfo').then(function (r) {
       if (r.error) return toast('⚠ ' + r.error);
       if (!r.path) return toast('⚠ บันทึกไฟล์ก่อน แล้วค่อยผูกกับใบงาน');
-      var nm = r.path.split(/[\\/]/).pop();
-      patch(j, { aiFile: r.path, aiFileName: nm }).then(function () { j.aiFile = r.path; j.aiFileName = nm; render(); toast('✓ ผูกไฟล์ ' + nm + ' กับ ' + (j.no || 'ใบงาน')); }, function (er) { toast('⚠ ' + er.message); });
+      var nm = r.path.split(/[\\/]/).pop(), cur = filesOf(j);
+      if (cur.some(function (f) { return f.p === r.path; })) return toast('ไฟล์ ' + nm + ' ผูกกับใบงานนี้อยู่แล้ว');
+      cur.push({ p: r.path, n: nm });
+      saveFiles(j, cur).then(function () { render(); refreshDetail(); toast('✓ ผูกไฟล์ ' + nm + ' กับ ' + (j.no || 'ใบงาน') + ' (รวม ' + cur.length + ' ไฟล์)'); }, function (er) { toast('⚠ ' + er.message); });
     });
   }
 
@@ -259,12 +291,11 @@
       (j.ws ? (function () { var t = (j.items || []).reduce(function (a2, i) { return a2 + (+i.qty || 0) * (+i.price || 0); }, 0) - (+j.discount || 0); return '<div class="cqv"><b>รวม ' + money(t) + ' บาท</b>' + (+j.discount ? ' <span class="mut">(ส่วนลด ' + money(+j.discount) + ')</span>' : '') + '</div>'; })() : '') +
       (j.note && String(j.note).trim() ? '<div class="cqk">หมายเหตุ</div><div class="cqv cqnote">' + h(j.note).replace(/\n/g, '<br>') + '</div>' : '') +
       (j.due ? '<div class="cqk">กำหนดส่ง</div><div class="cqv">' + thFull(j.due) + '</div>' : '') +
-      (j.aiFile ? '<div class="cqk">ไฟล์งาน</div><div class="cqv mut">📄 ' + h(j.aiFile) + '</div>' : '') +
+      (filesOf(j).length ? '<div class="cqk">ไฟล์งาน (' + filesOf(j).length + ')</div>' + fileBlock(j, true) : '') +
       (ph.length ? '<div class="cqk">รูปอ้างอิง</div><div class="cqph">' + ph.map(function (p) { return '<img src="' + h(p) + '" data-act="img" data-src="' + h(p) + '" alt="">'; }).join('') + '</div>' : '') +
       '<div class="cqv mut small">' + [j.date ? 'วันที่ ' + thFull(j.date) : '', j.createdBy ? 'โดย ' + h(j.createdBy) : ''].filter(Boolean).join(' · ') + '</div>' +
-      '<div class="qact">' + (j.aiFile ? '<button class="btn ghost sm" data-act="open">เปิดไฟล์</button>' : '') +
-        '<button class="btn ghost sm" data-act="link">' + (j.aiFile ? 'ผูกไฟล์ใหม่' : 'ผูกไฟล์ที่เปิดอยู่') + '</button>' +
-          (j.aiFile ? '<button class="btn ghost sm cqcut" data-act="cut">✂ สั่งตัด</button>' : '') +
+      '<div class="qact">' +
+        '<button class="btn ghost sm" data-act="link">' + linkLabel(j) + '</button>' +
         (s === 'pending' ? '<button class="btn sm" data-act="filed">✓ ทำไฟล์แล้ว</button>' : '') + '</div></div>';
     M.classList.add('show');
   }
