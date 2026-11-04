@@ -7023,12 +7023,12 @@ function bahtText(value) {
   function matchPayCharges() {
     if (!canBank) return;
     const pend = payCharges().filter(x => x.status !== 'paid' && Date.now() - (x.createdAt || 0) < 7 * 86400000);
-    if (!pend.length) return;
+    if (!pend.length) { matchOwedBankIns(); return; }
     const used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
-    const ins = bankInAll();
+    const ins = wantimPoolAll();
     const done = [];
     pend.slice().reverse().forEach(x => {
-      const hit = ins.slice().reverse().find(b => !used.has(b.id) && Math.abs(num(b.amount) - x.amount) < 0.005 && (b.createdAt || 0) >= (x.createdAt || 0) - 60000);
+      const hit = ins.slice().reverse().find(b => !used.has(b.id) && (x.channel !== 'owed' || b.account === 'วันทิม') && Math.abs(num(b.amount) - x.amount) < 0.005 && (b.createdAt || 0) >= (x.createdAt || 0) - 60000);
       if (!hit) return;
       used.add(hit.id);
       const rec = Object.assign({}, x, {status: 'paid', paidAt: hit.createdAt || Date.now(), bankInId: hit.id});
@@ -7037,9 +7037,50 @@ function bahtText(value) {
     if (!done.length) return;
     const all = payCharges().map(x => done.find(d => d.id === x.id) || x);
     store.set('bs_pay_charges', all); done.forEach(r => cloudSave('payCharges', r));
-    done.forEach(r => { if (r.docs && r.docs.length) markDocsPaid(r.docs); });
+    done.forEach(r => { if (r.docs && r.docs.length) markDocsPaid(r.docs); flagBankInOwed(r.bankInId, (r.docs || []).map(d => d.no).filter(Boolean).join(', ') || r.name); });
     toast('✅ ' + done.map(r => (r.name || 'ลูกค้า') + ' ชำระ ' + money(r.amount) + ' บาทแล้ว').join(' · ')); playChime();
     renderPayHist();
+    matchOwedBankIns();
+  }
+  // เงินเข้าทั้งหมด (รวมบัญชีวันทิมที่ซ่อนจากพนักงาน) ไว้ใช้จับคู่เท่านั้น ไม่ได้โชว์
+  const wantimPoolAll = () => (store.get('bs_bank_in', []) || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  function flagBankInOwed(id, label) {
+    if (!id) return;
+    const list = store.get('bs_bank_in', []) || [], i = list.findIndex(x => x.id === id);
+    if (i < 0) return;
+    const patch = {matchedJobId: 'owed', matchedJobNo: String(label || '').slice(0, 80)};
+    list[i] = Object.assign({}, list[i], patch); store.set('bs_bank_in', list); cloudSave('bankIn', Object.assign({id}, patch));
+  }
+  // เงินเข้าบัญชีวันทิมที่ยังไม่ผูกอะไร ยอดตรงกับ "ใบค้าง" ของลูกค้างานส่ง (ทั้งก้อนหรือบางใบรวมกัน) → ตัดใบนั้นเป็นชำระแล้วอัตโนมัติ
+  function matchOwedBankIns() {
+    try {
+      if (!canBank) return;
+      const since = Date.now() - 14 * 86400000, used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
+      const ins = wantimPoolAll().filter(b => b.account === 'วันทิม' && !b.matchedJobId && !used.has(b.id) && (b.createdAt || 0) >= since && num(b.amount) > 0).reverse();
+      if (!ins.length) return;
+      const msgs = [];
+      ins.forEach(b => {
+        const amt = num(b.amount);
+        for (const g of owedGroups()) {
+          const ds = g.docs.filter(d => !d.date || (b.createdAt || 0) >= new Date(d.date + 'T00:00:00').getTime() - 86400000).slice(0, 12);
+          let hit = null;
+          for (let m = 1; m < (1 << ds.length) && !hit; m++) {
+            let t = 0, sel = [];
+            for (let i = 0; i < ds.length; i++) if (m & (1 << i)) { t += ds[i].total; sel.push(ds[i]); }
+            if (Math.abs(t - amt) < 0.005) hit = sel;
+          }
+          if (!hit) continue;
+          markDocsPaid(hit);
+          flagBankInOwed(b.id, hit.map(d => d.no).filter(Boolean).join(', ') || g.name);
+          const ids = new Set(hit.map(d => d.id));
+          const all = payCharges(), ch = all.filter(c => c.status !== 'paid' && c.channel === 'owed' && c.docs && c.docs.length && c.docs.every(d => ids.has(d.id)));
+          if (ch.length) { const rec = ch.map(c => Object.assign({}, c, {status: 'paid', paidAt: b.createdAt || Date.now(), bankInId: b.id})); store.set('bs_pay_charges', all.map(c => rec.find(r => r.id === c.id) || c)); rec.forEach(r => cloudSave('payCharges', r)); }
+          msgs.push(g.name + ' ' + money(amt) + ' บาท (' + hit.map(d => d.no).filter(Boolean).join(', ') + ')');
+          break;
+        }
+      });
+      if (msgs.length) { toast('✅ เงินเข้าวันทิมตรงกับบิลค้าง: ' + msgs.join(' · ')); playChime(); }
+    } catch (e) { console.error('matchOwedBankIns', e); }
   }
   /* ---------- บิลค้างชำระ: รวมยอดต่อลูกค้า + QR พร้อมเพย์ยอดรวม ---------- */
   function owedGroups() {
@@ -9735,6 +9776,7 @@ function bahtText(value) {
     openBankAdd(false);
     if (bankListTab !== 'all' && bankListTab !== dir) { bankListTab = dir; try { localStorage.setItem('bs_bankin_tab', dir); } catch (e3) {} }
     renderBankIn(); renderJobBankInPick(); renderBell(false);
+    if (dir === 'in') { try { matchPayCharges(); } catch (e4) {} }
     toast('เพิ่ม' + (dir === 'in' ? 'เงินเข้า' : 'เงินออก') + ' ' + money(amount) + ' บาท แล้ว' + balMsg);
   });
   $('bankInList').addEventListener('click', e => {
