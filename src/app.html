@@ -1349,6 +1349,25 @@ body.chg-open{overflow:hidden}
 .acd-mb .lbl{font-weight:800;font-size:15px;min-width:150px;text-align:center}.acd-mb .lbl em{font-style:normal;font-size:11px;font-weight:600;background:#ffc400;color:#222;border-radius:999px;padding:2px 8px;margin-left:4px}
 .acd-mb button{border:1px solid rgba(0,0,0,.12);background:var(--surface,#fff);border-radius:999px;min-width:38px;height:38px;font:inherit;font-size:18px;font-weight:700;cursor:pointer;padding:0 12px}
 .acd-mb button.now{font-size:13px}.acd-mb button:disabled{opacity:.35;cursor:default}
+#jobHistory ul>li.jc{display:block!important;position:relative;padding:12px 14px 10px 17px!important;margin:0 0 12px!important;border:1px solid rgba(0,0,0,.07)!important;border-radius:18px!important;background:var(--surface,#fff)!important;box-shadow:0 6px 18px rgba(20,30,60,.07);overflow:hidden}
+#jobHistory li.jc::after{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:#f2a900}
+#jobHistory li.jc.st-filed::after{background:#3b82f6}#jobHistory li.jc.st-printed::after{background:#8b5cf6}#jobHistory li.jc.st-shipped::after{background:#22a55b}
+#jobHistory .jc-top{display:flex;align-items:center;gap:11px}
+#jobHistory .jc-top .thumb,#jobHistory .jc-ph{flex:none;width:52px!important;height:52px!important;border-radius:14px;object-fit:cover!important;border:1px solid rgba(0,0,0,.08)}
+#jobHistory .jc-ph{display:grid;place-items:center;font-size:21px;font-weight:800;color:#fff;background:linear-gradient(135deg,#1f4e79,#3aa99f)}
+#jobHistory li.jc.st-pending .jc-ph{background:linear-gradient(135deg,#d98a00,#f2b705)}#jobHistory li.jc.st-printed .jc-ph{background:linear-gradient(135deg,#6d3fa8,#a66bd6)}#jobHistory li.jc.st-shipped .jc-ph{background:linear-gradient(135deg,#1a6b3a,#3fbf72)}
+#jobHistory .jc-main{flex:1;min-width:0}
+#jobHistory .jc-no{font-size:12.5px;font-weight:700;letter-spacing:.2px;color:var(--muted,#6b7280)}
+#jobHistory .jc-cust{font-size:17px;font-weight:800;line-height:1.25;color:var(--ink,#111);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#jobHistory .jc-top .job-status-select{flex:none;align-self:flex-start;width:auto;max-width:112px;font-size:12px;padding:5px 2px 5px 8px;border-radius:999px}
+#jobHistory .jc-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+#jobHistory .jc-chip{font-size:12px;line-height:1;padding:6px 9px;border-radius:999px;background:rgba(0,0,0,.05);color:#4b5563}
+#jobHistory .jc-chip.money{background:#e6f6ea;color:#166534}#jobHistory .jc-chip.warn{background:#fff1d6;color:#8a5a00}#jobHistory .jc-chip.tg{background:#eaf1fb;color:#1f4e79}
+#jobHistory .jc-act{display:flex;gap:8px;margin-top:11px;padding-top:10px;border-top:1px solid rgba(0,0,0,.07)}
+#jobHistory .jc-b{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid rgba(0,0,0,.12);background:#fff;border-radius:12px;padding:9px 10px;font:inherit;font-size:14px;font-weight:700;color:#1d2433;cursor:pointer}
+#jobHistory .jc-b svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#jobHistory .jc-b.del{flex:0 0 auto;color:#b42318;border-color:#f3c9c4;background:#fff7f6}
+#jobHistory .jc-b.del.confirm{background:#b42318;color:#fff;border-color:#b42318}
 .jm-x{display:none}
 @media (max-width:899px){#jobFormTop{display:none}}
 body.jm-open{overflow:hidden}
@@ -7787,14 +7806,22 @@ function bahtText(value) {
     $('jobHistory').innerHTML = notice + whBanner + '<ul>' + shown.map(j => {
       const st = j.status || 'pending';
       const dupTag = noCount[String(j.no || '').trim().toUpperCase()] > 1 ? ' <span style="color:#b91c1c;font-weight:700">⚠ เลขซ้ำ</span>' : '';
-      return '<li data-id="' + esc(j.id) + '"' + (jobOpenIds[j.id] ? ' class="open"' : '') + '>' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '') +
-      '<div class="meta"><b>' + esc(j.no) + '</b>' + dupTag + '<small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[j.page] ? ' · ' + esc(PAGE_LABEL[j.page]) : '') + (canBank && j.account && !accHidden(j) ? ' · บัญชี ' + esc(j.account) : '') + (canBank && num(j.slipAmount) > 0 ? (j.slipPending ? ' · ⏳ รอรับเงิน ' : ' · สลิป ') + money(num(j.slipAmount)) + ' บาท' : '') + (j.wholesale ? ' · 🏷️ ราคาส่ง' : '') + (j.recv && (j.recv.name || j.recv.addr) ? ' · 📦 ฝากส่ง' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
+      const nItems = (j.items || []).filter(i => (i.name || '').trim()).length, cn = String(j.jName || '').trim();
+      const chip = (t, c) => '<span class="jc-chip' + (c ? ' ' + c : '') + '">' + t + '</span>';
+      const chips = chip(esc(thDate(j.date))) + (PAGE_LABEL[j.page] ? chip(esc(PAGE_LABEL[j.page])) : '') +
+        (canBank && j.account && !accHidden(j) ? chip('บัญชี ' + esc(j.account)) : '') +
+        (canBank && num(j.slipAmount) > 0 ? chip((j.slipPending ? 'รอรับเงิน ' : 'สลิป ') + money(num(j.slipAmount)) + ' บาท', j.slipPending ? 'warn' : 'money') : '') +
+        (j.wholesale ? chip('ราคาส่ง', 'tg') : '') + (j.recv && (j.recv.name || j.recv.addr) ? chip('ฝากส่ง', 'tg') : '') +
+        chip(nItems + ' รายการ') + (j.photos && j.photos.length ? chip('รูป ' + j.photos.length) : '') + (j.createdBy ? chip('โดย ' + esc(j.createdBy)) : '');
+      return '<li class="jc st-' + st + (jobOpenIds[j.id] ? ' open' : '') + '" data-id="' + esc(j.id) + '">' +
+      '<div class="jc-top">' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '<span class="jc-ph" aria-hidden="true">' + esc((cn || '?').replace(/^(คุณ|นาย|นาง|นางสาว|พี่|น้อง)\s*/, '').charAt(0).toUpperCase()) + '</span>') +
+      '<div class="jc-main"><div class="jc-no">' + esc(j.no) + dupTag + '</div><div class="jc-cust">' + esc(cn || 'ไม่ระบุชื่อลูกค้า') + '</div></div>' +
       '<select class="job-status-select status-pill ' + st + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
-      '</select>' +
-      '<span class="amt">' + (j.items || []).filter(i => (i.name || '').trim()).length + ' รายการ</span>' +
-      (canKey ? '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
-      '<button class="btn small del" data-act="del" type="button">ลบ</button>' : '') +
+      '</select></div>' +
+      '<div class="jc-chips">' + chips + '</div>' +
+      (canKey ? '<div class="jc-act"><button class="jc-b" data-act="open" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>เปิดแก้ไข</button>' +
+      '<button class="jc-b del" data-act="del" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>ลบ</button></div>' : '') +
       (jobOpenIds[j.id] ? jobDetailHTML(j) : '') + '</li>';
     }).join('') + '</ul><p class="hint" style="margin:10px 2px 0">แตะที่ใบเพื่อดูรายละเอียด ไม่ต้องกดแก้ไข</p>';
   }
