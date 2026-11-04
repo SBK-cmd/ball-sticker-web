@@ -2751,6 +2751,7 @@ html body .page-head h1{letter-spacing:-.02em}
             <div class="fields">
               <label class="f"><span>ชื่อลูกค้า / ผู้ซื้อ</span><input class="txt" id="whName" type="text" autocomplete="off" list="customerNames"></label>
               <label class="f"><span>วันที่</span><input class="txt" id="whDate" type="date"></label>
+              <label class="f"><span>เลขที่ใบราคาส่ง</span><input class="txt" id="whNo" type="text" autocomplete="off" placeholder="ออกเลขให้อัตโนมัติเมื่อเปิดใบใหม่ · ใบเก่าที่ยังไม่มีเลขปล่อยว่างได้"></label>
               <label class="f"><span>เลขอ้างอิง / หมายเหตุอ้างอิง (ถ้ามี)</span><input class="txt" id="whRef" type="text" autocomplete="off" placeholder="กรอกเองได้ ไม่รันเลขอัตโนมัติ"></label>
             </div>
           </div>
@@ -7028,7 +7029,7 @@ function bahtText(value) {
     const g = {};
     const add = (name, d) => { const k = String(name || '').trim() || 'ไม่ระบุชื่อ'; (g[k] = g[k] || {name: k, docs: [], total: 0}).docs.push(d); };
     // เฉพาะงานส่ง (JBS) = ใบราคาส่ง — บิลหน้าร้านไม่รวม
-    if (can('wholesale')) store.get('bs_wholesale', []).filter(w => !w.paid).forEach(w => add(w.buyerName, {k: 'wholesale', id: w.id, no: w.ref || 'ใบราคาส่ง', date: w.date || '', total: round2(wholesaleCalc(w).total)}));
+    if (can('wholesale')) store.get('bs_wholesale', []).filter(w => !w.paid).forEach(w => add(w.buyerName, {k: 'wholesale', id: w.id, no: w.no || w.ref || 'ใบราคาส่ง', date: w.date || '', total: round2(wholesaleCalc(w).total)}));
     const out = Object.values(g).filter(x => x.docs.some(d => d.total > 0));
     out.forEach(x => { x.docs.sort((a, b) => String(a.date).localeCompare(String(b.date))); x.total = round2(x.docs.reduce((t, d) => t + d.total, 0)); });
     return out.sort((a, b) => b.total - a.total);
@@ -7659,7 +7660,7 @@ function bahtText(value) {
     const rows = jobPendingWhItems(j); if (!rows.length) return null;
     const wl = store.get('bs_wholesale', []);
     let doc = wl.filter(w => !w.paid && String(w.buyerName || '').trim() === name).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0], isNew = false;
-    if (!doc) { doc = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: false, ref: '', date: todayISO(), buyerName: name, items: [], discount: 0, note: ''}; wl.push(doc); isNew = true; }
+    if (!doc) { doc = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: false, no: whNextNo(todayISO()), ref: '', date: todayISO(), buyerName: name, items: [], discount: 0, note: ''}; wl.push(doc); isNew = true; }
     const add = rows.map(r => ({name: String(r.i.name).trim() + ((r.i.note || '').trim() ? ' (' + String(r.i.note).trim() + ')' : ''), qty: r.i.qty, price: num(r.i.price)}));
     doc.items = (doc.items || []).filter(i => (i.name || '').trim()).concat(add);
     doc.savedAt = Date.now();
@@ -8346,7 +8347,7 @@ function bahtText(value) {
     if ($('whName').value.trim()) custParts.push('<div><b>' + esc($('whName').value.trim()) + '</b></div>');
     $('wholesaleSheet').innerHTML =
       '<header class="sh-head"><div class="sh-brand">' + logoImg() + '<div><div class="sh-name">' + esc(shop.name) + '</div><div class="sh-lines">' + shopLines() + '</div></div></div>' +
-      '<div class="sh-doc"><h2>ใบราคาส่ง</h2><div class="sh-lines">' + ($('whRef').value.trim() ? 'อ้างอิง <b>' + esc($('whRef').value.trim()) + '</b><br>' : '') + 'วันที่ ' + esc(thDate($('whDate').value)) + '</div></div></header>' +
+      '<div class="sh-doc"><h2>ใบราคาส่ง</h2><div class="sh-lines">' + ($('whNo').value.trim() ? 'เลขที่ <b>' + esc($('whNo').value.trim()) + '</b><br>' : '') + ($('whRef').value.trim() ? 'อ้างอิง <b>' + esc($('whRef').value.trim()) + '</b><br>' : '') + 'วันที่ ' + esc(thDate($('whDate').value)) + '</div></div></header>' +
       '<section class="cust"><h3>ลูกค้า / ผู้ซื้อ</h3>' + custParts.join('') + '</section>' +
       '<div class="tbl-wrap"><table class="lines"><thead><tr><th class="n">ลำดับ</th><th>รายการ</th><th class="r">จำนวน</th><th class="r">ราคา/ชิ้น</th><th class="r">รวม</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '<div class="totals-row"><div class="words"><b>' + bahtText(t.total) + '</b></div><div class="totals">' +
@@ -8360,12 +8361,12 @@ function bahtText(value) {
   function fitWholesale() { fitFrame('wholesaleA4frame', 'wholesaleSheet'); }
 
   function collectWholesale() {
-    return {ref: $('whRef').value, date: $('whDate').value, buyerName: $('whName').value,
+    return {no: $('whNo').value.trim(), ref: $('whRef').value, date: $('whDate').value, buyerName: $('whName').value,
       items: wholesaleItems.map(i => ({name: i.name, qty: i.qty, price: i.price})),
       discount: $('whDiscount').value, note: $('whNote').value};
   }
   function applyWholesale(w) {
-    $('whRef').value = w.ref || ''; $('whDate').value = w.date || todayISO();
+    $('whNo').value = w.no || ''; $('whRef').value = w.ref || ''; $('whDate').value = w.date || todayISO();
     $('whName').value = w.buyerName || '';
     wholesaleItems = (w.items && w.items.length) ? w.items.map(i => ({name: i.name || '', qty: i.qty, price: i.price})) : [{name: '', qty: 1, price: 0}];
     $('whDiscount').value = w.discount || 0; $('whNote').value = w.note || '';
@@ -8377,9 +8378,21 @@ function bahtText(value) {
     else { el.textContent = 'ใบใหม่ ยังไม่ได้บันทึกลงประวัติ'; el.classList.remove('editing'); }
   }
   // ใบราคาส่งไม่รันเลขที่เอกสารอัตโนมัติ (ต่างจาก nextNo()/nextJobNo()) — เปิดใบใหม่แล้วปล่อยว่างให้กรอกเลขอ้างอิงเองถ้าต้องการ
+  // เลขที่ใบราคาส่ง: WS + ปีเดือน (yymm) + - + ลำดับ เช่น WS2611-001 · ใบเก่าที่ไม่มีเลขไม่ถูกแตะ
+  function whNextNo(dateISO, skipId) {
+    const pre = 'WS' + String(dateISO || todayISO()).replace(/-/g, '').slice(2, 6);
+    const used = {}; let max = 0;
+    store.get('bs_wholesale', []).forEach(w => {
+      if (skipId && w.id === skipId) return;
+      const no = String(w.no || '').trim(); if (!no) return; used[no.toUpperCase()] = 1;
+      if (no.indexOf(pre + '-') === 0) { const m = /-(\d+)$/.exec(no); if (m) max = Math.max(max, parseInt(m[1], 10)); }
+    });
+    let n = max + 1, out; do { out = pre + '-' + String(n).padStart(3, '0'); n++; } while (used[out.toUpperCase()]);
+    return out;
+  }
   function newWholesale() {
     currentWholesaleId = null;
-    applyWholesale({date: todayISO()});
+    applyWholesale({date: todayISO(), no: whNextNo(todayISO())});
     renderWholesaleEditState();
   }
   function renderWholesaleHistory() {
@@ -8392,7 +8405,7 @@ function bahtText(value) {
     if (!shown.length) { $('wholesaleHistory').innerHTML = notice + '<p class="empty">ไม่พบใบราคาส่งของลูกค้าชื่อ “' + esc(q) + '”</p>'; return; }
     $('wholesaleHistory').innerHTML = notice + '<ul>' + shown.map(w => {
       const t = wholesaleCalc(w);
-      return '<li data-id="' + esc(w.id) + '"><div class="meta"><b>' + esc(w.buyerName || 'ไม่ระบุชื่อผู้ซื้อ') + '</b><small>' + esc(thDate(w.date)) + (w.ref ? ' · ' + esc(w.ref) : '') + (w.createdBy ? ' · โดย ' + esc(w.createdBy) : '') + '</small></div>' +
+      return '<li data-id="' + esc(w.id) + '"><div class="meta"><b>' + esc(w.buyerName || 'ไม่ระบุชื่อผู้ซื้อ') + '</b><small>' + esc(thDate(w.date)) + (w.no ? ' · ' + esc(w.no) : '') + (w.ref ? ' · ' + esc(w.ref) : '') + (w.createdBy ? ' · โดย ' + esc(w.createdBy) : '') + '</small></div>' +
       '<span class="amt">' + money(t.total) + ' บาท</span>' +
       '<button class="status-pill ' + (w.paid ? 'billdone' : 'pending') + '" data-act="togglepaid" data-id="' + esc(w.id) + '" type="button" title="กดเพื่อสลับสถานะ">' + (w.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</button>' +
       '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
@@ -8405,6 +8418,7 @@ function bahtText(value) {
     if (!String(data.buyerName).trim()) { toast('ใส่ชื่อลูกค้า/ผู้ซื้อก่อนบันทึก'); $('whName').focus(); return; }
     const id = currentWholesaleId || ('w' + Date.now());
     const idx = list.findIndex(w => w.id === id);
+    if (idx < 0 && (!data.no || list.some(w => String(w.no || '').trim().toUpperCase() === data.no.toUpperCase()))) { data.no = whNextNo(data.date); $('whNo').value = data.no; }   // ใบใหม่: ว่าง/ชนกัน → ออกเลขใหม่ (ใบเก่าปล่อยตามเดิม)
     const createdBy = idx >= 0 ? list[idx].createdBy : (currentUser ? currentUser.name : '');
     const paid = idx >= 0 ? !!list[idx].paid : false;
     const rec = Object.assign({id, savedAt: Date.now(), createdBy, paid}, data);
@@ -8746,6 +8760,7 @@ function bahtText(value) {
     const t = wholesaleTotals(), pages = [];
     let pg = mkPage(), x = pg.x; pages.push(pg.c);
     const rightLines = [];
+    if ($('whNo').value.trim()) rightLines.push('เลขที่ ' + $('whNo').value.trim());
     if ($('whRef').value.trim()) rightLines.push('อ้างอิง ' + $('whRef').value.trim());
     rightLines.push('วันที่ ' + thDate($('whDate').value));
     let y = drawHeader(x, 'ใบราคาส่ง', rightLines, null);
@@ -9895,7 +9910,7 @@ function bahtText(value) {
   });
 
   /* ---------------- events: ใบราคาส่ง (แยกต่างหากจากบิล ไม่แตะ items/bs_bills/billCalc ใดๆ) ---------------- */
-  ['whDate', 'whName', 'whRef', 'whDiscount', 'whNote'].forEach(id => $(id).addEventListener('input', renderWholesale));
+  ['whDate', 'whName', 'whNo', 'whRef', 'whDiscount', 'whNote'].forEach(id => $(id).addEventListener('input', renderWholesale));
 
   $('wholesaleItems').addEventListener('input', e => {
     const row = e.target.closest('.item'); if (!row) return;
