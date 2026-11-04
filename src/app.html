@@ -1400,6 +1400,31 @@ body.chg-open{overflow:hidden}
 #trackHistory .jc-b.sq{flex:0 0 36px;padding:9px 0}
 #trackHistory .jc-act{gap:6px}
 #trackHistory .jc-act{flex-wrap:nowrap}
+
+/* ใบราคาส่ง: การ์ดสวยเหมือนใบงาน */
+#wholesaleHistory ul>li.jc{display:block!important;position:relative;padding:12px 14px 10px 17px!important;margin:0 0 12px!important;border:1px solid rgba(0,0,0,.07)!important;border-radius:18px!important;background:var(--surface,#fff)!important;box-shadow:0 6px 18px rgba(20,30,60,.07);overflow:hidden}
+#wholesaleHistory li.jc::before{display:none!important}
+#wholesaleHistory li.jc::after{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:#f2a900}
+#wholesaleHistory li.jc.st-paid::after{background:#22a55b}
+#wholesaleHistory .jc-top{display:flex;align-items:center;gap:11px}
+#wholesaleHistory .jc-ph{flex:none;width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#d98a00,#f2b705)}
+#wholesaleHistory li.st-paid .jc-ph{background:linear-gradient(135deg,#1a6b3a,#3fbf72)}
+#wholesaleHistory .jc-ph svg{width:26px;height:26px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#wholesaleHistory .jc-main{flex:1;min-width:0}
+#wholesaleHistory .jc-no{font-size:12.5px;font-weight:700;color:var(--muted,#6b7280);font-variant-numeric:tabular-nums}
+#wholesaleHistory .jc-cust{font-size:17px;font-weight:800;line-height:1.25;color:var(--ink,#111);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#wholesaleHistory .jc-amt{flex:none;text-align:right;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink,#111);line-height:1.2}
+#wholesaleHistory .jc-amt small{display:block;font-size:11px;font-weight:600;color:var(--muted,#6b7280)}
+#wholesaleHistory .jc-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;align-items:center}
+#wholesaleHistory .jc-chip{font-size:12px;line-height:1;padding:6px 9px;border-radius:999px;background:rgba(0,0,0,.05);color:#4b5563}
+#wholesaleHistory .jc-chip.tg{background:#eaf1fb;color:#1f4e79}
+#wholesaleHistory .jc-chips .status-pill{font-size:12px;padding:6px 10px;margin:0;border-radius:999px;cursor:pointer;line-height:1}
+#wholesaleHistory .jc-act{display:flex;gap:6px;margin-top:11px;padding-top:10px;border-top:1px solid rgba(0,0,0,.07)}
+#wholesaleHistory .jc-b{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid rgba(0,0,0,.12);background:#fff;border-radius:12px;padding:9px 8px;font:inherit;font-size:14px;font-weight:700;color:#1d2433;cursor:pointer;white-space:nowrap}
+#wholesaleHistory .jc-b svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#wholesaleHistory .jc-b.main{background:#1f2a44;color:#fff;border-color:#1f2a44}
+#wholesaleHistory .jc-b.del{flex:0 0 auto;color:#b42318;border-color:#f3c9c4;background:#fff7f6}
+#wholesaleHistory .jc-b.del.confirm{background:#b42318;color:#fff;border-color:#b42318}
 #trackHistory li.jc .live-status{margin-top:10px}
 .tdy-t[data-k]{cursor:pointer;-webkit-tap-highlight-color:transparent}.tdy-t[data-k]:active{opacity:.7}
 .tl-r{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;border:1px solid rgba(0,0,0,.08);background:#fff;border-radius:14px;padding:10px 12px;margin:0 0 8px;font:inherit;color:#1d2433;cursor:pointer}
@@ -8225,14 +8250,22 @@ function bahtText(value) {
     const q = $('whHistSearch') ? $('whHistSearch').value : '';
     const shown = list.filter(w => matchesSearch(w.buyerName, q));
     if (!shown.length) { $('wholesaleHistory').innerHTML = notice + '<p class="empty">ไม่พบใบราคาส่งของลูกค้าชื่อ “' + esc(q) + '”</p>'; return; }
+    const IC_RC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>';
+    const IC_ED = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>';
+    const IC_QR = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-4"/></svg>';
     $('wholesaleHistory').innerHTML = notice + '<ul>' + shown.map(w => {
-      const t = wholesaleCalc(w);
-      return '<li data-id="' + esc(w.id) + '"><div class="meta"><b>' + esc(w.buyerName || 'ไม่ระบุชื่อผู้ซื้อ') + '</b><small>' + esc(thDate(w.date)) + (w.no ? ' · ' + esc(w.no) : '') + (w.ref ? ' · ' + esc(w.ref) : '') + (w.createdBy ? ' · โดย ' + esc(w.createdBy) : '') + '</small></div>' +
-      '<span class="amt">' + money(t.total) + ' บาท</span>' +
-      '<button class="status-pill ' + (w.paid ? 'billdone' : 'pending') + '" data-act="togglepaid" data-id="' + esc(w.id) + '" type="button" title="กดเพื่อสลับสถานะ">' + (w.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</button>' +
-      (w.paid ? '' : '<button class="btn small good" data-act="charge" type="button">เรียกเก็บเงิน</button>') +
-      '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
-      '<button class="btn small del" data-act="del" type="button">ลบ</button></li>';
+      const t = wholesaleCalc(w), st = w.paid ? 'paid' : 'pending', n = (w.items || []).filter(i => (i.name || '').trim()).length;
+      const jb = w.jobId ? (store.get('bs_jobs', []).find(x => x.id === w.jobId) || {}).no : '';
+      return '<li class="jc st-' + st + '" data-id="' + esc(w.id) + '">' +
+        '<div class="jc-top"><span class="jc-ph" aria-hidden="true">' + IC_RC + '</span>' +
+        '<div class="jc-main"><div class="jc-no">' + esc(w.no || w.ref || 'ใบราคาส่ง') + '</div><div class="jc-cust">' + esc(w.buyerName || 'ไม่ระบุชื่อผู้ซื้อ') + '</div></div>' +
+        '<div class="jc-amt">' + money(t.total) + '<small>บาท</small></div></div>' +
+        '<div class="jc-chips"><button class="status-pill ' + (w.paid ? 'billdone' : 'pending') + '" data-act="togglepaid" data-id="' + esc(w.id) + '" type="button" title="กดเพื่อสลับสถานะ">' + (w.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</button>' +
+        '<span class="jc-chip">' + esc(thDate(w.date)) + '</span><span class="jc-chip">' + n + ' รายการ</span>' +
+        (jb ? '<span class="jc-chip tg">ใบงาน ' + esc(jb) + '</span>' : '') + (w.createdBy ? '<span class="jc-chip">โดย ' + esc(w.createdBy) + '</span>' : '') + '</div>' +
+        '<div class="jc-act">' + (w.paid ? '' : '<button class="jc-b main" data-act="charge" type="button">' + IC_QR + 'เรียกเก็บเงิน</button>') +
+        '<button class="jc-b" data-act="open" type="button">' + IC_ED + 'แก้ไข</button>' +
+        '<button class="jc-b del" data-act="del" type="button">ลบ</button></div></li>';
     }).join('') + '</ul>';
   }
 

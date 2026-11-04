@@ -1400,6 +1400,31 @@ body.chg-open{overflow:hidden}
 #trackHistory .jc-b.sq{flex:0 0 36px;padding:9px 0}
 #trackHistory .jc-act{gap:6px}
 #trackHistory .jc-act{flex-wrap:nowrap}
+
+/* ใบราคาส่ง: การ์ดสวยเหมือนใบงาน */
+#wholesaleHistory ul>li.jc{display:block!important;position:relative;padding:12px 14px 10px 17px!important;margin:0 0 12px!important;border:1px solid rgba(0,0,0,.07)!important;border-radius:18px!important;background:var(--surface,#fff)!important;box-shadow:0 6px 18px rgba(20,30,60,.07);overflow:hidden}
+#wholesaleHistory li.jc::before{display:none!important}
+#wholesaleHistory li.jc::after{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:#f2a900}
+#wholesaleHistory li.jc.st-paid::after{background:#22a55b}
+#wholesaleHistory .jc-top{display:flex;align-items:center;gap:11px}
+#wholesaleHistory .jc-ph{flex:none;width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#d98a00,#f2b705)}
+#wholesaleHistory li.st-paid .jc-ph{background:linear-gradient(135deg,#1a6b3a,#3fbf72)}
+#wholesaleHistory .jc-ph svg{width:26px;height:26px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#wholesaleHistory .jc-main{flex:1;min-width:0}
+#wholesaleHistory .jc-no{font-size:12.5px;font-weight:700;color:var(--muted,#6b7280);font-variant-numeric:tabular-nums}
+#wholesaleHistory .jc-cust{font-size:17px;font-weight:800;line-height:1.25;color:var(--ink,#111);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#wholesaleHistory .jc-amt{flex:none;text-align:right;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink,#111);line-height:1.2}
+#wholesaleHistory .jc-amt small{display:block;font-size:11px;font-weight:600;color:var(--muted,#6b7280)}
+#wholesaleHistory .jc-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;align-items:center}
+#wholesaleHistory .jc-chip{font-size:12px;line-height:1;padding:6px 9px;border-radius:999px;background:rgba(0,0,0,.05);color:#4b5563}
+#wholesaleHistory .jc-chip.tg{background:#eaf1fb;color:#1f4e79}
+#wholesaleHistory .jc-chips .status-pill{font-size:12px;padding:6px 10px;margin:0;border-radius:999px;cursor:pointer;line-height:1}
+#wholesaleHistory .jc-act{display:flex;gap:6px;margin-top:11px;padding-top:10px;border-top:1px solid rgba(0,0,0,.07)}
+#wholesaleHistory .jc-b{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid rgba(0,0,0,.12);background:#fff;border-radius:12px;padding:9px 8px;font:inherit;font-size:14px;font-weight:700;color:#1d2433;cursor:pointer;white-space:nowrap}
+#wholesaleHistory .jc-b svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#wholesaleHistory .jc-b.main{background:#1f2a44;color:#fff;border-color:#1f2a44}
+#wholesaleHistory .jc-b.del{flex:0 0 auto;color:#b42318;border-color:#f3c9c4;background:#fff7f6}
+#wholesaleHistory .jc-b.del.confirm{background:#b42318;color:#fff;border-color:#b42318}
 #trackHistory li.jc .live-status{margin-top:10px}
 .tdy-t[data-k]{cursor:pointer;-webkit-tap-highlight-color:transparent}.tdy-t[data-k]:active{opacity:.7}
 .tl-r{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;border:1px solid rgba(0,0,0,.08);background:#fff;border-radius:14px;padding:10px 12px;margin:0 0 8px;font:inherit;color:#1d2433;cursor:pointer}
@@ -3713,7 +3738,7 @@ html body .page-head h1{letter-spacing:-.02em}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=c9a60ebea4",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=5536bc6690",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

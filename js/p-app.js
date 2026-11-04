@@ -4974,14 +4974,22 @@ function bahtText(value) {
     const q = $('whHistSearch') ? $('whHistSearch').value : '';
     const shown = list.filter(w => matchesSearch(w.buyerName, q));
     if (!shown.length) { $('wholesaleHistory').innerHTML = notice + '<p class="empty">ไม่พบใบราคาส่งของลูกค้าชื่อ “' + esc(q) + '”</p>'; return; }
+    const IC_RC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>';
+    const IC_ED = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>';
+    const IC_QR = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-4"/></svg>';
     $('wholesaleHistory').innerHTML = notice + '<ul>' + shown.map(w => {
-      const t = wholesaleCalc(w);
-      return '<li data-id="' + esc(w.id) + '"><div class="meta"><b>' + esc(w.buyerName || 'ไม่ระบุชื่อผู้ซื้อ') + '</b><small>' + esc(thDate(w.date)) + (w.no ? ' · ' + esc(w.no) : '') + (w.ref ? ' · ' + esc(w.ref) : '') + (w.createdBy ? ' · โดย ' + esc(w.createdBy) : '') + '</small></div>' +
-      '<span class="amt">' + money(t.total) + ' บาท</span>' +
-      '<button class="status-pill ' + (w.paid ? 'billdone' : 'pending') + '" data-act="togglepaid" data-id="' + esc(w.id) + '" type="button" title="กดเพื่อสลับสถานะ">' + (w.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</button>' +
-      (w.paid ? '' : '<button class="btn small good" data-act="charge" type="button">เรียกเก็บเงิน</button>') +
-      '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
-      '<button class="btn small del" data-act="del" type="button">ลบ</button></li>';
+      const t = wholesaleCalc(w), st = w.paid ? 'paid' : 'pending', n = (w.items || []).filter(i => (i.name || '').trim()).length;
+      const jb = w.jobId ? (store.get('bs_jobs', []).find(x => x.id === w.jobId) || {}).no : '';
+      return '<li class="jc st-' + st + '" data-id="' + esc(w.id) + '">' +
+        '<div class="jc-top"><span class="jc-ph" aria-hidden="true">' + IC_RC + '</span>' +
+        '<div class="jc-main"><div class="jc-no">' + esc(w.no || w.ref || 'ใบราคาส่ง') + '</div><div class="jc-cust">' + esc(w.buyerName || 'ไม่ระบุชื่อผู้ซื้อ') + '</div></div>' +
+        '<div class="jc-amt">' + money(t.total) + '<small>บาท</small></div></div>' +
+        '<div class="jc-chips"><button class="status-pill ' + (w.paid ? 'billdone' : 'pending') + '" data-act="togglepaid" data-id="' + esc(w.id) + '" type="button" title="กดเพื่อสลับสถานะ">' + (w.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</button>' +
+        '<span class="jc-chip">' + esc(thDate(w.date)) + '</span><span class="jc-chip">' + n + ' รายการ</span>' +
+        (jb ? '<span class="jc-chip tg">ใบงาน ' + esc(jb) + '</span>' : '') + (w.createdBy ? '<span class="jc-chip">โดย ' + esc(w.createdBy) + '</span>' : '') + '</div>' +
+        '<div class="jc-act">' + (w.paid ? '' : '<button class="jc-b main" data-act="charge" type="button">' + IC_QR + 'เรียกเก็บเงิน</button>') +
+        '<button class="jc-b" data-act="open" type="button">' + IC_ED + 'แก้ไข</button>' +
+        '<button class="jc-b del" data-act="del" type="button">ลบ</button></div></li>';
     }).join('') + '</ul>';
   }
 
