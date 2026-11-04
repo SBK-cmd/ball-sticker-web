@@ -294,6 +294,7 @@ function bahtText(value) {
       const isJbs = /^JBS/i.test(String(rec.no || '').trim());   // ที่อยู่/รูปอ้างอิง เฉพาะงานส่ง (JBS)
       if (isJbs && snd) doc.sender = snd;
       if (isJbs && rcv) { doc.receiver = rcv; const fn = String(rec.recv.name || '').replace(/\s+/g, ' ').trim().slice(0, 80); if (fn) doc.receiver.name = fn; }   // ผู้รับ: ชื่อเต็ม (ตามที่ร้านสั่ง)
+      if (isJbs && Array.isArray(rec.recvMore)) { const bx = rec.recvMore.filter(r => r && String((r.name || '') + (r.addr || '')).trim()).slice(0, 10).map(r => { const code = String(r.code || '').replace(/\s+/g, '').slice(0, 40), car = String(r.carrier || ''); return {name: String(r.name || '').replace(/\s+/g, ' ').trim().slice(0, 80), addr: String(r.addr || '').replace(/\s+/g, ' ').trim().slice(0, 300), note: String(r.note || '').replace(/\s+/g, ' ').trim().slice(0, 120), trackCode: code, carrier: car, trackUrl: code && car ? trackingLink(car, code) : ''}; }); if (bx.length) doc.boxes = bx; }   // ส่งหลายกล่อง (ไม่ส่งเบอร์โทร)
       // ยอดค้างรวมของลูกค้า (ใบราคาส่งที่ยังไม่จ่าย) + payload พร้อมเพย์ ให้ลูกค้าสแกนจ่ายเองจากหน้าติดตาม
       if (isJbs) { const ow = owedGroups().find(x => x.name === (String(rec.jName || '').trim() || 'ไม่ระบุชื่อ')); if (ow && ow.total > 0) doc.pay = {total: ow.total, payee: payAcct('วันทิม').name || '', ref: payRef(Date.now()), payload: promptPayPayload(payAcct('วันทิม').id, ow.total),   // งาน JBS เข้าบัญชีวันทิมทั้งหมด
       docs: ow.docs.slice(0, 10).map(d => ({no: d.no, amount: d.total, items: (d.items || []).slice(0, 20)}))}; }
@@ -4255,6 +4256,7 @@ function bahtText(value) {
 
   /* ---------------- ใบคอนเฟิร์มงาน (ใบสั่งผลิตภายในร้าน ไม่มีราคา) ---------------- */
   let jobItems = [{name: '', qty: 1, note: ''}];
+  let jobRecvMore = [];   // ผู้รับกล่องที่ 2,3,… (กล่องที่ 1 = ช่อง ชื่อ/เบอร์/ที่อยู่ผู้รับด้านบน)
   let currentJobId = null;
   let jobPhotos = [];
   let jobStatus = 'pending';
@@ -4423,8 +4425,19 @@ function bahtText(value) {
   }
   // งานส่ง (เลข JBS) เข้าบัญชีวันทิมทั้งหมด
   function syncJbsAccount() { if (/^JBS/i.test(String($('jobNo').value || '').trim()) && $('jobAccount').value !== 'วันทิม') $('jobAccount').value = 'วันทิม'; }
+  function renderRecvMore() {
+    const box = $('jRecvMore'); if (!box) return;
+    let cars = []; try { cars = Object.keys(TRACK_URL); } catch (e) {}
+    box.innerHTML = jobRecvMore.map((r, i) => '<div class="recv-more" data-i="' + i + '"><div class="rm-h"><b>📦 กล่องที่ ' + (i + 2) + '</b><button type="button" class="btn small" data-rmdel="1">✕ ลบกล่องนี้</button></div>' +
+      '<label class="f"><span>ชื่อผู้รับ</span><input class="txt" data-k="name" type="text" autocomplete="off" value="' + esc(r.name || '') + '"></label>' +
+      '<label class="f"><span>เบอร์ผู้รับ</span><input class="txt" data-k="phone" type="tel" autocomplete="off" value="' + esc(r.phone || '') + '"></label>' +
+      '<label class="f"><span>ที่อยู่ผู้รับ</span><textarea data-k="addr">' + esc(r.addr || '') + '</textarea></label>' +
+      '<label class="f"><span>ของในกล่องนี้ (ไม่บังคับ)</span><input class="txt" data-k="note" type="text" autocomplete="off" placeholder="เช่น ท้ายบังไมค์ 5 ชิ้น" value="' + esc(r.note || '') + '"></label>' +
+      '<div class="row2"><label class="f"><span>ขนส่ง</span><select class="txt" data-k="carrier"><option value="">— เลือก —</option>' + cars.map(c => '<option' + (c === r.carrier ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select></label>' +
+      '<label class="f"><span>เลขพัสดุกล่องนี้</span><input class="txt" data-k="code" type="text" autocomplete="off" value="' + esc(r.code || '') + '"></label></div></div>').join('');
+  }
   function isDeliveryJob() {
-    return !!(($('jobWholesale') && $('jobWholesale').checked) || $('jRName').value.trim() || $('jRAddr').value.trim());
+    return !!(($('jobWholesale') && $('jobWholesale').checked) || $('jRName').value.trim() || $('jRAddr').value.trim() || jobRecvMore.some(r => String(r.name || r.addr || '').trim()));
   }
   // งานส่งที่เลขยังเป็น JB → เปลี่ยนเป็น JBS (กันชนกับงานหน้าร้าน); คืนค่า true ถ้าเปลี่ยน
   function fixDeliveryNo(skipId) {
@@ -4438,6 +4451,7 @@ function bahtText(value) {
   function collectJob() {
     return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, account: $('jobAccount').value, page: $('jobPage').value, bankInIds: jobBankInIds.slice(), bankInId: jobBankInIds[0] || '', slipAmount: $('jobSlipAmount').value, slipPending: $('jobSlipPending').checked, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
       items: jobItems.map(i => { const o = {name: i.name, qty: i.qty, note: i.note}; if (i.price !== '' && i.price != null) o.price = i.price; return o; }), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus, wholesale: $('jobWholesale').checked,
+      recvMore: jobRecvMore.filter(r => String((r.name || '') + (r.phone || '') + (r.addr || '') + (r.code || '')).trim()).map(r => Object.assign({}, r)),
       recv: ($('jRName').value.trim() || $('jRPhone').value.trim() || $('jRAddr').value.trim()) ? {name: $('jRName').value.trim(), phone: $('jRPhone').value.trim(), addr: $('jRAddr').value.trim()} : null};
   }
   function applyJob(j) {
@@ -4452,6 +4466,7 @@ function bahtText(value) {
     jobStatus = j.status || 'pending';
     $('jobWholesale').checked = !!j.wholesale; syncJobWholesaleBtn();
     { const rv = j.recv || {}; $('jRName').value = rv.name || ''; $('jRPhone').value = rv.phone || ''; $('jRAddr').value = rv.addr || ''; }
+    jobRecvMore = Array.isArray(j.recvMore) ? j.recvMore.map(r => Object.assign({name: '', phone: '', addr: '', note: '', code: '', carrier: ''}, r)) : []; renderRecvMore();
     renderJobItems(); renderJobPhotos(); renderJobStatusBadge(); renderJob();
   }
   function syncJobWholesaleBtn() { const b = $('jobToWholesale'); if (b) b.hidden = !($('jobWholesale').checked && can('wholesale')); }
@@ -4495,6 +4510,7 @@ function bahtText(value) {
       (cust || j.jAddr ? '<div><span class="jd-k">ลูกค้า</span><span class="jd-cust">' + (cust ? cust : '') + '</span>' + (j.jAddr ? '<br>' + esc(j.jAddr) + '<br><button class="btn small good" data-act="copyaddr" data-who="cust" type="button" style="margin-top:6px">📋 คัดลอกที่อยู่ (ไปคีย์ iship)</button> <button class="btn small" data-act="copyphone" data-who="cust" type="button" style="margin-top:6px">📞 คัดลอกเบอร์</button>' : '') + '</div>' : '') +
       '<div><span class="jd-k">รายการงาน</span>' + (its.length ? '<ol>' + its.map(i => '<li style="display:list-item;padding:0;border:0;background:none;box-shadow:none;border-radius:0">' + esc(i.name) + ' × ' + esc(fmt(num(i.qty))) + (i.note && i.note.trim() ? ' <small>(' + esc(i.note) + ')</small>' : '') + ((j.whAdded && j.whAdded[jobItemKey(i, (j.items || []).indexOf(i))]) ? ' <small style="color:#0a7a3b;font-weight:700">✔ ใส่ใบราคาส่งแล้ว</small>' : '') + '</li>').join('') + '</ol>' : '—') + '</div>' +
       (j.recv && (j.recv.name || j.recv.addr) ? '<div><span class="jd-k">ฝากส่งถึง</span><b>' + esc(j.recv.name || '') + '</b>' + (j.recv.phone ? ' · <a href="tel:' + esc(String(j.recv.phone).replace(/[^\d+]/g, '')) + '">' + esc(j.recv.phone) + '</a>' : '') + (j.recv.addr ? '<br>' + esc(j.recv.addr) + '<br><button class="btn small good" data-act="copyaddr" data-who="recv" type="button" style="margin-top:6px">📋 คัดลอกที่อยู่ (ไปคีย์ iship)</button> <button class="btn small" data-act="copyphone" data-who="recv" type="button" style="margin-top:6px">📞 คัดลอกเบอร์</button>' : '') + '</div>' : '') +
+      (Array.isArray(j.recvMore) && j.recvMore.length ? j.recvMore.map((r, i) => '<div><span class="jd-k">กล่องที่ ' + (i + 2) + '</span><b>' + esc(r.name || '') + '</b>' + (r.phone ? ' · ' + esc(r.phone) : '') + (r.addr ? '<br>' + esc(r.addr) : '') + (r.note ? '<br><small>' + esc(r.note) + '</small>' : '') + (r.code ? '<br>📦 ' + esc(r.carrier || '') + ' ' + esc(r.code) : '') + '</div>').join('') : '') +
       (j.note && j.note.trim() ? '<div><span class="jd-k">หมายเหตุ</span>' + esc(j.note).replace(/\n/g, '<br>') + '</div>' : '') +
       (j.due ? '<div><span class="jd-k">กำหนดส่ง</span>' + esc(thDate(j.due)) + '</div>' : '') +
       ((j.photos && j.photos.length) ? '<div><span class="jd-k">รูปอ้างอิง</span></div><div class="jd-ph">' + j.photos.map(src => '<img src="' + src + '" alt="รูปอ้างอิง">').join('') + '</div>' : '') +
@@ -5600,8 +5616,21 @@ function bahtText(value) {
     if (e.target.classList.contains('i-wprice')) it.price = e.target.value;
     renderJob();
   });
+  $('jRecvAdd').addEventListener('click', () => {
+    jobRecvMore.push({name: '', phone: '', addr: '', note: '', code: '', carrier: ''}); renderRecvMore();
+    const last = $('jRecvMore').querySelector('.recv-more:last-child [data-k=name]'); if (last) last.focus();
+  });
+  $('jRecvMore').addEventListener('input', e => {
+    const k = e.target.dataset && e.target.dataset.k, box = e.target.closest('.recv-more'); if (!k || !box) return;
+    const r = jobRecvMore[+box.dataset.i]; if (r) r[k] = e.target.value;
+  });
+  $('jRecvMore').addEventListener('change', e => { if (!currentJobId && fixDeliveryNo()) renderJob(); });
+  $('jRecvMore').addEventListener('click', e => {
+    if (!e.target.closest('[data-rmdel]')) return;
+    jobRecvMore.splice(+e.target.closest('.recv-more').dataset.i, 1); renderRecvMore();
+  });
   $('jobItems').addEventListener('click', e => {
-    if (!e.target.classList.contains('del')) return;
+    if (!e.target.closest('.del')) return;
     const i = +e.target.closest('.item').dataset.i;
     jobItems.splice(i, 1);
     if (!jobItems.length) jobItems.push({name: '', qty: 1, note: ''});
@@ -6238,7 +6267,7 @@ function bahtText(value) {
     renderWholesale();
   });
   $('wholesaleItems').addEventListener('click', e => {
-    if (!e.target.classList.contains('del')) return;
+    if (!e.target.closest('.del')) return;
     const i = +e.target.closest('.item').dataset.i;
     wholesaleItems.splice(i, 1);
     if (!wholesaleItems.length) wholesaleItems.push({name: '', qty: 1, price: 0});
@@ -6323,7 +6352,7 @@ function bahtText(value) {
     renderQuote();
   });
   $('quoteItems').addEventListener('click', e => {
-    if (!e.target.classList.contains('del')) return;
+    if (!e.target.closest('.del')) return;
     const i = +e.target.closest('.item').dataset.i;
     quoteItems.splice(i, 1);
     if (!quoteItems.length) quoteItems.push({name: '', qty: 1, price: 0});
@@ -6375,7 +6404,7 @@ function bahtText(value) {
     renderBill();
   });
   $('items').addEventListener('click', e => {
-    if (!e.target.classList.contains('del')) return;
+    if (!e.target.closest('.del')) return;
     const i = +e.target.closest('.item').dataset.i;
     items.splice(i, 1);
     if (!items.length) items.push({name: '', qty: 1, price: 0});
