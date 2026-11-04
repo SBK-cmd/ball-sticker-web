@@ -4977,7 +4977,8 @@ function bahtText(value) {
   function syncWholesaleJob(rec) {
     const jl = store.get('bs_jobs', []);
     let ji = rec.jobId ? jl.findIndex(x => x.id === rec.jobId) : -1;
-    const items = (rec.items || []).filter(i => (i.name || '').trim());
+    // บรรทัดที่ดึงมาจากใบงานที่คีย์ไว้แล้ว (มี job) ไม่สร้างใบงานซ้ำ — ใช้เฉพาะบรรทัดที่คีย์ในใบราคาส่งเอง
+    const items = (rec.items || []).filter(i => (i.name || '').trim() && !i.job);
     if (!items.length) return null;
     const jobItems2 = items.map(i => ({name: String(i.name).trim(), qty: i.qty, note: '', price: i.price}));
     const whAdded = {}; jobItems2.forEach((i, idx) => { whAdded[jobItemKey(i, idx)] = {at: Date.now(), doc: rec.no || rec.id}; });
