@@ -1425,6 +1425,21 @@ body.chg-open{overflow:hidden}
 #wholesaleHistory .jc-b.main{background:#1f2a44;color:#fff;border-color:#1f2a44}
 #wholesaleHistory .jc-b.del{flex:0 0 auto;color:#b42318;border-color:#f3c9c4;background:#fff7f6}
 #wholesaleHistory .jc-b.del.confirm{background:#b42318;color:#fff;border-color:#b42318}
+#wholesaleHistory li.jc{cursor:pointer}
+#wholesaleHistory .jc-chip.warn{background:#fff1d6;color:#8a5a00}
+#wholesaleHistory .wd{margin-top:12px;padding:12px;border-radius:14px;background:rgba(0,0,0,.035);cursor:default}
+#wholesaleHistory .wd-h{font-size:14px;font-weight:800;margin:0 0 8px;color:#111}
+#wholesaleHistory .wd-h small{font-weight:500;font-size:12px;color:#6b7280;margin-left:4px}
+#wholesaleHistory .wd-r{display:grid;grid-template-columns:minmax(0,1fr) 92px 74px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06)}
+#wholesaleHistory .wd-n{font-size:14.5px;line-height:1.3;min-width:0;overflow-wrap:anywhere}
+#wholesaleHistory .wd-n small{display:block;color:#6b7280;font-size:12.5px}
+#wholesaleHistory .wd-p{padding:8px 10px!important;text-align:right;font-size:15px}
+#wholesaleHistory .wd-t{text-align:right;font-size:14px;font-variant-numeric:tabular-nums}
+#wholesaleHistory .wd-sum{display:flex;justify-content:space-between;padding-top:10px;font-size:15px}
+#wholesaleHistory .wd-j{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.06)}
+#wholesaleHistory .wd-jm{min-width:0}#wholesaleHistory .wd-jm b{display:block;font-size:14px}
+#wholesaleHistory .wd-jm small{display:block;font-size:12.5px;color:#4b5563;overflow-wrap:anywhere}
+#wholesaleHistory .wd-j .btn{flex:none}
 #jobHistory .jc-det{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.035);display:grid;gap:8px}
 #jobHistory .jc-k{font-size:11.5px;font-weight:700;color:var(--muted,#6b7280);margin-right:6px}
 #jobHistory .jc-det-h{display:flex;justify-content:space-between;font-size:13px;color:#4b5563}
@@ -8165,7 +8180,7 @@ function bahtText(value) {
      ไม่มี VAT ไม่รันเลขที่เอกสารอัตโนมัติ และไม่รวมกับ bs_bills / แดชบอร์ด / รายงานภาษีใดๆ ทั้งสิ้น
      เก็บข้อมูลแยกที่ localStorage key "bs_wholesale" และ Firestore collection "wholesale" ของตัวเอง) ---------------- */
   let wholesaleItems = [{name: '', qty: 1, price: 0}];
-  let currentWholesaleId = null, whPendingJobId = null, whFilterMode = 'open';
+  let currentWholesaleId = null, whPendingJobId = null, whFilterMode = 'open', whOpen = {};
   let whDelArmed = null, whDelTimer = null;
 
   function renderWholesaleItems() {
@@ -8341,17 +8356,55 @@ function bahtText(value) {
     $('wholesaleHistory').innerHTML = notice + '<ul>' + shown.map(w => {
       const t = wholesaleCalc(w), st = w.paid ? 'paid' : 'pending', n = (w.items || []).filter(i => (i.name || '').trim()).length;
       const jb = w.jobId ? (store.get('bs_jobs', []).find(x => x.id === w.jobId) || {}).no : '';
-      return '<li class="jc st-' + st + '" data-id="' + esc(w.id) + '">' +
+      const noPrice = (w.items || []).filter(i => (i.name || '').trim() && !(num(i.price) > 0)).length;
+      return '<li class="jc st-' + st + (whOpen[w.id] ? ' open' : '') + '" data-id="' + esc(w.id) + '">' +
         '<div class="jc-top"><span class="jc-ph" aria-hidden="true">' + IC_RC + '</span>' +
         '<div class="jc-main"><div class="jc-no">' + esc(w.no || w.ref || 'ใบราคาส่ง') + '</div><div class="jc-cust">' + esc(w.buyerName || 'ไม่ระบุชื่อผู้ซื้อ') + '</div></div>' +
         '<div class="jc-amt">' + money(t.total) + '<small>บาท</small></div></div>' +
         '<div class="jc-chips"><button class="status-pill ' + (w.paid ? 'billdone' : 'pending') + '" data-act="togglepaid" data-id="' + esc(w.id) + '" type="button" title="กดเพื่อสลับสถานะ">' + (w.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</button>' +
         '<span class="jc-chip">' + esc(thDate(w.date)) + '</span><span class="jc-chip">' + n + ' รายการ</span>' +
+        (noPrice ? '<span class="jc-chip warn">รอราคา ' + noPrice + '</span>' : '') +
         (jb ? '<span class="jc-chip tg">ใบงาน ' + esc(jb) + '</span>' : '') + (w.createdBy ? '<span class="jc-chip">โดย ' + esc(w.createdBy) + '</span>' : '') + '</div>' +
         '<div class="jc-act">' + (w.paid ? '' : '<button class="jc-b main" data-act="charge" type="button">' + IC_QR + 'เรียกเก็บเงิน</button>') +
         '<button class="jc-b" data-act="open" type="button">' + IC_ED + 'แก้ไข</button>' +
-        '<button class="jc-b del" data-act="del" type="button">ลบ</button></div></li>';
-    }).join('') + '</ul>';
+        '<button class="jc-b del" data-act="del" type="button">ลบ</button></div>' + (whOpen[w.id] ? whDetailHTML(w) : '') + '</li>';
+    }).join('') + '</ul><p class="hint" style="margin:10px 2px 0">แตะที่ใบเพื่อดูรายการ ใส่ราคา และเพิ่มงานเข้าบิลได้</p>';
+  }
+  // รายละเอียดในใบราคาส่ง: รายการ + ช่องราคา (ใส่ทีหลังได้) + งานของลูกค้าคนนี้ที่คีย์ไว้แล้วรอใส่เข้าบิล
+  function whPendingJobsFor(w) {
+    const nm = String(w.buyerName || '').trim(); if (!nm) return [];
+    const cutoff = new Date(Date.now() - 45 * 864e5).toISOString().slice(0, 10);
+    return store.get('bs_jobs', []).filter(j => String(j.jName || '').trim() === nm && String(j.date || '') >= cutoff && jobPendingWhItems(j).length)
+      .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  }
+  function whDetailHTML(w) {
+    const its = w.items || [], t = wholesaleCalc(w);
+    const rows = its.map((i, k) => (i.name || '').trim() ? '<div class="wd-r" data-k="' + k + '"><span class="wd-n">' + esc(i.name) + '<small>× ' + esc(i.qty === '' || i.qty == null ? 1 : i.qty) + '</small></span>' +
+      '<input class="num wd-p" type="number" inputmode="decimal" step="any" min="0" placeholder="รอราคา" aria-label="ราคาต่อชิ้น" value="' + (num(i.price) > 0 ? esc(i.price) : '') + '">' +
+      '<b class="wd-t">' + (num(i.price) > 0 ? money(round2(num(i.qty || 1) * num(i.price))) : '–') + '</b></div>' : '').join('');
+    const pj = whPendingJobsFor(w);
+    const pjHtml = pj.length ? pj.map(j => {
+      const rs = jobPendingWhItems(j);
+      return '<div class="wd-j"><div class="wd-jm"><b>' + esc(j.no || 'ใบงาน') + '</b><small>' + esc(thDate(j.date)) + ' · ' + rs.map(r => esc(String(r.i.name).trim()) + ' ×' + esc(r.i.qty || 1)).join(', ') + '</small></div><button class="btn small good" type="button" data-act="addjob" data-jid="' + esc(j.id) + '">＋ เพิ่มเข้าบิล</button></div>';
+    }).join('') : '<p class="hint" style="margin:6px 0 0">ยังไม่มีงานของลูกค้านี้ที่รอใส่ในบิล</p>';
+    return '<div class="wd">' +
+      '<div class="wd-h">รายการในบิลนี้ <small>ใส่ราคาทีหลังได้ ช่องราคาว่าง = รอราคา</small></div>' + (rows || '<p class="hint">ยังไม่มีรายการ</p>') +
+      '<div class="wd-sum"><span>รวม' + (t.disc > 0 ? ' (หักส่วนลด ' + money(t.disc) + ')' : '') + '</span><b>' + money(t.total) + ' บาท</b></div>' +
+      '<div class="wd-h" style="margin-top:12px">งานของ ' + esc(w.buyerName || '') + ' ที่คีย์ไว้ <small>เพิ่มเข้าบิลนี้ได้แม้ยังไม่มีราคา</small></div>' + pjHtml +
+      '<button class="btn small" type="button" data-act="newjobfor" style="margin-top:10px">＋ คีย์งานใหม่ให้ลูกค้าคนนี้</button></div>';
+  }
+  function addJobToWholesaleDoc(jobId, docId) {
+    const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === jobId), wl = store.get('bs_wholesale', []), wi = wl.findIndex(x => x.id === docId);
+    if (ji < 0 || wi < 0) return 0;
+    const j = jl[ji], doc = wl[wi], rows = jobPendingWhItems(j); if (!rows.length) return 0;
+    const add = rows.map(r => ({name: String(r.i.name).trim() + ((r.i.note || '').trim() ? ' (' + String(r.i.note).trim() + ')' : ''), qty: r.i.qty, price: num(jobUnitPrice(j, r.i))}));
+    doc.items = (doc.items || []).filter(i => (i.name || '').trim()).concat(add); doc.savedAt = Date.now();
+    j.whAdded = Object.assign({}, j.whAdded || {}); rows.forEach(r => { j.whAdded[jobItemKey(r.i, r.idx)] = {at: Date.now(), doc: doc.no || doc.id}; });
+    j.wholesale = true; j.savedAt = Date.now();
+    store.set('bs_wholesale', wl); cloudSave('wholesale', doc); store.set('bs_jobs', jl); cloudSave('jobs', j);
+    setWhCust(doc.buyerName, true);
+    try { renderJobHistory(); } catch (e) {}
+    return add.length;
   }
 
   /* ---------- หน้าต่างเรียกเก็บเงิน (ใบราคาส่ง): รายการบิลค้างทั้งหมดของลูกค้า + QR + ลิงก์ ---------- */
@@ -10047,10 +10100,33 @@ function bahtText(value) {
   });
   $('new-wholesale').addEventListener('click', () => { newWholesale(); toast('เปิดใบใหม่แล้ว'); });
 
+  $('wholesaleHistory').addEventListener('change', e => {
+    const inp = e.target.closest('input.wd-p'); if (!inp) return;
+    const li = inp.closest('li'), k = +inp.closest('.wd-r').dataset.k, list = store.get('bs_wholesale', []), i = list.findIndex(x => x.id === li.dataset.id); if (i < 0) return;
+    const items = (list[i].items || []).map(x => Object.assign({}, x)); if (!items[k]) return;
+    items[k].price = inp.value === '' ? 0 : inp.value;
+    list[i] = Object.assign({}, list[i], {items, savedAt: Date.now()}); store.set('bs_wholesale', list); cloudSave('wholesale', list[i]);
+    renderWholesaleHistory(); toast('บันทึกราคาแล้ว');
+  });
   $('wholesaleHistory').addEventListener('click', e => {
-    const btn = e.target.closest('button[data-act]'); if (!btn) return;
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) {
+      if (e.target.closest('input,select,textarea,a,.wd')) return;
+      const li0 = e.target.closest('li.jc'); if (!li0) return;
+      whOpen[li0.dataset.id] = !whOpen[li0.dataset.id]; renderWholesaleHistory(); return;
+    }
     const id = btn.closest('li').dataset.id;
     const list = store.get('bs_wholesale', []);
+    if (btn.dataset.act === 'addjob') {
+      const n = addJobToWholesaleDoc(btn.dataset.jid, id);
+      renderWholesaleHistory(); toast(n ? 'เพิ่มงานเข้าบิลแล้ว ' + n + ' รายการ ใส่ราคาได้ที่ช่องราคา (ว่างไว้ = รอราคา)' : 'ไม่มีรายการใหม่ให้เพิ่ม'); return;
+    }
+    if (btn.dataset.act === 'newjobfor') {
+      const w0 = list.find(x => x.id === id); if (!w0) return;
+      showTab('confirm'); newJob(); $('jName').value = w0.buyerName || ''; $('jName').dispatchEvent(new Event('change'));
+      if (window.innerWidth < 900) openJobModal(); else { const t = $('jobFormTop'); if (t) t.scrollIntoView({behavior: 'smooth', block: 'start'}); }
+      return;
+    }
     if (btn.dataset.act === 'togglepaid') {
       const idx2 = list.findIndex(x => x.id === id); if (idx2 < 0) return;
       list[idx2] = Object.assign({}, list[idx2], {paid: !list[idx2].paid});
