@@ -7049,7 +7049,7 @@ function bahtText(value) {
     if (can('wholesale')) store.get('bs_wholesale', []).filter(w => !w.paid).forEach(w => add(w.buyerName, {k: 'wholesale', id: w.id, no: w.no || w.ref || 'ใบราคาส่ง', date: w.date || '', total: round2(wholesaleCalc(w).total), items: (w.items || []).filter(i => String(i.name || '').trim()).map(i => ({n: String(i.name).trim().slice(0, 80), q: num(i.qty), p: num(i.price)}))}));
     // งาน JBS ที่คีย์จำนวนเงินไว้แล้ว แต่ยังไม่ได้รวมเข้าใบราคาส่ง และยังไม่ผูกกับเงินเข้าจริง = ยอดที่รอเก็บ
     if (can('wholesale')) store.get('bs_jobs', []).filter(j => /^JBS/i.test(String(j.no || '').trim()) && !j.owedPaid && num(j.slipAmount) > 0 && !jobBankIdsOf(j).length && jobPendingWhItems(j).length)
-      .forEach(j => add(j.jName, {k: 'jobs', id: j.id, no: j.no, date: j.date || '', total: round2(num(j.slipAmount)), items: (j.items || []).filter(i => String(i.name || '').trim()).map(i => ({n: String(i.name).trim().slice(0, 80), q: num(i.qty), p: 0}))}));
+      .forEach(j => add(j.jName, {k: 'jobs', id: j.id, no: j.no, date: j.date || '', total: round2(num(j.slipAmount)), items: (() => { const its = (j.items || []).filter(i => String(i.name || '').trim()).map(i => ({n: (String(i.name).trim() + (String(i.note || '').trim() ? ' (' + String(i.note).trim() + ')' : '')).slice(0, 80), q: num(i.qty), p: 0})); const nt = String(j.note || '').replace(/\s+/g, ' ').trim(); return its.length ? its : (nt ? [{n: nt.slice(0, 80), q: 0, p: 0}] : []); })()}));
     const out = Object.values(g).filter(x => x.docs.some(d => d.total > 0));
     out.forEach(x => { x.docs.sort((a, b) => String(a.date).localeCompare(String(b.date))); x.total = round2(x.docs.reduce((t, d) => t + d.total, 0)); });
     return out.sort((a, b) => b.total - a.total);
