@@ -4085,7 +4085,7 @@ function bahtText(value) {
     // จำไว้ว่าแบบไหนของใบนี้ถูกใส่ในใบราคาส่งแล้ว
     const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === j.id);
     if (ji >= 0) { jl[ji].whAdded = Object.assign({}, jl[ji].whAdded || {}); (picked || []).forEach(p => { jl[ji].whAdded[p.key] = {at: Date.now(), doc: doc ? (doc.ref || doc.id) : 'ใหม่'}; }); store.set('bs_jobs', jl); cloudSave('jobs', jl[ji]); renderJobHistory(); } if (!wholesaleItems.length) wholesaleItems = [{name: '', qty: 1, price: 0}];
-    renderWholesaleItems(); renderWholesale(); showTab('wholesale'); window.scrollTo({top: 0, behavior: 'smooth'});
+    renderWholesaleItems(); renderWholesale(); showTab('wholesale'); openWhModal(); window.scrollTo({top: 0, behavior: 'smooth'});
     toast(doc ? 'เปิดใบราคาส่งที่ยังไม่จ่าย เพิ่มงาน ' + fresh.length + ' รายการ ใส่ราคาส่งแล้วกด “บันทึกลงประวัติ”' : 'ไม่มีใบราคาส่งค้างของ ' + String(j.jName || '').trim() + ' เปิดใบใหม่ให้ ใส่ราคาส่งแล้วกด “บันทึกลงประวัติ”');
   }
   // รวมงานราคาส่งเข้าใบราคาส่งที่ยังไม่จ่ายของชื่อเดียวกันอัตโนมัติ (ใบล่าสุด ถ้าไม่มีเปิดใบใหม่) ใส่เฉพาะแบบที่ยังไม่เคยใส่ ราคา = ราคาส่งที่กรอกในใบงาน
@@ -4453,7 +4453,22 @@ function bahtText(value) {
   if (!canBank) {
     const acc = $('jobAccount'), row = acc && acc.closest('.row2');
     if (row) { row.hidden = true; const h = row.nextElementSibling; if (h && h.classList.contains('hint')) h.hidden = true; }
+    const mf = $('jobMoneyFold'); if (mf) mf.hidden = true;   // ส่วนการเงิน: เจ้าของเท่านั้น
   }
+  // ฟอร์มใบงาน: ส่วนที่ไม่ค่อยใช้พับไว้ · เปิดเองเมื่อใบนั้นมีข้อมูลในส่วนนั้น · สรุปเลขที่ใบ/วันที่/เพจไว้ที่หัวพับ
+  function syncJobFolds() {
+    try {
+      const ship = $('jobShipFold'), money = $('jobMoneyFold');
+      const hasRecv = !!(($('jRName').value || '').trim() || ($('jRAddr').value || '').trim() || jobRecvMore.length);
+      if (ship) ship.open = !!($('jobWholesale').checked || hasRecv);
+      if (money) money.open = !!(num($('jobSlipAmount').value) > 0 || $('jobAccount').value);
+      const d = $('jobDate').value, due = $('jobDue').value, pg = $('jobPage');
+      const sum = $('jobMetaSum'); if (sum) sum.textContent = '· ' + ($('jobNo').value || 'เลขอัตโนมัติ') + (d ? ' · ' + thDate(d) : '') + (due ? ' · ส่ง ' + thDate(due) : '') + (pg && pg.selectedOptions[0] ? ' · ' + pg.selectedOptions[0].text : '');
+    } catch (e) { console.error('syncJobFolds', e); }
+  }
+  ['jobNo', 'jobDate', 'jobDue', 'jobPage'].forEach(id => { const e = $(id); if (e) { e.addEventListener('input', syncJobFolds); e.addEventListener('change', syncJobFolds); } });
+  $('jobWholesale').addEventListener('change', () => { const f = $('jobShipFold'); if (f && $('jobWholesale').checked) f.open = true; });
+  $('jSplit').addEventListener('click', () => setTimeout(syncJobFolds, 80));
   function renderJobStatusBadge() {
     const el = $('jobStatusBadge'); if (!el) return;
     el.className = 'status-pill ' + jobStatus;
@@ -4651,9 +4666,13 @@ function bahtText(value) {
     $('jobWholesale').checked = !!j.wholesale; syncJobWholesaleBtn();
     { const rv = j.recv || {}; $('jRName').value = rv.name || ''; $('jRPhone').value = rv.phone || ''; $('jRAddr').value = rv.addr || ''; }
     jobRecvMore = Array.isArray(j.recvMore) ? j.recvMore.map(r => Object.assign({name: '', phone: '', addr: '', note: '', code: '', carrier: ''}, r)) : []; renderRecvMore();
-    renderJobItems(); renderJobPhotos(); renderJobStatusBadge(); renderJob();
+    renderJobItems(); renderJobPhotos(); renderJobStatusBadge(); renderJob(); syncJobFolds();
   }
-  function syncJobWholesaleBtn() { const b = $('jobToWholesale'); if (b) b.hidden = !($('jobWholesale').checked && can('wholesale')); }
+  function syncJobWholesaleBtn() {
+    const b = $('jobToWholesale'); if (b) b.hidden = !($('jobWholesale').checked && can('wholesale'));
+    const box = $('jobWholesale') && $('jobWholesale').closest('.wh-box'); if (box) box.hidden = !$('jobWholesale').checked;   // งานปกติไม่มีตัวเลือกราคาส่ง · เฉพาะใบเก่าที่เป็นงานราคาส่งจึงแสดง
+    const mv = $('job-to-wholesale'); if (mv) mv.hidden = true;
+  }
   function renderJobEditState() {
     const el = $('jobEditState');
     if (currentJobId) { el.textContent = 'กำลังแก้ไขใบที่บันทึกไว้ กด “บันทึกลงประวัติ” เพื่อบันทึกทับฉบับเดิม'; el.classList.add('editing'); }
@@ -4677,7 +4696,7 @@ function bahtText(value) {
     lastWhMerge = null;
     saveJob(); // บันทึกแล้วรวมเข้าใบราคาส่งตามชื่ออัตโนมัติ
     const d = lastWhMerge; lastWhMerge = null;
-    if (d) { currentWholesaleId = d.id; applyWholesale(d); renderWholesaleEditState(); showTab('wholesale'); window.scrollTo({top: 0, behavior: 'smooth'}); }
+    if (d) { currentWholesaleId = d.id; applyWholesale(d); renderWholesaleEditState(); showTab('wholesale'); openWhModal(); window.scrollTo({top: 0, behavior: 'smooth'}); }
     else { const rec = store.get('bs_jobs', []).find(x => x.id === currentJobId); if (rec && jobPendingWhItems(rec).length) jobToUnpaid(rec); else toast('งานนี้อยู่ในใบราคาส่งแล้ว'); }
   });
   function newJob() {
@@ -4844,17 +4863,70 @@ function bahtText(value) {
 
   function fitWholesale() { fitFrame('wholesaleA4frame', 'wholesaleSheet'); }
 
+  let whPhotos = [];
+  function renderWhPhotos() {
+    const wrap = $('whPhotoWrap'); if (!wrap) return;
+    if (!whPhotos.length) { wrap.hidden = true; wrap.innerHTML = ''; return; }
+    wrap.hidden = false;
+    wrap.innerHTML = whPhotos.map((src, i) => '<div class="job-photo-item"><img src="' + src + '" alt="รูปงาน ' + (i + 1) + '"><button type="button" data-i="' + i + '" aria-label="ลบรูปนี้">✕</button></div>').join('');
+  }
+  function readWhPhotos(files) {
+    Array.from(files || []).forEach(file => {
+      if (!file || !/^image\//.test(file.type)) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width, h = img.height; const maxDim = 1000;
+          if (w > maxDim || h > maxDim) { const k = maxDim / Math.max(w, h); w = Math.round(w * k); h = Math.round(h * k); }
+          const cv = document.createElement('canvas'); cv.width = w; cv.height = h; cv.getContext('2d').drawImage(img, 0, 0, w, h);
+          whPhotos.push(cv.toDataURL('image/jpeg', 0.75)); renderWhPhotos(); syncWhFolds();
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  // ใบราคาส่ง → สร้าง/อัปเดตใบสั่งงาน (JBS) ที่ผูกกันให้เอง: ฝ่ายผลิต/ติดตามพัสดุใช้ของเดิม ไม่ต้องคีย์ซ้ำ
+  function syncWholesaleJob(rec) {
+    const jl = store.get('bs_jobs', []);
+    let ji = rec.jobId ? jl.findIndex(x => x.id === rec.jobId) : -1;
+    const items = (rec.items || []).filter(i => (i.name || '').trim());
+    if (!items.length) return null;
+    const jobItems2 = items.map(i => ({name: String(i.name).trim(), qty: i.qty, note: '', price: i.price}));
+    const whAdded = {}; jobItems2.forEach((i, idx) => { whAdded[jobItemKey(i, idx)] = {at: Date.now(), doc: rec.no || rec.id}; });
+    const common = {jName: rec.buyerName, jPhone: rec.buyerPhone || '', jAddr: rec.buyerAddr || '', due: rec.due || '', note: rec.prodNote || '', items: jobItems2, photos: (rec.photos || []).slice(), recv: rec.recv || null, wholesale: true, whAdded, whDocId: rec.id};
+    let job, isNew = false;
+    if (ji >= 0) { job = Object.assign({}, jl[ji], common, {savedAt: Date.now()}); jl[ji] = job; }
+    else {
+      isNew = true;
+      const no = nextJobNoFor('JBS' + String(rec.date || todayISO()).replace(/-/g, '').slice(2));
+      job = Object.assign({id: 'j' + Date.now(), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', no, date: rec.date || todayISO(), account: 'วันทิม', page: 'ball', status: 'pending', slipAmount: '', slipPending: false, bankInIds: [], bankInId: '', recvMore: []}, common);
+      jl.push(job);
+    }
+    store.set('bs_jobs', jl); cloudSave('jobs', job);
+    syncRecordPhotosToCloud('bs_jobs', 'jobs', job.id, 'photos', renderJobHistory);
+    if (isNew) { try { pushJobNotif(job, 'new'); } catch (e) {} }
+    upsertCustomer(job.jName, job.jPhone, job.jAddr);
+    try { renderJobHistory(); } catch (e) {}
+    return {job, isNew};
+  }
   function collectWholesale() {
     return {no: $('whNo').value.trim(), ref: $('whRef').value, date: $('whDate').value, buyerName: $('whName').value,
       items: wholesaleItems.map(i => ({name: i.name, qty: i.qty, price: i.price})),
-      discount: $('whDiscount').value, note: $('whNote').value};
+      discount: $('whDiscount').value, note: $('whNote').value,
+      buyerPhone: $('whPhone').value.trim(), buyerAddr: $('whAddr').value.trim(), due: $('whDue').value, prodNote: $('whProdNote').value, photos: whPhotos.slice(),
+      recv: ($('whRName').value.trim() || $('whRPhone').value.trim() || $('whRAddr').value.trim()) ? {name: $('whRName').value.trim(), phone: $('whRPhone').value.trim(), addr: $('whRAddr').value.trim()} : null};
   }
   function applyWholesale(w) {
     $('whNo').value = w.no || ''; $('whRef').value = w.ref || ''; $('whDate').value = w.date || todayISO();
     $('whName').value = w.buyerName || '';
     wholesaleItems = (w.items && w.items.length) ? w.items.map(i => ({name: i.name || '', qty: i.qty, price: i.price})) : [{name: '', qty: 1, price: 0}];
     $('whDiscount').value = w.discount || 0; $('whNote').value = w.note || '';
-    renderWholesaleItems(); renderWholesale();
+    $('whPhone').value = w.buyerPhone || ''; $('whAddr').value = w.buyerAddr || ''; $('whDue').value = w.due || ''; $('whProdNote').value = w.prodNote || '';
+    { const rv = w.recv || {}; $('whRName').value = rv.name || ''; $('whRPhone').value = rv.phone || ''; $('whRAddr').value = rv.addr || ''; }
+    whPhotos = (w.photos && w.photos.length) ? w.photos.slice() : []; renderWhPhotos();
+    renderWholesaleItems(); renderWholesale(); try { syncWhFolds(); } catch (e) {}
   }
   function renderWholesaleEditState() {
     const el = $('wholesaleEditState');
@@ -4874,6 +4946,21 @@ function bahtText(value) {
     let n = max + 1, out; do { out = pre + '-' + String(n).padStart(3, '0'); n++; } while (used[out.toUpperCase()]);
     return out;
   }
+  function openWhModal() {
+    if (window.innerWidth >= 900) return;
+    document.body.classList.add('jm-open'); const f = $('whFormTop'); if (f) f.scrollTop = 0;
+    syncWhFolds();
+  }
+  function syncWhFolds() {
+    try {
+      const d = $('whDiscFold'); if (d) d.open = !!(num($('whDiscount').value) > 0 || ($('whNote').value || '').trim());
+      const sf = $('whShipFold'); if (sf) sf.open = !!(($('whPhone').value || '').trim() || ($('whAddr').value || '').trim() || ($('whRName').value || '').trim() || ($('whRAddr').value || '').trim() || whPhotos.length || $('whDue').value);
+      const ss = $('whShipSum'); if (ss) ss.textContent = ($('whRName').value || '').trim() ? '· ส่งถึง ' + $('whRName').value.trim() : (whPhotos.length ? '· รูป ' + whPhotos.length : '(เบอร์ ที่อยู่ ผู้รับ รูป กำหนดส่ง)');
+      const sum = $('whMetaSum'); if (sum) sum.textContent = '· ' + ($('whNo').value || 'เลขอัตโนมัติ') + ($('whDate').value ? ' · ' + thDate($('whDate').value) : '');
+    } catch (e) { console.error('syncWhFolds', e); }
+  }
+  ['whDate', 'whNo', 'whRef', 'whDiscount', 'whNote', 'whPhone', 'whAddr', 'whRName', 'whRPhone', 'whRAddr', 'whDue', 'whProdNote'].forEach(id => { const e = $(id); if (e) { e.addEventListener('input', syncWhFolds); e.addEventListener('change', syncWhFolds); } });
+  { const fb = $('fabNewWh'); if (fb) fb.addEventListener('click', () => { newWholesale(); renderWholesaleEditState(); openWhModal(); }); }
   function newWholesale() {
     currentWholesaleId = null;
     applyWholesale({date: todayISO(), no: whNextNo(todayISO())});
@@ -4887,14 +4974,22 @@ function bahtText(value) {
     const q = $('whHistSearch') ? $('whHistSearch').value : '';
     const shown = list.filter(w => matchesSearch(w.buyerName, q));
     if (!shown.length) { $('wholesaleHistory').innerHTML = notice + '<p class="empty">ไม่พบใบราคาส่งของลูกค้าชื่อ “' + esc(q) + '”</p>'; return; }
+    const IC_RC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>';
+    const IC_ED = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>';
+    const IC_QR = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-4"/></svg>';
     $('wholesaleHistory').innerHTML = notice + '<ul>' + shown.map(w => {
-      const t = wholesaleCalc(w);
-      return '<li data-id="' + esc(w.id) + '"><div class="meta"><b>' + esc(w.buyerName || 'ไม่ระบุชื่อผู้ซื้อ') + '</b><small>' + esc(thDate(w.date)) + (w.no ? ' · ' + esc(w.no) : '') + (w.ref ? ' · ' + esc(w.ref) : '') + (w.createdBy ? ' · โดย ' + esc(w.createdBy) : '') + '</small></div>' +
-      '<span class="amt">' + money(t.total) + ' บาท</span>' +
-      '<button class="status-pill ' + (w.paid ? 'billdone' : 'pending') + '" data-act="togglepaid" data-id="' + esc(w.id) + '" type="button" title="กดเพื่อสลับสถานะ">' + (w.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</button>' +
-      (w.paid ? '' : '<button class="btn small good" data-act="charge" type="button">เรียกเก็บเงิน</button>') +
-      '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
-      '<button class="btn small del" data-act="del" type="button">ลบ</button></li>';
+      const t = wholesaleCalc(w), st = w.paid ? 'paid' : 'pending', n = (w.items || []).filter(i => (i.name || '').trim()).length;
+      const jb = w.jobId ? (store.get('bs_jobs', []).find(x => x.id === w.jobId) || {}).no : '';
+      return '<li class="jc st-' + st + '" data-id="' + esc(w.id) + '">' +
+        '<div class="jc-top"><span class="jc-ph" aria-hidden="true">' + IC_RC + '</span>' +
+        '<div class="jc-main"><div class="jc-no">' + esc(w.no || w.ref || 'ใบราคาส่ง') + '</div><div class="jc-cust">' + esc(w.buyerName || 'ไม่ระบุชื่อผู้ซื้อ') + '</div></div>' +
+        '<div class="jc-amt">' + money(t.total) + '<small>บาท</small></div></div>' +
+        '<div class="jc-chips"><button class="status-pill ' + (w.paid ? 'billdone' : 'pending') + '" data-act="togglepaid" data-id="' + esc(w.id) + '" type="button" title="กดเพื่อสลับสถานะ">' + (w.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</button>' +
+        '<span class="jc-chip">' + esc(thDate(w.date)) + '</span><span class="jc-chip">' + n + ' รายการ</span>' +
+        (jb ? '<span class="jc-chip tg">ใบงาน ' + esc(jb) + '</span>' : '') + (w.createdBy ? '<span class="jc-chip">โดย ' + esc(w.createdBy) + '</span>' : '') + '</div>' +
+        '<div class="jc-act">' + (w.paid ? '' : '<button class="jc-b main" data-act="charge" type="button">' + IC_QR + 'เรียกเก็บเงิน</button>') +
+        '<button class="jc-b" data-act="open" type="button">' + IC_ED + 'แก้ไข</button>' +
+        '<button class="jc-b del" data-act="del" type="button">ลบ</button></div></li>';
     }).join('') + '</ul>';
   }
 
@@ -4961,14 +5056,20 @@ function bahtText(value) {
     const createdBy = idx >= 0 ? list[idx].createdBy : (currentUser ? currentUser.name : '');
     const paid = idx >= 0 ? !!list[idx].paid : false;
     const rec = Object.assign({id, savedAt: Date.now(), createdBy, paid}, data);
+    if (idx >= 0 && list[idx].jobId) rec.jobId = list[idx].jobId;
+    // ใบใหม่ หรือใบเก่าที่กรอกข้อมูลส่ง/ผลิตเพิ่ม → สร้างใบสั่งงานให้ (ใบเก่าที่ไม่ได้กรอกอะไรเพิ่มไม่แตะ กันงานซ้ำ)
+    let jr = null;
+    if (rec.jobId || idx < 0 || rec.recv || rec.buyerPhone || rec.buyerAddr || (rec.photos || []).length || rec.due || (rec.prodNote || '').trim()) {
+      jr = syncWholesaleJob(rec); if (jr) rec.jobId = jr.job.id;
+    }
     if (idx >= 0) list[idx] = rec; else list.push(rec);
     const wasEditing = idx >= 0;
     currentWholesaleId = rec.id;
     const persisted = store.set('bs_wholesale', list);
     cloudSave('wholesale', rec);
-    upsertCustomer(rec.buyerName, '', '');
+    upsertCustomer(rec.buyerName, rec.buyerPhone || '', rec.buyerAddr || '');
     renderWholesaleHistory(); renderWholesaleEditState(); closeJobModal();
-    toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับใบราคาส่งแล้ว' : 'บันทึกใบราคาส่งแล้ว')
+    toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับใบราคาส่งแล้ว' : 'บันทึกใบราคาส่งแล้ว') + (jr ? (jr.isNew ? ' · สร้างใบสั่งงาน ' + jr.job.no + ' ให้แล้ว' : ' · อัปเดตใบสั่งงาน ' + jr.job.no + ' แล้ว') : '')
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
   }
 
@@ -6072,11 +6173,10 @@ function bahtText(value) {
     if (sr && (sr.send.name || sr.send.phone) && (sr.recv.name || sr.recv.phone || sr.recv.addr)) {
       $('jName').value = sr.send.name; $('jPhone').value = sr.send.phone; $('jAddr').value = sr.send.addr || '';
       $('jRName').value = sr.recv.name; $('jRPhone').value = sr.recv.phone; $('jRAddr').value = sr.recv.addr;
-      if (!$('jobWholesale').checked) { $('jobWholesale').checked = true; syncJobWholesaleBtn(); renderJobItems(); }
       const ex = sr.pre ? splitCustomer(sr.pre) : null;
       if (ex && ex.item) { const k = jobItems.findIndex(x => !x.name.trim()); if (k >= 0) jobItems[k] = {name: ex.item.name, qty: ex.item.qty, note: jobItems[k].note || ''}; else jobItems.push({name: ex.item.name, qty: ex.item.qty, note: ''}); renderJobItems(); }
       ['jName', 'jPhone', 'jAddr', 'jRName', 'jRPhone', 'jRAddr'].forEach(id => $(id).dispatchEvent(new Event('input', {bubbles: true})));
-      renderJob(); toast('แยกแบบฝากส่งแล้ว: ผู้ส่ง ' + sr.send.name + ' (งานราคาส่ง) → ผู้รับ ' + (sr.recv.name || '') + ' ตรวจอีกครั้ง'); return;
+      renderJob(); toast('แยกแบบฝากส่งแล้ว: ผู้ส่ง ' + sr.send.name + ' → ผู้รับ ' + (sr.recv.name || '') + ' ตรวจอีกครั้ง'); return;
     }
     const r = splitCustomer($('jPaste').value);
     if (!r.name && !r.phone && !r.addr && !r.item) { toast('วางข้อมูลก่อน'); return; }
@@ -6316,7 +6416,7 @@ function bahtText(value) {
     wholesaleItems = shown.length ? shown.map(i => ({name: i.name, qty: i.qty, price: i.price})) : [{name: '', qty: 1, price: 0}];
     $('whDiscount').value = num($('discount').value) || 0;
     if ($('note').value.trim() && !$('whNote').value.trim()) $('whNote').value = $('note').value;
-    renderWholesaleItems(); renderWholesale(); showTab('wholesale');
+    renderWholesaleItems(); renderWholesale(); showTab('wholesale'); openWhModal();
     window.scrollTo({top: 0, behavior: 'smooth'});
     toast('คัดลอกข้อมูลจากเอกสารนี้มาที่ใบราคาส่งแล้ว');
   });
@@ -6340,7 +6440,7 @@ function bahtText(value) {
     const shown = jobItems.filter(i => i.name.trim());
     wholesaleItems = shown.length ? shown.map(i => ({name: i.name, qty: i.qty, price: 0})) : [{name: '', qty: 1, price: 0}];
     if ($('jobNote').value.trim() && !$('whNote').value.trim()) $('whNote').value = $('jobNote').value;
-    renderWholesaleItems(); renderWholesale(); showTab('wholesale');
+    renderWholesaleItems(); renderWholesale(); showTab('wholesale'); openWhModal();
     window.scrollTo({top: 0, behavior: 'smooth'});
     toast('คัดลอกข้อมูลจากใบคอนเฟิร์มงานมาที่ใบราคาส่งแล้ว ใส่ราคาส่งให้ครบก่อนพิมพ์');
   });
@@ -6561,6 +6661,23 @@ function bahtText(value) {
   });
   $('pdf-wholesale').addEventListener('click', () => exportDoc('wholesale', $('pdf-wholesale')));
   $('save-wholesale').addEventListener('click', saveWholesale);
+  $('whPhotoInput').addEventListener('change', e => { if (e.target.files && e.target.files.length) readWhPhotos(e.target.files); e.target.value = ''; });
+  $('whPhotoWrap').addEventListener('click', e => { const b = e.target.closest('button[data-i]'); if (!b) return; whPhotos.splice(+b.dataset.i, 1); renderWhPhotos(); syncWhFolds(); });
+  $('whSplit').addEventListener('click', () => {
+    const sr = splitSenderReceiver($('whPaste').value);
+    if (sr && (sr.send.name || sr.send.phone) && (sr.recv.name || sr.recv.phone || sr.recv.addr)) {
+      $('whName').value = sr.send.name; $('whPhone').value = sr.send.phone; $('whAddr').value = sr.send.addr || '';
+      $('whRName').value = sr.recv.name; $('whRPhone').value = sr.recv.phone; $('whRAddr').value = sr.recv.addr;
+      const ex = sr.pre ? splitCustomer(sr.pre) : null;
+      if (ex && ex.item) { const k = wholesaleItems.findIndex(x => !String(x.name || '').trim()); const it = {name: ex.item.name, qty: ex.item.qty, price: 0}; if (k >= 0) wholesaleItems[k] = it; else wholesaleItems.push(it); renderWholesaleItems(); }
+      renderWholesale(); syncWhFolds(); toast('แยกผู้ส่ง ' + sr.send.name + ' → ผู้รับ ' + (sr.recv.name || '') + ' แล้ว ตรวจอีกครั้ง'); return;
+    }
+    const r = splitCustomer($('whPaste').value);
+    if (!r.name && !r.phone && !r.addr && !r.item) { toast('วางข้อมูลก่อน'); return; }
+    $('whName').value = r.name; $('whPhone').value = r.phone; $('whAddr').value = r.addr;
+    if (r.item) { const k = wholesaleItems.findIndex(x => !String(x.name || '').trim()); const it = {name: r.item.name, qty: r.item.qty, price: 0}; if (k >= 0) wholesaleItems[k] = it; else wholesaleItems.push(it); renderWholesaleItems(); }
+    renderWholesale(); syncWhFolds(); toast('แยกข้อมูลแล้ว ตรวจอีกครั้ง');
+  });
   $('new-wholesale').addEventListener('click', () => { newWholesale(); toast('เปิดใบใหม่แล้ว'); });
 
   $('wholesaleHistory').addEventListener('click', e => {
@@ -6579,7 +6696,7 @@ function bahtText(value) {
     } else if (btn.dataset.act === 'open') {
       const w = list.find(x => x.id === id); if (!w) return;
       currentWholesaleId = id; applyWholesale(w); renderWholesaleEditState(); showTab('wholesale');
-      document.body.classList.add('jm-open'); { const f = $('whFormTop'); if (f) f.scrollTop = 0; } toast('เปิดใบราคาส่งแล้ว แก้ไขได้เลย');
+      document.body.classList.add('jm-open'); { const f = $('whFormTop'); if (f) f.scrollTop = 0; } syncWhFolds(); toast('เปิดใบราคาส่งแล้ว แก้ไขได้เลย');
     } else if (btn.dataset.act === 'del') {
       if (whDelArmed !== id) {
         whDelArmed = id; btn.textContent = 'กดอีกครั้งเพื่อลบ'; btn.classList.add('confirm');
