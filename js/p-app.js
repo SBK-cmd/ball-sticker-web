@@ -291,10 +291,11 @@ function bahtText(value) {
       // ผู้ส่ง = ลูกค้าของใบงาน · ผู้รับ = ผู้รับปลายทาง (ลูกค้าฝากส่ง) — โชว์เฉพาะชื่อแรก + ที่อยู่ ไม่ส่งเบอร์โทรขึ้นหน้าสาธารณะ
       const addrOf = (name, addr) => { const a = String(addr || '').replace(/\s+/g, ' ').trim().slice(0, 300); return a ? {name: firstNameOf(name), addr: a} : null; };
       const snd = addrOf(rec.jName, rec.jAddr), rcv = rec.recv ? addrOf(rec.recv.name, rec.recv.addr) : null;
-      if (snd) doc.sender = snd;
-      if (rcv) doc.receiver = rcv;
+      const isJbs = /^JBS/i.test(String(rec.no || '').trim());   // ที่อยู่/รูปอ้างอิง เฉพาะงานส่ง (JBS)
+      if (isJbs && snd) doc.sender = snd;
+      if (isJbs && rcv) doc.receiver = rcv;
       const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
-      if (refs.length) doc.refPhotos = refs;
+      if (isJbs && refs.length) doc.refPhotos = refs;
       cloudDb.collection('publicJobs').doc(String(rec.trackToken)).set(doc).catch(e => console.error('publicJobs save error', e));
     } catch (e) { console.error('publicJobs mirror', e); }
   }
