@@ -2358,7 +2358,7 @@ body.jm-open .fab-newjob{display:none!important}
               <button class="btn" id="img-confirm" type="button">บันทึกเป็นรูปส่งแชท</button>
               </div>
               </details>
-              <details class="fold jf-more"><summary>ทำต่อ: ออกบิล / เปิดใบใหม่</summary>
+              <details class="fold jf-more"><summary>ทำต่อ: ออกบิล / ใบราคาส่ง / เปิดใบใหม่</summary>
                 <div class="jf-grid">
               <button class="btn" id="job-to-bill" type="button">ใช้ข้อมูลนี้ออกบิล</button>
               <button class="btn" id="job-to-wholesale" type="button">ย้ายไปใบราคาส่ง</button>
@@ -7968,7 +7968,7 @@ function bahtText(value) {
   function syncJobWholesaleBtn() {
     const b = $('jobToWholesale'); if (b) b.hidden = !($('jobWholesale').checked && can('wholesale'));
     const box = $('jobWholesale') && $('jobWholesale').closest('.wh-box'); if (box) box.hidden = !$('jobWholesale').checked;   // งานปกติไม่มีตัวเลือกราคาส่ง · เฉพาะใบเก่าที่เป็นงานราคาส่งจึงแสดง
-    const mv = $('job-to-wholesale'); if (mv) mv.hidden = true;
+    const mv = $('job-to-wholesale'); if (mv) mv.hidden = !!$('jobWholesale').checked;   // งานปกติย้ายเข้าใบราคาส่งได้ · งานที่เป็นราคาส่งอยู่แล้วไม่ต้อง
   }
   function renderJobEditState() {
     const el = $('jobEditState');
@@ -8103,7 +8103,7 @@ function bahtText(value) {
      ไม่มี VAT ไม่รันเลขที่เอกสารอัตโนมัติ และไม่รวมกับ bs_bills / แดชบอร์ด / รายงานภาษีใดๆ ทั้งสิ้น
      เก็บข้อมูลแยกที่ localStorage key "bs_wholesale" และ Firestore collection "wholesale" ของตัวเอง) ---------------- */
   let wholesaleItems = [{name: '', qty: 1, price: 0}];
-  let currentWholesaleId = null;
+  let currentWholesaleId = null, whPendingJobId = null;
   let whDelArmed = null, whDelTimer = null;
 
   function renderWholesaleItems() {
@@ -8259,7 +8259,7 @@ function bahtText(value) {
   ['whDate', 'whNo', 'whRef', 'whDiscount', 'whNote', 'whPhone', 'whAddr', 'whRName', 'whRPhone', 'whRAddr', 'whDue', 'whProdNote'].forEach(id => { const e = $(id); if (e) { e.addEventListener('input', syncWhFolds); e.addEventListener('change', syncWhFolds); } });
   { const fb = $('fabNewWh'); if (fb) fb.addEventListener('click', () => { newWholesale(); renderWholesaleEditState(); openWhModal(); }); }
   function newWholesale() {
-    currentWholesaleId = null;
+    currentWholesaleId = null; whPendingJobId = null;
     applyWholesale({date: todayISO(), no: whNextNo(todayISO())});
     renderWholesaleEditState();
   }
@@ -8354,6 +8354,7 @@ function bahtText(value) {
     const paid = idx >= 0 ? !!list[idx].paid : false;
     const rec = Object.assign({id, savedAt: Date.now(), createdBy, paid}, data);
     if (idx >= 0 && list[idx].jobId) rec.jobId = list[idx].jobId;
+    if (!rec.jobId && whPendingJobId) rec.jobId = whPendingJobId;
     // ใบใหม่ หรือใบเก่าที่กรอกข้อมูลส่ง/ผลิตเพิ่ม → สร้างใบสั่งงานให้ (ใบเก่าที่ไม่ได้กรอกอะไรเพิ่มไม่แตะ กันงานซ้ำ)
     let jr = null;
     if (rec.jobId || idx < 0 || rec.recv || rec.buyerPhone || rec.buyerAddr || (rec.photos || []).length || rec.due || (rec.prodNote || '').trim()) {
@@ -9732,15 +9733,19 @@ function bahtText(value) {
   });
 
   $('job-to-wholesale').addEventListener('click', () => {
-    $('whName').value = $('jName').value;
-    $('whDate').value = todayISO();
-    const shown = jobItems.filter(i => i.name.trim());
-    wholesaleItems = shown.length ? shown.map(i => ({name: i.name, qty: i.qty, price: 0})) : [{name: '', qty: 1, price: 0}];
-    if ($('jobNote').value.trim() && !$('whNote').value.trim()) $('whNote').value = $('jobNote').value;
-    renderWholesaleItems(); renderWholesale(); showTab('wholesale'); openWhModal();
+    if (!$('jName').value.trim()) { toast('ใส่ชื่อลูกค้าก่อน'); $('jName').focus(); return; }
+    const jid = currentJobId, keepNote = $('jobNote').value;
+    const d = {name: $('jName').value, phone: $('jPhone').value, addr: $('jAddr').value, due: $('jobDue').value, rv: ($('jRName').value.trim() || $('jRPhone').value.trim() || $('jRAddr').value.trim()) ? {name: $('jRName').value.trim(), phone: $('jRPhone').value.trim(), addr: $('jRAddr').value.trim()} : null, photos: jobPhotos.slice(),
+      items: jobItems.filter(i => i.name.trim()).map(i => ({name: i.name, qty: i.qty, price: (i.price !== '' && i.price != null) ? i.price : 0}))};
+    closeJobModal();
+    newWholesale();
+    applyWholesale({date: todayISO(), no: whNextNo(todayISO()), buyerName: d.name, buyerPhone: d.phone, buyerAddr: d.addr, due: d.due, recv: d.rv, photos: d.photos, prodNote: keepNote, items: d.items});
+    whPendingJobId = jid || null;   // ใบงานนี้บันทึกไว้แล้ว → ตอนบันทึกใบราคาส่งจะผูก/อัปเดตใบงานเดิม ไม่สร้างใบงานซ้ำ
+    renderWholesaleEditState(); showTab('wholesale'); openWhModal();
     window.scrollTo({top: 0, behavior: 'smooth'});
-    toast('คัดลอกข้อมูลจากใบคอนเฟิร์มงานมาที่ใบราคาส่งแล้ว ใส่ราคาส่งให้ครบก่อนพิมพ์');
+    toast('ย้ายข้อมูลมาที่ใบราคาส่งแล้ว ใส่ราคาส่งต่อชิ้นแล้วกด “บันทึกลงประวัติ”' + (jid ? ' (ผูกกับใบงานเดิม ' + String($('jobNo').value || '') + ')' : ''));
   });
+
 
   let jdDownInside = false;
   $('jobHistory').addEventListener('pointerdown', e => { jdDownInside = !!e.target.closest('.jd'); });
