@@ -1766,9 +1766,9 @@ function bahtText(value) {
     $('tdyDate').textContent = thDate(today);
     $('tdyGrid').innerHTML =
       tile('c1', 'users', 'ลูกค้าวันนี้', Object.keys(custs).length, 'ราย', 'งานใหม่ ' + jobsToday + ' ใบ') +
-      tile('c2', 'box', 'ส่งวันนี้', boxes, 'กล่อง', boxes ? 'นับจากเลขพัสดุที่สแกน/บันทึกวันนี้' : 'ยังไม่มีกล่องที่บันทึกวันนี้') +
-      tile('c3', 'list', 'งานที่เหลือ', open.length, 'งาน', 'รอทำ ' + cnt('pending') + ' · ทำไฟล์แล้ว ' + cnt('filed') + ' · ผลิตแล้ว ' + cnt('printed')) +
-      tile('c4' + (dueToday + late ? ' hot' : ''), 'bolt', 'งานด่วน', dueToday + late, 'งาน', 'ครบกำหนดวันนี้ ' + dueToday + ' · เลยกำหนด ' + late);
+      tile('c2', 'box', 'ส่งวันนี้', boxes, 'กล่อง', boxes ? 'นับจากเลขพัสดุวันนี้' : 'ยังไม่มีกล่องวันนี้') +
+      tile('c3', 'list', 'งานที่เหลือ', open.length, 'งาน', 'รอทำ ' + cnt('pending') + ' · ไฟล์ ' + cnt('filed') + ' · ผลิต ' + cnt('printed')) +
+      tile('c4' + (dueToday + late ? ' hot' : ''), 'bolt', 'งานด่วน', dueToday + late, 'งาน', 'วันนี้ ' + dueToday + ' · เลยกำหนด ' + late);
   }
   function renderDash() {
     try { renderTodayJobs(); } catch (e) { console.error('todayJobs', e); }
