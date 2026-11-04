@@ -4783,11 +4783,27 @@ function bahtText(value) {
       '<select class="job-status-select status-pill ' + st + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
       '</select></div>' +
+      jobCardDetail(j) +
       '<div class="jc-chips">' + chips + '</div>' +
       (canKey ? '<div class="jc-act"><button class="jc-b" data-act="open" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>เปิดแก้ไข</button>' +
       '<button class="jc-b del" data-act="del" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>ลบ</button></div>' : '') +
       (jobOpenIds[j.id] ? jobDetailHTML(j) : '') + '</li>';
     }).join('') + '</ul><p class="hint" style="margin:10px 2px 0">แตะที่ใบเพื่อดูรายละเอียด ไม่ต้องกดแก้ไข</p>';
+  }
+  // รายละเอียดบนการ์ดใบงาน: งานอะไร กี่ชิ้น ยอดเงิน ฝากส่งถึงใคร (ตัวเลขคำนวณจากข้อมูลในใบ ไม่เดา)
+  function jobCardDetail(j) {
+    const its = (j.items || []).filter(i => (i.name || '').trim());
+    const pieces = its.reduce((a, i) => a + (num(i.qty) > 0 ? num(i.qty) : 0), 0);
+    const rows = its.slice(0, 3).map(i => '<li><span>' + esc(String(i.name).trim()) + '</span><b>× ' + esc(i.qty === '' || i.qty == null ? 1 : i.qty) + '</b></li>').join('') +
+      (its.length > 3 ? '<li class="more">+ อีก ' + (its.length - 3) + ' รายการ</li>' : '');
+    let amt = 0, hasPrice = false;
+    its.forEach(i => { const pr = (i.price !== '' && i.price != null) ? num(i.price) : null; if (pr != null && pr > 0) { hasPrice = true; amt += (num(i.qty) > 0 ? num(i.qty) : 1) * pr; } });
+    if (!hasPrice && num(j.slipAmount) > 0) { amt = num(j.slipAmount); hasPrice = true; }
+    const money$ = (canBank && hasPrice) ? '<div class="jc-det-amt"><small>' + (j.slipPending ? 'ยอดรอรับ' : 'ยอดเงิน') + '</small>' + money(round2(amt)) + ' บาท</div>' : '';
+    const rv = j.recv && (j.recv.name || j.recv.addr || j.recv.phone) ? j.recv : null;
+    const rvHtml = rv ? '<div class="jc-recv"><span class="jc-k">ฝากส่งถึง</span><b>' + esc(rv.name || '') + '</b>' + (rv.phone ? ' · ' + esc(rv.phone) : '') + (rv.addr ? '<div class="jc-addr">' + esc(rv.addr) + '</div>' : '') + (Array.isArray(j.recvMore) && j.recvMore.length ? '<div class="jc-addr">+ อีก ' + j.recvMore.length + ' กล่อง</div>' : '') + '</div>' : '';
+    if (!its.length && !rv && !money$) return '';
+    return '<div class="jc-det">' + (its.length ? '<div class="jc-det-h"><span class="jc-k">งาน</span><span>รวม ' + money(pieces).replace(/\.00$/, '') + ' ชิ้น</span></div><ul class="jc-det-l">' + rows + '</ul>' : '') + money$ + rvHtml + '</div>';
   }
   function saveJob() {
     const list = store.get('bs_jobs', []);

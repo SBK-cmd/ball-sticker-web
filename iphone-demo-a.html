@@ -1447,6 +1447,18 @@ body.chg-open{overflow:hidden}
 #wholesaleHistory .jc-b.main{background:#1f2a44;color:#fff;border-color:#1f2a44}
 #wholesaleHistory .jc-b.del{flex:0 0 auto;color:#b42318;border-color:#f3c9c4;background:#fff7f6}
 #wholesaleHistory .jc-b.del.confirm{background:#b42318;color:#fff;border-color:#b42318}
+#jobHistory .jc-det{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.035);display:grid;gap:8px}
+#jobHistory .jc-k{font-size:11.5px;font-weight:700;color:var(--muted,#6b7280);margin-right:6px}
+#jobHistory .jc-det-h{display:flex;justify-content:space-between;font-size:13px;color:#4b5563}
+#jobHistory .jc-det-l{list-style:none;margin:0;padding:0;display:grid;gap:3px}
+#jobHistory .jc-det-l li{display:flex!important;justify-content:space-between;gap:10px;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;border-radius:0!important;font-size:14.5px;color:#111}
+#jobHistory .jc-det-l li span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#jobHistory .jc-det-l li b{flex:none;font-variant-numeric:tabular-nums}
+#jobHistory .jc-det-l li.more{color:#6b7280;font-size:13px}
+#jobHistory .jc-det-amt{display:flex;justify-content:space-between;align-items:baseline;font-size:16px;font-weight:800;border-top:1px dashed rgba(0,0,0,.12);padding-top:8px;font-variant-numeric:tabular-nums}
+#jobHistory .jc-det-amt small{font-size:12px;font-weight:600;color:#6b7280}
+#jobHistory .jc-recv{font-size:14px;line-height:1.4;color:#111;border-top:1px dashed rgba(0,0,0,.12);padding-top:8px}
+#jobHistory .jc-addr{font-size:13px;color:#4b5563;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 /* ฟอร์มใบงาน/ราคาส่ง: จังหวะระยะห่างให้สม่ำเสมอ (ช่องละ 12px · ป้ายชื่อห่างช่อง 6px · หัวข้อ 18px) */
 .jf .fields{gap:12px!important}
 .jf .f>span{margin-bottom:6px!important}
@@ -8875,11 +8887,27 @@ function bahtText(value) {
       '<select class="job-status-select status-pill ' + st + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
       '</select></div>' +
+      jobCardDetail(j) +
       '<div class="jc-chips">' + chips + '</div>' +
       (canKey ? '<div class="jc-act"><button class="jc-b" data-act="open" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>เปิดแก้ไข</button>' +
       '<button class="jc-b del" data-act="del" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>ลบ</button></div>' : '') +
       (jobOpenIds[j.id] ? jobDetailHTML(j) : '') + '</li>';
     }).join('') + '</ul><p class="hint" style="margin:10px 2px 0">แตะที่ใบเพื่อดูรายละเอียด ไม่ต้องกดแก้ไข</p>';
+  }
+  // รายละเอียดบนการ์ดใบงาน: งานอะไร กี่ชิ้น ยอดเงิน ฝากส่งถึงใคร (ตัวเลขคำนวณจากข้อมูลในใบ ไม่เดา)
+  function jobCardDetail(j) {
+    const its = (j.items || []).filter(i => (i.name || '').trim());
+    const pieces = its.reduce((a, i) => a + (num(i.qty) > 0 ? num(i.qty) : 0), 0);
+    const rows = its.slice(0, 3).map(i => '<li><span>' + esc(String(i.name).trim()) + '</span><b>× ' + esc(i.qty === '' || i.qty == null ? 1 : i.qty) + '</b></li>').join('') +
+      (its.length > 3 ? '<li class="more">+ อีก ' + (its.length - 3) + ' รายการ</li>' : '');
+    let amt = 0, hasPrice = false;
+    its.forEach(i => { const pr = (i.price !== '' && i.price != null) ? num(i.price) : null; if (pr != null && pr > 0) { hasPrice = true; amt += (num(i.qty) > 0 ? num(i.qty) : 1) * pr; } });
+    if (!hasPrice && num(j.slipAmount) > 0) { amt = num(j.slipAmount); hasPrice = true; }
+    const money$ = (canBank && hasPrice) ? '<div class="jc-det-amt"><small>' + (j.slipPending ? 'ยอดรอรับ' : 'ยอดเงิน') + '</small>' + money(round2(amt)) + ' บาท</div>' : '';
+    const rv = j.recv && (j.recv.name || j.recv.addr || j.recv.phone) ? j.recv : null;
+    const rvHtml = rv ? '<div class="jc-recv"><span class="jc-k">ฝากส่งถึง</span><b>' + esc(rv.name || '') + '</b>' + (rv.phone ? ' · ' + esc(rv.phone) : '') + (rv.addr ? '<div class="jc-addr">' + esc(rv.addr) + '</div>' : '') + (Array.isArray(j.recvMore) && j.recvMore.length ? '<div class="jc-addr">+ อีก ' + j.recvMore.length + ' กล่อง</div>' : '') + '</div>' : '';
+    if (!its.length && !rv && !money$) return '';
+    return '<div class="jc-det">' + (its.length ? '<div class="jc-det-h"><span class="jc-k">งาน</span><span>รวม ' + money(pieces).replace(/\.00$/, '') + ' ชิ้น</span></div><ul class="jc-det-l">' + rows + '</ul>' : '') + money$ + rvHtml + '</div>';
   }
   function saveJob() {
     const list = store.get('bs_jobs', []);
@@ -11524,7 +11552,7 @@ if(document.body)start();else document.addEventListener('DOMContentLoaded',start
 const SRC=document.getElementById('appsrc').textContent.replace(/<\\\/script/g,'</script');
 function mkp(c,w,h){const k=document.createElement('canvas');k.width=w;k.height=h;const g=k.getContext('2d');g.fillStyle=c;g.fillRect(0,0,w,h);g.fillStyle='#ffc300';g.beginPath();g.arc(w/2,h/2,Math.min(w,h)*.38,0,7);g.fill();g.fillStyle='#1d1d2b';g.beginPath();g.arc(w/2,h/2,Math.min(w,h)*.2,0,7);g.fill();return k.toDataURL('image/jpeg',.8)}
 function seeds(role){
- const jobs=[{id:'j1',no:'JB261102-001',date:'2026-11-02',due:'2026-11-06',page:'ball',jName:'คุณตัวอย่าง ใจดี',jPhone:'081-234-5678',jAddr:'99 ถนนตัวอย่าง อ.เมือง จ.ตัวอย่าง 10000',account:'กิติพงษ์',slipAmount:650,items:[{name:'7cm',qty:140,note:'แบบละ70ชิ้น'}],note:'UV ด้าน',photos:[mkp('#2878dc',500,500),mkp('#dc4646',500,500)],status:'filed',savedAt:2},
+ const jobs=[{id:'j1',no:'JB261102-001',date:'2026-11-02',due:'2026-11-06',page:'ball',jName:'คุณตัวอย่าง ใจดี',jPhone:'081-234-5678',jAddr:'99 ถนนตัวอย่าง อ.เมือง จ.ตัวอย่าง 10000',account:'กิติพงษ์',slipAmount:650,recv:{name:'สมชาย ใจดี',phone:'082-222-2222',addr:'99 ม.1 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140'},items:[{name:'7cm',qty:140,note:'แบบละ70ชิ้น'}],note:'UV ด้าน',photos:[mkp('#2878dc',500,500),mkp('#dc4646',500,500)],status:'filed',savedAt:2},
  {id:'j2',no:'JB261101-002',date:'2026-11-01',page:'roll',jName:'ร้านตัวอย่าง',wholesale:true,items:[{name:'พ่อค้าผักหนีเที่ยว 1 ตรม',qty:1,note:''},{name:'หมู่ทัด V2 - 1 ตรม.',qty:1,note:''},{name:'แบบที่ 3',qty:200,note:'ลายขาว'}],photos:[mkp('#3ca064',500,300)],status:'pending',savedAt:1}];
  const u=role==='staff'?{id:'u2',username:'staff1',name:'พนักงาน (เดโม)',role:'staff'}:{id:'u1',username:'ball',name:'เจ้าของ (เดโม)',role:'owner'};
  var H=3600000,N=Date.now(),bi=[],bo=[];[['กิติพงษ์',[[1,480,'คุณตัวอย่าง'],[3,1250,'ร้านตัวอย่าง'],[6,320,''],[9,2100,'TN SHOP'],[12,760,'']]],['วันทิม',[[0,91,'โน๊ต'],[2,1189.5,'โน๊ต สติ๊กเกอร์'],[5,400,'PS sticker'],[8,2071.98,'TN SHOP สติ๊กเกอร์'],[11,9.85,'']]]].forEach(function(a){a[1].forEach(function(r,i){bi.push({id:'bi'+a[0]+i,account:a[0],amount:r[1],from:r[2],createdAt:N-r[0]*24*H-3*H,source:'sms'})});bo.push({id:'bo'+a[0]+'1',account:a[0],amount:a[0]=='วันทิม'?640:310,note:a[0]=='วันทิม'?'โฆษณา Facebook':'ค่ากระดาษ',createdAt:N-24*H-H,source:'sms'},{id:'bo'+a[0]+'2',account:a[0],amount:a[0]=='วันทิม'?1500:870,note:a[0]=='วันทิม'?'โฆษณา Facebook':'ค่าไฟ',createdAt:N-4*24*H,source:'sms'})});
