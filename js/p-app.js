@@ -293,7 +293,9 @@ function bahtText(value) {
       const snd = addrOf(rec.jName, rec.jAddr), rcv = rec.recv ? addrOf(rec.recv.name, rec.recv.addr) : null;
       const isJbs = /^JBS/i.test(String(rec.no || '').trim());   // ที่อยู่/รูปอ้างอิง เฉพาะงานส่ง (JBS)
       if (isJbs && snd) doc.sender = snd;
-      if (isJbs && rcv) doc.receiver = rcv;
+      if (isJbs && rcv) { doc.receiver = rcv; const fn = String(rec.recv.name || '').replace(/\s+/g, ' ').trim().slice(0, 80); if (fn) doc.receiver.name = fn; }   // ผู้รับ: ชื่อเต็ม (ตามที่ร้านสั่ง)
+      // ยอดค้างรวมของลูกค้า (ใบราคาส่งที่ยังไม่จ่าย) + payload พร้อมเพย์ ให้ลูกค้าสแกนจ่ายเองจากหน้าติดตาม
+      if (isJbs) { const ow = owedGroups().find(x => x.name === (String(rec.jName || '').trim() || 'ไม่ระบุชื่อ')); if (ow && ow.total > 0) doc.pay = {total: ow.total, payee: shop.promptpayName || '', ref: payRef(Date.now()), payload: promptPayPayload(shop.promptpay, ow.total), docs: ow.docs.slice(0, 10).map(d => ({no: d.no, amount: d.total}))}; }
       const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
       if (isJbs && refs.length) doc.refPhotos = refs;
       cloudDb.collection('publicJobs').doc(String(rec.trackToken)).set(doc).catch(e => console.error('publicJobs save error', e));
@@ -586,7 +588,7 @@ function bahtText(value) {
   const ACCOUNTS = ['กิติพงษ์', 'วันทิม'];
   const NON_TAX_ACCOUNTS = ['วันทิม'];
   // บัญชีที่ปิดไว้ชั่วคราว: ไม่แสดงในทุกหน้า (ข้อมูลเดิมยังเก็บไว้ครบ ไม่ได้ลบ) — เอาชื่อออกจากรายการนี้เมื่ออยากให้กลับมาแสดง
-  const HIDDEN_ACCOUNTS = ['วันทิม'];
+  const HIDDEN_ACCOUNTS = [];
   const VISIBLE_ACCOUNTS = ACCOUNTS.filter(a => HIDDEN_ACCOUNTS.indexOf(a) < 0);
   const accHidden = x => !!(x && HIDDEN_ACCOUNTS.indexOf(x.account) >= 0);
 
@@ -627,7 +629,7 @@ function bahtText(value) {
   const BANK_OUT_KIND = {'เงินออก': 'เงินออก', 'ชำระ': 'ชำระเงิน', 'จ่าย': 'จ่ายเงิน', 'ถอน': 'ถอนเงิน', 'โอนไป': 'โอนออก', 'โอนออก': 'โอนออก', 'โอนเงินออก': 'โอนออก', 'หักบัญชี': 'หักบัญชี'};
   let bankListTab = 'all';
   let bankDelArmed = null, bankDelTimer = null;
-  const BANK_HIDE_DEFAULT = ['วันทิม']; // บัญชีที่ซ่อนการ์ดไว้ก่อน กดปุ่มเพื่อแสดง
+  const BANK_HIDE_DEFAULT = []; // บัญชีที่ซ่อนการ์ดไว้ก่อน กดปุ่มเพื่อแสดง
   const BANK_LIST_STEP = 5; let bankListLimit = BANK_LIST_STEP; // ประวัติแสดงทีละ 5 รายการ กด "ดูเพิ่มเติม" เพื่อดูต่อ
   const BANK_BAL_KEY = {'กิติพงษ์': 'kittipong', 'วันทิม': 'wantim'};
   try { const t = localStorage.getItem('bs_bankin_tab'); if (t === 'in' || t === 'out') bankListTab = t; } catch (e) {}
@@ -3237,8 +3239,35 @@ function bahtText(value) {
     out.forEach(x => { x.docs.sort((a, b) => String(a.date).localeCompare(String(b.date))); x.total = round2(x.docs.reduce((t, d) => t + d.total, 0)); });
     return out.sort((a, b) => b.total - a.total);
   }
+  // อัปเดตหน้าติดตามของลูกค้า (งาน JBS) ให้ยอดค้าง/QR ตรงกับใบราคาส่งปัจจุบัน + เปิดรายการรอรับเงินให้ระบบเงินเข้าจับยอดอัตโนมัติ
+  let owedSig = {}, owedTimer = 0;
+  function refreshOwedMirrors() {
+    clearTimeout(owedTimer);
+    owedTimer = setTimeout(() => {
+      try {
+        if (!cloudDb) return;
+        const gs = owedGroups(), byName = {}; gs.forEach(x => { byName[x.name] = x; });
+        store.get('bs_jobs', []).filter(j => j.trackToken && /^JBS/i.test(String(j.no || '').trim())).forEach(j => {
+          const ow = byName[String(j.jName || '').trim() || 'ไม่ระบุชื่อ'];
+          const sig = ow ? ow.total + '|' + ow.docs.map(d => d.id).join(',') : '';
+          if (owedSig[j.id] === sig) return;
+          owedSig[j.id] = sig; publicJobMirror(j);
+        });
+        const charges = payCharges(), fresh = [];
+        gs.forEach(x => {
+          const key = x.total + '|' + x.docs.map(d => d.id).join(',');
+          let h = 0; for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+          const id = 'owe' + h.toString(36);
+          if (charges.some(c => c.id === id)) return;
+          fresh.push({id, ref: payRef(Date.now()), chatId: '', name: x.name, channel: 'owed', amount: x.total, note: 'ยอดค้างรวม ' + x.docs.length + ' ใบ', status: 'pending', createdAt: Date.now(), by: 'auto', docs: x.docs.map(d => ({k: d.k, id: d.id}))});
+        });
+        if (fresh.length) { store.set('bs_pay_charges', charges.concat(fresh)); fresh.forEach(r => cloudSave('payCharges', r)); }
+      } catch (e) { console.error('refreshOwedMirrors', e); }
+    }, 2500);
+  }
   function renderOwedCard() {
     const c = $('dashOwedCard'); if (!c) return;
+    refreshOwedMirrors();
     const gs = owedGroups(); c.hidden = !can('wholesale');
     $('owedCustCount').textContent = gs.length + ' ราย';
     $('owedTotalAmt').textContent = money(round2(gs.reduce((t, x) => t + x.total, 0))) + ' บาท';

@@ -35,6 +35,11 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
 .ad{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.ad h2{font-size:15px;margin:0 0 8px}
 .ab{background:#f8f9fb;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:14.5px;line-height:1.55}.ab small{display:block;color:var(--mut);font-size:12.5px;font-weight:600}.ab b{display:block}
 .rf{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.rf h2{font-size:15px;margin:0 0 8px}
+.pay{margin-top:4px;padding:14px;border:1px solid #fde68a;background:#fffbeb;border-radius:14px;text-align:center}
+.pay h2{margin:0 0 4px;font-size:1rem;text-align:left}.pay .amt{font-size:1.9rem;font-weight:800;margin:6px 0}
+.pay ul{list-style:none;margin:6px 0;padding:0;text-align:left;font-size:.9rem;color:#4b5563}.pay li{display:flex;justify-content:space-between;padding:2px 0}
+.pay canvas{width:240px;max-width:100%;height:auto;border-radius:10px;background:#fff;border:1px solid #e5e7eb;margin-top:6px}
+.pay small{display:block;color:#6b7280;margin-top:6px;line-height:1.5}.pay a.sv{display:inline-block;margin-top:8px;padding:8px 14px;border-radius:10px;background:#111827;color:#fff;text-decoration:none;font-weight:600}
 </style>
 </head>
 <body>
@@ -43,6 +48,7 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
   <div class="card" id="box"><p style="text-align:center;color:var(--mut);margin:20px 0">กำลังโหลดสถานะงาน…</p></div>
   <div class="ct">สอบถามเพิ่มเติม LINE <a href="https://line.me/R/ti/p/@bk25">@bk25</a> · โทร <a href="tel:0935353555">093-535-3555</a><br>จ–ส 09:00–17:00 น. (หยุดวันอาทิตย์)</div>
 </div>
+<script src="js/qr.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
@@ -70,6 +76,12 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
     }
     var rp = (isJbs ? (j.refPhotos || []) : []).filter(function (u) { return typeof u === 'string' && /^https:\/\//.test(u); });
     if (rp.length) html += '<div class="rf"><h2>🖼 รูปอ้างอิง</h2><div class="pg">' + rp.map(function (u, k) { return '<figure><a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="รูปอ้างอิง ' + (k + 1) + '" loading="lazy"></a></figure>'; }).join('') + '</div></div>';
+    if (isJbs && j.pay && +j.pay.total > 0 && typeof j.pay.payload === 'string' && /^000201/.test(j.pay.payload)) {
+      html += '<div class="pay"><h2>💳 ยอดที่ต้องชำระ</h2><div class="amt">' + Number(j.pay.total).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' บาท</div>' +
+        '<ul>' + (j.pay.docs || []).map(function (d) { return '<li><span>' + esc(d.no || 'ใบ') + '</span><span>' + Number(d.amount).toLocaleString('en-US', {minimumFractionDigits: 2}) + '</span></li>'; }).join('') + '</ul>' +
+        '<canvas id="payQr" width="480" height="480" aria-label="QR พร้อมเพย์"></canvas><br><a class="sv" id="payQrSave" download="QR-ชำระเงิน.png" href="#">บันทึกรูป QR</a>' +
+        '<small>สแกนด้วยแอปธนาคาร · ชื่อบัญชี ' + esc(j.pay.payee || '') + '<br>โอนแล้วร้านจะตรวจยอดให้อัตโนมัติ (หากไม่ขึ้นสถานะ แจ้งร้านทาง LINE @bk25)</small></div>';
+    }
     if (j.due && !done) html += '<div class="row"><span>กำหนดส่ง</span><b>' + esc(thDate(j.due)) + '</b></div>';
     if (j.trackCode) html += '<div class="row"><span>เลขพัสดุ' + (j.carrier ? ' (' + esc(j.carrier) + ')' : '') + '</span><b>' + esc(j.trackCode) + '<button class="copy" id="cp" type="button">คัดลอก</button></b></div>';
     if (j.trackUrl && /^https:\/\//.test(j.trackUrl)) html += '<a class="go" href="' + esc(j.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะพัสดุ' + (j.carrier ? ' กับ ' + esc(j.carrier) : '') + '</a>';
@@ -82,6 +94,15 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
     }
     if (j.updatedAt) { var d = new Date(j.updatedAt); html += '<div class="upd">อัปเดตล่าสุด ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + (d.getFullYear() + 543) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' น.</div>'; }
     box.innerHTML = html;
+    try {
+      var cv = document.getElementById('payQr');
+      if (cv && window.qrEncode && j.pay) {
+        var m = window.qrEncode(j.pay.payload), n = m.length, q = 4, sz = cv.width, cell = Math.floor(sz / (n + q * 2)), off = Math.floor((sz - cell * n) / 2), g = cv.getContext('2d');
+        g.fillStyle = '#fff'; g.fillRect(0, 0, sz, sz); g.fillStyle = '#000';
+        for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (m[r][c]) g.fillRect(off + c * cell, off + r * cell, cell, cell);
+        var sv = document.getElementById('payQrSave'); if (sv) sv.href = cv.toDataURL('image/png');
+      }
+    } catch (e) { var pc = document.querySelector('.pay'); if (pc) pc.insertAdjacentHTML('beforeend', '<small>แสดง QR ไม่ได้ กรุณาแจ้งร้านทาง LINE @bk25</small>'); }
     var cp = document.getElementById('cp'); if (cp) cp.onclick = function () { try { navigator.clipboard.writeText(j.trackCode); cp.textContent = 'คัดลอกแล้ว'; } catch (e) {} };
   }
   var t = (new URLSearchParams(location.search).get('t') || '').trim();
