@@ -1743,7 +1743,35 @@ function bahtText(value) {
       }).join('');
     sel.value = months.indexOf(prev) >= 0 ? prev : '';
   }
+  /* ---------- สรุปงานวันนี้: ลูกค้า · กล่องที่ส่ง · งานที่เหลือ · งานด่วน (ครบกำหนดวันนี้/เลยกำหนด) ---------- */
+  function renderTodayJobs() {
+    const box = $('dashTodayCard'); if (!box) return;
+    const today = todayISO(), jobs = store.get('bs_jobs', []) || [];
+    const nm = v => String(v || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const custs = {};
+    jobs.filter(j => j.date === today).forEach(j => { const k = nm(j.jName); if (k) custs[k] = 1; });
+    (store.get('bs_bills', []) || []).filter(b => b.date === today).forEach(b => { const k = nm(b.cName); if (k) custs[k] = 1; });
+    const jobsToday = jobs.filter(j => j.date === today).length;
+    const boxes = (store.get('bs_tracking', []) || []).filter(t => localISO(new Date(t.boxAt || t.savedAt || 0)) === today).length;
+    const open = jobs.filter(j => (j.status || 'pending') !== 'shipped');
+    const cnt = k => open.filter(j => (j.status || 'pending') === k).length;
+    const dueToday = open.filter(j => j.due && j.due === today).length, late = open.filter(j => j.due && j.due < today).length;
+    const IC = {
+      users: '<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 5.2a3.4 3.4 0 010 6.6M18.5 14.3c1.8.8 3 2.7 3 5.2"/>',
+      box: '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+      list: '<rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/>',
+      bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'
+    };
+    const tile = (cls, ic, label, val, unit, sub) => '<div class="tdy-t ' + cls + '" title="' + sub + '"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + IC[ic] + '</svg></span><span class="lb">' + label + '</span><b>' + val + '<em>' + unit + '</em></b><small>' + sub + '</small></div>';
+    $('tdyDate').textContent = thDate(today);
+    $('tdyGrid').innerHTML =
+      tile('c1', 'users', 'ลูกค้าวันนี้', Object.keys(custs).length, 'ราย', 'งานใหม่ ' + jobsToday + ' ใบ') +
+      tile('c2', 'box', 'ส่งวันนี้', boxes, 'กล่อง', boxes ? 'นับจากเลขพัสดุวันนี้' : 'ยังไม่มีกล่องวันนี้') +
+      tile('c3', 'list', 'งานที่เหลือ', open.length, 'งาน', 'รอทำ ' + cnt('pending') + ' · ไฟล์ ' + cnt('filed') + ' · ผลิต ' + cnt('printed')) +
+      tile('c4' + (dueToday + late ? ' hot' : ''), 'bolt', 'งานด่วน', dueToday + late, 'งาน', 'วันนี้ ' + dueToday + ' · เลยกำหนด ' + late);
+  }
   function renderDash() {
+    try { renderTodayJobs(); } catch (e) { console.error('todayJobs', e); }
     if (!$('dashChart')) return;
     populateDashMonthOptions();
     const list = store.get('bs_bills', []);
