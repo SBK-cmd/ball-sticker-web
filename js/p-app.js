@@ -6137,6 +6137,32 @@ function bahtText(value) {
     if (!wholesaleItems.length) wholesaleItems.push({name: '', qty: 1, price: 0});
     renderWholesaleItems(); renderWholesale();
   });
+  // เพิ่มรายการจากใบงานราคาส่ง (JBS) เข้าใบที่เปิดอยู่ — เหมือนแอดเข้าไป ไม่สลับไปใบอื่น ไม่ทับที่พิมพ์ค้างไว้
+  $('add-wh-fromjob').addEventListener('click', () => {
+    const q = $('whName').value.trim();
+    const jobs = store.get('bs_jobs', []).filter(j => (j.wholesale || /^JBS/i.test(String(j.no || ''))) && (j.items || []).some(i => (i.name || '').trim()) && (!q || String(j.jName || '').trim() === q))
+      .map(j => ({j, n: jobPendingWhItems(j).length})).sort((a, b) => (b.n > 0) - (a.n > 0) || (b.j.savedAt || 0) - (a.j.savedAt || 0));
+    if (!jobs.length) { toast(q ? 'ไม่พบใบงานราคาส่งของ ' + q : 'ยังไม่มีใบงานราคาส่ง'); return; }
+    const ov = document.createElement('div'); ov.className = 'job-zoom pick-ov'; ov.style.cursor = 'default';
+    ov.innerHTML = '<div class="pick-box"><b>เลือกใบงานราคาส่ง' + (q ? ' · ' + esc(q) : '') + '</b>' +
+      jobs.slice(0, 30).map((r, i) => '<button type="button" class="owed-row" data-ji="' + i + '"><b>' + esc(r.j.no || '') + ' · ' + esc(r.j.jName || 'ไม่ระบุชื่อ') + '<small>' + esc(thDate(r.j.date)) + ' · ' + (r.n ? r.n + ' แบบยังไม่ได้ใส่' : 'ใส่ครบแล้ว') + '</small></b><span>›</span></button>').join('') +
+      '<button type="button" class="btn" data-x="1">ปิด</button></div>';
+    ov.addEventListener('click', ev => {
+      const b = ev.target.closest('[data-ji]');
+      if (!b) { if (ev.target === ov || ev.target.closest('[data-x]')) ov.remove(); return; }
+      const j = jobs[+b.dataset.ji].j; ov.remove();
+      pickWholesaleItems(j, picked => {
+        const have = wholesaleItems.filter(i => (i.name || '').trim());
+        wholesaleItems = have.concat(picked.map(i => ({name: i.name, qty: i.qty, price: i.price})));
+        if (!$('whName').value.trim()) $('whName').value = j.jName || '';
+        const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === j.id);
+        if (ji >= 0) { jl[ji].whAdded = Object.assign({}, jl[ji].whAdded || {}); picked.forEach(pk => { jl[ji].whAdded[pk.key] = {at: Date.now(), doc: $('whNo').value.trim() || $('whRef').value.trim() || 'ใหม่'}; }); store.set('bs_jobs', jl); cloudSave('jobs', jl[ji]); try { renderJobHistory(); } catch (e) {} }
+        renderWholesaleItems(); renderWholesale();
+        toast('เพิ่มจากใบงาน ' + (j.no || '') + ' ' + picked.length + ' รายการ ใส่ราคาส่งแล้วกด “บันทึกลงประวัติ”');
+      });
+    });
+    document.body.appendChild(ov);
+  });
   $('add-wholesaleitem').addEventListener('click', () => {
     wholesaleItems.push({name: '', qty: 1, price: 0}); renderWholesaleItems(); renderWholesale();
     const last = $('wholesaleItems').querySelector('.item:last-child .i-name'); if (last) last.focus();
