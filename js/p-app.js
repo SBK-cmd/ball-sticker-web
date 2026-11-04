@@ -4129,6 +4129,16 @@ function bahtText(value) {
   }
   // รวมงานราคาส่งเข้าใบราคาส่งที่ยังไม่จ่ายของชื่อเดียวกันอัตโนมัติ (ใบล่าสุด ถ้าไม่มีเปิดใบใหม่) ใส่เฉพาะแบบที่ยังไม่เคยใส่ ราคา = ราคาส่งที่กรอกในใบงาน
   let lastWhMerge = null;
+  // แถวที่จะลงบิลราคาส่ง: ถ้าใบงานมียอดเงิน (ยอดงานนี้) และรายการไม่มีราคารายชิ้น → ลง "ยอดงาน" เป็น 1 บรรทัดตามยอดที่คีย์ ไม่ต้องแตกราคาต่อชิ้น
+  function jobBillRows(j, rows) {
+    const named = (j.items || []).filter(i => (i.name || '').trim());
+    const anyPrice = named.some(i => i.price !== '' && i.price != null && num(i.price) > 0);
+    if (num(j.slipAmount) > 0 && !anyPrice && rows.length && rows.length === named.length) {
+      const label = rows.map(r => String(r.i.name).trim() + (num(r.i.qty) > 0 ? ' ×' + r.i.qty : '')).join(', ').slice(0, 140);
+      return [{name: label, qty: 1, price: round2(num(j.slipAmount)), job: j.no}];
+    }
+    return rows.map(r => ({name: String(r.i.name).trim() + ((r.i.note || '').trim() ? ' (' + String(r.i.note).trim() + ')' : ''), qty: r.i.qty, price: num(jobUnitPrice(j, r.i)), job: j.no}));
+  }
   function jobPendingWhItems(j) {
     const done = j.whAdded || {};
     return (j.items || []).map((i, idx) => ({i, idx})).filter(r => (r.i.name || '').trim() && !done[jobItemKey(r.i, r.idx)]);
@@ -4142,7 +4152,7 @@ function bahtText(value) {
     const wl = store.get('bs_wholesale', []);
     let doc = wl.filter(w => !w.paid && String(w.buyerName || '').trim() === name).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0], isNew = false;
     if (!doc) { doc = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: false, no: whNextNo(todayISO()), ref: '', date: todayISO(), buyerName: name, items: [], discount: 0, note: ''}; wl.push(doc); isNew = true; }
-    const add = rows.map(r => ({name: String(r.i.name).trim() + ((r.i.note || '').trim() ? ' (' + String(r.i.note).trim() + ')' : ''), qty: r.i.qty, price: num(jobUnitPrice(j, r.i)), job: j.no}));
+    const add = jobBillRows(j, rows);
     doc.items = (doc.items || []).filter(i => (i.name || '').trim()).concat(add);
     doc.savedAt = Date.now();
     j.whAdded = Object.assign({}, j.whAdded || {}); rows.forEach(r => { j.whAdded[jobItemKey(r.i, r.idx)] = {at: Date.now(), doc: doc.ref || doc.id}; });
@@ -4711,8 +4721,9 @@ function bahtText(value) {
     const on = !!$('jobWholesale').checked;
     const b = $('jobToWholesale'); if (b) b.hidden = true;   // บันทึกใบงานก็เข้าบิลให้เองอยู่แล้ว
     const row = $('jobWhRow'); if (row) row.classList.toggle('on', on);
-    const h = $('jobWhHint'); if (h) h.textContent = on ? 'งานนี้เข้าบิลค้างของลูกค้าคนนี้ให้เอง (ใส่ราคาส่งต่อชิ้นในรายการ) จ่ายครบแล้วบิลปิดเข้าประวัติ งานใหม่เริ่มบิลใหม่' : 'ติ๊กแล้ว งานนี้เข้าบิลค้างของลูกค้าคนนี้ให้เอง ระบบจำชื่อไว้ ครั้งหน้าพิมพ์ชื่อก็เข้าเลย';
+    const h = $('jobWhHint'); if (h) h.textContent = on ? 'งานนี้เข้าบิลค้างของลูกค้าคนนี้ให้เอง ใส่ยอดงานนี้ด้านล่าง (หรือใส่ราคาต่อชิ้นในรายการก็ได้) จ่ายครบแล้วบิลปิดเข้าประวัติ งานใหม่เริ่มบิลใหม่' : 'ติ๊กแล้ว งานนี้เข้าบิลค้างของลูกค้าคนนี้ให้เอง ระบบจำชื่อไว้ ครั้งหน้าพิมพ์ชื่อก็เข้าเลย';
     const mv = $('job-to-wholesale'); if (mv) mv.hidden = on;
+    const ar = $('jobWhAmtRow'); if (ar) { ar.hidden = !(on && canBank); const ai = $('jobWhAmt'); if (ai && document.activeElement !== ai) ai.value = $('jobSlipAmount').value || ''; }
   }
   function renderJobEditState() {
     const el = $('jobEditState');
@@ -5116,7 +5127,7 @@ function bahtText(value) {
     const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === jobId), wl = store.get('bs_wholesale', []), wi = wl.findIndex(x => x.id === docId);
     if (ji < 0 || wi < 0) return 0;
     const j = jl[ji], doc = wl[wi], rows = jobPendingWhItems(j); if (!rows.length) return 0;
-    const add = rows.map(r => ({name: String(r.i.name).trim() + ((r.i.note || '').trim() ? ' (' + String(r.i.note).trim() + ')' : ''), qty: r.i.qty, price: num(jobUnitPrice(j, r.i)), job: j.no}));
+    const add = jobBillRows(j, rows);
     doc.items = (doc.items || []).filter(i => (i.name || '').trim()).concat(add); doc.savedAt = Date.now();
     j.whAdded = Object.assign({}, j.whAdded || {}); rows.forEach(r => { j.whAdded[jobItemKey(r.i, r.idx)] = {at: Date.now(), doc: doc.no || doc.id}; });
     j.wholesale = true; j.savedAt = Date.now();
@@ -6070,6 +6081,8 @@ function bahtText(value) {
   $('quoteVatMode').addEventListener('change', () => { syncQuoteVat(); renderQuote(); });
   $('quoteDocCopy').addEventListener('change', renderQuote);
 
+  $('jobWhAmt').addEventListener('input', () => { $('jobSlipAmount').value = $('jobWhAmt').value; $('jobSlipAmount').dispatchEvent(new Event('input', {bubbles: true})); });
+  $('jobSlipAmount').addEventListener('input', () => { const ai = $('jobWhAmt'); if (ai && document.activeElement !== ai) ai.value = $('jobSlipAmount').value || ''; });
   $('jobSlipAmount').addEventListener('input', () => {   // ลูกค้าราคาส่ง/งานส่ง ใส่ยอดไว้ก่อนโดยยังไม่ผูกเงินเข้า → ติ๊ก "ยังไม่ได้รับ" ให้ (เอาออกเองได้)
     if (jobBankInIds.length) { $('jobSlipPending').checked = false; return; }
     if (num($('jobSlipAmount').value) > 0 && (($('jobWholesale') && $('jobWholesale').checked) || /^JBS/i.test(String($('jobNo').value || '')))) $('jobSlipPending').checked = true;
