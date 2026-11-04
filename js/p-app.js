@@ -4324,17 +4324,22 @@ function bahtText(value) {
         }
       }
       const senderHtml = t.sender ? '<div class="sender-info">📍 ผู้ส่ง: <b>' + esc(t.sender) + '</b>' + '</div>' : '';
-      return '<li data-id="' + esc(t.id) + '"><div class="meta"><b>' + esc(revealedTrack.has(t.id) ? t.code : maskTrackCode(t.code)) + '</b>' + (t.customer ? '<span class="rcpt">' + esc(t.customer) + '</span>' : '') + '<small>' + esc(t.carrier) + ' · ' + esc(new Date(t.savedAt).toLocaleString('th-TH')) + '</small></div>' + senderHtml +
+      const BOX = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>';
+      const tchip = (x, c) => '<span class="jc-chip' + (c ? ' ' + c : '') + '">' + x + '</span>';
+      return '<li class="jc tk st-' + st + '" data-id="' + esc(t.id) + '">' +
+      '<div class="jc-top">' + (t.boxPhoto ? '<img class="trk-box thumb" src="' + t.boxPhoto + '" alt="รูปกล่องพัสดุ">' : '<span class="jc-ph" aria-hidden="true">' + BOX + '</span>') +
+      '<div class="jc-main"><div class="jc-no">' + esc(t.carrier || 'ขนส่ง') + '</div><div class="jc-cust">' + esc(t.customer || 'ไม่ระบุผู้รับ') + '</div></div>' +
       '<select class="track-status-select status-pill ' + cls + '" data-id="' + esc(t.id) + '" aria-label="สถานะพัสดุ">' +
         Object.keys(TRACK_STATUS).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + TRACK_STATUS[k].label + '</option>').join('') +
-      '</select>' +
-      (trackingLink(t.carrier, t.code) ? '<button class="btn small primary" data-act="checklive" type="button">🔍 เปิดหน้าติดตาม</button>' : '') +
-      '<button class="btn small" data-act="reveal" type="button">' + (revealedTrack.has(t.id) ? '🙈 ซ่อนเลข' : '👁 ดูเลขเต็ม') + '</button>' +
-      '<button class="btn small" data-act="copy" type="button">คัดลอก</button>' +
-      '<button class="btn small edit" data-act="use" type="button">เปิดดู</button>' +
-      '<button class="btn small del" data-act="del" type="button">ลบ</button>' +
-      (t.boxPhoto ? '<img class="trk-box" src="' + t.boxPhoto + '" alt="รูปกล่องพัสดุ">' : '') +
-      liveHtml + '</li>';
+      '</select></div>' +
+      '<div class="jc-chips">' + tchip('<b class="tk-code">' + esc(revealedTrack.has(t.id) ? t.code : maskTrackCode(t.code)) + '</b>', 'code') + tchip(esc(new Date(t.savedAt).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'}))) + (t.sender ? tchip('ผู้ส่ง ' + esc(t.sender), 'tg') : '') + '</div>' +
+      liveHtml +
+      '<div class="jc-act">' + (trackingLink(t.carrier, t.code) ? '<button class="jc-b main" data-act="checklive" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/></svg>เปิดหน้าติดตาม</button>' : '') +
+      '<button class="jc-b sq" data-act="reveal" type="button" aria-label="' + (revealedTrack.has(t.id) ? 'ซ่อนเลข' : 'ดูเลขเต็ม') + '">' + (revealedTrack.has(t.id) ? '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.2A9.8 9.8 0 0112 6c5 0 8.5 4.2 9.5 6-.4.8-1.3 2-2.6 3.2M6.4 7.4C4.3 8.8 2.9 10.7 2.5 12c1 1.800 4.500 6 9.500 6 1.600 0 3-.4 4.200-1"/></svg>' : '<svg viewBox="0 0 24 24"><path d="M2.500 12C3.500 10.200 7 6 12 6s8.500 4.200 9.500 6c-1 1.800-4.500 6-9.500 6s-8.500-4.200-9.500-6z"/><circle cx="12" cy="12" r="2.600"/></svg>') + '</button>' +
+      '<button class="jc-b sq" data-act="copy" type="button" aria-label="คัดลอก"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2.500"/><path d="M5 15V6a2 2 0 012-2h9"/></svg></button>' +
+      '<button class="jc-b sq" data-act="use" type="button" aria-label="เปิดดู"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.500 6.500l4 4"/></svg></button>' +
+      '<button class="jc-b sq del" data-act="del" type="button" aria-label="ลบ"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg></button></div>' +
+      '</li>';
     }).join('') + '</ul>';
     if (cloudDb && trackLiveOn) {
       shown.forEach(t => subscribeLiveTracking(t.code)); // เปิดฟังสถานะแบบเรียลไทม์ไว้ทุกรายการที่แสดงอยู่
