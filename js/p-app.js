@@ -3231,7 +3231,7 @@ function bahtText(value) {
   function owedGroups() {
     const g = {};
     const add = (name, d) => { const k = String(name || '').trim() || 'ไม่ระบุชื่อ'; (g[k] = g[k] || {name: k, docs: [], total: 0}).docs.push(d); };
-    if (can('bill')) store.get('bs_bills', []).filter(b => !b.paid).forEach(b => add(b.cName, {k: 'bills', id: b.id, no: b.no || '', date: b.date || '', total: round2(billCalc(b).total)}));
+    // เฉพาะงานส่ง (JBS) = ใบราคาส่ง — บิลหน้าร้านไม่รวม
     if (can('wholesale')) store.get('bs_wholesale', []).filter(w => !w.paid).forEach(w => add(w.buyerName, {k: 'wholesale', id: w.id, no: w.ref || 'ใบราคาส่ง', date: w.date || '', total: round2(wholesaleCalc(w).total)}));
     const out = Object.values(g).filter(x => x.docs.some(d => d.total > 0));
     out.forEach(x => { x.docs.sort((a, b) => String(a.date).localeCompare(String(b.date))); x.total = round2(x.docs.reduce((t, d) => t + d.total, 0)); });
@@ -3239,7 +3239,7 @@ function bahtText(value) {
   }
   function renderOwedCard() {
     const c = $('dashOwedCard'); if (!c) return;
-    const gs = owedGroups(); c.hidden = !(can('bill') || can('wholesale'));
+    const gs = owedGroups(); c.hidden = !can('wholesale');
     $('owedCustCount').textContent = gs.length + ' ราย';
     $('owedTotalAmt').textContent = money(round2(gs.reduce((t, x) => t + x.total, 0))) + ' บาท';
   }
@@ -3259,7 +3259,7 @@ function bahtText(value) {
     const close = () => ov.remove();
     ov.onclick = ev => { if (ev.target === ov) close(); };
     if (!name) {
-      ov.innerHTML = '<div class="pick-box"><b>บิลค้างชำระ · รวม ' + money(round2(gs.reduce((t, x) => t + x.total, 0))) + ' บาท</b>' +
+      ov.innerHTML = '<div class="pick-box"><b>บิลค้างงานส่ง (JBS) · รวม ' + money(round2(gs.reduce((t, x) => t + x.total, 0))) + ' บาท</b>' +
         (gs.length ? gs.map(x => '<button type="button" class="owed-row" data-cust="' + esc(x.name) + '"><b>' + esc(x.name) + '<small>' + x.docs.length + ' ใบ</small></b><span>' + money(x.total) + ' บาท ›</span></button>').join('') : '<p class="empty">ไม่มีบิลค้างชำระ 🎉</p>') +
         '<button type="button" class="btn" data-close="1">ปิด</button></div>';
       ov.onclick = ev => { if (ev.target === ov || ev.target.closest('[data-close]')) return close(); const r = ev.target.closest('[data-cust]'); if (r) openOwed(r.dataset.cust); };
