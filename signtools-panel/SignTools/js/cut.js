@@ -137,10 +137,14 @@
     g.clearRect(0, 0, cv.width, cv.height);
     g.strokeStyle = 'rgba(255,255,255,.3)'; g.setLineDash([3, 3]);
     g.strokeRect(X(Math.min(v.ab[0], v.ab[2])), Y(Math.max(v.ab[1], v.ab[3])), Math.abs(v.ab[2] - v.ab[0]) * sc, Math.abs(v.ab[1] - v.ab[3]) * sc); g.setLineDash([]);
-    (raw || []).forEach(function (pt) {   // เส้นตัดที่อ่านไว้ (anchor อย่างเดียวพอดูตำแหน่ง)
+    (raw || []).forEach(function (pt) {   // เส้นตัดที่อ่านไว้ (วาดตามเส้นโค้งจริง)
       var a = pt.p || []; if (a.length < 12) return;
       g.strokeStyle = COL[pt.k || 'kiss']; g.globalAlpha = 0.55; g.lineWidth = 1; g.beginPath();
-      for (var j = 0; j < a.length; j += 6) { if (j) g.lineTo(X(a[j]), Y(a[j + 1])); else g.moveTo(X(a[j]), Y(a[j + 1])); }
+      var np = a.length / 6; g.moveTo(X(a[0]), Y(a[1]));
+      for (var j = 0; j < (pt.c ? np : np - 1); j++) {   // โค้งเบซิเยร์ตามจุดจับจริง (ไม่ใช่ต่อเฉพาะจุด anchor จึงไม่กลายเป็นเหลี่ยม)
+        var A0 = j * 6, B0 = ((j + 1) % np) * 6;
+        g.bezierCurveTo(X(a[A0 + 4]), Y(a[A0 + 5]), X(a[B0 + 2]), Y(a[B0 + 3]), X(a[B0]), Y(a[B0 + 1]));
+      }
       if (pt.c) g.closePath(); g.stroke(); g.globalAlpha = 1;
     });
     for (i = 0; i < v.marks.length; i++) {
