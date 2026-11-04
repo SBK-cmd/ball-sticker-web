@@ -1798,7 +1798,7 @@ function bahtText(value) {
     let title = '', rows = '', foot = '';
     const jobRow = j => {
       const st = j.status || 'pending', late = j.due && j.due < today, dueTxt = j.due ? (j.due === today ? 'ครบกำหนดวันนี้' : late ? 'เลยกำหนด ' + thDate(j.due) : 'กำหนด ' + thDate(j.due)) : '';
-      return '<button type="button" class="tl-r" data-job="' + esc(j.id) + '"><span class="tl-m1"><b>' + esc(j.no || '') + '</b><span>' + esc(nm(j.jName) || 'ไม่ระบุชื่อลูกค้า') + '</span>' + (dueTxt ? '<small class="' + (late || j.due === today ? 'hot' : '') + '">' + esc(dueTxt) + '</small>' : '') + '</span><span class="status-pill ' + st + '">' + esc(JOB_STATUS_LABEL[st]) + '</span></button>';
+      return '<button type="button" class="tl-r" data-job="' + esc(j.id) + '"><span class="tl-m1"><b>' + esc(j.no || '') + '</b><span>' + esc(nm(j.jName) || 'ไม่ระบุชื่อลูกค้า') + '</span>' + (dueTxt ? '<small class="' + (late || j.due === today ? 'hot' : '') + '">' + esc(dueTxt) + '</small>' : '') + '</span><span class="status-pill ' + st + '">' + esc(JOB_STATUS_LABEL[st]) + '</span><span class="tl-go">›</span></button>';
     };
     if (kind === 'cust') {
       title = 'ลูกค้าวันนี้';
@@ -1806,12 +1806,12 @@ function bahtText(value) {
       jobs.filter(j => j.date === today).forEach(j => { const k = nm(j.jName); if (k) (m[k] = m[k] || {n: k, jobs: [], bills: 0}).jobs.push(j); });
       (store.get('bs_bills', []) || []).filter(b => b.date === today).forEach(b => { const k = nm(b.cName); if (k) (m[k] = m[k] || {n: k, jobs: [], bills: 0}).bills++; });
       const L = Object.values(m);
-      rows = L.length ? L.map(c => '<div class="tl-r static"><span class="tl-m1"><b>' + esc(c.n) + '</b><small>' + (c.jobs.length ? 'ใบงาน ' + c.jobs.map(j => esc(j.no)).join(', ') : '') + (c.jobs.length && c.bills ? ' · ' : '') + (c.bills ? 'บิล ' + c.bills + ' ใบ' : '') + '</small></span></div>').join('') : '<p class="tl-none">วันนี้ยังไม่มีลูกค้า</p>';
+      rows = L.length ? L.map(c => '<div class="tl-r static col"><b>' + esc(c.n) + '</b><span class="tl-links">' + c.jobs.map(j => '<button type="button" class="tl-lk" data-job="' + esc(j.id) + '">ใบงาน ' + esc(j.no) + ' ›</button>').join('') + (c.bills ? '<button type="button" class="tl-lk" data-goto="bill">บิล ' + c.bills + ' ใบ ›</button>' : '') + '</span></div>').join('') : '<p class="tl-none">วันนี้ยังไม่มีลูกค้า</p>';
     } else if (kind === 'box') {
       title = 'ส่งวันนี้ (กล่อง)';
       const L = (store.get('bs_tracking', []) || []).filter(t => localISO(new Date(t.boxAt || t.savedAt || 0)) === today).sort((a, b) => (b.boxAt || b.savedAt || 0) - (a.boxAt || a.savedAt || 0));
       const jobOf = t => jobs.find(j => j.trackCode && normCode(j.trackCode) === normCode(t.code));
-      rows = L.length ? L.map(t => { const j = jobOf(t), who = nm(t.customer) || (j ? nm(j.jName) : ''); return '<div class="tl-r static"><span class="tl-m1"><b>' + esc(t.code || '') + '</b><span>' + esc(who || 'ยังไม่ผูกลูกค้า') + '</span><small>' + esc(t.carrier || '') + (j ? ' · ใบงาน ' + esc(j.no) : '') + '</small></span></div>'; }).join('') : '<p class="tl-none">ยังไม่มีกล่องที่บันทึกวันนี้</p>';
+      rows = L.length ? L.map(t => { const j = jobOf(t), who = nm(t.customer) || (j ? nm(j.jName) : ''); return '<button type="button" class="tl-r" ' + (j ? 'data-job="' + esc(j.id) + '"' : 'data-goto="track"') + '><span class="tl-m1"><b>' + esc(t.code || '') + '</b><span>' + esc(who || 'ยังไม่ผูกลูกค้า') + '</span><small>' + esc(t.carrier || '') + (j ? ' · ใบงาน ' + esc(j.no) : ' · ดูในหน้าติดตาม') + '</small></span><span class="tl-go">›</span></button>'; }).join('') : '<p class="tl-none">ยังไม่มีกล่องที่บันทึกวันนี้</p>';
       foot = 'นับจากเลขพัสดุที่สแกน/บันทึกวันนี้';
     } else if (kind === 'open') {
       title = 'งานที่เหลือ';
@@ -1830,8 +1830,10 @@ function bahtText(value) {
     const close = () => { m.remove(); document.body.classList.remove('chg-open'); };
     m.addEventListener('click', e => {
       if (e.target === m || e.target.closest('[data-x]')) { close(); return; }
+      const g = e.target.closest('[data-goto]'); if (g) { close(); showTab(g.dataset.goto); window.scrollTo({top: 0}); return; }
       const r = e.target.closest('[data-job]'); if (!r) return;
       close(); showTab('confirm'); jobOpenIds[r.dataset.job] = true; renderJobHistory();
+      setTimeout(() => { const li = document.querySelector('#jobHistory li[data-id="' + r.dataset.job + '"]'); if (li) li.scrollIntoView({block: 'center'}); }, 60);
     });
   }
   document.addEventListener('click', e => { const t = e.target.closest && e.target.closest('.tdy-t[data-k]'); if (t) openTodayList(t.dataset.k); });
