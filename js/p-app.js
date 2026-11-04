@@ -425,7 +425,7 @@ function bahtText(value) {
 
   // ช่องชื่อลูกค้า: รายการแนะนำของแอปเอง (เฉพาะชื่อที่ตรงกับที่พิมพ์ ไม่เกิน 6 ชื่อ) แทน datalist ของเบราว์เซอร์ที่ยาวเต็มจอบนมือถือ
   (function () {
-    const IDS = ['jName', 'cName', 'whName', 'qName', 'trackCustomer'], box = document.createElement('div'); box.id = 'nameSuggest'; box.hidden = true; document.body.appendChild(box);
+    const IDS = ['jName', 'cName', 'whName', 'whAddName', 'qName', 'trackCustomer'], box = document.createElement('div'); box.id = 'nameSuggest'; box.hidden = true; document.body.appendChild(box);
     let cur = null;
     const hide = () => { box.hidden = true; cur = null; };
     function show(el) {
@@ -5029,7 +5029,7 @@ function bahtText(value) {
         '<div class="jc-amt">' + money(t.total) + '<small>บาท</small></div></div>' +
         '<div class="jc-chips"><button class="status-pill ' + (w.paid ? 'billdone' : 'pending') + '" data-act="togglepaid" data-id="' + esc(w.id) + '" type="button" title="กดเพื่อสลับสถานะ">' + (w.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</button>' +
         '<span class="jc-chip">' + esc(thDate(w.date)) + '</span><span class="jc-chip">' + n + ' รายการ</span>' +
-        (noPrice ? '<span class="jc-chip warn">รอราคา ' + noPrice + '</span>' : '') +
+        (noPrice && n ? '<span class="jc-chip warn">รอราคา ' + noPrice + '</span>' : '') + (!n ? '<span class="jc-chip tg">ยังไม่มีงาน · คีย์งานชื่อนี้แล้วจะเข้าที่นี่</span>' : '') +
         (jb ? '<span class="jc-chip tg">ใบงาน ' + esc(jb) + '</span>' : '') + (w.createdBy ? '<span class="jc-chip">โดย ' + esc(w.createdBy) + '</span>' : '') + '</div>' +
         '<div class="jc-act">' + (w.paid ? '' : '<button class="jc-b main" data-act="charge" type="button">' + IC_QR + 'เรียกเก็บเงิน</button>') +
         '<button class="jc-b" data-act="open" type="button">' + IC_ED + 'แก้ไข</button>' +
@@ -6933,6 +6933,19 @@ function bahtText(value) {
   $('histSearch').addEventListener('input', renderHistory);
   $('jobHistSearch').addEventListener('input', renderJobHistory);
   $('whHistSearch').addEventListener('input', renderWholesaleHistory);
+  function addWholesaleShop() {
+    const nm = $('whAddName').value.trim(); if (!nm) { toast('พิมพ์ชื่อร้านก่อน'); $('whAddName').focus(); return; }
+    const list = store.get('bs_wholesale', []);
+    const ex = list.find(w => !w.paid && String(w.buyerName || '').trim() === nm);
+    if (ex) { whFilterMode = 'open'; whOpen[ex.id] = true; renderWholesaleHistory(); toast('ร้านนี้มีการ์ดบิลค้างอยู่แล้ว เปิดให้ดูแล้ว'); $('whAddName').value = ''; return; }
+    const rec = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: false, no: whNextNo(todayISO()), ref: '', date: todayISO(), buyerName: nm, items: [], discount: 0, note: ''};
+    list.push(rec); store.set('bs_wholesale', list); cloudSave('wholesale', rec);
+    upsertCustomer(nm, '', ''); setWhCust(nm, true);
+    whFilterMode = 'open'; whOpen[rec.id] = true; $('whAddName').value = ''; $('whHistSearch').value = '';
+    renderWholesaleHistory(); toast('เพิ่มร้าน ' + nm + ' แล้ว คีย์งานชื่อนี้ที่หน้า “สั่งงาน” จะเข้าการ์ดนี้เอง');
+  }
+  $('whAddBtn').addEventListener('click', addWholesaleShop);
+  $('whAddName').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addWholesaleShop(); } });
   $('whFilter').addEventListener('click', e => { const b = e.target.closest('button[data-f]'); if (!b) return; whFilterMode = b.dataset.f; renderWholesaleHistory(); });
   $('purchHistSearch').addEventListener('input', renderPurchHistory);
   $('histPrintMonth').addEventListener('change', () => {

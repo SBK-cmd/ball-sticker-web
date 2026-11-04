@@ -1426,6 +1426,7 @@ body.chg-open{overflow:hidden}
 #wholesaleHistory .jc-b.del{flex:0 0 auto;color:#b42318;border-color:#f3c9c4;background:#fff7f6}
 #wholesaleHistory .jc-b.del.confirm{background:#b42318;color:#fff;border-color:#b42318}
 #wholesaleHistory li.jc{cursor:pointer}
+.whadd{display:flex;gap:8px;margin:0 0 10px}.whadd .txt{flex:1;min-width:0}.whadd .btn{flex:none;white-space:nowrap}
 #wholesaleHistory .jc-chip.warn{background:#fff1d6;color:#8a5a00}
 #wholesaleHistory .wd{margin-top:12px;padding:12px;border-radius:14px;background:rgba(0,0,0,.035);cursor:default}
 #wholesaleHistory .wd-h{font-size:14px;font-weight:800;margin:0 0 8px;color:#111}
@@ -2321,6 +2322,8 @@ body.jm-open .fab-newjob{display:none!important}
           <h2 id="wholesalehist-h">ประวัติใบราคาส่ง</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้ (แยกจากประวัติเอกสาร/ใบเสร็จ)</span>
         </div>
+        <div class="whadd no-print"><input class="txt" id="whAddName" type="text" autocomplete="off" placeholder="พิมพ์ชื่อร้านราคาส่ง เพื่อเพิ่มการ์ด"><button class="btn good" id="whAddBtn" type="button">＋ เพิ่มร้าน</button></div>
+        <p class="hint no-print" style="margin:-4px 0 12px">เพิ่มชื่อร้านไว้ก่อน แล้วเวลาลูกค้าสั่ง คีย์งานที่หน้า “สั่งงาน” ตามปกติ งานจะเข้าการ์ดของร้านนั้นเอง</p>
         <div class="whf no-print" id="whFilter"><button type="button" data-f="open" class="on">บิลค้างชำระ</button><button type="button" data-f="paid">จ่ายแล้ว (ประวัติ)</button></div>
         <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="whHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
         <div id="wholesaleHistory"></div>
@@ -3028,7 +3031,7 @@ body.jm-open .fab-newjob{display:none!important}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=b57081d3c7",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=1f6a1333e1",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 </body>

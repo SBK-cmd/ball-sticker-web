@@ -1448,6 +1448,7 @@ body.chg-open{overflow:hidden}
 #wholesaleHistory .jc-b.del{flex:0 0 auto;color:#b42318;border-color:#f3c9c4;background:#fff7f6}
 #wholesaleHistory .jc-b.del.confirm{background:#b42318;color:#fff;border-color:#b42318}
 #wholesaleHistory li.jc{cursor:pointer}
+.whadd{display:flex;gap:8px;margin:0 0 10px}.whadd .txt{flex:1;min-width:0}.whadd .btn{flex:none;white-space:nowrap}
 #wholesaleHistory .jc-chip.warn{background:#fff1d6;color:#8a5a00}
 #wholesaleHistory .wd{margin-top:12px;padding:12px;border-radius:14px;background:rgba(0,0,0,.035);cursor:default}
 #wholesaleHistory .wd-h{font-size:14px;font-weight:800;margin:0 0 8px;color:#111}
@@ -3109,6 +3110,8 @@ html body .page-head h1{letter-spacing:-.02em}
           <h2 id="wholesalehist-h">ประวัติใบราคาส่ง</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้ (แยกจากประวัติเอกสาร/ใบเสร็จ)</span>
         </div>
+        <div class="whadd no-print"><input class="txt" id="whAddName" type="text" autocomplete="off" placeholder="พิมพ์ชื่อร้านราคาส่ง เพื่อเพิ่มการ์ด"><button class="btn good" id="whAddBtn" type="button">＋ เพิ่มร้าน</button></div>
+        <p class="hint no-print" style="margin:-4px 0 12px">เพิ่มชื่อร้านไว้ก่อน แล้วเวลาลูกค้าสั่ง คีย์งานที่หน้า “สั่งงาน” ตามปกติ งานจะเข้าการ์ดของร้านนั้นเอง</p>
         <div class="whf no-print" id="whFilter"><button type="button" data-f="open" class="on">บิลค้างชำระ</button><button type="button" data-f="paid">จ่ายแล้ว (ประวัติ)</button></div>
         <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="whHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
         <div id="wholesaleHistory"></div>
@@ -4544,7 +4547,7 @@ function bahtText(value) {
 
   // ช่องชื่อลูกค้า: รายการแนะนำของแอปเอง (เฉพาะชื่อที่ตรงกับที่พิมพ์ ไม่เกิน 6 ชื่อ) แทน datalist ของเบราว์เซอร์ที่ยาวเต็มจอบนมือถือ
   (function () {
-    const IDS = ['jName', 'cName', 'whName', 'qName', 'trackCustomer'], box = document.createElement('div'); box.id = 'nameSuggest'; box.hidden = true; document.body.appendChild(box);
+    const IDS = ['jName', 'cName', 'whName', 'whAddName', 'qName', 'trackCustomer'], box = document.createElement('div'); box.id = 'nameSuggest'; box.hidden = true; document.body.appendChild(box);
     let cur = null;
     const hide = () => { box.hidden = true; cur = null; };
     function show(el) {
@@ -9148,7 +9151,7 @@ function bahtText(value) {
         '<div class="jc-amt">' + money(t.total) + '<small>บาท</small></div></div>' +
         '<div class="jc-chips"><button class="status-pill ' + (w.paid ? 'billdone' : 'pending') + '" data-act="togglepaid" data-id="' + esc(w.id) + '" type="button" title="กดเพื่อสลับสถานะ">' + (w.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</button>' +
         '<span class="jc-chip">' + esc(thDate(w.date)) + '</span><span class="jc-chip">' + n + ' รายการ</span>' +
-        (noPrice ? '<span class="jc-chip warn">รอราคา ' + noPrice + '</span>' : '') +
+        (noPrice && n ? '<span class="jc-chip warn">รอราคา ' + noPrice + '</span>' : '') + (!n ? '<span class="jc-chip tg">ยังไม่มีงาน · คีย์งานชื่อนี้แล้วจะเข้าที่นี่</span>' : '') +
         (jb ? '<span class="jc-chip tg">ใบงาน ' + esc(jb) + '</span>' : '') + (w.createdBy ? '<span class="jc-chip">โดย ' + esc(w.createdBy) + '</span>' : '') + '</div>' +
         '<div class="jc-act">' + (w.paid ? '' : '<button class="jc-b main" data-act="charge" type="button">' + IC_QR + 'เรียกเก็บเงิน</button>') +
         '<button class="jc-b" data-act="open" type="button">' + IC_ED + 'แก้ไข</button>' +
@@ -11052,6 +11055,19 @@ function bahtText(value) {
   $('histSearch').addEventListener('input', renderHistory);
   $('jobHistSearch').addEventListener('input', renderJobHistory);
   $('whHistSearch').addEventListener('input', renderWholesaleHistory);
+  function addWholesaleShop() {
+    const nm = $('whAddName').value.trim(); if (!nm) { toast('พิมพ์ชื่อร้านก่อน'); $('whAddName').focus(); return; }
+    const list = store.get('bs_wholesale', []);
+    const ex = list.find(w => !w.paid && String(w.buyerName || '').trim() === nm);
+    if (ex) { whFilterMode = 'open'; whOpen[ex.id] = true; renderWholesaleHistory(); toast('ร้านนี้มีการ์ดบิลค้างอยู่แล้ว เปิดให้ดูแล้ว'); $('whAddName').value = ''; return; }
+    const rec = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: false, no: whNextNo(todayISO()), ref: '', date: todayISO(), buyerName: nm, items: [], discount: 0, note: ''};
+    list.push(rec); store.set('bs_wholesale', list); cloudSave('wholesale', rec);
+    upsertCustomer(nm, '', ''); setWhCust(nm, true);
+    whFilterMode = 'open'; whOpen[rec.id] = true; $('whAddName').value = ''; $('whHistSearch').value = '';
+    renderWholesaleHistory(); toast('เพิ่มร้าน ' + nm + ' แล้ว คีย์งานชื่อนี้ที่หน้า “สั่งงาน” จะเข้าการ์ดนี้เอง');
+  }
+  $('whAddBtn').addEventListener('click', addWholesaleShop);
+  $('whAddName').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addWholesaleShop(); } });
   $('whFilter').addEventListener('click', e => { const b = e.target.closest('button[data-f]'); if (!b) return; whFilterMode = b.dataset.f; renderWholesaleHistory(); });
   $('purchHistSearch').addEventListener('input', renderPurchHistory);
   $('histPrintMonth').addEventListener('change', () => {
