@@ -4707,9 +4707,64 @@ function bahtText(value) {
       return '<li data-id="' + esc(w.id) + '"><div class="meta"><b>' + esc(w.buyerName || 'ไม่ระบุชื่อผู้ซื้อ') + '</b><small>' + esc(thDate(w.date)) + (w.no ? ' · ' + esc(w.no) : '') + (w.ref ? ' · ' + esc(w.ref) : '') + (w.createdBy ? ' · โดย ' + esc(w.createdBy) : '') + '</small></div>' +
       '<span class="amt">' + money(t.total) + ' บาท</span>' +
       '<button class="status-pill ' + (w.paid ? 'billdone' : 'pending') + '" data-act="togglepaid" data-id="' + esc(w.id) + '" type="button" title="กดเพื่อสลับสถานะ">' + (w.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</button>' +
+      (w.paid ? '' : '<button class="btn small good" data-act="charge" type="button">เรียกเก็บเงิน</button>') +
       '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
       '<button class="btn small del" data-act="del" type="button">ลบ</button></li>';
     }).join('') + '</ul>';
+  }
+
+  /* ---------- หน้าต่างเรียกเก็บเงิน (ใบราคาส่ง): รายการบิลค้างทั้งหมดของลูกค้า + QR + ลิงก์ ---------- */
+  function chargeLinkFor(name) {
+    const nm = String(name || '').trim(), jl = store.get('bs_jobs', []);
+    const mine = jl.filter(j => /^JBS/i.test(String(j.no || '').trim()) && String(j.jName || '').trim() === nm).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+    if (!mine.length) return '';
+    let j = mine.find(x => x.trackToken);
+    if (!j) {
+      j = mine[0]; const a = new Uint8Array(12); (window.crypto || window.msCrypto).getRandomValues(a);
+      const li = jl.findIndex(x => x.id === j.id);
+      jl[li] = Object.assign({}, j, {trackToken: Array.from(a, b => (b % 36).toString(36)).join('') + Date.now().toString(36).slice(-4)});
+      store.set('bs_jobs', jl); cloudSave('jobs', jl[li]); j = jl[li];
+    } else { try { publicJobMirror(j); } catch (e) {} }
+    return 'https://www.ballsticker.co.th/track.html?t=' + j.trackToken;
+  }
+  async function chargeCopy(msg, okMsg) {
+    try { if (PHONE_SHARE && navigator.share) { await navigator.share({text: msg}); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(msg); toast(okMsg); }
+    catch (e) { try { const ta = document.createElement('textarea'); ta.value = msg; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); toast(ok ? okMsg : 'คัดลอกอัตโนมัติไม่ได้'); } catch (e2) { toast('คัดลอกอัตโนมัติไม่ได้'); } }
+  }
+  function openChargeModal(w) {
+    const nm = String(w.buyerName || '').trim() || 'ไม่ระบุชื่อ';
+    const g = owedGroups().find(x => x.name === nm);
+    if (!g || !(g.total > 0)) { toast('ลูกค้านี้ไม่มียอดค้างชำระ'); return; }
+    const acct = payAcct('วันทิม'), payload = promptPayPayload(acct.id, g.total), ref = payRef(Date.now());
+    const link = chargeLinkFor(nm);
+    let m = document.getElementById('chgModal'); if (m) m.remove();
+    m = document.createElement('div'); m.id = 'chgModal'; m.className = 'chg-m';
+    const docsHtml = g.docs.map(d => '<div class="chg-d"><div class="chg-h"><b>' + esc(d.no || 'ใบ') + '</b><span>' + esc(thDate(d.date)) + '</span><b>' + money(d.total) + '</b></div>' +
+      ((d.items || []).length ? '<ul>' + d.items.map(i => { const ln = (i.q || 0) * (i.p || 0); return '<li><span>' + esc(i.n) + (i.q ? ' × ' + esc(i.q) : '') + '</span><span>' + (ln > 0 ? money(round2(ln)) : '') + '</span></li>'; }).join('') + '</ul>' : '') + '</div>').join('');
+    m.innerHTML = '<div class="chg-s"><div class="chg-t"><b>เรียกเก็บเงิน · ' + esc(nm) + '</b><button type="button" data-x="1" aria-label="ปิด">✕</button></div>' +
+      '<div class="chg-b">' + docsHtml + '<div class="chg-sum"><span>บิลค้างทั้งหมด ' + g.docs.length + ' ใบ</span><b>' + money(g.total) + ' บาท</b></div>' +
+      '<div class="chg-q"><canvas id="chgQr" width="440" height="440" aria-label="QR พร้อมเพย์"></canvas><small>พร้อมเพย์ ' + esc(acct.name) + ' · อ้างอิง ' + esc(ref) + '</small></div>' +
+      '<div class="chg-link"><label>ลิงก์ให้ลูกค้า (ดูรายการ + สแกนจ่าย)</label>' + (link ? '<input readonly value="' + esc(link) + '">' : '<p class="hint">ยังไม่มีงาน JBS ของลูกค้านี้ จึงยังสร้างลิงก์ไม่ได้ · ส่งรูป QR แทนได้</p>') + '</div>' +
+      '<div class="chg-a">' + (link ? '<button class="btn good" type="button" data-a="link">คัดลอกลิงก์</button><button class="btn" type="button" data-a="msg">คัดลอกข้อความ + ลิงก์</button>' : '') + '<button class="btn" type="button" data-a="img">บันทึกรูป QR</button></div></div></div>';
+    document.body.appendChild(m); document.body.classList.add('chg-open');
+    const cv = m.querySelector('#chgQr'), mt = qrEncode(payload), n = mt.length, q = 4, sz = cv.width, cell = Math.floor(sz / (n + q * 2)), off = Math.floor((sz - cell * n) / 2), c2 = cv.getContext('2d');
+    c2.fillStyle = '#fff'; c2.fillRect(0, 0, sz, sz); c2.fillStyle = '#000';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (mt[r][c]) c2.fillRect(off + c * cell, off + r * cell, cell, cell);
+    const close = () => { m.remove(); document.body.classList.remove('chg-open'); };
+    m.addEventListener('click', async e => {
+      if (e.target === m || e.target.closest('[data-x]')) { close(); return; }
+      const b = e.target.closest('[data-a]'); if (!b) return;
+      if (b.dataset.a === 'link') chargeCopy(link, 'คัดลอกลิงก์แล้ว ไปวางส่งให้ลูกค้าได้เลย');
+      else if (b.dataset.a === 'msg') {
+        const lines = g.docs.map(d => '• ' + (d.no || 'ใบ') + ' ' + money(d.total) + ' บาท');
+        chargeCopy('แจ้งยอดค้างชำระ คุณ' + nm + ' (บอลสติ๊กเกอร์)\n' + lines.join('\n') + '\nรวม ' + money(g.total) + ' บาท\nดูรายการและสแกนจ่ายได้ที่ 👇\n' + link, 'คัดลอกข้อความแล้ว');
+      } else if (b.dataset.a === 'img') {
+        try { const url = await payCardDataUrl(g.total, 'ยอดค้างชำระ ' + g.docs.length + ' ใบ · ' + nm, ref, Date.now(), acct); const a = document.createElement('a'); a.href = url; a.download = 'QR-เรียกเก็บ-' + nm + '.png'; document.body.appendChild(a); a.click(); a.remove(); toast('บันทึกรูป QR แล้ว'); }
+        catch (er) { toast('สร้างรูปไม่ได้'); }
+      }
+    });
+    refreshOwedMirrors();
   }
   function saveWholesale() {
     const list = store.get('bs_wholesale', []);
@@ -4727,7 +4782,7 @@ function bahtText(value) {
     const persisted = store.set('bs_wholesale', list);
     cloudSave('wholesale', rec);
     upsertCustomer(rec.buyerName, '', '');
-    renderWholesaleHistory(); renderWholesaleEditState();
+    renderWholesaleHistory(); renderWholesaleEditState(); closeJobModal();
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับใบราคาส่งแล้ว' : 'บันทึกใบราคาส่งแล้ว')
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
   }
@@ -5516,7 +5571,7 @@ function bahtText(value) {
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('jm-open')) closeJobModal(); });
   document.addEventListener('click', e => {
     if (!document.body.classList.contains('jm-open')) return;
-    if (e.target === document.body || e.target.closest('#jmClose')) closeJobModal();
+    if (e.target === document.body || e.target.closest('#jmClose') || e.target.closest('#jmClose2')) closeJobModal();
   });
   function showTab(name) {
     closeJobModal();
@@ -6333,10 +6388,12 @@ function bahtText(value) {
       cloudSave('wholesale', list[idx2]);
       renderWholesaleHistory();
       toast(list[idx2].paid ? 'ทำเครื่องหมายว่าชำระเงินแล้ว' : 'เปลี่ยนกลับเป็นรอชำระแล้ว');
+    } else if (btn.dataset.act === 'charge') {
+      const w = list.find(x => x.id === id); if (w) openChargeModal(w);
     } else if (btn.dataset.act === 'open') {
       const w = list.find(x => x.id === id); if (!w) return;
       currentWholesaleId = id; applyWholesale(w); renderWholesaleEditState(); showTab('wholesale');
-      window.scrollTo({top: 0, behavior: 'smooth'}); toast('เปิดใบราคาส่งแล้ว แก้ไขได้เลย');
+      document.body.classList.add('jm-open'); { const f = $('whFormTop'); if (f) f.scrollTop = 0; } toast('เปิดใบราคาส่งแล้ว แก้ไขได้เลย');
     } else if (btn.dataset.act === 'del') {
       if (whDelArmed !== id) {
         whDelArmed = id; btn.textContent = 'กดอีกครั้งเพื่อลบ'; btn.classList.add('confirm');
