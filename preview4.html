@@ -1425,6 +1425,27 @@ body.chg-open{overflow:hidden}
 #wholesaleHistory .jc-b.main{background:#1f2a44;color:#fff;border-color:#1f2a44}
 #wholesaleHistory .jc-b.del{flex:0 0 auto;color:#b42318;border-color:#f3c9c4;background:#fff7f6}
 #wholesaleHistory .jc-b.del.confirm{background:#b42318;color:#fff;border-color:#b42318}
+/* ฟอร์มใบงาน/ราคาส่ง: จังหวะระยะห่างให้สม่ำเสมอ (ช่องละ 12px · ป้ายชื่อห่างช่อง 6px · หัวข้อ 18px) */
+.jf .fields{gap:12px!important}
+.jf .f>span{margin-bottom:6px!important}
+.jf .jf-sec{margin:18px 0 4px}
+.jf .jf-h{margin:0 0 10px}
+.jf .txt,.jf select,.jf textarea{padding-top:9px!important;padding-bottom:9px!important}
+.jf textarea{min-height:64px!important}
+.jf #jNameChips{margin:-6px 0 0!important;padding:0!important;min-height:0!important;gap:6px!important;font-size:12px}
+.jf #jNameChips:empty{display:none}
+.jf #jNameChips .vchip{min-height:0!important;padding:5px 11px!important;font-size:13px!important;line-height:1.25!important}
+.jf .fold{margin:12px 0}
+.jf .fold>summary{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 10px;padding:12px 14px;min-height:46px;font-size:15px;line-height:1.35}
+.jf .fold>summary::after{grid-column:2;grid-row:1/span 2;margin-left:0}
+.jf .fold>summary .fold-sub{grid-column:1;font-size:12.5px;line-height:1.35}
+.jf .fold>.fields{padding:14px 0 10px}
+.jf .jf-actions{margin-top:20px}
+.jf .edit-state{margin:0 0 12px}
+.jf .hint{margin:8px 0 14px!important;line-height:1.45}
+.jf .jf-actions .fold{margin:0}
+.jf .fold-sub{font-weight:400!important}
+.jf .fold>summary{align-content:center}
 #trackHistory li.jc .live-status{margin-top:10px}
 .tdy-t[data-k]{cursor:pointer;-webkit-tap-highlight-color:transparent}.tdy-t[data-k]:active{opacity:.7}
 .tl-r{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;border:1px solid rgba(0,0,0,.08);background:#fff;border-radius:14px;padding:10px 12px;margin:0 0 8px;font:inherit;color:#1d2433;cursor:pointer}
@@ -2150,7 +2171,7 @@ svg{stroke-linecap:round;stroke-linejoin:round}
             </div>
             <section class="jf-sec">
               <div class="jf-h"><i>1</i>ลูกค้า</div>
-              <details class="fold jf-paste"><summary>วางข้อความทั้งก้อน ให้ระบบแยก งาน / ชื่อ / เบอร์ / ที่อยู่ ให้</summary>
+              <details class="fold jf-paste"><summary>วางข้อความ ให้ระบบแยกชื่อ / เบอร์ / ที่อยู่ ให้</summary>
               <label class="f"><span>วางข้อความทั้งก้อน (งาน + ชื่อ เบอร์ ที่อยู่) แล้วกดแยก</span><textarea id="jPaste" placeholder="วางข้อความทั้งก้อน เช่น&#10;7cm 140ชิ้น&#10;แบบละ70ชิ้น&#10;นาย สมชาย ใจดี&#10;081-234-5678&#10;99 หมู่ 1 ต.ในเมือง อ.เมือง จ.พิษณุโลก 65000"></textarea></label>
               <button class="btn small" id="jSplit" type="button">แยกงาน / ชื่อ / เบอร์ / ที่อยู่ อัตโนมัติ</button>
               </details>
