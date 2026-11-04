@@ -1449,8 +1449,9 @@ body.chg-open{overflow:hidden}
 .jf .fold-sub{font-weight:500;font-size:12.5px;color:#6b7280}
 .jf .jf-paste{background:#f6f8fc;border-style:dashed}
 .jf .jf-actions{margin-top:16px;display:grid;gap:8px}
-.jf .jf-actions>#save-job{width:100%;padding:15px;font-size:17px;font-weight:800;border-radius:14px}
-.jf .jf-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.jf .jf-grid .btn{width:100%;font-size:14px;padding-left:8px;padding-right:8px;white-space:nowrap}
+.jf .jf-actions>#save-job{width:100%;max-width:100%;padding:13px;font-size:16px;font-weight:800;border-radius:14px}
+.jf .jf-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.jf .jf-grid .btn{width:100%;font-size:14px;padding:11px 8px;white-space:normal;line-height:1.25}
+.jf .jf-actions,.jf .jf-actions *{box-sizing:border-box}.jf .jf-actions{min-width:0;max-width:100%}.jf .fold{overflow:hidden}
 .jf .jf-more>.jf-grid{padding:12px 0}
 body.jm-open #jobFormTop .jf-actions>#save-job{position:sticky;bottom:-80px;z-index:3;box-shadow:0 10px 24px rgba(0,0,0,.25)}
 @media (max-width:899px){#whFormTop{display:none}}
