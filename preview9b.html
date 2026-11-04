@@ -1413,6 +1413,25 @@ body.chg-open{overflow:hidden}
 .tip-q.on{background:#1f2a44;border-color:#1f2a44;color:#fff}
 .viz-head .tip-body:not([hidden]){flex:1 1 100%;order:5;font-size:13.5px;line-height:1.5;background:rgba(0,0,0,.045);border-radius:12px;padding:8px 12px;margin-top:2px}
 .page-head .tip-body:not([hidden]){display:block;font-size:14px}
+.jf .jf-sec{margin:14px 0 6px}
+.jf .jf-h{display:flex;align-items:center;gap:9px;font-weight:800;font-size:16px;margin:0 0 8px;color:var(--ink,#111)}
+.jf .jf-h i{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#1f2a44;color:#fff;font:700 13px/1 inherit;font-style:normal}
+.jf .fold{border:1px solid rgba(0,0,0,.1);border-radius:14px;margin:10px 0;background:rgba(0,0,0,.02)}
+.jf .fold>summary{list-style:none;cursor:pointer;padding:12px 14px;font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.jf .fold>summary::-webkit-details-marker{display:none}
+.jf .fold>summary::after{content:'+';margin-left:auto;font-size:20px;line-height:1;color:#6b7280}
+.jf .fold[open]>summary::after{content:'\2212'}
+.jf .fold[open]>summary{border-bottom:1px solid rgba(0,0,0,.08)}
+.jf .fold>.fields,.jf .fold>.wh-box,.jf .fold>.vchips,.jf .fold>label,.jf .fold>button,.jf .fold>.jf-grid{margin-left:14px;margin-right:14px}
+.jf .fold>.fields{padding:12px 0 6px}.jf .fold>label.f{margin-top:12px}.jf .fold>button{margin-top:8px;margin-bottom:12px}.jf .fold>.wh-box{margin-top:12px}
+.jf .fold-sub{font-weight:500;font-size:12.5px;color:#6b7280}
+.jf .jf-paste{background:#f6f8fc;border-style:dashed}
+.jf .jf-actions{margin-top:16px;display:grid;gap:8px}
+.jf .jf-actions>#save-job{width:100%;padding:15px;font-size:17px;font-weight:800;border-radius:14px}
+.jf .jf-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.jf .jf-grid .btn{width:100%;font-size:14px;padding-left:8px;padding-right:8px;white-space:nowrap}
+.jf .jf-more>.jf-grid{padding:12px 0}
+body.jm-open #jobFormTop .jf-actions>#save-job{position:sticky;bottom:-80px;z-index:3;box-shadow:0 10px 24px rgba(0,0,0,.25)}
+@media (max-width:899px){#whFormTop{display:none}}
 .jm-x{display:none}
 @media (max-width:899px){#jobFormTop{display:none}}
 body.jm-open{overflow:hidden}
@@ -2651,26 +2670,54 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
       <div class="bill-grid" id="jobFormTop">
         <div class="jm-x no-print"><span id="jmTitle">แก้ไขใบงาน</span><button type="button" id="jmClose">✕ ปิด</button></div>
         <div class="stack no-print">
-          <div class="card">
-            <h2>ข้อมูลงาน</h2>
+          <div class="card jf">
+            <h2>ใบคอนเฟิร์มงาน</h2>
             <p class="edit-state" id="jobEditState"></p>
             <div class="job-status-row">
               <span class="hint" style="margin:0">สถานะงาน:</span>
               <span class="status-pill" id="jobStatusBadge"></span>
             </div>
+            <section class="jf-sec">
+              <div class="jf-h"><i>1</i>ลูกค้า</div>
+              <details class="fold jf-paste"><summary>วางข้อความทั้งก้อน ให้ระบบแยก งาน / ชื่อ / เบอร์ / ที่อยู่ ให้</summary>
+              <label class="f"><span>วางข้อความทั้งก้อน (งาน + ชื่อ เบอร์ ที่อยู่) แล้วกดแยก</span><textarea id="jPaste" placeholder="วางข้อความทั้งก้อน เช่น&#10;7cm 140ชิ้น&#10;แบบละ70ชิ้น&#10;นาย สมชาย ใจดี&#10;081-234-5678&#10;99 หมู่ 1 ต.ในเมือง อ.เมือง จ.พิษณุโลก 65000"></textarea></label>
+              <button class="btn small" id="jSplit" type="button">แยกงาน / ชื่อ / เบอร์ / ที่อยู่ อัตโนมัติ</button>
+              </details>
+              <div class="fields">
+              <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="jName" type="text" autocomplete="off"></label>
+              <div id="jNameChips" class="vchips no-print" aria-label="ชื่อที่เคยคีย์ไว้"></div>
+              <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="jPhone" type="tel" autocomplete="off"></label>
+              <label class="f"><span>ที่อยู่ลูกค้า (ถ้ามี)</span><textarea id="jAddr"></textarea></label>
+              </div>
+            </section>
+            <section class="jf-sec">
+              <div class="jf-h"><i>2</i>งานที่ต้องผลิต</div>
+            <div class="item-head job" aria-hidden="true"><span>ชื่องาน / สเปก</span><span>จำนวน</span><span>หมายเหตุ</span><span></span></div>
+            <div id="jobItems"></div>
+            <button class="btn small" id="add-jobitem" type="button">＋ เพิ่มรายการ</button>
+            <p class="hint">ใส่ชนิดสติ๊กเกอร์ ขนาด และวัสดุในชื่อรายการได้เลย เช่น “สติ๊กเกอร์ PVC ไดคัท 5x5 ซม. เคลือบด้าน”</p>
+              <div class="fields">
+              <label class="f"><span>หมายเหตุถึงฝ่ายผลิต</span><textarea id="jobNote" placeholder="เช่น สีที่ต้องตรงปก ไดคัทตามขอบภาพ ส่งไฟล์งานแนบแล้ว"></textarea></label>
+              </div>
+            </section>
+            <details class="fold" id="jobShipFold"><summary>ส่งพัสดุ / ฝากส่ง <span class="fold-sub">(ถ้าเป็นงานส่ง)</span></summary>
             <div class="wh-box no-print">
               <label class="chk-row"><input type="checkbox" id="jobWholesale"> <span>🏷️ <b>งานราคาส่ง</b> — ใส่ราคาส่งต่อแบบได้ และรวมเข้าใบราคาส่งที่ยังไม่จ่ายของลูกค้าคนนี้</span></label>
               <button class="btn good" type="button" id="jobToWholesale" hidden>🧾 บันทึก แล้วใส่ในใบราคาส่งที่ยังไม่จ่ายของลูกค้าคนนี้</button>
             </div>
-            <div class="fields">
-              <div class="row2">
-                <label class="f"><span>เลขที่ใบคอนเฟิร์มงาน</span><input class="txt" id="jobNo" type="text" autocomplete="off"></label>
-                <label class="f"><span>วันที่สั่งงาน</span><input class="txt" id="jobDate" type="date"></label>
+              <div class="fields">
+              <div class="recv-box" id="jRecvBox"><b>📦 ลูกค้าฝากส่ง — ผู้รับปลายทาง</b>
+                <div class="hint" style="margin:2px 0 6px">ถ้าลูกค้าฝากส่งให้คนอื่น วางข้อความที่มี “ผู้ส่ง..” และ “ผู้รับ..” แล้วกดแยก ผู้ส่งจะเป็นชื่อลูกค้า (งานราคาส่ง) ผู้รับอยู่ในช่องนี้</div>
+                <label class="f"><span>ชื่อผู้รับ</span><input class="txt" id="jRName" type="text" autocomplete="off"></label>
+                <label class="f"><span>เบอร์ผู้รับ</span><input class="txt" id="jRPhone" type="tel" autocomplete="off"></label>
+                <label class="f"><span>ที่อยู่ผู้รับ</span><textarea id="jRAddr"></textarea></label>
+                <div id="jRecvMore"></div>
+                <button class="btn small" id="jRecvAdd" type="button">＋ เพิ่มผู้รับอีกกล่อง (ส่งหลายที่อยู่)</button>
               </div>
-              <div class="row2">
-                <label class="f"><span>กำหนดส่งงาน (ถ้ามี)</span><input class="txt" id="jobDue" type="date"></label>
-                <label class="f"><span>เพจ</span><select class="txt" id="jobPage"><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop (UV)</option></select></label>
               </div>
+            </details>
+            <details class="fold" id="jobMoneyFold"><summary>การเงิน <span class="fold-sub">(เจ้าของเท่านั้น)</span></summary>
+              <div class="fields">
               <div class="row2">
                 <label class="f"><span>เลือกบัญชี</span>
                   <select class="txt" id="jobAccount">
@@ -2691,43 +2738,33 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
                 </div>
                 <div id="jobBankInList" hidden></div>
               </div>
-              <label class="f"><span>วางข้อความทั้งก้อน (งาน + ชื่อ เบอร์ ที่อยู่) แล้วกดแยก</span><textarea id="jPaste" placeholder="วางข้อความทั้งก้อน เช่น&#10;7cm 140ชิ้น&#10;แบบละ70ชิ้น&#10;นาย สมชาย ใจดี&#10;081-234-5678&#10;99 หมู่ 1 ต.ในเมือง อ.เมือง จ.พิษณุโลก 65000"></textarea></label>
-              <button class="btn small" id="jSplit" type="button">แยกงาน / ชื่อ / เบอร์ / ที่อยู่ อัตโนมัติ</button>
-              <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="jName" type="text" autocomplete="off"></label>
-              <div id="jNameChips" class="vchips no-print" aria-label="ชื่อที่เคยคีย์ไว้"></div>
-              <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="jPhone" type="tel" autocomplete="off"></label>
-              <label class="f"><span>ที่อยู่ลูกค้า (ถ้ามี)</span><textarea id="jAddr"></textarea></label>
-              <div class="recv-box" id="jRecvBox"><b>📦 ลูกค้าฝากส่ง — ผู้รับปลายทาง</b>
-                <div class="hint" style="margin:2px 0 6px">ถ้าลูกค้าฝากส่งให้คนอื่น วางข้อความที่มี “ผู้ส่ง..” และ “ผู้รับ..” แล้วกดแยก ผู้ส่งจะเป็นชื่อลูกค้า (งานราคาส่ง) ผู้รับอยู่ในช่องนี้</div>
-                <label class="f"><span>ชื่อผู้รับ</span><input class="txt" id="jRName" type="text" autocomplete="off"></label>
-                <label class="f"><span>เบอร์ผู้รับ</span><input class="txt" id="jRPhone" type="tel" autocomplete="off"></label>
-                <label class="f"><span>ที่อยู่ผู้รับ</span><textarea id="jRAddr"></textarea></label>
-                <div id="jRecvMore"></div>
-                <button class="btn small" id="jRecvAdd" type="button">＋ เพิ่มผู้รับอีกกล่อง (ส่งหลายที่อยู่)</button>
               </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <h2>รายการงานที่ต้องผลิต</h2>
-            <div class="item-head job" aria-hidden="true"><span>ชื่องาน / สเปก</span><span>จำนวน</span><span>หมายเหตุ</span><span></span></div>
-            <div id="jobItems"></div>
-            <button class="btn small" id="add-jobitem" type="button">＋ เพิ่มรายการ</button>
-            <p class="hint">ใส่ชนิดสติ๊กเกอร์ ขนาด และวัสดุในชื่อรายการได้เลย เช่น “สติ๊กเกอร์ PVC ไดคัท 5x5 ซม. เคลือบด้าน”</p>
-          </div>
-
-          <div class="card">
-            <h2>ข้อกำหนดการผลิต / หมายเหตุ</h2>
-            <div class="fields">
-              <label class="f"><span>หมายเหตุถึงฝ่ายผลิต</span><textarea id="jobNote" placeholder="เช่น สีที่ต้องตรงปก ไดคัทตามขอบภาพ ส่งไฟล์งานแนบแล้ว"></textarea></label>
+            </details>
+            <details class="fold"><summary>แนบรูปภาพงาน</summary>
+              <div class="fields">
               <label class="f">
                 <span>แนบรูปภาพงาน (ถ้ามี)</span>
                 <input type="file" accept="image/*" multiple id="jobPhotoInput">
                 <p class="hint">แนบได้หลายรูป เช่น ภาพตัวอย่างงาน แบบดีไซน์ หรือรูปอ้างอิงที่ลูกค้าส่งมา</p>
                 <div class="job-photo-grid" id="jobPhotoWrap" hidden></div>
               </label>
-            </div>
-            <div class="actions">
+              </div>
+            </details>
+            <details class="fold" id="jobMetaFold"><summary>เลขที่ใบ / วันที่ / กำหนดส่ง / เพจ <span class="fold-sub" id="jobMetaSum"></span></summary>
+              <div class="fields">
+              <div class="row2">
+                <label class="f"><span>เลขที่ใบคอนเฟิร์มงาน</span><input class="txt" id="jobNo" type="text" autocomplete="off"></label>
+                <label class="f"><span>วันที่สั่งงาน</span><input class="txt" id="jobDate" type="date"></label>
+              </div>
+              <div class="row2">
+                <label class="f"><span>กำหนดส่งงาน (ถ้ามี)</span><input class="txt" id="jobDue" type="date"></label>
+                <label class="f"><span>เพจ</span><select class="txt" id="jobPage"><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop (UV)</option></select></label>
+              </div>
+              </div>
+            </details>
+            <div class="jf-actions">
+              <button class="btn good" id="save-job" type="button">บันทึกลงประวัติ</button>
+              <div class="jf-grid">
               <button class="btn primary" id="print-job" type="button">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg>
                 พิมพ์ใบคอนเฟิร์มงาน
@@ -2735,10 +2772,14 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
               <button class="btn" id="pdf-job" type="button">ดาวน์โหลด PDF</button>
               <button class="btn" id="copy-confirm" type="button">คัดลอกข้อความยืนยัน</button>
               <button class="btn" id="img-confirm" type="button">บันทึกเป็นรูปส่งแชท</button>
-              <button class="btn good" id="save-job" type="button">บันทึกลงประวัติ</button>
+              </div>
+              <details class="fold jf-more"><summary>ทำต่อ: ออกบิล / ใบราคาส่ง / เปิดใบใหม่</summary>
+                <div class="jf-grid">
               <button class="btn" id="job-to-bill" type="button">ใช้ข้อมูลนี้ออกบิล</button>
               <button class="btn" id="job-to-wholesale" type="button">ย้ายไปใบราคาส่ง</button>
               <button class="btn danger" id="new-job" type="button">เปิดใบใหม่</button>
+                </div>
+              </details>
             </div>
             <p class="actions-note">ใบนี้ไม่มีราคา ใช้ยืนยันรายละเอียดงานกับลูกค้าและแจ้งฝ่ายผลิตก่อน เมื่อพร้อมออกบิลจริง กด “ใช้ข้อมูลนี้ออกบิล” เพื่อคัดลอกชื่อลูกค้าและรายการไปที่แท็บบิล หรือกด “ย้ายไปใบราคาส่ง” เพื่อคัดลอกชื่อลูกค้าและรายการไปออกใบราคาส่งแทน</p>
           </div>
@@ -2879,43 +2920,54 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
         <p>เอกสารราคาขายส่งแยกต่างหาก ไม่ใช่ใบเสร็จ/ใบกำกับภาษี ไม่มี VAT และไม่รันเลขที่เอกสาร ใช้ส่งราคาให้ลูกค้าขายส่งดูก่อนตกลงกัน</p>
       </div>
 
+      <button type="button" class="fab-newjob no-print" id="fabNewWh" aria-label="เพิ่มใบราคาส่งใหม่">＋ เพิ่มใบราคาส่ง</button>
       <div class="bill-grid" id="whFormTop">
         <div class="jm-x no-print"><span>แก้ไขใบราคาส่ง</span><button type="button" id="jmClose2">✕ ปิด</button></div>
         <div class="stack no-print">
-          <div class="card">
-            <h2>ข้อมูลใบราคาส่ง</h2>
+          <div class="card jf">
+            <h2>ใบราคาส่ง</h2>
             <p class="edit-state" id="wholesaleEditState"></p>
-            <div class="fields">
+            <section class="jf-sec">
+              <div class="jf-h"><i>1</i>ลูกค้า</div>
+              <div class="fields">
               <label class="f"><span>ชื่อลูกค้า / ผู้ซื้อ</span><input class="txt" id="whName" type="text" autocomplete="off"></label>
-              <label class="f"><span>วันที่</span><input class="txt" id="whDate" type="date"></label>
-              <label class="f"><span>เลขที่ใบราคาส่ง</span><input class="txt" id="whNo" type="text" autocomplete="off" placeholder="ออกเลขให้อัตโนมัติเมื่อเปิดใบใหม่ · ใบเก่าที่ยังไม่มีเลขปล่อยว่างได้"></label>
-              <label class="f"><span>เลขอ้างอิง / หมายเหตุอ้างอิง (ถ้ามี)</span><input class="txt" id="whRef" type="text" autocomplete="off" placeholder="กรอกเองได้ ไม่รันเลขอัตโนมัติ"></label>
-            </div>
-          </div>
-
-          <div class="card">
-            <h2>รายการสินค้า (ราคาส่ง)</h2>
+              </div>
+            </section>
+            <section class="jf-sec">
+              <div class="jf-h"><i>2</i>รายการสินค้า (ราคาส่ง)</div>
             <div class="item-head" aria-hidden="true"><span>รายการ</span><span>จำนวน</span><span>ราคา/ชิ้น</span><span>รวม</span><span></span></div>
             <div id="wholesaleItems"></div>
             <button class="btn small" id="add-wholesaleitem" type="button">＋ เพิ่มรายการ</button>
             <button class="btn small good" id="add-wh-fromjob" type="button">📥 เพิ่มจากใบงานราคาส่ง</button>
             <p class="hint">ใส่ชนิดสติ๊กเกอร์และขนาดในชื่อรายการได้เลย ราคาที่กรอกคือราคาขายส่งต่อชิ้น</p>
-          </div>
-
-          <div class="card">
-            <h2>ยอดเงินและหมายเหตุ</h2>
-            <div class="fields">
+            </section>
+            <details class="fold" id="whDiscFold"><summary>ส่วนลด / หมายเหตุ</summary>
+              <div class="fields">
               <label class="f"><span>ส่วนลด (บาท)</span><input class="txt" id="whDiscount" type="number" inputmode="decimal" step="any" min="0" value="0"></label>
               <label class="f"><span>หมายเหตุ</span><textarea id="whNote" placeholder="เช่น เงื่อนไขการชำระเงิน วันรับสินค้า"></textarea></label>
-            </div>
-            <div class="actions">
+              </div>
+            </details>
+            <details class="fold" id="whMetaFold"><summary>เลขที่ใบ / วันที่ / เลขอ้างอิง <span class="fold-sub" id="whMetaSum"></span></summary>
+              <div class="fields">
+              <label class="f"><span>วันที่</span><input class="txt" id="whDate" type="date"></label>
+              <label class="f"><span>เลขที่ใบราคาส่ง</span><input class="txt" id="whNo" type="text" autocomplete="off" placeholder="ออกเลขให้อัตโนมัติเมื่อเปิดใบใหม่ · ใบเก่าที่ยังไม่มีเลขปล่อยว่างได้"></label>
+              <label class="f"><span>เลขอ้างอิง / หมายเหตุอ้างอิง (ถ้ามี)</span><input class="txt" id="whRef" type="text" autocomplete="off" placeholder="กรอกเองได้ ไม่รันเลขอัตโนมัติ"></label>
+              </div>
+            </details>
+            <div class="jf-actions">
+              <button class="btn good" id="save-wholesale" type="button">บันทึกลงประวัติ</button>
+              <div class="jf-grid">
               <button class="btn primary" id="print-wholesale" type="button">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg>
                 พิมพ์ใบราคาส่ง
               </button>
               <button class="btn" id="pdf-wholesale" type="button">ดาวน์โหลด PDF</button>
-              <button class="btn good" id="save-wholesale" type="button">บันทึกลงประวัติ</button>
+              </div>
+              <details class="fold jf-more"><summary>เปิดใบใหม่</summary>
+                <div class="jf-grid">
               <button class="btn danger" id="new-wholesale" type="button">เปิดใบใหม่</button>
+                </div>
+              </details>
             </div>
             <p class="actions-note">ใบราคาส่งเป็นเอกสารแยกต่างหากจากใบเสร็จ/ใบกำกับภาษี ไม่มี VAT ไม่รวมกับยอดขายในแดชบอร์ดหรือรายงานภาษี และไม่รันเลขที่เอกสารอัตโนมัติ</p>
           </div>
@@ -3638,7 +3690,7 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=7305ea83eb",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=3503892073",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

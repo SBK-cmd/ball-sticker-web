@@ -4085,7 +4085,7 @@ function bahtText(value) {
     // จำไว้ว่าแบบไหนของใบนี้ถูกใส่ในใบราคาส่งแล้ว
     const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === j.id);
     if (ji >= 0) { jl[ji].whAdded = Object.assign({}, jl[ji].whAdded || {}); (picked || []).forEach(p => { jl[ji].whAdded[p.key] = {at: Date.now(), doc: doc ? (doc.ref || doc.id) : 'ใหม่'}; }); store.set('bs_jobs', jl); cloudSave('jobs', jl[ji]); renderJobHistory(); } if (!wholesaleItems.length) wholesaleItems = [{name: '', qty: 1, price: 0}];
-    renderWholesaleItems(); renderWholesale(); showTab('wholesale'); window.scrollTo({top: 0, behavior: 'smooth'});
+    renderWholesaleItems(); renderWholesale(); showTab('wholesale'); openWhModal(); window.scrollTo({top: 0, behavior: 'smooth'});
     toast(doc ? 'เปิดใบราคาส่งที่ยังไม่จ่าย เพิ่มงาน ' + fresh.length + ' รายการ ใส่ราคาส่งแล้วกด “บันทึกลงประวัติ”' : 'ไม่มีใบราคาส่งค้างของ ' + String(j.jName || '').trim() + ' เปิดใบใหม่ให้ ใส่ราคาส่งแล้วกด “บันทึกลงประวัติ”');
   }
   // รวมงานราคาส่งเข้าใบราคาส่งที่ยังไม่จ่ายของชื่อเดียวกันอัตโนมัติ (ใบล่าสุด ถ้าไม่มีเปิดใบใหม่) ใส่เฉพาะแบบที่ยังไม่เคยใส่ ราคา = ราคาส่งที่กรอกในใบงาน
@@ -4453,7 +4453,22 @@ function bahtText(value) {
   if (!canBank) {
     const acc = $('jobAccount'), row = acc && acc.closest('.row2');
     if (row) { row.hidden = true; const h = row.nextElementSibling; if (h && h.classList.contains('hint')) h.hidden = true; }
+    const mf = $('jobMoneyFold'); if (mf) mf.hidden = true;   // ส่วนการเงิน: เจ้าของเท่านั้น
   }
+  // ฟอร์มใบงาน: ส่วนที่ไม่ค่อยใช้พับไว้ · เปิดเองเมื่อใบนั้นมีข้อมูลในส่วนนั้น · สรุปเลขที่ใบ/วันที่/เพจไว้ที่หัวพับ
+  function syncJobFolds() {
+    try {
+      const ship = $('jobShipFold'), money = $('jobMoneyFold');
+      const hasRecv = !!(($('jRName').value || '').trim() || ($('jRAddr').value || '').trim() || jobRecvMore.length);
+      if (ship) ship.open = !!($('jobWholesale').checked || hasRecv);
+      if (money) money.open = !!(num($('jobSlipAmount').value) > 0 || $('jobAccount').value);
+      const d = $('jobDate').value, due = $('jobDue').value, pg = $('jobPage');
+      const sum = $('jobMetaSum'); if (sum) sum.textContent = '· ' + ($('jobNo').value || 'เลขอัตโนมัติ') + (d ? ' · ' + thDate(d) : '') + (due ? ' · ส่ง ' + thDate(due) : '') + (pg && pg.selectedOptions[0] ? ' · ' + pg.selectedOptions[0].text : '');
+    } catch (e) { console.error('syncJobFolds', e); }
+  }
+  ['jobNo', 'jobDate', 'jobDue', 'jobPage'].forEach(id => { const e = $(id); if (e) { e.addEventListener('input', syncJobFolds); e.addEventListener('change', syncJobFolds); } });
+  $('jobWholesale').addEventListener('change', () => { const f = $('jobShipFold'); if (f && $('jobWholesale').checked) f.open = true; });
+  $('jSplit').addEventListener('click', () => setTimeout(syncJobFolds, 80));
   function renderJobStatusBadge() {
     const el = $('jobStatusBadge'); if (!el) return;
     el.className = 'status-pill ' + jobStatus;
@@ -4651,7 +4666,7 @@ function bahtText(value) {
     $('jobWholesale').checked = !!j.wholesale; syncJobWholesaleBtn();
     { const rv = j.recv || {}; $('jRName').value = rv.name || ''; $('jRPhone').value = rv.phone || ''; $('jRAddr').value = rv.addr || ''; }
     jobRecvMore = Array.isArray(j.recvMore) ? j.recvMore.map(r => Object.assign({name: '', phone: '', addr: '', note: '', code: '', carrier: ''}, r)) : []; renderRecvMore();
-    renderJobItems(); renderJobPhotos(); renderJobStatusBadge(); renderJob();
+    renderJobItems(); renderJobPhotos(); renderJobStatusBadge(); renderJob(); syncJobFolds();
   }
   function syncJobWholesaleBtn() { const b = $('jobToWholesale'); if (b) b.hidden = !($('jobWholesale').checked && can('wholesale')); }
   function renderJobEditState() {
@@ -4677,7 +4692,7 @@ function bahtText(value) {
     lastWhMerge = null;
     saveJob(); // บันทึกแล้วรวมเข้าใบราคาส่งตามชื่ออัตโนมัติ
     const d = lastWhMerge; lastWhMerge = null;
-    if (d) { currentWholesaleId = d.id; applyWholesale(d); renderWholesaleEditState(); showTab('wholesale'); window.scrollTo({top: 0, behavior: 'smooth'}); }
+    if (d) { currentWholesaleId = d.id; applyWholesale(d); renderWholesaleEditState(); showTab('wholesale'); openWhModal(); window.scrollTo({top: 0, behavior: 'smooth'}); }
     else { const rec = store.get('bs_jobs', []).find(x => x.id === currentJobId); if (rec && jobPendingWhItems(rec).length) jobToUnpaid(rec); else toast('งานนี้อยู่ในใบราคาส่งแล้ว'); }
   });
   function newJob() {
@@ -4874,6 +4889,19 @@ function bahtText(value) {
     let n = max + 1, out; do { out = pre + '-' + String(n).padStart(3, '0'); n++; } while (used[out.toUpperCase()]);
     return out;
   }
+  function openWhModal() {
+    if (window.innerWidth >= 900) return;
+    document.body.classList.add('jm-open'); const f = $('whFormTop'); if (f) f.scrollTop = 0;
+    syncWhFolds();
+  }
+  function syncWhFolds() {
+    try {
+      const d = $('whDiscFold'); if (d) d.open = !!(num($('whDiscount').value) > 0 || ($('whNote').value || '').trim());
+      const sum = $('whMetaSum'); if (sum) sum.textContent = '· ' + ($('whNo').value || 'เลขอัตโนมัติ') + ($('whDate').value ? ' · ' + thDate($('whDate').value) : '');
+    } catch (e) { console.error('syncWhFolds', e); }
+  }
+  ['whDate', 'whNo', 'whRef', 'whDiscount', 'whNote'].forEach(id => { const e = $(id); if (e) { e.addEventListener('input', syncWhFolds); e.addEventListener('change', syncWhFolds); } });
+  { const fb = $('fabNewWh'); if (fb) fb.addEventListener('click', () => { newWholesale(); renderWholesaleEditState(); openWhModal(); }); }
   function newWholesale() {
     currentWholesaleId = null;
     applyWholesale({date: todayISO(), no: whNextNo(todayISO())});
@@ -6316,7 +6344,7 @@ function bahtText(value) {
     wholesaleItems = shown.length ? shown.map(i => ({name: i.name, qty: i.qty, price: i.price})) : [{name: '', qty: 1, price: 0}];
     $('whDiscount').value = num($('discount').value) || 0;
     if ($('note').value.trim() && !$('whNote').value.trim()) $('whNote').value = $('note').value;
-    renderWholesaleItems(); renderWholesale(); showTab('wholesale');
+    renderWholesaleItems(); renderWholesale(); showTab('wholesale'); openWhModal();
     window.scrollTo({top: 0, behavior: 'smooth'});
     toast('คัดลอกข้อมูลจากเอกสารนี้มาที่ใบราคาส่งแล้ว');
   });
@@ -6340,7 +6368,7 @@ function bahtText(value) {
     const shown = jobItems.filter(i => i.name.trim());
     wholesaleItems = shown.length ? shown.map(i => ({name: i.name, qty: i.qty, price: 0})) : [{name: '', qty: 1, price: 0}];
     if ($('jobNote').value.trim() && !$('whNote').value.trim()) $('whNote').value = $('jobNote').value;
-    renderWholesaleItems(); renderWholesale(); showTab('wholesale');
+    renderWholesaleItems(); renderWholesale(); showTab('wholesale'); openWhModal();
     window.scrollTo({top: 0, behavior: 'smooth'});
     toast('คัดลอกข้อมูลจากใบคอนเฟิร์มงานมาที่ใบราคาส่งแล้ว ใส่ราคาส่งให้ครบก่อนพิมพ์');
   });
@@ -6579,7 +6607,7 @@ function bahtText(value) {
     } else if (btn.dataset.act === 'open') {
       const w = list.find(x => x.id === id); if (!w) return;
       currentWholesaleId = id; applyWholesale(w); renderWholesaleEditState(); showTab('wholesale');
-      document.body.classList.add('jm-open'); { const f = $('whFormTop'); if (f) f.scrollTop = 0; } toast('เปิดใบราคาส่งแล้ว แก้ไขได้เลย');
+      document.body.classList.add('jm-open'); { const f = $('whFormTop'); if (f) f.scrollTop = 0; } syncWhFolds(); toast('เปิดใบราคาส่งแล้ว แก้ไขได้เลย');
     } else if (btn.dataset.act === 'del') {
       if (whDelArmed !== id) {
         whDelArmed = id; btn.textContent = 'กดอีกครั้งเพื่อลบ'; btn.classList.add('confirm');
