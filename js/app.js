@@ -3244,6 +3244,9 @@ function bahtText(value) {
     const add = (name, d) => { const k = String(name || '').trim() || 'ไม่ระบุชื่อ'; (g[k] = g[k] || {name: k, docs: [], total: 0}).docs.push(d); };
     // เฉพาะงานส่ง (JBS) = ใบราคาส่ง — บิลหน้าร้านไม่รวม
     if (can('wholesale')) store.get('bs_wholesale', []).filter(w => !w.paid).forEach(w => add(w.buyerName, {k: 'wholesale', id: w.id, no: w.no || w.ref || 'ใบราคาส่ง', date: w.date || '', total: round2(wholesaleCalc(w).total)}));
+    // งาน JBS ที่คีย์จำนวนเงินไว้แล้ว แต่ยังไม่ได้รวมเข้าใบราคาส่ง และยังไม่ผูกกับเงินเข้าจริง = ยอดที่รอเก็บ
+    if (can('wholesale')) store.get('bs_jobs', []).filter(j => /^JBS/i.test(String(j.no || '').trim()) && !j.owedPaid && num(j.slipAmount) > 0 && !jobBankIdsOf(j).length && jobPendingWhItems(j).length)
+      .forEach(j => add(j.jName, {k: 'jobs', id: j.id, no: j.no, date: j.date || '', total: round2(num(j.slipAmount))}));
     const out = Object.values(g).filter(x => x.docs.some(d => d.total > 0));
     out.forEach(x => { x.docs.sort((a, b) => String(a.date).localeCompare(String(b.date))); x.total = round2(x.docs.reduce((t, d) => t + d.total, 0)); });
     return out.sort((a, b) => b.total - a.total);
@@ -3283,6 +3286,11 @@ function bahtText(value) {
   }
   function markDocsPaid(docs) {
     (docs || []).forEach(d => {
+      if (d.k === 'jobs') {   // ยอดที่คีย์ไว้ในใบงาน (ยังไม่เข้าใบราคาส่ง) → รับแล้ว
+        const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === d.id);
+        if (ji >= 0 && !jl[ji].owedPaid) { jl[ji] = Object.assign({}, jl[ji], {owedPaid: true, slipPending: false}); store.set('bs_jobs', jl); cloudSave('jobs', jl[ji]); }
+        return;
+      }
       const list = store.get('bs_' + (d.k === 'bills' ? 'bills' : 'wholesale'), []), i = list.findIndex(x => x.id === d.id);
       if (i < 0 || list[i].paid) return;
       list[i] = Object.assign({}, list[i], {paid: true});
@@ -3822,6 +3830,14 @@ function bahtText(value) {
   }
   // งานราคาส่ง: เลือกว่าแบบไหนจะใส่ในใบราคาส่งตอนนี้ + ใส่จำนวนและราคาส่งต่อหน่วยแยกตามแบบ (แบบที่ใส่ไปแล้วจะไม่ติ๊กให้)
   function jobItemKey(i, idx) { return idx + '|' + String(i.name || '').trim(); }
+  // ราคาส่งต่อหน่วยที่เติมให้อัตโนมัติ: ใบงานที่ใส่จำนวนเงินไว้แล้ว + มีรายการเดียว → จำนวนเงิน ÷ จำนวนชิ้น (หลายรายการแยกไม่ได้ ปล่อยว่างให้ใส่เอง)
+  function jobUnitPrice(j, i) {
+    if (i && i.price !== undefined && i.price !== null && String(i.price).trim() !== '') return i.price;
+    const named = (j.items || []).filter(x => x && String(x.name || '').trim());
+    const slip = num(j.slipAmount);
+    if (slip > 0 && named.length === 1) { const q = num(named[0].qty) > 0 ? num(named[0].qty) : 1; return round2(slip / q); }
+    return '';
+  }
   function pickWholesaleItems(j, cb) {
     const rows = (j.items || []).map((i, idx) => ({i, idx})).filter(r => (r.i.name || '').trim());
     const done = j.whAdded || {};
@@ -3830,7 +3846,7 @@ function bahtText(value) {
       '<div class="wh-hint">ติ๊กแบบที่ต้องการ ใส่จำนวนและราคาส่งต่อหน่วยของแต่ละแบบ (ไม่ใส่ราคา = 0 ไว้ไปใส่ในใบราคาส่ง)</div>' +
       rows.map(r => { const k = jobItemKey(r.i, r.idx), was = done[k];
         return '<div class="wh-row' + (was ? ' was' : '') + '" data-k="' + esc(k) + '"><label class="wh-nm"><input type="checkbox" class="wh-ck"' + (was ? '' : ' checked') + '> <span>' + esc(String(r.i.name).trim()) + ((r.i.note || '').trim() ? ' <small>(' + esc(String(r.i.note).trim()) + ')</small>' : '') + (was ? ' <em>✔ ใส่แล้ว</em>' : '') + '</span></label>' +
-        '<div class="wh-in"><label>จำนวน<input class="txt wh-q" type="number" inputmode="decimal" step="any" min="0" value="' + esc(r.i.qty) + '"></label><label>ราคาส่ง/หน่วย<input class="txt wh-p" type="number" inputmode="decimal" step="any" min="0" placeholder="0" value="' + esc(r.i.price == null ? '' : r.i.price) + '"></label></div></div>'; }).join('') +
+        '<div class="wh-in"><label>จำนวน<input class="txt wh-q" type="number" inputmode="decimal" step="any" min="0" value="' + esc(r.i.qty) + '"></label><label>ราคาส่ง/หน่วย<input class="txt wh-p" type="number" inputmode="decimal" step="any" min="0" placeholder="0" value="' + esc(jobUnitPrice(j, r.i)) + '"></label></div></div>'; }).join('') +
       '<button type="button" class="btn good" data-wh="ok">ใส่ในใบราคาส่ง</button><button type="button" class="btn small" data-wh="x">ยกเลิก</button></div>';
     ov.addEventListener('click', ev => {
       const b = ev.target.closest('[data-wh]');
@@ -3875,7 +3891,7 @@ function bahtText(value) {
     const wl = store.get('bs_wholesale', []);
     let doc = wl.filter(w => !w.paid && String(w.buyerName || '').trim() === name).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0], isNew = false;
     if (!doc) { doc = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: false, no: whNextNo(todayISO()), ref: '', date: todayISO(), buyerName: name, items: [], discount: 0, note: ''}; wl.push(doc); isNew = true; }
-    const add = rows.map(r => ({name: String(r.i.name).trim() + ((r.i.note || '').trim() ? ' (' + String(r.i.note).trim() + ')' : ''), qty: r.i.qty, price: num(r.i.price)}));
+    const add = rows.map(r => ({name: String(r.i.name).trim() + ((r.i.note || '').trim() ? ' (' + String(r.i.note).trim() + ')' : ''), qty: r.i.qty, price: num(jobUnitPrice(j, r.i))}));
     doc.items = (doc.items || []).filter(i => (i.name || '').trim()).concat(add);
     doc.savedAt = Date.now();
     j.whAdded = Object.assign({}, j.whAdded || {}); rows.forEach(r => { j.whAdded[jobItemKey(r.i, r.idx)] = {at: Date.now(), doc: doc.ref || doc.id}; });
@@ -4303,6 +4319,7 @@ function bahtText(value) {
   }
 
   function renderJob() {
+    { const q = $('jobQrBtn'); if (q) q.hidden = !/^JBS/i.test(String($('jobNo').value || '').trim()); }   // QR เก็บเงินในใบงาน: เฉพาะ JBS (งานราคาส่ง)
     renderJobHTML();
     fitJob();
   }
@@ -4452,6 +4469,7 @@ function bahtText(value) {
       '</div>';
   }
   function renderJobHistory() {
+    try { renderOwedCard(); } catch (e) {}
     try { const sel = window.getSelection && window.getSelection(); if (sel && !sel.isCollapsed && String(sel).trim() && $('jobHistory').contains(sel.anchorNode)) { clearTimeout(renderJobHistory._t); renderJobHistory._t = setTimeout(renderJobHistory, 1500); return; } } catch (e) {}
     try { renderCustomerDatalist(); } catch (e) {}
     const list = store.get('bs_jobs', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
@@ -5499,6 +5517,22 @@ function bahtText(value) {
   $('jobSlipAmount').addEventListener('input', () => {   // ลูกค้าราคาส่ง/งานส่ง ใส่ยอดไว้ก่อนโดยยังไม่ผูกเงินเข้า → ติ๊ก "ยังไม่ได้รับ" ให้ (เอาออกเองได้)
     if (jobBankInIds.length) { $('jobSlipPending').checked = false; return; }
     if (num($('jobSlipAmount').value) > 0 && (($('jobWholesale') && $('jobWholesale').checked) || /^JBS/i.test(String($('jobNo').value || '')))) $('jobSlipPending').checked = true;
+  });
+  $('jobQrBtn').addEventListener('click', async () => {   // QR พร้อมเพย์ตามจำนวนเงินในใบงาน (JBS เข้าวันทิม)
+    const a = round2(num($('jobSlipAmount').value));
+    if (!(a > 0)) { toast('ใส่จำนวนเงินก่อน'); $('jobSlipAmount').focus(); return; }
+    const jbs = /^JBS/i.test(String($('jobNo').value || '').trim()), acc = jbs ? 'วันทิม' : ($('jobAccount').value || 'กิติพงษ์');
+    const at = Date.now(), url = await payCardDataUrl(a, ($('jName').value.trim() + ' · ' + $('jobNo').value.trim()).slice(0, 44), payRef(at), at, payAcct(acc));
+    const ov = document.createElement('div'); ov.className = 'job-zoom pick-ov'; ov.style.cursor = 'default';
+    ov.innerHTML = '<div class="pick-box"><b>QR เก็บเงิน ' + money(a) + ' บาท</b><div class="owed-qr"><img alt="QR พร้อมเพย์" src="' + url + '"></div><button type="button" class="btn good" data-sv="1">บันทึก/แชร์รูป</button><button type="button" class="btn" data-x="1">ปิด</button></div>';
+    ov.addEventListener('click', async ev => {
+      if (ev.target === ov || ev.target.closest('[data-x]')) return ov.remove();
+      if (ev.target.closest('[data-sv]')) {
+        try { const blob = await (await fetch(url)).blob(), file = new File([blob], 'QR-' + a + '.png', {type: 'image/png'}); if (navigator.canShare && navigator.canShare({files: [file]})) { await navigator.share({files: [file], title: 'QR พร้อมเพย์ ' + money(a) + ' บาท'}); return; } } catch (err) { if (err && err.name === 'AbortError') return; }
+        const l = document.createElement('a'); l.href = url; l.download = 'QR-' + a + '.png'; l.click();
+      }
+    });
+    document.body.appendChild(ov);
   });
   $('jobSlipPending').addEventListener('change', () => { try { renderJob(); } catch (e) {} });
   ['jobNo', 'jobDate', 'jobDue', 'jobAccount', 'jobPage', 'jobSlipAmount', 'jName', 'jPhone', 'jAddr', 'jobNote'].forEach(id => $(id).addEventListener((id === 'jobAccount' || id === 'jobPage') ? 'change' : 'input', renderJob));
