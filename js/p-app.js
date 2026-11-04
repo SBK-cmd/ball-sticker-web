@@ -295,7 +295,8 @@ function bahtText(value) {
       if (isJbs && snd) doc.sender = snd;
       if (isJbs && rcv) { doc.receiver = rcv; const fn = String(rec.recv.name || '').replace(/\s+/g, ' ').trim().slice(0, 80); if (fn) doc.receiver.name = fn; }   // ผู้รับ: ชื่อเต็ม (ตามที่ร้านสั่ง)
       // ยอดค้างรวมของลูกค้า (ใบราคาส่งที่ยังไม่จ่าย) + payload พร้อมเพย์ ให้ลูกค้าสแกนจ่ายเองจากหน้าติดตาม
-      if (isJbs) { const ow = owedGroups().find(x => x.name === (String(rec.jName || '').trim() || 'ไม่ระบุชื่อ')); if (ow && ow.total > 0) doc.pay = {total: ow.total, payee: payAcct(rec.account).name || '', ref: payRef(Date.now()), payload: promptPayPayload(payAcct(rec.account).id, ow.total), docs: ow.docs.slice(0, 10).map(d => ({no: d.no, amount: d.total}))}; }
+      if (isJbs) { const ow = owedGroups().find(x => x.name === (String(rec.jName || '').trim() || 'ไม่ระบุชื่อ')); if (ow && ow.total > 0) doc.pay = {total: ow.total, payee: payAcct('วันทิม').name || '', ref: payRef(Date.now()), payload: promptPayPayload(payAcct('วันทิม').id, ow.total),   // งาน JBS เข้าบัญชีวันทิมทั้งหมด
+      docs: ow.docs.slice(0, 10).map(d => ({no: d.no, amount: d.total}))}; }
       const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
       if (isJbs && refs.length) doc.refPhotos = refs;
       cloudDb.collection('publicJobs').doc(String(rec.trackToken)).set(doc).catch(e => console.error('publicJobs save error', e));
@@ -3311,7 +3312,7 @@ function bahtText(value) {
     const picked = () => Array.from(ov.querySelectorAll('input[data-i]:checked')).map(c => grp.docs[+c.dataset.i]);
     const sum = () => { const t = round2(picked().reduce((a, d) => a + d.total, 0)); $('owedSel').textContent = money(t); $('owedMk').disabled = !(t > 0); return t; };
     sum();
-    { const lj = store.get('bs_jobs', []).filter(j => String(j.jName || '').trim() === grp.name && (j.account === 'วันทิม' || j.account === 'กิติพงษ์')).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0]; if (lj) $('owedAcc').value = lj.account; }
+    $('owedAcc').value = 'วันทิม';   // งานส่ง (JBS) เข้าบัญชีวันทิม
     let lastUrl = '';
     ov.onclick = async ev => {
       if (ev.target === ov) return close();
@@ -4357,6 +4358,8 @@ function bahtText(value) {
     const d = ($('jobDate').value || todayISO()).replace(/-/g, '').slice(2);
     return nextJobNoFor((isDeliveryJob() ? 'JBS' : 'JB') + d);   // งานส่ง (ติ๊กงานราคาส่ง หรือมีผู้รับปลายทาง) รันเลข JBS แยกจาก JB
   }
+  // งานส่ง (เลข JBS) เข้าบัญชีวันทิมทั้งหมด
+  function syncJbsAccount() { if (/^JBS/i.test(String($('jobNo').value || '').trim()) && $('jobAccount').value !== 'วันทิม') $('jobAccount').value = 'วันทิม'; }
   function isDeliveryJob() {
     return !!(($('jobWholesale') && $('jobWholesale').checked) || $('jRName').value.trim() || $('jRAddr').value.trim());
   }
@@ -4365,7 +4368,7 @@ function bahtText(value) {
     const cur = String($('jobNo').value || '').trim();
     const m = /^JB(\d{6})-\d{3}$/.exec(cur);
     if (!m || !isDeliveryJob()) return false;
-    $('jobNo').value = nextJobNoFor('JBS' + m[1], skipId);
+    $('jobNo').value = nextJobNoFor('JBS' + m[1], skipId); syncJbsAccount();
     return true;
   }
 
@@ -4403,7 +4406,7 @@ function bahtText(value) {
   $('jobWholesale').addEventListener('change', () => {
     syncJobWholesaleBtn(); renderJobItems();
     // ใบใหม่ที่ยังไม่บันทึก และเลขยังเป็นเลขอัตโนมัติ → สลับ JB ↔ JBS ตามติ๊ก (ใบที่บันทึกแล้วไม่เปลี่ยนเลข เพราะอาจส่งให้ลูกค้าไปแล้ว)
-    if (!currentJobId && /^JBS?\d{6}-\d{3}$/.test(String($('jobNo').value || '').trim())) { $('jobNo').value = nextJobNo(); renderJob(); }
+    if (!currentJobId && /^JBS?\d{6}-\d{3}$/.test(String($('jobNo').value || '').trim())) { $('jobNo').value = nextJobNo(); syncJbsAccount(); renderJob(); }
   });
   ['jRName', 'jRAddr'].forEach(id => $(id).addEventListener('change', () => { if (!currentJobId && fixDeliveryNo()) renderJob(); }));
   $('jobToWholesale').addEventListener('click', () => {
@@ -4475,7 +4478,8 @@ function bahtText(value) {
     if (!String(data.no).trim()) { toast('ใส่เลขที่ใบก่อนบันทึก'); $('jobNo').focus(); return; }
     const id = currentJobId || ('j' + Date.now());
     const idx = list.findIndex(j => j.id === id);
-    { const was = String(data.no).trim(); if (fixDeliveryNo(currentJobId)) { data.no = $('jobNo').value; toast('งานส่ง: เปลี่ยนเลข ' + was + ' เป็น ' + data.no + ' ให้แล้ว'); } }
+    { const was = String(data.no).trim(); if (fixDeliveryNo(currentJobId)) { data.no = $('jobNo').value; data.account = $('jobAccount').value; toast('งานส่ง: เปลี่ยนเลข ' + was + ' เป็น ' + data.no + ' ให้แล้ว'); } }
+    if (/^JBS/i.test(String(data.no).trim())) { $('jobAccount').value = 'วันทิม'; data.account = 'วันทิม'; }
     if (idx < 0 && list.some(j => String(j.no || '').trim().toUpperCase() === String(data.no).trim().toUpperCase())) {   // ใบใหม่ เลขชนกับใบเดิม (เช่น 2 เครื่องเปิดพร้อมกัน) → ขยับเลขให้อัตโนมัติ
       const m = /^(.*?)-?\d+$/.exec(String(data.no).trim()), old = data.no;
       data.no = nextJobNoFor(m && m[1] ? m[1] : 'JB' + String($('jobDate').value || todayISO()).replace(/-/g, '').slice(2));
