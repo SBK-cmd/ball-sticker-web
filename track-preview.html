@@ -37,8 +37,8 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
 details.jc{background:#fff;border:1px solid #d9dde3;border-left:6px solid var(--y);border-radius:16px;margin:0 0 12px;box-shadow:0 3px 14px rgba(20,24,40,.10);overflow:hidden}details.jc.dn{border-left-color:var(--ok)}
 details.jc>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:14px 16px}
 details.jc>summary::-webkit-details-marker{display:none}details.jc>summary img.jt{flex:none;width:52px;height:52px;border-radius:12px;object-fit:cover;background:#e5e7eb}.jp{margin-top:12px}.jp small{display:block;color:var(--mut);font-size:12.5px;margin-bottom:6px}.jp>div{display:flex;gap:8px;flex-wrap:wrap}.jp img{width:96px;height:96px;border-radius:12px;object-fit:cover;display:block}
-details.jc>summary .jn{flex:1;min-width:0}details.jc>summary .jn b{display:block;font-size:17px;font-weight:800;color:#0f1020;overflow-wrap:anywhere}details.jc>summary .jn small{display:block;color:#4b5563;font-size:13px;margin-top:2px;overflow-wrap:anywhere}
-details.jc>summary .js{flex:none;padding:5px 12px;border-radius:999px;background:var(--y);font-weight:700;font-size:13.5px;white-space:nowrap}
+details.jc>summary .jn{flex:1;min-width:0}details.jc>summary .jn b{display:block;white-space:nowrap;font-size:16px;font-weight:800;color:#0f1020;overflow-wrap:anywhere}details.jc>summary .jn small{display:block;color:#4b5563;font-size:13px;margin-top:2px;overflow-wrap:anywhere}
+details.jc>summary .js{flex:none;padding:5px 12px;border-radius:999px;background:var(--y);font-weight:700;font-size:13.5px;white-space:normal;text-align:center;max-width:112px;line-height:1.25}
 details.jc>summary .js.done{background:#16a34a;color:#fff}
 details.jc>summary::after{content:'▾';flex:none;color:var(--mut);font-size:16px;transition:transform .15s}details.jc[open]>summary::after{transform:rotate(180deg)}
 details.jc>.jb{padding:2px 16px 16px;border-top:1px solid var(--line)}
@@ -160,7 +160,7 @@ details.jc>.jb{padding:2px 16px 16px;border-top:1px solid var(--line)}
     if (others.length) {
       var stOf = function (st) { var k = 0, q; for (q = 0; q < STEPS.length; q++) if (STEPS[q][0] === st) k = q; return k; };
       var hd = function (no, date, st, sub, th) { var k = stOf(st), dn = k === STEPS.length - 1; return '<summary>' + (th ? '<img class="jt" src="' + esc(th) + '" alt="" loading="lazy">' : '') + '<span class="jn"><b>' + esc(no) + '</b>' + ((date || sub) ? '<small>' + esc([thDate(date), sub].filter(Boolean).join(' · ')) + '</small>' : '') + '</span><span class="js' + (dn ? ' done' : '') + '">' + esc(STEPS[k][1]) + '</span></summary>'; };
-      var cards = '<details class="jc' + (stOf(j.status) === STEPS.length - 1 ? ' dn' : '') + '" open>' + hd(j.no, j.date || '', j.status, subOf(j.items), j.thumb) + '<div class="jb">' + html + '</div></details>';
+      var cards = [{no: String(j.no || ''), date: j.date || '', h: '<details class="jc' + (stOf(j.status) === STEPS.length - 1 ? ' dn' : '') + '" open>' + hd(j.no, j.date || '', j.status, subOf(j.items), j.thumb) + '<div class="jb">' + html + '</div></details>'}];
       others.forEach(function (o) {
         var k = stOf(o.status), steps = STEPS.map(function (s2, n) { var c = n < k || k === STEPS.length - 1 ? 'done' : (n === k ? 'cur' : ''); return '<li class="' + c + '"><i>' + (c === 'done' ? '✓' : (n + 1)) + '</i>' + esc(s2[1]) + '</li>'; }).join('');
         var b = '<ul class="steps" style="margin-top:12px">' + steps + '</ul>';
@@ -170,9 +170,11 @@ details.jc>.jb{padding:2px 16px 16px;border-top:1px solid var(--line)}
         if (o.receiver) b += '<div class="ad" style="margin-top:12px"><div class="ab"><small>ผู้รับ</small>' + (o.receiver.name ? '<b>' + esc(o.receiver.name) + '</b>' : '') + esc(o.receiver.addr || '') + '</div></div>';
         if (o.due && k < STEPS.length - 1) b += '<div class="row"><span>กำหนดส่ง</span><b>' + esc(thDate(o.due)) + '</b></div>';
         if (o.trackCode) b += '<div class="row"><span>เลขพัสดุ' + (o.carrier ? ' (' + esc(o.carrier) + ')' : '') + '</span><b>' + esc(o.trackCode) + '<button class="copy" type="button" data-cp="' + esc(o.trackCode) + '">คัดลอก</button></b></div>' + (/^https:\/\//.test(o.trackUrl || '') ? '<a class="go" href="' + esc(o.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะพัสดุ' + (o.carrier ? ' กับ ' + esc(o.carrier) : '') + '</a>' : '');
-        cards += '<details class="jc' + (k === STEPS.length - 1 ? ' dn' : '') + '">' + hd(o.no, o.date, o.status, subOf(o.items), o.thumb) + '<div class="jb">' + b + '</div></details>';
+        cards.push({no: String(o.no || ''), date: o.date || '', h: '<details class="jc' + (k === STEPS.length - 1 ? ' dn' : '') + '">' + hd(o.no, o.date, o.status, subOf(o.items), o.thumb) + '<div class="jb">' + b + '</div></details>'});
       });
-      html = cards; box.className = 'card multi';
+      // ใบที่มาทีหลังอยู่บน (วันที่ใหม่สุด → เก่า, วันเดียวกันดูเลขใบ)
+      cards.sort(function (a, b2) { return (b2.date > a.date ? 1 : b2.date < a.date ? -1 : 0) || (b2.no > a.no ? 1 : b2.no < a.no ? -1 : 0); });
+      html = cards.map(function (c) { return c.h; }).join(''); box.className = 'card multi';
     } else box.className = 'card';
     box.innerHTML = html;
     setPayModal(payOk ? j.pay : null);
