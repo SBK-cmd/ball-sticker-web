@@ -285,7 +285,9 @@ function bahtText(value) {
   // ใบงานอื่นของลูกค้าคนเดียวกัน (งานส่ง JBS) — แสดงเป็นการ์ดพับได้ในหน้าติดตามเดียวกัน
   function siblingJobsOf(rec) {
     const nm = String(rec.jName || '').trim(); if (!nm) return [];
-    return store.get('bs_jobs', []).filter(x => x.id !== rec.id && /^JBS/i.test(String(x.no || '').trim()) && String(x.jName || '').trim() === nm)
+    // ชื่อเดียวกัน หรือชื่อหนึ่งขึ้นต้นด้วยอีกชื่อ+เว้นวรรค (เช่น "แต้ม" กับ "แต้ม สติ๊กเกอร์") ถือเป็นลูกค้าเดียวกัน
+    const same = n => { n = String(n || '').trim().toLowerCase(); const m = nm.toLowerCase(); return !!n && (n === m || n.startsWith(m + ' ') || m.startsWith(n + ' ')); };
+    return store.get('bs_jobs', []).filter(x => x.id !== rec.id && /^JBS/i.test(String(x.no || '').trim()) && same(x.jName))
       .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.no || '').localeCompare(String(a.no || ''))).slice(0, 8);
   }
   function refreshSiblingMirrors(rec) {
@@ -5086,8 +5088,8 @@ function bahtText(value) {
       return '<li class="jc st-' + (ow > 0 ? 'pending' : 'paid') + (whOpen[g.name] ? ' open' : '') + '" data-name="' + esc(g.name) + '">' +
         '<div class="jc-top"><span class="jc-ph" aria-hidden="true">' + IC_RC + '</span>' +
         '<div class="jc-main"><div class="jc-no">' + (has ? 'บิลปัจจุบัน' + (g.open.length > 1 ? ' ' + g.open.length + ' ใบ' : '') : 'ไม่มีบิลค้าง') + '</div><div class="jc-cust">' + esc(g.name) + '</div></div>' +
-        '<div class="jc-amt">' + (has ? money(ow) : '–') + '<small>' + (has ? 'บาท' : 'พร้อมรับงานใหม่') + '</small></div></div>' +
-        '<div class="jc-chips"><span class="status-pill ' + (ow > 0 ? 'pending' : 'billdone') + '" style="cursor:default">' + (ow > 0 ? 'ค้างชำระ' : 'ไม่มียอดค้าง') + '</span>' +
+        '<div class="jc-amt">' + (has ? (ow > 0 ? money(ow) : '–') : '–') + '<small>' + (has ? (ow > 0 ? 'บาท' : 'ยังไม่มีราคา') : 'พร้อมรับงานใหม่') + '</small></div></div>' +
+        '<div class="jc-chips"><span class="status-pill ' + (ow > 0 ? 'pending' : (has ? 'waitprice' : 'billdone')) + '" style="cursor:default' + (ow <= 0 && has ? ';background:#fff4d6;color:#8a5a00;border-color:#f0d58a' : '') + '">' + (ow > 0 ? (noP ? 'ค้างชำระ (บางงานรอราคา)' : 'ค้างชำระ') : (has ? 'รอคิดราคา' : 'ไม่มียอดค้าง')) + '</span>' +
         (has ? '<span class="jc-chip">' + openN + ' งานในบิล</span>' : '') + (noP && has ? '<span class="jc-chip warn">รอราคา ' + noP + '</span>' : '') +
         '<span class="jc-chip tg">ประวัติ ' + g.paid.length + ' บิล' + (g.paid.length ? ' · ' + money(paidTotal) + ' บาท' : '') + '</span></div>' +
         '<div class="jc-act">' + (ow > 0 ? '<button class="jc-b main" data-act="charge" type="button">' + IC_QR + 'เรียกเก็บเงิน</button>' : '') +
