@@ -6725,6 +6725,7 @@ function bahtText(value) {
       cloudDelete('jobs', id);
       if (delJob && delJob.trackToken && cloudDb) { (window.__bsAuthReady || Promise.resolve()).then(() => cloudDb.collection('publicJobs').doc(String(delJob.trackToken)).delete().catch(() => {})); }
       if (currentJobId === id) { currentJobId = null; renderJobEditState(); }
+      if (delJob) { try { refreshSiblingMirrors(delJob); } catch (e) {} }   // ใบอื่นของลูกค้าเดียวกัน: อัปเดตหน้าติดตามไม่ให้ยังโชว์ใบที่ลบแล้ว
       renderJobHistory(); toast('ลบใบแล้ว');
     }
   });
