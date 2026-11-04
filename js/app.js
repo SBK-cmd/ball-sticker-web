@@ -293,7 +293,10 @@ function bahtText(value) {
       const snd = addrOf(rec.jName, rec.jAddr), rcv = rec.recv ? addrOf(rec.recv.name, rec.recv.addr) : null;
       const isJbs = /^JBS/i.test(String(rec.no || '').trim());   // ที่อยู่/รูปอ้างอิง เฉพาะงานส่ง (JBS)
       if (isJbs && snd) doc.sender = snd;
-      if (isJbs && rcv) doc.receiver = rcv;
+      if (isJbs && rcv) { doc.receiver = rcv; const fn = String(rec.recv.name || '').replace(/\s+/g, ' ').trim().slice(0, 80); if (fn) doc.receiver.name = fn; }   // ผู้รับ: ชื่อเต็ม (ตามที่ร้านสั่ง)
+      // ยอดค้างรวมของลูกค้า (ใบราคาส่งที่ยังไม่จ่าย) + payload พร้อมเพย์ ให้ลูกค้าสแกนจ่ายเองจากหน้าติดตาม
+      if (isJbs) { const ow = owedGroups().find(x => x.name === (String(rec.jName || '').trim() || 'ไม่ระบุชื่อ')); if (ow && ow.total > 0) doc.pay = {total: ow.total, payee: payAcct('วันทิม').name || '', ref: payRef(Date.now()), payload: promptPayPayload(payAcct('วันทิม').id, ow.total),   // งาน JBS เข้าบัญชีวันทิมทั้งหมด
+      docs: ow.docs.slice(0, 10).map(d => ({no: d.no, amount: d.total}))}; }
       const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
       if (isJbs && refs.length) doc.refPhotos = refs;
       cloudDb.collection('publicJobs').doc(String(rec.trackToken)).set(doc).catch(e => console.error('publicJobs save error', e));
@@ -512,6 +515,8 @@ function bahtText(value) {
     promptpayName: 'นาย กิติพงษ์ สีทอง'
   };
   let shop = Object.assign({}, SHOP_DEFAULT, store.get('bs_shop', {}));
+  // บัญชีรับเงินผ่าน QR พร้อมเพย์: คีย์ตรงกับช่อง "บัญชีรับเงิน" (วันทิม = e-wallet ID 15 หลักจาก K PLUS)
+  const payAcct = k => k === 'วันทิม' ? {id: '004999240369651', name: 'นาย วันทิม สีทอง'} : {id: shop.promptpay, name: shop.promptpayName};
 
   function shopLines() {
     return '<div>' + esc(shop.address) + '</div>' +
@@ -586,7 +591,7 @@ function bahtText(value) {
   const ACCOUNTS = ['กิติพงษ์', 'วันทิม'];
   const NON_TAX_ACCOUNTS = ['วันทิม'];
   // บัญชีที่ปิดไว้ชั่วคราว: ไม่แสดงในทุกหน้า (ข้อมูลเดิมยังเก็บไว้ครบ ไม่ได้ลบ) — เอาชื่อออกจากรายการนี้เมื่ออยากให้กลับมาแสดง
-  const HIDDEN_ACCOUNTS = ['วันทิม'];
+  const HIDDEN_ACCOUNTS = [];
   const VISIBLE_ACCOUNTS = ACCOUNTS.filter(a => HIDDEN_ACCOUNTS.indexOf(a) < 0);
   const accHidden = x => !!(x && HIDDEN_ACCOUNTS.indexOf(x.account) >= 0);
 
@@ -627,7 +632,7 @@ function bahtText(value) {
   const BANK_OUT_KIND = {'เงินออก': 'เงินออก', 'ชำระ': 'ชำระเงิน', 'จ่าย': 'จ่ายเงิน', 'ถอน': 'ถอนเงิน', 'โอนไป': 'โอนออก', 'โอนออก': 'โอนออก', 'โอนเงินออก': 'โอนออก', 'หักบัญชี': 'หักบัญชี'};
   let bankListTab = 'all';
   let bankDelArmed = null, bankDelTimer = null;
-  const BANK_HIDE_DEFAULT = ['วันทิม']; // บัญชีที่ซ่อนการ์ดไว้ก่อน กดปุ่มเพื่อแสดง
+  const BANK_HIDE_DEFAULT = []; // บัญชีที่ซ่อนการ์ดไว้ก่อน กดปุ่มเพื่อแสดง
   const BANK_LIST_STEP = 5; let bankListLimit = BANK_LIST_STEP; // ประวัติแสดงทีละ 5 รายการ กด "ดูเพิ่มเติม" เพื่อดูต่อ
   const BANK_BAL_KEY = {'กิติพงษ์': 'kittipong', 'วันทิม': 'wantim'};
   try { const t = localStorage.getItem('bs_bankin_tab'); if (t === 'in' || t === 'out') bankListTab = t; } catch (e) {}
@@ -3140,12 +3145,12 @@ function bahtText(value) {
     let best = null, bp = Infinity; for (let m = 0; m < 8; m++) { const A = build(m), p = penalty(A); if (p < bp) { bp = p; best = A; } }
     return best;
   }
-  const ppMask = v => { const d = String(v || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 3) + '-XXX-' + d.slice(6) : d.length === 13 ? 'X-XXXX-XXXXX-' + d.slice(10, 12) + '-' + d.slice(12) : d; };
+  const ppMask = v => { const d = String(v || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 3) + '-XXX-' + d.slice(6) : d.length === 13 ? 'X-XXXX-XXXXX-' + d.slice(10, 12) + '-' + d.slice(12) : d.length === 15 ? 'e-wallet XXXXXXXXXXX' + d.slice(11) : d; };
   function promptPayPayload(id, amount) {
     const f = (t, v) => t + String(v.length).padStart(2, '0') + v;
     const d = String(id || '').replace(/\D/g, '');
-    const acc = d.length === 13 ? f('02', d) : f('01', '0066' + d.replace(/^0/, ''));
-    let p = f('00', '01') + f('01', amount ? '12' : '11') + f('29', f('00', 'A000000677010111') + acc) + f('58', 'TH') + f('53', '764') + (amount ? f('54', (+amount).toFixed(2)) : '') + '6304';
+    const acc = d.length === 15 ? f('03', d) : d.length === 13 ? f('02', d) : f('01', '0066' + d.replace(/^0/, ''));
+    let p = f('00', '01') + f('01', amount ? '12' : '11') + f('29', f('00', 'A000000677010111') + acc) + f('53', '764') + (amount ? f('54', (+amount).toFixed(2)) : '') + f('58', 'TH') + '6304';   // ลำดับแท็กตามมาตรฐาน EMVCo (เหมือน QR ของธนาคาร)
     let c = 0xFFFF;
     for (let i = 0; i < p.length; i++) { c ^= p.charCodeAt(i) << 8; for (let k = 0; k < 8; k++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; }
     return p + c.toString(16).toUpperCase().padStart(4, '0');
@@ -3153,7 +3158,8 @@ function bahtText(value) {
   let payLogo = null;
   const payLoadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
   // รูปเรียกเก็บเงิน: เรียบ สะอาด แบบหน้ารับเงินของแอปธนาคาร — ฟอนต์ Noto Sans Thai (วางสระ/วรรณยุกต์ถูกตำแหน่ง)
-  async function payCardDataUrl(amount, note, ref, at) {
+  async function payCardDataUrl(amount, note, ref, at, acct) {
+    acct = acct || payAcct('');
     const FN = 'Noto Sans Thai';
     try { await Promise.all(['400', '500', '600', '700'].map(w => document.fonts.load(w + " 40px '" + FN + "'", 'กขต้อง฿1'))); await document.fonts.ready; } catch (e) {}
     if (payLogo === null) payLogo = await payLoadImg('icon-512.png');
@@ -3173,15 +3179,15 @@ function bahtText(value) {
     g.fillStyle = NAVY; font(700, 96); g.fillText(money(amount) + ' บาท', W / 2, 395);
     if (note) { g.fillStyle = INK; font(400, 32); g.fillText(String(note).slice(0, 44), W / 2, 450); }
     // QR
-    const m = qrEncode(promptPayPayload(shop.promptpay, amount)), n = m.length;
+    const m = qrEncode(promptPayPayload(acct.id, amount)), n = m.length;
     const qs = 560, cell = Math.floor(qs / n), q = cell * n, qx = Math.round((W - q) / 2), qy = note ? 500 : 470;
     g.fillStyle = '#000';
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (m[r][c]) g.fillRect(qx + c * cell, qy + r * cell, cell, cell);
     // ข้อมูลผู้รับ
     let y = qy + q + 105;
     g.fillStyle = TEAL; font(500, 50); g.fillText('สแกน QR เพื่อโอนเข้าบัญชี', W / 2, y);
-    y += 72; g.fillStyle = INK; font(400, 48); g.fillText('ชื่อ: ' + (shop.promptpayName || ''), W / 2, y);
-    y += 68; g.fillText('พร้อมเพย์: ' + ppMask(shop.promptpay), W / 2, y);
+    y += 72; g.fillStyle = INK; font(400, 48); g.fillText('ชื่อ: ' + (acct.name || ''), W / 2, y);
+    y += 68; g.fillText('พร้อมเพย์: ' + ppMask(acct.id), W / 2, y);
     y += 58; g.fillStyle = MUTE; font(400, 34); g.fillText('เลขที่อ้างอิง: ' + (ref || '—'), W / 2, y);
     // ท้าย
     const fy = H - 150; g.fillStyle = TEAL; g.fillRect(0, fy, W, 3);
@@ -3189,7 +3195,7 @@ function bahtText(value) {
     const d = at ? new Date(at) : new Date();
     g.fillText('รับเงินได้จากทุกธนาคาร · ' + d.toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'}), W / 2, fy + 70);
     font(400, 26); g.fillText('โปรดตรวจชื่อผู้รับให้ตรงก่อนยืนยันการโอน · ติดต่อร้าน ' + String(shop.phone || '').split(/\s*[,/]\s*/)[0], W / 2, fy + 118);
-    try { return cv.toDataURL('image/png'); } catch (e) { if (payLogo) { payLogo = false; return payCardDataUrl(amount, note, ref, at); } throw e; }
+    try { return cv.toDataURL('image/png'); } catch (e) { if (payLogo) { payLogo = false; return payCardDataUrl(amount, note, ref, at, acct); } throw e; }
   }
   const payRef = t => 'BS' + new Date(t).toISOString().slice(2, 10).replace(/-/g, '') + '-' + String(t).slice(-4);
   const payCharges = () => (store.get('bs_pay_charges', []) || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -3237,8 +3243,35 @@ function bahtText(value) {
     out.forEach(x => { x.docs.sort((a, b) => String(a.date).localeCompare(String(b.date))); x.total = round2(x.docs.reduce((t, d) => t + d.total, 0)); });
     return out.sort((a, b) => b.total - a.total);
   }
+  // อัปเดตหน้าติดตามของลูกค้า (งาน JBS) ให้ยอดค้าง/QR ตรงกับใบราคาส่งปัจจุบัน + เปิดรายการรอรับเงินให้ระบบเงินเข้าจับยอดอัตโนมัติ
+  let owedSig = {}, owedTimer = 0;
+  function refreshOwedMirrors() {
+    clearTimeout(owedTimer);
+    owedTimer = setTimeout(() => {
+      try {
+        if (!cloudDb) return;
+        const gs = owedGroups(), byName = {}; gs.forEach(x => { byName[x.name] = x; });
+        store.get('bs_jobs', []).filter(j => j.trackToken && /^JBS/i.test(String(j.no || '').trim())).forEach(j => {
+          const ow = byName[String(j.jName || '').trim() || 'ไม่ระบุชื่อ'];
+          const sig = ow ? ow.total + '|' + ow.docs.map(d => d.id).join(',') : '';
+          if (owedSig[j.id] === sig) return;
+          owedSig[j.id] = sig; publicJobMirror(j);
+        });
+        const charges = payCharges(), fresh = [];
+        gs.forEach(x => {
+          const key = x.total + '|' + x.docs.map(d => d.id).join(',');
+          let h = 0; for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+          const id = 'owe' + h.toString(36);
+          if (charges.some(c => c.id === id)) return;
+          fresh.push({id, ref: payRef(Date.now()), chatId: '', name: x.name, channel: 'owed', amount: x.total, note: 'ยอดค้างรวม ' + x.docs.length + ' ใบ', status: 'pending', createdAt: Date.now(), by: 'auto', docs: x.docs.map(d => ({k: d.k, id: d.id}))});
+        });
+        if (fresh.length) { store.set('bs_pay_charges', charges.concat(fresh)); fresh.forEach(r => cloudSave('payCharges', r)); }
+      } catch (e) { console.error('refreshOwedMirrors', e); }
+    }, 2500);
+  }
   function renderOwedCard() {
     const c = $('dashOwedCard'); if (!c) return;
+    refreshOwedMirrors();
     const gs = owedGroups(); c.hidden = !can('wholesale');
     $('owedCustCount').textContent = gs.length + ' ราย';
     $('owedTotalAmt').textContent = money(round2(gs.reduce((t, x) => t + x.total, 0))) + ' บาท';
@@ -3271,6 +3304,7 @@ function bahtText(value) {
       grp.docs.map((d, i) => '<label class="owed-doc"><input type="checkbox" data-i="' + i + '" checked><span>' + esc(d.no) + '<small>' + esc(thDate(d.date)) + '</small></span><b>' + money(d.total) + '</b></label>').join('') +
       '<div class="owed-sum"><span>ยอดรวมที่เลือก</span><span id="owedSel">0.00</span></div>' +
       '<div class="owed-qr" id="owedQr" hidden><img id="owedQrImg" alt="QR พร้อมเพย์ยอดรวม"></div>' +
+      '<label class="f"><span>เข้าบัญชี</span><select id="owedAcc"><option value="กิติพงษ์">กิติพงษ์ (' + esc(ppMask(shop.promptpay)) + ')</option><option value="วันทิม">วันทิม (กสิกรไทย)</option></select></label>' +
       '<button type="button" class="btn primary" id="owedMk">สร้าง QR ยอดรวม</button>' +
       '<div class="row2"><button type="button" class="btn" id="owedShare" disabled>บันทึก/แชร์รูป</button><button type="button" class="btn" id="owedPaid">ชำระแล้ว (เอาออก)</button></div>' +
       '<p class="hint" style="margin:0">ลูกค้าโอนแล้วระบบเงินเข้าจับยอดให้ แล้วบิลที่เลือกจะหายจากรายการค้างเอง · หรือกด “ชำระแล้ว”</p>' +
@@ -3278,15 +3312,17 @@ function bahtText(value) {
     const picked = () => Array.from(ov.querySelectorAll('input[data-i]:checked')).map(c => grp.docs[+c.dataset.i]);
     const sum = () => { const t = round2(picked().reduce((a, d) => a + d.total, 0)); $('owedSel').textContent = money(t); $('owedMk').disabled = !(t > 0); return t; };
     sum();
+    $('owedAcc').value = 'วันทิม';   // งานส่ง (JBS) เข้าบัญชีวันทิม
     let lastUrl = '';
     ov.onclick = async ev => {
       if (ev.target === ov) return close();
       if (ev.target.closest('[data-back]')) return openOwed('');
+      if (ev.target.id === 'owedAcc') { $('owedQr').hidden = true; $('owedShare').disabled = true; return; }
       if (ev.target.matches('input[data-i]')) { $('owedQr').hidden = true; $('owedShare').disabled = true; sum(); return; }
       if (ev.target.id === 'owedMk') {
         const t = sum(), ds = picked(); if (!(t > 0)) return;
         const at = Date.now(), ref = payRef(at), note = ds.map(d => d.no).join(', ').slice(0, 44);
-        lastUrl = await payCardDataUrl(t, grp.name + ' · ' + note, ref, at);
+        const acc = $('owedAcc').value; lastUrl = await payCardDataUrl(t, grp.name + ' · ' + note, ref, at, payAcct(acc));
         $('owedQrImg').src = lastUrl; $('owedQr').hidden = false; $('owedShare').disabled = false;
         const rec = {id: 'pay' + at, ref, chatId: '', name: grp.name, channel: 'owed', amount: t, note, status: 'pending', createdAt: at, by: chatBy(), docs: ds.map(d => ({k: d.k, id: d.id}))};
         store.set('bs_pay_charges', payCharges().concat([rec])); cloudSave('payCharges', rec);
@@ -4322,6 +4358,8 @@ function bahtText(value) {
     const d = ($('jobDate').value || todayISO()).replace(/-/g, '').slice(2);
     return nextJobNoFor((isDeliveryJob() ? 'JBS' : 'JB') + d);   // งานส่ง (ติ๊กงานราคาส่ง หรือมีผู้รับปลายทาง) รันเลข JBS แยกจาก JB
   }
+  // งานส่ง (เลข JBS) เข้าบัญชีวันทิมทั้งหมด
+  function syncJbsAccount() { if (/^JBS/i.test(String($('jobNo').value || '').trim()) && $('jobAccount').value !== 'วันทิม') $('jobAccount').value = 'วันทิม'; }
   function isDeliveryJob() {
     return !!(($('jobWholesale') && $('jobWholesale').checked) || $('jRName').value.trim() || $('jRAddr').value.trim());
   }
@@ -4330,7 +4368,7 @@ function bahtText(value) {
     const cur = String($('jobNo').value || '').trim();
     const m = /^JB(\d{6})-\d{3}$/.exec(cur);
     if (!m || !isDeliveryJob()) return false;
-    $('jobNo').value = nextJobNoFor('JBS' + m[1], skipId);
+    $('jobNo').value = nextJobNoFor('JBS' + m[1], skipId); syncJbsAccount();
     return true;
   }
 
@@ -4368,7 +4406,7 @@ function bahtText(value) {
   $('jobWholesale').addEventListener('change', () => {
     syncJobWholesaleBtn(); renderJobItems();
     // ใบใหม่ที่ยังไม่บันทึก และเลขยังเป็นเลขอัตโนมัติ → สลับ JB ↔ JBS ตามติ๊ก (ใบที่บันทึกแล้วไม่เปลี่ยนเลข เพราะอาจส่งให้ลูกค้าไปแล้ว)
-    if (!currentJobId && /^JBS?\d{6}-\d{3}$/.test(String($('jobNo').value || '').trim())) { $('jobNo').value = nextJobNo(); renderJob(); }
+    if (!currentJobId && /^JBS?\d{6}-\d{3}$/.test(String($('jobNo').value || '').trim())) { $('jobNo').value = nextJobNo(); syncJbsAccount(); renderJob(); }
   });
   ['jRName', 'jRAddr'].forEach(id => $(id).addEventListener('change', () => { if (!currentJobId && fixDeliveryNo()) renderJob(); }));
   $('jobToWholesale').addEventListener('click', () => {
@@ -4440,7 +4478,8 @@ function bahtText(value) {
     if (!String(data.no).trim()) { toast('ใส่เลขที่ใบก่อนบันทึก'); $('jobNo').focus(); return; }
     const id = currentJobId || ('j' + Date.now());
     const idx = list.findIndex(j => j.id === id);
-    { const was = String(data.no).trim(); if (fixDeliveryNo(currentJobId)) { data.no = $('jobNo').value; toast('งานส่ง: เปลี่ยนเลข ' + was + ' เป็น ' + data.no + ' ให้แล้ว'); } }
+    { const was = String(data.no).trim(); if (fixDeliveryNo(currentJobId)) { data.no = $('jobNo').value; data.account = $('jobAccount').value; toast('งานส่ง: เปลี่ยนเลข ' + was + ' เป็น ' + data.no + ' ให้แล้ว'); } }
+    if (/^JBS/i.test(String(data.no).trim())) { $('jobAccount').value = 'วันทิม'; data.account = 'วันทิม'; }
     if (idx < 0 && list.some(j => String(j.no || '').trim().toUpperCase() === String(data.no).trim().toUpperCase())) {   // ใบใหม่ เลขชนกับใบเดิม (เช่น 2 เครื่องเปิดพร้อมกัน) → ขยับเลขให้อัตโนมัติ
       const m = /^(.*?)-?\d+$/.exec(String(data.no).trim()), old = data.no;
       data.no = nextJobNoFor(m && m[1] ? m[1] : 'JB' + String($('jobDate').value || todayISO()).replace(/-/g, '').slice(2));
