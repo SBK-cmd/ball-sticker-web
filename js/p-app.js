@@ -7066,6 +7066,18 @@ function bahtText(value) {
   onPaperChange();
   renderVatCalc();
   newBill(); renderHistory();
+  // คำอธิบายใต้หัวข้อ → ซ่อนไว้หลังปุ่ม ? เล็กๆ ท้ายหัวข้อ แตะแล้วค่อยแสดง
+  (function () {
+    const mk = (head, txt) => {
+      if (!head || !txt || txt.dataset.tipDone || !String(txt.textContent).trim()) return;
+      txt.dataset.tipDone = '1'; txt.classList.add('tip-body'); txt.hidden = true;
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'tip-q'; b.textContent = '?'; b.setAttribute('aria-label', 'คำอธิบาย'); b.setAttribute('aria-expanded', 'false');
+      b.addEventListener('click', e => { e.stopPropagation(); txt.hidden = !txt.hidden; b.setAttribute('aria-expanded', String(!txt.hidden)); b.classList.toggle('on', !txt.hidden); });
+      head.appendChild(b);
+    };
+    document.querySelectorAll('.viz-head').forEach(v => { const h = v.querySelector('h2,h3'), t = v.querySelector(':scope > span:not([id])'); if (h && t) mk(h, t); });
+    document.querySelectorAll('.page-head').forEach(v => { const h = v.querySelector('h1,h2'), t = v.querySelector(':scope > p'); if (h && t) mk(h, t); });
+  })();
   newJob(); renderJobHistory();
   newWholesale(); renderWholesaleHistory();
   newQuote(); renderQuoteHistory();
