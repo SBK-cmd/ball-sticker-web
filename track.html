@@ -43,6 +43,7 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
 .pay small{display:block;color:#6b7280;margin-top:6px;line-height:1.5}.pay a.sv{display:inline-block;margin-top:8px;padding:8px 14px;border-radius:10px;background:#111827;color:#fff;text-decoration:none;font-weight:600}
 .payBtn{display:flex;justify-content:space-between;align-items:center;width:100%;margin-top:6px;padding:14px 16px;border:0;border-radius:14px;background:#fde68a;color:#111;font:inherit;font-weight:700;font-size:1rem;cursor:pointer}
 .payBtn b{font-size:1.15rem}
+.payBox{margin-top:12px}.payBox .payBtn{margin-top:0;cursor:default}.payGo{display:block;width:100%;margin-top:8px;padding:14px;border:0;border-radius:14px;background:#111827;color:#fff;font:inherit;font-weight:700;font-size:1.05rem;cursor:pointer}
 .pm{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:max(14px,env(safe-area-inset-top)) 12px 12px}.pm.show{display:flex}
 .pms{background:#fff;color:#111;width:min(100%,460px);max-height:calc(100vh - 40px);overflow:auto;border-radius:18px;padding:16px;margin-top:6px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
 .pmt{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:1.1rem}.pmt button{border:0;background:#f3f4f6;border-radius:50%;width:34px;height:34px;font-size:1rem;cursor:pointer}
@@ -116,7 +117,7 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
     var rp = (isJbs ? (j.refPhotos || []) : []).filter(function (u) { return typeof u === 'string' && /^https:\/\//.test(u); });
     if (rp.length) html += '<div class="rf"><h2>🖼 รูปอ้างอิง</h2><div class="pg">' + rp.map(function (u, k) { return '<figure><a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="รูปอ้างอิง ' + (k + 1) + '" loading="lazy"></a></figure>'; }).join('') + '</div></div>';
     var payOk = isJbs && j.pay && +j.pay.total > 0 && typeof j.pay.payload === 'string' && /^000201/.test(j.pay.payload);
-    if (payOk) html += '<button type="button" class="payBtn" id="payOpen"><span>💳 ยังไม่ได้ชำระ</span><b>' + money(j.pay.total) + ' บาท</b></button>';
+    if (payOk) html += '<div class="payBox"><div class="payBtn"><span>💳 ยังไม่ได้ชำระ</span><b>' + money(j.pay.total) + ' บาท</b></div><button type="button" class="payGo" id="payOpen">ชำระเงิน (สแกน QR)</button></div>';
     if (j.due && !done) html += '<div class="row"><span>กำหนดส่ง</span><b>' + esc(thDate(j.due)) + '</b></div>';
     if (j.trackCode) html += '<div class="row"><span>เลขพัสดุ' + (j.carrier ? ' (' + esc(j.carrier) + ')' : '') + '</span><b>' + esc(j.trackCode) + '<button class="copy" id="cp" type="button">คัดลอก</button></b></div>';
     if (j.trackUrl && /^https:\/\//.test(j.trackUrl)) html += '<a class="go" href="' + esc(j.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะพัสดุ' + (j.carrier ? ' กับ ' + esc(j.carrier) : '') + '</a>';
