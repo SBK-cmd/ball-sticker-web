@@ -6,7 +6,7 @@
   var ST = ['pending', 'filed', 'printed', 'shipped'];
   var SN = { pending: 'รอทำ', filed: 'ทำไฟล์แล้ว', printed: 'ผลิตแล้ว', shipped: 'จัดส่ง' };
   var TH_M = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-  var cfg = null, jobs = [], filter = 'open', q = '', loading = false, lastErr = '', loadedAt = 0, openIds = {};
+  var compact = false, cfg = null, jobs = [], filter = 'open', q = '', loading = false, lastErr = '', loadedAt = 0, openIds = {};
   function h(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   var toastT;
   function toast(t) { var el = $('toast'); if (!el) return; el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { el.classList.remove('show'); }, 3000); }
@@ -146,14 +146,23 @@
     pane.innerHTML =
       '<div class="qsum" id="cqSum"></div>' +
       '<div class="seg" id="cqSeg"><button data-v="open" class="on">ยังไม่ส่ง</button><button data-v="done">จัดส่งแล้ว</button><button data-v="all">ทั้งหมด</button></div>' +
-      '<div class="cqbar"><input id="cqQ" type="text" placeholder="ค้นหา ชื่อลูกค้า / เลขใบ / งาน"><button class="btn ghost sm" id="cqRe">รีเฟรช</button></div>' +
+      '<div class="cqbar"><input id="cqQ" type="text" placeholder="ค้นหา ชื่อลูกค้า / เลขใบ / งาน"><button class="btn ghost sm" id="cqCmp" title="ย่อ/ขยายรายการ">▤ ย่อ</button><button class="btn ghost sm" id="cqRe">รีเฟรช</button></div>' +
       '<div id="cqList" class="qlist"></div>' +
       '<div class="hint" id="cqHint"></div>';
     $('cqSeg').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; [].forEach.call($('cqSeg').children, function (x) { x.classList.toggle('on', x === b); }); filter = b.dataset.v; render(); });
     $('cqQ').addEventListener('input', function () { q = this.value.trim().toLowerCase(); render(); });
+    try { compact = localStorage.getItem('st_cq_compact') === '1'; } catch (e) {}
+    function paintCmp() { var b = $('cqCmp'); if (b) { b.textContent = compact ? '▦ ขยาย' : '▤ ย่อ'; b.classList.toggle('on', compact); } }
+    paintCmp();
+    $('cqCmp').onclick = function () { compact = !compact; try { localStorage.setItem('st_cq_compact', compact ? '1' : '0'); } catch (e) {} paintCmp(); render(); };
     $('cqRe').onclick = function () { load(); };
     $('cqList').addEventListener('click', onClick);
     $('cqList').addEventListener('change', onChange);
+  }
+  // เวลาที่สร้างใบ: id ของใบเป็น 'j'/'w' + เวลา (ms) ตอนสร้าง · ไม่มี → ใช้วันที่สั่งงาน/เวลาบันทึก
+  function bornOf(j) {
+    var m = /^[a-z]+(\d{12,14})/i.exec(String(j._doc || j.id || ''));
+    return m ? +m[1] : (dayOf(j) || j.savedAt || 0);
   }
   function render() {
     if (!$('cqList')) return;
@@ -172,13 +181,17 @@
     });
     list.sort(function (a, b) {
       if (filter !== 'open') return (b.savedAt || 0) - (a.savedAt || 0);
-      var ad = a.due ? String(a.due).slice(0, 10) : '9999', bd = b.due ? String(b.due).slice(0, 10) : '9999';
-      return ad < bd ? -1 : ad > bd ? 1 : (a.savedAt || 0) - (b.savedAt || 0);
+      return bornOf(a) - bornOf(b);      // ยังไม่ส่ง: ใบที่เข้ามาก่อนอยู่บน ใบหลังอยู่ล่าง (เวลาสร้างใบ ไม่ใช่เวลาที่แก้ล่าสุด)
     });
     var shown = list.slice(0, 150);
     $('cqList').innerHTML = loading && !jobs.length ? '<div class="qempty">กำลังโหลดคิวจากแอปร้าน…</div>' : shown.length ? shown.map(function (j) {
       var s = j.status || 'pending', its = (j.items || []).filter(function (i) { return i && String(i.name || '').trim(); });
       var thumb = (j.photos || []).filter(function (p) { return /^https:/.test(p); })[0];
+      if (compact) {   // มุมมองย่อ: 2 บรรทัดต่อใบ · แตะเพื่อเปิดหน้าต่างรายละเอียด
+        var firstIt = its[0] ? h(its[0].name) + (its[0].qty ? ' × ' + h(its[0].qty) : '') + (its.length > 1 ? ' <i>+' + (its.length - 1) + '</i>' : '') : '';
+        return '<div class="qjob cq cmp" data-id="' + h(j.id) + '"><div class="cmp1"><span class="cqst ' + s + '">' + SN[s] + '</span><b>' + h(j.jName || '(ไม่ระบุลูกค้า)') + '</b>' + dueTag(j) + '</div>' +
+          '<div class="cmp2"><span class="mut">' + h(j.no || (j.ws && j.date ? fmtD(j.date) : '')) + '</span>' + (j.ws ? '<span class="cqws">ราคาส่ง</span>' : '') + '<span class="cmpit">' + firstIt + '</span>' + (filesOf(j).length ? '<span title="ผูกไฟล์แล้ว">📄</span>' : '') + '</div></div>';
+      }
       return '<div class="qjob cq" data-id="' + h(j.id) + '">' +
         '<div class="qtop"><select class="cqst ' + s + '" data-act="st">' + ST.map(function (k) { return '<option value="' + k + '"' + (k === s ? ' selected' : '') + '>' + SN[k] + '</option>'; }).join('') + '</select>' +
           '<span class="mut">' + h(j.no || (j.ws && j.date ? fmtD(j.date) : '')) + '</span>' + (j.ws ? '<span class="cqws">ราคาส่ง' + (j.wsN > 1 ? ' ' + j.wsI + '/' + j.wsN : '') + '</span>' : '') + dueTag(j) + '</div>' +
