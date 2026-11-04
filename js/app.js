@@ -804,52 +804,71 @@ function bahtText(value) {
       : 'ตอนเปิดแอปอยู่จะเด้งแถบด้านบนพร้อมเสียงอยู่แล้ว';
   }
   /* ---------- แดชบอร์ดแยกบัญชี (กิติพงษ์ / วันทิม): ยอดคงเหลือ · เข้า-ออก · กราฟ 14 วัน · รายการล่าสุด ---------- */
-  let acdTab = ACCOUNTS[0];
+  let acdTab = ACCOUNTS[0], acdMonth = '';
   function renderAcctDash() {
     const box = $('dashAcctCard'); if (!box) return;
     box.hidden = !canBank; if (!canBank) return;
     const accs = VISIBLE_ACCOUNTS.slice();
     if (accs.indexOf(acdTab) < 0) acdTab = accs[0];
-    const ins = bankInAll(), outs = bankOutAll(), today = todayISO(), month = today.slice(0, 7);
-    const sg = (n, pos) => (n > 0 ? (pos ? '+' : '\u2212') : '') + money(n), dOf = x => localISO(new Date(x.createdAt || 0)), sum = a => a.reduce((t, x) => t + num(x.amount), 0);
-    const days = []; for (let i = 13; i >= 0; i--) days.push(localISO(new Date(Date.now() - i * 864e5)));
+    const ins = bankInAll(), outs = bankOutAll(), today = todayISO(), curM = today.slice(0, 7);
+    const dOf = x => localISO(new Date(x.createdAt || 0)), sum = a => a.reduce((t, x) => t + num(x.amount), 0);
+    const sg = (n, pos) => (n > 0 ? (pos ? '+' : '−') : '') + money(n);
+    // เดือนที่เลือกได้: ตั้งแต่เดือนแรกที่มีรายการ ถึงเดือนปัจจุบัน
+    const all = ins.concat(outs).filter(x => accs.indexOf(x.account) >= 0).map(x => dOf(x).slice(0, 7)).filter(Boolean).concat([curM]).sort();
+    const first = all[0] || curM;
+    if (!acdMonth || acdMonth > curM || acdMonth < first) acdMonth = curM;
+    const month = acdMonth, isCur = month === curM;
+    const shiftM = d => { const [y, m] = month.split('-').map(Number), t = new Date(y, m - 1 + d, 1); return t.getFullYear() + '-' + pad2(t.getMonth() + 1); };
+    const mLabel = ym => { const [y, m] = ym.split('-').map(Number); return new Date(y, m - 1, 1).toLocaleDateString('th-TH', {month: 'long', year: 'numeric'}); };
+    const [yy, mm] = month.split('-').map(Number), dim = new Date(yy, mm, 0).getDate();
+    const days = []; for (let i = 1; i <= dim; i++) days.push(month + '-' + pad2(i));
     const owedAll = can('wholesale') ? owedGroups() : [];
     const THEME = {'กิติพงษ์': 'a', 'วันทิม': 'b'};
     const panel = a => {
       const mi = ins.filter(x => x.account === a), mo = outs.filter(x => x.account === a), bal = bankBalOf(a);
+      const miM = mi.filter(x => dOf(x).slice(0, 7) === month), moM = mo.filter(x => dOf(x).slice(0, 7) === month);
       const tdIn = sum(mi.filter(x => dOf(x) === today)), tdOut = sum(mo.filter(x => dOf(x) === today));
-      const mIn = sum(mi.filter(x => dOf(x).slice(0, 7) === month)), mOut = sum(mo.filter(x => dOf(x).slice(0, 7) === month)), net = mIn - mOut;
-      const di = days.map(d => sum(mi.filter(x => dOf(x) === d))), dO = days.map(d => sum(mo.filter(x => dOf(x) === d)));
+      const mIn = sum(miM), mOut = sum(moM), net = mIn - mOut;
+      const di = days.map(d => sum(miM.filter(x => dOf(x) === d))), dO = days.map(d => sum(moM.filter(x => dOf(x) === d)));
       const mx = Math.max(1, ...di, ...dO), W = 300, H = 90, bw = W / days.length;
       const bars = days.map((d, i) => {
-        const hi = Math.round(di[i] / mx * (H - 8)), ho = Math.round(dO[i] / mx * (H - 8)), x = i * bw;
-        return (hi ? '<rect class="ci" x="' + (x + 2).toFixed(1) + '" y="' + (H - hi) + '" width="' + (bw / 2 - 2).toFixed(1) + '" height="' + hi + '" rx="2"/>' : '') +
-               (ho ? '<rect class="co" x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - ho) + '" width="' + (bw / 2 - 2).toFixed(1) + '" height="' + ho + '" rx="2"/>' : '');
+        const hi = Math.round(di[i] / mx * (H - 8)), ho = Math.round(dO[i] / mx * (H - 8)), x = i * bw, g = Math.min(2, bw / 6);
+        return (hi ? '<rect class="ci" x="' + (x + g).toFixed(1) + '" y="' + (H - hi) + '" width="' + (bw / 2 - g).toFixed(1) + '" height="' + hi + '" rx="1.5"/>' : '') +
+               (ho ? '<rect class="co" x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - ho) + '" width="' + (bw / 2 - g).toFixed(1) + '" height="' + ho + '" rx="1.5"/>' : '');
       }).join('');
-      const recent = mi.map(x => ({t: x.createdAt || 0, in: true, x})).concat(mo.map(x => ({t: x.createdAt || 0, in: false, x}))).sort((p, q) => q.t - p.t).slice(0, 5);
-      const rows = recent.length ? recent.map(r => '<li><span class="t">' + esc(bankInWhen(r.x, true)) + '</span><span class="n">' + esc(r.in ? (r.x.matchedJobNo ? 'ใบงาน ' + r.x.matchedJobNo : (r.x.from ? 'จาก ' + r.x.from : 'เงินเข้า')) : (r.x.to || r.x.note || r.x.from || 'เงินออก')) + '</span><b class="' + (r.in ? 'i' : 'o') + '">' + (r.in ? '+' : '\u2212') + money(num(r.x.amount)) + '</b></li>').join('') : '<li class="none">ยังไม่มีรายการ</li>';
+      const recent = miM.map(x => ({t: x.createdAt || 0, in: true, x})).concat(moM.map(x => ({t: x.createdAt || 0, in: false, x}))).sort((p, q) => q.t - p.t).slice(0, 5);
+      const rows = recent.length ? recent.map(r => '<li><span class="t">' + esc(bankInWhen(r.x, true)) + '</span><span class="n">' + esc(r.in ? (r.x.matchedJobNo ? 'ใบงาน ' + r.x.matchedJobNo : (r.x.from ? 'จาก ' + r.x.from : 'เงินเข้า')) : (r.x.to || r.x.note || r.x.from || 'เงินออก')) + '</span><b class="' + (r.in ? 'i' : 'o') + '">' + (r.in ? '+' : '−') + money(num(r.x.amount)) + '</b></li>').join('') : '<li class="none">ไม่มีรายการในเดือนนี้</li>';
       let extra = '';
-      if (a === 'วันทิม') {
+      if (a === 'วันทิม' && isCur) {
         const owedTot = round2(owedAll.reduce((t, g) => t + g.total, 0)), cut = Date.now() - 14 * 864e5;
         const unm = mi.filter(x => (x.createdAt || 0) >= cut && !x.matchedJobId).length;
         extra = '<div class="acd-extra"><div><span>ลูกค้าค้างจ่าย (งานส่ง)</span><b>' + money(owedTot) + ' บาท</b><small>' + owedAll.length + ' ราย</small></div><div><span>เงินเข้ายังไม่จับคู่ 14 วัน</span><b>' + unm + ' รายการ</b></div></div>';
       }
+      const hero = isCur
+        ? '<div class="hero"><small>ยอดคงเหลือ</small>' + (bal ? '<b>' + money(num(bal.balance)) + '<em>บาท</em></b>' : '<b class="none">—</b>') + '</div>'
+        : '<div class="hero"><small>สุทธิ ' + esc(mLabel(month)) + '</small><b>' + (net < 0 ? '−' : '+') + money(Math.abs(net)) + '<em>บาท</em></b></div>';
+      const kp = isCur
+        ? '<div class="kp"><div class="ci"><span>เข้าวันนี้</span><b>' + sg(tdIn, true) + '</b></div><div class="co"><span>ออกวันนี้</span><b>' + sg(tdOut, false) + '</b></div><div class="ci"><span>เข้าเดือนนี้</span><b>' + sg(mIn, true) + '</b></div><div class="co"><span>ออกเดือนนี้</span><b>' + sg(mOut, false) + '</b></div></div>'
+        : '<div class="kp"><div class="ci"><span>เงินเข้า ' + miM.length + ' รายการ</span><b>' + sg(mIn, true) + '</b></div><div class="co"><span>เงินออก ' + moM.length + ' รายการ</span><b>' + sg(mOut, false) + '</b></div></div>';
       return '<article class="acd-card t-' + THEME[a] + '" data-acc="' + esc(a) + '"' + (a === acdTab ? ' data-on="1"' : '') + '>' +
-        '<header><span class="nm">บัญชี' + esc(a) + '</span>' + (bal ? '<span class="up">อัปเดต ' + esc(bankBalWhen(bal)) + '</span>' : '') + '</header>' +
-        '<div class="hero"><small>ยอดคงเหลือ</small>' + (bal ? '<b>' + money(num(bal.balance)) + '<em>บาท</em></b>' : '<b class="none">—</b>') + '</div>' +
-        '<div class="kp"><div class="ci"><span>เข้าวันนี้</span><b>' + sg(tdIn, true) + '</b></div><div class="co"><span>ออกวันนี้</span><b>' + sg(tdOut, false) + '</b></div>' +
-        '<div class="ci"><span>เข้าเดือนนี้</span><b>' + sg(mIn, true) + '</b></div><div class="co"><span>ออกเดือนนี้</span><b>' + sg(mOut, false) + '</b></div></div>' +
-        '<div class="net ' + (net < 0 ? 'neg' : 'pos') + '"><span>สุทธิเดือนนี้</span><b>' + (net < 0 ? '\u2212' : '+') + money(Math.abs(net)) + ' บาท</b></div>' + extra +
-        '<div class="ch"><div class="chh"><span>14 วันล่าสุด</span><span class="lg"><i class="ci"></i>เข้า <i class="co"></i>ออก</span></div><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="กราฟเงินเข้า-ออก 14 วัน">' + bars + '</svg></div>' +
+        '<header><span class="nm">บัญชี' + esc(a) + '</span>' + (isCur && bal ? '<span class="up">อัปเดต ' + esc(bankBalWhen(bal)) + '</span>' : '') + '</header>' + hero + kp +
+        (isCur ? '<div class="net ' + (net < 0 ? 'neg' : 'pos') + '"><span>สุทธิเดือนนี้</span><b>' + (net < 0 ? '−' : '+') + money(Math.abs(net)) + ' บาท</b></div>' : '<div style="height:10px"></div>') + extra +
+        '<div class="ch"><div class="chh"><span>รายวัน ' + esc(mLabel(month)) + '</span><span class="lg"><i class="ci"></i>เข้า <i class="co"></i>ออก</span></div><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="กราฟเงินเข้า-ออกรายวัน">' + bars + '</svg></div>' +
         '<ul class="rc">' + rows + '</ul></article>';
     };
     $('acdSeg').hidden = accs.length < 2;
     $('acdSeg').innerHTML = accs.map(a => '<button type="button" data-a="' + esc(a) + '" aria-pressed="' + (a === acdTab) + '">' + esc(a) + '</button>').join('');
+    $('acdMonthBar').innerHTML = '<button type="button" data-m="' + shiftM(-1) + '" aria-label="เดือนก่อน"' + (month <= first ? ' disabled' : '') + '>‹</button>' +
+      '<span class="lbl">' + esc(mLabel(month)) + (isCur ? ' <em>เดือนนี้</em>' : '') + '</span>' +
+      '<button type="button" data-m="' + shiftM(1) + '" aria-label="เดือนถัดไป"' + (isCur ? ' disabled' : '') + '>›</button>' + (isCur ? '' : '<button type="button" class="now" data-m="' + curM + '">เดือนนี้</button>');
     $('acdWrap').className = 'acd-wrap n' + accs.length;
     $('acdWrap').innerHTML = accs.map(panel).join('');
     const old = $('bankInSum'); if (old) old.style.display = 'none';
   }
-  (function () { const sg = $('acdSeg'); if (sg) sg.addEventListener('click', e => { const b = e.target.closest('button[data-a]'); if (!b) return; acdTab = b.dataset.a; renderAcctDash(); }); })();
+  (function () {
+    const sg = $('acdSeg'); if (sg) sg.addEventListener('click', e => { const b = e.target.closest('button[data-a]'); if (!b) return; acdTab = b.dataset.a; renderAcctDash(); });
+    const mb = $('acdMonthBar'); if (mb) mb.addEventListener('click', e => { const b = e.target.closest('button[data-m]'); if (!b || b.disabled) return; acdMonth = b.dataset.m; renderAcctDash(); });
+  })();
   function renderBankIn() {
     try { renderAcctDash(); } catch (e) { console.error('acctDash', e); }
     const card = $('dashBankInCard'); if (!card) return;
@@ -1745,7 +1764,7 @@ function bahtText(value) {
   }
   /* ---------- สรุปงานวันนี้: ลูกค้า · กล่องที่ส่ง · งานที่เหลือ · งานด่วน (ครบกำหนดวันนี้/เลยกำหนด) ---------- */
   function renderTodayJobs() {
-    const box = $('dashTodayCard'); if (!box) return;
+    const boxes_ = document.querySelectorAll('.tdy'); if (!boxes_.length) return;
     const today = todayISO(), jobs = store.get('bs_jobs', []) || [];
     const nm = v => String(v || '').replace(/\s+/g, ' ').trim().toLowerCase();
     const custs = {};
@@ -1762,14 +1781,63 @@ function bahtText(value) {
       list: '<rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/>',
       bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'
     };
-    const tile = (cls, ic, label, val, unit, sub) => '<div class="tdy-t ' + cls + '" title="' + sub + '"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + IC[ic] + '</svg></span><span class="lb">' + label + '</span><b>' + val + '<em>' + unit + '</em></b><small>' + sub + '</small></div>';
-    $('tdyDate').textContent = thDate(today);
-    $('tdyGrid').innerHTML =
-      tile('c1', 'users', 'ลูกค้าวันนี้', Object.keys(custs).length, 'ราย', 'งานใหม่ ' + jobsToday + ' ใบ') +
-      tile('c2', 'box', 'ส่งวันนี้', boxes, 'กล่อง', boxes ? 'นับจากเลขพัสดุวันนี้' : 'ยังไม่มีกล่องวันนี้') +
-      tile('c3', 'list', 'งานที่เหลือ', open.length, 'งาน', 'รอทำ ' + cnt('pending') + ' · ไฟล์ ' + cnt('filed') + ' · ผลิต ' + cnt('printed')) +
-      tile('c4' + (dueToday + late ? ' hot' : ''), 'bolt', 'งานด่วน', dueToday + late, 'งาน', 'วันนี้ ' + dueToday + ' · เลยกำหนด ' + late);
+    const tile = (cls, ic, label, val, unit, sub, k) => '<div class="tdy-t ' + cls + '" data-k="' + k + '" role="button" tabindex="0" title="' + sub + '"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + IC[ic] + '</svg></span><span class="lb">' + label + '</span><b>' + val + '<em>' + unit + '</em></b><small>' + sub + '</small></div>';
+    document.querySelectorAll('.tdyDate').forEach(el => { el.textContent = thDate(today); });
+    const html =
+      tile('c1', 'users', 'ลูกค้าวันนี้', Object.keys(custs).length, 'ราย', 'งานใหม่ ' + jobsToday + ' ใบ', 'cust') +
+      tile('c2', 'box', 'ส่งวันนี้', boxes, 'กล่อง', boxes ? 'นับจากเลขพัสดุวันนี้' : 'ยังไม่มีกล่องวันนี้', 'box') +
+      tile('c3', 'list', 'งานที่เหลือ', open.length, 'งาน', 'รอทำ ' + cnt('pending') + ' · ไฟล์ ' + cnt('filed') + ' · ผลิต ' + cnt('printed'), 'open') +
+      tile('c4' + (dueToday + late ? ' hot' : ''), 'bolt', 'งานด่วน', dueToday + late, 'งาน', 'วันนี้ ' + dueToday + ' · เลยกำหนด ' + late, 'urgent');
+    document.querySelectorAll('.tdy-grid').forEach(el => { el.innerHTML = html; });
   }
+  // แตะช่องสรุป → เปิดรายการที่อยู่เบื้องหลังตัวเลข (แตะใบงานในรายการ = ไปเปิดใบนั้น)
+  function openTodayList(kind) {
+    const today = todayISO(), jobs = store.get('bs_jobs', []) || [], nm = v => String(v || '').replace(/\s+/g, ' ').trim();
+    const open = jobs.filter(j => (j.status || 'pending') !== 'shipped');
+    const dueKey = j => j.due || '9999-99-99';
+    let title = '', rows = '', foot = '';
+    const jobRow = j => {
+      const st = j.status || 'pending', late = j.due && j.due < today, dueTxt = j.due ? (j.due === today ? 'ครบกำหนดวันนี้' : late ? 'เลยกำหนด ' + thDate(j.due) : 'กำหนด ' + thDate(j.due)) : '';
+      return '<button type="button" class="tl-r" data-job="' + esc(j.id) + '"><span class="tl-m1"><b>' + esc(j.no || '') + '</b><span>' + esc(nm(j.jName) || 'ไม่ระบุชื่อลูกค้า') + '</span>' + (dueTxt ? '<small class="' + (late || j.due === today ? 'hot' : '') + '">' + esc(dueTxt) + '</small>' : '') + '</span><span class="status-pill ' + st + '">' + esc(JOB_STATUS_LABEL[st]) + '</span><span class="tl-go">›</span></button>';
+    };
+    if (kind === 'cust') {
+      title = 'ลูกค้าวันนี้';
+      const m = {};
+      jobs.filter(j => j.date === today).forEach(j => { const k = nm(j.jName); if (k) (m[k] = m[k] || {n: k, jobs: [], bills: 0}).jobs.push(j); });
+      (store.get('bs_bills', []) || []).filter(b => b.date === today).forEach(b => { const k = nm(b.cName); if (k) (m[k] = m[k] || {n: k, jobs: [], bills: 0}).bills++; });
+      const L = Object.values(m);
+      rows = L.length ? L.map(c => '<div class="tl-r static col"><b>' + esc(c.n) + '</b><span class="tl-links">' + c.jobs.map(j => '<button type="button" class="tl-lk" data-job="' + esc(j.id) + '">ใบงาน ' + esc(j.no) + ' ›</button>').join('') + (c.bills ? '<button type="button" class="tl-lk" data-goto="bill">บิล ' + c.bills + ' ใบ ›</button>' : '') + '</span></div>').join('') : '<p class="tl-none">วันนี้ยังไม่มีลูกค้า</p>';
+    } else if (kind === 'box') {
+      title = 'ส่งวันนี้ (กล่อง)';
+      const L = (store.get('bs_tracking', []) || []).filter(t => localISO(new Date(t.boxAt || t.savedAt || 0)) === today).sort((a, b) => (b.boxAt || b.savedAt || 0) - (a.boxAt || a.savedAt || 0));
+      const jobOf = t => jobs.find(j => j.trackCode && normCode(j.trackCode) === normCode(t.code));
+      rows = L.length ? L.map(t => { const j = jobOf(t), who = nm(t.customer) || (j ? nm(j.jName) : ''); return '<button type="button" class="tl-r" ' + (j ? 'data-job="' + esc(j.id) + '"' : 'data-goto="track"') + '><span class="tl-m1"><b>' + esc(t.code || '') + '</b><span>' + esc(who || 'ยังไม่ผูกลูกค้า') + '</span><small>' + esc(t.carrier || '') + (j ? ' · ใบงาน ' + esc(j.no) : ' · ดูในหน้าติดตาม') + '</small></span><span class="tl-go">›</span></button>'; }).join('') : '<p class="tl-none">ยังไม่มีกล่องที่บันทึกวันนี้</p>';
+      foot = 'นับจากเลขพัสดุที่สแกน/บันทึกวันนี้';
+    } else if (kind === 'open') {
+      title = 'งานที่เหลือ';
+      const L = open.slice().sort((a, b) => dueKey(a).localeCompare(dueKey(b)) || String(a.date || '').localeCompare(String(b.date || '')));
+      rows = L.length ? L.map(jobRow).join('') : '<p class="tl-none">ไม่มีงานค้าง</p>';
+    } else {
+      title = 'งานด่วน';
+      const L = open.filter(j => j.due && j.due <= today).sort((a, b) => dueKey(a).localeCompare(dueKey(b)));
+      rows = L.length ? L.map(jobRow).join('') : '<p class="tl-none">ไม่มีงานครบกำหนดหรือเลยกำหนด</p>';
+      foot = 'นับจากวันกำหนดส่งในใบงาน (ครบกำหนดวันนี้หรือเลยกำหนด)';
+    }
+    let m = document.getElementById('tlModal'); if (m) m.remove();
+    m = document.createElement('div'); m.id = 'tlModal'; m.className = 'chg-m';
+    m.innerHTML = '<div class="chg-s"><div class="chg-t"><b>' + esc(title) + '</b><button type="button" data-x="1" aria-label="ปิด">✕</button></div><div class="chg-b">' + rows + (foot ? '<p class="tl-foot">' + esc(foot) + '</p>' : '') + '</div></div>';
+    document.body.appendChild(m); document.body.classList.add('chg-open');
+    const close = () => { m.remove(); document.body.classList.remove('chg-open'); };
+    m.addEventListener('click', e => {
+      if (e.target === m || e.target.closest('[data-x]')) { close(); return; }
+      const g = e.target.closest('[data-goto]'); if (g) { close(); showTab(g.dataset.goto); window.scrollTo({top: 0}); return; }
+      const r = e.target.closest('[data-job]'); if (!r) return;
+      close(); showTab('confirm'); jobOpenIds[r.dataset.job] = true; renderJobHistory();
+      setTimeout(() => { const li = document.querySelector('#jobHistory li[data-id="' + r.dataset.job + '"]'); if (li) li.scrollIntoView({block: 'center'}); }, 60);
+    });
+  }
+  document.addEventListener('click', e => { const t = e.target.closest && e.target.closest('.tdy-t[data-k]'); if (t) openTodayList(t.dataset.k); });
+  document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.tdy-t[data-k]')) { e.preventDefault(); openTodayList(e.target.dataset.k); } });
   function renderDash() {
     try { renderTodayJobs(); } catch (e) { console.error('todayJobs', e); }
     if (!$('dashChart')) return;
@@ -4640,6 +4708,7 @@ function bahtText(value) {
   }
   function renderJobHistory() {
     try { renderOwedCard(); } catch (e) {}
+    try { renderTodayJobs(); } catch (e) {}
     try { const sel = window.getSelection && window.getSelection(); if (sel && !sel.isCollapsed && String(sel).trim() && $('jobHistory').contains(sel.anchorNode)) { clearTimeout(renderJobHistory._t); renderJobHistory._t = setTimeout(renderJobHistory, 1500); return; } } catch (e) {}
     try { renderCustomerDatalist(); } catch (e) {}
     const list = store.get('bs_jobs', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
@@ -4654,14 +4723,22 @@ function bahtText(value) {
     $('jobHistory').innerHTML = notice + whBanner + '<ul>' + shown.map(j => {
       const st = j.status || 'pending';
       const dupTag = noCount[String(j.no || '').trim().toUpperCase()] > 1 ? ' <span style="color:#b91c1c;font-weight:700">⚠ เลขซ้ำ</span>' : '';
-      return '<li data-id="' + esc(j.id) + '"' + (jobOpenIds[j.id] ? ' class="open"' : '') + '>' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '') +
-      '<div class="meta"><b>' + esc(j.no) + '</b>' + dupTag + '<small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[j.page] ? ' · ' + esc(PAGE_LABEL[j.page]) : '') + (canBank && j.account && !accHidden(j) ? ' · บัญชี ' + esc(j.account) : '') + (canBank && num(j.slipAmount) > 0 ? (j.slipPending ? ' · ⏳ รอรับเงิน ' : ' · สลิป ') + money(num(j.slipAmount)) + ' บาท' : '') + (j.wholesale ? ' · 🏷️ ราคาส่ง' : '') + (j.recv && (j.recv.name || j.recv.addr) ? ' · 📦 ฝากส่ง' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
+      const nItems = (j.items || []).filter(i => (i.name || '').trim()).length, cn = String(j.jName || '').trim();
+      const chip = (t, c) => '<span class="jc-chip' + (c ? ' ' + c : '') + '">' + t + '</span>';
+      const chips = chip(esc(thDate(j.date))) + (PAGE_LABEL[j.page] ? chip(esc(PAGE_LABEL[j.page])) : '') +
+        (canBank && j.account && !accHidden(j) ? chip('บัญชี ' + esc(j.account)) : '') +
+        (canBank && num(j.slipAmount) > 0 ? chip((j.slipPending ? 'รอรับเงิน ' : 'สลิป ') + money(num(j.slipAmount)) + ' บาท', j.slipPending ? 'warn' : 'money') : '') +
+        (j.wholesale ? chip('ราคาส่ง', 'tg') : '') + (j.recv && (j.recv.name || j.recv.addr) ? chip('ฝากส่ง', 'tg') : '') +
+        chip(nItems + ' รายการ') + (j.photos && j.photos.length ? chip('รูป ' + j.photos.length) : '') + (j.createdBy ? chip('โดย ' + esc(j.createdBy)) : '');
+      return '<li class="jc st-' + st + (jobOpenIds[j.id] ? ' open' : '') + '" data-id="' + esc(j.id) + '">' +
+      '<div class="jc-top">' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '<span class="jc-ph" aria-hidden="true">' + esc((cn || '?').replace(/^(คุณ|นาย|นาง|นางสาว|พี่|น้อง)\s*/, '').charAt(0).toUpperCase()) + '</span>') +
+      '<div class="jc-main"><div class="jc-no">' + esc(j.no) + dupTag + '</div><div class="jc-cust">' + esc(cn || 'ไม่ระบุชื่อลูกค้า') + '</div></div>' +
       '<select class="job-status-select status-pill ' + st + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
-      '</select>' +
-      '<span class="amt">' + (j.items || []).filter(i => (i.name || '').trim()).length + ' รายการ</span>' +
-      (canKey ? '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
-      '<button class="btn small del" data-act="del" type="button">ลบ</button>' : '') +
+      '</select></div>' +
+      '<div class="jc-chips">' + chips + '</div>' +
+      (canKey ? '<div class="jc-act"><button class="jc-b" data-act="open" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>เปิดแก้ไข</button>' +
+      '<button class="jc-b del" data-act="del" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>ลบ</button></div>' : '') +
       (jobOpenIds[j.id] ? jobDetailHTML(j) : '') + '</li>';
     }).join('') + '</ul><p class="hint" style="margin:10px 2px 0">แตะที่ใบเพื่อดูรายละเอียด ไม่ต้องกดแก้ไข</p>';
   }
@@ -6989,6 +7066,18 @@ function bahtText(value) {
   onPaperChange();
   renderVatCalc();
   newBill(); renderHistory();
+  // คำอธิบายใต้หัวข้อ → ซ่อนไว้หลังปุ่ม ? เล็กๆ ท้ายหัวข้อ แตะแล้วค่อยแสดง
+  (function () {
+    const mk = (head, txt) => {
+      if (!head || !txt || txt.dataset.tipDone || !String(txt.textContent).trim()) return;
+      txt.dataset.tipDone = '1'; txt.classList.add('tip-body'); txt.hidden = true;
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'tip-q'; b.textContent = '?'; b.setAttribute('aria-label', 'คำอธิบาย'); b.setAttribute('aria-expanded', 'false');
+      b.addEventListener('click', e => { e.stopPropagation(); txt.hidden = !txt.hidden; b.setAttribute('aria-expanded', String(!txt.hidden)); b.classList.toggle('on', !txt.hidden); });
+      head.appendChild(b);
+    };
+    document.querySelectorAll('.viz-head').forEach(v => { const h = v.querySelector('h2,h3'), t = v.querySelector(':scope > span:not([id])'); if (h && t) mk(h, t); });
+    document.querySelectorAll('.page-head').forEach(v => { const h = v.querySelector('h1,h2'), t = v.querySelector(':scope > p'); if (h && t) mk(h, t); });
+  })();
   newJob(); renderJobHistory();
   newWholesale(); renderWholesaleHistory();
   newQuote(); renderQuoteHistory();
