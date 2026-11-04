@@ -1661,7 +1661,7 @@ body.jm-open .fab-newjob{display:none!important}
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v78 · พรีวิว</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v79 · พรีวิว</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
@@ -2020,29 +2020,8 @@ body.jm-open .fab-newjob{display:none!important}
               <label class="f"><span>ที่อยู่ลูกค้า (ถ้ามี)</span><textarea id="jAddr"></textarea></label>
               </div>
             </section>
-            <section class="jf-sec">
-              <div class="jf-h"><i>2</i>งานที่ต้องผลิต</div>
-            <div class="item-head job" aria-hidden="true"><span>ชื่องาน / สเปก</span><span>จำนวน</span><span>หมายเหตุ</span><span></span></div>
-            <div id="jobItems"></div>
-            <button class="btn small" id="add-jobitem" type="button">＋ เพิ่มรายการ</button>
-            <p class="hint">ใส่ชนิดสติ๊กเกอร์ ขนาด และวัสดุในชื่อรายการได้เลย เช่น “สติ๊กเกอร์ PVC ไดคัท 5x5 ซม. เคลือบด้าน”</p>
-              <div class="fields">
-              <label class="f"><span>หมายเหตุถึงฝ่ายผลิต</span><textarea id="jobNote" placeholder="เช่น สีที่ต้องตรงปก ไดคัทตามขอบภาพ ส่งไฟล์งานแนบแล้ว"></textarea></label>
-              </div>
-            </section>
-            <details class="fold" id="jobShipFold"><summary>ส่งพัสดุ / ฝากส่ง <span class="fold-sub">(ถ้าเป็นงานส่ง)</span></summary>
-              <div class="fields">
-              <div class="recv-box" id="jRecvBox"><b>📦 ลูกค้าฝากส่ง — ผู้รับปลายทาง</b>
-                <div class="hint" style="margin:2px 0 6px">ถ้าลูกค้าฝากส่งให้คนอื่น วางข้อความที่มี “ผู้ส่ง..” และ “ผู้รับ..” แล้วกดแยก ผู้ส่งจะเป็นชื่อลูกค้า (งานราคาส่ง) ผู้รับอยู่ในช่องนี้</div>
-                <label class="f"><span>ชื่อผู้รับ</span><input class="txt" id="jRName" type="text" autocomplete="off"></label>
-                <label class="f"><span>เบอร์ผู้รับ</span><input class="txt" id="jRPhone" type="tel" autocomplete="off"></label>
-                <label class="f"><span>ที่อยู่ผู้รับ</span><textarea id="jRAddr"></textarea></label>
-                <div id="jRecvMore"></div>
-                <button class="btn small" id="jRecvAdd" type="button">＋ เพิ่มผู้รับอีกกล่อง (ส่งหลายที่อยู่)</button>
-              </div>
-              </div>
-            </details>
-            <details class="fold" id="jobMoneyFold"><summary>การเงิน <span class="fold-sub">(เจ้าของเท่านั้น)</span></summary>
+            <section class="jf-sec" id="jobMoneyFold">
+              <div class="jf-h"><i>฿</i>การเงิน <span class="fold-sub" style="font-weight:400">(เจ้าของเท่านั้น)</span></div>
               <div class="fields">
               <div class="row2">
                 <label class="f"><span>เลือกบัญชี</span>
@@ -2063,6 +2042,28 @@ body.jm-open .fab-newjob{display:none!important}
                   <span class="hint" id="jobBankInSel" style="margin:0"></span>
                 </div>
                 <div id="jobBankInList" hidden></div>
+              </div>
+              </div>
+            </section>
+            <section class="jf-sec">
+              <div class="jf-h"><i>2</i>งานที่ต้องผลิต</div>
+            <div class="item-head job" aria-hidden="true"><span>ชื่องาน / สเปก</span><span>จำนวน</span><span>หมายเหตุ</span><span></span></div>
+            <div id="jobItems"></div>
+            <button class="btn small" id="add-jobitem" type="button">＋ เพิ่มรายการ</button>
+            <p class="hint">ใส่ชนิดสติ๊กเกอร์ ขนาด และวัสดุในชื่อรายการได้เลย เช่น “สติ๊กเกอร์ PVC ไดคัท 5x5 ซม. เคลือบด้าน”</p>
+              <div class="fields">
+              <label class="f"><span>หมายเหตุถึงฝ่ายผลิต</span><textarea id="jobNote" placeholder="เช่น สีที่ต้องตรงปก ไดคัทตามขอบภาพ ส่งไฟล์งานแนบแล้ว"></textarea></label>
+              </div>
+            </section>
+            <details class="fold" id="jobShipFold"><summary>ส่งพัสดุ / ฝากส่ง <span class="fold-sub">(ถ้าเป็นงานส่ง)</span></summary>
+              <div class="fields">
+              <div class="recv-box" id="jRecvBox"><b>📦 ลูกค้าฝากส่ง — ผู้รับปลายทาง</b>
+                <div class="hint" style="margin:2px 0 6px">ถ้าลูกค้าฝากส่งให้คนอื่น วางข้อความที่มี “ผู้ส่ง..” และ “ผู้รับ..” แล้วกดแยก ผู้ส่งจะเป็นชื่อลูกค้า (งานราคาส่ง) ผู้รับอยู่ในช่องนี้</div>
+                <label class="f"><span>ชื่อผู้รับ</span><input class="txt" id="jRName" type="text" autocomplete="off"></label>
+                <label class="f"><span>เบอร์ผู้รับ</span><input class="txt" id="jRPhone" type="tel" autocomplete="off"></label>
+                <label class="f"><span>ที่อยู่ผู้รับ</span><textarea id="jRAddr"></textarea></label>
+                <div id="jRecvMore"></div>
+                <button class="btn small" id="jRecvAdd" type="button">＋ เพิ่มผู้รับอีกกล่อง (ส่งหลายที่อยู่)</button>
               </div>
               </div>
             </details>
