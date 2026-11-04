@@ -1300,6 +1300,13 @@ tr{break-inside:avoid}
 .recv-box{background:#eef6ff;border:1px solid #bcd7f5;border-radius:14px;padding:10px 12px;margin:8px 0}
 .recv-box .f{margin-top:6px}
 .wh-sweep{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#fff3c4;border:1px solid #f0d36b;border-radius:14px;padding:10px 14px;margin:0 0 10px;font-size:14px}
+.jm-x{display:none}
+body.jm-open{overflow:hidden}
+body.jm-open::before{content:'';position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1100}
+body.jm-open #jobFormTop{position:fixed;inset:calc(env(safe-area-inset-top,0px) + 10px) 10px calc(env(safe-area-inset-bottom,0px) + 10px);z-index:1110;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--bg,#f4f4f1);border-radius:18px;padding:12px 12px 90px;box-shadow:0 24px 70px rgba(0,0,0,.45);margin:0!important;max-width:none}
+body.jm-open .jm-x{display:flex;position:sticky;top:0;z-index:5;grid-column:1/-1;justify-content:space-between;align-items:center;gap:10px;margin:-4px 0 8px;padding:8px 6px;background:var(--bg,#f4f4f1);font-weight:700}
+body.jm-open .jm-x button{border:1px solid var(--line,#ddd);background:var(--surface,#fff);border-radius:999px;padding:8px 16px;font:inherit;font-weight:700;cursor:pointer}
+body.jm-open .fab-newjob{display:none!important}
 .fab-newjob{position:fixed;right:12px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:60;border:3px solid #ffc400;border-radius:999px;padding:14px 22px;min-height:54px;background:#1c1c2e;color:#ffc400;font:inherit;font-weight:800;font-size:17px;letter-spacing:.2px;box-shadow:0 0 0 4px rgba(255,196,0,.28),0 14px 30px -6px rgba(20,20,40,.6);cursor:pointer}
 .fab-newjob:active{transform:scale(.97)}
 @media (min-width:900px){.fab-newjob{display:none}}
@@ -2518,6 +2525,7 @@ html body .page-head h1{letter-spacing:-.02em}
 
       <button type="button" class="fab-newjob no-print" id="fabNewJob" aria-label="เพิ่มใบคอนเฟิร์มใหม่">＋ เพิ่มใบคอนเฟิร์ม</button>
       <div class="bill-grid" id="jobFormTop">
+        <div class="jm-x no-print"><span id="jmTitle">แก้ไขใบงาน</span><button type="button" id="jmClose">✕ ปิด</button></div>
         <div class="stack no-print">
           <div class="card">
             <h2>ข้อมูลงาน</h2>
@@ -5683,7 +5691,7 @@ function bahtText(value) {
       const list = store.get('bs_jobs', []);
       const j = list.find(x => x.id === id); if (!j) return;
       currentJobId = id; applyJob(j); renderJobEditState(); showTab('confirm');
-      window.scrollTo({top: 0, behavior: 'smooth'}); toast('เปิดใบ ' + j.no + ' แล้ว แก้ไขได้เลย');
+      openJobModal(); toast('เปิดใบ ' + j.no + ' แล้ว แก้ไขได้เลย');
     });
   }
 
@@ -8317,7 +8325,7 @@ function bahtText(value) {
     cloudSave('jobs', rec);
     linkBankIn(rec, prevBankInIds);
     upsertCustomer(rec.jName, rec.jPhone, rec.jAddr);
-    renderJobHistory(); renderJobEditState();
+    renderJobHistory(); renderJobEditState(); closeJobModal();
     syncRecordPhotosToCloud('bs_jobs', 'jobs', rec.id, 'photos', renderJobHistory);
     if (idx < 0) pushJobNotif(rec, 'new'); else if (prevJobStatus !== (rec.status || 'pending')) pushJobNotif(rec, rec.status || 'pending');
     let whMsg = '';
@@ -9234,7 +9242,20 @@ function bahtText(value) {
     $('taxSheet').hidden = true;
     $('taxSheetBackdrop').hidden = true;
   }
+  // หน้าต่างแก้ไขใบคอนเฟิร์มงาน (เด้งขึ้นมาเหนือหน้า): เปิดจากปุ่ม "เปิดแก้ไข" · ปิดด้วย ✕ / Esc / แตะพื้นหลัง / บันทึกเสร็จ
+  function openJobModal() {
+    document.body.classList.add('jm-open');
+    const t = $('jmTitle'); if (t) t.textContent = 'แก้ไขใบ ' + ($('jobNo').value || '');
+    const f = $('jobFormTop'); if (f) f.scrollTop = 0;
+  }
+  function closeJobModal() { document.body.classList.remove('jm-open'); }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('jm-open')) closeJobModal(); });
+  document.addEventListener('click', e => {
+    if (!document.body.classList.contains('jm-open')) return;
+    if (e.target === document.body || e.target.closest('#jmClose')) closeJobModal();
+  });
   function showTab(name) {
+    closeJobModal();
     if (!can(name)) name = firstAllowedTab(); // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้ หรือโค้ดส่วนอื่นที่สั่งเปิดหน้า
     ['calc', 'vat', 'confirm', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
@@ -9904,7 +9925,7 @@ function bahtText(value) {
     if (btn.dataset.act === 'open') {
       const j = list.find(x => x.id === id); if (!j) return;
       currentJobId = id; applyJob(j); renderJobEditState(); showTab('confirm');
-      window.scrollTo({top: 0, behavior: 'smooth'}); toast('เปิดใบ ' + j.no + ' แล้ว แก้ไขได้เลย');
+      openJobModal(); toast('เปิดใบ ' + j.no + ' แล้ว แก้ไขได้เลย');
     } else if (btn.dataset.act === 'del') {
       if (delArmed !== id) {
         delArmed = id; btn.textContent = 'กดอีกครั้งเพื่อลบ'; btn.classList.add('confirm');

@@ -1888,7 +1888,7 @@ function bahtText(value) {
       const list = store.get('bs_jobs', []);
       const j = list.find(x => x.id === id); if (!j) return;
       currentJobId = id; applyJob(j); renderJobEditState(); showTab('confirm');
-      window.scrollTo({top: 0, behavior: 'smooth'}); toast('เปิดใบ ' + j.no + ' แล้ว แก้ไขได้เลย');
+      openJobModal(); toast('เปิดใบ ' + j.no + ' แล้ว แก้ไขได้เลย');
     });
   }
 
@@ -4522,7 +4522,7 @@ function bahtText(value) {
     cloudSave('jobs', rec);
     linkBankIn(rec, prevBankInIds);
     upsertCustomer(rec.jName, rec.jPhone, rec.jAddr);
-    renderJobHistory(); renderJobEditState();
+    renderJobHistory(); renderJobEditState(); closeJobModal();
     syncRecordPhotosToCloud('bs_jobs', 'jobs', rec.id, 'photos', renderJobHistory);
     if (idx < 0) pushJobNotif(rec, 'new'); else if (prevJobStatus !== (rec.status || 'pending')) pushJobNotif(rec, rec.status || 'pending');
     let whMsg = '';
@@ -5439,7 +5439,20 @@ function bahtText(value) {
     $('taxSheet').hidden = true;
     $('taxSheetBackdrop').hidden = true;
   }
+  // หน้าต่างแก้ไขใบคอนเฟิร์มงาน (เด้งขึ้นมาเหนือหน้า): เปิดจากปุ่ม "เปิดแก้ไข" · ปิดด้วย ✕ / Esc / แตะพื้นหลัง / บันทึกเสร็จ
+  function openJobModal() {
+    document.body.classList.add('jm-open');
+    const t = $('jmTitle'); if (t) t.textContent = 'แก้ไขใบ ' + ($('jobNo').value || '');
+    const f = $('jobFormTop'); if (f) f.scrollTop = 0;
+  }
+  function closeJobModal() { document.body.classList.remove('jm-open'); }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('jm-open')) closeJobModal(); });
+  document.addEventListener('click', e => {
+    if (!document.body.classList.contains('jm-open')) return;
+    if (e.target === document.body || e.target.closest('#jmClose')) closeJobModal();
+  });
   function showTab(name) {
+    closeJobModal();
     if (!can(name)) name = firstAllowedTab(); // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้ หรือโค้ดส่วนอื่นที่สั่งเปิดหน้า
     ['calc', 'vat', 'confirm', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
@@ -6109,7 +6122,7 @@ function bahtText(value) {
     if (btn.dataset.act === 'open') {
       const j = list.find(x => x.id === id); if (!j) return;
       currentJobId = id; applyJob(j); renderJobEditState(); showTab('confirm');
-      window.scrollTo({top: 0, behavior: 'smooth'}); toast('เปิดใบ ' + j.no + ' แล้ว แก้ไขได้เลย');
+      openJobModal(); toast('เปิดใบ ' + j.no + ' แล้ว แก้ไขได้เลย');
     } else if (btn.dataset.act === 'del') {
       if (delArmed !== id) {
         delArmed = id; btn.textContent = 'กดอีกครั้งเพื่อลบ'; btn.classList.add('confirm');
