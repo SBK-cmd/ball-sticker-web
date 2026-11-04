@@ -3630,7 +3630,9 @@ function bahtText(value) {
   // ใบงานอื่นของลูกค้าคนเดียวกัน (งานส่ง JBS) — แสดงเป็นการ์ดพับได้ในหน้าติดตามเดียวกัน
   function siblingJobsOf(rec) {
     const nm = String(rec.jName || '').trim(); if (!nm) return [];
-    return store.get('bs_jobs', []).filter(x => x.id !== rec.id && /^JBS/i.test(String(x.no || '').trim()) && String(x.jName || '').trim() === nm)
+    // ชื่อเดียวกัน หรือชื่อหนึ่งขึ้นต้นด้วยอีกชื่อ+เว้นวรรค (เช่น "แต้ม" กับ "แต้ม สติ๊กเกอร์") ถือเป็นลูกค้าเดียวกัน
+    const same = n => { n = String(n || '').trim().toLowerCase(); const m = nm.toLowerCase(); return !!n && (n === m || n.startsWith(m + ' ') || m.startsWith(n + ' ')); };
+    return store.get('bs_jobs', []).filter(x => x.id !== rec.id && /^JBS/i.test(String(x.no || '').trim()) && same(x.jName))
       .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.no || '').localeCompare(String(a.no || ''))).slice(0, 8);
   }
   function refreshSiblingMirrors(rec) {
