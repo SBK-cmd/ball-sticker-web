@@ -297,7 +297,7 @@ function bahtText(value) {
       if (isJbs && Array.isArray(rec.recvMore)) { const bx = rec.recvMore.filter(r => r && String((r.name || '') + (r.addr || '')).trim()).slice(0, 10).map(r => { const code = String(r.code || '').replace(/\s+/g, '').slice(0, 40), car = String(r.carrier || '') || (((store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(code))) || {}).carrier || ''); return {name: String(r.name || '').replace(/\s+/g, ' ').trim().slice(0, 80), addr: String(r.addr || '').replace(/\s+/g, ' ').trim().slice(0, 300), note: String(r.note || '').replace(/\s+/g, ' ').trim().slice(0, 120), trackCode: code, carrier: car, trackUrl: code && car ? trackingLink(car, code) : ''}; }); if (bx.length) doc.boxes = bx; }   // ส่งหลายกล่อง (ไม่ส่งเบอร์โทร)
       // ยอดค้างรวมของลูกค้า (ใบราคาส่งที่ยังไม่จ่าย) + payload พร้อมเพย์ ให้ลูกค้าสแกนจ่ายเองจากหน้าติดตาม
       if (isJbs) { const ow = owedGroups().find(x => x.name === (String(rec.jName || '').trim() || 'ไม่ระบุชื่อ')); if (ow && ow.total > 0) doc.pay = {total: ow.total, payee: payAcct('วันทิม').name || '', ref: payRef(Date.now()), payload: promptPayPayload(payAcct('วันทิม').id, ow.total),   // งาน JBS เข้าบัญชีวันทิมทั้งหมด
-      docs: ow.docs.slice(0, 10).map(d => ({no: d.no, amount: d.total, items: (d.items || []).slice(0, 20)}))}; }
+      docs: ow.docs.slice(0, 30).map(d => { const o = {no: d.no, amount: d.total, items: (d.items || []).slice(0, 20)}; if (d.photo) o.photo = d.photo; return o; })}; }
       const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
       if (isJbs && refs.length) doc.refPhotos = refs;
       cloudDb.collection('publicJobs').doc(String(rec.trackToken)).set(doc).catch(e => console.error('publicJobs save error', e));
@@ -3288,7 +3288,7 @@ function bahtText(value) {
     if (can('wholesale')) store.get('bs_wholesale', []).filter(w => !w.paid).forEach(w => add(w.buyerName, {k: 'wholesale', id: w.id, no: w.no || w.ref || 'ใบราคาส่ง', date: w.date || '', total: round2(wholesaleCalc(w).total), items: (w.items || []).filter(i => String(i.name || '').trim()).map(i => ({n: String(i.name).trim().slice(0, 80), q: num(i.qty), p: num(i.price)}))}));
     // งาน JBS ที่คีย์จำนวนเงินไว้แล้ว แต่ยังไม่ได้รวมเข้าใบราคาส่ง และยังไม่ผูกกับเงินเข้าจริง = ยอดที่รอเก็บ
     if (can('wholesale')) store.get('bs_jobs', []).filter(j => /^JBS/i.test(String(j.no || '').trim()) && !j.owedPaid && num(j.slipAmount) > 0 && !jobBankIdsOf(j).length && jobPendingWhItems(j).length)
-      .forEach(j => add(j.jName, {k: 'jobs', id: j.id, no: j.no, date: j.date || '', total: round2(num(j.slipAmount)), items: (() => { const its = (j.items || []).filter(i => String(i.name || '').trim()).map(i => ({n: (String(i.name).trim() + (String(i.note || '').trim() ? ' (' + String(i.note).trim() + ')' : '')).slice(0, 80), q: num(i.qty), p: 0})); const nt = String(j.note || '').replace(/\s+/g, ' ').trim(); return its.length ? its : (nt ? [{n: nt.slice(0, 80), q: 0, p: 0}] : []); })()}));
+      .forEach(j => add(j.jName, {k: 'jobs', id: j.id, no: j.no, date: j.date || '', total: round2(num(j.slipAmount)), photo: [].concat(j.donePhotos || [], j.photos || []).find(u => typeof u === 'string' && /^https:\/\//.test(u)) || '', items: (() => { const its = (j.items || []).filter(i => String(i.name || '').trim()).map(i => ({n: (String(i.name).trim() + (String(i.note || '').trim() ? ' (' + String(i.note).trim() + ')' : '')).slice(0, 80), q: num(i.qty), p: 0})); const nt = String(j.note || '').replace(/\s+/g, ' ').trim(); return its.length ? its : (nt ? [{n: nt.slice(0, 80), q: 0, p: 0}] : []); })()}));
     const out = Object.values(g).filter(x => x.docs.some(d => d.total > 0));
     out.forEach(x => { x.docs.sort((a, b) => String(a.date).localeCompare(String(b.date))); x.total = round2(x.docs.reduce((t, d) => t + d.total, 0)); });
     return out.sort((a, b) => b.total - a.total);
@@ -4740,7 +4740,7 @@ function bahtText(value) {
     const link = chargeLinkFor(nm);
     let m = document.getElementById('chgModal'); if (m) m.remove();
     m = document.createElement('div'); m.id = 'chgModal'; m.className = 'chg-m';
-    const docsHtml = g.docs.map(d => '<div class="chg-d"><div class="chg-h"><b>' + esc(d.no || 'ใบ') + '</b><span>' + esc(thDate(d.date)) + '</span><b>' + money(d.total) + '</b></div>' +
+    const docsHtml = g.docs.map(d => '<div class="chg-d"><div class="chg-h">' + (d.photo ? '<img class="chg-ph" src="' + esc(d.photo) + '" alt="">' : '') + '<b>' + esc(d.no || 'ใบ') + '</b><span>' + esc(thDate(d.date)) + '</span><b>' + money(d.total) + '</b></div>' +
       ((d.items || []).length ? '<ul>' + d.items.map(i => { const ln = (i.q || 0) * (i.p || 0); return '<li><span>' + esc(i.n) + (i.q ? ' × ' + esc(i.q) : '') + '</span><span>' + (ln > 0 ? money(round2(ln)) : '') + '</span></li>'; }).join('') + '</ul>' : '') + '</div>').join('');
     m.innerHTML = '<div class="chg-s"><div class="chg-t"><b>เรียกเก็บเงิน · ' + esc(nm) + '</b><button type="button" data-x="1" aria-label="ปิด">✕</button></div>' +
       '<div class="chg-b">' + docsHtml + '<div class="chg-sum"><span>บิลค้างทั้งหมด ' + g.docs.length + ' ใบ</span><b>' + money(g.total) + ' บาท</b></div>' +

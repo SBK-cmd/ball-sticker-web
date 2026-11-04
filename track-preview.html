@@ -49,7 +49,7 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
 .pm{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:max(14px,env(safe-area-inset-top)) 12px 12px}.pm.show{display:flex}
 .pms{background:#fff;color:#111;width:min(100%,460px);max-height:calc(100vh - 40px);overflow:auto;border-radius:18px;padding:16px;margin-top:6px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
 .pmt{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:1.1rem}.pmt button{border:0;background:#f3f4f6;border-radius:50%;width:34px;height:34px;font-size:1rem;cursor:pointer}
-.pmd{border:1px solid #e5e7eb;border-radius:12px;padding:8px 10px;margin:6px 0}.pmh{display:flex;justify-content:space-between}
+.pmd{border:1px solid #e5e7eb;border-radius:12px;padding:8px 10px;margin:6px 0}.pmh{display:flex;align-items:center;gap:8px}.pmh .pmn{flex:1}.pmph{width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb}
 .pmd ul{list-style:none;margin:6px 0 0;padding:0;font-size:.9rem;color:#4b5563}.pmd li{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
 .pmsum{display:flex;justify-content:space-between;align-items:center;margin:12px 0 4px;font-size:1.05rem}.pmsum b{font-size:1.5rem}
 .pmq{text-align:center}.pmq canvas{width:240px;max-width:100%;height:auto;border:1px solid #e5e7eb;border-radius:10px}
@@ -85,7 +85,8 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
     if (!payM) { payM = document.createElement('div'); payM.className = 'pm'; document.body.appendChild(payM); payM.addEventListener('click', function (e) { if (e.target === payM || e.target.closest('[data-pmx]')) openPay(false); }); }
     var docs = (p.docs || []).map(function (d) {
       var its = (d.items || []).map(function (i) { var line = (+i.q || 0) * (+i.p || 0); return '<li><span>' + esc(i.n || '') + (i.q ? ' × ' + esc(i.q) : '') + '</span><span>' + (line > 0 ? money(line) : '') + '</span></li>'; }).join('');
-      return '<div class="pmd"><div class="pmh"><b>' + esc(d.no || 'ใบ') + '</b><b>' + money(d.amount) + '</b></div>' + (its ? '<ul>' + its + '</ul>' : '') + '</div>';
+      var ph = (typeof d.photo === 'string' && /^https:\/\//.test(d.photo)) ? '<img class="pmph" src="' + esc(d.photo) + '" alt="">' : '';
+      return '<div class="pmd"><div class="pmh">' + ph + '<b class="pmn">' + esc(d.no || 'ใบ') + '</b><b>' + money(d.amount) + '</b></div>' + (its ? '<ul>' + its + '</ul>' : '') + '</div>';
     }).join('');
     payM.innerHTML = '<div class="pms"><div class="pmt"><b>รายการค้างชำระ</b><button type="button" data-pmx="1" aria-label="ปิด">✕</button></div>' + docs +
       '<div class="pmsum"><span>ยอดที่ยังไม่ได้จ่าย</span><b>' + money(p.total) + ' บาท</b></div>' +
