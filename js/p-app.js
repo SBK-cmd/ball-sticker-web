@@ -4319,6 +4319,7 @@ function bahtText(value) {
   }
 
   function renderJob() {
+    { const q = $('jobQrBtn'); if (q) q.hidden = !/^JBS/i.test(String($('jobNo').value || '').trim()); }   // QR เก็บเงินในใบงาน: เฉพาะ JBS (งานราคาส่ง)
     renderJobHTML();
     fitJob();
   }
