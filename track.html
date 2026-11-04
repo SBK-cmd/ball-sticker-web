@@ -108,10 +108,15 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
     }).join('');
     var html = '<h1>ใบงานเลขที่</h1><p class="no">' + esc(j.no) + '</p>' + (j.cname ? '<div class="cn">ลูกค้า: <b>' + esc(j.cname) + '</b></div>' : '') + '<span class="now' + (done ? ' done' : '') + '">' + esc(STEPS[idx][1]) + '</span><ul class="steps">' + lis + '</ul>';
     var isJbs = /^JBS/i.test(String(j.no || ''));
-    if (isJbs && (j.sender || j.receiver)) {
+    if (isJbs && (j.sender || j.receiver || (j.boxes && j.boxes.length))) {
       html += '<div class="ad"><h2>📍 ที่อยู่จัดส่ง</h2>';
       if (j.sender) html += '<div class="ab"><small>ผู้ส่ง</small>' + (j.sender.name ? '<b>' + esc(j.sender.name) + '</b>' : '') + esc(j.sender.addr) + '</div>';
-      if (j.receiver) html += '<div class="ab"><small>ผู้รับ</small>' + (j.receiver.name ? '<b>' + esc(j.receiver.name) + '</b>' : '') + esc(j.receiver.addr) + '</div>';
+      var bxs = (j.boxes || []).filter(function (b) { return b && (b.name || b.addr); });
+      if (j.receiver) html += '<div class="ab"><small>' + (bxs.length ? 'ผู้รับ · กล่องที่ 1' : 'ผู้รับ') + '</small>' + (j.receiver.name ? '<b>' + esc(j.receiver.name) + '</b>' : '') + esc(j.receiver.addr) + '</div>';
+      bxs.forEach(function (b, i) {
+        html += '<div class="ab"><small>ผู้รับ · กล่องที่ ' + (i + 2) + '</small>' + (b.name ? '<b>' + esc(b.name) + '</b>' : '') + esc(b.addr || '') + (b.note ? '<br><small>' + esc(b.note) + '</small>' : '') +
+          (b.trackCode ? '<br><small>📦 ' + esc(b.carrier || '') + ' เลขพัสดุ</small><b>' + esc(b.trackCode) + '</b>' + (/^https:\/\//.test(b.trackUrl || '') ? '<a href="' + esc(b.trackUrl) + '" target="_blank" rel="noopener">ติดตามพัสดุกล่องนี้ ›</a>' : '') : '') + '</div>';
+      });
       html += '</div>';
     }
     var rp = (isJbs ? (j.refPhotos || []) : []).filter(function (u) { return typeof u === 'string' && /^https:\/\//.test(u); });
