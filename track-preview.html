@@ -15,7 +15,7 @@
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}.brand img{width:40px;height:40px;border-radius:10px}.brand b{font-size:17px}.brand small{display:block;color:var(--mut);font-size:12.5px}
 .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
 h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:24px;font-weight:700;margin:0 0 4px}
-.now{display:inline-block;margin:6px 0 14px;padding:6px 14px;border-radius:999px;background:var(--y);font-weight:700;font-size:15px}.now.done{background:#dcfce7;color:#166534}
+.now{display:inline-block;margin:6px 0 14px;padding:6px 14px;border-radius:999px;background:var(--y);font-weight:700;font-size:15px}.now.done{background:#dcfce7;color:#166534}.now.rcv{background:#dbeafe;color:#1e40af}
 .steps{list-style:none;margin:0;padding:0}.steps li{position:relative;padding:0 0 18px 38px;color:var(--mut);font-size:15.5px}
 .steps li:last-child{padding-bottom:0}
 .steps li::before{content:'';position:absolute;left:11px;top:24px;bottom:-2px;width:2px;background:var(--line)}.steps li:last-child::before{display:none}
@@ -39,7 +39,7 @@ details.jc>summary{list-style:none;cursor:pointer;display:flex;align-items:cente
 details.jc>summary::-webkit-details-marker{display:none}details.jc>summary img.jt{flex:none;width:52px;height:52px;border-radius:12px;object-fit:cover;background:#e5e7eb}.jp{margin-top:12px}.jp small{display:block;color:var(--mut);font-size:12.5px;margin-bottom:6px}.jp>div{display:flex;gap:8px;flex-wrap:wrap}.jp img{width:96px;height:96px;border-radius:12px;object-fit:cover;display:block}
 details.jc>summary .jn{flex:1;min-width:0}details.jc>summary .jn b{display:block;white-space:nowrap;font-size:16px;font-weight:800;color:#0f1020;overflow-wrap:anywhere}details.jc>summary .jn small{display:block;color:#4b5563;font-size:13px;margin-top:2px;overflow-wrap:anywhere}
 details.jc>summary .js{flex:none;padding:5px 12px;border-radius:999px;background:var(--y);font-weight:700;font-size:13.5px;white-space:normal;text-align:center;max-width:112px;line-height:1.25}
-details.jc>summary .js.done{background:#16a34a;color:#fff}
+details.jc>summary .js.done{background:#16a34a;color:#fff}details.jc>summary .js.rcv{background:#2563eb;color:#fff}details.jc.rcv{border-left-color:#2563eb}
 details.jc>summary::after{content:'▾';flex:none;color:var(--mut);font-size:16px;transition:transform .15s}details.jc[open]>summary::after{transform:rotate(180deg)}
 details.jc>.jb{padding:2px 16px 16px;border-top:1px solid var(--line)}
 .jb .it{margin:10px 0 0;padding:0;list-style:none;font-size:14.5px}.jb .it li{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid #f1f2f4}.jb .it li b{flex:none}
@@ -80,7 +80,7 @@ details.jc>.jb{padding:2px 16px 16px;border-top:1px solid var(--line)}
 <script>
 (function () {
   var box = document.getElementById('box');
-  var STEPS = [['pending', 'รับงานแล้ว · รอทำ'], ['filed', 'ทำไฟล์เสร็จแล้ว'], ['printed', 'ผลิตเสร็จแล้ว'], ['shipped', 'จัดส่งแล้ว'], ['completed', 'เสร็จสิ้น · ถึงลูกค้าแล้ว']];
+  var STEPS = [['pending', 'รับงานแล้ว · รอทำ'], ['filed', 'ทำไฟล์เสร็จแล้ว'], ['printed', 'ผลิตเสร็จแล้ว'], ['shipped', 'จัดส่งแล้ว'], ['completed', 'ลูกค้ารับแล้ว · เสร็จสิ้น']];
   var effSt = function (st, dlv) { return (st === 'shipped' && dlv) ? 'completed' : st; };   // พัสดุถึงลูกค้าแล้ว = เสร็จสิ้น
   var MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]; }); }
@@ -116,11 +116,11 @@ details.jc>.jb{padding:2px 16px 16px;border-top:1px solid var(--line)}
   }
   function show(j) {
     var idx = 0, i; for (i = 0; i < STEPS.length; i++) if (STEPS[i][0] === effSt(j.status, j.delivered)) idx = i;
-    var done = idx === STEPS.length - 1, lis = STEPS.map(function (s, k) {
-      var c = k < idx || done ? 'done' : (k === idx ? 'cur' : '');
+    var done = idx === 3, rcv = idx === 4, lis = STEPS.map(function (s, k) {
+      var c = k < idx || (idx >= 3 && k === idx) ? 'done' : (k === idx ? 'cur' : '');
       return '<li class="' + c + '"><i>' + (c === 'done' ? '✓' : (k + 1)) + '</i>' + esc(s[1]) + '</li>';
     }).join('');
-    var html = '<h1>ใบงานเลขที่</h1><p class="no">' + esc(j.no) + '</p>' + (j.cname ? '<div class="cn">ลูกค้า: <b>' + esc(j.cname) + '</b></div>' : '') + '<span class="now' + (done ? ' done' : '') + '">' + esc(STEPS[idx][1]) + '</span><ul class="steps">' + lis + '</ul>';
+    var html = '<h1>ใบงานเลขที่</h1><p class="no">' + esc(j.no) + '</p>' + (j.cname ? '<div class="cn">ลูกค้า: <b>' + esc(j.cname) + '</b></div>' : '') + '<span class="now' + (done ? ' done' : rcv ? ' rcv' : '') + '">' + esc(STEPS[idx][1]) + '</span><ul class="steps">' + lis + '</ul>';
     var isJbs = /^JBS/i.test(String(j.no || ''));
     if (isJbs && (j.sender || j.receiver || (j.boxes && j.boxes.length))) {
       html += '<div class="ad"><h2>📍 ที่อยู่จัดส่ง</h2>';
@@ -160,18 +160,18 @@ details.jc>.jb{padding:2px 16px 16px;border-top:1px solid var(--line)}
     var others = (isJbs && Array.isArray(j.others)) ? j.others.filter(function (o) { return o && o.no; }) : [];
     if (others.length) {
       var stOf = function (st) { var k = 0, q; for (q = 0; q < STEPS.length; q++) if (STEPS[q][0] === st) k = q; return k; };
-      var hd = function (no, date, st, sub, th) { var k = stOf(st), dn = k === STEPS.length - 1; return '<summary>' + (th ? '<img class="jt" src="' + esc(th) + '" alt="" loading="lazy">' : '') + '<span class="jn"><b>' + esc(no) + '</b>' + ((date || sub) ? '<small>' + esc([thDate(date), sub].filter(Boolean).join(' · ')) + '</small>' : '') + '</span><span class="js' + (dn ? ' done' : '') + '">' + esc(STEPS[k][1]) + '</span></summary>'; };
-      var cards = [{no: String(j.no || ''), date: j.date || '', h: '<details class="jc' + (stOf(effSt(j.status, j.delivered)) === STEPS.length - 1 ? ' dn' : '') + '" open>' + hd(j.no, j.date || '', effSt(j.status, j.delivered), subOf(j.items), j.thumb) + '<div class="jb">' + html + '</div></details>'}];
+      var hd = function (no, date, st, sub, th) { var k = stOf(st), dn = k === 3, rc = k === 4; return '<summary>' + (th ? '<img class="jt" src="' + esc(th) + '" alt="" loading="lazy">' : '') + '<span class="jn"><b>' + esc(no) + '</b>' + ((date || sub) ? '<small>' + esc([thDate(date), sub].filter(Boolean).join(' · ')) + '</small>' : '') + '</span><span class="js' + (dn ? ' done' : rc ? ' rcv' : '') + '">' + esc(STEPS[k][1]) + '</span></summary>'; };
+      var cards = [{no: String(j.no || ''), date: j.date || '', h: '<details class="jc' + (stOf(effSt(j.status, j.delivered)) === 3 ? ' dn' : stOf(effSt(j.status, j.delivered)) === 4 ? ' rcv' : '') + '" open>' + hd(j.no, j.date || '', effSt(j.status, j.delivered), subOf(j.items), j.thumb) + '<div class="jb">' + html + '</div></details>'}];
       others.forEach(function (o) {
-        var k = stOf(effSt(o.status, o.delivered)), steps = STEPS.map(function (s2, n) { var c = n < k || k === STEPS.length - 1 ? 'done' : (n === k ? 'cur' : ''); return '<li class="' + c + '"><i>' + (c === 'done' ? '✓' : (n + 1)) + '</i>' + esc(s2[1]) + '</li>'; }).join('');
+        var k = stOf(effSt(o.status, o.delivered)), steps = STEPS.map(function (s2, n) { var c = n < k || (k >= 3 && n === k) ? 'done' : (n === k ? 'cur' : ''); return '<li class="' + c + '"><i>' + (c === 'done' ? '✓' : (n + 1)) + '</i>' + esc(s2[1]) + '</li>'; }).join('');
         var b = '<ul class="steps" style="margin-top:12px">' + steps + '</ul>';
         b += itemsHtml(o.items);
         var pic = function (arr, t) { return (arr && arr.length) ? '<div class="jp"><small>' + t + '</small><div>' + arr.map(function (u) { return '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="" loading="lazy"></a>'; }).join('') + '</div></div>' : ''; };
         b += pic(o.photos, 'รูปงาน') + pic(o.refPhotos, 'รูปอ้างอิง');
         if (o.receiver) b += '<div class="ad" style="margin-top:12px"><div class="ab"><small>ผู้รับ</small>' + (o.receiver.name ? '<b>' + esc(o.receiver.name) + '</b>' : '') + esc(o.receiver.addr || '') + '</div></div>';
-        if (o.due && k < STEPS.length - 1) b += '<div class="row"><span>กำหนดส่ง</span><b>' + esc(thDate(o.due)) + '</b></div>';
+        if (o.due && k < 3) b += '<div class="row"><span>กำหนดส่ง</span><b>' + esc(thDate(o.due)) + '</b></div>';
         if (o.trackCode) b += '<div class="row"><span>เลขพัสดุ' + (o.carrier ? ' (' + esc(o.carrier) + ')' : '') + '</span><b>' + esc(o.trackCode) + '<button class="copy" type="button" data-cp="' + esc(o.trackCode) + '">คัดลอก</button></b></div>' + (/^https:\/\//.test(o.trackUrl || '') ? '<a class="go" href="' + esc(o.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะพัสดุ' + (o.carrier ? ' กับ ' + esc(o.carrier) : '') + '</a>' : '');
-        cards.push({no: String(o.no || ''), date: o.date || '', h: '<details class="jc' + (k === STEPS.length - 1 ? ' dn' : '') + '">' + hd(o.no, o.date, effSt(o.status, o.delivered), subOf(o.items), o.thumb) + '<div class="jb">' + b + '</div></details>'});
+        cards.push({no: String(o.no || ''), date: o.date || '', h: '<details class="jc' + (k === 3 ? ' dn' : k === 4 ? ' rcv' : '') + '">' + hd(o.no, o.date, effSt(o.status, o.delivered), subOf(o.items), o.thumb) + '<div class="jb">' + b + '</div></details>'});
       });
       // ใบที่มาทีหลังอยู่บน (วันที่ใหม่สุด → เก่า, วันเดียวกันดูเลขใบ)
       cards.sort(function (a, b2) { return (b2.date > a.date ? 1 : b2.date < a.date ? -1 : 0) || (b2.no > a.no ? 1 : b2.no < a.no ? -1 : 0); });
