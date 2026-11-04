@@ -271,7 +271,7 @@ function bahtText(value) {
     if (hasDataUri(safeRec.boxPhoto)) delete safeRec.boxPhoto;
     (window.__bsAuthReady || Promise.resolve()).then(() => {
       cloudDb.collection(col).doc(String(rec.id)).set(safeRec, {merge: true}).catch(e => console.error(col + ' save error', e));
-      if (col === 'jobs' && rec.trackToken) publicJobMirror(rec);
+      if (col === 'jobs') { if (rec.trackToken) publicJobMirror(rec); else refreshSiblingMirrors(rec); }
     });
   }
   // หน้า "ติดตามงานของลูกค้า" (track.html) อ่านจากเอกสารนี้เท่านั้น — เก็บเฉพาะเลขใบ/สถานะ/กำหนดส่ง/เลขพัสดุ (ไม่มีชื่อ เบอร์ ที่อยู่ ราคา)
@@ -282,7 +282,17 @@ function bahtText(value) {
     if (!w.length) return '';
     return (NAME_TITLES.indexOf(w[0]) >= 0 && w[1]) ? w[0] + ' ' + w[1] : w[0];
   }
-  function publicJobMirror(rec) {
+  // ใบงานอื่นของลูกค้าคนเดียวกัน (งานส่ง JBS) — แสดงเป็นการ์ดพับได้ในหน้าติดตามเดียวกัน
+  function siblingJobsOf(rec) {
+    const nm = String(rec.jName || '').trim(); if (!nm) return [];
+    return store.get('bs_jobs', []).filter(x => x.id !== rec.id && /^JBS/i.test(String(x.no || '').trim()) && String(x.jName || '').trim() === nm)
+      .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.no || '').localeCompare(String(a.no || ''))).slice(0, 8);
+  }
+  function refreshSiblingMirrors(rec) {
+    if (!/^JBS/i.test(String(rec.no || '').trim())) return;
+    siblingJobsOf(rec).forEach(x => { if (x.trackToken) { try { publicJobMirror(x, {noSib: true}); } catch (e) {} } });
+  }
+  function publicJobMirror(rec, opts) {
     try {
       const tr = rec.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(rec.trackCode)) || null) : null;
       const carrier = (tr && tr.carrier) || '';
@@ -300,7 +310,17 @@ function bahtText(value) {
       docs: ow.docs.slice(0, 30).map(d => { const o = {no: d.no, amount: d.total, items: (d.items || []).slice(0, 20)}; if (d.photo) o.photo = d.photo; return o; })}; }
       const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
       if (isJbs && refs.length) doc.refPhotos = refs;
+      if (isJbs) {   // ใบงานอื่นของลูกค้าคนนี้ (สถานะล่าสุดของแต่ละใบ)
+        doc.others = siblingJobsOf(rec).map(x => {
+          const trx = x.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(x.trackCode)) || null) : null, car2 = (trx && trx.carrier) || '';
+          const o = {no: String(x.no || ''), status: x.status || 'pending', date: x.date || '', due: x.due || '', items: (x.items || []).filter(i => (i.name || '').trim()).slice(0, 8).map(i => ({n: String(i.name).trim().slice(0, 80), q: String(i.qty == null ? '' : i.qty).slice(0, 12)}))};
+          if (x.recv && (x.recv.name || x.recv.addr)) o.receiver = {name: String(x.recv.name || '').replace(/\s+/g, ' ').trim().slice(0, 80), addr: String(x.recv.addr || '').replace(/\s+/g, ' ').trim().slice(0, 300)};
+          if (x.trackCode) { o.trackCode = String(x.trackCode); o.carrier = car2; o.trackUrl = trackingLink(car2, x.trackCode) || ''; }
+          return o;
+        });
+      }
       cloudDb.collection('publicJobs').doc(String(rec.trackToken)).set(doc).catch(e => console.error('publicJobs save error', e));
+      if (isJbs && !(opts && opts.noSib)) refreshSiblingMirrors(rec);
     } catch (e) { console.error('publicJobs mirror', e); }
   }
   function cloudDelete(col, id) {
