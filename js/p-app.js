@@ -3553,7 +3553,7 @@ function bahtText(value) {
   $('chatToJob').addEventListener('click', () => {
     const c = chatList.find(x => x.userId === chatSel); if (!c) return;
     if (!can('confirm') || !canKey) { toast('ไม่มีสิทธิ์เปิดใบคอนเฟิร์มงาน'); return; }
-    newJob(); $('jName').value = c.name || ''; renderJob(); showTab('confirm');
+    newJob(); $('jName').value = c.name || ''; renderJob(); showTab('confirm'); if (window.innerWidth < 900) openJobModal();
     toast('เปิดใบงานใหม่ให้ ' + (c.name || 'ลูกค้า') + ' แล้ว');
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && chatSel && isChatActive()) { const c = chatList.find(x => x.userId === chatSel); if (c) { markChatSeen(c.userId, c.lastInAt || 0); paintChatBadge(); renderChatList(); } } });
@@ -4513,6 +4513,7 @@ function bahtText(value) {
   document.addEventListener('click', e => {
     if (!e.target.closest || !e.target.closest('#fabNewJob')) return;
     newJob();
+    if (window.innerWidth < 900) { openJobModal(); return; }   // มือถือ: เด้งเป็นหน้าต่าง · จอใหญ่: ฟอร์มอยู่ข้างๆ เลื่อนไปที่ฟอร์ม
     const t = $('jobFormTop'); if (t) t.scrollIntoView({behavior: 'smooth', block: 'start'});
     const n = $('jName'); if (n) setTimeout(() => n.focus({preventScroll: true}), 350);
   });
@@ -5590,7 +5591,8 @@ function bahtText(value) {
   // หน้าต่างแก้ไขใบคอนเฟิร์มงาน (เด้งขึ้นมาเหนือหน้า): เปิดจากปุ่ม "เปิดแก้ไข" · ปิดด้วย ✕ / Esc / แตะพื้นหลัง / บันทึกเสร็จ
   function openJobModal() {
     document.body.classList.add('jm-open');
-    const t = $('jmTitle'); if (t) t.textContent = 'แก้ไขใบ ' + ($('jobNo').value || '');
+    const t = $('jmTitle'); if (t) t.textContent = (currentJobId ? 'แก้ไขใบ ' : 'ใบใหม่ ') + ($('jobNo').value || '');
+    if (!currentJobId && window.innerWidth < 900) setTimeout(() => { const n = $('jName'); if (n && document.body.classList.contains('jm-open')) n.focus({preventScroll: true}); }, 250);
     const f = $('jobFormTop'); if (f) f.scrollTop = 0;
   }
   function closeJobModal() { document.body.classList.remove('jm-open'); }
@@ -6960,7 +6962,7 @@ function bahtText(value) {
   $('dash-all').addEventListener('click', () => { $('dashMonth').value = ''; renderDash(); });
   $('dash-go-report').addEventListener('click', () => { $('reportMonth').value = $('dashMonth').value; showTab('report'); });
   if ($('dashCatBillBtn')) $('dashCatBillBtn').addEventListener('click', () => showTab('bill'));
-  if ($('dashCatJobBtn')) $('dashCatJobBtn').addEventListener('click', () => showTab('confirm'));
+  if ($('dashCatJobBtn')) $('dashCatJobBtn').addEventListener('click', () => { showTab('confirm'); if (window.innerWidth < 900) { newJob(); openJobModal(); } });
   if ($('dashCatWholesaleBtn')) $('dashCatWholesaleBtn').addEventListener('click', () => showTab('wholesale'));
   if ($('dashCatPurchBtn')) $('dashCatPurchBtn').addEventListener('click', () => showTab('purchase'));
   if ($('dashCatReportBtn')) $('dashCatReportBtn').addEventListener('click', () => { $('reportMonth').value = $('dashMonth').value; showTab('report'); });
