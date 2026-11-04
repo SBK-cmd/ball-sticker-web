@@ -6445,7 +6445,8 @@ function bahtText(value) {
     applyWholesale({date: todayISO(), no: whNextNo(todayISO()), buyerName: d.name, buyerPhone: d.phone, buyerAddr: d.addr, due: d.due, recv: d.rv, photos: d.photos, prodNote: keepNote, items: d.items});
     whPendingJobId = jid || null;   // ใบงานนี้บันทึกไว้แล้ว → ตอนบันทึกใบราคาส่งจะผูก/อัปเดตใบงานเดิม ไม่สร้างใบงานซ้ำ
     renderWholesaleEditState(); showTab('wholesale'); openWhModal();
-    window.scrollTo({top: 0, behavior: 'smooth'});
+    { const sf = $('whShipFold'); if (sf) sf.open = false; }   // พับข้อมูลส่งไว้ ให้เห็นรายการ + ช่องราคาทันที
+    setTimeout(() => { const it = $('wholesaleItems'); if (it) it.scrollIntoView({block: 'center', behavior: 'smooth'}); const pr = it && it.querySelector('.i-price'); if (pr) pr.focus({preventScroll: true}); }, 250);
     toast('ย้ายข้อมูลมาที่ใบราคาส่งแล้ว ใส่ราคาส่งต่อชิ้นแล้วกด “บันทึกลงประวัติ”' + (jid ? ' (ผูกกับใบงานเดิม ' + String($('jobNo').value || '') + ')' : ''));
   });
 
