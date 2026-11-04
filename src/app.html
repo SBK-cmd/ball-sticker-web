@@ -2567,6 +2567,7 @@ tr{break-inside:avoid}
         </div>
         <div class="bankin-sum" id="bankInSum"></div>
         <div class="bk-tools">
+          <div class="bk-seg" id="bankAccSeg" role="group" aria-label="แยกตามบัญชี"></div>
           <div class="bk-seg" id="bankListSeg" role="group" aria-label="แสดงรายการ">
             <button type="button" data-bk="all" aria-pressed="true">ทั้งหมด</button>
             <button type="button" data-bk="in" aria-pressed="false">เงินเข้า</button>
@@ -3599,7 +3600,7 @@ function bahtText(value) {
   const ACCOUNTS = ['กิติพงษ์', 'วันทิม'];
   const NON_TAX_ACCOUNTS = ['วันทิม'];
   // บัญชีที่ปิดไว้ชั่วคราว: ไม่แสดงในทุกหน้า (ข้อมูลเดิมยังเก็บไว้ครบ ไม่ได้ลบ) — เอาชื่อออกจากรายการนี้เมื่ออยากให้กลับมาแสดง
-  const HIDDEN_ACCOUNTS = [];
+  const HIDDEN_ACCOUNTS = isSuper ? [] : ['วันทิม'];   // บัญชีวันทิม เห็นเฉพาะรหัส ball (ผู้ดูแลสูงสุด)
   const VISIBLE_ACCOUNTS = ACCOUNTS.filter(a => HIDDEN_ACCOUNTS.indexOf(a) < 0);
   const accHidden = x => !!(x && HIDDEN_ACCOUNTS.indexOf(x.account) >= 0);
 
@@ -3639,6 +3640,8 @@ function bahtText(value) {
   const bankOutAll = () => (store.get('bs_bank_out', []) || []).filter(x => !accHidden(x)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   const BANK_OUT_KIND = {'เงินออก': 'เงินออก', 'ชำระ': 'ชำระเงิน', 'จ่าย': 'จ่ายเงิน', 'ถอน': 'ถอนเงิน', 'โอนไป': 'โอนออก', 'โอนออก': 'โอนออก', 'โอนเงินออก': 'โอนออก', 'หักบัญชี': 'หักบัญชี'};
   let bankListTab = 'all';
+  let bankAccTab = 'all';   // แยกรายการตามบัญชี: all / กิติพงษ์ / วันทิม
+  try { const t = localStorage.getItem('bs_bankacc_tab'); if (t && (t === 'all' || ACCOUNTS.indexOf(t) >= 0)) bankAccTab = t; } catch (e) {}
   let bankDelArmed = null, bankDelTimer = null;
   const BANK_HIDE_DEFAULT = []; // บัญชีที่ซ่อนการ์ดไว้ก่อน กดปุ่มเพื่อแสดง
   const BANK_LIST_STEP = 5; let bankListLimit = BANK_LIST_STEP; // ประวัติแสดงทีละ 5 รายการ กด "ดูเพิ่มเติม" เพื่อดูต่อ
@@ -3806,7 +3809,7 @@ function bahtText(value) {
       const mIn = sum(inMonth(mine)), mOut = sum(inMonth(mineOut)), net = mIn - mOut;
       return '<div class="bkc">' +
         '<div class="bkc-head"><span class="bkc-name">บัญชี' + esc(a) + '</span>' + (bal ? '<span class="bkc-when">อัปเดต ' + esc(bankBalWhen(bal)) + '</span>' : '') + '</div>' +
-        '<div class="bkc-bal"><span>ยอดคงเหลือ</span>' + (bal ? '<b>' + money(num(bal.balance)) + '<em>บาท</em></b>' : '<b class="none">—</b><small>รอ SMS ครั้งถัดไป</small>') + '</div>' +
+        '<div class="bkc-bal"><span>ยอดคงเหลือ</span>' + (bal ? '<b>' + money(num(bal.balance)) + '<em>บาท</em></b>' : '<b class="none">—</b><small>' + (mine.concat(mineOut).some(x => x.source !== 'manual') ? 'รอ SMS ครั้งถัดไป' : 'ยังไม่ได้ตั้ง SMS · เพิ่มรายการเองได้') + '</small>') + '</div>' +
         '<div class="bkc-flow">' +
           '<div class="bkc-chip in' + (td.length ? '' : ' zero') + '"><i>' + ICO_IN + '</i><span>เข้าวันนี้</span><b>' + (td.length ? '+' : '') + money(sum(td)) + '</b><small>' + td.length + ' รายการ</small></div>' +
           '<div class="bkc-chip out' + (tdOut.length ? '' : ' zero') + '"><i>' + ICO_OUT + '</i><span>ออกวันนี้</span><b>' + (tdOut.length ? '\u2212' : '') + money(sum(tdOut)) + '</b><small>' + tdOut.length + ' รายการ</small></div>' +
@@ -3815,8 +3818,11 @@ function bahtText(value) {
         '</div>';
     }).join('') + (hiddenAcc.length ? '<div class="bkc-toggle"><button type="button" class="btn small" data-bkshow="1">' +
       (showHidden ? 'ซ่อนบัญชี' + hiddenAcc.join(', ') : '👁 แสดงบัญชี' + hiddenAcc.join(', ')) + '</button></div>' : '');
+    const accF = x => bankAccTab === 'all' || x.account === bankAccTab;
+    const listF = list.filter(accF), outsF = outs.filter(accF);
+    $('bankAccSeg').innerHTML = '<button type="button" data-ba="all" aria-pressed="' + (bankAccTab === 'all') + '">ทุกบัญชี</button>' + VISIBLE_ACCOUNTS.map(a => '<button type="button" data-ba="' + esc(a) + '" aria-pressed="' + (bankAccTab === a) + '">' + esc(a) + '</button>').join('');
     document.querySelectorAll('#bankListSeg button').forEach(b => {
-      const k = b.dataset.bk, n = k === 'in' ? list.length : k === 'out' ? outs.length : 0;
+      const k = b.dataset.bk, n = k === 'in' ? listF.length : k === 'out' ? outsF.length : listF.length + outsF.length;
       b.setAttribute('aria-pressed', String(k === bankListTab));
       b.innerHTML = ({all: 'ทั้งหมด', in: 'เงินเข้า', out: 'เงินออก'})[k] + (n ? '<span class="n">' + n + '</span>' : '');
     });
@@ -3834,8 +3840,8 @@ function bahtText(value) {
       '<span class="bil-mid"><span>' + tagOf(x) + manTag(x) + '</span>' +
       '<small>' + esc(BANK_OUT_KIND[x.kind] || x.kind || 'เงินออก') + (x.to ? ' · ไป ' + esc(x.to) : '') + noteOf(x) + '</small></span>' +
       '<span class="bil-amt amt-out">' + money(num(x.amount)) + '</span>' + delBtn('out', x) + '</li>';
-    const merged = bankListTab === 'in' ? list.map(x => ['in', x]) : bankListTab === 'out' ? outs.map(x => ['out', x])
-      : list.map(x => ['in', x]).concat(outs.map(x => ['out', x])).sort((p, q) => (q[1].createdAt || 0) - (p[1].createdAt || 0));
+    const merged = bankListTab === 'in' ? listF.map(x => ['in', x]) : bankListTab === 'out' ? outsF.map(x => ['out', x])
+      : listF.map(x => ['in', x]).concat(outsF.map(x => ['out', x])).sort((p, q) => (q[1].createdAt || 0) - (p[1].createdAt || 0));
     const rows = merged.slice(0, bankListLimit);
     const more = merged.length - rows.length;
     const moreHtml = (more > 0 || bankListLimit > BANK_LIST_STEP) ? '<div class="bk-more">' +
@@ -6312,7 +6318,7 @@ function bahtText(value) {
       grp.docs.map((d, i) => '<label class="owed-doc"><input type="checkbox" data-i="' + i + '" checked><span>' + esc(d.no) + '<small>' + esc(thDate(d.date)) + '</small></span><b>' + money(d.total) + '</b></label>').join('') +
       '<div class="owed-sum"><span>ยอดรวมที่เลือก</span><span id="owedSel">0.00</span></div>' +
       '<div class="owed-qr" id="owedQr" hidden><img id="owedQrImg" alt="QR พร้อมเพย์ยอดรวม"></div>' +
-      '<label class="f"><span>เข้าบัญชี</span><select id="owedAcc"><option value="กิติพงษ์">กิติพงษ์ (' + esc(ppMask(shop.promptpay)) + ')</option><option value="วันทิม">วันทิม (กสิกรไทย)</option></select></label>' +
+      '<label class="f"' + (isSuper ? '' : ' hidden') + '><span>เข้าบัญชี</span><select id="owedAcc"><option value="กิติพงษ์">กิติพงษ์ (' + esc(ppMask(shop.promptpay)) + ')</option><option value="วันทิม">วันทิม (กสิกรไทย)</option></select></label>' +
       '<button type="button" class="btn primary" id="owedMk">สร้าง QR ยอดรวม</button>' +
       '<div class="row2"><button type="button" class="btn" id="owedShare" disabled>บันทึก/แชร์รูป</button><button type="button" class="btn" id="owedPaid">ชำระแล้ว (เอาออก)</button></div>' +
       '<p class="hint" style="margin:0">ลูกค้าโอนแล้วระบบเงินเข้าจับยอดให้ แล้วบิลที่เลือกจะหายจากรายการค้างเอง · หรือกด “ชำระแล้ว”</p>' +
@@ -7470,7 +7476,7 @@ function bahtText(value) {
       const st = j.status || 'pending';
       const dupTag = noCount[String(j.no || '').trim().toUpperCase()] > 1 ? ' <span style="color:#b91c1c;font-weight:700">⚠ เลขซ้ำ</span>' : '';
       return '<li data-id="' + esc(j.id) + '"' + (jobOpenIds[j.id] ? ' class="open"' : '') + '>' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '') +
-      '<div class="meta"><b>' + esc(j.no) + '</b>' + dupTag + '<small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[j.page] ? ' · ' + esc(PAGE_LABEL[j.page]) : '') + (canBank && j.account ? ' · บัญชี ' + esc(j.account) : '') + (canBank && num(j.slipAmount) > 0 ? (j.slipPending ? ' · ⏳ รอรับเงิน ' : ' · สลิป ') + money(num(j.slipAmount)) + ' บาท' : '') + (j.wholesale ? ' · 🏷️ ราคาส่ง' : '') + (j.recv && (j.recv.name || j.recv.addr) ? ' · 📦 ฝากส่ง' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
+      '<div class="meta"><b>' + esc(j.no) + '</b>' + dupTag + '<small>' + esc(thDate(j.date)) + ' · ' + esc(j.jName || 'ไม่ระบุชื่อลูกค้า') + (PAGE_LABEL[j.page] ? ' · ' + esc(PAGE_LABEL[j.page]) : '') + (canBank && j.account && !accHidden(j) ? ' · บัญชี ' + esc(j.account) : '') + (canBank && num(j.slipAmount) > 0 ? (j.slipPending ? ' · ⏳ รอรับเงิน ' : ' · สลิป ') + money(num(j.slipAmount)) + ' บาท' : '') + (j.wholesale ? ' · 🏷️ ราคาส่ง' : '') + (j.recv && (j.recv.name || j.recv.addr) ? ' · 📦 ฝากส่ง' : '') + (j.createdBy ? ' · โดย ' + esc(j.createdBy) : '') + (j.photos && j.photos.length ? ' · แนบรูป ' + j.photos.length + ' รูป' : '') + '</small></div>' +
       '<select class="job-status-select status-pill ' + st + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
       '</select>' +
@@ -8825,6 +8831,7 @@ function bahtText(value) {
   // ทดสอบในเครื่องที่ไม่ได้ต่อคลาวด์: ใช้รายการที่อยู่ใน localStorage (bs_bank_in)
   if (!cloudDb && canBank && (store.get('bs_bank_in', []).length || store.get('bs_bank_out', []).length || store.get('bs_bank_balance', []).length)) onBankInChange();
   /* เพิ่ม/ลบรายการเงินเข้า-ออกเอง (กรณี SMS ไม่เข้า หรือระบบอ่านผิด) */
+  if (!isSuper) document.querySelectorAll('#jobAccount option[value="วันทิม"], #billAccount option[value="วันทิม"]').forEach(o => o.remove());   // บัญชีวันทิม เห็นเฉพาะ ball
   $('bkAcc').innerHTML = VISIBLE_ACCOUNTS.map(a => '<option value="' + esc(a) + '">บัญชี' + esc(a) + '</option>').join('');
   const toLocalInput = ms => { const d = new Date(ms); return localISO(d) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); };
   const bkDir = () => (document.querySelector('input[name="bkDir"]:checked') || {}).value || 'out';
@@ -8837,6 +8844,7 @@ function bahtText(value) {
     $('bankAddForm').reset();
     const dir = bankListTab === 'in' ? 'in' : 'out';
     document.querySelectorAll('input[name="bkDir"]').forEach(r => { r.checked = r.value === dir; });
+    if (bankAccTab !== 'all') $('bkAcc').value = bankAccTab;
     $('bkWhen').value = toLocalInput(Date.now());
     $('bkWhen').max = toLocalInput(Date.now() + 60000);
     $('bkErr').hidden = true;
@@ -8914,6 +8922,12 @@ function bahtText(value) {
   $('bankInSum').addEventListener('click', e => {
     if (!e.target.closest('[data-bkshow]')) return;
     try { localStorage.setItem('bs_bk_show_hidden', localStorage.getItem('bs_bk_show_hidden') === '1' ? '0' : '1'); } catch (e2) {}
+    renderBankIn();
+  });
+  $('bankAccSeg').addEventListener('click', e => {
+    const b = e.target.closest('button[data-ba]'); if (!b) return;
+    bankAccTab = b.dataset.ba; bankListLimit = BANK_LIST_STEP;
+    try { localStorage.setItem('bs_bankacc_tab', bankAccTab); } catch (e2) {}
     renderBankIn();
   });
   $('bankListSeg').addEventListener('click', e => {
