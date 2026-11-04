@@ -4085,7 +4085,7 @@ function bahtText(value) {
       if (isJbs && snd) doc.sender = snd;
       if (isJbs && rcv) { doc.receiver = rcv; const fn = String(rec.recv.name || '').replace(/\s+/g, ' ').trim().slice(0, 80); if (fn) doc.receiver.name = fn; }   // ผู้รับ: ชื่อเต็ม (ตามที่ร้านสั่ง)
       // ยอดค้างรวมของลูกค้า (ใบราคาส่งที่ยังไม่จ่าย) + payload พร้อมเพย์ ให้ลูกค้าสแกนจ่ายเองจากหน้าติดตาม
-      if (isJbs) { const ow = owedGroups().find(x => x.name === (String(rec.jName || '').trim() || 'ไม่ระบุชื่อ')); if (ow && ow.total > 0) doc.pay = {total: ow.total, payee: shop.promptpayName || '', ref: payRef(Date.now()), payload: promptPayPayload(shop.promptpay, ow.total), docs: ow.docs.slice(0, 10).map(d => ({no: d.no, amount: d.total}))}; }
+      if (isJbs) { const ow = owedGroups().find(x => x.name === (String(rec.jName || '').trim() || 'ไม่ระบุชื่อ')); if (ow && ow.total > 0) doc.pay = {total: ow.total, payee: shop.promptpayName || '', ref: payRef(Date.now()), payload: promptPayPayload(shop.promptpay, ow.total), alt: shop.altAccount || null, docs: ow.docs.slice(0, 10).map(d => ({no: d.no, amount: d.total}))}; }
       const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
       if (isJbs && refs.length) doc.refPhotos = refs;
       cloudDb.collection('publicJobs').doc(String(rec.trackToken)).set(doc).catch(e => console.error('publicJobs save error', e));
@@ -4301,7 +4301,9 @@ function bahtText(value) {
     address: '8 หมู่ 19 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140',
     phone: '093-5353555, 096-6697495',
     promptpay: '0935353555',
-    promptpayName: 'นาย กิติพงษ์ สีทอง'
+    promptpayName: 'นาย กิติพงษ์ สีทอง',
+    // บัญชีโอนเงินอีกบัญชี (ไม่ได้ผูกพร้อมเพย์ จึงทำ QR ไม่ได้ — แสดงเป็นข้อความให้ลูกค้าโอนเอง)
+    altAccount: {bank: 'กสิกรไทย', no: '2308167014', name: 'วันทิม สีทอง'}
   };
   let shop = Object.assign({}, SHOP_DEFAULT, store.get('bs_shop', {}));
 

@@ -39,6 +39,7 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
 .pay h2{margin:0 0 4px;font-size:1rem;text-align:left}.pay .amt{font-size:1.9rem;font-weight:800;margin:6px 0}
 .pay ul{list-style:none;margin:6px 0;padding:0;text-align:left;font-size:.9rem;color:#4b5563}.pay li{display:flex;justify-content:space-between;padding:2px 0}
 .pay canvas{width:240px;max-width:100%;height:auto;border-radius:10px;background:#fff;border:1px solid #e5e7eb;margin-top:6px}
+.pay .alt{margin-top:12px;padding:10px;border-top:1px dashed #fcd34d;line-height:1.6}.pay .alt .no{font-weight:800;font-size:1.15rem;letter-spacing:.5px}.pay .alt button{margin-top:4px;padding:6px 12px;border-radius:8px;border:1px solid #d1d5db;background:#fff;font:inherit;cursor:pointer}
 .pay small{display:block;color:#6b7280;margin-top:6px;line-height:1.5}.pay a.sv{display:inline-block;margin-top:8px;padding:8px 14px;border-radius:10px;background:#111827;color:#fff;text-decoration:none;font-weight:600}
 </style>
 </head>
@@ -80,6 +81,7 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
       html += '<div class="pay"><h2>💳 ยอดที่ต้องชำระ</h2><div class="amt">' + Number(j.pay.total).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' บาท</div>' +
         '<ul>' + (j.pay.docs || []).map(function (d) { return '<li><span>' + esc(d.no || 'ใบ') + '</span><span>' + Number(d.amount).toLocaleString('en-US', {minimumFractionDigits: 2}) + '</span></li>'; }).join('') + '</ul>' +
         '<canvas id="payQr" width="480" height="480" aria-label="QR พร้อมเพย์"></canvas><br><a class="sv" id="payQrSave" download="QR-ชำระเงิน.png" href="#">บันทึกรูป QR</a>' +
+        (j.pay.alt && /^\d{6,20}$/.test(String(j.pay.alt.no || '')) ? '<div class="alt"><b>หรือโอนเข้าบัญชี</b><br>' + esc(j.pay.alt.bank || '') + ' <span class="no">' + esc(j.pay.alt.no) + '</span><br>' + esc(j.pay.alt.name || '') + '<br><button type="button" id="payCopy" data-no="' + esc(j.pay.alt.no) + '">คัดลอกเลขบัญชี</button></div>' : '') +
         '<small>สแกนด้วยแอปธนาคาร · ชื่อบัญชี ' + esc(j.pay.payee || '') + '<br>โอนแล้วร้านจะตรวจยอดให้อัตโนมัติ (หากไม่ขึ้นสถานะ แจ้งร้านทาง LINE @bk25)</small></div>';
     }
     if (j.due && !done) html += '<div class="row"><span>กำหนดส่ง</span><b>' + esc(thDate(j.due)) + '</b></div>';
@@ -94,6 +96,12 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
     }
     if (j.updatedAt) { var d = new Date(j.updatedAt); html += '<div class="upd">อัปเดตล่าสุด ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + (d.getFullYear() + 543) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' น.</div>'; }
     box.innerHTML = html;
+    var cp = document.getElementById('payCopy');
+    if (cp) cp.addEventListener('click', function () {
+      var no = cp.getAttribute('data-no');
+      function ok() { cp.textContent = 'คัดลอกแล้ว ✓'; }
+      try { navigator.clipboard.writeText(no).then(ok, function () { window.prompt('คัดลอกเลขบัญชี', no); }); } catch (e) { window.prompt('คัดลอกเลขบัญชี', no); }
+    });
     try {
       var cv = document.getElementById('payQr');
       if (cv && window.qrEncode && j.pay) {
