@@ -23,6 +23,8 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
 .steps li.done{color:var(--ink)}.steps li.done i{background:var(--ok);border-color:var(--ok)}.steps li.done::before{background:var(--ok)}
 .steps li.cur{color:var(--ink);font-weight:700}.steps li.cur i{background:var(--y);border-color:var(--y);color:var(--ink)}
 .row{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid var(--line);margin-top:14px;font-size:15px}.row span{color:var(--mut)}.row b{text-align:right;word-break:break-all}
+.bx{border:1.5px solid var(--line);border-radius:14px;margin-bottom:12px;overflow:hidden;background:#fff}.bxh{display:flex;justify-content:space-between;align-items:center;background:#111827;color:#fff;padding:8px 12px;font-weight:700;font-size:15px}.bxh em{font-style:normal;font-size:12.5px;background:#4b5563;border-radius:99px;padding:2px 10px}.bxh em.on{background:#16a34a}
+.bxb{padding:10px 12px;line-height:1.55;font-size:14.5px}.bxb small{display:block;color:var(--mut);font-size:12.5px;font-weight:600}.bxb b{display:block}.bxn{margin-top:4px;color:#374151}.bxt{margin-top:8px;padding:8px 10px;background:#f8f9fb;border-radius:10px}.bxt b{display:inline-block;font-size:16px;letter-spacing:.3px}.bxt.none{color:var(--mut);font-size:13.5px}.bxb .go{margin-top:8px;padding:10px 0;font-size:14.5px}
 .copy{margin-left:8px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:2px 9px;font:inherit;font-size:13px;cursor:pointer}
 .err{text-align:center;padding:26px 10px}.err b{display:block;font-size:17px;margin-bottom:6px}
 .ct{margin-top:16px;text-align:center;color:var(--mut);font-size:13.5px;line-height:1.7}.ct a{color:var(--ink);font-weight:600}
@@ -112,11 +114,16 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
       html += '<div class="ad"><h2>📍 ที่อยู่จัดส่ง</h2>';
       if (j.sender) html += '<div class="ab"><small>ผู้ส่ง</small>' + (j.sender.name ? '<b>' + esc(j.sender.name) + '</b>' : '') + esc(j.sender.addr) + '</div>';
       var bxs = (j.boxes || []).filter(function (b) { return b && (b.name || b.addr); });
-      if (j.receiver) html += '<div class="ab"><small>' + (bxs.length ? 'ผู้รับ · กล่องที่ 1' : 'ผู้รับ') + '</small>' + (j.receiver.name ? '<b>' + esc(j.receiver.name) + '</b>' : '') + esc(j.receiver.addr) + '</div>';
-      bxs.forEach(function (b, i) {
-        html += '<div class="ab"><small>ผู้รับ · กล่องที่ ' + (i + 2) + '</small>' + (b.name ? '<b>' + esc(b.name) + '</b>' : '') + esc(b.addr || '') + (b.note ? '<br><small>' + esc(b.note) + '</small>' : '') +
-          (b.trackCode ? '<br><small>📦 ' + esc(b.carrier || '') + ' เลขพัสดุ</small><b>' + esc(b.trackCode) + '</b>' + (/^https:\/\//.test(b.trackUrl || '') ? '<a href="' + esc(b.trackUrl) + '" target="_blank" rel="noopener">ติดตามพัสดุกล่องนี้ ›</a>' : '') : '') + '</div>';
-      });
+      if (bxs.length) {
+        var all = [{name: j.receiver ? j.receiver.name : '', addr: j.receiver ? j.receiver.addr : '', note: '', trackCode: j.trackCode || '', carrier: j.carrier || '', trackUrl: j.trackUrl || ''}].concat(bxs), tot = all.length;
+        html += '</div><div class="ad"><h2>📦 พัสดุ ' + tot + ' กล่อง</h2>';
+        all.forEach(function (b, i) {
+          var ok = b.trackCode && /^https:\/\//.test(b.trackUrl || '');
+          html += '<div class="bx"><div class="bxh"><span>กล่องที่ ' + (i + 1) + ' จาก ' + tot + '</span><em class="' + (b.trackCode ? 'on' : '') + '">' + (b.trackCode ? 'จัดส่งแล้ว' : 'เตรียมจัดส่ง') + '</em></div>' +
+            '<div class="bxb"><small>ผู้รับ</small>' + (b.name ? '<b>' + esc(b.name) + '</b>' : '') + '<div>' + esc(b.addr || '') + '</div>' + (b.note ? '<div class="bxn">📝 ' + esc(b.note) + '</div>' : '') +
+            (b.trackCode ? '<div class="bxt"><small>' + esc(b.carrier || 'เลขพัสดุ') + ' · เลขพัสดุ</small><b>' + esc(b.trackCode) + '</b><button class="copy" type="button" data-cp="' + esc(b.trackCode) + '">คัดลอก</button></div>' + (ok ? '<a class="go" href="' + esc(b.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะกล่องที่ ' + (i + 1) + '</a>' : '') : '<div class="bxt none">ยังไม่มีเลขพัสดุ</div>') + '</div></div>';
+        });
+      } else if (j.receiver) html += '<div class="ab"><small>ผู้รับ</small>' + (j.receiver.name ? '<b>' + esc(j.receiver.name) + '</b>' : '') + esc(j.receiver.addr) + '</div>';
       html += '</div>';
     }
     var rp = (isJbs ? (j.refPhotos || []) : []).filter(function (u) { return typeof u === 'string' && /^https:\/\//.test(u); });
@@ -124,8 +131,9 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
     var payOk = isJbs && j.pay && +j.pay.total > 0 && typeof j.pay.payload === 'string' && /^000201/.test(j.pay.payload);
     if (payOk) html += '<div class="payBox"><div class="payBtn"><span>💳 ยังไม่ได้ชำระ</span><b>' + money(j.pay.total) + ' บาท</b></div><button type="button" class="payGo" id="payOpen">ชำระเงิน (สแกน QR)</button></div>';
     if (j.due && !done) html += '<div class="row"><span>กำหนดส่ง</span><b>' + esc(thDate(j.due)) + '</b></div>';
-    if (j.trackCode) html += '<div class="row"><span>เลขพัสดุ' + (j.carrier ? ' (' + esc(j.carrier) + ')' : '') + '</span><b>' + esc(j.trackCode) + '<button class="copy" id="cp" type="button">คัดลอก</button></b></div>';
-    if (j.trackUrl && /^https:\/\//.test(j.trackUrl)) html += '<a class="go" href="' + esc(j.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะพัสดุ' + (j.carrier ? ' กับ ' + esc(j.carrier) : '') + '</a>';
+    var multi = isJbs && (j.boxes || []).some(function (b) { return b && (b.name || b.addr); });
+    if (j.trackCode && !multi) html += '<div class="row"><span>เลขพัสดุ' + (j.carrier ? ' (' + esc(j.carrier) + ')' : '') + '</span><b>' + esc(j.trackCode) + '<button class="copy" id="cp" type="button">คัดลอก</button></b></div>';
+    if (j.trackUrl && !multi && /^https:\/\//.test(j.trackUrl)) html += '<a class="go" href="' + esc(j.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะพัสดุ' + (j.carrier ? ' กับ ' + esc(j.carrier) : '') + '</a>';
     var ph = (j.photos || []).filter(function (u) { return typeof u === 'string' && /^https:\/\//.test(u); });
     if (ph.length && idx >= 2) {
       html += '<div class="ph"><h2>📷 รูปงานของคุณ</h2><p>กดปุ่ม “บันทึกรูป” หรือกดค้างที่รูปเพื่อบันทึกลงเครื่อง</p><div class="pg">' + ph.map(function (u, k) {
@@ -137,6 +145,7 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
     box.innerHTML = html;
     setPayModal(payOk ? j.pay : null);
     var po = document.getElementById('payOpen'); if (po) po.onclick = function () { openPay(true); };
+    [].forEach.call(document.querySelectorAll('.copy[data-cp]'), function (c) { c.onclick = function () { try { navigator.clipboard.writeText(c.getAttribute('data-cp')); c.textContent = 'คัดลอกแล้ว'; } catch (e) {} }; });
     var cp = document.getElementById('cp'); if (cp) cp.onclick = function () { try { navigator.clipboard.writeText(j.trackCode); cp.textContent = 'คัดลอกแล้ว'; } catch (e) {} };
   }
   var t = (new URLSearchParams(location.search).get('t') || '').trim();

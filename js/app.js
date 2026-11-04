@@ -294,7 +294,7 @@ function bahtText(value) {
       const isJbs = /^JBS/i.test(String(rec.no || '').trim());   // ที่อยู่/รูปอ้างอิง เฉพาะงานส่ง (JBS)
       if (isJbs && snd) doc.sender = snd;
       if (isJbs && rcv) { doc.receiver = rcv; const fn = String(rec.recv.name || '').replace(/\s+/g, ' ').trim().slice(0, 80); if (fn) doc.receiver.name = fn; }   // ผู้รับ: ชื่อเต็ม (ตามที่ร้านสั่ง)
-      if (isJbs && Array.isArray(rec.recvMore)) { const bx = rec.recvMore.filter(r => r && String((r.name || '') + (r.addr || '')).trim()).slice(0, 10).map(r => { const code = String(r.code || '').replace(/\s+/g, '').slice(0, 40), car = String(r.carrier || ''); return {name: String(r.name || '').replace(/\s+/g, ' ').trim().slice(0, 80), addr: String(r.addr || '').replace(/\s+/g, ' ').trim().slice(0, 300), note: String(r.note || '').replace(/\s+/g, ' ').trim().slice(0, 120), trackCode: code, carrier: car, trackUrl: code && car ? trackingLink(car, code) : ''}; }); if (bx.length) doc.boxes = bx; }   // ส่งหลายกล่อง (ไม่ส่งเบอร์โทร)
+      if (isJbs && Array.isArray(rec.recvMore)) { const bx = rec.recvMore.filter(r => r && String((r.name || '') + (r.addr || '')).trim()).slice(0, 10).map(r => { const code = String(r.code || '').replace(/\s+/g, '').slice(0, 40), car = String(r.carrier || '') || (((store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(code))) || {}).carrier || ''); return {name: String(r.name || '').replace(/\s+/g, ' ').trim().slice(0, 80), addr: String(r.addr || '').replace(/\s+/g, ' ').trim().slice(0, 300), note: String(r.note || '').replace(/\s+/g, ' ').trim().slice(0, 120), trackCode: code, carrier: car, trackUrl: code && car ? trackingLink(car, code) : ''}; }); if (bx.length) doc.boxes = bx; }   // ส่งหลายกล่อง (ไม่ส่งเบอร์โทร)
       // ยอดค้างรวมของลูกค้า (ใบราคาส่งที่ยังไม่จ่าย) + payload พร้อมเพย์ ให้ลูกค้าสแกนจ่ายเองจากหน้าติดตาม
       if (isJbs) { const ow = owedGroups().find(x => x.name === (String(rec.jName || '').trim() || 'ไม่ระบุชื่อ')); if (ow && ow.total > 0) doc.pay = {total: ow.total, payee: payAcct('วันทิม').name || '', ref: payRef(Date.now()), payload: promptPayPayload(payAcct('วันทิม').id, ow.total),   // งาน JBS เข้าบัญชีวันทิมทั้งหมด
       docs: ow.docs.slice(0, 10).map(d => ({no: d.no, amount: d.total, items: (d.items || []).slice(0, 20)}))}; }
@@ -3969,9 +3969,18 @@ function bahtText(value) {
       const tl = store.get('bs_tracking', []); tl.unshift(rec); store.set('bs_tracking', tl); cloudSave('tracking', rec); syncRecordPhotosToCloud('bs_tracking', 'tracking', rec.id, 'boxPhoto', renderTrackingHistory); renderTrackingHistory();
       note = ' (ยังไม่มีในหน้าติดตาม สร้างรายการใหม่ให้แล้ว)';
     }
-    jl[ji].trackCode = code; jl[ji].savedAt = Date.now(); store.set('bs_jobs', jl); cloudSave('jobs', jl[ji]);
+    // งานส่งหลายกล่อง: สแกนครั้งแรก = กล่องที่ 1 · ครั้งต่อไป = ใส่ให้กล่องถัดไปที่ยังไม่มีเลขพัสดุ (ไม่ทับเลขกล่องแรก)
+    const jb = jl[ji], tcar = ((store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(code))) || {}).carrier || $('trackCarrier').value || '';
+    let boxNo = 1;
+    if (Array.isArray(jb.recvMore) && jb.recvMore.length && jb.trackCode) {
+      if (normCode(jb.trackCode) === normCode(code) || jb.recvMore.some(r => normCode(r.code) === normCode(code))) { toast('เลข ' + code + ' ใส่ในใบ ' + (jb.no || '') + ' ไว้แล้ว'); return; }
+      const ei = jb.recvMore.findIndex(r => !String(r.code || '').trim() && String((r.name || '') + (r.addr || '')).trim());
+      if (ei >= 0) { jb.recvMore[ei] = Object.assign({}, jb.recvMore[ei], {code, carrier: jb.recvMore[ei].carrier || tcar}); boxNo = ei + 2; }
+    }
+    if (boxNo === 1) jb.trackCode = code;
+    jb.savedAt = Date.now(); store.set('bs_jobs', jl); cloudSave('jobs', jb);
     advanceJobStatus(id, 'shipped');
-    renderJobHistory(); toast('สแกนได้ ' + code + ' ผูกกับใบ ' + (jl[ji].no || '') + ' แล้ว สถานะ: จัดส่งแล้ว' + note);
+    renderJobHistory(); toast('สแกนได้ ' + code + ' ผูกกับใบ ' + (jb.no || '') + (boxNo > 1 || (jb.recvMore || []).length ? ' · กล่องที่ ' + boxNo : '') + ' แล้ว สถานะ: จัดส่งแล้ว' + note);
   }
   /* ---------------- สแกนสด: เปิดกล้อง เล็งบาร์โค้ด อ่านได้เองทันที (มีเสียงปี๊บ + สั่น + กรอบเขียว) ---------------- */
   function beepOk() {
@@ -4520,7 +4529,8 @@ function bahtText(value) {
       '<div class="jd-add"><label class="btn small primary">📷 ถ่าย/เพิ่มรูปงานเสร็จ<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '"></label> ' +
       '<button class="btn small primary" data-act="livescan" type="button">📦 สแกนเลขพัสดุ</button> <button class="btn small good" data-act="tracklink" type="button">🔗 ส่งลิงก์ติดตามงาน</button>' +
       '<input type="file" accept="image/*" hidden data-scanjob="' + esc(j.id) + '">' +
-      (j.trackCode ? '<div class="jd-trk">📦 เลขพัสดุ: <b>' + esc(j.trackCode) + '</b></div>' : '') +
+      (j.trackCode ? '<div class="jd-trk">📦 เลขพัสดุ' + (Array.isArray(j.recvMore) && j.recvMore.length ? ' (กล่องที่ 1)' : '') + ': <b>' + esc(j.trackCode) + '</b></div>' : '') +
+      (Array.isArray(j.recvMore) && j.recvMore.some(r => !String(r.code || '').trim() && String((r.name || '') + (r.addr || '')).trim()) ? '<div class="jd-trk"><small>มีกล่องที่ยังไม่มีเลขพัสดุ — กดสแกนต่อได้เลย ระบบใส่ให้กล่องถัดไป</small></div>' : '') +
       ((isSuper && (j.jName || '').trim() && (j.items || []).some(i => (i.name || '').trim())) ? '<button class="btn small good" data-act="tobill" type="button" style="margin-top:8px">🧾 ใส่ใน' + (j.wholesale ? 'ใบราคาส่ง' : 'บิล') + 'ที่ยังไม่จ่ายของ ' + esc(String(j.jName).trim()) + '</button>' : '') +
       (j.trackCode && j.status === 'shipped' ? '<button class="btn small good" data-act="sendtrk" type="button" style="margin-top:8px">📤 ส่งเลขพัสดุให้ลูกค้า</button>' : '') + '</div>' +
       '</div>';
