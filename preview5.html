@@ -1442,6 +1442,14 @@ body.chg-open{overflow:hidden}
 .jf .fold>.fields{padding:14px 0 10px}
 .jf .jf-actions{margin-top:20px}
 .jf .edit-state{margin:0 0 12px}
+.whc{display:grid;gap:4px;padding:10px 12px;border-radius:12px;background:#fff8e1;border:1px solid #f0e3b0}
+.whc-l{display:flex;align-items:center;gap:10px;font-size:15px;margin:0;cursor:pointer}
+.whc-l input{width:20px;height:20px;flex:none}
+.whc small{color:#7a6a2a;font-size:12.5px;line-height:1.4}
+.whc.on{background:#e8f6ec;border-color:#bfe3c9}.whc.on small{color:#2f6b43}
+.whf{display:flex;gap:8px;margin:2px 0 12px}
+.whf button{flex:1;border:1px solid rgba(0,0,0,.12);background:#fff;border-radius:12px;padding:10px 8px;font:inherit;font-size:14px;font-weight:700;color:#1d2433;cursor:pointer}
+.whf button.on{background:#1f2a44;color:#fff;border-color:#1f2a44}
 .jf .hint{margin:8px 0 14px!important;line-height:1.45}
 .jf .jf-actions .fold{margin:0}
 .jf .fold-sub{font-weight:400!important}
@@ -2367,6 +2375,11 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
               <div class="fields">
               <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="jName" type="text" autocomplete="off"></label>
               <div id="jNameChips" class="vchips no-print" aria-label="ชื่อที่เคยคีย์ไว้"></div>
+              <div class="whc no-print" id="jobWhRow">
+                <label class="whc-l"><input type="checkbox" id="jobWholesale"> <span><b>ลูกค้าราคาส่ง</b></span></label>
+                <small id="jobWhHint">ติ๊กแล้ว งานนี้เข้าบิลค้างของลูกค้าคนนี้ให้เอง ระบบจำชื่อไว้ ครั้งหน้าพิมพ์ชื่อก็เข้าเลย</small>
+                <button class="btn good" type="button" id="jobToWholesale" hidden>🧾 บันทึก แล้วใส่ในใบราคาส่ง</button>
+              </div>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="jPhone" type="tel" autocomplete="off"></label>
               <label class="f"><span>ที่อยู่ลูกค้า (ถ้ามี)</span><textarea id="jAddr"></textarea></label>
               </div>
@@ -2382,10 +2395,6 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
               </div>
             </section>
             <details class="fold" id="jobShipFold"><summary>ส่งพัสดุ / ฝากส่ง <span class="fold-sub">(ถ้าเป็นงานส่ง)</span></summary>
-            <div class="wh-box no-print">
-              <label class="chk-row"><input type="checkbox" id="jobWholesale"> <span>🏷️ <b>งานราคาส่ง</b> — ใส่ราคาส่งต่อแบบได้ และรวมเข้าใบราคาส่งที่ยังไม่จ่ายของลูกค้าคนนี้</span></label>
-              <button class="btn good" type="button" id="jobToWholesale" hidden>🧾 บันทึก แล้วใส่ในใบราคาส่งที่ยังไม่จ่ายของลูกค้าคนนี้</button>
-            </div>
               <div class="fields">
               <div class="recv-box" id="jRecvBox"><b>📦 ลูกค้าฝากส่ง — ผู้รับปลายทาง</b>
                 <div class="hint" style="margin:2px 0 6px">ถ้าลูกค้าฝากส่งให้คนอื่น วางข้อความที่มี “ผู้ส่ง..” และ “ผู้รับ..” แล้วกดแยก ผู้ส่งจะเป็นชื่อลูกค้า (งานราคาส่ง) ผู้รับอยู่ในช่องนี้</div>
@@ -2687,6 +2696,7 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
           <h2 id="wholesalehist-h">ประวัติใบราคาส่ง</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้ (แยกจากประวัติเอกสาร/ใบเสร็จ)</span>
         </div>
+        <div class="whf no-print" id="whFilter"><button type="button" data-f="open" class="on">บิลค้างชำระ</button><button type="button" data-f="paid">จ่ายแล้ว (ประวัติ)</button></div>
         <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="whHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
         <div id="wholesaleHistory"></div>
       </section>
@@ -3393,7 +3403,7 @@ fieldset+fieldset,.card fieldset+fieldset{margin-top:14px!important}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=b1062fee83",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=ea19be6fe5",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
