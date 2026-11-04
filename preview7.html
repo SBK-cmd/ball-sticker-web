@@ -1345,6 +1345,10 @@ body.chg-open{overflow:hidden}
 .tdy-t .ic{order:1}
 .tdy-t.c1 .ic{background:rgba(96,165,250,.22);color:#8ec5ff}.tdy-t.c2 .ic{background:rgba(52,211,153,.22);color:#6ee7b7}.tdy-t.c3 .ic{background:rgba(251,191,36,.22);color:#fcd34d}.tdy-t.c4 .ic{background:rgba(255,255,255,.14);color:#e5e7eb}
 .tdy-t.c4.hot .ic{background:rgba(251,113,60,.3);color:#ffb08a}.tdy-t.c4.hot b{color:#ffb08a}
+.acd-mb{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 10px}
+.acd-mb .lbl{font-weight:800;font-size:15px;min-width:150px;text-align:center}.acd-mb .lbl em{font-style:normal;font-size:11px;font-weight:600;background:#ffc400;color:#222;border-radius:999px;padding:2px 8px;margin-left:4px}
+.acd-mb button{border:1px solid rgba(0,0,0,.12);background:var(--surface,#fff);border-radius:999px;min-width:38px;height:38px;font:inherit;font-size:18px;font-weight:700;cursor:pointer;padding:0 12px}
+.acd-mb button.now{font-size:13px}.acd-mb button:disabled{opacity:.35;cursor:default}
 .jm-x{display:none}
 @media (max-width:899px){#jobFormTop{display:none}}
 body.jm-open{overflow:hidden}
@@ -2943,6 +2947,7 @@ html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!importa
       </section>
 
       <section class="acd no-print" id="dashAcctCard" aria-label="แดชบอร์ดแยกบัญชี" hidden>
+        <div class="acd-mb" id="acdMonthBar"></div>
         <div class="acd-seg" id="acdSeg" role="group" aria-label="เลือกบัญชี"></div>
         <div class="acd-wrap" id="acdWrap"></div>
       </section>
@@ -3394,7 +3399,7 @@ html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!importa
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=35e4eea18e",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=5e2d9a8777",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
