@@ -288,6 +288,13 @@ function bahtText(value) {
       const carrier = (tr && tr.carrier) || '';
       const photos = (Array.isArray(rec.donePhotos) ? rec.donePhotos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 8);   // รูปงานเสร็จ (เฉพาะลิงก์ที่อัปโหลดแล้ว)
       const doc = {no: String(rec.no || ''), cname: firstNameOf(rec.jName), status: rec.status || 'pending', due: rec.due || '', trackCode: rec.trackCode || '', carrier, trackUrl: rec.trackCode ? trackingLink(carrier, rec.trackCode) : '', photos, updatedAt: Date.now()};
+      // ผู้ส่ง = ลูกค้าของใบงาน · ผู้รับ = ผู้รับปลายทาง (ลูกค้าฝากส่ง) — โชว์เฉพาะชื่อแรก + ที่อยู่ ไม่ส่งเบอร์โทรขึ้นหน้าสาธารณะ
+      const addrOf = (name, addr) => { const a = String(addr || '').replace(/\s+/g, ' ').trim().slice(0, 300); return a ? {name: firstNameOf(name), addr: a} : null; };
+      const snd = addrOf(rec.jName, rec.jAddr), rcv = rec.recv ? addrOf(rec.recv.name, rec.recv.addr) : null;
+      if (snd) doc.sender = snd;
+      if (rcv) doc.receiver = rcv;
+      const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
+      if (refs.length) doc.refPhotos = refs;
       cloudDb.collection('publicJobs').doc(String(rec.trackToken)).set(doc).catch(e => console.error('publicJobs save error', e));
     } catch (e) { console.error('publicJobs mirror', e); }
   }
@@ -4230,7 +4237,7 @@ function bahtText(value) {
   }
   function nextJobNo() {
     const d = ($('jobDate').value || todayISO()).replace(/-/g, '').slice(2);
-    return nextJobNoFor('JB' + d);
+    return nextJobNoFor((($('jobWholesale') && $('jobWholesale').checked) ? 'JBS' : 'JB') + d);   // งานราคาส่ง (งานส่ง) รันเลข JBS แยกจาก JB
   }
 
   function collectJob() {
@@ -4264,7 +4271,11 @@ function bahtText(value) {
     const t = $('jobFormTop'); if (t) t.scrollIntoView({behavior: 'smooth', block: 'start'});
     const n = $('jName'); if (n) setTimeout(() => n.focus({preventScroll: true}), 350);
   });
-  $('jobWholesale').addEventListener('change', () => { syncJobWholesaleBtn(); renderJobItems(); });
+  $('jobWholesale').addEventListener('change', () => {
+    syncJobWholesaleBtn(); renderJobItems();
+    // ใบใหม่ที่ยังไม่บันทึก และเลขยังเป็นเลขอัตโนมัติ → สลับ JB ↔ JBS ตามติ๊ก (ใบที่บันทึกแล้วไม่เปลี่ยนเลข เพราะอาจส่งให้ลูกค้าไปแล้ว)
+    if (!currentJobId && /^JBS?\d{6}-\d{3}$/.test(String($('jobNo').value || '').trim())) { $('jobNo').value = nextJobNo(); renderJob(); }
+  });
   $('jobToWholesale').addEventListener('click', () => {
     if (!$('jName').value.trim()) { toast('ใส่ชื่อลูกค้าก่อน'); $('jName').focus(); return; }
     lastWhMerge = null;
