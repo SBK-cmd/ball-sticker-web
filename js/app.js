@@ -1718,6 +1718,7 @@ function bahtText(value) {
       $('catJobPrinted').textContent = jobsAll.filter(j => j.status === 'printed').length + ' งาน';
       $('catJobShipped').textContent = jobsAll.filter(j => j.status === 'shipped').length + ' งาน';
     }
+    try { renderOwedCard(); } catch (e) {}
     if ($('catWhUnpaidCount')) {
       // ใบราคาส่ง: แสดงเป็นการ์ดแยก ไม่รวมใน todaySales/monthSales/รายงานภาษี
       const whAll = store.get('bs_wholesale', []);
@@ -3222,9 +3223,90 @@ function bahtText(value) {
     if (!done.length) return;
     const all = payCharges().map(x => done.find(d => d.id === x.id) || x);
     store.set('bs_pay_charges', all); done.forEach(r => cloudSave('payCharges', r));
+    done.forEach(r => { if (r.docs && r.docs.length) markDocsPaid(r.docs); });
     toast('✅ ' + done.map(r => (r.name || 'ลูกค้า') + ' ชำระ ' + money(r.amount) + ' บาทแล้ว').join(' · ')); playChime();
     renderPayHist();
   }
+  /* ---------- บิลค้างชำระ: รวมยอดต่อลูกค้า + QR พร้อมเพย์ยอดรวม ---------- */
+  function owedGroups() {
+    const g = {};
+    const add = (name, d) => { const k = String(name || '').trim() || 'ไม่ระบุชื่อ'; (g[k] = g[k] || {name: k, docs: [], total: 0}).docs.push(d); };
+    // เฉพาะงานส่ง (JBS) = ใบราคาส่ง — บิลหน้าร้านไม่รวม
+    if (can('wholesale')) store.get('bs_wholesale', []).filter(w => !w.paid).forEach(w => add(w.buyerName, {k: 'wholesale', id: w.id, no: w.ref || 'ใบราคาส่ง', date: w.date || '', total: round2(wholesaleCalc(w).total)}));
+    const out = Object.values(g).filter(x => x.docs.some(d => d.total > 0));
+    out.forEach(x => { x.docs.sort((a, b) => String(a.date).localeCompare(String(b.date))); x.total = round2(x.docs.reduce((t, d) => t + d.total, 0)); });
+    return out.sort((a, b) => b.total - a.total);
+  }
+  function renderOwedCard() {
+    const c = $('dashOwedCard'); if (!c) return;
+    const gs = owedGroups(); c.hidden = !can('wholesale');
+    $('owedCustCount').textContent = gs.length + ' ราย';
+    $('owedTotalAmt').textContent = money(round2(gs.reduce((t, x) => t + x.total, 0))) + ' บาท';
+  }
+  function markDocsPaid(docs) {
+    (docs || []).forEach(d => {
+      const list = store.get('bs_' + (d.k === 'bills' ? 'bills' : 'wholesale'), []), i = list.findIndex(x => x.id === d.id);
+      if (i < 0 || list[i].paid) return;
+      list[i] = Object.assign({}, list[i], {paid: true});
+      store.set('bs_' + (d.k === 'bills' ? 'bills' : 'wholesale'), list); cloudSave(d.k === 'bills' ? 'bills' : 'wholesale', list[i]);
+    });
+    try { renderDash(); renderHistory(); renderWholesaleHistory(); } catch (e) {}
+  }
+  function openOwed(name) {
+    let ov = $('owedOv');
+    if (!ov) { ov = document.createElement('div'); ov.id = 'owedOv'; ov.className = 'job-zoom pick-ov'; ov.style.cursor = 'default'; document.body.appendChild(ov); }
+    const gs = owedGroups();
+    const close = () => ov.remove();
+    ov.onclick = ev => { if (ev.target === ov) close(); };
+    if (!name) {
+      ov.innerHTML = '<div class="pick-box"><b>บิลค้างงานส่ง (JBS) · รวม ' + money(round2(gs.reduce((t, x) => t + x.total, 0))) + ' บาท</b>' +
+        (gs.length ? gs.map(x => '<button type="button" class="owed-row" data-cust="' + esc(x.name) + '"><b>' + esc(x.name) + '<small>' + x.docs.length + ' ใบ</small></b><span>' + money(x.total) + ' บาท ›</span></button>').join('') : '<p class="empty">ไม่มีบิลค้างชำระ 🎉</p>') +
+        '<button type="button" class="btn" data-close="1">ปิด</button></div>';
+      ov.onclick = ev => { if (ev.target === ov || ev.target.closest('[data-close]')) return close(); const r = ev.target.closest('[data-cust]'); if (r) openOwed(r.dataset.cust); };
+      return;
+    }
+    const grp = gs.find(x => x.name === name);
+    if (!grp) return openOwed('');
+    ov.innerHTML = '<div class="pick-box"><b>' + esc(grp.name) + '</b>' +
+      grp.docs.map((d, i) => '<label class="owed-doc"><input type="checkbox" data-i="' + i + '" checked><span>' + esc(d.no) + '<small>' + esc(thDate(d.date)) + '</small></span><b>' + money(d.total) + '</b></label>').join('') +
+      '<div class="owed-sum"><span>ยอดรวมที่เลือก</span><span id="owedSel">0.00</span></div>' +
+      '<div class="owed-qr" id="owedQr" hidden><img id="owedQrImg" alt="QR พร้อมเพย์ยอดรวม"></div>' +
+      '<button type="button" class="btn primary" id="owedMk">สร้าง QR ยอดรวม</button>' +
+      '<div class="row2"><button type="button" class="btn" id="owedShare" disabled>บันทึก/แชร์รูป</button><button type="button" class="btn" id="owedPaid">ชำระแล้ว (เอาออก)</button></div>' +
+      '<p class="hint" style="margin:0">ลูกค้าโอนแล้วระบบเงินเข้าจับยอดให้ แล้วบิลที่เลือกจะหายจากรายการค้างเอง · หรือกด “ชำระแล้ว”</p>' +
+      '<button type="button" class="btn" data-back="1">‹ กลับ</button></div>';
+    const picked = () => Array.from(ov.querySelectorAll('input[data-i]:checked')).map(c => grp.docs[+c.dataset.i]);
+    const sum = () => { const t = round2(picked().reduce((a, d) => a + d.total, 0)); $('owedSel').textContent = money(t); $('owedMk').disabled = !(t > 0); return t; };
+    sum();
+    let lastUrl = '';
+    ov.onclick = async ev => {
+      if (ev.target === ov) return close();
+      if (ev.target.closest('[data-back]')) return openOwed('');
+      if (ev.target.matches('input[data-i]')) { $('owedQr').hidden = true; $('owedShare').disabled = true; sum(); return; }
+      if (ev.target.id === 'owedMk') {
+        const t = sum(), ds = picked(); if (!(t > 0)) return;
+        const at = Date.now(), ref = payRef(at), note = ds.map(d => d.no).join(', ').slice(0, 44);
+        lastUrl = await payCardDataUrl(t, grp.name + ' · ' + note, ref, at);
+        $('owedQrImg').src = lastUrl; $('owedQr').hidden = false; $('owedShare').disabled = false;
+        const rec = {id: 'pay' + at, ref, chatId: '', name: grp.name, channel: 'owed', amount: t, note, status: 'pending', createdAt: at, by: chatBy(), docs: ds.map(d => ({k: d.k, id: d.id}))};
+        store.set('bs_pay_charges', payCharges().concat([rec])); cloudSave('payCharges', rec);
+        return;
+      }
+      if (ev.target.id === 'owedShare' && lastUrl) {
+        try {
+          const blob = await (await fetch(lastUrl)).blob(), file = new File([blob], 'QR-' + grp.name + '.png', {type: 'image/png'});
+          if (navigator.canShare && navigator.canShare({files: [file]})) { await navigator.share({files: [file], title: 'QR พร้อมเพย์ ' + grp.name}); return; }
+        } catch (err) { if (err && err.name === 'AbortError') return; }
+        const a = document.createElement('a'); a.href = lastUrl; a.download = 'QR-' + grp.name + '.png'; a.click(); return;
+      }
+      if (ev.target.id === 'owedPaid') {
+        const ds = picked(); if (!ds.length) return;
+        if (!confirm('ทำเครื่องหมายชำระแล้ว ' + ds.length + ' ใบ (' + money(sum()) + ' บาท) ?')) return;
+        markDocsPaid(ds); toast('เอาออกจากบิลค้างแล้ว ' + ds.length + ' ใบ'); openOwed(grp.docs.length === ds.length ? '' : grp.name);
+      }
+    };
+  }
+  if ($('dashOwedBtn')) $('dashOwedBtn').addEventListener('click', () => openOwed(''));
   // ส่งเลขพัสดุ: ดึงจากประวัติหน้า "ติดตามพัสดุ" เรียงชื่อที่ตรงกับลูกค้าในแชทขึ้นก่อน กดแล้วใส่ข้อความในช่องพิมพ์ให้ตรวจก่อนส่ง
   const normName = v => String(v || '').toLowerCase().replace(/^(คุณ|k\.|คุน)\s*/, '').replace(/[\s._-]+/g, '');
   function renderChatTrackList() {
