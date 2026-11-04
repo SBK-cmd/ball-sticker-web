@@ -1764,7 +1764,7 @@ function bahtText(value) {
   }
   /* ---------- สรุปงานวันนี้: ลูกค้า · กล่องที่ส่ง · งานที่เหลือ · งานด่วน (ครบกำหนดวันนี้/เลยกำหนด) ---------- */
   function renderTodayJobs() {
-    const box = $('dashTodayCard'); if (!box) return;
+    const boxes_ = document.querySelectorAll('.tdy'); if (!boxes_.length) return;
     const today = todayISO(), jobs = store.get('bs_jobs', []) || [];
     const nm = v => String(v || '').replace(/\s+/g, ' ').trim().toLowerCase();
     const custs = {};
@@ -1782,12 +1782,13 @@ function bahtText(value) {
       bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'
     };
     const tile = (cls, ic, label, val, unit, sub) => '<div class="tdy-t ' + cls + '" title="' + sub + '"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + IC[ic] + '</svg></span><span class="lb">' + label + '</span><b>' + val + '<em>' + unit + '</em></b><small>' + sub + '</small></div>';
-    $('tdyDate').textContent = thDate(today);
-    $('tdyGrid').innerHTML =
+    document.querySelectorAll('.tdyDate').forEach(el => { el.textContent = thDate(today); });
+    const html =
       tile('c1', 'users', 'ลูกค้าวันนี้', Object.keys(custs).length, 'ราย', 'งานใหม่ ' + jobsToday + ' ใบ') +
       tile('c2', 'box', 'ส่งวันนี้', boxes, 'กล่อง', boxes ? 'นับจากเลขพัสดุวันนี้' : 'ยังไม่มีกล่องวันนี้') +
       tile('c3', 'list', 'งานที่เหลือ', open.length, 'งาน', 'รอทำ ' + cnt('pending') + ' · ไฟล์ ' + cnt('filed') + ' · ผลิต ' + cnt('printed')) +
       tile('c4' + (dueToday + late ? ' hot' : ''), 'bolt', 'งานด่วน', dueToday + late, 'งาน', 'วันนี้ ' + dueToday + ' · เลยกำหนด ' + late);
+    document.querySelectorAll('.tdy-grid').forEach(el => { el.innerHTML = html; });
   }
   function renderDash() {
     try { renderTodayJobs(); } catch (e) { console.error('todayJobs', e); }
@@ -4659,6 +4660,7 @@ function bahtText(value) {
   }
   function renderJobHistory() {
     try { renderOwedCard(); } catch (e) {}
+    try { renderTodayJobs(); } catch (e) {}
     try { const sel = window.getSelection && window.getSelection(); if (sel && !sel.isCollapsed && String(sel).trim() && $('jobHistory').contains(sel.anchorNode)) { clearTimeout(renderJobHistory._t); renderJobHistory._t = setTimeout(renderJobHistory, 1500); return; } } catch (e) {}
     try { renderCustomerDatalist(); } catch (e) {}
     const list = store.get('bs_jobs', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
