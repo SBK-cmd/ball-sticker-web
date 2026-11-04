@@ -4135,9 +4135,22 @@ function bahtText(value) {
     const anyPrice = named.some(i => i.price !== '' && i.price != null && num(i.price) > 0);
     if (num(j.slipAmount) > 0 && !anyPrice && rows.length && rows.length === named.length) {
       const label = rows.map(r => String(r.i.name).trim() + (num(r.i.qty) > 0 ? ' ×' + r.i.qty : '')).join(', ').slice(0, 140);
-      return [{name: label, qty: 1, price: round2(num(j.slipAmount)), job: j.no}];
+      return [{name: label, qty: 1, price: round2(num(j.slipAmount)), job: j.no, jtot: true}];
     }
-    return rows.map(r => ({name: String(r.i.name).trim() + ((r.i.note || '').trim() ? ' (' + String(r.i.note).trim() + ')' : ''), qty: r.i.qty, price: num(jobUnitPrice(j, r.i)), job: j.no}));
+    return rows.map(r => ({name: String(r.i.name).trim() + ((r.i.note || '').trim() ? ' (' + String(r.i.note).trim() + ')' : ''), qty: r.i.qty, price: num(jobUnitPrice(j, r.i)), job: j.no, ji: r.idx}));
+  }
+  // แก้ราคาในบิลราคาส่ง → แก้ใบคอนเฟิร์มงาน (ใบงาน) ที่เป็นต้นทางให้ตรงกัน
+  function syncPriceToJob(item, newPrice) {
+    if (!item || !item.job) return false;
+    const jl = store.get('bs_jobs', []), k = jl.findIndex(x => String(x.no || '') === String(item.job));
+    if (k < 0) return false;
+    const j = Object.assign({}, jl[k]);
+    if (item.jtot) j.slipAmount = num(newPrice) > 0 ? String(round2(num(newPrice))) : '';
+    else if (item.ji != null && j.items && j.items[item.ji]) { j.items = j.items.map((x, n) => n === item.ji ? Object.assign({}, x, {price: num(newPrice) > 0 ? newPrice : ''}) : x); }
+    else return false;
+    j.savedAt = Date.now(); jl[k] = j; store.set('bs_jobs', jl); cloudSave('jobs', j);
+    try { renderJobHistory(); } catch (e) {}
+    return true;
   }
   function jobPendingWhItems(j) {
     const done = j.whAdded || {};
@@ -6838,7 +6851,8 @@ function bahtText(value) {
     const items = (list[i].items || []).map(x => Object.assign({}, x)); if (!items[k]) return;
     items[k].price = inp.value === '' ? 0 : inp.value;
     list[i] = Object.assign({}, list[i], {items, savedAt: Date.now()}); store.set('bs_wholesale', list); cloudSave('wholesale', list[i]);
-    renderWholesaleHistory(); toast('บันทึกราคาแล้ว');
+    const synced = syncPriceToJob(items[k], items[k].price);
+    renderWholesaleHistory(); toast(synced ? 'บันทึกราคาแล้ว และแก้ในใบคอนเฟิร์มงาน ' + items[k].job + ' ให้ตรงกัน' : 'บันทึกราคาแล้ว');
   });
   $('wholesaleHistory').addEventListener('click', e => {
     const btn = e.target.closest('button[data-act]');
