@@ -9,7 +9,7 @@
 <link rel="icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--y:#ffd23f;--ink:#1b1b2f;--mut:#6b7280;--ok:#16a34a;--bg:#f5f6f8;--line:#e5e7eb}
+:root{--y:#ffd23f;--ink:#1b1b2f;--mut:#6b7280;--ok:#16a34a;--bg:#eef0f4;--line:#e5e7eb}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans Thai',system-ui,sans-serif;-webkit-text-size-adjust:100%}
 .wrap{max-width:480px;margin:0 auto;padding:18px 16px 40px}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}.brand img{width:40px;height:40px;border-radius:10px}.brand b{font-size:17px}.brand small{display:block;color:var(--mut);font-size:12.5px}
@@ -34,12 +34,12 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
 .go{display:block;margin-top:12px;text-align:center;background:var(--y);color:var(--ink);font-weight:700;border-radius:12px;padding:12px 0;text-decoration:none;font-size:15.5px}
 .cn{margin:-2px 0 4px;font-size:15px;color:var(--mut)}.cn b{color:var(--ink)}
 .card.multi{background:none;border:0;box-shadow:none;padding:0}
-details.jc{background:#fff;border:1px solid var(--line);border-radius:16px;margin:0 0 12px;box-shadow:0 2px 10px rgba(0,0,0,.04);overflow:hidden}
+details.jc{background:#fff;border:1px solid #d9dde3;border-left:6px solid var(--y);border-radius:16px;margin:0 0 12px;box-shadow:0 3px 14px rgba(20,24,40,.10);overflow:hidden}details.jc.dn{border-left-color:var(--ok)}
 details.jc>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:14px 16px}
-details.jc>summary::-webkit-details-marker{display:none}
-details.jc>summary .jn{flex:1;min-width:0}details.jc>summary .jn b{display:block;font-size:16px;overflow-wrap:anywhere}details.jc>summary .jn small{display:block;color:var(--mut);font-size:12.5px;margin-top:1px}
+details.jc>summary::-webkit-details-marker{display:none}details.jc>summary img.jt{flex:none;width:52px;height:52px;border-radius:12px;object-fit:cover;background:#e5e7eb}.jp{margin-top:12px}.jp small{display:block;color:var(--mut);font-size:12.5px;margin-bottom:6px}.jp>div{display:flex;gap:8px;flex-wrap:wrap}.jp img{width:96px;height:96px;border-radius:12px;object-fit:cover;display:block}
+details.jc>summary .jn{flex:1;min-width:0}details.jc>summary .jn b{display:block;font-size:17px;font-weight:800;color:#0f1020;overflow-wrap:anywhere}details.jc>summary .jn small{display:block;color:#4b5563;font-size:13px;margin-top:2px;overflow-wrap:anywhere}
 details.jc>summary .js{flex:none;padding:5px 12px;border-radius:999px;background:var(--y);font-weight:700;font-size:13.5px;white-space:nowrap}
-details.jc>summary .js.done{background:#dcfce7;color:#166534}
+details.jc>summary .js.done{background:#16a34a;color:#fff}
 details.jc>summary::after{content:'▾';flex:none;color:var(--mut);font-size:16px;transition:transform .15s}details.jc[open]>summary::after{transform:rotate(180deg)}
 details.jc>.jb{padding:2px 16px 16px;border-top:1px solid var(--line)}
 .jb .it{margin:10px 0 0;padding:0;list-style:none;font-size:14.5px}.jb .it li{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid #f1f2f4}.jb .it li b{flex:none}
@@ -153,19 +153,24 @@ details.jc>.jb{padding:2px 16px 16px;border-top:1px solid var(--line)}
       }).join('') + '</div></div>';
     }
     if (j.updatedAt) { var d = new Date(j.updatedAt); html += '<div class="upd">อัปเดตล่าสุด ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + (d.getFullYear() + 543) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' น.</div>'; }
+    var itemsHtml = function (arr) { return (arr && arr.length) ? '<ul class="it" style="margin-top:12px">' + arr.map(function (i) { return '<li><span>' + esc(i.n) + '</span><b>' + (i.q ? '× ' + esc(i.q) : '') + '</b></li>'; }).join('') + '</ul>' : ''; };
+    var subOf = function (arr) { return (arr && arr[0]) ? String(arr[0].n || '') + (arr[0].q ? ' × ' + arr[0].q : '') + (arr.length > 1 ? ' +' + (arr.length - 1) + ' รายการ' : '') : ''; };
+    if (isJbs) html += itemsHtml(j.items);
     var others = (isJbs && Array.isArray(j.others)) ? j.others.filter(function (o) { return o && o.no; }) : [];
     if (others.length) {
       var stOf = function (st) { var k = 0, q; for (q = 0; q < STEPS.length; q++) if (STEPS[q][0] === st) k = q; return k; };
-      var hd = function (no, date, st) { var k = stOf(st), dn = k === STEPS.length - 1; return '<summary><span class="jn"><b>' + esc(no) + '</b>' + (date ? '<small>' + esc(thDate(date)) + '</small>' : '') + '</span><span class="js' + (dn ? ' done' : '') + '">' + esc(STEPS[k][1]) + '</span></summary>'; };
-      var cards = '<details class="jc" open>' + hd(j.no, '', j.status) + '<div class="jb">' + html + '</div></details>';
+      var hd = function (no, date, st, sub, th) { var k = stOf(st), dn = k === STEPS.length - 1; return '<summary>' + (th ? '<img class="jt" src="' + esc(th) + '" alt="" loading="lazy">' : '') + '<span class="jn"><b>' + esc(no) + '</b>' + ((date || sub) ? '<small>' + esc([thDate(date), sub].filter(Boolean).join(' · ')) + '</small>' : '') + '</span><span class="js' + (dn ? ' done' : '') + '">' + esc(STEPS[k][1]) + '</span></summary>'; };
+      var cards = '<details class="jc' + (stOf(j.status) === STEPS.length - 1 ? ' dn' : '') + '" open>' + hd(j.no, j.date || '', j.status, subOf(j.items), j.thumb) + '<div class="jb">' + html + '</div></details>';
       others.forEach(function (o) {
         var k = stOf(o.status), steps = STEPS.map(function (s2, n) { var c = n < k || k === STEPS.length - 1 ? 'done' : (n === k ? 'cur' : ''); return '<li class="' + c + '"><i>' + (c === 'done' ? '✓' : (n + 1)) + '</i>' + esc(s2[1]) + '</li>'; }).join('');
         var b = '<ul class="steps" style="margin-top:12px">' + steps + '</ul>';
-        if (o.items && o.items.length) b += '<ul class="it">' + o.items.map(function (i) { return '<li><span>' + esc(i.n) + '</span><b>' + (i.q ? '× ' + esc(i.q) : '') + '</b></li>'; }).join('') + '</ul>';
+        b += itemsHtml(o.items);
+        var pic = function (arr, t) { return (arr && arr.length) ? '<div class="jp"><small>' + t + '</small><div>' + arr.map(function (u) { return '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="" loading="lazy"></a>'; }).join('') + '</div></div>' : ''; };
+        b += pic(o.photos, 'รูปงาน') + pic(o.refPhotos, 'รูปอ้างอิง');
         if (o.receiver) b += '<div class="ad" style="margin-top:12px"><div class="ab"><small>ผู้รับ</small>' + (o.receiver.name ? '<b>' + esc(o.receiver.name) + '</b>' : '') + esc(o.receiver.addr || '') + '</div></div>';
         if (o.due && k < STEPS.length - 1) b += '<div class="row"><span>กำหนดส่ง</span><b>' + esc(thDate(o.due)) + '</b></div>';
         if (o.trackCode) b += '<div class="row"><span>เลขพัสดุ' + (o.carrier ? ' (' + esc(o.carrier) + ')' : '') + '</span><b>' + esc(o.trackCode) + '<button class="copy" type="button" data-cp="' + esc(o.trackCode) + '">คัดลอก</button></b></div>' + (/^https:\/\//.test(o.trackUrl || '') ? '<a class="go" href="' + esc(o.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะพัสดุ' + (o.carrier ? ' กับ ' + esc(o.carrier) : '') + '</a>' : '');
-        cards += '<details class="jc">' + hd(o.no, o.date, o.status) + '<div class="jb">' + b + '</div></details>';
+        cards += '<details class="jc' + (k === STEPS.length - 1 ? ' dn' : '') + '">' + hd(o.no, o.date, o.status, subOf(o.items), o.thumb) + '<div class="jb">' + b + '</div></details>';
       });
       html = cards; box.className = 'card multi';
     } else box.className = 'card';
