@@ -3629,6 +3629,12 @@ function bahtText(value) {
     return (NAME_TITLES.indexOf(w[0]) >= 0 && w[1]) ? w[0] + ' ' + w[1] : w[0];
   }
   // ใบงานอื่นของลูกค้าคนเดียวกัน (งานส่ง JBS) — แสดงเป็นการ์ดพับได้ในหน้าติดตามเดียวกัน
+  // พัสดุของใบงานนี้ถึงลูกค้าแล้ว (iship ขึ้นสำเร็จ) = ใบงานเสร็จสิ้น
+  function jobDelivered(j) {
+    if (!j || !j.trackCode || (j.status || '') !== 'shipped') return false;
+    const t = store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(j.trackCode));
+    return !!t && t.status === 'delivered';
+  }
   function siblingJobsOf(rec) {
     const nm = String(rec.jName || '').trim(); if (!nm) return [];
     // ชื่อเดียวกัน หรือชื่อหนึ่งขึ้นต้นด้วยอีกชื่อ+เว้นวรรค (เช่น "แต้ม" กับ "แต้ม สติ๊กเกอร์") ถือเป็นลูกค้าเดียวกัน
@@ -3645,7 +3651,7 @@ function bahtText(value) {
       const tr = rec.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(rec.trackCode)) || null) : null;
       const carrier = (tr && tr.carrier) || '';
       const photos = (Array.isArray(rec.donePhotos) ? rec.donePhotos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 8);   // รูปงานเสร็จ (เฉพาะลิงก์ที่อัปโหลดแล้ว)
-      const doc = {no: String(rec.no || ''), cname: firstNameOf(rec.jName), status: rec.status || 'pending', due: rec.due || '', trackCode: rec.trackCode || '', carrier, trackUrl: rec.trackCode ? trackingLink(carrier, rec.trackCode) : '', photos, updatedAt: Date.now()};
+      const doc = {delivered: jobDelivered(rec), no: String(rec.no || ''), cname: firstNameOf(rec.jName), status: rec.status || 'pending', due: rec.due || '', trackCode: rec.trackCode || '', carrier, trackUrl: rec.trackCode ? trackingLink(carrier, rec.trackCode) : '', photos, updatedAt: Date.now()};
       // ผู้ส่ง = ลูกค้าของใบงาน · ผู้รับ = ผู้รับปลายทาง (ลูกค้าฝากส่ง) — โชว์เฉพาะชื่อแรก + ที่อยู่ ไม่ส่งเบอร์โทรขึ้นหน้าสาธารณะ
       const addrOf = (name, addr) => { const a = String(addr || '').replace(/\s+/g, ' ').trim().slice(0, 300); return a ? {name: firstNameOf(name), addr: a} : null; };
       const snd = addrOf(rec.jName, rec.jAddr), rcv = rec.recv ? addrOf(rec.recv.name, rec.recv.addr) : null;
@@ -3663,7 +3669,7 @@ function bahtText(value) {
       if (isJbs) {   // ใบงานอื่นของลูกค้าคนนี้ (สถานะล่าสุดของแต่ละใบ)
         doc.others = siblingJobsOf(rec).map(x => {
           const trx = x.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(x.trackCode)) || null) : null, car2 = (trx && trx.carrier) || '';
-          const o = {no: String(x.no || ''), status: x.status || 'pending', date: x.date || '', due: x.due || '', items: (x.items || []).filter(i => (i.name || '').trim()).slice(0, 8).map(i => ({n: String(i.name).trim().slice(0, 80), q: String(i.qty == null ? '' : i.qty).slice(0, 12)}))};
+          const o = {delivered: jobDelivered(x), no: String(x.no || ''), status: x.status || 'pending', date: x.date || '', due: x.due || '', items: (x.items || []).filter(i => (i.name || '').trim()).slice(0, 8).map(i => ({n: String(i.name).trim().slice(0, 80), q: String(i.qty == null ? '' : i.qty).slice(0, 12)}))};
           { const https = a => (Array.isArray(a) ? a : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)); const ph = https(x.donePhotos).slice(0, 4), rf = https(x.photos).slice(0, 4); if (ph.length) o.photos = ph; if (rf.length) o.refPhotos = rf; const th2 = ph[0] || rf[0]; if (th2) o.thumb = th2; }
           if (x.recv && (x.recv.name || x.recv.addr)) o.receiver = {name: String(x.recv.name || '').replace(/\s+/g, ' ').trim().slice(0, 80), addr: String(x.recv.addr || '').replace(/\s+/g, ' ').trim().slice(0, 300)};
           if (x.trackCode) { o.trackCode = String(x.trackCode); o.carrier = car2; o.trackUrl = trackingLink(car2, x.trackCode) || ''; }
@@ -7188,6 +7194,7 @@ function bahtText(value) {
       const list = store.get('bs_tracking', []);
       const changed = applyIshipStatuses(orders, list);
       if (changed.length) { store.set('bs_tracking', list); changed.forEach(rec => cloudSave('tracking', rec)); }
+      try { changed.forEach(rec => store.get('bs_jobs', []).filter(j => j.trackToken && j.trackCode && normCode(j.trackCode) === normCode(rec.code)).forEach(j => publicJobMirror(j))); } catch (e) {}   // อัปเดตหน้าติดตามลูกค้า (เสร็จสิ้นเมื่อพัสดุถึง)
       try { localStorage.setItem(ISHIP_SYNC_KEY, String(Date.now())); } catch (e) {}
       if (isTrackPanelActive()) renderTrackingHistory();
       const delivered = changed.filter(r => r.status === 'delivered').length;
@@ -8169,6 +8176,7 @@ function bahtText(value) {
       const chip = (t, c) => '<span class="jc-chip' + (c ? ' ' + c : '') + '">' + t + '</span>';
       const chips = chip(esc(thDate(j.date))) + (PAGE_LABEL[j.page] ? chip(esc(PAGE_LABEL[j.page])) : '') +
         (canBank && j.account && !accHidden(j) ? chip('บัญชี ' + esc(j.account)) : '') +
+        (jobDelivered(j) ? chip('เสร็จสิ้น · ถึงลูกค้าแล้ว', 'money') : '') +
         (canBank && num(j.slipAmount) > 0 ? chip((j.slipPending ? 'รอรับเงิน ' : 'สลิป ') + money(num(j.slipAmount)) + ' บาท', j.slipPending ? 'warn' : 'money') : '') +
         (j.wholesale ? chip('ราคาส่ง', 'tg') : '') + (j.recv && (j.recv.name || j.recv.addr) ? chip('ฝากส่ง', 'tg') : '') +
         chip(nItems + ' รายการ') + (j.photos && j.photos.length ? chip('รูป ' + j.photos.length) : '') + (j.createdBy ? chip('โดย ' + esc(j.createdBy)) : '');
