@@ -32,6 +32,9 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
 .go{display:block;margin-top:12px;text-align:center;background:var(--y);color:var(--ink);font-weight:700;border-radius:12px;padding:12px 0;text-decoration:none;font-size:15.5px}
 .cn{margin:-2px 0 4px;font-size:15px;color:var(--mut)}.cn b{color:var(--ink)}
 .upd{margin-top:10px;color:var(--mut);font-size:12.5px;text-align:right}
+.ad{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.ad h2{font-size:15px;margin:0 0 8px}
+.ab{background:#f8f9fb;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:14.5px;line-height:1.55}.ab small{display:block;color:var(--mut);font-size:12.5px;font-weight:600}.ab b{display:block}
+.rf{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.rf h2{font-size:15px;margin:0 0 8px}
 </style>
 </head>
 <body>
@@ -58,6 +61,14 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
       return '<li class="' + c + '"><i>' + (c === 'done' ? '✓' : (k + 1)) + '</i>' + esc(s[1]) + '</li>';
     }).join('');
     var html = '<h1>ใบงานเลขที่</h1><p class="no">' + esc(j.no) + '</p>' + (j.cname ? '<div class="cn">ลูกค้า: <b>' + esc(j.cname) + '</b></div>' : '') + '<span class="now' + (done ? ' done' : '') + '">' + esc(STEPS[idx][1]) + '</span><ul class="steps">' + lis + '</ul>';
+    if (j.sender || j.receiver) {
+      html += '<div class="ad"><h2>📍 ที่อยู่จัดส่ง</h2>';
+      if (j.sender) html += '<div class="ab"><small>ผู้ส่ง</small>' + (j.sender.name ? '<b>' + esc(j.sender.name) + '</b>' : '') + esc(j.sender.addr) + '</div>';
+      if (j.receiver) html += '<div class="ab"><small>ผู้รับ</small>' + (j.receiver.name ? '<b>' + esc(j.receiver.name) + '</b>' : '') + esc(j.receiver.addr) + '</div>';
+      html += '</div>';
+    }
+    var rp = (j.refPhotos || []).filter(function (u) { return typeof u === 'string' && /^https:\/\//.test(u); });
+    if (rp.length) html += '<div class="rf"><h2>🖼 รูปอ้างอิง</h2><div class="pg">' + rp.map(function (u, k) { return '<figure><a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="รูปอ้างอิง ' + (k + 1) + '" loading="lazy"></a></figure>'; }).join('') + '</div></div>';
     if (j.due && !done) html += '<div class="row"><span>กำหนดส่ง</span><b>' + esc(thDate(j.due)) + '</b></div>';
     if (j.trackCode) html += '<div class="row"><span>เลขพัสดุ' + (j.carrier ? ' (' + esc(j.carrier) + ')' : '') + '</span><b>' + esc(j.trackCode) + '<button class="copy" id="cp" type="button">คัดลอก</button></b></div>';
     if (j.trackUrl && /^https:\/\//.test(j.trackUrl)) html += '<a class="go" href="' + esc(j.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะพัสดุ' + (j.carrier ? ' กับ ' + esc(j.carrier) : '') + '</a>';
