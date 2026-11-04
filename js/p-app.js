@@ -1762,7 +1762,7 @@ function bahtText(value) {
       list: '<rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/>',
       bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'
     };
-    const tile = (cls, ic, label, val, unit, sub) => '<div class="tdy-t ' + cls + '"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + IC[ic] + '</svg></span><span class="lb">' + label + '</span><b>' + val + '<em>' + unit + '</em></b><small>' + sub + '</small></div>';
+    const tile = (cls, ic, label, val, unit, sub) => '<div class="tdy-t ' + cls + '" title="' + sub + '"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + IC[ic] + '</svg></span><span class="lb">' + label + '</span><b>' + val + '<em>' + unit + '</em></b><small>' + sub + '</small></div>';
     $('tdyDate').textContent = thDate(today);
     $('tdyGrid').innerHTML =
       tile('c1', 'users', 'ลูกค้าวันนี้', Object.keys(custs).length, 'ราย', 'งานใหม่ ' + jobsToday + ' ใบ') +
