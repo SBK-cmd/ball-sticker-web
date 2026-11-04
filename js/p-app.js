@@ -403,6 +403,32 @@ function bahtText(value) {
     const el = $('jName'); el.value = b.dataset.c;
     el.dispatchEvent(new Event('input', {bubbles: true})); el.dispatchEvent(new Event('change', {bubbles: true}));
   });
+
+  // ช่องชื่อลูกค้า: รายการแนะนำของแอปเอง (เฉพาะชื่อที่ตรงกับที่พิมพ์ ไม่เกิน 6 ชื่อ) แทน datalist ของเบราว์เซอร์ที่ยาวเต็มจอบนมือถือ
+  (function () {
+    const IDS = ['jName', 'cName', 'whName', 'qName', 'trackCustomer'], box = document.createElement('div'); box.id = 'nameSuggest'; box.hidden = true; document.body.appendChild(box);
+    let cur = null;
+    const hide = () => { box.hidden = true; cur = null; };
+    function show(el) {
+      cur = el; const q = el.value.trim().toLowerCase(), all = allCustomers();
+      const hit = (q ? all.filter(c => c.name.toLowerCase().includes(q) && c.name.toLowerCase() !== q).sort((a, b) => (a.name.toLowerCase().startsWith(q) ? 0 : 1) - (b.name.toLowerCase().startsWith(q) ? 0 : 1)) : all).slice(0, q ? 6 : 5);
+      if (!hit.length) { hide(); return; }
+      box.innerHTML = hit.map(c => '<button type="button" data-n="' + esc(c.name) + '">' + esc(c.name) + '</button>').join('');
+      const r = el.getBoundingClientRect(), vh = window.innerHeight, below = vh - r.bottom;
+      box.style.left = Math.max(8, r.left) + 'px'; box.style.width = Math.min(r.width, window.innerWidth - 16) + 'px';
+      if (below >= 150 || below >= r.top) { box.style.top = (r.bottom + 4) + 'px'; box.style.bottom = 'auto'; box.style.maxHeight = Math.max(100, below - 12) + 'px'; }
+      else { box.style.bottom = (vh - r.top + 4) + 'px'; box.style.top = 'auto'; box.style.maxHeight = Math.max(100, r.top - 12) + 'px'; }
+      box.hidden = false;
+    }
+    IDS.forEach(id => { const el = $(id); if (!el) return; el.addEventListener('input', () => show(el)); el.addEventListener('focus', () => show(el)); el.addEventListener('blur', () => setTimeout(() => { if (cur === el) hide(); }, 150)); });
+    box.addEventListener('mousedown', e => e.preventDefault());
+    box.addEventListener('click', e => {
+      const b = e.target.closest('button[data-n]'); if (!b || !cur) return;
+      const el = cur; el.value = b.dataset.n; hide();
+      el.dispatchEvent(new Event('input', {bubbles: true})); el.dispatchEvent(new Event('change', {bubbles: true}));
+    });
+    window.addEventListener('scroll', e => { if (e.target !== box && !box.contains(e.target)) hide(); }, true); window.addEventListener('resize', () => { if (cur && document.activeElement === cur) show(cur); else hide(); });
+  })();
   function findCustomer(name) {
     const n = String(name || '').trim(); if (!n) return null;
     return allCustomers().find(c => c.name === n) || null;

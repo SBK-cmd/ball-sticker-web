@@ -1295,6 +1295,9 @@ tr{break-inside:avoid}
 .chg-link{margin-top:12px}.chg-link label{font-size:13px;color:#666;display:block;margin-bottom:4px}.chg-link input{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #ddd;border-radius:10px;font-size:13px}
 .chg-a{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.chg-a .btn{flex:1;min-width:130px}
 body.chg-open{overflow:hidden}
+#nameSuggest{position:fixed;z-index:1300;background:#fff;border:1px solid #ddd;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.25);overflow:auto;-webkit-overflow-scrolling:touch}
+#nameSuggest button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #f0f0f0;background:#fff;padding:12px 14px;font:inherit;font-size:16px;color:#222;cursor:pointer}
+#nameSuggest button:last-child{border-bottom:0}
 .jm-x{display:none}
 body.jm-open{overflow:hidden}
 @media print{body.jm-open #whFormTop{position:static!important;box-shadow:none!important;overflow:visible!important;padding:0!important}body.jm-open::before{display:none}}
@@ -2569,7 +2572,7 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
               </div>
               <label class="f"><span>วางข้อความทั้งก้อน (งาน + ชื่อ เบอร์ ที่อยู่) แล้วกดแยก</span><textarea id="jPaste" placeholder="วางข้อความทั้งก้อน เช่น&#10;7cm 140ชิ้น&#10;แบบละ70ชิ้น&#10;นาย สมชาย ใจดี&#10;081-234-5678&#10;99 หมู่ 1 ต.ในเมือง อ.เมือง จ.พิษณุโลก 65000"></textarea></label>
               <button class="btn small" id="jSplit" type="button">แยกงาน / ชื่อ / เบอร์ / ที่อยู่ อัตโนมัติ</button>
-              <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="jName" type="text" autocomplete="off" list="customerNames"></label>
+              <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="jName" type="text" autocomplete="off"></label>
               <div id="jNameChips" class="vchips no-print" aria-label="ชื่อที่เคยคีย์ไว้"></div>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="jPhone" type="tel" autocomplete="off"></label>
               <label class="f"><span>ที่อยู่ลูกค้า (ถ้ามี)</span><textarea id="jAddr"></textarea></label>
@@ -2653,7 +2656,7 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
                 <label class="f"><span>บัญชีรับเงิน</span><select id="billAccount"><option value="">— ไม่ระบุ —</option><option value="กิติพงษ์">กิติพงษ์</option><option value="วันทิม">วันทิม สีทอง</option></select></label>
               </div>
               <p class="hint" style="margin:-6px 0 0">เพจและบัญชีไม่พิมพ์ลงบิล</p>
-              <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="cName" type="text" autocomplete="off" list="customerNames"></label>
+              <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="cName" type="text" autocomplete="off"></label>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="cPhone" type="tel" autocomplete="off"></label>
               <label class="f"><span>เลขประจำตัวผู้เสียภาษีลูกค้า (ถ้ามี)</span><input class="txt" id="cTax" type="text" inputmode="numeric" autocomplete="off"></label>
               <label class="f"><span>ที่อยู่ลูกค้า</span><textarea id="cAddr"></textarea></label>
@@ -2762,7 +2765,7 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
             <h2>ข้อมูลใบราคาส่ง</h2>
             <p class="edit-state" id="wholesaleEditState"></p>
             <div class="fields">
-              <label class="f"><span>ชื่อลูกค้า / ผู้ซื้อ</span><input class="txt" id="whName" type="text" autocomplete="off" list="customerNames"></label>
+              <label class="f"><span>ชื่อลูกค้า / ผู้ซื้อ</span><input class="txt" id="whName" type="text" autocomplete="off"></label>
               <label class="f"><span>วันที่</span><input class="txt" id="whDate" type="date"></label>
               <label class="f"><span>เลขที่ใบราคาส่ง</span><input class="txt" id="whNo" type="text" autocomplete="off" placeholder="ออกเลขให้อัตโนมัติเมื่อเปิดใบใหม่ · ใบเก่าที่ยังไม่มีเลขปล่อยว่างได้"></label>
               <label class="f"><span>เลขอ้างอิง / หมายเหตุอ้างอิง (ถ้ามี)</span><input class="txt" id="whRef" type="text" autocomplete="off" placeholder="กรอกเองได้ ไม่รันเลขอัตโนมัติ"></label>
@@ -2834,7 +2837,7 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
               <label class="f"><span>ชุดเอกสาร</span>
                 <select id="quoteDocCopy"><option value="ต้นฉบับ">ต้นฉบับ</option><option value="สำเนา">สำเนา</option></select>
               </label>
-              <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="qName" type="text" autocomplete="off" list="customerNames"></label>
+              <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="qName" type="text" autocomplete="off"></label>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="qPhone" type="tel" autocomplete="off"></label>
               <label class="f"><span>เลขประจำตัวผู้เสียภาษีลูกค้า (ถ้ามี)</span><input class="txt" id="qTax" type="text" inputmode="numeric" autocomplete="off"></label>
               <label class="f"><span>ที่อยู่ลูกค้า</span><textarea id="qAddr"></textarea></label>
@@ -2929,7 +2932,7 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
                   <option value="อื่นๆ">อื่นๆ</option>
                 </select>
               </label>
-              <label class="f"><span>ชื่อลูกค้า (ถ้ามี จะใส่ในข้อความด้วย)</span><input class="txt" id="trackCustomer" type="text" autocomplete="off" list="customerNames" placeholder="ไม่บังคับ"></label>
+              <label class="f"><span>ชื่อลูกค้า (ถ้ามี จะใส่ในข้อความด้วย)</span><input class="txt" id="trackCustomer" type="text" autocomplete="off" placeholder="ไม่บังคับ"></label>
             </div>
             <div class="actions" style="margin-top:14px">
               <button class="btn good" id="track-make" type="button">✨ สร้างข้อความและบันทึก</button>
@@ -3503,7 +3506,7 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=41b4306129",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=1a38c5c954",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
