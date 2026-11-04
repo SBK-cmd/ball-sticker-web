@@ -1781,15 +1781,61 @@ function bahtText(value) {
       list: '<rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/>',
       bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'
     };
-    const tile = (cls, ic, label, val, unit, sub) => '<div class="tdy-t ' + cls + '" title="' + sub + '"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + IC[ic] + '</svg></span><span class="lb">' + label + '</span><b>' + val + '<em>' + unit + '</em></b><small>' + sub + '</small></div>';
+    const tile = (cls, ic, label, val, unit, sub, k) => '<div class="tdy-t ' + cls + '" data-k="' + k + '" role="button" tabindex="0" title="' + sub + '"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + IC[ic] + '</svg></span><span class="lb">' + label + '</span><b>' + val + '<em>' + unit + '</em></b><small>' + sub + '</small></div>';
     document.querySelectorAll('.tdyDate').forEach(el => { el.textContent = thDate(today); });
     const html =
-      tile('c1', 'users', 'ลูกค้าวันนี้', Object.keys(custs).length, 'ราย', 'งานใหม่ ' + jobsToday + ' ใบ') +
-      tile('c2', 'box', 'ส่งวันนี้', boxes, 'กล่อง', boxes ? 'นับจากเลขพัสดุวันนี้' : 'ยังไม่มีกล่องวันนี้') +
-      tile('c3', 'list', 'งานที่เหลือ', open.length, 'งาน', 'รอทำ ' + cnt('pending') + ' · ไฟล์ ' + cnt('filed') + ' · ผลิต ' + cnt('printed')) +
-      tile('c4' + (dueToday + late ? ' hot' : ''), 'bolt', 'งานด่วน', dueToday + late, 'งาน', 'วันนี้ ' + dueToday + ' · เลยกำหนด ' + late);
+      tile('c1', 'users', 'ลูกค้าวันนี้', Object.keys(custs).length, 'ราย', 'งานใหม่ ' + jobsToday + ' ใบ', 'cust') +
+      tile('c2', 'box', 'ส่งวันนี้', boxes, 'กล่อง', boxes ? 'นับจากเลขพัสดุวันนี้' : 'ยังไม่มีกล่องวันนี้', 'box') +
+      tile('c3', 'list', 'งานที่เหลือ', open.length, 'งาน', 'รอทำ ' + cnt('pending') + ' · ไฟล์ ' + cnt('filed') + ' · ผลิต ' + cnt('printed'), 'open') +
+      tile('c4' + (dueToday + late ? ' hot' : ''), 'bolt', 'งานด่วน', dueToday + late, 'งาน', 'วันนี้ ' + dueToday + ' · เลยกำหนด ' + late, 'urgent');
     document.querySelectorAll('.tdy-grid').forEach(el => { el.innerHTML = html; });
   }
+  // แตะช่องสรุป → เปิดรายการที่อยู่เบื้องหลังตัวเลข (แตะใบงานในรายการ = ไปเปิดใบนั้น)
+  function openTodayList(kind) {
+    const today = todayISO(), jobs = store.get('bs_jobs', []) || [], nm = v => String(v || '').replace(/\s+/g, ' ').trim();
+    const open = jobs.filter(j => (j.status || 'pending') !== 'shipped');
+    const dueKey = j => j.due || '9999-99-99';
+    let title = '', rows = '', foot = '';
+    const jobRow = j => {
+      const st = j.status || 'pending', late = j.due && j.due < today, dueTxt = j.due ? (j.due === today ? 'ครบกำหนดวันนี้' : late ? 'เลยกำหนด ' + thDate(j.due) : 'กำหนด ' + thDate(j.due)) : '';
+      return '<button type="button" class="tl-r" data-job="' + esc(j.id) + '"><span class="tl-m1"><b>' + esc(j.no || '') + '</b><span>' + esc(nm(j.jName) || 'ไม่ระบุชื่อลูกค้า') + '</span>' + (dueTxt ? '<small class="' + (late || j.due === today ? 'hot' : '') + '">' + esc(dueTxt) + '</small>' : '') + '</span><span class="status-pill ' + st + '">' + esc(JOB_STATUS_LABEL[st]) + '</span></button>';
+    };
+    if (kind === 'cust') {
+      title = 'ลูกค้าวันนี้';
+      const m = {};
+      jobs.filter(j => j.date === today).forEach(j => { const k = nm(j.jName); if (k) (m[k] = m[k] || {n: k, jobs: [], bills: 0}).jobs.push(j); });
+      (store.get('bs_bills', []) || []).filter(b => b.date === today).forEach(b => { const k = nm(b.cName); if (k) (m[k] = m[k] || {n: k, jobs: [], bills: 0}).bills++; });
+      const L = Object.values(m);
+      rows = L.length ? L.map(c => '<div class="tl-r static"><span class="tl-m1"><b>' + esc(c.n) + '</b><small>' + (c.jobs.length ? 'ใบงาน ' + c.jobs.map(j => esc(j.no)).join(', ') : '') + (c.jobs.length && c.bills ? ' · ' : '') + (c.bills ? 'บิล ' + c.bills + ' ใบ' : '') + '</small></span></div>').join('') : '<p class="tl-none">วันนี้ยังไม่มีลูกค้า</p>';
+    } else if (kind === 'box') {
+      title = 'ส่งวันนี้ (กล่อง)';
+      const L = (store.get('bs_tracking', []) || []).filter(t => localISO(new Date(t.boxAt || t.savedAt || 0)) === today).sort((a, b) => (b.boxAt || b.savedAt || 0) - (a.boxAt || a.savedAt || 0));
+      const jobOf = t => jobs.find(j => j.trackCode && normCode(j.trackCode) === normCode(t.code));
+      rows = L.length ? L.map(t => { const j = jobOf(t), who = nm(t.customer) || (j ? nm(j.jName) : ''); return '<div class="tl-r static"><span class="tl-m1"><b>' + esc(t.code || '') + '</b><span>' + esc(who || 'ยังไม่ผูกลูกค้า') + '</span><small>' + esc(t.carrier || '') + (j ? ' · ใบงาน ' + esc(j.no) : '') + '</small></span></div>'; }).join('') : '<p class="tl-none">ยังไม่มีกล่องที่บันทึกวันนี้</p>';
+      foot = 'นับจากเลขพัสดุที่สแกน/บันทึกวันนี้';
+    } else if (kind === 'open') {
+      title = 'งานที่เหลือ';
+      const L = open.slice().sort((a, b) => dueKey(a).localeCompare(dueKey(b)) || String(a.date || '').localeCompare(String(b.date || '')));
+      rows = L.length ? L.map(jobRow).join('') : '<p class="tl-none">ไม่มีงานค้าง</p>';
+    } else {
+      title = 'งานด่วน';
+      const L = open.filter(j => j.due && j.due <= today).sort((a, b) => dueKey(a).localeCompare(dueKey(b)));
+      rows = L.length ? L.map(jobRow).join('') : '<p class="tl-none">ไม่มีงานครบกำหนดหรือเลยกำหนด</p>';
+      foot = 'นับจากวันกำหนดส่งในใบงาน (ครบกำหนดวันนี้หรือเลยกำหนด)';
+    }
+    let m = document.getElementById('tlModal'); if (m) m.remove();
+    m = document.createElement('div'); m.id = 'tlModal'; m.className = 'chg-m';
+    m.innerHTML = '<div class="chg-s"><div class="chg-t"><b>' + esc(title) + '</b><button type="button" data-x="1" aria-label="ปิด">✕</button></div><div class="chg-b">' + rows + (foot ? '<p class="tl-foot">' + esc(foot) + '</p>' : '') + '</div></div>';
+    document.body.appendChild(m); document.body.classList.add('chg-open');
+    const close = () => { m.remove(); document.body.classList.remove('chg-open'); };
+    m.addEventListener('click', e => {
+      if (e.target === m || e.target.closest('[data-x]')) { close(); return; }
+      const r = e.target.closest('[data-job]'); if (!r) return;
+      close(); showTab('confirm'); jobOpenIds[r.dataset.job] = true; renderJobHistory();
+    });
+  }
+  document.addEventListener('click', e => { const t = e.target.closest && e.target.closest('.tdy-t[data-k]'); if (t) openTodayList(t.dataset.k); });
+  document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.tdy-t[data-k]')) { e.preventDefault(); openTodayList(e.target.dataset.k); } });
   function renderDash() {
     try { renderTodayJobs(); } catch (e) { console.error('todayJobs', e); }
     if (!$('dashChart')) return;
