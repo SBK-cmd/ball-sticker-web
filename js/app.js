@@ -291,10 +291,11 @@ function bahtText(value) {
       // ผู้ส่ง = ลูกค้าของใบงาน · ผู้รับ = ผู้รับปลายทาง (ลูกค้าฝากส่ง) — โชว์เฉพาะชื่อแรก + ที่อยู่ ไม่ส่งเบอร์โทรขึ้นหน้าสาธารณะ
       const addrOf = (name, addr) => { const a = String(addr || '').replace(/\s+/g, ' ').trim().slice(0, 300); return a ? {name: firstNameOf(name), addr: a} : null; };
       const snd = addrOf(rec.jName, rec.jAddr), rcv = rec.recv ? addrOf(rec.recv.name, rec.recv.addr) : null;
-      if (snd) doc.sender = snd;
-      if (rcv) doc.receiver = rcv;
+      const isJbs = /^JBS/i.test(String(rec.no || '').trim());   // ที่อยู่/รูปอ้างอิง เฉพาะงานส่ง (JBS)
+      if (isJbs && snd) doc.sender = snd;
+      if (isJbs && rcv) doc.receiver = rcv;
       const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
-      if (refs.length) doc.refPhotos = refs;
+      if (isJbs && refs.length) doc.refPhotos = refs;
       cloudDb.collection('publicJobs').doc(String(rec.trackToken)).set(doc).catch(e => console.error('publicJobs save error', e));
     } catch (e) { console.error('publicJobs mirror', e); }
   }
@@ -4237,7 +4238,18 @@ function bahtText(value) {
   }
   function nextJobNo() {
     const d = ($('jobDate').value || todayISO()).replace(/-/g, '').slice(2);
-    return nextJobNoFor((($('jobWholesale') && $('jobWholesale').checked) ? 'JBS' : 'JB') + d);   // งานราคาส่ง (งานส่ง) รันเลข JBS แยกจาก JB
+    return nextJobNoFor((isDeliveryJob() ? 'JBS' : 'JB') + d);   // งานส่ง (ติ๊กงานราคาส่ง หรือมีผู้รับปลายทาง) รันเลข JBS แยกจาก JB
+  }
+  function isDeliveryJob() {
+    return !!(($('jobWholesale') && $('jobWholesale').checked) || $('jRName').value.trim() || $('jRAddr').value.trim());
+  }
+  // งานส่งที่เลขยังเป็น JB → เปลี่ยนเป็น JBS (กันชนกับงานหน้าร้าน); คืนค่า true ถ้าเปลี่ยน
+  function fixDeliveryNo(skipId) {
+    const cur = String($('jobNo').value || '').trim();
+    const m = /^JB(\d{6})-\d{3}$/.exec(cur);
+    if (!m || !isDeliveryJob()) return false;
+    $('jobNo').value = nextJobNoFor('JBS' + m[1], skipId);
+    return true;
   }
 
   function collectJob() {
@@ -4276,6 +4288,7 @@ function bahtText(value) {
     // ใบใหม่ที่ยังไม่บันทึก และเลขยังเป็นเลขอัตโนมัติ → สลับ JB ↔ JBS ตามติ๊ก (ใบที่บันทึกแล้วไม่เปลี่ยนเลข เพราะอาจส่งให้ลูกค้าไปแล้ว)
     if (!currentJobId && /^JBS?\d{6}-\d{3}$/.test(String($('jobNo').value || '').trim())) { $('jobNo').value = nextJobNo(); renderJob(); }
   });
+  ['jRName', 'jRAddr'].forEach(id => $(id).addEventListener('change', () => { if (!currentJobId && fixDeliveryNo()) renderJob(); }));
   $('jobToWholesale').addEventListener('click', () => {
     if (!$('jName').value.trim()) { toast('ใส่ชื่อลูกค้าก่อน'); $('jName').focus(); return; }
     lastWhMerge = null;
@@ -4345,6 +4358,7 @@ function bahtText(value) {
     if (!String(data.no).trim()) { toast('ใส่เลขที่ใบก่อนบันทึก'); $('jobNo').focus(); return; }
     const id = currentJobId || ('j' + Date.now());
     const idx = list.findIndex(j => j.id === id);
+    { const was = String(data.no).trim(); if (fixDeliveryNo(currentJobId)) { data.no = $('jobNo').value; toast('งานส่ง: เปลี่ยนเลข ' + was + ' เป็น ' + data.no + ' ให้แล้ว'); } }
     if (idx < 0 && list.some(j => String(j.no || '').trim().toUpperCase() === String(data.no).trim().toUpperCase())) {   // ใบใหม่ เลขชนกับใบเดิม (เช่น 2 เครื่องเปิดพร้อมกัน) → ขยับเลขให้อัตโนมัติ
       const m = /^(.*?)-?\d+$/.exec(String(data.no).trim()), old = data.no;
       data.no = nextJobNoFor(m && m[1] ? m[1] : 'JB' + String($('jobDate').value || todayISO()).replace(/-/g, '').slice(2));
