@@ -587,6 +587,7 @@ button.status-pill:active{filter:brightness(0.9)}
 .dash-stat-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow-1);display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}
 .dash-stat-card.hero{position:relative;overflow:hidden;background:var(--hero-bg);border-color:transparent;color:#fff;background-image:radial-gradient(120% 140% at 100% 0%,rgba(127,211,239,.2),transparent 55%)}
 .dash-stat-card.hero .dsc-label{color:rgba(255,255,255,.78)}
+.dsc-ic svg,.dash-cat-ic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .dsc-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:18px}
 .dash-stat-card.hero .dsc-ic{background:rgba(255,255,255,.18);color:#fff}
 .dsc-ic.teal{background:rgba(13,111,146,.12);color:var(--sticker-line)}
@@ -3106,28 +3107,28 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
       </div>
       <div class="dash-stat-grid">
         <div class="dash-stat-card hero">
-          <span class="dsc-ic" aria-hidden="true">🎉</span>
+          <span class="dsc-ic" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>
           <span class="dsc-label">ยอดขายวันนี้</span>
           <span class="dsc-val" id="dashTodaySales">0.00 บาท</span>
           <span class="dsc-trend" id="dashTodayCompare">เทียบกับเมื่อวาน —</span>
         </div>
         <div class="dash-stat-card">
-          <span class="dsc-ic teal" aria-hidden="true">📈</span>
+          <span class="dsc-ic teal" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/></svg></span>
           <span class="dsc-label">ยอดขายเดือนนี้</span>
           <span class="dsc-val" id="dashMonthSales">0.00 บาท</span>
         </div>
         <div class="dash-stat-card">
-          <span class="dsc-ic blue" aria-hidden="true">👥</span>
+          <span class="dsc-ic blue" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 5.2a3.4 3.4 0 010 6.6M18.5 14.3c1.8.8 3 2.7 3 5.2"/></svg></span>
           <span class="dsc-label">ลูกค้าทั้งหมด</span>
           <span class="dsc-val" id="dashCustCount">0 ราย</span>
         </div>
         <div class="dash-stat-card">
-          <span class="dsc-ic amber" aria-hidden="true">📄</span>
+          <span class="dsc-ic amber" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></span>
           <span class="dsc-label">เอกสารทั้งหมด</span>
           <span class="dsc-val" id="dashDocCount">0 รายการ</span>
         </div>
         <div class="dash-stat-card">
-          <span class="dsc-ic purple" aria-hidden="true">💰</span>
+          <span class="dsc-ic purple" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5L5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/></svg></span>
           <span class="dsc-label" id="dashNetVatMiniLabel">VAT สุทธิเดือนนี้</span>
           <span class="dsc-val" id="dashNetVatMini">0.00 บาท</span>
         </div>
@@ -3186,7 +3187,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
 
       <div class="dash-cat-card" id="dashOwedCard" style="margin-bottom:14px">
         <div class="dash-cat-head">
-          <span class="dash-cat-ic amber" aria-hidden="true">💳</span>
+          <span class="dash-cat-ic amber" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5A2.5 2.5 0 016.5 5H18v3"/><path d="M4 7.5V17a2 2 0 002 2h13a1 1 0 001-1V9a1 1 0 00-1-1H6.5A2.5 2.5 0 014 7.5z"/><circle cx="16" cy="13.5" r="1.2"/></svg></span>
           <h3>บิลค้างชำระ · งานส่ง (JBS)</h3>
           <button type="button" class="dash-cat-link" id="dashOwedBtn">ดูและเก็บเงิน ›</button>
         </div>
@@ -3199,7 +3200,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
       <div class="dash-cat-row">
         <div class="dash-cat-card">
           <div class="dash-cat-head">
-            <span class="dash-cat-ic teal" aria-hidden="true">🧾</span>
+            <span class="dash-cat-ic teal" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg></span>
             <h3>เอกสารขาย</h3>
             <button type="button" class="dash-cat-link" id="dashCatBillBtn">ดูทั้งหมด ›</button>
           </div>
@@ -3212,7 +3213,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
 
         <div class="dash-cat-card">
           <div class="dash-cat-head">
-            <span class="dash-cat-ic amber" aria-hidden="true">🎯</span>
+            <span class="dash-cat-ic amber" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M9 13l2 2 4-4"/></svg></span>
             <h3>ใบคอนเฟิร์มงาน</h3>
             <button type="button" class="dash-cat-link" id="dashCatJobBtn">ดูทั้งหมด ›</button>
           </div>
@@ -3226,7 +3227,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
 
         <div class="dash-cat-card">
           <div class="dash-cat-head">
-            <span class="dash-cat-ic blue" aria-hidden="true">🛒</span>
+            <span class="dash-cat-ic blue" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M3 4h2.5l2.2 11h10l2-8H7"/></svg></span>
             <h3>ภาษีซื้อ</h3>
             <button type="button" class="dash-cat-link" id="dashCatPurchBtn">ดูทั้งหมด ›</button>
           </div>
@@ -3239,7 +3240,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
 
         <div class="dash-cat-card" id="dashWholesaleCard">
           <div class="dash-cat-head">
-            <span class="dash-cat-ic amber" aria-hidden="true">🏷️</span>
+            <span class="dash-cat-ic amber" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/></svg></span>
             <h3>ใบราคาส่ง</h3>
             <button type="button" class="dash-cat-link" id="dashCatWholesaleBtn">ดูทั้งหมด ›</button>
           </div>
@@ -3254,7 +3255,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
 
         <div class="dash-cat-card">
           <div class="dash-cat-head">
-            <span class="dash-cat-ic green" aria-hidden="true">💰</span>
+            <span class="dash-cat-ic green" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6.5" width="18" height="11" rx="2.5"/><circle cx="12" cy="12" r="2.6"/><path d="M6.5 12h.01M17.5 12h.01"/></svg></span>
             <h3>สรุปการเงินเดือนนี้</h3>
             <button type="button" class="dash-cat-link" id="dashCatReportBtn">ดูรายงาน ›</button>
           </div>
