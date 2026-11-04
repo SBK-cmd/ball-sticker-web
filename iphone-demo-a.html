@@ -9760,7 +9760,7 @@ function bahtText(value) {
   // ทดสอบในเครื่องที่ไม่ได้ต่อคลาวด์: ใช้รายการที่อยู่ใน localStorage (bs_bank_in)
   if (!cloudDb && canBank && (store.get('bs_bank_in', []).length || store.get('bs_bank_out', []).length || store.get('bs_bank_balance', []).length)) onBankInChange();
   /* เพิ่ม/ลบรายการเงินเข้า-ออกเอง (กรณี SMS ไม่เข้า หรือระบบอ่านผิด) */
-  if (!isSuper) document.querySelectorAll('#jobAccount option[value="วันทิม"], #billAccount option[value="วันทิม"]').forEach(o => o.remove());   // บัญชีวันทิม เห็นเฉพาะ ball
+  if (!isSuper) document.querySelectorAll('#billAccount option[value="วันทิม"]').forEach(o => o.remove());   // บัญชีวันทิม เห็นเฉพาะ ball
   $('bkAcc').innerHTML = VISIBLE_ACCOUNTS.map(a => '<option value="' + esc(a) + '">บัญชี' + esc(a) + '</option>').join('');
   const toLocalInput = ms => { const d = new Date(ms); return localISO(d) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); };
   const bkDir = () => (document.querySelector('input[name="bkDir"]:checked') || {}).value || 'out';
