@@ -1278,6 +1278,13 @@ tr{break-inside:avoid}
 .recv-box{background:#eef6ff;border:1px solid #bcd7f5;border-radius:14px;padding:10px 12px;margin:8px 0}
 .recv-box .f{margin-top:6px}
 .wh-sweep{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#fff3c4;border:1px solid #f0d36b;border-radius:14px;padding:10px 14px;margin:0 0 10px;font-size:14px}
+.jm-x{display:none}
+body.jm-open{overflow:hidden}
+body.jm-open::before{content:'';position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1100}
+body.jm-open #jobFormTop{position:fixed;inset:calc(env(safe-area-inset-top,0px) + 10px) 10px calc(env(safe-area-inset-bottom,0px) + 10px);z-index:1110;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--bg,#f4f4f1);border-radius:18px;padding:12px 12px 90px;box-shadow:0 24px 70px rgba(0,0,0,.45);margin:0!important;max-width:none}
+body.jm-open .jm-x{display:flex;position:sticky;top:0;z-index:5;grid-column:1/-1;justify-content:space-between;align-items:center;gap:10px;margin:-4px 0 8px;padding:8px 6px;background:var(--bg,#f4f4f1);font-weight:700}
+body.jm-open .jm-x button{border:1px solid var(--line,#ddd);background:var(--surface,#fff);border-radius:999px;padding:8px 16px;font:inherit;font-weight:700;cursor:pointer}
+body.jm-open .fab-newjob{display:none!important}
 .fab-newjob{position:fixed;right:12px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:60;border:3px solid #ffc400;border-radius:999px;padding:14px 22px;min-height:54px;background:#1c1c2e;color:#ffc400;font:inherit;font-weight:800;font-size:17px;letter-spacing:.2px;box-shadow:0 0 0 4px rgba(255,196,0,.28),0 14px 30px -6px rgba(20,20,40,.6);cursor:pointer}
 .fab-newjob:active{transform:scale(.97)}
 @media (min-width:900px){.fab-newjob{display:none}}
@@ -2498,6 +2505,7 @@ html body .page-head h1{letter-spacing:-.02em}
 
       <button type="button" class="fab-newjob no-print" id="fabNewJob" aria-label="เพิ่มใบคอนเฟิร์มใหม่">＋ เพิ่มใบคอนเฟิร์ม</button>
       <div class="bill-grid" id="jobFormTop">
+        <div class="jm-x no-print"><span id="jmTitle">แก้ไขใบงาน</span><button type="button" id="jmClose">✕ ปิด</button></div>
         <div class="stack no-print">
           <div class="card">
             <h2>ข้อมูลงาน</h2>
@@ -3472,7 +3480,7 @@ html body .page-head h1{letter-spacing:-.02em}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=f587cbd1ef",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=fb272b4415",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
