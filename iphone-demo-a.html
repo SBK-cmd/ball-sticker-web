@@ -1463,6 +1463,7 @@ body.chg-open{overflow:hidden}
 #wholesaleHistory .wd-jm{min-width:0}#wholesaleHistory .wd-jm b{display:block;font-size:14px}
 #wholesaleHistory .wd-jm small{display:block;font-size:12.5px;color:#4b5563;overflow-wrap:anywhere}
 #wholesaleHistory .wd-j .btn{flex:none}
+#wholesaleHistory .wd-jm small.wd-in{color:#166534;font-weight:700}
 #wholesaleHistory .wd-bill{margin-bottom:12px;padding-bottom:10px;border-bottom:1px dashed rgba(0,0,0,.14)}
 #wholesaleHistory .wd-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}#wholesaleHistory .wd-btns .btn{flex:1 1 auto;white-space:nowrap}
 #wholesaleHistory .wd-p2{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,.06)}
@@ -8993,7 +8994,7 @@ function bahtText(value) {
      ไม่มี VAT ไม่รันเลขที่เอกสารอัตโนมัติ และไม่รวมกับ bs_bills / แดชบอร์ด / รายงานภาษีใดๆ ทั้งสิ้น
      เก็บข้อมูลแยกที่ localStorage key "bs_wholesale" และ Firestore collection "wholesale" ของตัวเอง) ---------------- */
   let wholesaleItems = [{name: '', qty: 1, price: 0}];
-  let currentWholesaleId = null, whPendingJobId = null, whOpen = {};
+  let currentWholesaleId = null, whPendingJobId = null, whOpen = {}, whAgainArmed = null;
   let whDelArmed = null, whDelTimer = null;
 
   function renderWholesaleItems() {
@@ -9201,7 +9202,7 @@ function bahtText(value) {
   function whPendingJobsFor(name) {
     const nm = String(name || '').trim(); if (!nm) return [];
     const cutoff = new Date(Date.now() - 45 * 864e5).toISOString().slice(0, 10);
-    return store.get('bs_jobs', []).filter(j => String(j.jName || '').trim() === nm && String(j.date || '') >= cutoff && jobPendingWhItems(j).length)
+    return store.get('bs_jobs', []).filter(j => String(j.jName || '').trim() === nm && String(j.date || '') >= cutoff && (j.items || []).some(i => (i.name || '').trim()))
       .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
   }
   function sumLine(w) {
@@ -9222,9 +9223,12 @@ function bahtText(value) {
     });
     const pj = whPendingJobsFor(g.name);
     h += '<div class="wd-h" style="margin-top:12px">งานของร้านนี้ที่คีย์ไว้ <small>เพิ่มเข้าบิลได้แม้ยังไม่มีราคา</small></div>' + (pj.length ? pj.map(j => {
-      const rs = jobPendingWhItems(j);
-      return '<div class="wd-j"><div class="wd-jm"><b>' + esc(j.no || 'ใบงาน') + '</b><small>' + esc(thDate(j.date)) + ' · ' + rs.map(r => esc(String(r.i.name).trim()) + ' ×' + esc(r.i.qty || 1)).join(', ') + '</small></div><button class="btn small good" type="button" data-act="addjob" data-jid="' + esc(j.id) + '">＋ เพิ่มเข้าบิล</button></div>';
-    }).join('') : '<p class="hint" style="margin:6px 0 0">ยังไม่มีงานที่รอใส่ในบิล</p>');
+      const rs = jobPendingWhItems(j), named = (j.items || []).filter(i => (i.name || '').trim()), refs = Object.keys(j.whAdded || {}).map(k => j.whAdded[k] && j.whAdded[k].doc).filter(Boolean);
+      const where = refs.length ? refs[refs.length - 1] : '';
+      const amt = num(j.slipAmount) > 0 ? ' · ยอด ' + money(num(j.slipAmount)) + ' บาท' : '';
+      return '<div class="wd-j"><div class="wd-jm"><b>' + esc(j.no || 'ใบงาน') + '</b><small>' + esc(thDate(j.date)) + ' · ' + (rs.length ? rs : named.map(i => ({i}))).map(r => esc(String(r.i.name).trim()) + ' ×' + esc(r.i.qty || 1)).join(', ') + esc(amt) + '</small>' + (rs.length ? '' : '<small class="wd-in">✓ อยู่ในบิล ' + esc(where) + ' แล้ว</small>') + '</div>' +
+        (rs.length ? '<button class="btn small good" type="button" data-act="addjob" data-jid="' + esc(j.id) + '">＋ เพิ่มเข้าบิล</button>' : '<button class="btn small" type="button" data-act="addjob" data-again="1" data-jid="' + esc(j.id) + '">เพิ่มอีกครั้ง</button>') + '</div>';
+    }).join('') : '<p class="hint" style="margin:6px 0 0">ยังไม่มีงานของร้านนี้ (ย้อนหลัง 45 วัน)</p>');
     h += '<div class="wd-h" style="margin-top:14px">ประวัติที่จ่ายแล้ว <small>' + g.paid.length + ' บิล' + (g.paid.length ? ' · รวม ' + money(round2(g.paid.reduce((a, w) => a + wholesaleCalc(w).total, 0))) + ' บาท' : '') + '</small></div>';
     h += g.paid.length ? g.paid.map(w => '<div class="wd-p2" data-doc="' + esc(w.id) + '"><div class="wd-jm"><b>' + esc(w.no || 'บิล') + ' <span class="wd-ok">จ่ายแล้ว</span></b><small>' + esc(thDate(w.paidAt ? new Date(w.paidAt).toISOString().slice(0, 10) : w.date)) + '</small><span class="wd-sl">' + esc(sumLine(w)) + '</span></div><div class="wd-pb"><button class="btn small" type="button" data-act="open">เปิด/พิมพ์</button><button class="btn small" type="button" data-act="togglepaid">ยกเลิกจ่าย</button></div></div>').join('') : '<p class="hint" style="margin:6px 0 0">ยังไม่มีประวัติ</p>';
     return h + '</div>';
@@ -10962,6 +10966,12 @@ function bahtText(value) {
     const act = btn.dataset.act, box = btn.closest('[data-doc]'), id = box ? box.dataset.doc : '';
     const list = store.get('bs_wholesale', []);
     if (act === 'addjob') {
+      if (btn.dataset.again) {   // งานที่อยู่ในบิลแล้ว (เช่น บิลเดิมจ่ายไปแล้ว) → ใส่เข้าบิลค้างปัจจุบัน/บิลใหม่อีกครั้ง · กดยืนยัน 2 ครั้งกันซ้ำโดยไม่ตั้งใจ
+        if (whAgainArmed !== btn.dataset.jid) { whAgainArmed = btn.dataset.jid; btn.textContent = 'กดอีกครั้งเพื่อยืนยัน'; btn.classList.add('good'); setTimeout(() => { if (whAgainArmed === btn.dataset.jid) { whAgainArmed = null; renderWholesaleHistory(); } }, 4000); return; }
+        whAgainArmed = null;
+        const jl0 = store.get('bs_jobs', []), k0 = jl0.findIndex(x => x.id === btn.dataset.jid);
+        if (k0 >= 0) { jl0[k0] = Object.assign({}, jl0[k0], {whAdded: {}}); store.set('bs_jobs', jl0); cloudSave('jobs', jl0[k0]); }
+      }
       const doc = wholesaleOpenDocFor(name, true);
       const n = doc ? addJobToWholesaleDoc(btn.dataset.jid, doc.id) : 0;
       renderWholesaleHistory(); toast(n ? 'เพิ่มงานเข้าบิลแล้ว ' + n + ' รายการ ใส่ราคาได้ที่ช่องราคา (ว่างไว้ = รอราคา)' : 'ไม่มีรายการใหม่ให้เพิ่ม'); return;
