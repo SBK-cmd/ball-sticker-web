@@ -803,7 +803,55 @@ function bahtText(value) {
       : pushSupported() && Notification.permission === 'denied' ? 'เครื่องนี้ปิดการแจ้งเตือนของเว็บไว้ ไปเปิดในการตั้งค่าเครื่อง/เบราว์เซอร์'
       : 'ตอนเปิดแอปอยู่จะเด้งแถบด้านบนพร้อมเสียงอยู่แล้ว';
   }
+  /* ---------- แดชบอร์ดแยกบัญชี (กิติพงษ์ / วันทิม): ยอดคงเหลือ · เข้า-ออก · กราฟ 14 วัน · รายการล่าสุด ---------- */
+  let acdTab = ACCOUNTS[0];
+  function renderAcctDash() {
+    const box = $('dashAcctCard'); if (!box) return;
+    box.hidden = !canBank; if (!canBank) return;
+    const accs = VISIBLE_ACCOUNTS.slice();
+    if (accs.indexOf(acdTab) < 0) acdTab = accs[0];
+    const ins = bankInAll(), outs = bankOutAll(), today = todayISO(), month = today.slice(0, 7);
+    const dOf = x => localISO(new Date(x.createdAt || 0)), sum = a => a.reduce((t, x) => t + num(x.amount), 0);
+    const days = []; for (let i = 13; i >= 0; i--) days.push(localISO(new Date(Date.now() - i * 864e5)));
+    const owedAll = can('wholesale') ? owedGroups() : [];
+    const THEME = {'กิติพงษ์': 'a', 'วันทิม': 'b'};
+    const panel = a => {
+      const mi = ins.filter(x => x.account === a), mo = outs.filter(x => x.account === a), bal = bankBalOf(a);
+      const tdIn = sum(mi.filter(x => dOf(x) === today)), tdOut = sum(mo.filter(x => dOf(x) === today));
+      const mIn = sum(mi.filter(x => dOf(x).slice(0, 7) === month)), mOut = sum(mo.filter(x => dOf(x).slice(0, 7) === month)), net = mIn - mOut;
+      const di = days.map(d => sum(mi.filter(x => dOf(x) === d))), dO = days.map(d => sum(mo.filter(x => dOf(x) === d)));
+      const mx = Math.max(1, ...di, ...dO), W = 300, H = 90, bw = W / days.length;
+      const bars = days.map((d, i) => {
+        const hi = Math.round(di[i] / mx * (H - 8)), ho = Math.round(dO[i] / mx * (H - 8)), x = i * bw;
+        return (hi ? '<rect class="ci" x="' + (x + 2).toFixed(1) + '" y="' + (H - hi) + '" width="' + (bw / 2 - 2).toFixed(1) + '" height="' + hi + '" rx="2"/>' : '') +
+               (ho ? '<rect class="co" x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - ho) + '" width="' + (bw / 2 - 2).toFixed(1) + '" height="' + ho + '" rx="2"/>' : '');
+      }).join('');
+      const recent = mi.map(x => ({t: x.createdAt || 0, in: true, x})).concat(mo.map(x => ({t: x.createdAt || 0, in: false, x}))).sort((p, q) => q.t - p.t).slice(0, 5);
+      const rows = recent.length ? recent.map(r => '<li><span class="t">' + esc(bankInWhen(r.x, true)) + '</span><span class="n">' + esc(r.in ? (r.x.matchedJobNo ? 'ใบงาน ' + r.x.matchedJobNo : (r.x.from ? 'จาก ' + r.x.from : 'เงินเข้า')) : (r.x.to || r.x.note || r.x.from || 'เงินออก')) + '</span><b class="' + (r.in ? 'i' : 'o') + '">' + (r.in ? '+' : '\u2212') + money(num(r.x.amount)) + '</b></li>').join('') : '<li class="none">ยังไม่มีรายการ</li>';
+      let extra = '';
+      if (a === 'วันทิม') {
+        const owedTot = round2(owedAll.reduce((t, g) => t + g.total, 0)), cut = Date.now() - 14 * 864e5;
+        const unm = mi.filter(x => (x.createdAt || 0) >= cut && !x.matchedJobId).length;
+        extra = '<div class="acd-extra"><div><span>ลูกค้าค้างจ่าย (งานส่ง)</span><b>' + money(owedTot) + ' บาท</b><small>' + owedAll.length + ' ราย</small></div><div><span>เงินเข้ายังไม่จับคู่ 14 วัน</span><b>' + unm + ' รายการ</b></div></div>';
+      }
+      return '<article class="acd-card t-' + THEME[a] + '" data-acc="' + esc(a) + '"' + (a === acdTab ? ' data-on="1"' : '') + '>' +
+        '<header><span class="nm">บัญชี' + esc(a) + '</span>' + (bal ? '<span class="up">อัปเดต ' + esc(bankBalWhen(bal)) + '</span>' : '') + '</header>' +
+        '<div class="hero"><small>ยอดคงเหลือ</small>' + (bal ? '<b>' + money(num(bal.balance)) + '<em>บาท</em></b>' : '<b class="none">—</b>') + '</div>' +
+        '<div class="kp"><div class="ci"><span>เข้าวันนี้</span><b>+' + money(tdIn) + '</b></div><div class="co"><span>ออกวันนี้</span><b>\u2212' + money(tdOut) + '</b></div>' +
+        '<div class="ci"><span>เข้าเดือนนี้</span><b>+' + money(mIn) + '</b></div><div class="co"><span>ออกเดือนนี้</span><b>\u2212' + money(mOut) + '</b></div></div>' +
+        '<div class="net ' + (net < 0 ? 'neg' : 'pos') + '"><span>สุทธิเดือนนี้</span><b>' + (net < 0 ? '\u2212' : '+') + money(Math.abs(net)) + ' บาท</b></div>' + extra +
+        '<div class="ch"><div class="chh"><span>14 วันล่าสุด</span><span class="lg"><i class="ci"></i>เข้า <i class="co"></i>ออก</span></div><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="กราฟเงินเข้า-ออก 14 วัน">' + bars + '</svg></div>' +
+        '<ul class="rc">' + rows + '</ul></article>';
+    };
+    $('acdSeg').hidden = accs.length < 2;
+    $('acdSeg').innerHTML = accs.map(a => '<button type="button" data-a="' + esc(a) + '" aria-pressed="' + (a === acdTab) + '">' + esc(a) + '</button>').join('');
+    $('acdWrap').className = 'acd-wrap n' + accs.length;
+    $('acdWrap').innerHTML = accs.map(panel).join('');
+    const old = $('bankInSum'); if (old) old.style.display = 'none';
+  }
+  (function () { const sg = $('acdSeg'); if (sg) sg.addEventListener('click', e => { const b = e.target.closest('button[data-a]'); if (!b) return; acdTab = b.dataset.a; renderAcctDash(); }); })();
   function renderBankIn() {
+    try { renderAcctDash(); } catch (e) { console.error('acctDash', e); }
     const card = $('dashBankInCard'); if (!card) return;
     card.hidden = !canBank; if (!canBank) return;
     const list = bankInAll(), outs = bankOutAll();
