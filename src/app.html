@@ -3306,7 +3306,7 @@ function bahtText(value) {
       if (isJbs && rcv) { doc.receiver = rcv; const fn = String(rec.recv.name || '').replace(/\s+/g, ' ').trim().slice(0, 80); if (fn) doc.receiver.name = fn; }   // ผู้รับ: ชื่อเต็ม (ตามที่ร้านสั่ง)
       // ยอดค้างรวมของลูกค้า (ใบราคาส่งที่ยังไม่จ่าย) + payload พร้อมเพย์ ให้ลูกค้าสแกนจ่ายเองจากหน้าติดตาม
       if (isJbs) { const ow = owedGroups().find(x => x.name === (String(rec.jName || '').trim() || 'ไม่ระบุชื่อ')); if (ow && ow.total > 0) doc.pay = {total: ow.total, payee: payAcct('วันทิม').name || '', ref: payRef(Date.now()), payload: promptPayPayload(payAcct('วันทิม').id, ow.total),   // งาน JBS เข้าบัญชีวันทิมทั้งหมด
-      docs: ow.docs.slice(0, 10).map(d => ({no: d.no, amount: d.total}))}; }
+      docs: ow.docs.slice(0, 10).map(d => ({no: d.no, amount: d.total, items: (d.items || []).slice(0, 20)}))}; }
       const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
       if (isJbs && refs.length) doc.refPhotos = refs;
       cloudDb.collection('publicJobs').doc(String(rec.trackToken)).set(doc).catch(e => console.error('publicJobs save error', e));
@@ -6253,10 +6253,10 @@ function bahtText(value) {
     const g = {};
     const add = (name, d) => { const k = String(name || '').trim() || 'ไม่ระบุชื่อ'; (g[k] = g[k] || {name: k, docs: [], total: 0}).docs.push(d); };
     // เฉพาะงานส่ง (JBS) = ใบราคาส่ง — บิลหน้าร้านไม่รวม
-    if (can('wholesale')) store.get('bs_wholesale', []).filter(w => !w.paid).forEach(w => add(w.buyerName, {k: 'wholesale', id: w.id, no: w.no || w.ref || 'ใบราคาส่ง', date: w.date || '', total: round2(wholesaleCalc(w).total)}));
+    if (can('wholesale')) store.get('bs_wholesale', []).filter(w => !w.paid).forEach(w => add(w.buyerName, {k: 'wholesale', id: w.id, no: w.no || w.ref || 'ใบราคาส่ง', date: w.date || '', total: round2(wholesaleCalc(w).total), items: (w.items || []).filter(i => String(i.name || '').trim()).map(i => ({n: String(i.name).trim().slice(0, 80), q: num(i.qty), p: num(i.price)}))}));
     // งาน JBS ที่คีย์จำนวนเงินไว้แล้ว แต่ยังไม่ได้รวมเข้าใบราคาส่ง และยังไม่ผูกกับเงินเข้าจริง = ยอดที่รอเก็บ
     if (can('wholesale')) store.get('bs_jobs', []).filter(j => /^JBS/i.test(String(j.no || '').trim()) && !j.owedPaid && num(j.slipAmount) > 0 && !jobBankIdsOf(j).length && jobPendingWhItems(j).length)
-      .forEach(j => add(j.jName, {k: 'jobs', id: j.id, no: j.no, date: j.date || '', total: round2(num(j.slipAmount))}));
+      .forEach(j => add(j.jName, {k: 'jobs', id: j.id, no: j.no, date: j.date || '', total: round2(num(j.slipAmount)), items: (j.items || []).filter(i => String(i.name || '').trim()).map(i => ({n: String(i.name).trim().slice(0, 80), q: num(i.qty), p: 0}))}));
     const out = Object.values(g).filter(x => x.docs.some(d => d.total > 0));
     out.forEach(x => { x.docs.sort((a, b) => String(a.date).localeCompare(String(b.date))); x.total = round2(x.docs.reduce((t, d) => t + d.total, 0)); });
     return out.sort((a, b) => b.total - a.total);

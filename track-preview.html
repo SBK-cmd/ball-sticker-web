@@ -41,6 +41,17 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
 .pay canvas{width:240px;max-width:100%;height:auto;border-radius:10px;background:#fff;border:1px solid #e5e7eb;margin-top:6px}
 .pay .alt{margin-top:12px;padding:10px;border-top:1px dashed #fcd34d;line-height:1.6}.pay .alt .no{font-weight:800;font-size:1.15rem;letter-spacing:.5px}.pay .alt button{margin-top:4px;padding:6px 12px;border-radius:8px;border:1px solid #d1d5db;background:#fff;font:inherit;cursor:pointer}
 .pay small{display:block;color:#6b7280;margin-top:6px;line-height:1.5}.pay a.sv{display:inline-block;margin-top:8px;padding:8px 14px;border-radius:10px;background:#111827;color:#fff;text-decoration:none;font-weight:600}
+.payBtn{display:flex;justify-content:space-between;align-items:center;width:100%;margin-top:6px;padding:14px 16px;border:0;border-radius:14px;background:#fde68a;color:#111;font:inherit;font-weight:700;font-size:1rem;cursor:pointer}
+.payBtn b{font-size:1.15rem}
+.pm{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:50}.pm.show{display:flex}
+.pms{background:#fff;color:#111;width:min(100%,460px);max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px}
+.pmt{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:1.1rem}.pmt button{border:0;background:#f3f4f6;border-radius:50%;width:34px;height:34px;font-size:1rem;cursor:pointer}
+.pmd{border:1px solid #e5e7eb;border-radius:12px;padding:8px 10px;margin:6px 0}.pmh{display:flex;justify-content:space-between}
+.pmd ul{list-style:none;margin:6px 0 0;padding:0;font-size:.9rem;color:#4b5563}.pmd li{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
+.pmsum{display:flex;justify-content:space-between;align-items:center;margin:12px 0 4px;font-size:1.05rem}.pmsum b{font-size:1.5rem}
+.pmq{text-align:center}.pmq canvas{width:240px;max-width:100%;height:auto;border:1px solid #e5e7eb;border-radius:10px}
+.pmq a.sv{display:inline-block;margin-top:8px;padding:8px 14px;border-radius:10px;background:#111827;color:#fff;text-decoration:none;font-weight:600}
+.pms small{display:block;color:#6b7280;margin-top:8px;line-height:1.5;text-align:center}
 </style>
 </head>
 <body>
@@ -61,6 +72,33 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]; }); }
   function thDate(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? (+m[3]) + ' ' + MONTHS[+m[2] - 1] + ' ' + (+m[1] + 543) : ''; }
   function fail(t, d) { box.innerHTML = '<div class="err"><b>' + esc(t) + '</b>' + esc(d || '') + '</div>'; }
+  function money(n) { return Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+  // หน้าต่างบิลค้างชำระ: รายการ + ยอดรวม + QR พร้อมเพย์ (วาดจาก payload ที่ร้านสร้าง) · จ่ายแล้ว/ไม่มียอดค้าง = ไม่มีปุ่ม ไม่มีหน้าต่าง
+  var payM = null;
+  function openPay(on) { if (payM) payM.classList.toggle('show', !!on); document.body.style.overflow = on ? 'hidden' : ''; }
+  function setPayModal(p) {
+    if (!p) { if (payM) { payM.remove(); payM = null; } document.body.style.overflow = ''; return; }
+    var was = payM && payM.classList.contains('show');
+    if (!payM) { payM = document.createElement('div'); payM.className = 'pm'; document.body.appendChild(payM); payM.addEventListener('click', function (e) { if (e.target === payM || e.target.closest('[data-pmx]')) openPay(false); }); }
+    var docs = (p.docs || []).map(function (d) {
+      var its = (d.items || []).map(function (i) { var line = (+i.q || 0) * (+i.p || 0); return '<li><span>' + esc(i.n || '') + (i.q ? ' × ' + esc(i.q) : '') + '</span><span>' + (line > 0 ? money(line) : '') + '</span></li>'; }).join('');
+      return '<div class="pmd"><div class="pmh"><b>' + esc(d.no || 'ใบ') + '</b><b>' + money(d.amount) + '</b></div>' + (its ? '<ul>' + its + '</ul>' : '') + '</div>';
+    }).join('');
+    payM.innerHTML = '<div class="pms"><div class="pmt"><b>รายการค้างชำระ</b><button type="button" data-pmx="1" aria-label="ปิด">✕</button></div>' + docs +
+      '<div class="pmsum"><span>ยอดที่ยังไม่ได้จ่าย</span><b>' + money(p.total) + ' บาท</b></div>' +
+      '<div class="pmq"><canvas id="payQr" width="480" height="480" aria-label="QR พร้อมเพย์"></canvas><br><a class="sv" id="payQrSave" download="QR-ชำระเงิน.png" href="#">บันทึกรูป QR</a></div>' +
+      '<small>สแกนด้วยแอปธนาคาร · ชื่อบัญชี ' + esc(p.payee || '') + '<br>โอนแล้วร้านจะตรวจยอดให้อัตโนมัติ รายการที่จ่ายแล้วจะหายไปจากหน้านี้ (หากไม่หาย แจ้งร้านทาง LINE @bk25)</small></div>';
+    try {
+      var cv = document.getElementById('payQr');
+      if (cv && window.qrEncode) {
+        var m = window.qrEncode(p.payload), n = m.length, q = 4, sz = cv.width, cell = Math.floor(sz / (n + q * 2)), off = Math.floor((sz - cell * n) / 2), g = cv.getContext('2d');
+        g.fillStyle = '#fff'; g.fillRect(0, 0, sz, sz); g.fillStyle = '#000';
+        for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (m[r][c]) g.fillRect(off + c * cell, off + r * cell, cell, cell);
+        var sv = document.getElementById('payQrSave'); if (sv) sv.href = cv.toDataURL('image/png');
+      }
+    } catch (e) { payM.querySelector('.pms').insertAdjacentHTML('beforeend', '<small>แสดง QR ไม่ได้ กรุณาแจ้งร้านทาง LINE @bk25</small>'); }
+    if (was) openPay(true);
+  }
   function show(j) {
     var idx = 0, i; for (i = 0; i < STEPS.length; i++) if (STEPS[i][0] === j.status) idx = i;
     var done = idx === STEPS.length - 1, lis = STEPS.map(function (s, k) {
@@ -77,13 +115,8 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
     }
     var rp = (isJbs ? (j.refPhotos || []) : []).filter(function (u) { return typeof u === 'string' && /^https:\/\//.test(u); });
     if (rp.length) html += '<div class="rf"><h2>🖼 รูปอ้างอิง</h2><div class="pg">' + rp.map(function (u, k) { return '<figure><a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="รูปอ้างอิง ' + (k + 1) + '" loading="lazy"></a></figure>'; }).join('') + '</div></div>';
-    if (isJbs && j.pay && +j.pay.total > 0 && typeof j.pay.payload === 'string' && /^000201/.test(j.pay.payload)) {
-      html += '<div class="pay"><h2>💳 ยอดที่ต้องชำระ</h2><div class="amt">' + Number(j.pay.total).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' บาท</div>' +
-        '<ul>' + (j.pay.docs || []).map(function (d) { return '<li><span>' + esc(d.no || 'ใบ') + '</span><span>' + Number(d.amount).toLocaleString('en-US', {minimumFractionDigits: 2}) + '</span></li>'; }).join('') + '</ul>' +
-        '<canvas id="payQr" width="480" height="480" aria-label="QR พร้อมเพย์"></canvas><br><a class="sv" id="payQrSave" download="QR-ชำระเงิน.png" href="#">บันทึกรูป QR</a>' +
-        (j.pay.alt && /^\d{6,20}$/.test(String(j.pay.alt.no || '')) ? '<div class="alt"><b>หรือโอนเข้าบัญชี</b><br>' + esc(j.pay.alt.bank || '') + ' <span class="no">' + esc(j.pay.alt.no) + '</span><br>' + esc(j.pay.alt.name || '') + '<br><button type="button" id="payCopy" data-no="' + esc(j.pay.alt.no) + '">คัดลอกเลขบัญชี</button></div>' : '') +
-        '<small>สแกนด้วยแอปธนาคาร · ชื่อบัญชี ' + esc(j.pay.payee || '') + '<br>โอนแล้วร้านจะตรวจยอดให้อัตโนมัติ (หากไม่ขึ้นสถานะ แจ้งร้านทาง LINE @bk25)</small></div>';
-    }
+    var payOk = isJbs && j.pay && +j.pay.total > 0 && typeof j.pay.payload === 'string' && /^000201/.test(j.pay.payload);
+    if (payOk) html += '<button type="button" class="payBtn" id="payOpen"><span>💳 ยังไม่ได้ชำระ</span><b>' + money(j.pay.total) + ' บาท</b></button>';
     if (j.due && !done) html += '<div class="row"><span>กำหนดส่ง</span><b>' + esc(thDate(j.due)) + '</b></div>';
     if (j.trackCode) html += '<div class="row"><span>เลขพัสดุ' + (j.carrier ? ' (' + esc(j.carrier) + ')' : '') + '</span><b>' + esc(j.trackCode) + '<button class="copy" id="cp" type="button">คัดลอก</button></b></div>';
     if (j.trackUrl && /^https:\/\//.test(j.trackUrl)) html += '<a class="go" href="' + esc(j.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะพัสดุ' + (j.carrier ? ' กับ ' + esc(j.carrier) : '') + '</a>';
@@ -96,21 +129,8 @@ h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:
     }
     if (j.updatedAt) { var d = new Date(j.updatedAt); html += '<div class="upd">อัปเดตล่าสุด ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + (d.getFullYear() + 543) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' น.</div>'; }
     box.innerHTML = html;
-    var cp = document.getElementById('payCopy');
-    if (cp) cp.addEventListener('click', function () {
-      var no = cp.getAttribute('data-no');
-      function ok() { cp.textContent = 'คัดลอกแล้ว ✓'; }
-      try { navigator.clipboard.writeText(no).then(ok, function () { window.prompt('คัดลอกเลขบัญชี', no); }); } catch (e) { window.prompt('คัดลอกเลขบัญชี', no); }
-    });
-    try {
-      var cv = document.getElementById('payQr');
-      if (cv && window.qrEncode && j.pay) {
-        var m = window.qrEncode(j.pay.payload), n = m.length, q = 4, sz = cv.width, cell = Math.floor(sz / (n + q * 2)), off = Math.floor((sz - cell * n) / 2), g = cv.getContext('2d');
-        g.fillStyle = '#fff'; g.fillRect(0, 0, sz, sz); g.fillStyle = '#000';
-        for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (m[r][c]) g.fillRect(off + c * cell, off + r * cell, cell, cell);
-        var sv = document.getElementById('payQrSave'); if (sv) sv.href = cv.toDataURL('image/png');
-      }
-    } catch (e) { var pc = document.querySelector('.pay'); if (pc) pc.insertAdjacentHTML('beforeend', '<small>แสดง QR ไม่ได้ กรุณาแจ้งร้านทาง LINE @bk25</small>'); }
+    setPayModal(payOk ? j.pay : null);
+    var po = document.getElementById('payOpen'); if (po) po.onclick = function () { openPay(true); };
     var cp = document.getElementById('cp'); if (cp) cp.onclick = function () { try { navigator.clipboard.writeText(j.trackCode); cp.textContent = 'คัดลอกแล้ว'; } catch (e) {} };
   }
   var t = (new URLSearchParams(location.search).get('t') || '').trim();
