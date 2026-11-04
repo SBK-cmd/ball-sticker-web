@@ -1331,6 +1331,17 @@ body.chg-open{overflow:hidden}
 .acd-card .rc li{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid rgba(0,0,0,.07);font-size:14px}
 .acd-card .rc .t{flex:0 0 auto;font-size:12px;opacity:.65;min-width:84px}.acd-card .rc .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .acd-card .rc li.none{opacity:.6;justify-content:center}
+.tdy{margin:0 0 16px}
+.tdy-head{display:flex;justify-content:space-between;align-items:baseline;margin:0 2px 10px}.tdy-head h2{margin:0;font-size:18px}.tdy-head span{font-size:13px;opacity:.65}
+.tdy-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (min-width:900px){.tdy-grid{grid-template-columns:repeat(4,1fr)}}
+.tdy-t{border-radius:20px;padding:14px;background:var(--surface,#fff);border:1px solid rgba(0,0,0,.07);box-shadow:0 8px 24px rgba(20,30,60,.06);display:flex;flex-direction:column;gap:2px;min-width:0}
+.tdy-t .ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;margin-bottom:6px}
+.tdy-t .ic svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tdy-t .lb{font-size:13px;opacity:.7}.tdy-t b{font-size:30px;line-height:1.1;font-weight:800;color:#1d2433}.tdy-t b em{font-style:normal;font-size:14px;font-weight:600;margin-left:5px;opacity:.65}
+.tdy-t small{font-size:12px;opacity:.65;line-height:1.35}
+.tdy-t.c1 .ic{background:#e8f1fb;color:#2b6cb0}.tdy-t.c2 .ic{background:#e6f6ea;color:#1a6b3a}.tdy-t.c3 .ic{background:#fff3d9;color:#9a6b00}.tdy-t.c4 .ic{background:#f1f1f1;color:#555}
+.tdy-t.c4.hot{background:linear-gradient(160deg,#fff4f0,#fff);border-color:#f5c2b0}.tdy-t.c4.hot .ic{background:#fde2d8;color:#c2410c}.tdy-t.c4.hot b{color:#c2410c}
 .jm-x{display:none}
 @media (max-width:899px){#jobFormTop{display:none}}
 body.jm-open{overflow:hidden}
@@ -2628,6 +2639,11 @@ body.jm-open .fab-newjob{display:none!important}
         <h1>สรุปยอดขาย.</h1>
         <p>รวมยอดขายและภาษีขายจากบิล/ใบกำกับภาษีที่บันทึกไว้ในเครื่องนี้ (และในคลาวด์ ถ้าเชื่อมต่อไว้)</p>
       </div>
+
+      <section class="tdy no-print" id="dashTodayCard" aria-label="สรุปงานวันนี้">
+        <div class="tdy-head"><h2>สรุปงานวันนี้</h2><span id="tdyDate"></span></div>
+        <div class="tdy-grid" id="tdyGrid"></div>
+      </section>
 
       <section class="acd no-print" id="dashAcctCard" aria-label="แดชบอร์ดแยกบัญชี" hidden>
         <div class="acd-seg" id="acdSeg" role="group" aria-label="เลือกบัญชี"></div>
@@ -4826,7 +4842,35 @@ function bahtText(value) {
       }).join('');
     sel.value = months.indexOf(prev) >= 0 ? prev : '';
   }
+  /* ---------- สรุปงานวันนี้: ลูกค้า · กล่องที่ส่ง · งานที่เหลือ · งานด่วน (ครบกำหนดวันนี้/เลยกำหนด) ---------- */
+  function renderTodayJobs() {
+    const box = $('dashTodayCard'); if (!box) return;
+    const today = todayISO(), jobs = store.get('bs_jobs', []) || [];
+    const nm = v => String(v || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const custs = {};
+    jobs.filter(j => j.date === today).forEach(j => { const k = nm(j.jName); if (k) custs[k] = 1; });
+    (store.get('bs_bills', []) || []).filter(b => b.date === today).forEach(b => { const k = nm(b.cName); if (k) custs[k] = 1; });
+    const jobsToday = jobs.filter(j => j.date === today).length;
+    const boxes = (store.get('bs_tracking', []) || []).filter(t => localISO(new Date(t.boxAt || t.savedAt || 0)) === today).length;
+    const open = jobs.filter(j => (j.status || 'pending') !== 'shipped');
+    const cnt = k => open.filter(j => (j.status || 'pending') === k).length;
+    const dueToday = open.filter(j => j.due && j.due === today).length, late = open.filter(j => j.due && j.due < today).length;
+    const IC = {
+      users: '<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 5.2a3.4 3.4 0 010 6.6M18.5 14.3c1.8.8 3 2.7 3 5.2"/>',
+      box: '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+      list: '<rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/>',
+      bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'
+    };
+    const tile = (cls, ic, label, val, unit, sub) => '<div class="tdy-t ' + cls + '"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + IC[ic] + '</svg></span><span class="lb">' + label + '</span><b>' + val + '<em>' + unit + '</em></b><small>' + sub + '</small></div>';
+    $('tdyDate').textContent = thDate(today);
+    $('tdyGrid').innerHTML =
+      tile('c1', 'users', 'ลูกค้าวันนี้', Object.keys(custs).length, 'ราย', 'งานใหม่ ' + jobsToday + ' ใบ') +
+      tile('c2', 'box', 'ส่งวันนี้', boxes, 'กล่อง', boxes ? 'นับจากเลขพัสดุที่สแกน/บันทึกวันนี้' : 'ยังไม่มีกล่องที่บันทึกวันนี้') +
+      tile('c3', 'list', 'งานที่เหลือ', open.length, 'งาน', 'รอทำ ' + cnt('pending') + ' · ทำไฟล์แล้ว ' + cnt('filed') + ' · ผลิตแล้ว ' + cnt('printed')) +
+      tile('c4' + (dueToday + late ? ' hot' : ''), 'bolt', 'งานด่วน', dueToday + late, 'งาน', 'ครบกำหนดวันนี้ ' + dueToday + ' · เลยกำหนด ' + late);
+  }
   function renderDash() {
+    try { renderTodayJobs(); } catch (e) { console.error('todayJobs', e); }
     if (!$('dashChart')) return;
     populateDashMonthOptions();
     const list = store.get('bs_bills', []);

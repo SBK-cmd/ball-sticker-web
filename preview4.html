@@ -1331,6 +1331,17 @@ body.chg-open{overflow:hidden}
 .acd-card .rc li{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid rgba(0,0,0,.07);font-size:14px}
 .acd-card .rc .t{flex:0 0 auto;font-size:12px;opacity:.65;min-width:84px}.acd-card .rc .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .acd-card .rc li.none{opacity:.6;justify-content:center}
+.tdy{margin:0 0 16px}
+.tdy-head{display:flex;justify-content:space-between;align-items:baseline;margin:0 2px 10px}.tdy-head h2{margin:0;font-size:18px}.tdy-head span{font-size:13px;opacity:.65}
+.tdy-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (min-width:900px){.tdy-grid{grid-template-columns:repeat(4,1fr)}}
+.tdy-t{border-radius:20px;padding:14px;background:var(--surface,#fff);border:1px solid rgba(0,0,0,.07);box-shadow:0 8px 24px rgba(20,30,60,.06);display:flex;flex-direction:column;gap:2px;min-width:0}
+.tdy-t .ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;margin-bottom:6px}
+.tdy-t .ic svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tdy-t .lb{font-size:13px;opacity:.7}.tdy-t b{font-size:30px;line-height:1.1;font-weight:800;color:#1d2433}.tdy-t b em{font-style:normal;font-size:14px;font-weight:600;margin-left:5px;opacity:.65}
+.tdy-t small{font-size:12px;opacity:.65;line-height:1.35}
+.tdy-t.c1 .ic{background:#e8f1fb;color:#2b6cb0}.tdy-t.c2 .ic{background:#e6f6ea;color:#1a6b3a}.tdy-t.c3 .ic{background:#fff3d9;color:#9a6b00}.tdy-t.c4 .ic{background:#f1f1f1;color:#555}
+.tdy-t.c4.hot{background:linear-gradient(160deg,#fff4f0,#fff);border-color:#f5c2b0}.tdy-t.c4.hot .ic{background:#fde2d8;color:#c2410c}.tdy-t.c4.hot b{color:#c2410c}
 .jm-x{display:none}
 @media (max-width:899px){#jobFormTop{display:none}}
 body.jm-open{overflow:hidden}
@@ -2538,6 +2549,11 @@ svg{stroke-linecap:round;stroke-linejoin:round}
         <p>รวมยอดขายและภาษีขายจากบิล/ใบกำกับภาษีที่บันทึกไว้ในเครื่องนี้ (และในคลาวด์ ถ้าเชื่อมต่อไว้)</p>
       </div>
 
+      <section class="tdy no-print" id="dashTodayCard" aria-label="สรุปงานวันนี้">
+        <div class="tdy-head"><h2>สรุปงานวันนี้</h2><span id="tdyDate"></span></div>
+        <div class="tdy-grid" id="tdyGrid"></div>
+      </section>
+
       <section class="acd no-print" id="dashAcctCard" aria-label="แดชบอร์ดแยกบัญชี" hidden>
         <div class="acd-seg" id="acdSeg" role="group" aria-label="เลือกบัญชี"></div>
         <div class="acd-wrap" id="acdWrap"></div>
@@ -2990,7 +3006,7 @@ svg{stroke-linecap:round;stroke-linejoin:round}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=cc005761c2",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=b08a16b7db",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
