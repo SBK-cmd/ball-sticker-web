@@ -1319,10 +1319,11 @@ tr{break-inside:avoid}
 body.chg-open{overflow:hidden}
 .jm-x{display:none}
 body.jm-open{overflow:hidden}
+@media print{body.jm-open #whFormTop{position:static!important;box-shadow:none!important;overflow:visible!important;padding:0!important}body.jm-open::before{display:none}}
 body.jm-open::before{content:'';position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1100}
-body.jm-open #jobFormTop{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 10px);left:0;right:0;width:min(780px,calc(100% - 20px));z-index:1110;display:block!important;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--bg,#f4f4f1);border-radius:18px;padding:12px 12px 90px;box-shadow:0 24px 70px rgba(0,0,0,.45);margin:0 auto!important;max-width:none}
-body.jm-open #jobFormTop .stack{display:block!important}
-body.jm-open #jobFormTop .stack>.card,body.jm-open #jobFormTop .preview-col{grid-column:auto!important;grid-row:auto!important;margin:0 0 12px!important;position:static!important;width:auto!important;max-width:none!important}
+body.jm-open #jobFormTop,body.jm-open #whFormTop{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 10px);left:0;right:0;width:min(780px,calc(100% - 20px));z-index:1110;display:block!important;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--bg,#f4f4f1);border-radius:18px;padding:12px 12px 90px;box-shadow:0 24px 70px rgba(0,0,0,.45);margin:0 auto!important;max-width:none}
+body.jm-open #jobFormTop .stack,body.jm-open #whFormTop .stack{display:block!important}
+body.jm-open #jobFormTop .stack>.card,body.jm-open #jobFormTop .preview-col,body.jm-open #whFormTop .stack>.card,body.jm-open #whFormTop .preview-col{grid-column:auto!important;grid-row:auto!important;margin:0 0 12px!important;position:static!important;width:auto!important;max-width:none!important}
 body.jm-open .jm-x{display:flex;position:sticky;top:0;z-index:5;grid-column:1/-1;justify-content:space-between;align-items:center;gap:10px;margin:-4px 0 8px;padding:8px 6px;background:var(--bg,#f4f4f1);font-weight:700}
 body.jm-open .jm-x button{border:1px solid var(--line,#ddd);background:var(--surface,#fff);border-radius:999px;padding:8px 16px;font:inherit;font-weight:700;cursor:pointer}
 body.jm-open .fab-newjob{display:none!important}
@@ -2774,7 +2775,8 @@ html body .page-head h1{letter-spacing:-.02em}
         <p>เอกสารราคาขายส่งแยกต่างหาก ไม่ใช่ใบเสร็จ/ใบกำกับภาษี ไม่มี VAT และไม่รันเลขที่เอกสาร ใช้ส่งราคาให้ลูกค้าขายส่งดูก่อนตกลงกัน</p>
       </div>
 
-      <div class="bill-grid">
+      <div class="bill-grid" id="whFormTop">
+        <div class="jm-x no-print"><span>แก้ไขใบราคาส่ง</span><button type="button" id="jmClose2">✕ ปิด</button></div>
         <div class="stack no-print">
           <div class="card">
             <h2>ข้อมูลใบราคาส่ง</h2>
@@ -8606,7 +8608,7 @@ function bahtText(value) {
     const persisted = store.set('bs_wholesale', list);
     cloudSave('wholesale', rec);
     upsertCustomer(rec.buyerName, '', '');
-    renderWholesaleHistory(); renderWholesaleEditState();
+    renderWholesaleHistory(); renderWholesaleEditState(); closeJobModal();
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับใบราคาส่งแล้ว' : 'บันทึกใบราคาส่งแล้ว')
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
   }
@@ -9395,7 +9397,7 @@ function bahtText(value) {
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('jm-open')) closeJobModal(); });
   document.addEventListener('click', e => {
     if (!document.body.classList.contains('jm-open')) return;
-    if (e.target === document.body || e.target.closest('#jmClose')) closeJobModal();
+    if (e.target === document.body || e.target.closest('#jmClose') || e.target.closest('#jmClose2')) closeJobModal();
   });
   function showTab(name) {
     closeJobModal();
@@ -10217,7 +10219,7 @@ function bahtText(value) {
     } else if (btn.dataset.act === 'open') {
       const w = list.find(x => x.id === id); if (!w) return;
       currentWholesaleId = id; applyWholesale(w); renderWholesaleEditState(); showTab('wholesale');
-      window.scrollTo({top: 0, behavior: 'smooth'}); toast('เปิดใบราคาส่งแล้ว แก้ไขได้เลย');
+      document.body.classList.add('jm-open'); { const f = $('whFormTop'); if (f) f.scrollTop = 0; } toast('เปิดใบราคาส่งแล้ว แก้ไขได้เลย');
     } else if (btn.dataset.act === 'del') {
       if (whDelArmed !== id) {
         whDelArmed = id; btn.textContent = 'กดอีกครั้งเพื่อลบ'; btn.classList.add('confirm');

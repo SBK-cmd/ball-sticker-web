@@ -4782,7 +4782,7 @@ function bahtText(value) {
     const persisted = store.set('bs_wholesale', list);
     cloudSave('wholesale', rec);
     upsertCustomer(rec.buyerName, '', '');
-    renderWholesaleHistory(); renderWholesaleEditState();
+    renderWholesaleHistory(); renderWholesaleEditState(); closeJobModal();
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับใบราคาส่งแล้ว' : 'บันทึกใบราคาส่งแล้ว')
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
   }
@@ -5571,7 +5571,7 @@ function bahtText(value) {
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('jm-open')) closeJobModal(); });
   document.addEventListener('click', e => {
     if (!document.body.classList.contains('jm-open')) return;
-    if (e.target === document.body || e.target.closest('#jmClose')) closeJobModal();
+    if (e.target === document.body || e.target.closest('#jmClose') || e.target.closest('#jmClose2')) closeJobModal();
   });
   function showTab(name) {
     closeJobModal();
@@ -6393,7 +6393,7 @@ function bahtText(value) {
     } else if (btn.dataset.act === 'open') {
       const w = list.find(x => x.id === id); if (!w) return;
       currentWholesaleId = id; applyWholesale(w); renderWholesaleEditState(); showTab('wholesale');
-      window.scrollTo({top: 0, behavior: 'smooth'}); toast('เปิดใบราคาส่งแล้ว แก้ไขได้เลย');
+      document.body.classList.add('jm-open'); { const f = $('whFormTop'); if (f) f.scrollTop = 0; } toast('เปิดใบราคาส่งแล้ว แก้ไขได้เลย');
     } else if (btn.dataset.act === 'del') {
       if (whDelArmed !== id) {
         whDelArmed = id; btn.textContent = 'กดอีกครั้งเพื่อลบ'; btn.classList.add('confirm');
