@@ -4830,7 +4830,7 @@ function bahtText(value) {
       const chip = (t, c) => '<span class="jc-chip' + (c ? ' ' + c : '') + '">' + t + '</span>';
       const chips = chip(esc(thDate(j.date))) + (PAGE_LABEL[j.page] ? chip(esc(PAGE_LABEL[j.page])) : '') +
         (canBank && j.account && !accHidden(j) ? chip('บัญชี ' + esc(j.account)) : '') +
-        (jobDelivered(j) ? chip('เสร็จสิ้น · ถึงลูกค้าแล้ว', 'money') : '') +
+        (jobDelivered(j) ? chip('ลูกค้ารับแล้ว · เสร็จสิ้น', 'tg') : '') +
         (canBank && num(j.slipAmount) > 0 ? chip((j.slipPending ? 'รอรับเงิน ' : 'สลิป ') + money(num(j.slipAmount)) + ' บาท', j.slipPending ? 'warn' : 'money') : '') +
         (j.wholesale ? chip('ราคาส่ง', 'tg') : '') + (j.recv && (j.recv.name || j.recv.addr) ? chip('ฝากส่ง', 'tg') : '') +
         chip(nItems + ' รายการ') + (j.photos && j.photos.length ? chip('รูป ' + j.photos.length) : '') + (j.createdBy ? chip('โดย ' + esc(j.createdBy)) : '');
