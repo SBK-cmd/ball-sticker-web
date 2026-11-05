@@ -4859,8 +4859,8 @@ function bahtText(value) {
       return '<li class="jc st-' + st + (jobOpenIds[j.id] ? ' open' : '') + '" data-id="' + esc(j.id) + '">' +
       '<div class="jc-top">' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '<span class="jc-ph" aria-hidden="true">' + esc((cn || '?').replace(/^(คุณ|นาย|นาง|นางสาว|พี่|น้อง)\s*/, '').charAt(0).toUpperCase()) + '</span>') +
       '<div class="jc-main"><div class="jc-no">' + esc(j.no) + dupTag + '</div><div class="jc-cust">' + esc(cn || 'ไม่ระบุชื่อลูกค้า') + '</div></div>' +
-      '<select class="job-status-select status-pill ' + st + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +
-        Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
+      '<select class="job-status-select status-pill ' + st + (jobDelivered(j) ? ' rcvd' : '') + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +   // ขนส่งแจ้งถึงลูกค้าแล้ว → ป้าย "รับแล้ว ✓" (ค่าสถานะยังเป็น shipped)
+        Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + ((k === 'shipped' && jobDelivered(j)) ? 'รับแล้ว ✓' : JOB_STATUS_LABEL[k]) + '</option>').join('') +
       '</select></div>' +
       jobCardDetail(j) +
       (chips ? '<div class="jc-chips">' + chips + '</div>' : '') +
