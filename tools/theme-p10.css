@@ -111,8 +111,9 @@ html body .fab-newjob *,html body .fab-newjob:before,html body .fab-newjob:after
   /* รายการงาน/ราคาส่ง/พัสดุ → กริดการ์ด 2–3 คอลัมน์ ไม่ยืดเต็มจอ */
   html body :is(#jobHistory,#trackHistory,#wholesaleHistory)>ul{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:20px;align-items:start;margin:0;padding:0;list-style:none}
   html body :is(#jobHistory,#trackHistory,#wholesaleHistory)>.wh-sweep{margin-bottom:18px;font-size:15px}
-  html body .jc{padding:18px 20px!important;transition:transform .15s ease,box-shadow .15s ease;margin:0!important}
-  html body .jc:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink)!important}
+  html body .jc{padding:18px 20px!important;transition:box-shadow .15s ease;margin:0!important}
+  /* ห้ามใช้ transform บน .jc: หน้าต่างรายละเอียด (.jd) เป็น position:fixed อยู่ในการ์ด — transform ทำให้ fixed ยึดการ์ดแทนจอ แล้วกระพริบเมื่อเมาส์ชี้ */
+  html body .jc:hover{box-shadow:6px 6px 0 var(--ink)!important}
   html body .jc .jc-no{font-size:13.5px;letter-spacing:.02em}
   html body .jc .jc-cust{font-size:18px;font-weight:800;line-height:1.3;overflow:visible;white-space:normal;overflow-wrap:anywhere}
   html body .jc .jc-ph{width:52px;height:52px;flex:none}
