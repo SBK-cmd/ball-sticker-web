@@ -6112,14 +6112,14 @@ function bahtText(value) {
   }
   async function dsSaveNew() {
     if (dsBusy) return;
-    const text = $('dsNewTxt').value.trim(), btn = $('dsNewGo');
-    if (!text && !dsNewPh.length) { toast('พิมพ์โน้ตหรือแนบรูปก่อน'); return; }
+    const text = $('dsNewTxt').value.trim(), addr = $('dsNewAddr').value.trim(), btn = $('dsNewGo');
+    if (!text && !addr && !dsNewPh.length) { toast('พิมพ์โน้ตหรือแนบรูปก่อน'); return; }
     dsBusy = true; const label = btn.textContent; btn.disabled = true; btn.textContent = dsNewPh.length ? 'กำลังอัปโหลดรูป…' : 'กำลังบันทึก…';
     try {
       const urls = dsNewPh.length ? await dsUpload(dsNewPh) : [];
       if (!urls) { toast('อัปโหลดรูปไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่ (โน้ตยังอยู่)'); return; }
-      dsPut({id: 'd' + dsRid(), createdAt: Date.now(), by: dsMe(), text, photos: urls, approved: [], sentAt: null});
-      $('dsNewTxt').value = ''; dsNewPh.length = 0; dsPhotoThumbs($('dsNewPh'), dsNewPh);
+      dsPut({id: 'd' + dsRid(), createdAt: Date.now(), by: dsMe(), text, addr, photos: urls, approved: [], sentAt: null});
+      $('dsNewTxt').value = ''; $('dsNewAddr').value = ''; dsNewPh.length = 0; dsPhotoThumbs($('dsNewPh'), dsNewPh);
       renderDesign(); toast('บันทึกโน้ตแล้ว');
     } finally { dsBusy = false; btn.disabled = false; btn.textContent = label; }
   }
@@ -6147,6 +6147,7 @@ function bahtText(value) {
         '<div><b>' + esc(dsTitle(d)) + '</b><small>' + esc(d.by || '') + ' · ' + esc(dsAgo(d.updatedAt || d.createdAt)) + '</small></div>' +
         '<span class="ds-st ' + st[0] + '">' + st[1] + '</span></header>' +
         (rest ? '<p class="ds-tx">' + esc(rest) + '</p>' : '') +
+        (d.addr ? '<p class="ds-tx ds-ad">📍 ' + esc(d.addr) + '</p>' : '') +
         (ph.length ? '<div class="ds-imgs' + (ph.length === 1 ? ' one' : '') + '">' + ph.map(u => '<img loading="lazy" src="' + esc(dsThumb(u, 500)) + '" alt="รูปในโน้ต">').join('') + '</div>' : '') +
         ((d.photos || []).length ? '<footer>📷 ' + d.photos.length + ' รูป</footer>' : '') + '</article>';
     }).join('');
@@ -6157,8 +6158,9 @@ function bahtText(value) {
     $('dsTTitle').textContent = dsTitle(d);
     $('dsThread').innerHTML = '<div class="ds-hero"><span class="ds-st ' + st[0] + '">' + st[1] + '</span>' +
       (canKey ? '<button type="button" class="ds-btn ds-main" data-dsact="toconfirm">📋 ไปคอนเฟิร์มงาน →</button>' : '') +
-      '<small>ชื่อ / เบอร์ / ที่อยู่ / รายละเอียด ดึงจากข้อความโน้ตให้ · รูปที่แนบไปใบคอนเฟิร์ม: ' + (ap.length ? 'เฉพาะรูปที่ติ๊กไว้ (' + ap.length + ')' : 'ทุกรูป (ถ้าจะเลือกเฉพาะบางรูป กด “ใช้รูปนี้” ใต้รูป)') + '</small></div>' +
-      '<div class="ds-post"><div class="ds-ptx"><textarea id="dsEditTxt" rows="7" placeholder="พิมพ์โน้ตงาน…">' + esc(d.text || '') + '</textarea></div>' +
+      '<small>ชื่อ / เบอร์ / ที่อยู่ / รายละเอียด ดึงจากโน้ตกับช่องที่อยู่ให้ · รูปที่แนบไปใบคอนเฟิร์ม: ' + (ap.length ? 'เฉพาะรูปที่ติ๊กไว้ (' + ap.length + ')' : 'ทุกรูป (ถ้าจะเลือกเฉพาะบางรูป กด “ใช้รูปนี้” ใต้รูป)') + '</small></div>' +
+      '<div class="ds-post"><div class="ds-ptx"><textarea id="dsEditTxt" rows="7" placeholder="พิมพ์โน้ตงาน…">' + esc(d.text || '') + '</textarea>' +
+      '<textarea id="dsEditAddr" class="ds-addr" rows="2" placeholder="ที่อยู่จัดส่ง (ถ้ามี)">' + esc(d.addr || '') + '</textarea></div>' +
       (ph.length ? '<div class="ds-pimgs">' + ph.map((u, i) => {
         const on = ap.indexOf(u) >= 0;
         return '<figure><img loading="lazy" src="' + esc(dsThumb(u, 900)) + '" data-zoom="' + esc(u) + '" alt="รูปในโน้ต">' +
@@ -6171,15 +6173,16 @@ function bahtText(value) {
     if (!$('dsFeed')) return;
     if (dsSel && !dsById(dsSel)) dsSel = null;
     $('dsListView').hidden = !!dsSel; $('dsThreadView').hidden = !dsSel;
-    if (dsSel) { const ae = document.activeElement; if (!(ae && ae.id === 'dsEditTxt')) renderDsThread(); } else renderDsFeed();
+    if (dsSel) { const ae = document.activeElement; if (!(ae && (ae.id === 'dsEditTxt' || ae.id === 'dsEditAddr'))) renderDsThread(); } else renderDsFeed();
   }
   function dsToConfirm(d) {
     if (!canKey) { toast('ไม่มีสิทธิ์สร้างใบคอนเฟิร์ม'); return; }
     const photos = ((d.approved || []).length ? d.approved : (d.photos || [])).slice();
     showTab('confirm'); newJob();
     jobPhotos = photos; renderJobPhotos();
-    $('jPaste').value = d.text || '';
-    if (d.text) $('jSplit').click();
+    $('jPaste').value = [d.text, d.addr].filter(Boolean).join('\n');
+    if ($('jPaste').value) $('jSplit').click();
+    if (d.addr && !$('jAddr').value.trim()) $('jAddr').value = d.addr;
     renderJob();
     if (window.innerWidth < 900) openJobModal(); else window.scrollTo({top: 0, behavior: 'smooth'});
     dsPut(Object.assign({}, d, {sentAt: Date.now()}));
@@ -6195,9 +6198,9 @@ function bahtText(value) {
     $('dsSearch').addEventListener('input', e => { dsQ = e.target.value; renderDsFeed(); });
     $('panel-design').addEventListener('change', e => { if (e.target.matches && e.target.matches('[data-dsadd]')) { const fl = Array.from(e.target.files); e.target.value = ''; dsAddPhotos(fl); } });
     $('panel-design').addEventListener('input', e => {
-      if (e.target.id !== 'dsEditTxt') return;
-      clearTimeout(dsSaveT); const v = e.target.value, id = dsSel;
-      dsSaveT = setTimeout(() => { const d = dsById(id); if (d && d.text !== v) { dsPut(Object.assign({}, d, {text: v})); $('dsTTitle').textContent = dsTitle(dsById(id) || d); } }, 700);
+      if (e.target.id !== 'dsEditTxt' && e.target.id !== 'dsEditAddr') return;
+      clearTimeout(dsSaveT); const id = dsSel;
+      dsSaveT = setTimeout(() => { const d = dsById(id); if (!d) return; const v = $('dsEditTxt').value, a = $('dsEditAddr').value; if (d.text !== v || (d.addr || '') !== a) { dsPut(Object.assign({}, d, {text: v, addr: a})); $('dsTTitle').textContent = dsTitle(dsById(id) || d); } }, 700);
     });
     $('panel-design').addEventListener('click', e => {
       const t = e.target;
@@ -6223,7 +6226,7 @@ function bahtText(value) {
       const act = b.dataset.dsact, d = dsById(dsSel);
       if (act === 'back') { dsSel = null; renderDesign(); return; }
       if (!d) return;
-      if (act === 'toconfirm') { clearTimeout(dsSaveT); const ta = $('dsEditTxt'); const cur = ta ? Object.assign({}, d, {text: ta.value}) : d; dsToConfirm(cur); }
+      if (act === 'toconfirm') { clearTimeout(dsSaveT); const ta = $('dsEditTxt'), ad = $('dsEditAddr'); const cur = ta ? Object.assign({}, d, {text: ta.value, addr: ad ? ad.value.trim() : d.addr}) : d; dsToConfirm(cur); }
       else if (act === 'deldesign') {
         if (!confirm('ลบโน้ตนี้ทั้งหมด (รวมรูป)?')) return;
         store.set(DS_KEY, (store.get(DS_KEY, []) || []).filter(x => x.id !== d.id)); cloudDelete('designs', d.id); dsSel = null; renderDesign(); toast('ลบแล้ว');
