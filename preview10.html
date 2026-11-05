@@ -2505,6 +2505,28 @@ html body .fab-newjob *,html body .fab-newjob:before,html body .fab-newjob:after
   html body .bil-row,html body .bankin-list li{font-size:15px}
 }
 @media (min-width:900px) and (prefers-reduced-motion:reduce){html body *{transition:none!important}}
+
+/* ===== DESKTOP: หน้าต่างรายละเอียดใบงาน เด้งกลางจอ ขนาดใหญ่ (2 คอลัมน์) ===== */
+@media (min-width:900px){
+  html body #jobHistory li.open::before{background:rgba(22,22,22,.62)!important}
+  html body #jobHistory li.open .jd{
+    left:0!important;right:0!important;margin:0 auto!important;
+    top:4vh!important;bottom:4vh!important;
+    width:min(1240px,calc(100vw - 96px))!important;max-width:none!important;
+    display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px 40px;align-content:start;align-items:start;
+    padding:0 36px 32px!important;font-size:17px!important;line-height:1.65;
+    background:var(--cream)!important;border:3px solid var(--ink)!important;border-radius:26px!important;box-shadow:10px 10px 0 var(--ink)!important}
+  html body #jobHistory .jd .jd-head{grid-column:1/-1;padding:20px 0 14px!important;background:var(--cream)!important;border-bottom:2px solid var(--ink)!important}
+  html body #jobHistory .jd .jd-head b{font-size:26px!important;font-weight:800}
+  html body #jobHistory .jd .jd-k{font-size:14px!important;margin-bottom:2px;letter-spacing:.02em}
+  html body #jobHistory .jd .jd-cust{font-size:20px!important}
+  html body #jobHistory .jd>div:has(>.jd-k){background:#fff;border:2px solid var(--ink);border-radius:16px;padding:14px 16px;box-shadow:3px 3px 0 var(--ink)}
+  html body #jobHistory .jd>.jd-ph,html body #jobHistory .jd>.jd-add,html body #jobHistory .jd>.jd-trk,html body #jobHistory .jd>div:has(>.jd-k):has(+.jd-ph){grid-column:1/-1}
+  html body #jobHistory .jd .jd-ph{gap:14px}
+  html body #jobHistory .jd .jd-ph img{width:calc(25% - 11px)!important;min-width:180px;max-height:300px!important}
+  html body #jobHistory .jd .jd-ph img:only-child{width:min(100%,520px)!important;max-height:420px!important}
+  html body #jobHistory .jd .btn{min-height:46px;font-size:16px!important}
+}
 </style>
 </head>
 <body>
@@ -2575,7 +2597,7 @@ html body .fab-newjob *,html body .fab-newjob:before,html body .fab-newjob:after
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v85</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v85 · พรีวิว</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
@@ -3955,7 +3977,7 @@ html body .fab-newjob *,html body .fab-newjob:before,html body .fab-newjob:after
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=9c752608f9",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=9c752608f9",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
