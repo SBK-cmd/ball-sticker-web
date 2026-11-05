@@ -4842,7 +4842,8 @@ function bahtText(value) {
     try { renderTodayJobs(); } catch (e) {}
     try { const sel = window.getSelection && window.getSelection(); if (sel && !sel.isCollapsed && String(sel).trim() && $('jobHistory').contains(sel.anchorNode)) { clearTimeout(renderJobHistory._t); renderJobHistory._t = setTimeout(renderJobHistory, 1500); return; } } catch (e) {}
     try { renderCustomerDatalist(); } catch (e) {}
-    const list = store.get('bs_jobs', []).slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.no || '').localeCompare(String(a.no || ''), 'en', {numeric: true}) || (b.savedAt || 0) - (a.savedAt || 0));   // ใหม่สุดบน: วันที่สั่ง → เลขใบ → เวลาบันทึก
+    const jobMadeAt = j => { const m = /^j(\d{13})/.exec(String(j.id || '')); return m ? +m[1] : (j.savedAt || 0); };   // เวลาสร้างใบ (id = 'j' + เวลา) ไม่ใช่เวลาแก้ล่าสุด
+    const list = store.get('bs_jobs', []).slice().sort((a, b) => jobMadeAt(b) - jobMadeAt(a) || (b.savedAt || 0) - (a.savedAt || 0));   // ใหม่สุดบน: ตามเวลาที่สร้างใบ
     const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้ ควรดาวน์โหลด PDF เก็บไว้ทุกครั้ง</p>');
     if (!list.length) { $('jobHistory').innerHTML = notice + '<p class="empty">ยังไม่มีใบคอนเฟิร์มงานที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; return; }
     const q = $('jobHistSearch') ? $('jobHistSearch').value : '';
