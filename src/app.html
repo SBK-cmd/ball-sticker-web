@@ -7160,8 +7160,8 @@ function bahtText(value) {
   }
   function mapIshipStatusToLocal(statusName) {
     const s = String(statusName || '');
-    if (/สำเร็จ|ถึงปลายทาง|ส่งมอบแล้ว/.test(s)) return 'delivered';
-    if (/ยกเลิก|ตีกลับ|คืน|ปัญหา|ไม่สำเร็จ/.test(s)) return 'issue';
+    if (/ยกเลิก|ตีกลับ|คืน|ปัญหา|ไม่สำเร็จ/.test(s)) return 'issue';   // เช็กก่อน เพราะ "ไม่สำเร็จ" มีคำว่า "สำเร็จ"
+    if (/สำเร็จ|ถึงปลายทาง|ส่งมอบแล้ว|เซ็นรับ|^\s*จัดส่งแล้ว\s*$/.test(s)) return 'delivered';   // iship ขึ้น "จัดส่งแล้ว" เมื่อขนส่งนำส่งสำเร็จ (ระหว่างทางขึ้น "ระหว่างการขนส่ง")
     if (/รอเข้ารับ/.test(s)) return 'pending';
     return 'transit';
   }
@@ -7207,7 +7207,11 @@ function bahtText(value) {
     list.forEach((t, i) => {
       const o = byCode.get(String(t.code || '').trim().toUpperCase());
       const name = o && (o.status_name || '');
-      if (!name || name === t.ishipStatusName) return;
+      if (!name) return;
+      if (name === t.ishipStatusName) {   // ชื่อสถานะเดิม: ปรับขึ้นเป็น "ถึงแล้ว" เฉพาะรายการที่เคยถูกจัดเป็นกำลังขนส่งด้วยกติกาเก่า (ไม่ทับสถานะที่เลือกเอง)
+        if (mapIshipStatusToLocal(name) === 'delivered' && (t.status || 'transit') === 'transit') { list[i] = Object.assign({}, t, {status: 'delivered', ishipStatusAt: Date.now()}); changed.push(list[i]); }
+        return;
+      }
       list[i] = Object.assign({}, t, {ishipStatusName: name, status: mapIshipStatusToLocal(name), ishipStatusAt: Date.now()});
       changed.push(list[i]);
     });
