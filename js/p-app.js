@@ -1846,7 +1846,7 @@ function bahtText(value) {
     (store.get('bs_bills', []) || []).filter(b => b.date === today).forEach(b => { const k = nm(b.cName); if (k) custs[k] = 1; });
     const jobsToday = jobs.filter(j => j.date === today).length;
     const boxes = (store.get('bs_tracking', []) || []).filter(t => localISO(new Date(t.boxAt || t.savedAt || 0)) === today).length;
-    const open = jobs.filter(j => (j.status || 'pending') !== 'shipped');
+    const open = jobs.filter(j => (j.status || 'pending') !== 'shipped' && j.status !== 'pickup');
     const cnt = k => open.filter(j => (j.status || 'pending') === k).length;
     const dueToday = open.filter(j => j.due && j.due === today).length, late = open.filter(j => j.due && j.due < today).length;
     const IC = {
@@ -1867,7 +1867,7 @@ function bahtText(value) {
   // แตะช่องสรุป → เปิดรายการที่อยู่เบื้องหลังตัวเลข (แตะใบงานในรายการ = ไปเปิดใบนั้น)
   function openTodayList(kind) {
     const today = todayISO(), jobs = store.get('bs_jobs', []) || [], nm = v => String(v || '').replace(/\s+/g, ' ').trim();
-    const open = jobs.filter(j => (j.status || 'pending') !== 'shipped');
+    const open = jobs.filter(j => (j.status || 'pending') !== 'shipped' && j.status !== 'pickup');
     const dueKey = j => j.due || '9999-99-99';
     let title = '', rows = '', foot = '';
     const jobRow = j => {
@@ -2104,7 +2104,7 @@ function bahtText(value) {
     const tmrDate = new Date(todayKey + 'T00:00:00'); tmrDate.setDate(tmrDate.getDate() + 1);
     const tmrKey = tmrDate.toISOString().slice(0, 10);
     const jobs = store.get('bs_jobs', [])
-      .filter(j => j.status !== 'shipped' && j.due && j.due <= tmrKey)
+      .filter(j => j.status !== 'shipped' && j.status !== 'pickup' && j.due && j.due <= tmrKey)
       .sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : 0));
     if (!jobs.length) {
       el.innerHTML = '<p class="empty">ไม่มีงานที่ใกล้ถึงกำหนดส่ง</p>';
@@ -4546,7 +4546,7 @@ function bahtText(value) {
   let currentJobId = null;
   let jobPhotos = [];
   let jobStatus = 'pending';
-  const JOB_STATUS_LABEL = {pending: 'รอทำ', filed: 'ทำไฟล์แล้ว', printed: 'ผลิตแล้ว', shipped: 'จัดส่งแล้ว'};
+  const JOB_STATUS_LABEL = {pending: 'รอทำ', filed: 'ทำไฟล์แล้ว', printed: 'ผลิตแล้ว', shipped: 'จัดส่งแล้ว', pickup: 'รับหน้าร้าน'};
   // ไม่มีสิทธิ์เห็นเงิน (เช่น พนักงาน): ซ่อนช่องบัญชี/ยอดสลิป/คำอธิบายในใบคอนเฟิร์มงาน (ค่าที่บันทึกไว้เดิมยังอยู่ ไม่ถูกลบ)
   if (!canKey) {
     ['fabNewJob', 'jobFormTop'].forEach(id => { const e = $(id); if (e) e.hidden = true; });
@@ -4584,7 +4584,7 @@ function bahtText(value) {
   }
   // เลื่อนสถานะไปข้างหน้าอัตโนมัติ (ไม่ย้อนกลับ): อัปรูปงานเสร็จ → ผลิตแล้ว · สแกนเลขพัสดุ → จัดส่งแล้ว
   function advanceJobStatus(id, to) {
-    const rank = {pending: 0, filed: 1, printed: 2, shipped: 3};
+    const rank = {pending: 0, filed: 1, printed: 2, shipped: 3, pickup: 3};
     const j = store.get('bs_jobs', []).find(x => x.id === id); if (!j) return false;
     if ((rank[to] || 0) <= (rank[j.status || 'pending'] || 0)) return false;
     updateJobStatus(id, to, {silent: true}); return true;
@@ -4900,7 +4900,7 @@ function bahtText(value) {
       const c = st === 'delivered' ? 'ok' : st === 'issue' ? 'bad' : code ? 'go' : 'none';
       return '<div class="jc-ship"><span class="jc-k">' + label + '</span><b class="' + c + '">' + (st === 'delivered' ? '✓ ' : '') + esc(txt) + '</b>' + (code ? '<small>' + esc(String(code)) + '</small>' : '') + '</div>';
     };
-    const rvHtml = (rv || j.trackCode) ? boxCodes.map((c, k) => shipLine(c, nBoxes > 1 ? 'พัสดุ กล่อง ' + (k + 1) : 'พัสดุ')).join('') : '';
+    const rvHtml = ((rv || j.trackCode) && j.status !== 'pickup') ? boxCodes.map((c, k) => shipLine(c, nBoxes > 1 ? 'พัสดุ กล่อง ' + (k + 1) : 'พัสดุ')).join('') : '';
 
     return rvHtml ? '<div class="jc-det">' + rvHtml + '</div>' : '';   // การ์ดโชว์แค่สถานะพัสดุ (รายละเอียดงานอยู่ในปุ่ม เปิดดู)   // การ์ดไม่โชว์ยอดเงิน (ดูในรายละเอียด/บิล)
   }

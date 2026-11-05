@@ -89,6 +89,7 @@ details.jc>.jb{padding:4px 14px 14px}
 .bx{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#fafbfc}
 .bxl{display:flex;align-items:center;gap:8px;font-size:15px}.bxl em{font-style:normal;font-size:12px;font-weight:700;background:#111827;color:#fff;border-radius:99px;padding:2px 9px}
 .zoom{position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:14px;cursor:zoom-out}.zoom img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;background:#fff}.zoom button{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;border:0;background:#fff;font-size:20px;font-weight:700}
+.pk-a{line-height:1.55;font-size:14.5px;margin-bottom:10px}.pk-a b{display:block;font-size:15.5px}.pk-a small{display:block;color:var(--mut);font-size:12.5px;font-weight:600}.pk-r{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.pk-b{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--ink,#111);font-weight:800;font-size:14px;text-decoration:none}.pk-b.ln{grid-column:1/-1;background:#06c755;border-color:#06c755;color:#fff}
 .bxf{display:flex;align-items:center;gap:8px;font-size:14.5px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed var(--line)}.bxf em{font-style:normal;font-size:12px;font-weight:700;background:#e5e7eb;color:#111827;border-radius:99px;padding:2px 9px}
 .bxa{margin-top:4px;color:#4b5563;font-size:13.5px;line-height:1.5}
 .bxt{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:13px;color:var(--mut)}.bxt b{font-size:15px;color:var(--ink);letter-spacing:.2px;word-break:break-all}.bxt.none{border:0;padding:0;margin-top:6px}
@@ -151,14 +152,14 @@ details.jc>.jb{padding:4px 14px 14px}
   }
   var SHORT = ['รับงาน', 'ทำไฟล์', 'ผลิต', 'จัดส่ง', 'รับแล้ว'];
   var https = function (arr) { return (Array.isArray(arr) ? arr : []).filter(function (u) { return typeof u === 'string' && /^https:\/\//.test(u); }); };
-  var stIdx = function (st, dlv) { var k = 0, q, e = effSt(st, dlv); for (q = 0; q < STEPS.length; q++) if (STEPS[q][0] === e) k = q; return k; };
+  var stIdx = function (st, dlv) { var k = 0, q, e = effSt(st, dlv); if (e === 'pickup') return 3; for (q = 0; q < STEPS.length; q++) if (STEPS[q][0] === e) k = q; return k; };
   var cls = function (k) { return k === 4 ? ' rcv' : k === 3 ? ' dn' : ''; };
   var fmt = function (a) { return Number(a).toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2}); };
   // ขั้นตอน 5 ขั้นแนวนอน (สั้น ไม่กินความสูง)
-  function stepper(k) {
+  function stepper(k, pk) {
     return '<ol class="st5" aria-label="ขั้นตอนงาน">' + SHORT.map(function (s, n) {
       var c = n < k || (k >= 3 && n === k) ? 'done' : (n === k ? 'cur' : '');
-      return '<li class="' + c + '"' + (n === k ? ' aria-current="step"' : '') + '><i>' + (c === 'done' ? '✓' : (n + 1)) + '</i><span>' + s + '</span></li>';
+      return '<li class="' + c + '"' + (n === k ? ' aria-current="step"' : '') + '><i>' + (c === 'done' ? '✓' : (n + 1)) + '</i><span>' + (pk && n === 3 ? 'รับที่ร้าน' : s) + '</span></li>';
     }).join('') + '</ol>';
   }
   function boxRows(list) {
@@ -177,16 +178,22 @@ details.jc>.jb{padding:4px 14px 14px}
       return '<figure><a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="' + esc(title) + ' ' + (k + 1) + '" loading="lazy"></a>' + (dl ? '<a class="sv" href="' + esc(dl) + '" download="' + esc(dlName + '-' + (k + 1) + '.jpg') + '" target="_blank" rel="noopener" aria-label="บันทึกรูป ' + (k + 1) + '">💾</a>' : '') + '</figure>';
     }).join('') + '</div></div>';
   }
+  // รับหน้าร้าน: ที่อยู่ร้าน + แผนที่ + เบอร์โทร + LINE (ข้อมูลร้านตามที่ระบุในเว็บ)
+  function pickupBlock() {
+    return '<div class="sec pk"><h2>🏬 รับสินค้าหน้าร้านได้เลย</h2><div class="pk-a"><b>บอลสติ๊กเกอร์ พิษณุโลก</b>8 หมู่ 19 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140<small>เปิด จ–ส 09:00–17:00 น. (หยุดวันอาทิตย์)</small></div>' +
+      '<a class="go2" href="https://maps.app.goo.gl/d8F8hY2ko8PbT1Hv8" target="_blank" rel="noopener">🗺️ เปิดแผนที่ร้าน</a>' +
+      '<div class="pk-r"><a class="pk-b" href="tel:0935353555">📞 093-535-3555</a><a class="pk-b" href="tel:0966697495">📞 096-669-7495</a><a class="pk-b ln" href="https://line.me/R/ti/p/@bk25" target="_blank" rel="noopener">💬 LINE @bk25</a></div></div>';
+  }
   // การ์ดงาน 1 ใบ (เหมือนกันทุกใบ): หัวการ์ดมีสถานะ+แถบความคืบหน้า กดแล้วค่อยเปิดรายละเอียด
   function jobCard(o, open) {
-    var k = stIdx(o.status, o.delivered), sub = (o.items && o.items[0]) ? String(o.items[0].n || '') + (o.items[0].q ? ' × ' + o.items[0].q : '') + (o.items.length > 1 ? ' +' + (o.items.length - 1) + ' รายการ' : '') : '';
-    var head = '<summary>' + (o.thumb ? '<img class="jt" src="' + esc(o.thumb) + '" alt="" loading="lazy">' : '') + '<span class="jn"><b>' + esc(o.no) + '</b>' + ((o.date || sub) ? '<small>' + esc([thDate(o.date), sub].filter(Boolean).join(' · ')) + '</small>' : '') + '</span><span class="js' + (k === 4 ? ' rcv' : k === 3 ? ' done' : '') + '">' + esc(STEPS[k][1]) + '</span>' +
+    var pk = o.status === 'pickup', k = stIdx(o.status, o.delivered), sub = (o.items && o.items[0]) ? String(o.items[0].n || '') + (o.items[0].q ? ' × ' + o.items[0].q : '') + (o.items.length > 1 ? ' +' + (o.items.length - 1) + ' รายการ' : '') : '';
+    var head = '<summary>' + (o.thumb ? '<img class="jt" src="' + esc(o.thumb) + '" alt="" loading="lazy">' : '') + '<span class="jn"><b>' + esc(o.no) + '</b>' + ((o.date || sub) ? '<small>' + esc([thDate(o.date), sub].filter(Boolean).join(' · ')) + '</small>' : '') + '</span><span class="js' + (k === 4 ? ' rcv' : k === 3 ? ' done' : '') + '">' + esc(pk ? 'พร้อมรับหน้าร้าน' : STEPS[k][1]) + '</span>' +
       '<span class="pb" aria-hidden="true">' + SHORT.map(function (s, n) { return '<i class="' + (n <= k ? 'on' : '') + '"></i>'; }).join('') + '</span></summary>';
-    var b = stepper(k);
+    var b = stepper(k, pk);
     if (o.items && o.items.length) b += '<ul class="it">' + o.items.map(function (i) { return '<li><span>' + esc(i.n) + '</span><b>' + (i.q ? '× ' + esc(i.q) : '') + '</b></li>'; }).join('') + '</ul>';
     if (o.amt > 0) b += '<div class="row"><span>ยอดเงิน</span><b>' + fmt(o.amt) + ' บาท</b></div>';
     if (o.due && k < 3) b += '<div class="row"><span>กำหนดส่ง</span><b>' + esc(thDate(o.due)) + '</b></div>';
-    if (o.boxes && o.boxes.length) b += '<div class="sec"><h2>📦 ' + (o.boxes.length > 1 ? 'พัสดุ ' + o.boxes.length + ' กล่อง' : 'จัดส่งถึง') + '</h2>' + boxRows(o.boxes) + '</div>';
+    if (pk) b += pickupBlock(); else if (o.boxes && o.boxes.length) b += '<div class="sec"><h2>📦 ' + (o.boxes.length > 1 ? 'พัสดุ ' + o.boxes.length + ' กล่อง' : 'จัดส่งถึง') + '</h2>' + boxRows(o.boxes) + '</div>';
     if (o.sender) b += '<details class="mini"><summary>ที่อยู่ผู้ส่ง</summary><div class="bxa"><b>' + esc(o.sender.name || '') + '</b> ' + esc(o.sender.addr || '') + '</div></details>';
     b += strip(o.photos || [], 'รูปงานของคุณ', o.no) + strip(o.refs || [], 'รูปอ้างอิง', '');
     return {no: String(o.no || ''), date: o.date || '', h: '<details class="jc' + cls(k) + '"' + (open ? ' open' : '') + '>' + head + '<div class="jb">' + b + '</div></details>'};

@@ -227,3 +227,6 @@ html body #jobHistory select.job-status-select{min-width:122px!important;font-si
 html body .jf-filt select{height:36px!important;min-height:0!important;padding:0 8px!important;font-size:13.5px!important;border-width:1.5px!important;box-shadow:none!important;border-radius:10px!important}
 /* ลูกค้ารับแล้ว (ขนส่งแจ้งถึง): ป้ายสีเข้มต่างจาก "จัดส่งแล้ว" */
 html body #jobHistory select.job-status-select.rcvd,html body .status-pill.rcvd{background:var(--ink,#111)!important;color:#fff!important;border-color:var(--ink,#111)!important}
+/* สถานะ "รับหน้าร้าน" */
+html body .status-pill.pickup,html body #jobHistory select.job-status-select.pickup{background:var(--sun,#ffd23f)!important;color:var(--ink,#111)!important}
+html body #jobHistory li.jc.st-pickup::after{background:#f59e0b}
