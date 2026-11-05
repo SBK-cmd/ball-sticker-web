@@ -4847,6 +4847,7 @@ function bahtText(value) {
       (j.trackCode && j.status === 'shipped' ? '<button class="btn small jd-t" data-act="sendtrk" type="button">📤 ส่งเลขพัสดุ</button>' : '') +
       '</div>' +
       '<input type="file" accept="image/*" hidden data-scanjob="' + esc(j.id) + '">' +
+      '<div class="jd-man"><input class="txt" type="text" data-mancode placeholder="หรือพิมพ์เลขพัสดุเอง เช่น TH09028M5NDY0F" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="เลขพัสดุ"><button type="button" class="btn small jd-t" data-act="mancode">บันทึกเลข</button></div>' +
       (j.trackCode ? '<div class="jd-trk">📦 เลขพัสดุ' + (Array.isArray(j.recvMore) && j.recvMore.length ? ' (กล่องที่ 1)' : '') + ': <b>' + esc(j.trackCode) + '</b></div>' : '') +
       (Array.isArray(j.recvMore) && j.recvMore.some(r => !String(r.code || '').trim() && String((r.name || '') + (r.addr || '')).trim()) ? '<div class="jd-trk"><small>มีกล่องที่ยังไม่มีเลขพัสดุ — กดสแกนต่อได้เลย ระบบใส่ให้กล่องถัดไป</small></div>' : '') +
       ((isSuper && (j.jName || '').trim() && (j.items || []).some(i => (i.name || '').trim())) ? '<button class="jd-wide" data-act="tobill" type="button">🧾 ใส่ใน' + (j.wholesale ? 'ใบราคาส่ง' : 'บิล') + 'ที่ยังไม่จ่าย · ' + esc(String(j.jName).trim()) + '</button>' : '') +
@@ -6844,6 +6845,13 @@ function bahtText(value) {
     if (btn.dataset.act === 'closejd') { jobOpenIds[id] = false; renderJobHistory(); return; }
     if (btn.dataset.act === 'view') { jobOpenIds[id] = !jobOpenIds[id]; renderJobHistory(); return; }
     const list = store.get('bs_jobs', []);
+    if (btn.dataset.act === 'mancode') {
+      const mi = btn.closest('li').querySelector('input[data-mancode]');
+      const code = String((mi && mi.value) || '').replace(/\s+/g, '').toUpperCase();
+      if (!/^[A-Z0-9-]{8,}$/.test(code)) { toast('เลขพัสดุไม่ถูกต้อง (ตัวอักษร/ตัวเลข อย่างน้อย 8 ตัว)'); if (mi) mi.focus(); return; }
+      applyJobScan(id, code, '');
+      return;
+    }
     if (btn.dataset.act === 'livescan') {
       const sjInp = btn.closest('li').querySelector('input[data-scanjob]');
       openLiveScan({title: 'สแกนเลขพัสดุ · ' + ((list.find(x => x.id === id) || {}).no || ''),
