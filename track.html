@@ -92,7 +92,7 @@ details.jc>.jb{padding:4px 14px 14px}
 .pk-a{line-height:1.55;font-size:14.5px;margin-bottom:10px}.pk-a b{display:block;font-size:15.5px}.pk-a small{display:block;color:var(--mut);font-size:12.5px;font-weight:600}.pk-r{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.pk-b{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--ink,#111);font-weight:800;font-size:14px;text-decoration:none}.pk-b.ln{grid-column:1/-1;background:#06c755;border-color:#06c755;color:#fff}
 .bxf{display:flex;align-items:center;gap:8px;font-size:14.5px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed var(--line)}.bxf em{font-style:normal;font-size:12px;font-weight:700;background:#e5e7eb;color:#111827;border-radius:99px;padding:2px 9px}
 .bxa{margin-top:4px;color:#4b5563;font-size:13.5px;line-height:1.5}
-.bxs{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;margin-top:8px;padding:8px 10px;border-radius:10px;background:#fff8e1;border:1px solid #f3dd8a;font-size:13px;color:var(--mut)}.bxs b{font-size:14.5px;color:var(--ink)}.bxs small{width:100%;font-size:12px}.bxs.ok{background:#e8f7ee;border-color:#a8dcb9}.bxs.ok b{color:#166534}.bxs.bad{background:#fdecec;border-color:#f3b4b4}.bxs.bad b{color:#b3261e}
+.bxs{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:10px;padding:12px;border-radius:14px;background:#fff;border:1.5px solid #e5e7eb}.bxs span{font-size:13px;font-weight:700;color:var(--mut)}.bxs b{display:inline-block;font-size:22px;line-height:1.25;font-weight:800;padding:8px 16px;border-radius:999px;background:var(--y);color:var(--ink);box-shadow:0 2px 0 rgba(0,0,0,.12)}.bxs small{font-size:13px;font-weight:600;color:var(--mut)}.bxs.ok b{background:var(--ink);color:#fff}.bxs.bad b{background:#d93025;color:#fff}
 .bxt{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:13px;color:var(--mut)}.bxt b{font-size:15px;color:var(--ink);letter-spacing:.2px;word-break:break-all}.bxt.none{border:0;padding:0;margin-top:6px}
 .copy{min-height:32px;padding:2px 12px;margin-left:auto}
 .go2{display:flex;align-items:center;justify-content:center;min-height:44px;margin-top:8px;border-radius:12px;background:var(--y);color:var(--ink);font-weight:700;font-size:14.5px;text-decoration:none}
@@ -164,9 +164,18 @@ details.jc>.jb{padding:4px 14px 14px}
     }).join('') + '</ol>';
   }
   // สถานะการจัดส่งใต้เลขพัสดุ (ร้านส่งข้อความสถานะขนส่งมาให้) · ถ้างานนี้ลูกค้ารับแล้ว โชว์ "รับแล้ว"
+  // วันที่ย่อ + เวลา เช่น 5 พ.ย. 69 14:32 (เวลาไทย)
+  var SMON = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  function thShort(ms) {
+    try {
+      var p = {}; new Intl.DateTimeFormat('en-GB', {timeZone: 'Asia/Bangkok', day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false}).formatToParts(new Date(ms)).forEach(function (x) { p[x.type] = x.value; });
+      var hh = p.hour === '24' ? '00' : p.hour;
+      return (+p.day) + ' ' + SMON[+p.month - 1] + ' ' + String((+p.year + 543) % 100).padStart(2, '0') + ' ' + hh + ':' + p.minute + ' น.';
+    } catch (e) { return ''; }
+  }
   function shipSt(b, dn) {
     var s = b.st, c = dn ? 'ok' : (s && s.c) || 'go', t = dn ? '✓ ลูกค้ารับพัสดุแล้ว' : (s && s.t) || 'รอสถานะขนส่ง';
-    var at = (!dn && s && s.at) ? '<small>อัปเดต ' + esc(thDate(new Date(s.at).toISOString().slice(0, 10))) + '</small>' : '';
+    var at = (s && s.at) ? '<small>อัปเดต ' + esc(thShort(s.at)) + '</small>' : '';
     return '<div class="bxs ' + c + '"><span>สถานะการจัดส่ง</span><b>' + esc(t) + '</b>' + at + '</div>';
   }
   function boxRows(list, dn) {

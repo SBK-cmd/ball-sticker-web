@@ -129,16 +129,46 @@ if ('serviceWorker' in navigator) {
     setTimeout(function () { navigator.serviceWorker.register('sw.js').catch(function () {}); }, 3000); // ลงทะเบียนหลังหน้าโหลดเสร็จ ไม่แย่งเน็ตตอนเปิดหน้า
   });
   // service worker เปิดหน้าจากแคชทันทีแล้วเช็กเวอร์ชันใหม่เบื้องหลัง — ถ้ามีของใหม่ ขึ้นปุ่มให้แตะโหลด (พรีวิว: โหลดใหม่ให้เลย)
+  // อัปเดตเองอัตโนมัติ: มีเวอร์ชันใหม่ → รีเฟรชให้เองในจังหวะที่ไม่ทำให้งานค้างหาย
+  //   · เปิดแอปมาใหม่ๆ ยังไม่ได้แตะอะไร  → รีเฟรชทันที
+  //   · แอปอยู่เบื้องหลัง/ปิดจอ            → รีเฟรชทันที
+  //   · กำลังใช้งาน                        → รอจนไม่ได้แตะ/พิมพ์ 30 วินาที และไม่มีหน้าต่างฟอร์ม/กล้องเปิดอยู่ แล้วรีเฟรช
+  //   · ระหว่างรอ มีแถบเล็กๆ ให้แตะโหลดเองได้
+  var bsPending = false, bsLoadAt = Date.now(), bsLastInput = 0, bsTimer = null;
+  ['pointerdown', 'keydown', 'input', 'touchstart'].forEach(function (ev) { window.addEventListener(ev, function () { bsLastInput = Date.now(); }, {capture: true, passive: true}); });
+  function bsBusy() {
+    var a = document.activeElement, typing = a && /INPUT|TEXTAREA|SELECT/.test(a.tagName);
+    return !!(typing || document.body.classList.contains('jm-open') || document.body.classList.contains('chg-open') || document.getElementById('liveScanOv') || document.querySelector('.ds-lb,.pick-ov'));
+  }
+  function bsReload() {
+    var k = 'bs_auto_reload', last = 0;
+    try { last = +sessionStorage.getItem(k) || 0; } catch (e) {}
+    if (Date.now() - last < 20000) return;   // กันรีโหลดวนซ้ำ
+    try { sessionStorage.setItem(k, String(Date.now())); } catch (e) {}
+    location.reload();
+  }
+  function bsTry() {
+    if (!bsPending) return;
+    if (document.hidden) { bsReload(); return; }
+    var untouched = !bsLastInput && (Date.now() - bsLoadAt) < 60000;
+    if (!bsBusy() && (untouched || Date.now() - bsLastInput > 30000)) { bsReload(); return; }
+    bsBar();
+    if (!bsTimer) bsTimer = setInterval(bsTry, 5000);
+  }
+  function bsBar() {
+    if (document.getElementById('bsUpdBar') || !document.body) return;
+    var b = document.createElement('button'); b.id = 'bsUpdBar'; b.type = 'button';
+    b.textContent = '✨ มีเวอร์ชันใหม่ จะอัปเดตให้เองเมื่อหยุดใช้งาน — หรือแตะตอนนี้';
+    b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:3000;border:0;border-radius:999px;padding:10px 16px;font:600 13.5px Sarabun,sans-serif;background:#1f2937;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.3);max-width:92vw';
+    b.onclick = function () { bsReload(); };
+    document.body.appendChild(b);
+  }
+  document.addEventListener('visibilitychange', function () { if (document.hidden) bsTry(); });
   navigator.serviceWorker.addEventListener('message', function (e) {
     if (!e.data || !e.data.bsUpdated) return;
     var a = document.activeElement, typing = a && /INPUT|TEXTAREA|SELECT/.test(a.tagName);
     if (/preview\.html$/.test(location.pathname) && !typing) { location.reload(); return; }
-    if (document.getElementById('bsUpdBar')) return;
-    var b = document.createElement('button'); b.id = 'bsUpdBar'; b.type = 'button';
-    b.textContent = '✨ มีเวอร์ชันใหม่ — แตะเพื่อโหลด';
-    b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:3000;border:0;border-radius:999px;padding:12px 18px;font:600 15px Sarabun,sans-serif;background:#1f2937;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.25)';
-    b.onclick = function () { location.reload(); };
-    document.body.appendChild(b);
+    bsPending = true; bsTry();
   });
 }
 // GitHub Pages ให้เบราว์เซอร์จำหน้าเว็บไว้ ~10 นาที ทำให้กดรีเฟรชธรรมดาแล้วยังเห็นของเก่า
@@ -2223,7 +2253,7 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v100</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.01</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>

@@ -45,7 +45,9 @@ loader = ('<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_ses
 s = s.replace(app_block, loader, 1)
 s = s.replace(block, '', 1)
 _m = re.search(r"ball-sticker-v(\d+)", open(os.path.join(ROOT, 'sw.js'), encoding='utf-8').read())
-s = s.replace('__BUILD_VER__', 'v' + (_m.group(1) if _m else '?') + (' · พรีวิว' if target == 'preview' else ''))
+_n = int(_m.group(1)) if _m else None
+_ver = ('v%d.%02d' % (_n // 100, _n % 100)) if _n is not None else 'v?'   # เลขบิลด์ 100 → v1.00 · 101 → v1.01 · 110 → v1.10
+s = s.replace('__BUILD_VER__', _ver + (' · พรีวิว' if target == 'preview' else ''))
 files = ['preview.html'] if target == 'preview' else ['index.html', 'ball-sticker.html']
 for f in files: open(os.path.join(ROOT, f), 'w', encoding='utf-8').write(s)
 print('built', files, 'html', len(s), 'lock', len(lock_js), 'app', len(app_js))
