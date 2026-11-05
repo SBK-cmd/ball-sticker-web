@@ -8202,7 +8202,6 @@ function bahtText(value) {
       // การ์ดโล่ง: ข้อมูลรอง (วันที่ · เพจ · บัญชี · ผู้บันทึก) รวมเป็นบรรทัดเดียวสีจาง · ป้ายเหลือเฉพาะสถานะ/เงื่อนไขที่ต้องเห็น (จำนวนรายการ/รูปดูได้จากในการ์ด)
       const meta = [esc(thDate(j.date)), PAGE_LABEL[j.page] ? esc(PAGE_LABEL[j.page]) : '', (canBank && j.account && !accHidden(j)) ? 'บัญชี ' + esc(j.account) : '', j.createdBy ? 'โดย ' + esc(j.createdBy) : ''].filter(Boolean).join(' · ');
       const chips = (jobDelivered(j) ? chip('ลูกค้ารับแล้ว · เสร็จสิ้น', 'tg') : '') +
-        (canBank && num(j.slipAmount) > 0 ? chip((j.slipPending ? 'รอรับเงิน ' : 'สลิป ') + money(num(j.slipAmount)) + ' บาท', j.slipPending ? 'warn' : 'money') : '') +
         (j.wholesale ? chip('ราคาส่ง', 'tg') : '') + (j.recv && (j.recv.name || j.recv.addr) ? chip('ฝากส่ง', 'tg') : '');
       return '<li class="jc st-' + st + (jobOpenIds[j.id] ? ' open' : '') + '" data-id="' + esc(j.id) + '">' +
       '<div class="jc-top">' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '<span class="jc-ph" aria-hidden="true">' + esc((cn || '?').replace(/^(คุณ|นาย|นาง|นางสาว|พี่|น้อง)\s*/, '').charAt(0).toUpperCase()) + '</span>') +
@@ -8238,8 +8237,8 @@ function bahtText(value) {
       return '<div class="jc-ship"><span class="jc-k">' + label + '</span><b class="' + c + '">' + (st === 'delivered' ? '✓ ' : '') + esc(txt) + '</b>' + (code ? '<small>' + esc(String(code)) + '</small>' : '') + '</div>';
     };
     const rvHtml = (rv || j.trackCode) ? boxCodes.map((c, k) => shipLine(c, nBoxes > 1 ? 'พัสดุ กล่อง ' + (k + 1) : 'พัสดุ')).join('') : '';
-    if (!its.length && !rv && !money$) return '';
-    return '<div class="jc-det">' + (its.length ? '<ul class="jc-det-l">' + rows + '</ul>' : '') + money$ + rvHtml + '</div>';
+    if (!its.length && !rv) return '';
+    return '<div class="jc-det">' + (its.length ? '<ul class="jc-det-l">' + rows + '</ul>' : '') + rvHtml + '</div>';   // การ์ดไม่โชว์ยอดเงิน (ดูในรายละเอียด/บิล)
   }
   function saveJob() {
     const list = store.get('bs_jobs', []);
