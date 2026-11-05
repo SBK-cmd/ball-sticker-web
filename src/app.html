@@ -8172,7 +8172,7 @@ function bahtText(value) {
       ((j.donePhotos && j.donePhotos.length) ? '<div class="jd-ph">' + j.donePhotos.map(src => '<img src="' + src + '" alt="รูปงานเสร็จ">').join('') + '</div>' : '') +
       ((j.donePhotos && j.donePhotos.length) ? '<div class="jd-add"><button class="btn small good" data-act="savephotos" type="button">💾 บันทึก/ส่งรูปงานให้ลูกค้า (' + j.donePhotos.length + ' รูป)</button></div>' : '') +
       '<div class="jd-add"><label class="btn small primary">📷 ถ่าย/เพิ่มรูปงานเสร็จ<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '"></label> ' +
-      '<button class="btn small primary" data-act="livescan" type="button">📦 สแกนเลขพัสดุ</button> <button class="btn small good" data-act="tracklink" type="button">🔗 ส่งลิงก์ติดตามงาน</button>' +
+      '<button class="btn small primary" data-act="livescan" type="button">📦 สแกนเลขพัสดุ</button> <button class="btn small good" data-act="tracklink" type="button">🔗 ส่งลิงก์ติดตามงาน</button> <button class="btn small" data-act="copyurl" type="button">📋 คัดลอกลิงก์</button>' +
       '<input type="file" accept="image/*" hidden data-scanjob="' + esc(j.id) + '">' +
       (j.trackCode ? '<div class="jd-trk">📦 เลขพัสดุ' + (Array.isArray(j.recvMore) && j.recvMore.length ? ' (กล่องที่ 1)' : '') + ': <b>' + esc(j.trackCode) + '</b></div>' : '') +
       (Array.isArray(j.recvMore) && j.recvMore.some(r => !String(r.code || '').trim() && String((r.name || '') + (r.addr || '')).trim()) ? '<div class="jd-trk"><small>มีกล่องที่ยังไม่มีเลขพัสดุ — กดสแกนต่อได้เลย ระบบใส่ให้กล่องถัดไป</small></div>' : '') +
@@ -10047,7 +10047,7 @@ function bahtText(value) {
       })();
       return;
     }
-    if (btn.dataset.act === 'tracklink' || btn.dataset.act === 'copylink') {   // ลิงก์ติดตามงานของลูกค้า: รหัสสุ่มต่อใบ (สร้างครั้งแรกที่กด) ไม่ต้องล็อกอิน
+    if (btn.dataset.act === 'tracklink' || btn.dataset.act === 'copylink' || btn.dataset.act === 'copyurl') {   // ลิงก์ติดตามงานของลูกค้า: รหัสสุ่มต่อใบ (สร้างครั้งแรกที่กด) ไม่ต้องล็อกอิน
       const li = list.findIndex(x => x.id === id); if (li < 0) return;
       if (!list[li].trackToken) {
         const a = new Uint8Array(12); (window.crypto || window.msCrypto).getRandomValues(a);
@@ -10057,7 +10057,7 @@ function bahtText(value) {
       const jt = list[li];
       cloudSave('jobs', jt);
       const url = 'https://www.ballsticker.co.th/track.html?t=' + jt.trackToken;
-      const msg = 'ติดตามสถานะงาน ' + (jt.no || '') + ' ของบอลสติ๊กเกอร์ได้ที่นี่ค่ะ 👇\n' + url;
+      const msg = btn.dataset.act === 'copyurl' ? url : 'ติดตามสถานะงาน ' + (jt.no || '') + ' ของบอลสติ๊กเกอร์ได้ที่นี่ค่ะ 👇\n' + url;
       (async () => {
         try { if (btn.dataset.act === 'tracklink' && PHONE_SHARE && navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือก LINE / ข้อความ ส่งให้ลูกค้าได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
         try { await navigator.clipboard.writeText(msg); toast('คัดลอกลิงก์ติดตามงานแล้ว ไปวางส่งให้ลูกค้าได้เลย'); }
