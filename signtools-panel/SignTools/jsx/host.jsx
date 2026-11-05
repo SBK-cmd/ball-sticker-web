@@ -1055,7 +1055,7 @@ function st_stkPlace(o) {
         var right = -Infinity, top0 = 0;
         for (i = 0; i < doc.artboards.length; i++) { var ar = doc.artboards[i].artboardRect; if (ar[2] > right) { right = ar[2]; top0 = ar[1]; } }
         var emptyABs = o.delEmptyAB ? st_emptyArtboards(doc) : [];
-        var gapAB = P(40), made = 0, abFirst = doc.artboards.length, cm5L = null, cm5Seg = false, cm5Col = null, cm5N = [];
+        var gapAB = P(40), made = 0, kissKept = 0, dieKept = 0, abFirst = doc.artboards.length, cm5L = null, cm5Seg = false, cm5Col = null, cm5N = [];
         for (var s = 0; s < o.sheets.length; s++) {
             var SH = (o.sheetHs && o.sheetHs[s]) || o.sheetH;
             var spot = st_freeSpot(doc, o.sheetW, SH, right + gapAB + s * (o.sheetW + gapAB), top0, gapAB);
@@ -1093,8 +1093,8 @@ function st_stkPlace(o) {
                 tmp.translate((L + pl.x) - cb[0], (T - pl.y) - cb[1]);
                 grow(a2); grow(c2); if (d2) grow(d2); if (cr2) grow(cr2);
                 if (d2 && o.die && o.die.only) { c2.remove(); c2 = null; }   // Die Cut อย่างเดียว: ไม่เก็บเส้น kiss
-                else c2.move(cutL, ElementPlacement.PLACEATEND);
-                if (d2) d2.move(dieL, ElementPlacement.PLACEATEND);
+                else { c2.move(cutL, ElementPlacement.PLACEATEND); kissKept++; }
+                if (d2) { d2.move(dieL, ElementPlacement.PLACEATEND); dieKept++; }
                 a2.move(printL, ElementPlacement.PLACEATEND);
                 if (cr2) cr2.move(printL, ElementPlacement.PLACEATEND);
                 tmp.remove(); tmp = null;
@@ -1122,11 +1122,13 @@ function st_stkPlace(o) {
         try { doc.artboards.setActiveArtboardIndex(abFirst); } catch (ea) {}
         if (removed) warn.push('ลบ artboard เดิมที่ว่าง ' + removed + ' อัน');
         if (cm5L) warn.push('มาร์ค CM5: ' + (cm5Seg ? 'Segment Area Type1 ทุก 25 ซม. (' + cm5N.join(', ') + ' ช่วง)' : '4 Points Type1') + (o.sheets.length > 1 ? ' · หลายแผ่นในไฟล์เดียว — ลองส่งตัดทีละแผ่นก่อน' : ''));
+        if (o.die && o.die.only) warn.push('เลือก "Die Cut อย่างเดียว" ไว้ → ไม่สร้างเส้น Kiss Cut (เลเยอร์ Kiss Cut จะว่าง) · ปิดช่องนี้ถ้าต้องการเส้นตัดตามรูปด้วย');
+        else if (kissKept === 0 && made > 0) warn.push('ไม่มีเส้น Kiss Cut ในแผ่นนี้ — ตรวจแบบเส้นตัดแล้วสร้างใหม่');
         st_bcClear();
         var H0 = (o.sheetHs && o.sheetHs[0]) || o.sheetH;
         var mk = o.marks ? ' · มาร์คห่างกัน X ' + Math.round((o.sheetW * ST_SF / MM - 2 * o.marks.insetMM) * 10) / 10 + ' × Y ' + Math.round((H0 * ST_SF / MM - 2 * o.marks.insetMM) * 10) / 10 + ' มม.' : '';
         var sz = ' · แผ่น ' + Math.round(o.sheetW * ST_SF / MM) / 10 + '×' + Math.round(H0 * ST_SF / MM) / 10 + ' ซม.';
-        return '{"ok":true,"msg":' + st_q('สร้าง ' + o.sheets.length + ' แผ่น · รวม ' + made + ' ดวง' + sz + mk) + ',"warn":[' +
+        return '{"ok":true,"msg":' + st_q('สร้าง ' + o.sheets.length + ' แผ่น · รวม ' + made + ' ดวง · Kiss Cut ' + kissKept + ' เส้น' + (o.die ? ' · DieCut ' + dieKept + ' เส้น' : '') + sz + mk) + ',"warn":[' +
             (function () { var w = []; for (var x = 0; x < warn.length; x++) w.push(st_q(warn[x])); return w.join(','); })() + ']}';
     } catch (e) {
         // ย้อนกลับ: ลบของที่เพิ่งสร้าง ไม่ให้เหลือแผ่นว่าง
