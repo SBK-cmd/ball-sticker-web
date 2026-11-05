@@ -114,7 +114,7 @@ function bahtText(value) {
   const isSuper = !window.BSAuth || (!!currentUser && isSuperUser(meRec)); // ไม่มีระบบบัญชีเลย (โหมดเก่า) ให้ถือว่าเป็นผู้ดูแล
   const myPerms = isSuper ? permsOf(null) : (currentUser ? permsOf(meRec) : {}); // ยังไม่ล็อกอิน = ยังไม่เห็นอะไร (หน้าล็อกอินบังอยู่)
   const CHAT_ENABLED = false; // แชทลูกค้า (LINE/เพจ) ปิดไว้ — แยกออกไปทำเป็นของตัวเอง ตั้งเป็น true เพื่อเปิดกลับ
-  const can = k => (k === 'chat' && !CHAT_ENABLED) ? false : (isSuper || !!myPerms[k]);
+  const can = k => (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
   const canBank = can('bank');
   // พนักงาน (ไม่ใช่เจ้าของ) ดูประวัติใบคอนเฟิร์มงานได้อย่างเดียว คีย์/แก้/ลบไม่ได้
   const canKey = isSuper || isOwnerFixed(meRec) || !!(meRec && meRec.role === 'owner');
@@ -193,7 +193,7 @@ function bahtText(value) {
       bc[col] = (bc[col] || 0) + n; localStorage.setItem(kc, JSON.stringify(bc));
     } catch (e) {}
   }
-  const READ_COL_TH = {bills: 'บิล', jobs: 'ใบงาน', notifs: 'แจ้งเตือน', wholesale: 'ใบราคาส่ง', quotes: 'ใบเสนอราคา', purchases: 'ใบซื้อ', customers: 'ลูกค้า', vendors: 'ผู้ขาย', tracking: 'พัสดุ', payCharges: 'ชำระเงิน', lineReplies: 'ข้อความตอบ', bankIn: 'เงินเข้า', bankOut: 'เงินออก', bankBalance: 'ยอดบัญชี', trackingWebhooks: 'สถานะ iship', lineChats: 'แชต LINE', chatMessages: 'ข้อความแชต'};
+  const READ_COL_TH = {bills: 'บิล', jobs: 'ใบงาน', designs: 'งานออกแบบ', notifs: 'แจ้งเตือน', wholesale: 'ใบราคาส่ง', quotes: 'ใบเสนอราคา', purchases: 'ใบซื้อ', customers: 'ลูกค้า', vendors: 'ผู้ขาย', tracking: 'พัสดุ', payCharges: 'ชำระเงิน', lineReplies: 'ข้อความตอบ', bankIn: 'เงินเข้า', bankOut: 'เงินออก', bankBalance: 'ยอดบัญชี', trackingWebhooks: 'สถานะ iship', lineChats: 'แชต LINE', chatMessages: 'ข้อความแชต'};
   function readsBreakdown() {   // วันนี้เครื่องนี้อ่านจากคอลเลกชันไหนบ้าง (มาก→น้อย)
     try {
       const bc = JSON.parse(localStorage.getItem(readsKey() + '_c') || '{}') || {};
@@ -6067,6 +6067,187 @@ function bahtText(value) {
 
   /* ---------------- events ---------------- */
   const TAX_TABS = ['bill', 'purchase', 'dash', 'report'];
+
+  /* ---------------- งานออกแบบ: โน้ต+รูปช่องเดียว แก้ต่อเนื่องแบบเธรด → ยืนยันภาพ → ส่งไปใบคอนเฟิร์มงาน ----------------
+     เก็บที่ bs_designs ซิงก์คลาวด์คอลเลกชัน 'designs' · รูปอัปโหลดขึ้น Cloudinary ก่อนบันทึกเสมอ (กันเอกสารเกินลิมิต) */
+  const DS_KEY = 'bs_designs';
+  let dsSel = null, dsQ = '', dsFilt = 'all', dsEditPid = null, dsBusy = false;
+  const dsNewPh = [], dsRepPh = [];
+  const dsAll = () => store.get(DS_KEY, []) || [];
+  const dsById = id => dsAll().find(x => x.id === id);
+  const dsMe = () => currentUser ? (currentUser.name || currentUser.username || '') : '';
+  const dsRid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  function dsPut(d) {
+    d.updatedAt = Date.now();
+    const l = dsAll(), i = l.findIndex(x => x.id === d.id);
+    if (i >= 0) l[i] = d; else l.unshift(d);
+    store.set(DS_KEY, l); cloudSave('designs', d);
+  }
+  function dsAgo(ts) {
+    const m = Math.round((Date.now() - (ts || 0)) / 60000);
+    if (m < 1) return 'เมื่อกี้'; if (m < 60) return m + ' นาทีก่อน';
+    const h = Math.round(m / 60); if (h < 24) return h + ' ชม.ก่อน';
+    const dd = new Date(ts); return dd.getDate() + '/' + (dd.getMonth() + 1) + ' ' + String(dd.getHours()).padStart(2, '0') + ':' + String(dd.getMinutes()).padStart(2, '0');
+  }
+  const dsThumb = (u, w) => String(u).indexOf('/image/upload/') > 0 ? String(u).replace('/image/upload/', '/image/upload/w_' + w + ',c_limit,q_auto/') : u;
+  function dsTitle(d) {
+    const t = String(((d.posts || [])[0] || {}).text || '').split('\n').map(x => x.trim()).find(Boolean) || 'งานออกแบบ';
+    return t.length > 42 ? t.slice(0, 42) + '…' : t;
+  }
+  function dsState(d) {
+    if (d.sentAt) return ['sent', 'ส่งใบคอนเฟิร์มแล้ว'];
+    if ((d.approved || []).length) return ['ok', 'ลูกค้าพอใจ ✓'];
+    return ['wip', 'กำลังแก้'];
+  }
+  function dsPhotoThumbs(el, arr) {
+    el.innerHTML = arr.map((src, i) => '<div class="ds-th"><img src="' + src + '" alt="รูปที่แนบ"><button type="button" data-rmph="' + i + '" aria-label="เอารูปออก">✕</button></div>').join('');
+  }
+  async function dsPick(files, arr, phEl) {
+    for (const f of Array.from(files).slice(0, 8)) {
+      try { arr.push(await shrinkImage(f)); } catch (e) { toast('เปิดรูปไม่ได้'); }
+    }
+    dsPhotoThumbs(phEl, arr);
+  }
+  async function dsUpload(arr) {
+    const out = await Promise.all(arr.map(p => String(p).indexOf('data:') === 0 ? uploadPhotoToCloudinary(p) : Promise.resolve(p)));
+    return out.every(Boolean) ? out : null;
+  }
+  async function dsPost(isNew) {
+    if (dsBusy) return;
+    const txtEl = $(isNew ? 'dsNewTxt' : 'dsRepTxt'), arr = isNew ? dsNewPh : dsRepPh, btn = $(isNew ? 'dsNewGo' : 'dsRepGo');
+    const text = txtEl.value.trim();
+    if (!text && !arr.length) { toast('พิมพ์ข้อความหรือแนบรูปก่อน'); return; }
+    const d0 = isNew ? null : dsById(dsSel);
+    if (!isNew && !d0) return;
+    dsBusy = true; const label = btn.textContent; btn.disabled = true; btn.textContent = arr.length ? 'กำลังอัปโหลดรูป…' : 'กำลังบันทึก…';
+    try {
+      const urls = arr.length ? await dsUpload(arr) : [];
+      if (!urls) { toast('อัปโหลดรูปไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่ (ข้อความยังอยู่)'); return; }
+      const post = {id: 'p' + dsRid(), at: Date.now(), by: dsMe(), text, photos: urls};
+      if (isNew) {
+        dsPut({id: 'd' + dsRid(), createdAt: Date.now(), by: dsMe(), posts: [post], approved: [], sentAt: null});
+        toast('บันทึกโน้ตแล้ว');
+      } else {
+        const d = Object.assign({}, d0, {posts: (d0.posts || []).concat([post])});
+        dsPut(d); toast('ส่งแล้ว');
+      }
+      txtEl.value = ''; arr.length = 0; dsPhotoThumbs($(isNew ? 'dsNewPh' : 'dsRepPh'), arr);
+      renderDesign();
+      if (!isNew) setTimeout(() => window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'}), 80);
+    } finally { dsBusy = false; btn.disabled = false; btn.textContent = label; }
+  }
+  function renderDsFeed() {
+    const chips = [['all', 'ทั้งหมด'], ['wip', 'กำลังแก้'], ['ok', 'ลูกค้าพอใจ'], ['sent', 'ส่งแล้ว']];
+    $('dsChips').innerHTML = chips.map(c => '<button type="button" data-dsfilt="' + c[0] + '"' + (dsFilt === c[0] ? ' class="on"' : '') + '>' + c[1] + '</button>').join('');
+    const q = dsQ.trim().toLowerCase();
+    const list = dsAll().slice().sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))
+      .filter(d => dsFilt === 'all' || dsState(d)[0] === dsFilt)
+      .filter(d => !q || (d.posts || []).some(p => String(p.text || '').toLowerCase().includes(q)));
+    if (!list.length) { $('dsFeed').innerHTML = '<p class="hint" style="text-align:center;padding:24px 0">' + (dsAll().length ? 'ไม่พบงานที่ตรงเงื่อนไข' : 'ยังไม่มีงานออกแบบ จดโน้ตงานแรกด้านบนได้เลย') + '</p>'; return; }
+    $('dsFeed').innerHTML = list.map(d => {
+      const st = dsState(d), posts = d.posts || [], first = posts[0] || {};
+      const rest = String(first.text || '').split('\n').map(x => x.trim()).filter(Boolean).slice(1).join('\n');
+      const lastWith = posts.slice().reverse().find(p => p.photos && p.photos.length);
+      const ph = (d.approved && d.approved.length ? d.approved : (lastWith ? lastWith.photos : [])).slice(0, 4);
+      return '<article class="ds-card" data-ds="' + esc(d.id) + '"><header><span class="ds-av">' + esc((dsTitle(d).charAt(0) || '?').toUpperCase()) + '</span>' +
+        '<div><b>' + esc(dsTitle(d)) + '</b><small>' + esc(first.by || '') + ' · อัปเดต ' + esc(dsAgo(d.updatedAt || d.createdAt)) + '</small></div>' +
+        '<span class="ds-st ' + st[0] + '">' + st[1] + '</span></header>' +
+        (rest ? '<p class="ds-tx">' + esc(rest) + '</p>' : '') +
+        (ph.length ? '<div class="ds-imgs' + (ph.length === 1 ? ' one' : '') + '">' + ph.map(u => '<img loading="lazy" src="' + esc(dsThumb(u, 600)) + '" alt="รูปงานออกแบบ">').join('') + '</div>' : '') +
+        '<footer>💬 ' + posts.length + ' ครั้ง' + ((d.approved || []).length ? ' · ✓ ยืนยันภาพแล้ว ' + d.approved.length + ' ภาพ' : '') + '</footer></article>';
+    }).join('');
+  }
+  function renderDsThread() {
+    const d = dsById(dsSel); if (!d) return;
+    const st = dsState(d), posts = d.posts || [], ap = d.approved || [];
+    $('dsTTitle').textContent = dsTitle(d);
+    let h = '<div class="ds-hero"><span class="ds-st ' + st[0] + '">' + st[1] + '</span>' +
+      (canKey ? '<button type="button" class="ds-btn ds-main" data-dsact="toconfirm">📋 ไปคอนเฟิร์มงาน →</button>' : '') +
+      '<small>' + (ap.length ? 'ยืนยันภาพแล้ว ' + ap.length + ' ภาพ — จะแนบภาพนี้ไปกับใบคอนเฟิร์ม พร้อมชื่อ/ที่อยู่/รายละเอียดจากโน้ตแรก' : 'พอลูกค้าพอใจ กด “ยืนยันภาพนี้” ใต้รูป แล้วกดไปคอนเฟิร์มงาน (ชื่อ/ที่อยู่/รายละเอียดจะดึงจากโน้ตแรกให้)') + '</small></div>';
+    h += posts.map((p, n) => {
+      const ed = dsEditPid === p.id;
+      return '<article class="ds-post" data-pid="' + esc(p.id) + '"><header><span class="ds-av">' + esc((p.by || '?').charAt(0).toUpperCase()) + '</span>' +
+        '<div><b>' + esc(p.by || 'ไม่ระบุ') + '</b><small>' + esc(dsAgo(p.at)) + '</small></div><span class="ds-ver">' + (n === 0 ? 'โน้ตแรก' : 'ครั้งที่ ' + (n + 1)) + '</span>' +
+        '<span class="ds-acts"><button type="button" data-dsact="editpost" aria-label="แก้ข้อความ"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></button>' + (n > 0 ? '<button type="button" data-dsact="delpost" aria-label="ลบโพสต์นี้"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M6 6l1 14h10l1-14"></path></svg></button>' : '') + '</span></header>' +
+        (ed ? '<div class="ds-ptx"><textarea id="dsEditTxt">' + esc(p.text || '') + '</textarea><div class="ds-cbar"><button type="button" class="ds-btn" data-dsact="canceledit">ยกเลิก</button><button type="button" class="ds-btn ds-main" data-dsact="saveedit">บันทึก</button></div></div>'
+          : (p.text ? '<div class="ds-ptx">' + esc(p.text) + '</div>' : '')) +
+        ((p.photos || []).length ? '<div class="ds-pimgs">' + p.photos.map(u => {
+          const on = ap.indexOf(u) >= 0;
+          return '<figure><img loading="lazy" src="' + esc(dsThumb(u, 900)) + '" data-zoom="' + esc(u) + '" alt="รูปงานออกแบบ">' +
+            '<button type="button" class="ds-ok' + (on ? ' on' : '') + '" data-ok="' + esc(u) + '">' + (on ? '✓ ภาพที่ยืนยันแล้ว (กดยกเลิก)' : '✓ ยืนยันภาพนี้') + '</button></figure>';
+        }).join('') + '</div>' : '') + '</article>';
+    }).join('');
+    $('dsThread').innerHTML = h;
+  }
+  function renderDesign() {
+    if (!$('dsFeed')) return;
+    if (dsSel && !dsById(dsSel)) dsSel = null;
+    $('dsListView').hidden = !!dsSel; $('dsThreadView').hidden = !dsSel;
+    if (dsSel) renderDsThread(); else renderDsFeed();
+  }
+  function dsToConfirm(d) {
+    if (!canKey) { toast('ไม่มีสิทธิ์สร้างใบคอนเฟิร์ม'); return; }
+    const posts = d.posts || [];
+    let photos = (d.approved || []).slice();
+    if (!photos.length) {
+      const lp = posts.slice().reverse().find(p => p.photos && p.photos.length);
+      photos = lp ? lp.photos.slice() : [];
+      if (photos.length && !confirm('ยังไม่ได้กดยืนยันภาพ\nส่งไปใบคอนเฟิร์มด้วยภาพล่าสุดแทนไหม?')) return;
+    }
+    showTab('confirm'); newJob();
+    jobPhotos = photos; renderJobPhotos();
+    const first = posts[0] || {};
+    $('jPaste').value = first.text || '';
+    if (first.text) $('jSplit').click();
+    renderJob();
+    if (window.innerWidth < 900) openJobModal(); else window.scrollTo({top: 0, behavior: 'smooth'});
+    dsPut(Object.assign({}, d, {sentAt: Date.now()}));
+    toast('ส่งไปใบคอนเฟิร์มแล้ว ตรวจชื่อ เบอร์ ที่อยู่ อีกครั้งก่อนบันทึก');
+  }
+  function dsZoom(u) {
+    const o = document.createElement('div'); o.className = 'ds-lb'; o.innerHTML = '<img alt="" src="' + esc(u) + '">';
+    o.addEventListener('click', () => o.remove()); document.body.appendChild(o);
+  }
+  if ($('panel-design')) {
+    $('dsNewFile').addEventListener('change', e => { dsPick(e.target.files, dsNewPh, $('dsNewPh')); e.target.value = ''; });
+    $('dsRepFile').addEventListener('change', e => { dsPick(e.target.files, dsRepPh, $('dsRepPh')); e.target.value = ''; });
+    $('dsNewGo').addEventListener('click', () => dsPost(true));
+    $('dsRepGo').addEventListener('click', () => dsPost(false));
+    $('dsSearch').addEventListener('input', e => { dsQ = e.target.value; renderDsFeed(); });
+    $('panel-design').addEventListener('click', e => {
+      const t = e.target;
+      const rm = t.closest('[data-rmph]');
+      if (rm) { const box = rm.closest('#dsNewPh') ? dsNewPh : dsRepPh; box.splice(+rm.dataset.rmph, 1); dsPhotoThumbs(rm.closest('.ds-ph'), box); return; }
+      const fl = t.closest('[data-dsfilt]'); if (fl) { dsFilt = fl.dataset.dsfilt; renderDsFeed(); return; }
+      const z = t.closest('[data-zoom]'); if (z) { dsZoom(z.dataset.zoom); return; }
+      const ok = t.closest('[data-ok]');
+      if (ok) {
+        const d = dsById(dsSel); if (!d) return;
+        const u = ok.dataset.ok, ap = (d.approved || []).slice(), i = ap.indexOf(u);
+        if (i >= 0) ap.splice(i, 1); else ap.push(u);
+        dsPut(Object.assign({}, d, {approved: ap, sentAt: ap.length ? d.sentAt : null})); renderDesign();
+        toast(i >= 0 ? 'ยกเลิกการยืนยันภาพ' : 'ยืนยันภาพแล้ว'); return;
+      }
+      const card = t.closest('[data-ds]'); if (card && !t.closest('[data-dsact]')) { dsSel = card.dataset.ds; dsEditPid = null; renderDesign(); window.scrollTo({top: 0}); return; }
+      const b = t.closest('[data-dsact]'); if (!b) return;
+      const act = b.dataset.dsact, d = dsById(dsSel), pid = (b.closest('[data-pid]') || {dataset: {}}).dataset.pid;
+      if (act === 'back') { dsSel = null; dsEditPid = null; renderDesign(); return; }
+      if (!d) return;
+      if (act === 'toconfirm') dsToConfirm(d);
+      else if (act === 'editpost') { dsEditPid = pid; renderDsThread(); const ta = $('dsEditTxt'); if (ta) ta.focus(); }
+      else if (act === 'canceledit') { dsEditPid = null; renderDsThread(); }
+      else if (act === 'saveedit') { const v = $('dsEditTxt').value.trim(); dsPut(Object.assign({}, d, {posts: d.posts.map(p => p.id === dsEditPid ? Object.assign({}, p, {text: v}) : p)})); dsEditPid = null; renderDesign(); }
+      else if (act === 'delpost') {
+        if (!confirm('ลบโพสต์นี้?')) return;
+        const gone = (d.posts.find(p => p.id === pid) || {}).photos || [];
+        dsPut(Object.assign({}, d, {posts: d.posts.filter(p => p.id !== pid), approved: (d.approved || []).filter(u => gone.indexOf(u) < 0)})); renderDesign();
+      }
+      else if (act === 'deldesign') {
+        if (!confirm('ลบงานออกแบบนี้ทั้งหมด (รวมทุกโพสต์)?')) return;
+        store.set(DS_KEY, dsAll().filter(x => x.id !== d.id)); cloudDelete('designs', d.id); dsSel = null; renderDesign(); toast('ลบแล้ว');
+      }
+    });
+  }
   const firstAllowedTab = () => ['calc', 'confirm', 'track', 'chat', 'vat', 'wholesale', 'quote', 'bill', 'purchase', 'dash', 'report'].find(can) || 'calc';
   function closeTaxMenus() {
     $('taxTrigger').setAttribute('aria-expanded', 'false');
@@ -6092,7 +6273,7 @@ function bahtText(value) {
   function showTab(name) {
     closeJobModal();
     if (!can(name)) name = firstAllowedTab(); // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้ หรือโค้ดส่วนอื่นที่สั่งเปิดหน้า
-    ['calc', 'vat', 'confirm', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report'].forEach(n => {
+    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
@@ -6102,7 +6283,7 @@ function bahtText(value) {
     document.querySelectorAll('.top-track[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
     const isTax = TAX_TABS.indexOf(name) >= 0;
     $('taxTrigger').closest('.tab-group').classList.toggle('has-active', isTax);
-    $('bnavTaxTrigger').classList.toggle('active', isTax || name === 'vat' || name === 'quote' || name === 'chat');
+    $('bnavTaxTrigger').classList.toggle('active', isTax || name === 'vat' || name === 'quote' || name === 'chat' || name === 'track');
     closeTaxMenus();
     if (name === 'bill') fitBill();
     if (name === 'confirm') fitJob();
@@ -6113,6 +6294,7 @@ function bahtText(value) {
     if (name === 'dash') renderDash();
     if (name === 'report') renderReport();
     if (name === 'chat') renderChat();
+    if (name === 'design') renderDesign();
     const activeTab = isTax ? $('taxTrigger') : $('tab-' + name);
     if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
   }
@@ -7295,7 +7477,7 @@ function bahtText(value) {
   function applyRoleUI() {
     if (isSuper) return;
     // ซ่อนหน้าที่ไม่ได้รับสิทธิ์ ทั้งแถบเมนูบน เมนูภาษี เมนูล่างบนมือถือ และแผ่น "เพิ่มเติม"
-    PAGE_KEYS.forEach(n => {
+    PAGE_KEYS.concat(['design']).forEach(n => {
       if (can(n)) return;
       const t = $('tab-' + n); if (t) t.hidden = true;
       document.querySelectorAll('.btab[data-tab="' + n + '"], .tax-sheet-item[data-tab="' + n + '"], .top-track[data-tab="' + n + '"]').forEach(el => { el.hidden = true; });
@@ -7522,6 +7704,7 @@ function bahtText(value) {
   (window.__bsAuthReady || Promise.resolve()).then(function () {
     watchCloud('bills', 'bs_bills', renderHistory);
     watchCloud('jobs', 'bs_jobs', renderJobHistory);
+    if (can('design')) watchCloud('designs', 'bs_designs', renderDesign);
     watchCloud('notifs', NOTIF_KEY, onNotifsChanged);
     watchCloud('wholesale', 'bs_wholesale', renderWholesaleHistory);
     watchCloud('quotes', 'bs_quotes', renderQuoteHistory);

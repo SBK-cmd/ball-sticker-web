@@ -63,6 +63,58 @@ try { if (!localStorage.getItem('bs_session')) document.documentElement.classLis
 .rthumb-wrap{display:flex;gap:12px;align-items:center}
 #rthumb{border:1.5px solid var(--field-line);border-radius:8px;flex:none;max-width:120px;height:auto}
 #tab-chat,#panel-chat{display:none!important}
+.ds-wrap{max-width:760px;margin:0 auto}
+.ds-comp{padding:12px;margin-bottom:14px}
+.ds-comp textarea{width:100%;box-sizing:border-box;min-height:84px;border:2px solid var(--ink,#0c1f38);border-radius:14px;padding:10px 12px;font:500 16px/1.5 inherit;font-family:inherit;background:var(--field,#fff);color:inherit;resize:vertical}
+.ds-cbar{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:8px}
+.ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 14px;border:2px solid var(--ink,#0c1f38);border-radius:12px;background:var(--surface,#fff);color:var(--ink,#0c1f38);font:700 14.5px/1 inherit;font-family:inherit;cursor:pointer;box-shadow:none}
+.ds-btn.ds-main{background:var(--lime,var(--accent,#ffd23f))}
+.ds-btn:disabled{opacity:.5}
+.ds-ph{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.ds-ph:empty{display:none}
+.ds-th{position:relative;width:76px;height:76px;border-radius:10px;overflow:hidden;border:1.5px solid var(--line,#ccc)}
+.ds-th img{width:100%;height:100%;object-fit:cover}
+.ds-th button{position:absolute;top:2px;right:2px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:13px;line-height:1}
+.ds-tools{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.ds-chips{display:flex;gap:6px;flex-wrap:wrap}
+.ds-chips button{padding:6px 12px;border-radius:999px;border:1.5px solid var(--line,#bbb);background:transparent;color:inherit;font:600 13.5px/1 inherit;font-family:inherit;cursor:pointer}
+.ds-chips button.on{background:var(--ink,#0c1f38);color:var(--cream,#fff);border-color:var(--ink,#0c1f38)}
+.ds-card,.ds-post{background:var(--surface,#fff);border:2px solid var(--ink,#0c1f38);border-radius:16px;padding:12px;margin-bottom:12px}
+.ds-card{cursor:pointer}
+.ds-card header,.ds-post header{display:flex;gap:10px;align-items:center}
+.ds-av{flex:none;width:38px;height:38px;border-radius:50%;background:var(--lime,var(--accent,#ffd23f));border:2px solid var(--ink,#0c1f38);display:flex;align-items:center;justify-content:center;font-weight:800}
+.ds-card header>div,.ds-post header>div{flex:1;min-width:0}
+.ds-card header b,.ds-post header b{display:block;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ds-card small,.ds-post small{color:var(--muted,#666);font-size:12.5px}
+.ds-st{flex:none;font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;border:1.5px solid var(--ink,#0c1f38);background:#fff3c4}
+.ds-st.ok{background:#c9f5d4}.ds-st.sent{background:#d6e8ff}
+.ds-tx{margin:8px 0 0;white-space:pre-wrap;font-size:15px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ds-imgs{display:grid;gap:6px;margin-top:8px;grid-template-columns:repeat(2,1fr)}
+.ds-imgs.one{grid-template-columns:1fr}
+.ds-imgs img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;border:1.5px solid var(--line,#ccc);background:#fff;cursor:zoom-in}
+.ds-imgs.one img{aspect-ratio:auto;max-height:420px;object-fit:contain}
+.ds-card footer{margin-top:8px;font-size:13px;color:var(--muted,#666)}
+.ds-tbar{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.ds-tbar span{flex:1;min-width:0;font-weight:800;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ds-del{color:#b3261e;border-color:#b3261e}
+.ds-hero{background:var(--surface,#fff);border:2px solid var(--ink,#0c1f38);border-radius:16px;padding:12px;margin-bottom:12px}
+.ds-hero .ds-btn{width:100%;margin-top:8px}
+.ds-hero small{display:block;margin-top:8px;color:var(--muted,#666)}
+.ds-post .ds-ver{flex:none;font-size:12px;font-weight:700;color:var(--muted,#666)}
+.ds-post .ds-acts{display:flex;gap:4px}
+.ds-post .ds-acts button{border:0;background:none;font-size:16px;padding:6px;cursor:pointer;color:inherit}
+.ds-ptx{margin:8px 0 0;white-space:pre-wrap;font-size:15.5px;line-height:1.55}
+.ds-ptx textarea{width:100%;box-sizing:border-box;min-height:90px;border:2px solid var(--ink,#0c1f38);border-radius:12px;padding:8px 10px;font:500 15.5px/1.5 inherit;font-family:inherit}
+.ds-pimgs{display:grid;gap:10px;margin-top:8px}
+.ds-pimgs figure{margin:0}
+.ds-pimgs img{width:100%;max-height:520px;object-fit:contain;border-radius:12px;border:1.5px solid var(--line,#ccc);background:#fff;cursor:zoom-in;display:block}
+.ds-ok{width:100%;margin-top:6px;min-height:42px;border:2px dashed var(--ink,#0c1f38);border-radius:12px;background:transparent;color:inherit;font:700 14.5px/1 inherit;font-family:inherit;cursor:pointer}
+.ds-ok.on{border-style:solid;background:#c9f5d4}
+.ds-reply{position:sticky;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:5;box-shadow:0 -6px 18px rgba(0,0,0,.12)}
+.ds-reply textarea{min-height:56px}
+.ds-lb{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:12px;cursor:zoom-out}
+.ds-lb img{max-width:100%;max-height:100%;object-fit:contain}
+@media(min-width:900px){.ds-reply{bottom:12px}}
 </style>
 <script>
 // ตั้งโหมดมืด/สว่างจากค่าที่จำไว้ทันทีตั้งแต่ก่อนวาดหน้าจอ กันไฟกะพริบสลับธีมตอนโหลด
@@ -2397,7 +2449,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v97</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v97 · พรีวิว</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
@@ -2411,6 +2463,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
       <button role="tab" id="tab-calc" data-tab="calc" aria-selected="true" aria-controls="panel-calc"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"></rect><line x1="8" y1="7" x2="16" y2="7"></line><line x1="8" y1="11" x2="8" y2="11.01"></line><line x1="12" y1="11" x2="12" y2="11.01"></line><line x1="16" y1="11" x2="16" y2="11.01"></line><line x1="8" y1="15" x2="8" y2="15.01"></line><line x1="12" y1="15" x2="12" y2="15.01"></line><line x1="16" y1="15" x2="16" y2="15.01"></line></svg><span>คำนวณสติ๊กเกอร์</span></button>
       <button role="tab" id="tab-vat" data-tab="vat" aria-selected="false" aria-controls="panel-vat"><svg class="tab-ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="8" y1="16" x2="16" y2="8"></line><circle cx="8.5" cy="8.5" r="1"></circle><circle cx="15.5" cy="15.5" r="1"></circle></svg><span>คำนวณ VAT</span></button>
       <button role="tab" id="tab-confirm" data-tab="confirm" aria-selected="false" aria-controls="panel-confirm"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"></rect><path d="M9 3h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V3z" fill="currentColor" stroke="none"></path><path d="m9 13 2 2 4-4"></path></svg><span>ใบคอนเฟิร์มงาน</span></button>
+      <button role="tab" id="tab-design" data-tab="design" aria-selected="false" aria-controls="panel-design"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg><span>งานออกแบบ</span></button>
       <button role="tab" id="tab-wholesale" data-tab="wholesale" aria-selected="false" aria-controls="panel-wholesale"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg><span>ใบราคาส่ง</span></button>
       <button role="tab" id="tab-quote" data-tab="quote" aria-selected="false" aria-controls="panel-quote"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="13" y2="17"></line></svg><span>ใบเสนอราคา</span></button>
       <button role="tab" id="tab-track" data-tab="track" aria-selected="false" aria-controls="panel-track"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg><span>ติดตามพัสดุ</span></button>
@@ -2510,9 +2563,9 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
       </span>
       <span class="btab-label">สั่งงาน</span>
     </button>
-    <button type="button" class="btab" data-tab="track" aria-controls="panel-track">
-      <span class="btab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5A1.5 1.5 0 0 1 3.5 5h9A1.5 1.5 0 0 1 14 6.5V16H2z"></path><path d="M14 9h3.6a1 1 0 0 1 .8.4l2.4 3.2a1 1 0 0 1 .2.6V16h-7"></path><circle cx="6.5" cy="17.5" r="2"></circle><circle cx="17.5" cy="17.5" r="2"></circle></svg></span>
-      <span class="btab-label">ติดตาม</span>
+    <button type="button" class="btab" data-tab="design" aria-controls="panel-design">
+      <span class="btab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></span>
+      <span class="btab-label">งานออกแบบ</span>
     </button>
     <button type="button" class="btab" id="bnavTaxTrigger" aria-haspopup="true" aria-expanded="false">
       <span class="btab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"></rect></svg></span>
@@ -2522,6 +2575,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
 
   <div class="tax-sheet-backdrop no-print" id="taxSheetBackdrop" hidden></div>
   <div class="tax-sheet no-print" id="taxSheet" role="menu" aria-label="เมนูเพิ่มเติม: ใบเสนอราคาและภาษี" hidden>
+    <button type="button" class="tax-sheet-item" data-tab="track">ติดตามพัสดุ</button>
     <button type="button" class="tax-sheet-item" data-tab="wholesale">ใบราคาส่ง</button>
     <button type="button" class="tax-sheet-item" data-tab="quote">ใบเสนอราคา</button>
     <button type="button" class="tax-sheet-item" data-tab="vat">คำนวณ VAT</button>
@@ -3592,6 +3646,43 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
     </section>
 
     <!-- ================= รายงานภาษีซื้อ-ขาย ================= -->
+    <!-- ================= งานออกแบบ ================= -->
+    <section id="panel-design" class="panel" role="tabpanel" aria-labelledby="tab-design">
+      <div class="page-head no-print">
+        <h1>งานออกแบบ.</h1>
+        <p>จดโน้ตงานออกแบบ แนบรูป แก้ไปมากับลูกค้า พอลูกค้าพอใจกดยืนยันภาพ แล้วส่งต่อไปใบคอนเฟิร์มงาน</p>
+      </div>
+      <div class="ds-wrap no-print">
+        <div id="dsListView">
+          <div class="ds-comp card" id="dsNew">
+            <textarea id="dsNewTxt" rows="4" placeholder="จดโน้ตงานใหม่ได้เลย เช่น ชื่อลูกค้า เบอร์ ที่อยู่ รายละเอียดงาน แล้วแนบรูปได้ในช่องเดียว"></textarea>
+            <div class="ds-ph" id="dsNewPh"></div>
+            <div class="ds-cbar">
+              <label class="ds-btn">📷 แนบรูป<input type="file" accept="image/*" multiple hidden id="dsNewFile"></label>
+              <button type="button" class="ds-btn ds-main" id="dsNewGo">บันทึกโน้ต</button>
+            </div>
+          </div>
+          <div class="ds-tools">
+            <input class="txt" id="dsSearch" type="search" placeholder="ค้นหาชื่อ / ข้อความ" autocomplete="off">
+            <div class="ds-chips" id="dsChips"></div>
+          </div>
+          <div id="dsFeed"></div>
+        </div>
+        <div id="dsThreadView" hidden>
+          <div class="ds-tbar"><button type="button" class="ds-btn" data-dsact="back">‹ กลับ</button><span id="dsTTitle"></span><button type="button" class="ds-btn ds-del" data-dsact="deldesign" aria-label="ลบงานนี้"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M6 6l1 14h10l1-14"></path></svg></button></div>
+          <div id="dsThread"></div>
+          <div class="ds-comp ds-reply" id="dsReply">
+            <textarea id="dsRepTxt" rows="2" placeholder="เขียนความคืบหน้า / ที่ลูกค้าขอแก้ แล้วแนบรูปที่แก้แล้ว"></textarea>
+            <div class="ds-ph" id="dsRepPh"></div>
+            <div class="ds-cbar">
+              <label class="ds-btn">📷 แนบรูป<input type="file" accept="image/*" multiple hidden id="dsRepFile"></label>
+              <button type="button" class="ds-btn ds-main" id="dsRepGo">ส่ง</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="panel-chat" class="panel" role="tabpanel" aria-labelledby="tab-chat">
       <div class="page-head no-print">
         <h1>แชทลูกค้า.</h1>
@@ -3782,7 +3873,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=77c04fbc99",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=990a1d78ec",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
