@@ -192,13 +192,13 @@ details.jc>.jb{padding:4px 14px 14px}
   }
   function recOf(j) {   // ใบหลัก (เอกสารที่ลิงก์ชี้) → โครงเดียวกับใบอื่น
     var isJbs = /^JBS/i.test(String(j.no || '')), k = stIdx(j.status, j.delivered), boxes = [];
-    if (isJbs) {
+    {   // งานทุกประเภท: โชว์ที่อยู่จัดส่ง/เลขพัสดุเท่าที่ร้านส่งขึ้นมา
       var bxs = (j.boxes || []).filter(function (b) { return b && (b.name || b.addr); });
       if (bxs.length) boxes = [{from: j.shipFrom || '', name: j.receiver ? j.receiver.name : '', addr: j.receiver ? j.receiver.addr : '', note: '', trackCode: j.trackCode || '', carrier: j.carrier || '', trackUrl: j.trackUrl || ''}].concat(bxs);
       else if (j.receiver || j.trackCode) boxes = [{from: j.shipFrom || '', name: j.receiver ? j.receiver.name : '', addr: j.receiver ? j.receiver.addr : '', trackCode: j.trackCode || '', carrier: j.carrier || '', trackUrl: j.trackUrl || ''}];
-    } else if (j.trackCode) boxes = [{from: j.shipFrom || '', trackCode: j.trackCode, carrier: j.carrier || '', trackUrl: j.trackUrl || ''}];
-    return {no: j.no, date: j.date || '', status: j.status, delivered: j.delivered, items: isJbs ? (j.items || []) : [], amt: isJbs ? (+j.amt || 0) : 0, due: j.due, thumb: j.thumb, boxes: boxes, sender: isJbs ? j.sender : null,
-      photos: k >= 2 ? https(j.photos) : [], refs: isJbs ? https(j.refPhotos) : []};
+    }
+    return {no: j.no, date: j.date || '', status: j.status, delivered: j.delivered, items: j.items || [], amt: isJbs ? (+j.amt || 0) : 0, due: j.due, thumb: j.thumb, boxes: boxes, sender: isJbs ? j.sender : null,
+      photos: k >= 2 ? https(j.photos) : [], refs: https(j.refPhotos)};
   }
   function show(j) {
     var isJbs = /^JBS/i.test(String(j.no || ''));

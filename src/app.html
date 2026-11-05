@@ -3679,15 +3679,17 @@ function bahtText(value) {
       const isJbs = /^JBS/i.test(String(rec.no || '').trim());   // ที่อยู่/รูปอ้างอิง เฉพาะงานส่ง (JBS)
       if (isJbs && snd) doc.sender = snd;
       if (isJbs) { const am = jobAmountOf(rec); if (am > 0) doc.amt = am; }
-      if (isJbs) { doc.date = rec.date || ''; doc.items = (rec.items || []).filter(i => (i.name || '').trim()).slice(0, 8).map(i => ({n: String(i.name).trim().slice(0, 80), q: String(i.qty == null ? '' : i.qty).slice(0, 12)})); }   // รายการงานของใบนี้ (ให้ลูกค้าเห็นว่างานอะไร)
-      if (isJbs && rcv) { doc.receiver = rcv; const fn = String(rec.recv.name || '').replace(/\s+/g, ' ').trim().slice(0, 80); if (fn) doc.receiver.name = fn; }   // ผู้รับ: ชื่อเต็ม (ตามที่ร้านสั่ง)
+      { doc.date = rec.date || ''; doc.items = (rec.items || []).filter(i => (i.name || '').trim()).slice(0, 8).map(i => ({n: String(i.name).trim().slice(0, 80), q: String(i.qty == null ? '' : i.qty).slice(0, 12)})); }   // รายการงานของใบนี้ (ให้ลูกค้าเห็นว่างานอะไร)
+      const custAddr = String(rec.jAddr || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+      const rcvAny = isJbs ? rcv : (rcv || (custAddr ? {name: firstNameOf(rec.jName), addr: custAddr} : null));   // งานร้าน (JB): ไม่มีผู้รับฝากส่ง → ใช้ที่อยู่ลูกค้าเป็นที่อยู่จัดส่ง
+      if (rcvAny) { doc.receiver = rcvAny; const fn = String((rec.recv && rec.recv.name) || (isJbs ? '' : rec.jName) || '').replace(/\s+/g, ' ').trim().slice(0, 80); if (fn) doc.receiver.name = fn; }   // ผู้รับ: ชื่อเต็ม
       if (isJbs && Array.isArray(rec.recvMore)) { const bx = rec.recvMore.filter(r => r && String((r.name || '') + (r.addr || '')).trim()).slice(0, 10).map(r => { const code = String(r.code || '').replace(/\s+/g, '').slice(0, 40), car = String(r.carrier || '') || (((store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(code))) || {}).carrier || ''); return {name: String(r.name || '').replace(/\s+/g, ' ').trim().slice(0, 80), addr: String(r.addr || '').replace(/\s+/g, ' ').trim().slice(0, 300), note: String(r.note || '').replace(/\s+/g, ' ').trim().slice(0, 120), trackCode: code, carrier: car, trackUrl: code && car ? trackingLink(car, code) : '', from: shipFromOf(rec, store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(code)))}; }); if (bx.length) doc.boxes = bx; }   // ส่งหลายกล่อง (ไม่ส่งเบอร์โทร)
       // ยอดค้างรวมของลูกค้า (ใบราคาส่งที่ยังไม่จ่าย) + payload พร้อมเพย์ ให้ลูกค้าสแกนจ่ายเองจากหน้าติดตาม
       if (isJbs) { const ow = owedGroups().find(x => x.name === (String(rec.jName || '').trim() || 'ไม่ระบุชื่อ')); if (ow && ow.total > 0) doc.pay = {total: ow.total, payee: payAcct('วันทิม').name || '', ref: payRef(Date.now()), payload: promptPayPayload(payAcct('วันทิม').id, ow.total),   // งาน JBS เข้าบัญชีวันทิมทั้งหมด
       docs: ow.docs.slice(0, 30).map(d => { const o = {no: d.no, amount: d.total, items: (d.items || []).slice(0, 20)}; if (d.photo) o.photo = d.photo; return o; })}; }
       const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
-      if (isJbs && refs.length) doc.refPhotos = refs;
-      if (isJbs) { const th = (photos[0] || refs[0] || ''); if (th) doc.thumb = th; }   // รูปย่อหัวการ์ด
+      if (refs.length) doc.refPhotos = refs;
+      { const th = (photos[0] || refs[0] || ''); if (th) doc.thumb = th; }   // รูปย่อหัวการ์ด
       if (isJbs) {   // ใบงานอื่นของลูกค้าคนนี้ (สถานะล่าสุดของแต่ละใบ)
         doc.others = siblingJobsOf(rec).map(x => {
           const trx = x.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(x.trackCode)) || null) : null, car2 = (trx && trx.carrier) || '';
