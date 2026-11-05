@@ -3651,6 +3651,13 @@ function bahtText(value) {
     if (!/^JBS/i.test(String(rec.no || '').trim())) return;
     siblingJobsOf(rec).forEach(x => { if (x.trackToken) { try { publicJobMirror(x, {noSib: true}); } catch (e) {} } });
   }
+  // ยอดเงินของใบงาน (รวมราคารายการ×จำนวน ถ้าไม่มีใช้ยอดสลิป) — ใช้โชว์ในหน้าติดตามของลูกค้า
+  function jobAmountOf(j) {
+    let amt = 0, has = false;
+    (j.items || []).forEach(i => { if ((i.name || '').trim() && i.price !== '' && i.price != null && num(i.price) > 0) { has = true; amt += (num(i.qty) > 0 ? num(i.qty) : 1) * num(i.price); } });
+    if (!has && num(j.slipAmount) > 0) { amt = num(j.slipAmount); has = true; }
+    return has ? round2(amt) : 0;
+  }
   function publicJobMirror(rec, opts) {
     try {
       const tr = rec.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(rec.trackCode)) || null) : null;
@@ -3662,6 +3669,7 @@ function bahtText(value) {
       const snd = addrOf(rec.jName, rec.jAddr), rcv = rec.recv ? addrOf(rec.recv.name, rec.recv.addr) : null;
       const isJbs = /^JBS/i.test(String(rec.no || '').trim());   // ที่อยู่/รูปอ้างอิง เฉพาะงานส่ง (JBS)
       if (isJbs && snd) doc.sender = snd;
+      if (isJbs) { const am = jobAmountOf(rec); if (am > 0) doc.amt = am; }
       if (isJbs) { doc.date = rec.date || ''; doc.items = (rec.items || []).filter(i => (i.name || '').trim()).slice(0, 8).map(i => ({n: String(i.name).trim().slice(0, 80), q: String(i.qty == null ? '' : i.qty).slice(0, 12)})); }   // รายการงานของใบนี้ (ให้ลูกค้าเห็นว่างานอะไร)
       if (isJbs && rcv) { doc.receiver = rcv; const fn = String(rec.recv.name || '').replace(/\s+/g, ' ').trim().slice(0, 80); if (fn) doc.receiver.name = fn; }   // ผู้รับ: ชื่อเต็ม (ตามที่ร้านสั่ง)
       if (isJbs && Array.isArray(rec.recvMore)) { const bx = rec.recvMore.filter(r => r && String((r.name || '') + (r.addr || '')).trim()).slice(0, 10).map(r => { const code = String(r.code || '').replace(/\s+/g, '').slice(0, 40), car = String(r.carrier || '') || (((store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(code))) || {}).carrier || ''); return {name: String(r.name || '').replace(/\s+/g, ' ').trim().slice(0, 80), addr: String(r.addr || '').replace(/\s+/g, ' ').trim().slice(0, 300), note: String(r.note || '').replace(/\s+/g, ' ').trim().slice(0, 120), trackCode: code, carrier: car, trackUrl: code && car ? trackingLink(car, code) : ''}; }); if (bx.length) doc.boxes = bx; }   // ส่งหลายกล่อง (ไม่ส่งเบอร์โทร)
@@ -3674,7 +3682,7 @@ function bahtText(value) {
       if (isJbs) {   // ใบงานอื่นของลูกค้าคนนี้ (สถานะล่าสุดของแต่ละใบ)
         doc.others = siblingJobsOf(rec).map(x => {
           const trx = x.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(x.trackCode)) || null) : null, car2 = (trx && trx.carrier) || '';
-          const o = {delivered: jobDelivered(x), no: String(x.no || ''), status: x.status || 'pending', date: x.date || '', due: x.due || '', items: (x.items || []).filter(i => (i.name || '').trim()).slice(0, 8).map(i => ({n: String(i.name).trim().slice(0, 80), q: String(i.qty == null ? '' : i.qty).slice(0, 12)}))};
+          const o = {amt: jobAmountOf(x) || 0, delivered: jobDelivered(x), no: String(x.no || ''), status: x.status || 'pending', date: x.date || '', due: x.due || '', items: (x.items || []).filter(i => (i.name || '').trim()).slice(0, 8).map(i => ({n: String(i.name).trim().slice(0, 80), q: String(i.qty == null ? '' : i.qty).slice(0, 12)}))};
           { const https = a => (Array.isArray(a) ? a : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)); const ph = https(x.donePhotos).slice(0, 4), rf = https(x.photos).slice(0, 4); if (ph.length) o.photos = ph; if (rf.length) o.refPhotos = rf; const th2 = ph[0] || rf[0]; if (th2) o.thumb = th2; }
           if (x.recv && (x.recv.name || x.recv.addr)) o.receiver = {name: String(x.recv.name || '').replace(/\s+/g, ' ').trim().slice(0, 80), addr: String(x.recv.addr || '').replace(/\s+/g, ' ').trim().slice(0, 300)};
           if (x.trackCode) { o.trackCode = String(x.trackCode); o.carrier = car2; o.trackUrl = trackingLink(car2, x.trackCode) || ''; }
@@ -6886,7 +6894,7 @@ function bahtText(value) {
         const gs = owedGroups(), byName = {}; gs.forEach(x => { byName[x.name] = x; });
         store.get('bs_jobs', []).filter(j => j.trackToken && /^JBS/i.test(String(j.no || '').trim())).forEach(j => {
           const ow = byName[String(j.jName || '').trim() || 'ไม่ระบุชื่อ'];
-          const sig = ow ? ow.total + '|' + ow.docs.map(d => d.id).join(',') : '';
+          const sig = (ow ? ow.total + '|' + ow.docs.map(d => d.id).join(',') : '') + '#' + jobAmountOf(j);
           if (owedSig[j.id] === sig) return;
           owedSig[j.id] = sig; publicJobMirror(j);
         });

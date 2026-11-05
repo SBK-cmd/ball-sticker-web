@@ -157,6 +157,8 @@ details.jc>.jb{padding:2px 16px 16px;border-top:1px solid var(--line)}
     var itemsHtml = function (arr) { return (arr && arr.length) ? '<ul class="it" style="margin-top:12px">' + arr.map(function (i) { return '<li><span>' + esc(i.n) + '</span><b>' + (i.q ? '× ' + esc(i.q) : '') + '</b></li>'; }).join('') + '</ul>' : ''; };
     var subOf = function (arr) { return (arr && arr[0]) ? String(arr[0].n || '') + (arr[0].q ? ' × ' + arr[0].q : '') + (arr.length > 1 ? ' +' + (arr.length - 1) + ' รายการ' : '') : ''; };
     if (isJbs) html += itemsHtml(j.items);
+    var amtRow = function (a) { return a > 0 ? '<div class="row"><span>ยอดเงิน</span><b>' + Number(a).toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' บาท</b></div>' : ''; };
+    if (isJbs) html += amtRow(j.amt);
     var others = (isJbs && Array.isArray(j.others)) ? j.others.filter(function (o) { return o && o.no; }) : [];
     if (others.length) {
       var stOf = function (st) { var k = 0, q; for (q = 0; q < STEPS.length; q++) if (STEPS[q][0] === st) k = q; return k; };
@@ -166,6 +168,7 @@ details.jc>.jb{padding:2px 16px 16px;border-top:1px solid var(--line)}
         var k = stOf(effSt(o.status, o.delivered)), steps = STEPS.map(function (s2, n) { var c = n < k || (k >= 3 && n === k) ? 'done' : (n === k ? 'cur' : ''); return '<li class="' + c + '"><i>' + (c === 'done' ? '✓' : (n + 1)) + '</i>' + esc(s2[1]) + '</li>'; }).join('');
         var b = '<ul class="steps" style="margin-top:12px">' + steps + '</ul>';
         b += itemsHtml(o.items);
+        b += amtRow(o.amt);
         var pic = function (arr, t) { return (arr && arr.length) ? '<div class="jp"><small>' + t + '</small><div>' + arr.map(function (u) { return '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="" loading="lazy"></a>'; }).join('') + '</div></div>' : ''; };
         b += pic(o.photos, 'รูปงาน') + pic(o.refPhotos, 'รูปอ้างอิง');
         if (o.receiver) b += '<div class="ad" style="margin-top:12px"><div class="ab"><small>ผู้รับ</small>' + (o.receiver.name ? '<b>' + esc(o.receiver.name) + '</b>' : '') + esc(o.receiver.addr || '') + '</div></div>';
