@@ -8221,8 +8221,8 @@ function bahtText(value) {
   function jobCardDetail(j) {
     const its = (j.items || []).filter(i => (i.name || '').trim());
     const pieces = its.reduce((a, i) => a + (num(i.qty) > 0 ? num(i.qty) : 0), 0);
-    const rows = its.slice(0, 3).map(i => '<li><span>' + esc(String(i.name).trim()) + '</span><b>× ' + esc(i.qty === '' || i.qty == null ? 1 : i.qty) + '</b></li>').join('') +
-      (its.length > 3 ? '<li class="more">+ อีก ' + (its.length - 3) + ' รายการ</li>' : '');
+    const rows = its.slice(0, 1).map(i => '<li><span>' + esc(String(i.name).trim()) + '</span><b>× ' + esc(i.qty === '' || i.qty == null ? 1 : i.qty) + '</b></li>').join('') +
+      (its.length > 1 ? '<li class="more"><span>+ อีก ' + (its.length - 1) + ' รายการ</span><b>รวม ' + money(pieces).replace(/\.00$/, '') + ' ชิ้น</b></li>' : '');
     let amt = 0, hasPrice = false;
     its.forEach(i => { const pr = (i.price !== '' && i.price != null) ? num(i.price) : null; if (pr != null && pr > 0) { hasPrice = true; amt += (num(i.qty) > 0 ? num(i.qty) : 1) * pr; } });
     if (!hasPrice && num(j.slipAmount) > 0) { amt = num(j.slipAmount); hasPrice = true; }
@@ -8239,7 +8239,7 @@ function bahtText(value) {
     };
     const rvHtml = (rv || j.trackCode) ? boxCodes.map((c, k) => shipLine(c, nBoxes > 1 ? 'พัสดุ กล่อง ' + (k + 1) : 'พัสดุ')).join('') : '';
     if (!its.length && !rv && !money$) return '';
-    return '<div class="jc-det">' + (its.length ? (its.length > 1 ? '<div class="jc-det-h"><span class="jc-k">งาน</span><span>รวม ' + money(pieces).replace(/\.00$/, '') + ' ชิ้น</span></div>' : '') + '<ul class="jc-det-l">' + rows + '</ul>' : '') + money$ + rvHtml + '</div>';
+    return '<div class="jc-det">' + (its.length ? '<ul class="jc-det-l">' + rows + '</ul>' : '') + money$ + rvHtml + '</div>';
   }
   function saveJob() {
     const list = store.get('bs_jobs', []);
