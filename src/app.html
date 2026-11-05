@@ -3553,7 +3553,17 @@ function bahtText(value) {
       if (!n) return;
       readsByCol[col] = (readsByCol[col] || 0) + n;
       const k = readsKey(); localStorage.setItem(k, String((+localStorage.getItem(k) || 0) + n));
+      const kc = k + '_c'; let bc = {}; try { bc = JSON.parse(localStorage.getItem(kc) || '{}') || {}; } catch (e) {}   // แยกรายคอลเลกชัน (เก็บทั้งวัน)
+      bc[col] = (bc[col] || 0) + n; localStorage.setItem(kc, JSON.stringify(bc));
     } catch (e) {}
+  }
+  const READ_COL_TH = {bills: 'บิล', jobs: 'ใบงาน', notifs: 'แจ้งเตือน', wholesale: 'ใบราคาส่ง', quotes: 'ใบเสนอราคา', purchases: 'ใบซื้อ', customers: 'ลูกค้า', vendors: 'ผู้ขาย', tracking: 'พัสดุ', payCharges: 'ชำระเงิน', lineReplies: 'ข้อความตอบ', bankIn: 'เงินเข้า', bankOut: 'เงินออก', bankBalance: 'ยอดบัญชี', trackingWebhooks: 'สถานะ iship', lineChats: 'แชต LINE', chatMessages: 'ข้อความแชต'};
+  function readsBreakdown() {   // วันนี้เครื่องนี้อ่านจากคอลเลกชันไหนบ้าง (มาก→น้อย)
+    try {
+      const bc = JSON.parse(localStorage.getItem(readsKey() + '_c') || '{}') || {};
+      const rows = Object.keys(bc).sort((a, b) => bc[b] - bc[a]).slice(0, 6).map(k => (READ_COL_TH[k] || k) + ' ' + bc[k].toLocaleString());
+      return rows.length ? rows.join(' · ') : '';
+    } catch (e) { return ''; }
   }
   function readsToday() { try { return +localStorage.getItem(readsKey()) || 0; } catch (e) { return 0; } }
   window.bsReads = () => ({today: readsToday(), session: Object.assign({}, readsByCol)});
@@ -3747,7 +3757,7 @@ function bahtText(value) {
     })();
   }
   function cloudNotice() {
-    if (cloudStatus === 'on') return '<p class="notice" style="background:#e6f6ea;color:#1a6b3a">ซิงก์กับคลาวด์แล้ว ทุกเครื่องที่เปิดหน้านี้เห็นข้อมูลเดียวกัน · วันนี้เครื่องนี้อ่านข้อมูล ~' + readsToday().toLocaleString() + ' รายการ (โควตาฟรีรวมทุกเครื่อง 50,000/วัน)</p>';
+    if (cloudStatus === 'on') return '<p class="notice" style="background:#e6f6ea;color:#1a6b3a">ซิงก์กับคลาวด์แล้ว ทุกเครื่องที่เปิดหน้านี้เห็นข้อมูลเดียวกัน · วันนี้เครื่องนี้อ่านข้อมูล ~' + readsToday().toLocaleString() + ' รายการ (โควตาฟรีรวมทุกเครื่อง 50,000/วัน)' + (readsBreakdown() ? '<br><small>อ่านมากสุดวันนี้: ' + readsBreakdown() + '</small>' : '') + '</p>';
     if (cloudStatus === 'connecting') return '<p class="notice">กำลังเชื่อมต่อคลาวด์…</p>';
     if (cloudStatus === 'error') return '<p class="notice">เชื่อมต่อคลาวด์ไม่ได้ตอนนี้ (เช่น ไม่มีอินเทอร์เน็ต) ใช้ข้อมูลในเครื่องนี้ไปก่อน จะซิงก์ให้เองเมื่อเชื่อมต่อได้</p>';
     return '';
@@ -4073,7 +4083,7 @@ function bahtText(value) {
   function bankBalWhen(b) { return b && b.updatedAt ? bankInWhen({createdAt: b.updatedAt}, true) : ''; }
   function watchBankBalance() {
     if (!cloudDb || !canBank) return;
-    cloudDb.collection('bankBalance').onSnapshot(snap => {
+    cloudDb.collection('bankBalance').onSnapshot(snap => { countReads('bankBalance', snap);
       countReads('bankBalance', snap);
       const list = [];
       snap.forEach(d => list.push(Object.assign({id: d.id}, d.data())));
@@ -4094,7 +4104,7 @@ function bahtText(value) {
   try { const t = localStorage.getItem('bs_bankin_tab'); if (t === 'in' || t === 'out') bankListTab = t; } catch (e) {}
   function watchBankOut() {
     if (!cloudDb || !canBank) return;
-    cloudDb.collection('bankOut').orderBy('createdAt', 'desc').limit(300).onSnapshot(snap => {
+    cloudDb.collection('bankOut').orderBy('createdAt', 'desc').limit(300).onSnapshot(snap => { countReads('bankOut', snap);
       countReads('bankOut', snap);
       const list = [];
       snap.forEach(d => list.push(Object.assign({id: d.id}, d.data())));
@@ -4104,7 +4114,7 @@ function bahtText(value) {
   }
   function watchBankIn() {
     if (!cloudDb || !canBank) return;
-    cloudDb.collection('bankIn').orderBy('createdAt', 'desc').limit(300).onSnapshot(snap => {
+    cloudDb.collection('bankIn').orderBy('createdAt', 'desc').limit(300).onSnapshot(snap => { countReads('bankIn', snap);
       countReads('bankIn', snap);
       const list = [];
       snap.forEach(d => list.push(Object.assign({id: d.id}, d.data())));
@@ -6217,7 +6227,7 @@ function bahtText(value) {
     (window.__bsAuthReady || Promise.resolve()).then(() => {
       sanitizeTrackIdCandidates(code).forEach(id => {
         try {
-          const unsub = cloudDb.collection('trackingWebhooks').doc(id).onSnapshot(snap => {
+          const unsub = cloudDb.collection('trackingWebhooks').doc(id).onSnapshot(snap => { countReads('trackingWebhooks', snap);
             if (snap.exists) {
               liveTrackCache[code] = {data: Object.assign({}, snap.data()), fetchedAt: Date.now(), live: true};
               if (isTrackPanelActive()) renderTrackingHistory();
@@ -6342,7 +6352,7 @@ function bahtText(value) {
   function watchLineChats() {
     if (!can('chat')) return;
     if (!cloudDb) { chatList = store.get('bs_line_chats', []) || []; renderChatList(); paintChatBadge(); return; }
-    cloudDb.collection('lineChats').orderBy('lastAt', 'desc').limit(120).onSnapshot(snap => {
+    cloudDb.collection('lineChats').orderBy('lastAt', 'desc').limit(120).onSnapshot(snap => { countReads('lineChats', snap);
       countReads('lineChats', snap);
       const prev = new Map(chatList.map(c => [c.userId, c.lastInAt || 0]));
       const list = []; snap.forEach(d => list.push(Object.assign({userId: d.id}, d.data())));
@@ -6395,7 +6405,7 @@ function bahtText(value) {
     const c = chatList.find(x => x.userId === uid); if (c) markChatSeen(uid, c.lastInAt || 0);
     paintChatBadge(); renderChatList();
     if (!cloudDb) { chatMsgs = ((store.get('bs_line_msgs', {}) || {})[uid] || []).slice().sort((a, b) => a.createdAt - b.createdAt); renderChatMsgs(); return; }
-    chatMsgUnsub = cloudDb.collection('lineChats').doc(uid).collection('messages').orderBy('createdAt', 'desc').limit(80).onSnapshot(snap => {
+    chatMsgUnsub = cloudDb.collection('lineChats').doc(uid).collection('messages').orderBy('createdAt', 'desc').limit(80).onSnapshot(snap => { countReads('chatMessages', snap);
       countReads('messages', snap);
       const l = []; snap.forEach(d => l.push(Object.assign({id: d.id}, d.data())));
       chatMsgs = l.reverse().concat(chatMsgs.filter(m => m.pending)); renderChatMsgs();
