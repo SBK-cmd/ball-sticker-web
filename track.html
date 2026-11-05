@@ -88,6 +88,7 @@ details.jc>.jb{padding:4px 14px 14px}
 .sec{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}.sec h2{font-size:14.5px;margin:0 0 8px}
 .bx{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#fafbfc}
 .bxl{display:flex;align-items:center;gap:8px;font-size:15px}.bxl em{font-style:normal;font-size:12px;font-weight:700;background:#111827;color:#fff;border-radius:99px;padding:2px 9px}
+.bxf{display:flex;align-items:center;gap:8px;font-size:14.5px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed var(--line)}.bxf em{font-style:normal;font-size:12px;font-weight:700;background:#e5e7eb;color:#111827;border-radius:99px;padding:2px 9px}
 .bxa{margin-top:4px;color:#4b5563;font-size:13.5px;line-height:1.5}
 .bxt{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:13px;color:var(--mut)}.bxt b{font-size:15px;color:var(--ink);letter-spacing:.2px;word-break:break-all}.bxt.none{border:0;padding:0;margin-top:6px}
 .copy{min-height:32px;padding:2px 12px;margin-left:auto}
@@ -163,7 +164,7 @@ details.jc>.jb{padding:4px 14px 14px}
     var n = list.length;
     return list.map(function (b, i) {
       var ok = b.trackCode && /^https:\/\//.test(b.trackUrl || '');
-      return '<div class="bx">' + (b.name || n > 1 ? '<div class="bxl">' + (n > 1 ? '<em>กล่อง ' + (i + 1) + '/' + n + '</em>' : '<em>ผู้รับ</em>') + (b.name ? '<b>' + esc(b.name) + '</b>' : '') + '</div>' : '') +
+      return '<div class="bx">' + (b.from ? '<div class="bxf"><em>ผู้ส่ง</em><b>' + esc(b.from) + '</b></div>' : '') + (b.name || n > 1 ? '<div class="bxl">' + (n > 1 ? '<em>กล่อง ' + (i + 1) + '/' + n + '</em>' : '<em>ผู้รับ</em>') + (b.name ? '<b>' + esc(b.name) + '</b>' : '') + '</div>' : '') +
         (b.addr ? '<div class="bxa">' + esc(b.addr) + '</div>' : '') + (b.note ? '<div class="bxa">📝 ' + esc(b.note) + '</div>' : '') +
         (b.trackCode ? '<div class="bxt"><span>' + esc(b.carrier || 'เลขพัสดุ') + '</span><b>' + esc(b.trackCode) + '</b><button class="copy" type="button" data-cp="' + esc(b.trackCode) + '">คัดลอก</button></div>' + (ok ? '<a class="go2" href="' + esc(b.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะพัสดุ' + (n > 1 ? ' กล่อง ' + (i + 1) : '') + '</a>' : '') : '<div class="bxt none">ยังไม่มีเลขพัสดุ</div>') + '</div>';
     }).join('');
@@ -193,9 +194,9 @@ details.jc>.jb{padding:4px 14px 14px}
     var isJbs = /^JBS/i.test(String(j.no || '')), k = stIdx(j.status, j.delivered), boxes = [];
     if (isJbs) {
       var bxs = (j.boxes || []).filter(function (b) { return b && (b.name || b.addr); });
-      if (bxs.length) boxes = [{name: j.receiver ? j.receiver.name : '', addr: j.receiver ? j.receiver.addr : '', note: '', trackCode: j.trackCode || '', carrier: j.carrier || '', trackUrl: j.trackUrl || ''}].concat(bxs);
-      else if (j.receiver || j.trackCode) boxes = [{name: j.receiver ? j.receiver.name : '', addr: j.receiver ? j.receiver.addr : '', trackCode: j.trackCode || '', carrier: j.carrier || '', trackUrl: j.trackUrl || ''}];
-    } else if (j.trackCode) boxes = [{trackCode: j.trackCode, carrier: j.carrier || '', trackUrl: j.trackUrl || ''}];
+      if (bxs.length) boxes = [{from: j.shipFrom || '', name: j.receiver ? j.receiver.name : '', addr: j.receiver ? j.receiver.addr : '', note: '', trackCode: j.trackCode || '', carrier: j.carrier || '', trackUrl: j.trackUrl || ''}].concat(bxs);
+      else if (j.receiver || j.trackCode) boxes = [{from: j.shipFrom || '', name: j.receiver ? j.receiver.name : '', addr: j.receiver ? j.receiver.addr : '', trackCode: j.trackCode || '', carrier: j.carrier || '', trackUrl: j.trackUrl || ''}];
+    } else if (j.trackCode) boxes = [{from: j.shipFrom || '', trackCode: j.trackCode, carrier: j.carrier || '', trackUrl: j.trackUrl || ''}];
     return {no: j.no, date: j.date || '', status: j.status, delivered: j.delivered, items: isJbs ? (j.items || []) : [], amt: isJbs ? (+j.amt || 0) : 0, due: j.due, thumb: j.thumb, boxes: boxes, sender: isJbs ? j.sender : null,
       photos: k >= 2 ? https(j.photos) : [], refs: isJbs ? https(j.refPhotos) : []};
   }
@@ -205,7 +206,7 @@ details.jc>.jb{padding:4px 14px 14px}
     var others = (isJbs && Array.isArray(j.others)) ? j.others.filter(function (o) { return o && o.no; }) : [];
     var cards = [jobCard(recOf(j), !others.length)];   // มีใบเดียว = เปิดให้เลย · หลายใบ = พับไว้ กดดูทีละใบ
     others.forEach(function (o) {
-      var bx = (o.receiver || o.trackCode) ? [{name: o.receiver ? o.receiver.name : '', addr: o.receiver ? o.receiver.addr : '', trackCode: o.trackCode || '', carrier: o.carrier || '', trackUrl: o.trackUrl || ''}] : [];
+      var bx = (o.receiver || o.trackCode) ? [{from: o.shipFrom || '', name: o.receiver ? o.receiver.name : '', addr: o.receiver ? o.receiver.addr : '', trackCode: o.trackCode || '', carrier: o.carrier || '', trackUrl: o.trackUrl || ''}] : [];
       cards.push(jobCard({no: o.no, date: o.date, status: o.status, delivered: o.delivered, items: o.items || [], amt: +o.amt || 0, due: o.due, thumb: o.thumb, boxes: bx, photos: https(o.photos), refs: https(o.refPhotos)}, false));
     });
     cards.sort(function (a, b2) { return (b2.date > a.date ? 1 : b2.date < a.date ? -1 : 0) || (b2.no > a.no ? 1 : b2.no < a.no ? -1 : 0); });
