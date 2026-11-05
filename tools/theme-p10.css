@@ -192,3 +192,9 @@ html body #jobHistory .jc-act{margin-top:10px;gap:8px}
 html body #jobHistory .jc-b{min-height:40px;padding-top:6px;padding-bottom:6px}
 html body #jobHistory .jc-b.lnk{min-height:38px}
 html body #jobHistory .jc-det-amt{font-size:17px}
+/* ปุ่มบนการ์ดใบงาน: ไอคอน + ป้ายสั้นๆ ใต้ไอคอน (เปิดดู · แก้ไข · ลิงก์ · ยกเลิก) */
+html body #jobHistory .jc-act{display:grid!important;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;margin-top:12px}
+html body #jobHistory .jc-b,html body #jobHistory .jc-b.lnk{flex:none;flex-direction:column;gap:3px;min-height:54px;padding:6px 4px;font-size:12.5px;font-weight:700;background:#fff!important;justify-content:center;align-items:center}
+html body #jobHistory .jc-b svg{width:22px;height:22px}
+html body #jobHistory .jc-b.del{color:#b91c1c}
+html body #jobHistory .jc-det{border-top:0!important;padding-top:0!important;margin-top:10px!important}

@@ -4851,7 +4851,7 @@ function bahtText(value) {
       // การ์ดโล่ง: ข้อมูลรอง (วันที่ · เพจ · บัญชี · ผู้บันทึก) รวมเป็นบรรทัดเดียวสีจาง · ป้ายเหลือเฉพาะสถานะ/เงื่อนไขที่ต้องเห็น (จำนวนรายการ/รูปดูได้จากในการ์ด)
       const meta = [esc(thDate(j.date)), PAGE_LABEL[j.page] ? esc(PAGE_LABEL[j.page]) : '', (canBank && j.account && !accHidden(j)) ? 'บัญชี ' + esc(j.account) : '', j.createdBy ? 'โดย ' + esc(j.createdBy) : ''].filter(Boolean).join(' · ');
       const chips = (jobDelivered(j) ? chip('ลูกค้ารับแล้ว · เสร็จสิ้น', 'tg') : '') +
-        (j.wholesale ? chip('ราคาส่ง', 'tg') : '') + (j.recv && (j.recv.name || j.recv.addr) ? chip('ฝากส่ง', 'tg') : '');
+        (j.wholesale ? chip('ราคาส่ง', 'tg') : '');
       return '<li class="jc st-' + st + (jobOpenIds[j.id] ? ' open' : '') + '" data-id="' + esc(j.id) + '">' +
       '<div class="jc-top">' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '<span class="jc-ph" aria-hidden="true">' + esc((cn || '?').replace(/^(คุณ|นาย|นาง|นางสาว|พี่|น้อง)\s*/, '').charAt(0).toUpperCase()) + '</span>') +
       '<div class="jc-main"><div class="jc-no">' + esc(j.no) + dupTag + '</div><div class="jc-cust">' + esc(cn || 'ไม่ระบุชื่อลูกค้า') + '</div></div>' +
@@ -4859,9 +4859,12 @@ function bahtText(value) {
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
       '</select></div>' +
       jobCardDetail(j) +
-      '<div class="jc-meta">' + meta + '</div>' + (chips ? '<div class="jc-chips">' + chips + '</div>' : '') +
-      (canKey ? '<div class="jc-act">' + (/^JBS/i.test(String(j.no || '').trim()) ? '<button class="jc-b lnk" data-act="copylink" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.500"/><path d="M5 15V6a2 2 0 012-2h9"/></svg>คัดลอกลิงก์ให้ลูกค้าดู</button>' : '') + '<button class="jc-b" data-act="open" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>เปิดแก้ไข</button>' +
-      '<button class="jc-b del" data-act="del" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>ลบ</button></div>' : '') +
+      (chips ? '<div class="jc-chips">' + chips + '</div>' : '') +
+      (canKey ? '<div class="jc-act">' +
+      '<button class="jc-b" data-act="view" type="button" aria-label="เปิดดู"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span>เปิดดู</span></button>' +
+      '<button class="jc-b" data-act="open" type="button" aria-label="แก้ไข"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span>แก้ไข</span></button>' +
+      (/^JBS/i.test(String(j.no || '').trim()) ? '<button class="jc-b" data-act="copylink" type="button" aria-label="คัดลอกลิงก์ให้ลูกค้า"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg><span>ลิงก์</span></button>' : '') +
+      '<button class="jc-b del" data-act="del" type="button" aria-label="ยกเลิก"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg><span>ยกเลิก</span></button></div>' : '') +
       (jobOpenIds[j.id] ? jobDetailHTML(j) : '') + '</li>';
     }).join('') + '</ul><p class="hint" style="margin:10px 2px 0">แตะที่ใบเพื่อดูรายละเอียด ไม่ต้องกดแก้ไข</p>';
   }
@@ -4886,8 +4889,8 @@ function bahtText(value) {
       return '<div class="jc-ship"><span class="jc-k">' + label + '</span><b class="' + c + '">' + (st === 'delivered' ? '✓ ' : '') + esc(txt) + '</b>' + (code ? '<small>' + esc(String(code)) + '</small>' : '') + '</div>';
     };
     const rvHtml = (rv || j.trackCode) ? boxCodes.map((c, k) => shipLine(c, nBoxes > 1 ? 'พัสดุ กล่อง ' + (k + 1) : 'พัสดุ')).join('') : '';
-    if (!its.length && !rv) return '';
-    return '<div class="jc-det">' + (its.length ? '<ul class="jc-det-l">' + rows + '</ul>' : '') + rvHtml + '</div>';   // การ์ดไม่โชว์ยอดเงิน (ดูในรายละเอียด/บิล)
+
+    return rvHtml ? '<div class="jc-det">' + rvHtml + '</div>' : '';   // การ์ดโชว์แค่สถานะพัสดุ (รายละเอียดงานอยู่ในปุ่ม เปิดดู)   // การ์ดไม่โชว์ยอดเงิน (ดูในรายละเอียด/บิล)
   }
   function saveJob() {
     const list = store.get('bs_jobs', []);
@@ -6676,6 +6679,7 @@ function bahtText(value) {
     }
     const id = btn.closest('li').dataset.id;
     if (btn.dataset.act === 'closejd') { jobOpenIds[id] = false; renderJobHistory(); return; }
+    if (btn.dataset.act === 'view') { jobOpenIds[id] = !jobOpenIds[id]; renderJobHistory(); return; }
     const list = store.get('bs_jobs', []);
     if (btn.dataset.act === 'livescan') {
       const sjInp = btn.closest('li').querySelector('input[data-scanjob]');
