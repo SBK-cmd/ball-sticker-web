@@ -114,7 +114,7 @@ function bahtText(value) {
   const isSuper = !window.BSAuth || (!!currentUser && isSuperUser(meRec)); // ไม่มีระบบบัญชีเลย (โหมดเก่า) ให้ถือว่าเป็นผู้ดูแล
   const myPerms = isSuper ? permsOf(null) : (currentUser ? permsOf(meRec) : {}); // ยังไม่ล็อกอิน = ยังไม่เห็นอะไร (หน้าล็อกอินบังอยู่)
   const CHAT_ENABLED = false; // แชทลูกค้า (LINE/เพจ) ปิดไว้ — แยกออกไปทำเป็นของตัวเอง ตั้งเป็น true เพื่อเปิดกลับ
-  const can = k => (k === 'chat' && !CHAT_ENABLED) ? false : (isSuper || !!myPerms[k]);
+  const can = k => (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
   const canBank = can('bank');
   // พนักงาน (ไม่ใช่เจ้าของ) ดูประวัติใบคอนเฟิร์มงานได้อย่างเดียว คีย์/แก้/ลบไม่ได้
   const canKey = isSuper || isOwnerFixed(meRec) || !!(meRec && meRec.role === 'owner');
@@ -193,7 +193,7 @@ function bahtText(value) {
       bc[col] = (bc[col] || 0) + n; localStorage.setItem(kc, JSON.stringify(bc));
     } catch (e) {}
   }
-  const READ_COL_TH = {bills: 'บิล', jobs: 'ใบงาน', notifs: 'แจ้งเตือน', wholesale: 'ใบราคาส่ง', quotes: 'ใบเสนอราคา', purchases: 'ใบซื้อ', customers: 'ลูกค้า', vendors: 'ผู้ขาย', tracking: 'พัสดุ', payCharges: 'ชำระเงิน', lineReplies: 'ข้อความตอบ', bankIn: 'เงินเข้า', bankOut: 'เงินออก', bankBalance: 'ยอดบัญชี', trackingWebhooks: 'สถานะ iship', lineChats: 'แชต LINE', chatMessages: 'ข้อความแชต'};
+  const READ_COL_TH = {bills: 'บิล', jobs: 'ใบงาน', designs: 'งานออกแบบ', notifs: 'แจ้งเตือน', wholesale: 'ใบราคาส่ง', quotes: 'ใบเสนอราคา', purchases: 'ใบซื้อ', customers: 'ลูกค้า', vendors: 'ผู้ขาย', tracking: 'พัสดุ', payCharges: 'ชำระเงิน', lineReplies: 'ข้อความตอบ', bankIn: 'เงินเข้า', bankOut: 'เงินออก', bankBalance: 'ยอดบัญชี', trackingWebhooks: 'สถานะ iship', lineChats: 'แชต LINE', chatMessages: 'ข้อความแชต'};
   function readsBreakdown() {   // วันนี้เครื่องนี้อ่านจากคอลเลกชันไหนบ้าง (มาก→น้อย)
     try {
       const bc = JSON.parse(localStorage.getItem(readsKey() + '_c') || '{}') || {};
@@ -6067,6 +6067,172 @@ function bahtText(value) {
 
   /* ---------------- events ---------------- */
   const TAX_TABS = ['bill', 'purchase', 'dash', 'report'];
+
+  /* ---------------- งานออกแบบ: โน้ต + รูป (แปะรูปแชท/แบบ) → ส่งไปใบคอนเฟิร์มงาน ----------------
+     เก็บที่ bs_designs ซิงก์คลาวด์คอลเลกชัน 'designs' · โน้ต = {text, photos[], approved[] (รูปที่ติ๊กใช้), sentAt}
+     รูปอัปโหลดขึ้น Cloudinary ก่อนบันทึกเสมอ (กันเอกสารเกินลิมิต) */
+  const DS_KEY = 'bs_designs';
+  let dsSel = null, dsQ = '', dsFilt = 'all', dsBusy = false, dsSaveT = null;
+  const dsNewPh = [];
+  // รุ่นทดลองเก่าเก็บเป็นเธรด (posts[]) → รวมเป็นโน้ตเดียว
+  const dsNorm = d => (d && d.posts && !('text' in d)) ? Object.assign({}, d, {text: (d.posts[0] || {}).text || '', photos: [].concat(...d.posts.map(p => p.photos || []))}) : d;
+  const dsAll = () => (store.get(DS_KEY, []) || []).map(dsNorm);
+  const dsById = id => dsAll().find(x => x.id === id);
+  const dsMe = () => currentUser ? (currentUser.name || currentUser.username || '') : '';
+  const dsRid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  function dsPut(d) {
+    d.updatedAt = Date.now();
+    const l = (store.get(DS_KEY, []) || []), i = l.findIndex(x => x.id === d.id);
+    if (i >= 0) l[i] = d; else l.unshift(d);
+    store.set(DS_KEY, l); cloudSave('designs', d);
+  }
+  function dsAgo(ts) {
+    const m = Math.round((Date.now() - (ts || 0)) / 60000);
+    if (m < 1) return 'เมื่อกี้'; if (m < 60) return m + ' นาทีก่อน';
+    const h = Math.round(m / 60); if (h < 24) return h + ' ชม.ก่อน';
+    const dd = new Date(ts); return dd.getDate() + '/' + (dd.getMonth() + 1) + ' ' + String(dd.getHours()).padStart(2, '0') + ':' + String(dd.getMinutes()).padStart(2, '0');
+  }
+  const dsThumb = (u, w) => String(u).indexOf('/image/upload/') > 0 ? String(u).replace('/image/upload/', '/image/upload/w_' + w + ',c_limit,q_auto/') : u;
+  function dsTitle(d) {
+    const t = String(d.text || '').split('\n').map(x => x.trim()).find(Boolean) || 'โน้ตงานออกแบบ';
+    return t.length > 42 ? t.slice(0, 42) + '…' : t;
+  }
+  const dsState = d => d.sentAt ? ['sent', 'ส่งใบคอนเฟิร์มแล้ว'] : ['wip', 'กำลังทำ'];
+  function dsPhotoThumbs(el, arr) {
+    el.innerHTML = arr.map((src, i) => '<div class="ds-th"><img src="' + src + '" alt="รูปที่แนบ"><button type="button" data-rmph="' + i + '" aria-label="เอารูปออก">✕</button></div>').join('');
+  }
+  async function dsPick(files, arr) {
+    for (const f of Array.from(files).slice(0, 10)) {
+      try { arr.push(await shrinkImage(f)); } catch (e) { toast('เปิดรูปไม่ได้'); }
+    }
+  }
+  async function dsUpload(arr) {
+    const out = await Promise.all(arr.map(p => String(p).indexOf('data:') === 0 ? uploadPhotoToCloudinary(p) : Promise.resolve(p)));
+    return out.every(Boolean) ? out : null;
+  }
+  async function dsSaveNew() {
+    if (dsBusy) return;
+    const text = $('dsNewTxt').value.trim(), addr = $('dsNewAddr').value.trim(), btn = $('dsNewGo');
+    if (!text && !addr && !dsNewPh.length) { toast('พิมพ์โน้ตหรือแนบรูปก่อน'); return; }
+    dsBusy = true; const label = btn.textContent; btn.disabled = true; btn.textContent = dsNewPh.length ? 'กำลังอัปโหลดรูป…' : 'กำลังบันทึก…';
+    try {
+      const urls = dsNewPh.length ? await dsUpload(dsNewPh) : [];
+      if (!urls) { toast('อัปโหลดรูปไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่ (โน้ตยังอยู่)'); return; }
+      dsPut({id: 'd' + dsRid(), createdAt: Date.now(), by: dsMe(), text, addr, photos: urls, approved: [], sentAt: null});
+      $('dsNewTxt').value = ''; $('dsNewAddr').value = ''; dsNewPh.length = 0; dsPhotoThumbs($('dsNewPh'), dsNewPh);
+      renderDesign(); toast('บันทึกโน้ตแล้ว');
+    } finally { dsBusy = false; btn.disabled = false; btn.textContent = label; }
+  }
+  async function dsAddPhotos(files) {
+    const d = dsById(dsSel); if (!d || !files.length) return;
+    toast('กำลังอัปโหลดรูป…');
+    const tmp = []; await dsPick(files, tmp);
+    const urls = await dsUpload(tmp);
+    if (!urls) { toast('อัปโหลดรูปไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่'); return; }
+    const cur = dsById(dsSel) || d;
+    dsPut(Object.assign({}, cur, {photos: (cur.photos || []).concat(urls)})); renderDesign(); toast('เพิ่มรูปแล้ว');
+  }
+  function renderDsFeed() {
+    const chips = [['all', 'ทั้งหมด'], ['wip', 'กำลังทำ'], ['sent', 'ส่งแล้ว']];
+    $('dsChips').innerHTML = chips.map(c => '<button type="button" data-dsfilt="' + c[0] + '"' + (dsFilt === c[0] ? ' class="on"' : '') + '>' + c[1] + '</button>').join('');
+    const q = dsQ.trim().toLowerCase();
+    const list = dsAll().slice().sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))
+      .filter(d => dsFilt === 'all' || dsState(d)[0] === dsFilt)
+      .filter(d => !q || String(d.text || '').toLowerCase().includes(q));
+    if (!list.length) { $('dsFeed').innerHTML = '<p class="hint" style="text-align:center;padding:24px 0">' + (dsAll().length ? 'ไม่พบโน้ตที่ตรงเงื่อนไข' : 'ยังไม่มีโน้ต จดงานแรกด้านบนได้เลย') + '</p>'; return; }
+    $('dsFeed').innerHTML = list.map(d => {
+      const st = dsState(d), ph = ((d.approved && d.approved.length) ? d.approved : (d.photos || [])).slice(0, 4);
+      const rest = String(d.text || '').split('\n').map(x => x.trim()).filter(Boolean).slice(1).join('\n');
+      return '<article class="ds-card" data-ds="' + esc(d.id) + '"><header><span class="ds-av">' + esc((dsTitle(d).charAt(0) || '?').toUpperCase()) + '</span>' +
+        '<div><b>' + esc(dsTitle(d)) + '</b><small>' + esc(d.by || '') + ' · ' + esc(dsAgo(d.updatedAt || d.createdAt)) + '</small></div>' +
+        '<span class="ds-st ' + st[0] + '">' + st[1] + '</span></header>' +
+        (rest ? '<p class="ds-tx">' + esc(rest) + '</p>' : '') +
+        (d.addr ? '<p class="ds-tx ds-ad">📍 ' + esc(d.addr) + '</p>' : '') +
+        (ph.length ? '<div class="ds-imgs' + (ph.length === 1 ? ' one' : '') + '">' + ph.map(u => '<img loading="lazy" src="' + esc(dsThumb(u, 500)) + '" alt="รูปในโน้ต">').join('') + '</div>' : '') +
+        ((d.photos || []).length ? '<footer>📷 ' + d.photos.length + ' รูป</footer>' : '') + '</article>';
+    }).join('');
+  }
+  function renderDsThread() {
+    const d = dsById(dsSel); if (!d) return;
+    const st = dsState(d), ap = d.approved || [], ph = d.photos || [];
+    $('dsTTitle').textContent = dsTitle(d);
+    $('dsThread').innerHTML = '<div class="ds-hero"><span class="ds-st ' + st[0] + '">' + st[1] + '</span>' +
+      (canKey ? '<button type="button" class="ds-btn ds-main" data-dsact="toconfirm">📋 ไปคอนเฟิร์มงาน →</button>' : '') +
+      '<small>ชื่อ / เบอร์ / ที่อยู่ / รายละเอียด ดึงจากโน้ตกับช่องที่อยู่ให้ · รูปที่แนบไปใบคอนเฟิร์ม: ' + (ap.length ? 'เฉพาะรูปที่ติ๊กไว้ (' + ap.length + ')' : 'ทุกรูป (ถ้าจะเลือกเฉพาะบางรูป กด “ใช้รูปนี้” ใต้รูป)') + '</small></div>' +
+      '<div class="ds-post"><div class="ds-ptx"><textarea id="dsEditTxt" rows="7" placeholder="พิมพ์โน้ตงาน…">' + esc(d.text || '') + '</textarea>' +
+      '<textarea id="dsEditAddr" class="ds-addr" rows="2" placeholder="ที่อยู่จัดส่ง (ถ้ามี)">' + esc(d.addr || '') + '</textarea></div>' +
+      (ph.length ? '<div class="ds-pimgs">' + ph.map((u, i) => {
+        const on = ap.indexOf(u) >= 0;
+        return '<figure><img loading="lazy" src="' + esc(dsThumb(u, 900)) + '" data-zoom="' + esc(u) + '" alt="รูปในโน้ต">' +
+          '<div class="ds-row2"><button type="button" class="ds-ok' + (on ? ' on' : '') + '" data-ok="' + esc(u) + '">' + (on ? '✓ ใช้รูปนี้ (กดยกเลิก)' : '✓ ใช้รูปนี้') + '</button>' +
+          '<button type="button" class="ds-ok ds-rm" data-rmphoto="' + i + '" aria-label="ลบรูปนี้">✕ ลบ</button></div></figure>';
+      }).join('') + '</div>' : '') +
+      '<div class="ds-cbar"><label class="ds-btn">📷 เพิ่มรูป<input type="file" accept="image/*" multiple hidden data-dsadd></label></div></div>';
+  }
+  function renderDesign() {
+    if (!$('dsFeed')) return;
+    if (dsSel && !dsById(dsSel)) dsSel = null;
+    $('dsListView').hidden = !!dsSel; $('dsThreadView').hidden = !dsSel;
+    if (dsSel) { const ae = document.activeElement; if (!(ae && (ae.id === 'dsEditTxt' || ae.id === 'dsEditAddr'))) renderDsThread(); } else renderDsFeed();
+  }
+  function dsToConfirm(d) {
+    if (!canKey) { toast('ไม่มีสิทธิ์สร้างใบคอนเฟิร์ม'); return; }
+    const photos = ((d.approved || []).length ? d.approved : (d.photos || [])).slice();
+    showTab('confirm'); newJob();
+    jobPhotos = photos; renderJobPhotos();
+    $('jPaste').value = [d.text, d.addr].filter(Boolean).join('\n');
+    if ($('jPaste').value) $('jSplit').click();
+    if (d.addr && !$('jAddr').value.trim()) $('jAddr').value = d.addr;
+    renderJob();
+    if (window.innerWidth < 900) openJobModal(); else window.scrollTo({top: 0, behavior: 'smooth'});
+    dsPut(Object.assign({}, d, {sentAt: Date.now()}));
+    toast('ส่งไปใบคอนเฟิร์มแล้ว ตรวจชื่อ เบอร์ ที่อยู่ อีกครั้งก่อนบันทึก');
+  }
+  function dsZoom(u) {
+    const o = document.createElement('div'); o.className = 'ds-lb'; o.innerHTML = '<img alt="" src="' + esc(u) + '">';
+    o.addEventListener('click', () => o.remove()); document.body.appendChild(o);
+  }
+  if ($('panel-design')) {
+    $('dsNewFile').addEventListener('change', async e => { await dsPick(e.target.files, dsNewPh); dsPhotoThumbs($('dsNewPh'), dsNewPh); e.target.value = ''; });
+    $('dsNewGo').addEventListener('click', dsSaveNew);
+    $('dsSearch').addEventListener('input', e => { dsQ = e.target.value; renderDsFeed(); });
+    $('panel-design').addEventListener('change', e => { if (e.target.matches && e.target.matches('[data-dsadd]')) { const fl = Array.from(e.target.files); e.target.value = ''; dsAddPhotos(fl); } });
+    $('panel-design').addEventListener('input', e => {
+      if (e.target.id !== 'dsEditTxt' && e.target.id !== 'dsEditAddr') return;
+      clearTimeout(dsSaveT); const id = dsSel;
+      dsSaveT = setTimeout(() => { const d = dsById(id); if (!d) return; const v = $('dsEditTxt').value, a = $('dsEditAddr').value; if (d.text !== v || (d.addr || '') !== a) { dsPut(Object.assign({}, d, {text: v, addr: a})); $('dsTTitle').textContent = dsTitle(dsById(id) || d); } }, 700);
+    });
+    $('panel-design').addEventListener('click', e => {
+      const t = e.target;
+      const rm = t.closest('[data-rmph]');
+      if (rm) { dsNewPh.splice(+rm.dataset.rmph, 1); dsPhotoThumbs($('dsNewPh'), dsNewPh); return; }
+      const fl = t.closest('[data-dsfilt]'); if (fl) { dsFilt = fl.dataset.dsfilt; renderDsFeed(); return; }
+      const z = t.closest('[data-zoom]'); if (z) { dsZoom(z.dataset.zoom); return; }
+      const ok = t.closest('[data-ok]');
+      if (ok) {
+        const d = dsById(dsSel); if (!d) return;
+        const u = ok.dataset.ok, ap = (d.approved || []).slice(), i = ap.indexOf(u);
+        if (i >= 0) ap.splice(i, 1); else ap.push(u);
+        dsPut(Object.assign({}, d, {approved: ap})); renderDesign(); return;
+      }
+      const rp = t.closest('[data-rmphoto]');
+      if (rp) {
+        const d = dsById(dsSel); if (!d || !confirm('ลบรูปนี้ออกจากโน้ต?')) return;
+        const u = (d.photos || [])[+rp.dataset.rmphoto];
+        dsPut(Object.assign({}, d, {photos: d.photos.filter((x, i) => i !== +rp.dataset.rmphoto), approved: (d.approved || []).filter(x => x !== u)})); renderDesign(); return;
+      }
+      const card = t.closest('[data-ds]'); if (card) { dsSel = card.dataset.ds; renderDesign(); window.scrollTo({top: 0}); return; }
+      const b = t.closest('[data-dsact]'); if (!b) return;
+      const act = b.dataset.dsact, d = dsById(dsSel);
+      if (act === 'back') { dsSel = null; renderDesign(); return; }
+      if (!d) return;
+      if (act === 'toconfirm') { clearTimeout(dsSaveT); const ta = $('dsEditTxt'), ad = $('dsEditAddr'); const cur = ta ? Object.assign({}, d, {text: ta.value, addr: ad ? ad.value.trim() : d.addr}) : d; dsToConfirm(cur); }
+      else if (act === 'deldesign') {
+        if (!confirm('ลบโน้ตนี้ทั้งหมด (รวมรูป)?')) return;
+        store.set(DS_KEY, (store.get(DS_KEY, []) || []).filter(x => x.id !== d.id)); cloudDelete('designs', d.id); dsSel = null; renderDesign(); toast('ลบแล้ว');
+      }
+    });
+  }
   const firstAllowedTab = () => ['calc', 'confirm', 'track', 'chat', 'vat', 'wholesale', 'quote', 'bill', 'purchase', 'dash', 'report'].find(can) || 'calc';
   function closeTaxMenus() {
     $('taxTrigger').setAttribute('aria-expanded', 'false');
@@ -6092,7 +6258,7 @@ function bahtText(value) {
   function showTab(name) {
     closeJobModal();
     if (!can(name)) name = firstAllowedTab(); // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้ หรือโค้ดส่วนอื่นที่สั่งเปิดหน้า
-    ['calc', 'vat', 'confirm', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report'].forEach(n => {
+    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
@@ -6102,7 +6268,7 @@ function bahtText(value) {
     document.querySelectorAll('.top-track[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
     const isTax = TAX_TABS.indexOf(name) >= 0;
     $('taxTrigger').closest('.tab-group').classList.toggle('has-active', isTax);
-    $('bnavTaxTrigger').classList.toggle('active', isTax || name === 'vat' || name === 'quote' || name === 'chat');
+    $('bnavTaxTrigger').classList.toggle('active', isTax || name === 'vat' || name === 'quote' || name === 'chat' || name === 'track');
     closeTaxMenus();
     if (name === 'bill') fitBill();
     if (name === 'confirm') fitJob();
@@ -6113,6 +6279,7 @@ function bahtText(value) {
     if (name === 'dash') renderDash();
     if (name === 'report') renderReport();
     if (name === 'chat') renderChat();
+    if (name === 'design') renderDesign();
     const activeTab = isTax ? $('taxTrigger') : $('tab-' + name);
     if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
   }
@@ -7295,7 +7462,7 @@ function bahtText(value) {
   function applyRoleUI() {
     if (isSuper) return;
     // ซ่อนหน้าที่ไม่ได้รับสิทธิ์ ทั้งแถบเมนูบน เมนูภาษี เมนูล่างบนมือถือ และแผ่น "เพิ่มเติม"
-    PAGE_KEYS.forEach(n => {
+    PAGE_KEYS.concat(['design']).forEach(n => {
       if (can(n)) return;
       const t = $('tab-' + n); if (t) t.hidden = true;
       document.querySelectorAll('.btab[data-tab="' + n + '"], .tax-sheet-item[data-tab="' + n + '"], .top-track[data-tab="' + n + '"]').forEach(el => { el.hidden = true; });
@@ -7522,6 +7689,7 @@ function bahtText(value) {
   (window.__bsAuthReady || Promise.resolve()).then(function () {
     watchCloud('bills', 'bs_bills', renderHistory);
     watchCloud('jobs', 'bs_jobs', renderJobHistory);
+    if (can('design')) watchCloud('designs', 'bs_designs', renderDesign);
     watchCloud('notifs', NOTIF_KEY, onNotifsChanged);
     watchCloud('wholesale', 'bs_wholesale', renderWholesaleHistory);
     watchCloud('quotes', 'bs_quotes', renderQuoteHistory);
