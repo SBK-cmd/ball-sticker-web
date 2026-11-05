@@ -518,6 +518,12 @@ details.shop .fields{margin-top:12px}
 #jobHistory .jd .jd-ph img:only-child{width:100%;max-height:340px}
 .job-zoom{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}
 .job-zoom img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;background:#fff}
+.trk-pop{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:12px}
+.trk-pop .tp-box{width:min(520px,100%);height:min(92vh,860px);background:#fff;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;border:3px solid #111}
+.trk-pop .tp-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;background:#f6f1de;border-bottom:2px solid #111;font-weight:800;font-size:14px}
+.trk-pop .tp-h button{border:2px solid #111;background:#fff;border-radius:10px;min-height:34px;padding:0 12px;font-weight:800;font-size:13px;cursor:pointer}
+.trk-pop iframe{flex:1;border:0;width:100%;background:#fff}
+.trk-pop .tp-ld{padding:18px;text-align:center;color:#6b7280;font-size:14px}
 #jobHistory .jd a{color:inherit;font-weight:600}
 #jobHistory .tap-hint{flex:1 1 100%;order:8;font-size:12.5px;color:var(--muted);margin:0}
 .history li b{font-family:'Prompt',sans-serif;font-weight:600}
@@ -2527,6 +2533,71 @@ html body .fab-newjob *,html body .fab-newjob:before,html body .fab-newjob:after
   html body #jobHistory .jd .jd-ph img:only-child{width:min(100%,520px)!important;max-height:420px!important}
   html body #jobHistory .jd .btn{min-height:46px;font-size:16px!important}
 }
+
+/* การ์ดใบงาน (ลิสต์ประวัติ): โล่งขึ้น — ไม่มีกล่องเทาซ้อน · เส้นแบ่งบางเส้นเดียว · ข้อมูลรองเป็นบรรทัดจาง */
+html body #jobHistory .jc-det{background:none!important;padding:14px 0 0!important;margin:14px 0 0!important;border-top:1px solid rgba(0,0,0,.1);border-radius:0!important;gap:14px!important}
+html body #jobHistory .jc-det-l{gap:6px!important}
+html body #jobHistory .jc-det-l li{font-size:15px;line-height:1.35}
+html body #jobHistory .jc-det-amt{border-top:0!important;padding-top:0!important}
+html body #jobHistory .jc-recv{border-top:0!important;padding-top:0!important;line-height:1.5}
+html body #jobHistory .jc-recv .jc-k{display:block;margin:0 0 3px}
+html body #jobHistory .jc-addr{margin-top:4px;color:#6b7280}
+html body #jobHistory .jc-meta{margin:14px 0 0;font-size:13px;line-height:1.5;color:#6b7280}
+html body #jobHistory .jc-chips{margin-top:10px}
+html body #jobHistory .jc-act{margin-top:16px}
+html body #jobHistory .jc-act{flex-wrap:wrap}
+html body #jobHistory .jc-b.lnk{flex:1 0 100%;justify-content:center;background:var(--lime)!important}
+/* สถานะขนส่งบนการ์ดใบงาน (แทนชื่อ/ที่อยู่ผู้รับ) */
+html body #jobHistory .jc-ship{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;font-size:15px}
+html body #jobHistory .jc-ship .jc-k{margin:0;min-width:64px}
+html body #jobHistory .jc-ship b{font-weight:800}
+html body #jobHistory .jc-ship b.ok{color:#15803d}
+html body #jobHistory .jc-ship b.bad{color:#b91c1c}
+html body #jobHistory .jc-ship b.go{color:#1d4ed8}
+html body #jobHistory .jc-ship b.none{color:#6b7280;font-weight:600}
+html body #jobHistory .jc-ship small{font-size:12.5px;color:#6b7280;font-variant-numeric:tabular-nums;letter-spacing:.03em}
+/* การ์ดใบงาน: แบบสั้น (รายการแรก + สรุป · รายละเอียดเต็มอยู่ในหน้าเปิดใบ) */
+html body #jobHistory .jc-det{padding-top:10px!important;margin-top:10px!important;gap:8px!important}
+html body #jobHistory .jc-det-l li.more{display:flex!important;font-size:13px;color:#6b7280}
+html body #jobHistory .jc-meta{margin-top:8px}
+html body #jobHistory .jc-chips{margin-top:6px}
+html body #jobHistory .jc-act{margin-top:10px;gap:8px}
+html body #jobHistory .jc-b{min-height:40px;padding-top:6px;padding-bottom:6px}
+html body #jobHistory .jc-b.lnk{min-height:38px}
+html body #jobHistory .jc-det-amt{font-size:17px}
+/* ปุ่มบนการ์ดใบงาน: ไอคอน + ป้ายสั้นๆ ใต้ไอคอน (เปิดดู · แก้ไข · ลิงก์ · ยกเลิก) */
+html body #jobHistory .jc-act{display:grid!important;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;margin-top:12px}
+html body #jobHistory .jc-b,html body #jobHistory .jc-b.lnk{flex:none;flex-direction:column;gap:3px;min-height:54px;padding:6px 4px;font-size:12.5px;font-weight:700;background:#fff!important;justify-content:center;align-items:center}
+html body #jobHistory .jc-b svg{width:22px;height:22px}
+html body #jobHistory .jc-b.del{color:#b91c1c}
+html body #jobHistory .jc-det{border-top:0!important;padding-top:0!important;margin-top:10px!important}
+/* การ์ดใบงานกะทัดรัด: ปุ่มเล็กลง เห็นได้หลายใบต่อหน้าจอ */
+html body #jobHistory .jc-act{gap:6px!important;margin-top:8px!important}
+html body #jobHistory .jc-b,html body #jobHistory .jc-b.lnk{min-height:38px!important;padding:3px 2px!important;gap:1px!important;font-size:11.5px!important;border-width:2px!important;box-shadow:2px 2px 0 var(--ink)!important}
+html body #jobHistory .jc-b svg{width:17px!important;height:17px!important}
+html body #jobHistory .jc-det{margin-top:6px!important}
+/* ฟิลเตอร์หางาน (ใต้ช่องค้นหาชื่อ) */
+html body .jf-filt{display:flex;gap:8px;margin:8px 0 12px}
+html body .jf-filt select{flex:1 1 0;min-width:0;height:38px;padding:0 10px;font-size:14px;font-weight:600;border:2px solid var(--ink);border-radius:10px;background:#fff}
+/* การ์ดใบงาน มินิมอล: เล็กลงอีก · ปุ่มเป็นไอคอนเงียบๆ ไม่มีกรอบหนา/เงา */
+html body #jobHistory li.jc{padding:10px 12px!important}
+html body #jobHistory .jc-top{gap:10px}
+html body #jobHistory .jc-top .thumb,html body #jobHistory .jc-ph{width:36px!important;height:36px!important;border-radius:9px!important;font-size:16px}
+html body #jobHistory .jc-no{font-size:12px}
+html body #jobHistory .jc-cust{font-size:15.5px;line-height:1.25}
+html body #jobHistory select.job-status-select{height:32px!important;min-height:0!important;padding:0 26px 0 10px!important;font-size:12.5px!important;border-width:1.5px!important;box-shadow:none!important;border-radius:999px!important;width:auto!important}
+html body #jobHistory .jc-chips{margin-top:4px!important}
+html body #jobHistory .jc-chip{font-size:11.5px!important;padding:1px 8px!important;min-height:0!important;border-width:1px!important}
+html body #jobHistory .jc-det{margin-top:4px!important}
+html body #jobHistory .jc-ship{font-size:13px}
+html body #jobHistory .jc-act{margin-top:6px!important;gap:2px!important;justify-content:flex-end;display:flex!important;border-top:1px solid rgba(0,0,0,.07);padding-top:4px}
+html body #jobHistory .jc-b,html body #jobHistory .jc-b.lnk{flex:0 0 auto!important;flex-direction:row!important;min-height:32px!important;min-width:44px;padding:4px 10px!important;gap:5px!important;font-size:12px!important;font-weight:600!important;background:transparent!important;border:0!important;box-shadow:none!important;color:#4b5563!important}
+html body #jobHistory .jc-b svg{width:18px!important;height:18px!important;stroke-width:1.7}
+html body #jobHistory .jc-b span{display:none}
+html body #jobHistory .jc-b.del{color:#b91c1c!important}
+html body #jobHistory select.job-status-select{padding:0 28px 0 12px!important;min-width:104px;text-overflow:clip}
+html body #jobHistory select.job-status-select{min-width:122px!important;font-size:12px!important;padding:0 30px 0 10px!important}
+html body .jf-filt select{height:36px!important;min-height:0!important;padding:0 8px!important;font-size:13.5px!important;border-width:1.5px!important;box-shadow:none!important;border-radius:10px!important}
 </style>
 </head>
 <body>
@@ -2597,7 +2668,7 @@ html body .fab-newjob *,html body .fab-newjob:before,html body .fab-newjob:after
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v86</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v88</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
@@ -2923,6 +2994,7 @@ html body .fab-newjob *,html body .fab-newjob:before,html body .fab-newjob:after
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้</span>
         </div>
         <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="jobHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
+        <div class="jf-filt" id="jobFilt"><select id="jobFiltSt" aria-label="กรองตามสถานะ"><option value="">ทุกสถานะ</option><option value="pending">รอทำ</option><option value="filed">ทำไฟล์แล้ว</option><option value="printed">ผลิตแล้ว</option><option value="shipped">จัดส่งแล้ว</option><option value="delivered">ลูกค้ารับแล้ว</option><option value="notrack">ส่งแล้ว · ยังไม่มีเลขพัสดุ</option></select><select id="jobFiltPg" aria-label="กรองตามเพจ"><option value="">ทุกเพจ</option><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop</option></select></div>
         <div id="jobHistory"></div>
       </section>
 
@@ -3977,7 +4049,7 @@ html body .fab-newjob *,html body .fab-newjob:before,html body .fab-newjob:after
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=9c752608f9",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=eb34be23cd",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

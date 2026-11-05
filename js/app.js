@@ -4821,7 +4821,7 @@ function bahtText(value) {
       ((j.donePhotos && j.donePhotos.length) ? '<div class="jd-ph">' + j.donePhotos.map(src => '<img src="' + src + '" alt="รูปงานเสร็จ">').join('') + '</div>' : '') +
       ((j.donePhotos && j.donePhotos.length) ? '<div class="jd-add"><button class="btn small good" data-act="savephotos" type="button">💾 บันทึก/ส่งรูปงานให้ลูกค้า (' + j.donePhotos.length + ' รูป)</button></div>' : '') +
       '<div class="jd-add"><label class="btn small primary">📷 ถ่าย/เพิ่มรูปงานเสร็จ<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '"></label> ' +
-      '<button class="btn small primary" data-act="livescan" type="button">📦 สแกนเลขพัสดุ</button> <button class="btn small good" data-act="tracklink" type="button">🔗 ส่งลิงก์ติดตามงาน</button>' +
+      '<button class="btn small primary" data-act="livescan" type="button">📦 สแกนเลขพัสดุ</button> <button class="btn small good" data-act="tracklink" type="button">🔗 ส่งลิงก์ติดตามงาน</button> <button class="btn small" data-act="copyurl" type="button">📋 คัดลอกลิงก์</button>' +
       '<input type="file" accept="image/*" hidden data-scanjob="' + esc(j.id) + '">' +
       (j.trackCode ? '<div class="jd-trk">📦 เลขพัสดุ' + (Array.isArray(j.recvMore) && j.recvMore.length ? ' (กล่องที่ 1)' : '') + ': <b>' + esc(j.trackCode) + '</b></div>' : '') +
       (Array.isArray(j.recvMore) && j.recvMore.some(r => !String(r.code || '').trim() && String((r.name || '') + (r.addr || '')).trim()) ? '<div class="jd-trk"><small>มีกล่องที่ยังไม่มีเลขพัสดุ — กดสแกนต่อได้เลย ระบบใส่ให้กล่องถัดไป</small></div>' : '') +
@@ -4834,26 +4834,26 @@ function bahtText(value) {
     try { renderTodayJobs(); } catch (e) {}
     try { const sel = window.getSelection && window.getSelection(); if (sel && !sel.isCollapsed && String(sel).trim() && $('jobHistory').contains(sel.anchorNode)) { clearTimeout(renderJobHistory._t); renderJobHistory._t = setTimeout(renderJobHistory, 1500); return; } } catch (e) {}
     try { renderCustomerDatalist(); } catch (e) {}
-    const list = store.get('bs_jobs', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+    const list = store.get('bs_jobs', []).slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.no || '').localeCompare(String(a.no || ''), 'en', {numeric: true}) || (b.savedAt || 0) - (a.savedAt || 0));   // ใหม่สุดบน: วันที่สั่ง → เลขใบ → เวลาบันทึก
     const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้ ควรดาวน์โหลด PDF เก็บไว้ทุกครั้ง</p>');
     if (!list.length) { $('jobHistory').innerHTML = notice + '<p class="empty">ยังไม่มีใบคอนเฟิร์มงานที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; return; }
     const q = $('jobHistSearch') ? $('jobHistSearch').value : '';
-    const shown = list.filter(j => matchesSearch(j.jName, q));
-    if (!shown.length) { $('jobHistory').innerHTML = notice + '<p class="empty">ไม่พบใบคอนเฟิร์มงานของลูกค้าชื่อ “' + esc(q) + '”</p>'; return; }
+    const fSt = $('jobFiltSt') ? $('jobFiltSt').value : '', fPg = $('jobFiltPg') ? $('jobFiltPg').value : '';
+    const shown = list.filter(j => matchesSearch(j.jName, q) && (!fPg || (j.page || 'ball') === fPg) && (!fSt || (fSt === 'delivered' ? jobDelivered(j) : fSt === 'notrack' ? ((j.status || 'pending') === 'shipped' && !j.trackCode) : (j.status || 'pending') === fSt)));
+    if (!shown.length) { $('jobHistory').innerHTML = notice + '<p class="empty">ไม่พบใบงาน' + (q ? 'ของลูกค้าชื่อ “' + esc(q) + '”' : '') + (fSt || fPg ? ' ตามตัวกรองที่เลือก' : '') + '</p>'; return; }
     const pendWh = can('wholesale') ? list.filter(j => j.wholesale && String(j.jName || '').trim() && jobPendingWhItems(j).length).length : 0;
-    const whBanner = pendWh ? '<div class="wh-sweep"><span>🏷️ มีงานราคาส่ง <b>' + pendWh + '</b> ใบ ที่ยังไม่ได้รวมในใบราคาส่ง</span><button type="button" class="btn small good" id="whSweepBtn">รวมเข้าใบราคาส่งตามชื่อ</button></div>' : '';
+    const whBanner = '';   // เอาปุ่ม "รวมเข้าใบราคาส่งตามชื่อ" ออกจากหน้านี้ (ระบบรวมให้เองตอนบันทึกใบราคาส่งอยู่แล้ว · ฟังก์ชัน sweepWholesaleJobs ยังอยู่)
+    const _whBannerOld = pendWh ? '<div class="wh-sweep"><span>🏷️ มีงานราคาส่ง <b>' + pendWh + '</b> ใบ ที่ยังไม่ได้รวมในใบราคาส่ง</span><button type="button" class="btn small good" id="whSweepBtn">รวมเข้าใบราคาส่งตามชื่อ</button></div>' : '';
     const noCount = {}; list.forEach(j => { const k = String(j.no || '').trim().toUpperCase(); if (k) noCount[k] = (noCount[k] || 0) + 1; });
     $('jobHistory').innerHTML = notice + whBanner + '<ul>' + shown.map(j => {
       const st = j.status || 'pending';
       const dupTag = noCount[String(j.no || '').trim().toUpperCase()] > 1 ? ' <span style="color:#b91c1c;font-weight:700">⚠ เลขซ้ำ</span>' : '';
       const nItems = (j.items || []).filter(i => (i.name || '').trim()).length, cn = String(j.jName || '').trim();
       const chip = (t, c) => '<span class="jc-chip' + (c ? ' ' + c : '') + '">' + t + '</span>';
-      const chips = chip(esc(thDate(j.date))) + (PAGE_LABEL[j.page] ? chip(esc(PAGE_LABEL[j.page])) : '') +
-        (canBank && j.account && !accHidden(j) ? chip('บัญชี ' + esc(j.account)) : '') +
-        (jobDelivered(j) ? chip('ลูกค้ารับแล้ว · เสร็จสิ้น', 'tg') : '') +
-        (canBank && num(j.slipAmount) > 0 ? chip((j.slipPending ? 'รอรับเงิน ' : 'สลิป ') + money(num(j.slipAmount)) + ' บาท', j.slipPending ? 'warn' : 'money') : '') +
-        (j.wholesale ? chip('ราคาส่ง', 'tg') : '') + (j.recv && (j.recv.name || j.recv.addr) ? chip('ฝากส่ง', 'tg') : '') +
-        chip(nItems + ' รายการ') + (j.photos && j.photos.length ? chip('รูป ' + j.photos.length) : '') + (j.createdBy ? chip('โดย ' + esc(j.createdBy)) : '');
+      // การ์ดโล่ง: ข้อมูลรอง (วันที่ · เพจ · บัญชี · ผู้บันทึก) รวมเป็นบรรทัดเดียวสีจาง · ป้ายเหลือเฉพาะสถานะ/เงื่อนไขที่ต้องเห็น (จำนวนรายการ/รูปดูได้จากในการ์ด)
+      const meta = [esc(thDate(j.date)), PAGE_LABEL[j.page] ? esc(PAGE_LABEL[j.page]) : '', (canBank && j.account && !accHidden(j)) ? 'บัญชี ' + esc(j.account) : '', j.createdBy ? 'โดย ' + esc(j.createdBy) : ''].filter(Boolean).join(' · ');
+      const chips = (jobDelivered(j) ? chip('ลูกค้ารับแล้ว · เสร็จสิ้น', 'tg') : '') +
+        (j.wholesale ? chip('ราคาส่ง', 'tg') : '');
       return '<li class="jc st-' + st + (jobOpenIds[j.id] ? ' open' : '') + '" data-id="' + esc(j.id) + '">' +
       '<div class="jc-top">' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '<span class="jc-ph" aria-hidden="true">' + esc((cn || '?').replace(/^(คุณ|นาย|นาง|นางสาว|พี่|น้อง)\s*/, '').charAt(0).toUpperCase()) + '</span>') +
       '<div class="jc-main"><div class="jc-no">' + esc(j.no) + dupTag + '</div><div class="jc-cust">' + esc(cn || 'ไม่ระบุชื่อลูกค้า') + '</div></div>' +
@@ -4861,9 +4861,13 @@ function bahtText(value) {
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
       '</select></div>' +
       jobCardDetail(j) +
-      '<div class="jc-chips">' + chips + '</div>' +
-      (canKey ? '<div class="jc-act"><button class="jc-b" data-act="open" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>เปิดแก้ไข</button>' +
-      '<button class="jc-b del" data-act="del" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>ลบ</button></div>' : '') +
+      (chips ? '<div class="jc-chips">' + chips + '</div>' : '') +
+      (canKey ? '<div class="jc-act">' +
+      '<button class="jc-b" data-act="view" type="button" aria-label="เปิดดู"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span>เปิดดู</span></button>' +
+      '<button class="jc-b" data-act="open" type="button" aria-label="แก้ไข"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span>แก้ไข</span></button>' +
+      ('<button class="jc-b" data-act="copylink" type="button" aria-label="คัดลอกลิงก์สถานะงานให้ลูกค้า" title="คัดลอกลิงก์สถานะงาน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg><span>ลิงก์</span></button>') +
+      '<button class="jc-b" data-act="openlink" type="button" aria-label="เปิดดูหน้าสถานะที่ลูกค้าเห็น" title="เปิดดูหน้าสถานะที่ลูกค้าเห็น"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg><span>เปิดลิงก์</span></button>' +
+      '<button class="jc-b del" data-act="del" type="button" aria-label="ยกเลิก"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg><span>ยกเลิก</span></button></div>' : '') +
       (jobOpenIds[j.id] ? jobDetailHTML(j) : '') + '</li>';
     }).join('') + '</ul><p class="hint" style="margin:10px 2px 0">แตะที่ใบเพื่อดูรายละเอียด ไม่ต้องกดแก้ไข</p>';
   }
@@ -4871,16 +4875,25 @@ function bahtText(value) {
   function jobCardDetail(j) {
     const its = (j.items || []).filter(i => (i.name || '').trim());
     const pieces = its.reduce((a, i) => a + (num(i.qty) > 0 ? num(i.qty) : 0), 0);
-    const rows = its.slice(0, 3).map(i => '<li><span>' + esc(String(i.name).trim()) + '</span><b>× ' + esc(i.qty === '' || i.qty == null ? 1 : i.qty) + '</b></li>').join('') +
-      (its.length > 3 ? '<li class="more">+ อีก ' + (its.length - 3) + ' รายการ</li>' : '');
+    const rows = its.slice(0, 1).map(i => '<li><span>' + esc(String(i.name).trim()) + '</span><b>× ' + esc(i.qty === '' || i.qty == null ? 1 : i.qty) + '</b></li>').join('') +
+      (its.length > 1 ? '<li class="more"><span>+ อีก ' + (its.length - 1) + ' รายการ</span><b>รวม ' + money(pieces).replace(/\.00$/, '') + ' ชิ้น</b></li>' : '');
     let amt = 0, hasPrice = false;
     its.forEach(i => { const pr = (i.price !== '' && i.price != null) ? num(i.price) : null; if (pr != null && pr > 0) { hasPrice = true; amt += (num(i.qty) > 0 ? num(i.qty) : 1) * pr; } });
     if (!hasPrice && num(j.slipAmount) > 0) { amt = num(j.slipAmount); hasPrice = true; }
     const money$ = (canBank && hasPrice) ? '<div class="jc-det-amt"><small>' + (j.slipPending ? 'ยอดรอรับ' : 'ยอดเงิน') + '</small>' + money(round2(amt)) + ' บาท</div>' : '';
     const rv = j.recv && (j.recv.name || j.recv.addr || j.recv.phone) ? j.recv : null;
-    const rvHtml = rv ? '<div class="jc-recv"><span class="jc-k">ฝากส่งถึง</span><b>' + esc(rv.name || '') + '</b>' + (rv.phone ? ' · ' + esc(rv.phone) : '') + (rv.addr ? '<div class="jc-addr">' + esc(rv.addr) + '</div>' : '') + (Array.isArray(j.recvMore) && j.recvMore.length ? '<div class="jc-addr">+ อีก ' + j.recvMore.length + ' กล่อง</div>' : '') + '</div>' : '';
-    if (!its.length && !rv && !money$) return '';
-    return '<div class="jc-det">' + (its.length ? '<div class="jc-det-h"><span class="jc-k">งาน</span><span>รวม ' + money(pieces).replace(/\.00$/, '') + ' ชิ้น</span></div><ul class="jc-det-l">' + rows + '</ul>' : '') + money$ + rvHtml + '</div>';
+    // การ์ดไม่โชว์ชื่อ/ที่อยู่ผู้รับ (ดูได้ในรายละเอียดเมื่อกดเปิด) — โชว์สถานะขนส่งต่อกล่องแทน จะได้รู้ว่าลูกค้ารับของหรือยัง
+    const nBoxes = 1 + (Array.isArray(j.recvMore) ? j.recvMore.length : 0);
+    const boxCodes = [j.trackCode || ''].concat(Array.isArray(j.recvMore) ? j.recvMore.map(r => String(r.code || '').trim()) : []);
+    const shipLine = (code, label) => {
+      const t = code ? store.get('bs_tracking', []).find(x => normCode(x.code) === normCode(code)) : null;
+      const st = t ? (t.status || 'transit') : '', txt = !code ? 'ยังไม่มีเลขพัสดุ' : t ? (t.ishipStatusName ? translateIshipStatus(t.ishipStatusName) : (TRACK_STATUS[st] || TRACK_STATUS.transit).label) : 'รอสถานะขนส่ง';
+      const c = st === 'delivered' ? 'ok' : st === 'issue' ? 'bad' : code ? 'go' : 'none';
+      return '<div class="jc-ship"><span class="jc-k">' + label + '</span><b class="' + c + '">' + (st === 'delivered' ? '✓ ' : '') + esc(txt) + '</b>' + (code ? '<small>' + esc(String(code)) + '</small>' : '') + '</div>';
+    };
+    const rvHtml = (rv || j.trackCode) ? boxCodes.map((c, k) => shipLine(c, nBoxes > 1 ? 'พัสดุ กล่อง ' + (k + 1) : 'พัสดุ')).join('') : '';
+
+    return rvHtml ? '<div class="jc-det">' + rvHtml + '</div>' : '';   // การ์ดโชว์แค่สถานะพัสดุ (รายละเอียดงานอยู่ในปุ่ม เปิดดู)   // การ์ดไม่โชว์ยอดเงิน (ดูในรายละเอียด/บิล)
   }
   function saveJob() {
     const list = store.get('bs_jobs', []);
@@ -6669,6 +6682,7 @@ function bahtText(value) {
     }
     const id = btn.closest('li').dataset.id;
     if (btn.dataset.act === 'closejd') { jobOpenIds[id] = false; renderJobHistory(); return; }
+    if (btn.dataset.act === 'view') { jobOpenIds[id] = !jobOpenIds[id]; renderJobHistory(); return; }
     const list = store.get('bs_jobs', []);
     if (btn.dataset.act === 'livescan') {
       const sjInp = btn.closest('li').querySelector('input[data-scanjob]');
@@ -6697,7 +6711,7 @@ function bahtText(value) {
       })();
       return;
     }
-    if (btn.dataset.act === 'tracklink') {   // ลิงก์ติดตามงานของลูกค้า: รหัสสุ่มต่อใบ (สร้างครั้งแรกที่กด) ไม่ต้องล็อกอิน
+    if (btn.dataset.act === 'tracklink' || btn.dataset.act === 'copylink' || btn.dataset.act === 'copyurl' || btn.dataset.act === 'openlink') {   // ลิงก์ติดตามงานของลูกค้า: รหัสสุ่มต่อใบ (สร้างครั้งแรกที่กด) ไม่ต้องล็อกอิน
       const li = list.findIndex(x => x.id === id); if (li < 0) return;
       if (!list[li].trackToken) {
         const a = new Uint8Array(12); (window.crypto || window.msCrypto).getRandomValues(a);
@@ -6707,9 +6721,18 @@ function bahtText(value) {
       const jt = list[li];
       cloudSave('jobs', jt);
       const url = 'https://www.ballsticker.co.th/track.html?t=' + jt.trackToken;
-      const msg = 'ติดตามสถานะงาน ' + (jt.no || '') + ' ของบอลสติ๊กเกอร์ได้ที่นี่ค่ะ 👇\n' + url;
+      if (btn.dataset.act === 'openlink') {   // เด้งหน้าต่างโชว์หน้าสถานะที่ลูกค้าเห็น (ไม่ต้องไปแท็บอื่น)
+        const old = document.getElementById('trkPop'); if (old) old.remove();
+        const pop = document.createElement('div'); pop.id = 'trkPop'; pop.className = 'trk-pop';
+        pop.innerHTML = '<div class="tp-box"><div class="tp-h"><span>สถานะงาน ' + esc(jt.no || '') + ' (ที่ลูกค้าเห็น)</span><button type="button" data-tpclose>ปิด ✕</button></div><div class="tp-ld">กำลังโหลด…</div></div>';
+        pop.addEventListener('click', ev => { if (ev.target === pop || ev.target.closest('[data-tpclose]')) pop.remove(); });
+        document.body.appendChild(pop);
+        setTimeout(() => { if (!pop.isConnected) return; const fr = document.createElement('iframe'); fr.title = 'หน้าสถานะงานของลูกค้า'; fr.src = url + '&_=' + Date.now(); fr.addEventListener('load', () => { const l = pop.querySelector('.tp-ld'); if (l) l.remove(); }); pop.querySelector('.tp-box').appendChild(fr); }, 900);   // รอให้ข้อมูลล่าสุดซิงก์ขึ้นหน้าลูกค้าก่อน
+        return;
+      }
+      const msg = btn.dataset.act === 'copyurl' ? url : 'ติดตามสถานะงาน ' + (jt.no || '') + ' ของบอลสติ๊กเกอร์ได้ที่นี่ค่ะ 👇\n' + url;
       (async () => {
-        try { if (PHONE_SHARE && navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือก LINE / ข้อความ ส่งให้ลูกค้าได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+        try { if (btn.dataset.act === 'tracklink' && PHONE_SHARE && navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือก LINE / ข้อความ ส่งให้ลูกค้าได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
         try { await navigator.clipboard.writeText(msg); toast('คัดลอกลิงก์ติดตามงานแล้ว ไปวางส่งให้ลูกค้าได้เลย'); }
         catch (e) { try { const ta = document.createElement('textarea'); ta.value = msg; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); toast(ok ? 'คัดลอกลิงก์ติดตามงานแล้ว' : 'คัดลอกอัตโนมัติไม่ได้'); } catch (e2) { toast('คัดลอกอัตโนมัติไม่ได้'); } }
       })();
@@ -7073,6 +7096,7 @@ function bahtText(value) {
   });
   $('histSearch').addEventListener('input', renderHistory);
   $('jobHistSearch').addEventListener('input', renderJobHistory);
+  ['jobFiltSt', 'jobFiltPg'].forEach(i => $(i).addEventListener('change', renderJobHistory));
   $('whHistSearch').addEventListener('input', renderWholesaleHistory);
   function addWholesaleShop() {
     const nm = $('whAddName').value.trim(); if (!nm) { toast('พิมพ์ชื่อร้านก่อน'); $('whAddName').focus(); return; }
