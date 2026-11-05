@@ -4866,6 +4866,7 @@ function bahtText(value) {
       '<button class="jc-b" data-act="view" type="button" aria-label="เปิดดู"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span>เปิดดู</span></button>' +
       '<button class="jc-b" data-act="open" type="button" aria-label="แก้ไข"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span>แก้ไข</span></button>' +
       ('<button class="jc-b" data-act="copylink" type="button" aria-label="คัดลอกลิงก์สถานะงานให้ลูกค้า" title="คัดลอกลิงก์สถานะงาน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg><span>ลิงก์</span></button>') +
+      '<button class="jc-b" data-act="openlink" type="button" aria-label="เปิดดูหน้าสถานะที่ลูกค้าเห็น" title="เปิดดูหน้าสถานะที่ลูกค้าเห็น"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg><span>เปิดลิงก์</span></button>' +
       '<button class="jc-b del" data-act="del" type="button" aria-label="ยกเลิก"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg><span>ยกเลิก</span></button></div>' : '') +
       (jobOpenIds[j.id] ? jobDetailHTML(j) : '') + '</li>';
     }).join('') + '</ul><p class="hint" style="margin:10px 2px 0">แตะที่ใบเพื่อดูรายละเอียด ไม่ต้องกดแก้ไข</p>';
@@ -6710,7 +6711,7 @@ function bahtText(value) {
       })();
       return;
     }
-    if (btn.dataset.act === 'tracklink' || btn.dataset.act === 'copylink' || btn.dataset.act === 'copyurl') {   // ลิงก์ติดตามงานของลูกค้า: รหัสสุ่มต่อใบ (สร้างครั้งแรกที่กด) ไม่ต้องล็อกอิน
+    if (btn.dataset.act === 'tracklink' || btn.dataset.act === 'copylink' || btn.dataset.act === 'copyurl' || btn.dataset.act === 'openlink') {   // ลิงก์ติดตามงานของลูกค้า: รหัสสุ่มต่อใบ (สร้างครั้งแรกที่กด) ไม่ต้องล็อกอิน
       const li = list.findIndex(x => x.id === id); if (li < 0) return;
       if (!list[li].trackToken) {
         const a = new Uint8Array(12); (window.crypto || window.msCrypto).getRandomValues(a);
@@ -6720,6 +6721,15 @@ function bahtText(value) {
       const jt = list[li];
       cloudSave('jobs', jt);
       const url = 'https://www.ballsticker.co.th/track.html?t=' + jt.trackToken;
+      if (btn.dataset.act === 'openlink') {   // เด้งหน้าต่างโชว์หน้าสถานะที่ลูกค้าเห็น (ไม่ต้องไปแท็บอื่น)
+        const old = document.getElementById('trkPop'); if (old) old.remove();
+        const pop = document.createElement('div'); pop.id = 'trkPop'; pop.className = 'trk-pop';
+        pop.innerHTML = '<div class="tp-box"><div class="tp-h"><span>สถานะงาน ' + esc(jt.no || '') + ' (ที่ลูกค้าเห็น)</span><button type="button" data-tpclose>ปิด ✕</button></div><div class="tp-ld">กำลังโหลด…</div></div>';
+        pop.addEventListener('click', ev => { if (ev.target === pop || ev.target.closest('[data-tpclose]')) pop.remove(); });
+        document.body.appendChild(pop);
+        setTimeout(() => { if (!pop.isConnected) return; const fr = document.createElement('iframe'); fr.title = 'หน้าสถานะงานของลูกค้า'; fr.src = url + '&_=' + Date.now(); fr.addEventListener('load', () => { const l = pop.querySelector('.tp-ld'); if (l) l.remove(); }); pop.querySelector('.tp-box').appendChild(fr); }, 900);   // รอให้ข้อมูลล่าสุดซิงก์ขึ้นหน้าลูกค้าก่อน
+        return;
+      }
       const msg = btn.dataset.act === 'copyurl' ? url : 'ติดตามสถานะงาน ' + (jt.no || '') + ' ของบอลสติ๊กเกอร์ได้ที่นี่ค่ะ 👇\n' + url;
       (async () => {
         try { if (btn.dataset.act === 'tracklink' && PHONE_SHARE && navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือก LINE / ข้อความ ส่งให้ลูกค้าได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
