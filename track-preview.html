@@ -88,6 +88,7 @@ details.jc>.jb{padding:4px 14px 14px}
 .sec{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}.sec h2{font-size:14.5px;margin:0 0 8px}
 .bx{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#fafbfc}
 .bxl{display:flex;align-items:center;gap:8px;font-size:15px}.bxl em{font-style:normal;font-size:12px;font-weight:700;background:#111827;color:#fff;border-radius:99px;padding:2px 9px}
+.zoom{position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:14px;cursor:zoom-out}.zoom img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;background:#fff}.zoom button{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;border:0;background:#fff;font-size:20px;font-weight:700}
 .bxf{display:flex;align-items:center;gap:8px;font-size:14.5px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed var(--line)}.bxf em{font-style:normal;font-size:12px;font-weight:700;background:#e5e7eb;color:#111827;border-radius:99px;padding:2px 9px}
 .bxa{margin-top:4px;color:#4b5563;font-size:13.5px;line-height:1.5}
 .bxt{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:13px;color:var(--mut)}.bxt b{font-size:15px;color:var(--ink);letter-spacing:.2px;word-break:break-all}.bxt.none{border:0;padding:0;margin-top:6px}
@@ -217,6 +218,15 @@ details.jc>.jb{padding:4px 14px 14px}
     box.innerHTML = hi + payHtml + cards.map(function (c) { return c.h; }).join('') + upd;
     setPayModal(payOk ? j.pay : null);
     var po = document.getElementById('payOpen'); if (po) po.onclick = function () { openPay(true); };
+    [].forEach.call(document.querySelectorAll('img.jt'), function (im) {   // รูปเล็กหน้าเลขใบ: แตะเพื่อดูใหญ่ (ไม่พับ/เปิดการ์ด)
+      im.style.cursor = 'zoom-in';
+      im.addEventListener('click', function (e) {
+        e.preventDefault(); e.stopPropagation();
+        var z = document.createElement('div'); z.className = 'zoom'; z.setAttribute('role', 'dialog'); z.setAttribute('aria-label', 'รูปขยาย');
+        z.innerHTML = '<img alt="รูปงาน"><button type="button" aria-label="ปิด">✕</button>'; z.firstChild.src = im.src;
+        z.addEventListener('click', function () { z.remove(); }); document.body.appendChild(z);
+      });
+    });
     [].forEach.call(document.querySelectorAll('.copy[data-cp]'), function (c) { c.onclick = function () { try { navigator.clipboard.writeText(c.getAttribute('data-cp')); c.textContent = 'คัดลอกแล้ว'; } catch (e) {} }; });
   }
   var t = (new URLSearchParams(location.search).get('t') || '').trim();
