@@ -4838,14 +4838,18 @@ function bahtText(value) {
       ((j.photos && j.photos.length) ? '<div><span class="jd-k">รูปอ้างอิง</span></div><div class="jd-ph">' + j.photos.map(src => '<img src="' + src + '" alt="รูปอ้างอิง">').join('') + '</div>' : '') +
       '<div><span class="jd-k">รูปงานเสร็จ</span>' + ((j.donePhotos && j.donePhotos.length) ? '' : '<small style="color:var(--muted,#888)">ยังไม่มี</small>') + '</div>' +
       ((j.donePhotos && j.donePhotos.length) ? '<div class="jd-ph">' + j.donePhotos.map(src => '<img src="' + src + '" alt="รูปงานเสร็จ">').join('') + '</div>' : '') +
-      ((j.donePhotos && j.donePhotos.length) ? '<div class="jd-add"><button class="btn small good" data-act="savephotos" type="button">💾 บันทึก/ส่งรูปงานให้ลูกค้า (' + j.donePhotos.length + ' รูป)</button></div>' : '') +
-      '<div class="jd-add"><label class="btn small primary">📷 ถ่าย/เพิ่มรูปงานเสร็จ<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '"></label> ' +
-      '<button class="btn small primary" data-act="livescan" type="button">📦 สแกนเลขพัสดุ</button> <button class="btn small good" data-act="tracklink" type="button">🔗 ส่งลิงก์ติดตามงาน</button> <button class="btn small" data-act="copyurl" type="button">📋 คัดลอกลิงก์</button>' +
+      '<div class="jd-add jd-acts">' +
+      '<label class="btn small jd-t">📷 ถ่ายรูปงานเสร็จ<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '"></label>' +
+      ((j.donePhotos && j.donePhotos.length) ? '<button class="btn small jd-t" data-act="savephotos" type="button">💾 บันทึกรูป (' + j.donePhotos.length + ')</button>' : '') +
+      '<button class="btn small jd-t" data-act="livescan" type="button">📦 สแกนพัสดุ</button>' +
+      '<button class="btn small jd-t jd-main" data-act="tracklink" type="button">🔗 ส่งลิงก์ติดตาม</button>' +
+      '<button class="btn small jd-t" data-act="copyurl" type="button">📋 คัดลอกลิงก์</button>' +
+      (j.trackCode && j.status === 'shipped' ? '<button class="btn small jd-t" data-act="sendtrk" type="button">📤 ส่งเลขพัสดุ</button>' : '') +
+      '</div>' +
       '<input type="file" accept="image/*" hidden data-scanjob="' + esc(j.id) + '">' +
       (j.trackCode ? '<div class="jd-trk">📦 เลขพัสดุ' + (Array.isArray(j.recvMore) && j.recvMore.length ? ' (กล่องที่ 1)' : '') + ': <b>' + esc(j.trackCode) + '</b></div>' : '') +
       (Array.isArray(j.recvMore) && j.recvMore.some(r => !String(r.code || '').trim() && String((r.name || '') + (r.addr || '')).trim()) ? '<div class="jd-trk"><small>มีกล่องที่ยังไม่มีเลขพัสดุ — กดสแกนต่อได้เลย ระบบใส่ให้กล่องถัดไป</small></div>' : '') +
-      ((isSuper && (j.jName || '').trim() && (j.items || []).some(i => (i.name || '').trim())) ? '<button class="btn small good" data-act="tobill" type="button" style="margin-top:8px">🧾 ใส่ใน' + (j.wholesale ? 'ใบราคาส่ง' : 'บิล') + 'ที่ยังไม่จ่ายของ ' + esc(String(j.jName).trim()) + '</button>' : '') +
-      (j.trackCode && j.status === 'shipped' ? '<button class="btn small good" data-act="sendtrk" type="button" style="margin-top:8px">📤 ส่งเลขพัสดุให้ลูกค้า</button>' : '') + '</div>' +
+      ((isSuper && (j.jName || '').trim() && (j.items || []).some(i => (i.name || '').trim())) ? '<button class="jd-wide" data-act="tobill" type="button">🧾 ใส่ใน' + (j.wholesale ? 'ใบราคาส่ง' : 'บิล') + 'ที่ยังไม่จ่าย · ' + esc(String(j.jName).trim()) + '</button>' : '') +
       '</div>';
   }
   function renderJobHistory() {
