@@ -41,6 +41,7 @@
     if (!d) return;
     Object.keys(d).forEach(function (k) {
       if (k.indexOf('seg_') === 0) { setSeg(k.slice(4), d[k]); return; }
+      if (k === 'stkDieOnly') return;   // Die Cut อย่างเดียว = ลบเส้น Kiss ทั้งหมด → ไม่จำค่า เริ่มเป็นไม่ติ๊กทุกครั้ง กันค้างจนเส้น Kiss Cut หาย
       var el = $(k); if (!el) return;
       if (el.type === 'checkbox') el.checked = !!d[k]; else el.value = d[k];
     });
