@@ -4834,12 +4834,13 @@ function bahtText(value) {
     try { renderTodayJobs(); } catch (e) {}
     try { const sel = window.getSelection && window.getSelection(); if (sel && !sel.isCollapsed && String(sel).trim() && $('jobHistory').contains(sel.anchorNode)) { clearTimeout(renderJobHistory._t); renderJobHistory._t = setTimeout(renderJobHistory, 1500); return; } } catch (e) {}
     try { renderCustomerDatalist(); } catch (e) {}
-    const list = store.get('bs_jobs', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+    const list = store.get('bs_jobs', []).slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.no || '').localeCompare(String(a.no || ''), 'en', {numeric: true}) || (b.savedAt || 0) - (a.savedAt || 0));   // ใหม่สุดบน: วันที่สั่ง → เลขใบ → เวลาบันทึก
     const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้ ควรดาวน์โหลด PDF เก็บไว้ทุกครั้ง</p>');
     if (!list.length) { $('jobHistory').innerHTML = notice + '<p class="empty">ยังไม่มีใบคอนเฟิร์มงานที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; return; }
     const q = $('jobHistSearch') ? $('jobHistSearch').value : '';
-    const shown = list.filter(j => matchesSearch(j.jName, q));
-    if (!shown.length) { $('jobHistory').innerHTML = notice + '<p class="empty">ไม่พบใบคอนเฟิร์มงานของลูกค้าชื่อ “' + esc(q) + '”</p>'; return; }
+    const fSt = $('jobFiltSt') ? $('jobFiltSt').value : '', fPg = $('jobFiltPg') ? $('jobFiltPg').value : '';
+    const shown = list.filter(j => matchesSearch(j.jName, q) && (!fPg || (j.page || 'ball') === fPg) && (!fSt || (fSt === 'delivered' ? jobDelivered(j) : fSt === 'notrack' ? ((j.status || 'pending') === 'shipped' && !j.trackCode) : (j.status || 'pending') === fSt)));
+    if (!shown.length) { $('jobHistory').innerHTML = notice + '<p class="empty">ไม่พบใบงาน' + (q ? 'ของลูกค้าชื่อ “' + esc(q) + '”' : '') + (fSt || fPg ? ' ตามตัวกรองที่เลือก' : '') + '</p>'; return; }
     const pendWh = can('wholesale') ? list.filter(j => j.wholesale && String(j.jName || '').trim() && jobPendingWhItems(j).length).length : 0;
     const whBanner = '';   // เอาปุ่ม "รวมเข้าใบราคาส่งตามชื่อ" ออกจากหน้านี้ (ระบบรวมให้เองตอนบันทึกใบราคาส่งอยู่แล้ว · ฟังก์ชัน sweepWholesaleJobs ยังอยู่)
     const _whBannerOld = pendWh ? '<div class="wh-sweep"><span>🏷️ มีงานราคาส่ง <b>' + pendWh + '</b> ใบ ที่ยังไม่ได้รวมในใบราคาส่ง</span><button type="button" class="btn small good" id="whSweepBtn">รวมเข้าใบราคาส่งตามชื่อ</button></div>' : '';
@@ -7085,6 +7086,7 @@ function bahtText(value) {
   });
   $('histSearch').addEventListener('input', renderHistory);
   $('jobHistSearch').addEventListener('input', renderJobHistory);
+  ['jobFiltSt', 'jobFiltPg'].forEach(i => $(i).addEventListener('change', renderJobHistory));
   $('whHistSearch').addEventListener('input', renderWholesaleHistory);
   function addWholesaleShop() {
     const nm = $('whAddName').value.trim(); if (!nm) { toast('พิมพ์ชื่อร้านก่อน'); $('whAddName').focus(); return; }

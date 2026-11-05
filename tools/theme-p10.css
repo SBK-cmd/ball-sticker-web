@@ -203,3 +203,25 @@ html body #jobHistory .jc-act{gap:6px!important;margin-top:8px!important}
 html body #jobHistory .jc-b,html body #jobHistory .jc-b.lnk{min-height:38px!important;padding:3px 2px!important;gap:1px!important;font-size:11.5px!important;border-width:2px!important;box-shadow:2px 2px 0 var(--ink)!important}
 html body #jobHistory .jc-b svg{width:17px!important;height:17px!important}
 html body #jobHistory .jc-det{margin-top:6px!important}
+/* ฟิลเตอร์หางาน (ใต้ช่องค้นหาชื่อ) */
+html body .jf-filt{display:flex;gap:8px;margin:8px 0 12px}
+html body .jf-filt select{flex:1 1 0;min-width:0;height:38px;padding:0 10px;font-size:14px;font-weight:600;border:2px solid var(--ink);border-radius:10px;background:#fff}
+/* การ์ดใบงาน มินิมอล: เล็กลงอีก · ปุ่มเป็นไอคอนเงียบๆ ไม่มีกรอบหนา/เงา */
+html body #jobHistory li.jc{padding:10px 12px!important}
+html body #jobHistory .jc-top{gap:10px}
+html body #jobHistory .jc-top .thumb,html body #jobHistory .jc-ph{width:36px!important;height:36px!important;border-radius:9px!important;font-size:16px}
+html body #jobHistory .jc-no{font-size:12px}
+html body #jobHistory .jc-cust{font-size:15.5px;line-height:1.25}
+html body #jobHistory select.job-status-select{height:32px!important;min-height:0!important;padding:0 26px 0 10px!important;font-size:12.5px!important;border-width:1.5px!important;box-shadow:none!important;border-radius:999px!important;width:auto!important}
+html body #jobHistory .jc-chips{margin-top:4px!important}
+html body #jobHistory .jc-chip{font-size:11.5px!important;padding:1px 8px!important;min-height:0!important;border-width:1px!important}
+html body #jobHistory .jc-det{margin-top:4px!important}
+html body #jobHistory .jc-ship{font-size:13px}
+html body #jobHistory .jc-act{margin-top:6px!important;gap:2px!important;justify-content:flex-end;display:flex!important;border-top:1px solid rgba(0,0,0,.07);padding-top:4px}
+html body #jobHistory .jc-b,html body #jobHistory .jc-b.lnk{flex:0 0 auto!important;flex-direction:row!important;min-height:32px!important;min-width:44px;padding:4px 10px!important;gap:5px!important;font-size:12px!important;font-weight:600!important;background:transparent!important;border:0!important;box-shadow:none!important;color:#4b5563!important}
+html body #jobHistory .jc-b svg{width:18px!important;height:18px!important;stroke-width:1.7}
+html body #jobHistory .jc-b span{display:none}
+html body #jobHistory .jc-b.del{color:#b91c1c!important}
+html body #jobHistory select.job-status-select{padding:0 28px 0 12px!important;min-width:104px;text-overflow:clip}
+html body #jobHistory select.job-status-select{min-width:122px!important;font-size:12px!important;padding:0 30px 0 10px!important}
+html body .jf-filt select{height:36px!important;min-height:0!important;padding:0 8px!important;font-size:13.5px!important;border-width:1.5px!important;box-shadow:none!important;border-radius:10px!important}
