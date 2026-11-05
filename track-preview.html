@@ -117,7 +117,7 @@ details.jc>.jb{padding:4px 14px 14px}
 (function () {
   var box = document.getElementById('box');
   var STEPS = [['pending', 'รับงานแล้ว · รอทำ'], ['filed', 'ทำไฟล์เสร็จแล้ว'], ['printed', 'ผลิตเสร็จแล้ว'], ['shipped', 'จัดส่งแล้ว'], ['completed', 'ลูกค้ารับแล้ว · เสร็จสิ้น']];
-  var effSt = function (st, dlv) { return (st === 'shipped' && dlv) ? 'completed' : st; };   // พัสดุถึงลูกค้าแล้ว = เสร็จสิ้น
+  var effSt = function (st, dlv) { return ((st === 'shipped' && dlv) || st === 'received') ? 'completed' : st; };   // พัสดุถึงลูกค้าแล้ว = เสร็จสิ้น
   var MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]; }); }
   function thDate(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? (+m[3]) + ' ' + MONTHS[+m[2] - 1] + ' ' + (+m[1] + 543) : ''; }
