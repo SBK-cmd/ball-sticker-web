@@ -393,7 +393,7 @@ function bahtText(value) {
     })();
   }
   function cloudNotice() {
-    if (cloudStatus === 'on') return '<p class="notice" style="background:#e6f6ea;color:#1a6b3a">ซิงก์กับคลาวด์แล้ว ทุกเครื่องที่เปิดหน้านี้เห็นข้อมูลเดียวกัน · วันนี้เครื่องนี้อ่านข้อมูล ~' + readsToday().toLocaleString() + ' รายการ (โควตาฟรีรวมทุกเครื่อง 50,000/วัน)' + (readsBreakdown() ? '<br><small>อ่านมากสุดวันนี้: ' + readsBreakdown() + '</small>' : '') + '</p>';
+    if (cloudStatus === 'on') return '<details class="cloud-mini"><summary>☁ ซิงก์แล้ว · อ่านวันนี้ ~' + readsToday().toLocaleString() + '</summary><div>ทุกเครื่องเห็นข้อมูลเดียวกัน · โควตาฟรีรวมทุกเครื่อง 50,000/วัน' + (readsBreakdown() ? '<br>อ่านมากสุด: ' + readsBreakdown() : '') + '</div></details>';
     if (cloudStatus === 'connecting') return '<p class="notice">กำลังเชื่อมต่อคลาวด์…</p>';
     if (cloudStatus === 'error') return '<p class="notice">เชื่อมต่อคลาวด์ไม่ได้ตอนนี้ (เช่น ไม่มีอินเทอร์เน็ต) ใช้ข้อมูลในเครื่องนี้ไปก่อน จะซิงก์ให้เองเมื่อเชื่อมต่อได้</p>';
     return '';
