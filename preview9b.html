@@ -108,13 +108,13 @@ try { if (!localStorage.getItem('bs_session')) document.documentElement.classLis
 .ds-pimgs{display:grid;gap:10px;margin-top:8px}
 .ds-pimgs figure{margin:0}
 .ds-pimgs img{width:100%;max-height:520px;object-fit:contain;border-radius:12px;border:1.5px solid var(--line,#ccc);background:#fff;cursor:zoom-in;display:block}
+.ds-row2{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:6px}
+.ds-row2 .ds-ok{margin-top:0}
+.ds-ok.ds-rm{width:auto;padding:0 14px;border-color:#b3261e;color:#b3261e}
 .ds-ok{width:100%;margin-top:6px;min-height:42px;border:2px dashed var(--ink,#0c1f38);border-radius:12px;background:transparent;color:inherit;font:700 14.5px/1 inherit;font-family:inherit;cursor:pointer}
 .ds-ok.on{border-style:solid;background:#c9f5d4}
-.ds-reply{position:sticky;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:5;box-shadow:0 -6px 18px rgba(0,0,0,.12)}
-.ds-reply textarea{min-height:56px}
 .ds-lb{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:12px;cursor:zoom-out}
 .ds-lb img{max-width:100%;max-height:100%;object-fit:contain}
-@media(min-width:900px){.ds-reply{bottom:12px}}
 </style>
 <script>
 // ตั้งโหมดมืด/สว่างจากค่าที่จำไว้ทันทีตั้งแต่ก่อนวาดหน้าจอ กันไฟกะพริบสลับธีมตอนโหลด
@@ -3702,12 +3702,12 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
     <section id="panel-design" class="panel" role="tabpanel" aria-labelledby="tab-design">
       <div class="page-head no-print">
         <h1>งานออกแบบ.</h1>
-        <p>จดโน้ตงานออกแบบ แนบรูป แก้ไปมากับลูกค้า พอลูกค้าพอใจกดยืนยันภาพ แล้วส่งต่อไปใบคอนเฟิร์มงาน</p>
+        <p>จดโน้ตงานออกแบบ แปะรูปแชท/แบบที่ลูกค้าส่งมา พอตกลงกันแล้วกดส่งไปใบคอนเฟิร์มงาน</p>
       </div>
       <div class="ds-wrap no-print">
         <div id="dsListView">
           <div class="ds-comp card" id="dsNew">
-            <textarea id="dsNewTxt" rows="4" placeholder="จดโน้ตงานใหม่ได้เลย เช่น ชื่อลูกค้า เบอร์ ที่อยู่ รายละเอียดงาน แล้วแนบรูปได้ในช่องเดียว"></textarea>
+            <textarea id="dsNewTxt" rows="4" placeholder="จดโน้ตงานใหม่ เช่น ชื่อลูกค้า เบอร์ ที่อยู่ รายละเอียดงาน แล้วแนบรูปแชท/แบบได้ในช่องเดียว"></textarea>
             <div class="ds-ph" id="dsNewPh"></div>
             <div class="ds-cbar">
               <label class="ds-btn">📷 แนบรูป<input type="file" accept="image/*" multiple hidden id="dsNewFile"></label>
@@ -3721,16 +3721,8 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
           <div id="dsFeed"></div>
         </div>
         <div id="dsThreadView" hidden>
-          <div class="ds-tbar"><button type="button" class="ds-btn" data-dsact="back">‹ กลับ</button><span id="dsTTitle"></span><button type="button" class="ds-btn ds-del" data-dsact="deldesign" aria-label="ลบงานนี้"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M6 6l1 14h10l1-14"></path></svg></button></div>
+          <div class="ds-tbar"><button type="button" class="ds-btn" data-dsact="back">‹ กลับ</button><span id="dsTTitle"></span><button type="button" class="ds-btn ds-del" data-dsact="deldesign" aria-label="ลบโน้ตนี้"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M6 6l1 14h10l1-14"></path></svg></button></div>
           <div id="dsThread"></div>
-          <div class="ds-comp ds-reply" id="dsReply">
-            <textarea id="dsRepTxt" rows="2" placeholder="เขียนความคืบหน้า / ที่ลูกค้าขอแก้ แล้วแนบรูปที่แก้แล้ว"></textarea>
-            <div class="ds-ph" id="dsRepPh"></div>
-            <div class="ds-cbar">
-              <label class="ds-btn">📷 แนบรูป<input type="file" accept="image/*" multiple hidden id="dsRepFile"></label>
-              <button type="button" class="ds-btn ds-main" id="dsRepGo">ส่ง</button>
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -3925,7 +3917,7 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=990a1d78ec",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=f76fbf0c08",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

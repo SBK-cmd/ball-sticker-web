@@ -6068,18 +6068,21 @@ function bahtText(value) {
   /* ---------------- events ---------------- */
   const TAX_TABS = ['bill', 'purchase', 'dash', 'report'];
 
-  /* ---------------- งานออกแบบ: โน้ต+รูปช่องเดียว แก้ต่อเนื่องแบบเธรด → ยืนยันภาพ → ส่งไปใบคอนเฟิร์มงาน ----------------
-     เก็บที่ bs_designs ซิงก์คลาวด์คอลเลกชัน 'designs' · รูปอัปโหลดขึ้น Cloudinary ก่อนบันทึกเสมอ (กันเอกสารเกินลิมิต) */
+  /* ---------------- งานออกแบบ: โน้ต + รูป (แปะรูปแชท/แบบ) → ส่งไปใบคอนเฟิร์มงาน ----------------
+     เก็บที่ bs_designs ซิงก์คลาวด์คอลเลกชัน 'designs' · โน้ต = {text, photos[], approved[] (รูปที่ติ๊กใช้), sentAt}
+     รูปอัปโหลดขึ้น Cloudinary ก่อนบันทึกเสมอ (กันเอกสารเกินลิมิต) */
   const DS_KEY = 'bs_designs';
-  let dsSel = null, dsQ = '', dsFilt = 'all', dsEditPid = null, dsBusy = false;
-  const dsNewPh = [], dsRepPh = [];
-  const dsAll = () => store.get(DS_KEY, []) || [];
+  let dsSel = null, dsQ = '', dsFilt = 'all', dsBusy = false, dsSaveT = null;
+  const dsNewPh = [];
+  // รุ่นทดลองเก่าเก็บเป็นเธรด (posts[]) → รวมเป็นโน้ตเดียว
+  const dsNorm = d => (d && d.posts && !('text' in d)) ? Object.assign({}, d, {text: (d.posts[0] || {}).text || '', photos: [].concat(...d.posts.map(p => p.photos || []))}) : d;
+  const dsAll = () => (store.get(DS_KEY, []) || []).map(dsNorm);
   const dsById = id => dsAll().find(x => x.id === id);
   const dsMe = () => currentUser ? (currentUser.name || currentUser.username || '') : '';
   const dsRid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   function dsPut(d) {
     d.updatedAt = Date.now();
-    const l = dsAll(), i = l.findIndex(x => x.id === d.id);
+    const l = (store.get(DS_KEY, []) || []), i = l.findIndex(x => x.id === d.id);
     if (i >= 0) l[i] = d; else l.unshift(d);
     store.set(DS_KEY, l); cloudSave('designs', d);
   }
@@ -6091,114 +6094,92 @@ function bahtText(value) {
   }
   const dsThumb = (u, w) => String(u).indexOf('/image/upload/') > 0 ? String(u).replace('/image/upload/', '/image/upload/w_' + w + ',c_limit,q_auto/') : u;
   function dsTitle(d) {
-    const t = String(((d.posts || [])[0] || {}).text || '').split('\n').map(x => x.trim()).find(Boolean) || 'งานออกแบบ';
+    const t = String(d.text || '').split('\n').map(x => x.trim()).find(Boolean) || 'โน้ตงานออกแบบ';
     return t.length > 42 ? t.slice(0, 42) + '…' : t;
   }
-  function dsState(d) {
-    if (d.sentAt) return ['sent', 'ส่งใบคอนเฟิร์มแล้ว'];
-    if ((d.approved || []).length) return ['ok', 'ลูกค้าพอใจ ✓'];
-    return ['wip', 'กำลังแก้'];
-  }
+  const dsState = d => d.sentAt ? ['sent', 'ส่งใบคอนเฟิร์มแล้ว'] : ['wip', 'กำลังทำ'];
   function dsPhotoThumbs(el, arr) {
     el.innerHTML = arr.map((src, i) => '<div class="ds-th"><img src="' + src + '" alt="รูปที่แนบ"><button type="button" data-rmph="' + i + '" aria-label="เอารูปออก">✕</button></div>').join('');
   }
-  async function dsPick(files, arr, phEl) {
-    for (const f of Array.from(files).slice(0, 8)) {
+  async function dsPick(files, arr) {
+    for (const f of Array.from(files).slice(0, 10)) {
       try { arr.push(await shrinkImage(f)); } catch (e) { toast('เปิดรูปไม่ได้'); }
     }
-    dsPhotoThumbs(phEl, arr);
   }
   async function dsUpload(arr) {
     const out = await Promise.all(arr.map(p => String(p).indexOf('data:') === 0 ? uploadPhotoToCloudinary(p) : Promise.resolve(p)));
     return out.every(Boolean) ? out : null;
   }
-  async function dsPost(isNew) {
+  async function dsSaveNew() {
     if (dsBusy) return;
-    const txtEl = $(isNew ? 'dsNewTxt' : 'dsRepTxt'), arr = isNew ? dsNewPh : dsRepPh, btn = $(isNew ? 'dsNewGo' : 'dsRepGo');
-    const text = txtEl.value.trim();
-    if (!text && !arr.length) { toast('พิมพ์ข้อความหรือแนบรูปก่อน'); return; }
-    const d0 = isNew ? null : dsById(dsSel);
-    if (!isNew && !d0) return;
-    dsBusy = true; const label = btn.textContent; btn.disabled = true; btn.textContent = arr.length ? 'กำลังอัปโหลดรูป…' : 'กำลังบันทึก…';
+    const text = $('dsNewTxt').value.trim(), btn = $('dsNewGo');
+    if (!text && !dsNewPh.length) { toast('พิมพ์โน้ตหรือแนบรูปก่อน'); return; }
+    dsBusy = true; const label = btn.textContent; btn.disabled = true; btn.textContent = dsNewPh.length ? 'กำลังอัปโหลดรูป…' : 'กำลังบันทึก…';
     try {
-      const urls = arr.length ? await dsUpload(arr) : [];
-      if (!urls) { toast('อัปโหลดรูปไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่ (ข้อความยังอยู่)'); return; }
-      const post = {id: 'p' + dsRid(), at: Date.now(), by: dsMe(), text, photos: urls};
-      if (isNew) {
-        dsPut({id: 'd' + dsRid(), createdAt: Date.now(), by: dsMe(), posts: [post], approved: [], sentAt: null});
-        toast('บันทึกโน้ตแล้ว');
-      } else {
-        const d = Object.assign({}, d0, {posts: (d0.posts || []).concat([post])});
-        dsPut(d); toast('ส่งแล้ว');
-      }
-      txtEl.value = ''; arr.length = 0; dsPhotoThumbs($(isNew ? 'dsNewPh' : 'dsRepPh'), arr);
-      renderDesign();
-      if (!isNew) setTimeout(() => window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'}), 80);
+      const urls = dsNewPh.length ? await dsUpload(dsNewPh) : [];
+      if (!urls) { toast('อัปโหลดรูปไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่ (โน้ตยังอยู่)'); return; }
+      dsPut({id: 'd' + dsRid(), createdAt: Date.now(), by: dsMe(), text, photos: urls, approved: [], sentAt: null});
+      $('dsNewTxt').value = ''; dsNewPh.length = 0; dsPhotoThumbs($('dsNewPh'), dsNewPh);
+      renderDesign(); toast('บันทึกโน้ตแล้ว');
     } finally { dsBusy = false; btn.disabled = false; btn.textContent = label; }
   }
+  async function dsAddPhotos(files) {
+    const d = dsById(dsSel); if (!d || !files.length) return;
+    toast('กำลังอัปโหลดรูป…');
+    const tmp = []; await dsPick(files, tmp);
+    const urls = await dsUpload(tmp);
+    if (!urls) { toast('อัปโหลดรูปไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่'); return; }
+    const cur = dsById(dsSel) || d;
+    dsPut(Object.assign({}, cur, {photos: (cur.photos || []).concat(urls)})); renderDesign(); toast('เพิ่มรูปแล้ว');
+  }
   function renderDsFeed() {
-    const chips = [['all', 'ทั้งหมด'], ['wip', 'กำลังแก้'], ['ok', 'ลูกค้าพอใจ'], ['sent', 'ส่งแล้ว']];
+    const chips = [['all', 'ทั้งหมด'], ['wip', 'กำลังทำ'], ['sent', 'ส่งแล้ว']];
     $('dsChips').innerHTML = chips.map(c => '<button type="button" data-dsfilt="' + c[0] + '"' + (dsFilt === c[0] ? ' class="on"' : '') + '>' + c[1] + '</button>').join('');
     const q = dsQ.trim().toLowerCase();
     const list = dsAll().slice().sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))
       .filter(d => dsFilt === 'all' || dsState(d)[0] === dsFilt)
-      .filter(d => !q || (d.posts || []).some(p => String(p.text || '').toLowerCase().includes(q)));
-    if (!list.length) { $('dsFeed').innerHTML = '<p class="hint" style="text-align:center;padding:24px 0">' + (dsAll().length ? 'ไม่พบงานที่ตรงเงื่อนไข' : 'ยังไม่มีงานออกแบบ จดโน้ตงานแรกด้านบนได้เลย') + '</p>'; return; }
+      .filter(d => !q || String(d.text || '').toLowerCase().includes(q));
+    if (!list.length) { $('dsFeed').innerHTML = '<p class="hint" style="text-align:center;padding:24px 0">' + (dsAll().length ? 'ไม่พบโน้ตที่ตรงเงื่อนไข' : 'ยังไม่มีโน้ต จดงานแรกด้านบนได้เลย') + '</p>'; return; }
     $('dsFeed').innerHTML = list.map(d => {
-      const st = dsState(d), posts = d.posts || [], first = posts[0] || {};
-      const rest = String(first.text || '').split('\n').map(x => x.trim()).filter(Boolean).slice(1).join('\n');
-      const lastWith = posts.slice().reverse().find(p => p.photos && p.photos.length);
-      const ph = (d.approved && d.approved.length ? d.approved : (lastWith ? lastWith.photos : [])).slice(0, 4);
+      const st = dsState(d), ph = ((d.approved && d.approved.length) ? d.approved : (d.photos || [])).slice(0, 4);
+      const rest = String(d.text || '').split('\n').map(x => x.trim()).filter(Boolean).slice(1).join('\n');
       return '<article class="ds-card" data-ds="' + esc(d.id) + '"><header><span class="ds-av">' + esc((dsTitle(d).charAt(0) || '?').toUpperCase()) + '</span>' +
-        '<div><b>' + esc(dsTitle(d)) + '</b><small>' + esc(first.by || '') + ' · อัปเดต ' + esc(dsAgo(d.updatedAt || d.createdAt)) + '</small></div>' +
+        '<div><b>' + esc(dsTitle(d)) + '</b><small>' + esc(d.by || '') + ' · ' + esc(dsAgo(d.updatedAt || d.createdAt)) + '</small></div>' +
         '<span class="ds-st ' + st[0] + '">' + st[1] + '</span></header>' +
         (rest ? '<p class="ds-tx">' + esc(rest) + '</p>' : '') +
-        (ph.length ? '<div class="ds-imgs' + (ph.length === 1 ? ' one' : '') + '">' + ph.map(u => '<img loading="lazy" src="' + esc(dsThumb(u, 600)) + '" alt="รูปงานออกแบบ">').join('') + '</div>' : '') +
-        '<footer>💬 ' + posts.length + ' ครั้ง' + ((d.approved || []).length ? ' · ✓ ยืนยันภาพแล้ว ' + d.approved.length + ' ภาพ' : '') + '</footer></article>';
+        (ph.length ? '<div class="ds-imgs' + (ph.length === 1 ? ' one' : '') + '">' + ph.map(u => '<img loading="lazy" src="' + esc(dsThumb(u, 500)) + '" alt="รูปในโน้ต">').join('') + '</div>' : '') +
+        ((d.photos || []).length ? '<footer>📷 ' + d.photos.length + ' รูป</footer>' : '') + '</article>';
     }).join('');
   }
   function renderDsThread() {
     const d = dsById(dsSel); if (!d) return;
-    const st = dsState(d), posts = d.posts || [], ap = d.approved || [];
+    const st = dsState(d), ap = d.approved || [], ph = d.photos || [];
     $('dsTTitle').textContent = dsTitle(d);
-    let h = '<div class="ds-hero"><span class="ds-st ' + st[0] + '">' + st[1] + '</span>' +
+    $('dsThread').innerHTML = '<div class="ds-hero"><span class="ds-st ' + st[0] + '">' + st[1] + '</span>' +
       (canKey ? '<button type="button" class="ds-btn ds-main" data-dsact="toconfirm">📋 ไปคอนเฟิร์มงาน →</button>' : '') +
-      '<small>' + (ap.length ? 'ยืนยันภาพแล้ว ' + ap.length + ' ภาพ — จะแนบภาพนี้ไปกับใบคอนเฟิร์ม พร้อมชื่อ/ที่อยู่/รายละเอียดจากโน้ตแรก' : 'พอลูกค้าพอใจ กด “ยืนยันภาพนี้” ใต้รูป แล้วกดไปคอนเฟิร์มงาน (ชื่อ/ที่อยู่/รายละเอียดจะดึงจากโน้ตแรกให้)') + '</small></div>';
-    h += posts.map((p, n) => {
-      const ed = dsEditPid === p.id;
-      return '<article class="ds-post" data-pid="' + esc(p.id) + '"><header><span class="ds-av">' + esc((p.by || '?').charAt(0).toUpperCase()) + '</span>' +
-        '<div><b>' + esc(p.by || 'ไม่ระบุ') + '</b><small>' + esc(dsAgo(p.at)) + '</small></div><span class="ds-ver">' + (n === 0 ? 'โน้ตแรก' : 'ครั้งที่ ' + (n + 1)) + '</span>' +
-        '<span class="ds-acts"><button type="button" data-dsact="editpost" aria-label="แก้ข้อความ"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></button>' + (n > 0 ? '<button type="button" data-dsact="delpost" aria-label="ลบโพสต์นี้"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M6 6l1 14h10l1-14"></path></svg></button>' : '') + '</span></header>' +
-        (ed ? '<div class="ds-ptx"><textarea id="dsEditTxt">' + esc(p.text || '') + '</textarea><div class="ds-cbar"><button type="button" class="ds-btn" data-dsact="canceledit">ยกเลิก</button><button type="button" class="ds-btn ds-main" data-dsact="saveedit">บันทึก</button></div></div>'
-          : (p.text ? '<div class="ds-ptx">' + esc(p.text) + '</div>' : '')) +
-        ((p.photos || []).length ? '<div class="ds-pimgs">' + p.photos.map(u => {
-          const on = ap.indexOf(u) >= 0;
-          return '<figure><img loading="lazy" src="' + esc(dsThumb(u, 900)) + '" data-zoom="' + esc(u) + '" alt="รูปงานออกแบบ">' +
-            '<button type="button" class="ds-ok' + (on ? ' on' : '') + '" data-ok="' + esc(u) + '">' + (on ? '✓ ภาพที่ยืนยันแล้ว (กดยกเลิก)' : '✓ ยืนยันภาพนี้') + '</button></figure>';
-        }).join('') + '</div>' : '') + '</article>';
-    }).join('');
-    $('dsThread').innerHTML = h;
+      '<small>ชื่อ / เบอร์ / ที่อยู่ / รายละเอียด ดึงจากข้อความโน้ตให้ · รูปที่แนบไปใบคอนเฟิร์ม: ' + (ap.length ? 'เฉพาะรูปที่ติ๊กไว้ (' + ap.length + ')' : 'ทุกรูป (ถ้าจะเลือกเฉพาะบางรูป กด “ใช้รูปนี้” ใต้รูป)') + '</small></div>' +
+      '<div class="ds-post"><div class="ds-ptx"><textarea id="dsEditTxt" rows="7" placeholder="พิมพ์โน้ตงาน…">' + esc(d.text || '') + '</textarea></div>' +
+      (ph.length ? '<div class="ds-pimgs">' + ph.map((u, i) => {
+        const on = ap.indexOf(u) >= 0;
+        return '<figure><img loading="lazy" src="' + esc(dsThumb(u, 900)) + '" data-zoom="' + esc(u) + '" alt="รูปในโน้ต">' +
+          '<div class="ds-row2"><button type="button" class="ds-ok' + (on ? ' on' : '') + '" data-ok="' + esc(u) + '">' + (on ? '✓ ใช้รูปนี้ (กดยกเลิก)' : '✓ ใช้รูปนี้') + '</button>' +
+          '<button type="button" class="ds-ok ds-rm" data-rmphoto="' + i + '" aria-label="ลบรูปนี้">✕ ลบ</button></div></figure>';
+      }).join('') + '</div>' : '') +
+      '<div class="ds-cbar"><label class="ds-btn">📷 เพิ่มรูป<input type="file" accept="image/*" multiple hidden data-dsadd></label></div></div>';
   }
   function renderDesign() {
     if (!$('dsFeed')) return;
     if (dsSel && !dsById(dsSel)) dsSel = null;
     $('dsListView').hidden = !!dsSel; $('dsThreadView').hidden = !dsSel;
-    if (dsSel) renderDsThread(); else renderDsFeed();
+    if (dsSel) { const ae = document.activeElement; if (!(ae && ae.id === 'dsEditTxt')) renderDsThread(); } else renderDsFeed();
   }
   function dsToConfirm(d) {
     if (!canKey) { toast('ไม่มีสิทธิ์สร้างใบคอนเฟิร์ม'); return; }
-    const posts = d.posts || [];
-    let photos = (d.approved || []).slice();
-    if (!photos.length) {
-      const lp = posts.slice().reverse().find(p => p.photos && p.photos.length);
-      photos = lp ? lp.photos.slice() : [];
-      if (photos.length && !confirm('ยังไม่ได้กดยืนยันภาพ\nส่งไปใบคอนเฟิร์มด้วยภาพล่าสุดแทนไหม?')) return;
-    }
+    const photos = ((d.approved || []).length ? d.approved : (d.photos || [])).slice();
     showTab('confirm'); newJob();
     jobPhotos = photos; renderJobPhotos();
-    const first = posts[0] || {};
-    $('jPaste').value = first.text || '';
-    if (first.text) $('jSplit').click();
+    $('jPaste').value = d.text || '';
+    if (d.text) $('jSplit').click();
     renderJob();
     if (window.innerWidth < 900) openJobModal(); else window.scrollTo({top: 0, behavior: 'smooth'});
     dsPut(Object.assign({}, d, {sentAt: Date.now()}));
@@ -6209,15 +6190,19 @@ function bahtText(value) {
     o.addEventListener('click', () => o.remove()); document.body.appendChild(o);
   }
   if ($('panel-design')) {
-    $('dsNewFile').addEventListener('change', e => { dsPick(e.target.files, dsNewPh, $('dsNewPh')); e.target.value = ''; });
-    $('dsRepFile').addEventListener('change', e => { dsPick(e.target.files, dsRepPh, $('dsRepPh')); e.target.value = ''; });
-    $('dsNewGo').addEventListener('click', () => dsPost(true));
-    $('dsRepGo').addEventListener('click', () => dsPost(false));
+    $('dsNewFile').addEventListener('change', async e => { await dsPick(e.target.files, dsNewPh); dsPhotoThumbs($('dsNewPh'), dsNewPh); e.target.value = ''; });
+    $('dsNewGo').addEventListener('click', dsSaveNew);
     $('dsSearch').addEventListener('input', e => { dsQ = e.target.value; renderDsFeed(); });
+    $('panel-design').addEventListener('change', e => { if (e.target.matches && e.target.matches('[data-dsadd]')) { const fl = Array.from(e.target.files); e.target.value = ''; dsAddPhotos(fl); } });
+    $('panel-design').addEventListener('input', e => {
+      if (e.target.id !== 'dsEditTxt') return;
+      clearTimeout(dsSaveT); const v = e.target.value, id = dsSel;
+      dsSaveT = setTimeout(() => { const d = dsById(id); if (d && d.text !== v) { dsPut(Object.assign({}, d, {text: v})); $('dsTTitle').textContent = dsTitle(dsById(id) || d); } }, 700);
+    });
     $('panel-design').addEventListener('click', e => {
       const t = e.target;
       const rm = t.closest('[data-rmph]');
-      if (rm) { const box = rm.closest('#dsNewPh') ? dsNewPh : dsRepPh; box.splice(+rm.dataset.rmph, 1); dsPhotoThumbs(rm.closest('.ds-ph'), box); return; }
+      if (rm) { dsNewPh.splice(+rm.dataset.rmph, 1); dsPhotoThumbs($('dsNewPh'), dsNewPh); return; }
       const fl = t.closest('[data-dsfilt]'); if (fl) { dsFilt = fl.dataset.dsfilt; renderDsFeed(); return; }
       const z = t.closest('[data-zoom]'); if (z) { dsZoom(z.dataset.zoom); return; }
       const ok = t.closest('[data-ok]');
@@ -6225,26 +6210,23 @@ function bahtText(value) {
         const d = dsById(dsSel); if (!d) return;
         const u = ok.dataset.ok, ap = (d.approved || []).slice(), i = ap.indexOf(u);
         if (i >= 0) ap.splice(i, 1); else ap.push(u);
-        dsPut(Object.assign({}, d, {approved: ap, sentAt: ap.length ? d.sentAt : null})); renderDesign();
-        toast(i >= 0 ? 'ยกเลิกการยืนยันภาพ' : 'ยืนยันภาพแล้ว'); return;
+        dsPut(Object.assign({}, d, {approved: ap})); renderDesign(); return;
       }
-      const card = t.closest('[data-ds]'); if (card && !t.closest('[data-dsact]')) { dsSel = card.dataset.ds; dsEditPid = null; renderDesign(); window.scrollTo({top: 0}); return; }
+      const rp = t.closest('[data-rmphoto]');
+      if (rp) {
+        const d = dsById(dsSel); if (!d || !confirm('ลบรูปนี้ออกจากโน้ต?')) return;
+        const u = (d.photos || [])[+rp.dataset.rmphoto];
+        dsPut(Object.assign({}, d, {photos: d.photos.filter((x, i) => i !== +rp.dataset.rmphoto), approved: (d.approved || []).filter(x => x !== u)})); renderDesign(); return;
+      }
+      const card = t.closest('[data-ds]'); if (card) { dsSel = card.dataset.ds; renderDesign(); window.scrollTo({top: 0}); return; }
       const b = t.closest('[data-dsact]'); if (!b) return;
-      const act = b.dataset.dsact, d = dsById(dsSel), pid = (b.closest('[data-pid]') || {dataset: {}}).dataset.pid;
-      if (act === 'back') { dsSel = null; dsEditPid = null; renderDesign(); return; }
+      const act = b.dataset.dsact, d = dsById(dsSel);
+      if (act === 'back') { dsSel = null; renderDesign(); return; }
       if (!d) return;
-      if (act === 'toconfirm') dsToConfirm(d);
-      else if (act === 'editpost') { dsEditPid = pid; renderDsThread(); const ta = $('dsEditTxt'); if (ta) ta.focus(); }
-      else if (act === 'canceledit') { dsEditPid = null; renderDsThread(); }
-      else if (act === 'saveedit') { const v = $('dsEditTxt').value.trim(); dsPut(Object.assign({}, d, {posts: d.posts.map(p => p.id === dsEditPid ? Object.assign({}, p, {text: v}) : p)})); dsEditPid = null; renderDesign(); }
-      else if (act === 'delpost') {
-        if (!confirm('ลบโพสต์นี้?')) return;
-        const gone = (d.posts.find(p => p.id === pid) || {}).photos || [];
-        dsPut(Object.assign({}, d, {posts: d.posts.filter(p => p.id !== pid), approved: (d.approved || []).filter(u => gone.indexOf(u) < 0)})); renderDesign();
-      }
+      if (act === 'toconfirm') { clearTimeout(dsSaveT); const ta = $('dsEditTxt'); const cur = ta ? Object.assign({}, d, {text: ta.value}) : d; dsToConfirm(cur); }
       else if (act === 'deldesign') {
-        if (!confirm('ลบงานออกแบบนี้ทั้งหมด (รวมทุกโพสต์)?')) return;
-        store.set(DS_KEY, dsAll().filter(x => x.id !== d.id)); cloudDelete('designs', d.id); dsSel = null; renderDesign(); toast('ลบแล้ว');
+        if (!confirm('ลบโน้ตนี้ทั้งหมด (รวมรูป)?')) return;
+        store.set(DS_KEY, (store.get(DS_KEY, []) || []).filter(x => x.id !== d.id)); cloudDelete('designs', d.id); dsSel = null; renderDesign(); toast('ลบแล้ว');
       }
     });
   }
