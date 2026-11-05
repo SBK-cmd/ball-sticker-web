@@ -160,3 +160,17 @@ html body .fab-newjob *,html body .fab-newjob:before,html body .fab-newjob:after
   html body #jobHistory .jd .jd-ph img:only-child{width:min(100%,520px)!important;max-height:420px!important}
   html body #jobHistory .jd .btn{min-height:46px;font-size:16px!important}
 }
+
+/* การ์ดใบงาน (ลิสต์ประวัติ): โล่งขึ้น — ไม่มีกล่องเทาซ้อน · เส้นแบ่งบางเส้นเดียว · ข้อมูลรองเป็นบรรทัดจาง */
+html body #jobHistory .jc-det{background:none!important;padding:14px 0 0!important;margin:14px 0 0!important;border-top:1px solid rgba(0,0,0,.1);border-radius:0!important;gap:14px!important}
+html body #jobHistory .jc-det-l{gap:6px!important}
+html body #jobHistory .jc-det-l li{font-size:15px;line-height:1.35}
+html body #jobHistory .jc-det-amt{border-top:0!important;padding-top:0!important}
+html body #jobHistory .jc-recv{border-top:0!important;padding-top:0!important;line-height:1.5}
+html body #jobHistory .jc-recv .jc-k{display:block;margin:0 0 3px}
+html body #jobHistory .jc-addr{margin-top:4px;color:#6b7280}
+html body #jobHistory .jc-meta{margin:14px 0 0;font-size:13px;line-height:1.5;color:#6b7280}
+html body #jobHistory .jc-chips{margin-top:10px}
+html body #jobHistory .jc-act{margin-top:16px}
+html body #jobHistory .jc-act{flex-wrap:wrap}
+html body #jobHistory .jc-b.lnk{flex:1 0 100%;justify-content:center;background:var(--lime)!important}

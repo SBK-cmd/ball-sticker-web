@@ -8199,12 +8199,11 @@ function bahtText(value) {
       const dupTag = noCount[String(j.no || '').trim().toUpperCase()] > 1 ? ' <span style="color:#b91c1c;font-weight:700">⚠ เลขซ้ำ</span>' : '';
       const nItems = (j.items || []).filter(i => (i.name || '').trim()).length, cn = String(j.jName || '').trim();
       const chip = (t, c) => '<span class="jc-chip' + (c ? ' ' + c : '') + '">' + t + '</span>';
-      const chips = chip(esc(thDate(j.date))) + (PAGE_LABEL[j.page] ? chip(esc(PAGE_LABEL[j.page])) : '') +
-        (canBank && j.account && !accHidden(j) ? chip('บัญชี ' + esc(j.account)) : '') +
-        (jobDelivered(j) ? chip('ลูกค้ารับแล้ว · เสร็จสิ้น', 'tg') : '') +
+      // การ์ดโล่ง: ข้อมูลรอง (วันที่ · เพจ · บัญชี · ผู้บันทึก) รวมเป็นบรรทัดเดียวสีจาง · ป้ายเหลือเฉพาะสถานะ/เงื่อนไขที่ต้องเห็น (จำนวนรายการ/รูปดูได้จากในการ์ด)
+      const meta = [esc(thDate(j.date)), PAGE_LABEL[j.page] ? esc(PAGE_LABEL[j.page]) : '', (canBank && j.account && !accHidden(j)) ? 'บัญชี ' + esc(j.account) : '', j.createdBy ? 'โดย ' + esc(j.createdBy) : ''].filter(Boolean).join(' · ');
+      const chips = (jobDelivered(j) ? chip('ลูกค้ารับแล้ว · เสร็จสิ้น', 'tg') : '') +
         (canBank && num(j.slipAmount) > 0 ? chip((j.slipPending ? 'รอรับเงิน ' : 'สลิป ') + money(num(j.slipAmount)) + ' บาท', j.slipPending ? 'warn' : 'money') : '') +
-        (j.wholesale ? chip('ราคาส่ง', 'tg') : '') + (j.recv && (j.recv.name || j.recv.addr) ? chip('ฝากส่ง', 'tg') : '') +
-        chip(nItems + ' รายการ') + (j.photos && j.photos.length ? chip('รูป ' + j.photos.length) : '') + (j.createdBy ? chip('โดย ' + esc(j.createdBy)) : '');
+        (j.wholesale ? chip('ราคาส่ง', 'tg') : '') + (j.recv && (j.recv.name || j.recv.addr) ? chip('ฝากส่ง', 'tg') : '');
       return '<li class="jc st-' + st + (jobOpenIds[j.id] ? ' open' : '') + '" data-id="' + esc(j.id) + '">' +
       '<div class="jc-top">' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '<span class="jc-ph" aria-hidden="true">' + esc((cn || '?').replace(/^(คุณ|นาย|นาง|นางสาว|พี่|น้อง)\s*/, '').charAt(0).toUpperCase()) + '</span>') +
       '<div class="jc-main"><div class="jc-no">' + esc(j.no) + dupTag + '</div><div class="jc-cust">' + esc(cn || 'ไม่ระบุชื่อลูกค้า') + '</div></div>' +
@@ -8212,8 +8211,8 @@ function bahtText(value) {
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + JOB_STATUS_LABEL[k] + '</option>').join('') +
       '</select></div>' +
       jobCardDetail(j) +
-      '<div class="jc-chips">' + chips + '</div>' +
-      (canKey ? '<div class="jc-act"><button class="jc-b" data-act="open" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>เปิดแก้ไข</button>' +
+      '<div class="jc-meta">' + meta + '</div>' + (chips ? '<div class="jc-chips">' + chips + '</div>' : '') +
+      (canKey ? '<div class="jc-act">' + (/^JBS/i.test(String(j.no || '').trim()) ? '<button class="jc-b lnk" data-act="copylink" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.500"/><path d="M5 15V6a2 2 0 012-2h9"/></svg>คัดลอกลิงก์ให้ลูกค้าดู</button>' : '') + '<button class="jc-b" data-act="open" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>เปิดแก้ไข</button>' +
       '<button class="jc-b del" data-act="del" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>ลบ</button></div>' : '') +
       (jobOpenIds[j.id] ? jobDetailHTML(j) : '') + '</li>';
     }).join('') + '</ul><p class="hint" style="margin:10px 2px 0">แตะที่ใบเพื่อดูรายละเอียด ไม่ต้องกดแก้ไข</p>';
@@ -8231,7 +8230,7 @@ function bahtText(value) {
     const rv = j.recv && (j.recv.name || j.recv.addr || j.recv.phone) ? j.recv : null;
     const rvHtml = rv ? '<div class="jc-recv"><span class="jc-k">ฝากส่งถึง</span><b>' + esc(rv.name || '') + '</b>' + (rv.phone ? ' · ' + esc(rv.phone) : '') + (rv.addr ? '<div class="jc-addr">' + esc(rv.addr) + '</div>' : '') + (Array.isArray(j.recvMore) && j.recvMore.length ? '<div class="jc-addr">+ อีก ' + j.recvMore.length + ' กล่อง</div>' : '') + '</div>' : '';
     if (!its.length && !rv && !money$) return '';
-    return '<div class="jc-det">' + (its.length ? '<div class="jc-det-h"><span class="jc-k">งาน</span><span>รวม ' + money(pieces).replace(/\.00$/, '') + ' ชิ้น</span></div><ul class="jc-det-l">' + rows + '</ul>' : '') + money$ + rvHtml + '</div>';
+    return '<div class="jc-det">' + (its.length ? (its.length > 1 ? '<div class="jc-det-h"><span class="jc-k">งาน</span><span>รวม ' + money(pieces).replace(/\.00$/, '') + ' ชิ้น</span></div>' : '') + '<ul class="jc-det-l">' + rows + '</ul>' : '') + money$ + rvHtml + '</div>';
   }
   function saveJob() {
     const list = store.get('bs_jobs', []);
@@ -10048,7 +10047,7 @@ function bahtText(value) {
       })();
       return;
     }
-    if (btn.dataset.act === 'tracklink') {   // ลิงก์ติดตามงานของลูกค้า: รหัสสุ่มต่อใบ (สร้างครั้งแรกที่กด) ไม่ต้องล็อกอิน
+    if (btn.dataset.act === 'tracklink' || btn.dataset.act === 'copylink') {   // ลิงก์ติดตามงานของลูกค้า: รหัสสุ่มต่อใบ (สร้างครั้งแรกที่กด) ไม่ต้องล็อกอิน
       const li = list.findIndex(x => x.id === id); if (li < 0) return;
       if (!list[li].trackToken) {
         const a = new Uint8Array(12); (window.crypto || window.msCrypto).getRandomValues(a);
@@ -10060,7 +10059,7 @@ function bahtText(value) {
       const url = 'https://www.ballsticker.co.th/track.html?t=' + jt.trackToken;
       const msg = 'ติดตามสถานะงาน ' + (jt.no || '') + ' ของบอลสติ๊กเกอร์ได้ที่นี่ค่ะ 👇\n' + url;
       (async () => {
-        try { if (PHONE_SHARE && navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือก LINE / ข้อความ ส่งให้ลูกค้าได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+        try { if (btn.dataset.act === 'tracklink' && PHONE_SHARE && navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือก LINE / ข้อความ ส่งให้ลูกค้าได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
         try { await navigator.clipboard.writeText(msg); toast('คัดลอกลิงก์ติดตามงานแล้ว ไปวางส่งให้ลูกค้าได้เลย'); }
         catch (e) { try { const ta = document.createElement('textarea'); ta.value = msg; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); toast(ok ? 'คัดลอกลิงก์ติดตามงานแล้ว' : 'คัดลอกอัตโนมัติไม่ได้'); } catch (e2) { toast('คัดลอกอัตโนมัติไม่ได้'); } }
       })();
