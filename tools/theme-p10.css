@@ -232,3 +232,5 @@ html body .status-pill.pickup,html body #jobHistory select.job-status-select.pic
 html body #jobHistory li.jc.st-pickup::after{background:#f59e0b}
 html body .status-pill.received,html body #jobHistory select.job-status-select.received{background:var(--ink,#111)!important;color:#fff!important}
 html body #jobHistory li.jc.st-received::after{background:#111}
+/* เอาเครื่องหมายประกายข้างหัวข้อหน้าออก (เจ้าของว่าแปลก) */
+html body .page-head h1:after{content:none!important;display:none!important}
