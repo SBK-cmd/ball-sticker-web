@@ -8228,7 +8228,16 @@ function bahtText(value) {
     if (!hasPrice && num(j.slipAmount) > 0) { amt = num(j.slipAmount); hasPrice = true; }
     const money$ = (canBank && hasPrice) ? '<div class="jc-det-amt"><small>' + (j.slipPending ? 'ยอดรอรับ' : 'ยอดเงิน') + '</small>' + money(round2(amt)) + ' บาท</div>' : '';
     const rv = j.recv && (j.recv.name || j.recv.addr || j.recv.phone) ? j.recv : null;
-    const rvHtml = rv ? '<div class="jc-recv"><span class="jc-k">ฝากส่งถึง</span><b>' + esc(rv.name || '') + '</b>' + (rv.phone ? ' · ' + esc(rv.phone) : '') + (rv.addr ? '<div class="jc-addr">' + esc(rv.addr) + '</div>' : '') + (Array.isArray(j.recvMore) && j.recvMore.length ? '<div class="jc-addr">+ อีก ' + j.recvMore.length + ' กล่อง</div>' : '') + '</div>' : '';
+    // การ์ดไม่โชว์ชื่อ/ที่อยู่ผู้รับ (ดูได้ในรายละเอียดเมื่อกดเปิด) — โชว์สถานะขนส่งต่อกล่องแทน จะได้รู้ว่าลูกค้ารับของหรือยัง
+    const nBoxes = 1 + (Array.isArray(j.recvMore) ? j.recvMore.length : 0);
+    const boxCodes = [j.trackCode || ''].concat(Array.isArray(j.recvMore) ? j.recvMore.map(r => String(r.code || '').trim()) : []);
+    const shipLine = (code, label) => {
+      const t = code ? store.get('bs_tracking', []).find(x => normCode(x.code) === normCode(code)) : null;
+      const st = t ? (t.status || 'transit') : '', txt = !code ? 'ยังไม่มีเลขพัสดุ' : t ? (t.ishipStatusName ? translateIshipStatus(t.ishipStatusName) : (TRACK_STATUS[st] || TRACK_STATUS.transit).label) : 'รอสถานะขนส่ง';
+      const c = st === 'delivered' ? 'ok' : st === 'issue' ? 'bad' : code ? 'go' : 'none';
+      return '<div class="jc-ship"><span class="jc-k">' + label + '</span><b class="' + c + '">' + (st === 'delivered' ? '✓ ' : '') + esc(txt) + '</b>' + (code ? '<small>' + esc(String(code)) + '</small>' : '') + '</div>';
+    };
+    const rvHtml = (rv || j.trackCode) ? boxCodes.map((c, k) => shipLine(c, nBoxes > 1 ? 'พัสดุ กล่อง ' + (k + 1) : 'พัสดุ')).join('') : '';
     if (!its.length && !rv && !money$) return '';
     return '<div class="jc-det">' + (its.length ? (its.length > 1 ? '<div class="jc-det-h"><span class="jc-k">งาน</span><span>รวม ' + money(pieces).replace(/\.00$/, '') + ' ชิ้น</span></div>' : '') + '<ul class="jc-det-l">' + rows + '</ul>' : '') + money$ + rvHtml + '</div>';
   }
