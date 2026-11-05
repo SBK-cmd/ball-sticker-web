@@ -891,9 +891,13 @@ button.status-pill:active{filter:brightness(0.9)}
 .bis small{display:block;font-size:12px;color:var(--muted);line-height:1.45}
 .bankin-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .bankin-list li,.bankin-opt{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--line);border-radius:12px;background:var(--surface);min-width:0}
-.bil-time{flex:none;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:66px}
+.bil-time{flex:0 0 78px;font-size:12px;line-height:1.35;color:var(--muted);font-variant-numeric:tabular-nums;white-space:normal;overflow-wrap:anywhere}
 .bil-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.bil-mid small{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bil-mid small{font-size:11.5px;color:var(--muted);white-space:normal;overflow-wrap:anywhere}
+.bil-mid .bk-note{color:var(--ink);font-weight:600}
+.bk-nbtn{align-self:flex-start;border:0;background:none;color:var(--muted);font:600 12px 'Sarabun','Noto Sans Thai',system-ui,sans-serif;padding:2px 0;cursor:pointer;text-decoration:underline}
+.bankin-list li.bk-ne{gap:8px;flex-wrap:wrap;background:var(--ytint,#fff7d6)}
+.bk-ne input{flex:1 1 100%;min-height:44px;border:1px solid var(--field-line);border-radius:10px;padding:0 12px;font-size:16px;background:#fff}
 .bil-amt{flex:none;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
 .bankin-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
 .bankin-pick{margin-top:-4px}
@@ -4057,7 +4061,7 @@ function bahtText(value) {
   let bankListTab = 'all';
   let bankAccTab = 'all';   // แยกรายการตามบัญชี: all / กิติพงษ์ / วันทิม
   try { const t = localStorage.getItem('bs_bankacc_tab'); if (t && (t === 'all' || ACCOUNTS.indexOf(t) >= 0)) bankAccTab = t; } catch (e) {}
-  let bankDelArmed = null, bankDelTimer = null;
+  let bankDelArmed = null, bankDelTimer = null, bankNoteEdit = null;
   const BANK_HIDE_DEFAULT = []; // บัญชีที่ซ่อนการ์ดไว้ก่อน กดปุ่มเพื่อแสดง
   const BANK_LIST_STEP = 5; let bankListLimit = BANK_LIST_STEP; // ประวัติแสดงทีละ 5 รายการ กด "ดูเพิ่มเติม" เพื่อดูต่อ
   const BANK_BAL_KEY = {'กิติพงษ์': 'kittipong', 'วันทิม': 'wantim'};
@@ -4310,18 +4314,19 @@ function bahtText(value) {
     });
     const tagOf = x => '<span class="tax-tag ' + (NON_TAX_ACCOUNTS.indexOf(x.account) >= 0 ? 'off' : 'on') + '">' + esc(x.account || '-') + '</span>';
     const manTag = x => x.source === 'manual' ? '<span class="bk-manual">เพิ่มเอง</span>' : '';
-    const noteOf = x => x.note ? ' · ' + esc(x.note) : '';
+    const noteLine = (d, x) => (x.note ? '<small class="bk-note">📝 ' + esc(x.note) + '</small>' : '') + (canBank ? '<button type="button" class="bk-nbtn" data-bknote="1" data-d="' + d + '" data-id="' + esc(x.id) + '">' + (x.note ? '✎ แก้โน้ต' : '＋ โน้ต') + '</button>' : '');
+    const noteEdit = (d, x) => bankNoteEdit === x.id ? '<li class="bk-ne"><input type="text" id="bkNoteInput" maxlength="120" value="' + esc(x.note || '') + '" placeholder="โน้ตยอดนี้ เช่น ค่าหมึก / มัดจำ / ลูกค้าโอนเกิน"><button type="button" class="btn small good" data-bknsave="1" data-d="' + d + '" data-id="' + esc(x.id) + '">บันทึก</button><button type="button" class="btn small" data-bkncancel="1">ยกเลิก</button></li>' : '';
     const delBtn = (d, x) => '<button type="button" class="bil-del' + (bankDelArmed === x.id ? ' armed' : '') + '" data-bkdel="' + d + '" data-id="' + esc(x.id) + '">' + (bankDelArmed === x.id ? 'กดอีกครั้งเพื่อลบ' : 'ลบ') + '</button>';
     const rowIn = x =>
       '<li><span class="bil-time">' + esc(bankInWhen(x, true)) + '</span>' +
       '<span class="bil-mid"><span>' + tagOf(x) + manTag(x) + '</span>' +
-      '<small>' + (x.matchedJobNo ? 'ใบงาน ' + esc(x.matchedJobNo) : 'ยังไม่ผูกใบงาน') + (x.from ? ' · จาก ' + esc(x.from) : '') + noteOf(x) + '</small></span>' +
-      '<span class="bil-amt amt-in">' + money(num(x.amount)) + '</span>' + delBtn('in', x) + '</li>';
+      '<small>' + (x.matchedJobNo ? 'ใบงาน ' + esc(x.matchedJobNo) : 'ยังไม่ผูกใบงาน') + (x.from ? ' · จาก ' + esc(x.from) : '') + '</small>' + noteLine('in', x) + '</span>' +
+      '<span class="bil-amt amt-in">' + money(num(x.amount)) + '</span>' + delBtn('in', x) + '</li>' + noteEdit('in', x);
     const rowOut = x =>
       '<li class="is-out"><span class="bil-time">' + esc(bankInWhen(x, true)) + '</span>' +
       '<span class="bil-mid"><span>' + tagOf(x) + manTag(x) + '</span>' +
-      '<small>' + esc(BANK_OUT_KIND[x.kind] || x.kind || 'เงินออก') + (x.to ? ' · ไป ' + esc(x.to) : '') + noteOf(x) + '</small></span>' +
-      '<span class="bil-amt amt-out">' + money(num(x.amount)) + '</span>' + delBtn('out', x) + '</li>';
+      '<small>' + esc(BANK_OUT_KIND[x.kind] || x.kind || 'เงินออก') + (x.to ? ' · ไป ' + esc(x.to) : '') + '</small>' + noteLine('out', x) + '</span>' +
+      '<span class="bil-amt amt-out">' + money(num(x.amount)) + '</span>' + delBtn('out', x) + '</li>' + noteEdit('out', x);
     const merged = bankListTab === 'in' ? listF.map(x => ['in', x]) : bankListTab === 'out' ? outsF.map(x => ['out', x])
       : listF.map(x => ['in', x]).concat(outsF.map(x => ['out', x])).sort((p, q) => (q[1].createdAt || 0) - (p[1].createdAt || 0));
     const rows = merged.slice(0, bankListLimit);
@@ -4332,6 +4337,17 @@ function bahtText(value) {
     $('bankInList').innerHTML = rows.length ? '<ul class="bankin-list">' + rows.map(([d, x]) => d === 'in' ? rowIn(x) : rowOut(x)).join('') + '</ul>' + moreHtml
       : '<p class="empty">' + (bankListTab === 'out' ? 'ยังไม่มีเงินออกที่ส่งมาจากมือถือ' : bankListTab === 'in' ? 'ยังไม่มีเงินเข้าที่ส่งมาจากมือถือ' : 'ยังไม่มีรายการที่ส่งมาจากมือถือ') + '</p>';
     renderBankInNotifyState();
+  }
+  // โน้ตประจำยอดเงินเข้า/ออก (เจ้าของเท่านั้น) — เก็บในรายการเดิม ซิงก์ขึ้นคลาวด์
+  function saveBankNote(dir, id) {
+    const key = dir === 'in' ? 'bs_bank_in' : 'bs_bank_out';
+    const list = store.get(key, []) || [], i = list.findIndex(r => r.id === id);
+    const inp = $('bkNoteInput'); if (i < 0 || !inp) { bankNoteEdit = null; renderBankIn(); return; }
+    const note = String(inp.value || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+    list[i] = Object.assign({}, list[i], {note, noteAt: Date.now()}); store.set(key, list);
+    cloudSave(dir === 'in' ? 'bankIn' : 'bankOut', {id, note, noteAt: list[i].noteAt});
+    bankNoteEdit = null; renderBankIn(); try { renderJobBankInPick(); } catch (e) {}
+    toast(note ? 'บันทึกโน้ตแล้ว' : 'ลบโน้ตแล้ว');
   }
   // วันเวลาแบบสั้นสำหรับรายการเลือกยอด: วันนี้ 11:50 / เมื่อวาน 11:52 / 12 ต.ค. 09:10
   const TH_MON_S = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
@@ -9884,6 +9900,11 @@ function bahtText(value) {
       else { bankListLimit = BANK_LIST_STEP; const c = $('dashBankInCard'); if (c && c.getBoundingClientRect().top < 0) c.scrollIntoView({block: 'start', behavior: 'smooth'}); }
       renderBankIn(); return;
     }
+    const nb = e.target.closest('[data-bknote]');
+    if (nb && canBank) { bankNoteEdit = nb.dataset.id; renderBankIn(); setTimeout(() => { const i = $('bkNoteInput'); if (i) { i.focus(); i.select(); } }, 30); return; }
+    if (e.target.closest('[data-bkncancel]')) { bankNoteEdit = null; renderBankIn(); return; }
+    const ns = e.target.closest('[data-bknsave]');
+    if (ns && canBank) { saveBankNote(ns.dataset.d, ns.dataset.id); return; }
     const b = e.target.closest('button[data-bkdel]'); if (!b || !canBank) return;
     const id = b.dataset.id, dir = b.dataset.bkdel;
     if (bankDelArmed !== id) { // กดครั้งแรก: ขอให้ยืนยัน
@@ -9899,6 +9920,11 @@ function bahtText(value) {
     cloudDelete(dir === 'in' ? 'bankIn' : 'bankOut', id);
     renderBankIn(); renderJobBankInPick(); renderBell(false);
     toast('ลบรายการ' + (x ? ' ' + money(num(x.amount)) + ' บาท' : '') + ' แล้ว');
+  });
+  $('bankInList').addEventListener('keydown', e => {
+    if (!e.target || e.target.id !== 'bkNoteInput') return;
+    if (e.key === 'Enter') { e.preventDefault(); const b = $('bankInList').querySelector('[data-bknsave]'); if (b) b.click(); }
+    else if (e.key === 'Escape') { bankNoteEdit = null; renderBankIn(); }
   });
   $('bankInSum').addEventListener('click', e => {
     if (!e.target.closest('[data-bkshow]')) return;
