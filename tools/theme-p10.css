@@ -234,3 +234,11 @@ html body .status-pill.received,html body #jobHistory select.job-status-select.r
 html body #jobHistory li.jc.st-received::after{background:#111}
 /* เอาเครื่องหมายประกายข้างหัวข้อหน้าออก (เจ้าของว่าแปลก) */
 html body .page-head h1:after{content:none!important;display:none!important}
+
+/* ===== ปุ่มในรายละเอียดงาน: ตารางเรียบ 2 คอลัมน์ ===== */
+html body #jobHistory .jd .jd-acts{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}
+html body #jobHistory .jd .jd-acts .jd-t{min-height:46px!important;font-size:14.5px!important;font-weight:700!important;background:#fff!important;color:var(--ink)!important;border:2px solid var(--ink)!important;border-radius:12px!important;box-shadow:none!important;padding:8px 6px!important;white-space:nowrap}
+html body #jobHistory .jd .jd-acts .jd-t.jd-main{background:var(--lime)!important}
+html body #jobHistory .jd .jd-acts .jd-t:active{transform:scale(.97)}
+html body #jobHistory .jd .jd-wide{background:none!important;border:0!important;border-top:1px dashed rgba(0,0,0,.25)!important;box-shadow:none!important;min-height:40px;font-size:14px!important;font-weight:600!important;color:#555!important;width:100%;margin-top:10px}
+@media(min-width:900px){html body #jobHistory .jd .jd-acts{grid-template-columns:repeat(3,1fr)!important}}
