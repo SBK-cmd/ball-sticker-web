@@ -285,6 +285,7 @@ function bahtText(value) {
   // ใบงานอื่นของลูกค้าคนเดียวกัน (งานส่ง JBS) — แสดงเป็นการ์ดพับได้ในหน้าติดตามเดียวกัน
   // พัสดุของใบงานนี้ถึงลูกค้าแล้ว (iship ขึ้นสำเร็จ) = ใบงานเสร็จสิ้น
   function jobDelivered(j) {
+    if (j && j.status === 'received') return true;   // ร้านกดว่าลูกค้ารับแล้ว (เช่น มารับหน้าร้าน)
     if (!j || !j.trackCode || (j.status || '') !== 'shipped') return false;
     const t = store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(j.trackCode));
     return !!t && t.status === 'delivered';
@@ -1846,7 +1847,7 @@ function bahtText(value) {
     (store.get('bs_bills', []) || []).filter(b => b.date === today).forEach(b => { const k = nm(b.cName); if (k) custs[k] = 1; });
     const jobsToday = jobs.filter(j => j.date === today).length;
     const boxes = (store.get('bs_tracking', []) || []).filter(t => localISO(new Date(t.boxAt || t.savedAt || 0)) === today).length;
-    const open = jobs.filter(j => (j.status || 'pending') !== 'shipped' && j.status !== 'pickup');
+    const open = jobs.filter(j => (j.status || 'pending') !== 'shipped' && j.status !== 'pickup' && j.status !== 'received');
     const cnt = k => open.filter(j => (j.status || 'pending') === k).length;
     const dueToday = open.filter(j => j.due && j.due === today).length, late = open.filter(j => j.due && j.due < today).length;
     const IC = {
@@ -1867,7 +1868,7 @@ function bahtText(value) {
   // แตะช่องสรุป → เปิดรายการที่อยู่เบื้องหลังตัวเลข (แตะใบงานในรายการ = ไปเปิดใบนั้น)
   function openTodayList(kind) {
     const today = todayISO(), jobs = store.get('bs_jobs', []) || [], nm = v => String(v || '').replace(/\s+/g, ' ').trim();
-    const open = jobs.filter(j => (j.status || 'pending') !== 'shipped' && j.status !== 'pickup');
+    const open = jobs.filter(j => (j.status || 'pending') !== 'shipped' && j.status !== 'pickup' && j.status !== 'received');
     const dueKey = j => j.due || '9999-99-99';
     let title = '', rows = '', foot = '';
     const jobRow = j => {
@@ -2104,7 +2105,7 @@ function bahtText(value) {
     const tmrDate = new Date(todayKey + 'T00:00:00'); tmrDate.setDate(tmrDate.getDate() + 1);
     const tmrKey = tmrDate.toISOString().slice(0, 10);
     const jobs = store.get('bs_jobs', [])
-      .filter(j => j.status !== 'shipped' && j.status !== 'pickup' && j.due && j.due <= tmrKey)
+      .filter(j => j.status !== 'shipped' && j.status !== 'pickup' && j.status !== 'received' && j.due && j.due <= tmrKey)
       .sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : 0));
     if (!jobs.length) {
       el.innerHTML = '<p class="empty">ไม่มีงานที่ใกล้ถึงกำหนดส่ง</p>';
@@ -4546,7 +4547,7 @@ function bahtText(value) {
   let currentJobId = null;
   let jobPhotos = [];
   let jobStatus = 'pending';
-  const JOB_STATUS_LABEL = {pending: 'รอทำ', filed: 'ทำไฟล์แล้ว', printed: 'ผลิตแล้ว', shipped: 'จัดส่งแล้ว', pickup: 'รับหน้าร้าน'};
+  const JOB_STATUS_LABEL = {pending: 'รอทำ', filed: 'ทำไฟล์แล้ว', printed: 'ผลิตแล้ว', shipped: 'จัดส่งแล้ว', pickup: 'รับหน้าร้าน', received: 'ลูกค้ารับแล้ว'};
   // ไม่มีสิทธิ์เห็นเงิน (เช่น พนักงาน): ซ่อนช่องบัญชี/ยอดสลิป/คำอธิบายในใบคอนเฟิร์มงาน (ค่าที่บันทึกไว้เดิมยังอยู่ ไม่ถูกลบ)
   if (!canKey) {
     ['fabNewJob', 'jobFormTop'].forEach(id => { const e = $(id); if (e) e.hidden = true; });
@@ -4584,7 +4585,7 @@ function bahtText(value) {
   }
   // เลื่อนสถานะไปข้างหน้าอัตโนมัติ (ไม่ย้อนกลับ): อัปรูปงานเสร็จ → ผลิตแล้ว · สแกนเลขพัสดุ → จัดส่งแล้ว
   function advanceJobStatus(id, to) {
-    const rank = {pending: 0, filed: 1, printed: 2, shipped: 3, pickup: 3};
+    const rank = {pending: 0, filed: 1, printed: 2, shipped: 3, pickup: 3, received: 4};
     const j = store.get('bs_jobs', []).find(x => x.id === id); if (!j) return false;
     if ((rank[to] || 0) <= (rank[j.status || 'pending'] || 0)) return false;
     updateJobStatus(id, to, {silent: true}); return true;
@@ -4867,7 +4868,7 @@ function bahtText(value) {
       '<div class="jc-top">' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '<span class="jc-ph" aria-hidden="true">' + esc((cn || '?').replace(/^(คุณ|นาย|นาง|นางสาว|พี่|น้อง)\s*/, '').charAt(0).toUpperCase()) + '</span>') +
       '<div class="jc-main"><div class="jc-no">' + esc(j.no) + dupTag + '</div><div class="jc-cust">' + esc(cn || 'ไม่ระบุชื่อลูกค้า') + '</div></div>' +
       '<select class="job-status-select status-pill ' + st + (jobDelivered(j) ? ' rcvd' : '') + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +   // ขนส่งแจ้งถึงลูกค้าแล้ว → ป้าย "รับแล้ว ✓" (ค่าสถานะยังเป็น shipped)
-        Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + ((k === 'shipped' && jobDelivered(j)) ? 'รับแล้ว ✓' : JOB_STATUS_LABEL[k]) + '</option>').join('') +
+        Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + ((k === 'received' || (k === 'shipped' && st === 'shipped' && jobDelivered(j))) ? 'รับแล้ว ✓' : JOB_STATUS_LABEL[k]) + '</option>').join('') +
       '</select></div>' +
       jobCardDetail(j) +
       (chips ? '<div class="jc-chips">' + chips + '</div>' : '') +
