@@ -2441,6 +2441,69 @@ html body .bnav{background:transparent!important;border:0!important;box-shadow:n
 html body .bnav::after{background:var(--cream)!important;border:2.5px solid var(--ink)!important;border-bottom:0!important;border-radius:26px 26px 0 0!important;box-shadow:0 -4px 0 var(--ink)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 html body .bell-panel{border:2px solid var(--ink)!important;border-radius:20px!important;box-shadow:4px 4px 0 var(--ink)!important}
 html body .fab-newjob *,html body .fab-newjob:before,html body .fab-newjob:after{color:var(--ink)!important;-webkit-text-fill-color:var(--ink)!important;background-color:transparent}
+
+/* ===== DESKTOP ≥900px — จัดเลย์เอาต์ใหม่ (ui-ux-pro-max: container-width, font-scale 16px, target 44px, focus ring, hover feedback) ===== */
+@media (min-width:900px){
+  html body{font-size:16px;line-height:1.55}
+  html body .wrap{padding:0 40px 56px 292px!important;max-width:none!important}
+  html body main{max-width:1240px;margin:0 auto}
+  /* sidebar */
+  html body header.top{width:260px!important;padding:24px 18px 20px 20px!important;gap:6px!important;overflow-x:hidden}
+  html body header.top .brand{padding:0 4px 18px!important}
+  html body header.top .brand b{font-size:19px}
+  html body header.top .brand small{font-size:13px}
+  html body .sidebar-cta{width:calc(100% - 4px);min-height:48px;font-size:16px!important;margin-bottom:16px!important}
+  html body header.top .tabs button,html body header.top .tabs a{width:calc(100% - 4px)!important;min-height:44px;font-size:15.5px!important;padding:10px 14px!important;transition:transform .15s ease,box-shadow .15s ease,background .15s ease;cursor:pointer}
+  html body header.top .tabs button:hover,html body header.top .tabs a:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink)!important;background:#fffde0!important}
+  html body header.top .tabs button[aria-selected="true"]:hover{background:#161616!important}
+  html body header.top .tab-trigger{font-size:12.5px!important;border:0!important;background:transparent!important;box-shadow:none!important;letter-spacing:.08em;padding:14px 6px 4px!important;width:100%!important;min-height:0!important}
+  html body header.top .tab-trigger:hover{transform:none;box-shadow:none!important;background:transparent!important}
+  html body header.top .tabs svg{width:20px;height:20px;flex:none}
+  html body header.top .user-chip{margin-top:auto!important}
+  html body :is(button,a,summary,input,select,textarea,[tabindex]):focus-visible{outline:3px solid #161616!important;outline-offset:3px!important;box-shadow:0 0 0 6px #fff36b!important}
+  /* หัวเรื่อง + แถบสรุป */
+  html body .page-head{margin:30px 0 18px}
+  html body .page-head h1{font-size:34px}
+  html body .tdy{margin-bottom:22px;padding:16px 24px}
+  html body .tdy .tdy-t,html body .tdy b{font-size:26px}
+  html body .tdy small,html body .tdy span{font-size:13.5px}
+  /* การ์ดทั่วไป */
+  html body .card{padding:26px 28px!important;margin-bottom:24px}
+  html body .card h2{font-size:22px!important;margin-bottom:12px}
+  html body .hint,html body .card p.hint,html body label.f>span,html body .f>span{font-size:14.5px}
+  html body .in,html body select,html body input[type=text],html body input[type=tel],html body input[type=number],html body input[type=search]{min-height:46px;font-size:16px}
+  html body .btn{min-height:44px;font-size:15.5px;padding:10px 18px;cursor:pointer;transition:transform .12s,box-shadow .12s}
+  html body .btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)!important}
+  html body .btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)!important}
+  /* รายการงาน/ราคาส่ง/พัสดุ → กริดการ์ด 2–3 คอลัมน์ ไม่ยืดเต็มจอ */
+  html body :is(#jobHistory,#trackHistory,#wholesaleHistory)>ul{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:20px;align-items:start;margin:0;padding:0;list-style:none}
+  html body :is(#jobHistory,#trackHistory,#wholesaleHistory)>.wh-sweep{margin-bottom:18px;font-size:15px}
+  html body .jc{padding:18px 20px!important;transition:transform .15s ease,box-shadow .15s ease;margin:0!important}
+  html body .jc:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink)!important}
+  html body .jc .jc-no{font-size:13.5px;letter-spacing:.02em}
+  html body .jc .jc-cust{font-size:18px;font-weight:800;line-height:1.3;overflow:visible;white-space:normal;overflow-wrap:anywhere}
+  html body .jc .jc-ph{width:52px;height:52px;flex:none}
+  html body .jc .jc-amt,html body .jc .jc-det-amt{font-size:20px;font-variant-numeric:tabular-nums}
+  html body .jc-chips{gap:8px;flex-wrap:wrap}
+  html body .jc-chip{font-size:13.5px;padding:4px 11px;min-height:28px;white-space:normal}
+  html body .status-pill{font-size:13.5px!important;min-height:36px}
+  html body .jc-act{gap:10px}
+  html body .jc .jc-b{min-height:44px;font-size:15px!important;cursor:pointer}
+  html body .jc .jc-b:hover{background:#fffde0!important}
+  html body .jc .jc-b.main:hover{background:#e3ff5a!important}
+  /* ช่องค้นหา ไม่ให้สั้นกว่าเนื้อหา */
+  html body #jobSearch,html body :is(#jobHistory,#trackHistory,#wholesaleHistory) input[type=search]{max-width:420px}
+  /* ตัวสลับกราฟเข้า/ออก (toggle) ให้ขนาดพอดี */
+  html body .theme-toggle,html body .acd-wrap .acd-seg{flex:none}
+  html body .kp{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  html body .ci{padding:14px 16px}
+  html body .ci b,html body .ci .v{font-size:22px}
+  html body .ci small,html body .ci span{font-size:13.5px}
+  html body .acd-card{padding:22px 24px!important}
+  html body .acd-wrap{gap:24px}
+  html body .bil-row,html body .bankin-list li{font-size:15px}
+}
+@media (min-width:900px) and (prefers-reduced-motion:reduce){html body *{transition:none!important}}
 </style>
 </head>
 <body>
@@ -2511,7 +2574,7 @@ html body .fab-newjob *,html body .fab-newjob:before,html body .fab-newjob:after
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v82</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v82 · พรีวิว</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
@@ -3891,7 +3954,7 @@ html body .fab-newjob *,html body .fab-newjob:before,html body .fab-newjob:after
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=777a18d667",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=777a18d667",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
