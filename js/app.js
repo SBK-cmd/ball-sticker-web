@@ -4847,6 +4847,7 @@ function bahtText(value) {
       (j.trackCode && j.status === 'shipped' ? '<button class="btn small jd-t" data-act="sendtrk" type="button">📤 ส่งเลขพัสดุ</button>' : '') +
       '</div>' +
       '<input type="file" accept="image/*" hidden data-scanjob="' + esc(j.id) + '">' +
+      '<div class="jd-man"><input class="txt" type="text" data-mancode placeholder="หรือพิมพ์เลขพัสดุเอง เช่น TH09028M5NDY0F" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="เลขพัสดุ"><button type="button" class="btn small jd-t" data-act="mancode">บันทึกเลข</button></div>' +
       (j.trackCode ? '<div class="jd-trk">📦 เลขพัสดุ' + (Array.isArray(j.recvMore) && j.recvMore.length ? ' (กล่องที่ 1)' : '') + ': <b>' + esc(j.trackCode) + '</b></div>' : '') +
       (Array.isArray(j.recvMore) && j.recvMore.some(r => !String(r.code || '').trim() && String((r.name || '') + (r.addr || '')).trim()) ? '<div class="jd-trk"><small>มีกล่องที่ยังไม่มีเลขพัสดุ — กดสแกนต่อได้เลย ระบบใส่ให้กล่องถัดไป</small></div>' : '') +
       ((isSuper && (j.jName || '').trim() && (j.items || []).some(i => (i.name || '').trim())) ? '<button class="jd-wide" data-act="tobill" type="button">🧾 ใส่ใน' + (j.wholesale ? 'ใบราคาส่ง' : 'บิล') + 'ที่ยังไม่จ่าย · ' + esc(String(j.jName).trim()) + '</button>' : '') +
@@ -6072,7 +6073,7 @@ function bahtText(value) {
      เก็บที่ bs_designs ซิงก์คลาวด์คอลเลกชัน 'designs' · โน้ต = {text, photos[], approved[] (รูปที่ติ๊กใช้), sentAt}
      รูปอัปโหลดขึ้น Cloudinary ก่อนบันทึกเสมอ (กันเอกสารเกินลิมิต) */
   const DS_KEY = 'bs_designs';
-  let dsSel = null, dsQ = '', dsFilt = 'all', dsBusy = false, dsSaveT = null;
+  let dsSel = null, dsQ = '', dsBusy = false, dsSaveT = null;
   const dsNewPh = [];
   // รุ่นทดลองเก่าเก็บเป็นเธรด (posts[]) → รวมเป็นโน้ตเดียว
   const dsNorm = d => (d && d.posts && !('text' in d)) ? Object.assign({}, d, {text: (d.posts[0] || {}).text || '', photos: [].concat(...d.posts.map(p => p.photos || []))}) : d;
@@ -6097,7 +6098,6 @@ function bahtText(value) {
     const t = String(d.text || '').split('\n').map(x => x.trim()).find(Boolean) || 'โน้ตงานออกแบบ';
     return t.length > 42 ? t.slice(0, 42) + '…' : t;
   }
-  const dsState = d => d.sentAt ? ['sent', 'ส่งใบคอนเฟิร์มแล้ว'] : ['wip', 'กำลังทำ'];
   function dsPhotoThumbs(el, arr) {
     el.innerHTML = arr.map((src, i) => '<div class="ds-th"><img src="' + src + '" alt="รูปที่แนบ"><button type="button" data-rmph="' + i + '" aria-label="เอารูปออก">✕</button></div>').join('');
   }
@@ -6133,19 +6133,15 @@ function bahtText(value) {
     dsPut(Object.assign({}, cur, {photos: (cur.photos || []).concat(urls)})); renderDesign(); toast('เพิ่มรูปแล้ว');
   }
   function renderDsFeed() {
-    const chips = [['all', 'ทั้งหมด'], ['wip', 'กำลังทำ'], ['sent', 'ส่งแล้ว']];
-    $('dsChips').innerHTML = chips.map(c => '<button type="button" data-dsfilt="' + c[0] + '"' + (dsFilt === c[0] ? ' class="on"' : '') + '>' + c[1] + '</button>').join('');
     const q = dsQ.trim().toLowerCase();
     const list = dsAll().slice().sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))
-      .filter(d => dsFilt === 'all' || dsState(d)[0] === dsFilt)
       .filter(d => !q || String(d.text || '').toLowerCase().includes(q));
     if (!list.length) { $('dsFeed').innerHTML = '<p class="hint" style="text-align:center;padding:24px 0">' + (dsAll().length ? 'ไม่พบโน้ตที่ตรงเงื่อนไข' : 'ยังไม่มีโน้ต จดงานแรกด้านบนได้เลย') + '</p>'; return; }
     $('dsFeed').innerHTML = list.map(d => {
-      const st = dsState(d), ph = ((d.approved && d.approved.length) ? d.approved : (d.photos || [])).slice(0, 4);
+      const ph = (d.photos || []).slice(0, 4);
       const rest = String(d.text || '').split('\n').map(x => x.trim()).filter(Boolean).slice(1).join('\n');
       return '<article class="ds-card" data-ds="' + esc(d.id) + '"><header><span class="ds-av">' + esc((dsTitle(d).charAt(0) || '?').toUpperCase()) + '</span>' +
-        '<div><b>' + esc(dsTitle(d)) + '</b><small>' + esc(d.by || '') + ' · ' + esc(dsAgo(d.updatedAt || d.createdAt)) + '</small></div>' +
-        '<span class="ds-st ' + st[0] + '">' + st[1] + '</span></header>' +
+        '<div><b>' + esc(dsTitle(d)) + '</b><small>' + esc(d.by || '') + ' · ' + esc(dsAgo(d.updatedAt || d.createdAt)) + '</small></div></header>' +
         (rest ? '<p class="ds-tx">' + esc(rest) + '</p>' : '') +
         (d.addr ? '<p class="ds-tx ds-ad">📍 ' + esc(d.addr) + '</p>' : '') +
         (ph.length ? '<div class="ds-imgs' + (ph.length === 1 ? ' one' : '') + '">' + ph.map(u => '<img loading="lazy" src="' + esc(dsThumb(u, 500)) + '" alt="รูปในโน้ต">').join('') + '</div>' : '') +
@@ -6154,18 +6150,14 @@ function bahtText(value) {
   }
   function renderDsThread() {
     const d = dsById(dsSel); if (!d) return;
-    const st = dsState(d), ap = d.approved || [], ph = d.photos || [];
+    const ph = d.photos || [];
     $('dsTTitle').textContent = dsTitle(d);
-    $('dsThread').innerHTML = '<div class="ds-hero"><span class="ds-st ' + st[0] + '">' + st[1] + '</span>' +
-      (canKey ? '<button type="button" class="ds-btn ds-main" data-dsact="toconfirm">📋 ไปคอนเฟิร์มงาน →</button>' : '') +
-      '<small>ชื่อ / เบอร์ / ที่อยู่ / รายละเอียด ดึงจากโน้ตกับช่องที่อยู่ให้ · รูปที่แนบไปใบคอนเฟิร์ม: ' + (ap.length ? 'เฉพาะรูปที่ติ๊กไว้ (' + ap.length + ')' : 'ทุกรูป (ถ้าจะเลือกเฉพาะบางรูป กด “ใช้รูปนี้” ใต้รูป)') + '</small></div>' +
+    $('dsThread').innerHTML =
       '<div class="ds-post"><div class="ds-ptx"><textarea id="dsEditTxt" rows="7" placeholder="พิมพ์โน้ตงาน…">' + esc(d.text || '') + '</textarea>' +
       '<textarea id="dsEditAddr" class="ds-addr" rows="2" placeholder="ที่อยู่จัดส่ง (ถ้ามี)">' + esc(d.addr || '') + '</textarea></div>' +
       (ph.length ? '<div class="ds-pimgs">' + ph.map((u, i) => {
-        const on = ap.indexOf(u) >= 0;
         return '<figure><img loading="lazy" src="' + esc(dsThumb(u, 900)) + '" data-zoom="' + esc(u) + '" alt="รูปในโน้ต">' +
-          '<div class="ds-row2"><button type="button" class="ds-ok' + (on ? ' on' : '') + '" data-ok="' + esc(u) + '">' + (on ? '✓ ใช้รูปนี้ (กดยกเลิก)' : '✓ ใช้รูปนี้') + '</button>' +
-          '<button type="button" class="ds-ok ds-rm" data-rmphoto="' + i + '" aria-label="ลบรูปนี้">✕ ลบ</button></div></figure>';
+          '<div class="ds-row2"><button type="button" class="ds-ok ds-rm" data-rmphoto="' + i + '" aria-label="ลบรูปนี้">✕ ลบรูปนี้</button></div></figure>';
       }).join('') + '</div>' : '') +
       '<div class="ds-cbar"><label class="ds-btn">📷 เพิ่มรูป<input type="file" accept="image/*" multiple hidden data-dsadd></label></div></div>';
   }
@@ -6174,19 +6166,6 @@ function bahtText(value) {
     if (dsSel && !dsById(dsSel)) dsSel = null;
     $('dsListView').hidden = !!dsSel; $('dsThreadView').hidden = !dsSel;
     if (dsSel) { const ae = document.activeElement; if (!(ae && (ae.id === 'dsEditTxt' || ae.id === 'dsEditAddr'))) renderDsThread(); } else renderDsFeed();
-  }
-  function dsToConfirm(d) {
-    if (!canKey) { toast('ไม่มีสิทธิ์สร้างใบคอนเฟิร์ม'); return; }
-    const photos = ((d.approved || []).length ? d.approved : (d.photos || [])).slice();
-    showTab('confirm'); newJob();
-    jobPhotos = photos; renderJobPhotos();
-    $('jPaste').value = [d.text, d.addr].filter(Boolean).join('\n');
-    if ($('jPaste').value) $('jSplit').click();
-    if (d.addr && !$('jAddr').value.trim()) $('jAddr').value = d.addr;
-    renderJob();
-    if (window.innerWidth < 900) openJobModal(); else window.scrollTo({top: 0, behavior: 'smooth'});
-    dsPut(Object.assign({}, d, {sentAt: Date.now()}));
-    toast('ส่งไปใบคอนเฟิร์มแล้ว ตรวจชื่อ เบอร์ ที่อยู่ อีกครั้งก่อนบันทึก');
   }
   function dsZoom(u) {
     const o = document.createElement('div'); o.className = 'ds-lb'; o.innerHTML = '<img alt="" src="' + esc(u) + '">';
@@ -6206,15 +6185,7 @@ function bahtText(value) {
       const t = e.target;
       const rm = t.closest('[data-rmph]');
       if (rm) { dsNewPh.splice(+rm.dataset.rmph, 1); dsPhotoThumbs($('dsNewPh'), dsNewPh); return; }
-      const fl = t.closest('[data-dsfilt]'); if (fl) { dsFilt = fl.dataset.dsfilt; renderDsFeed(); return; }
       const z = t.closest('[data-zoom]'); if (z) { dsZoom(z.dataset.zoom); return; }
-      const ok = t.closest('[data-ok]');
-      if (ok) {
-        const d = dsById(dsSel); if (!d) return;
-        const u = ok.dataset.ok, ap = (d.approved || []).slice(), i = ap.indexOf(u);
-        if (i >= 0) ap.splice(i, 1); else ap.push(u);
-        dsPut(Object.assign({}, d, {approved: ap})); renderDesign(); return;
-      }
       const rp = t.closest('[data-rmphoto]');
       if (rp) {
         const d = dsById(dsSel); if (!d || !confirm('ลบรูปนี้ออกจากโน้ต?')) return;
@@ -6226,8 +6197,7 @@ function bahtText(value) {
       const act = b.dataset.dsact, d = dsById(dsSel);
       if (act === 'back') { dsSel = null; renderDesign(); return; }
       if (!d) return;
-      if (act === 'toconfirm') { clearTimeout(dsSaveT); const ta = $('dsEditTxt'), ad = $('dsEditAddr'); const cur = ta ? Object.assign({}, d, {text: ta.value, addr: ad ? ad.value.trim() : d.addr}) : d; dsToConfirm(cur); }
-      else if (act === 'deldesign') {
+      if (act === 'deldesign') {
         if (!confirm('ลบโน้ตนี้ทั้งหมด (รวมรูป)?')) return;
         store.set(DS_KEY, (store.get(DS_KEY, []) || []).filter(x => x.id !== d.id)); cloudDelete('designs', d.id); dsSel = null; renderDesign(); toast('ลบแล้ว');
       }
@@ -6875,6 +6845,13 @@ function bahtText(value) {
     if (btn.dataset.act === 'closejd') { jobOpenIds[id] = false; renderJobHistory(); return; }
     if (btn.dataset.act === 'view') { jobOpenIds[id] = !jobOpenIds[id]; renderJobHistory(); return; }
     const list = store.get('bs_jobs', []);
+    if (btn.dataset.act === 'mancode') {
+      const mi = btn.closest('li').querySelector('input[data-mancode]');
+      const code = String((mi && mi.value) || '').replace(/\s+/g, '').toUpperCase();
+      if (!/^[A-Z0-9-]{8,}$/.test(code)) { toast('เลขพัสดุไม่ถูกต้อง (ตัวอักษร/ตัวเลข อย่างน้อย 8 ตัว)'); if (mi) mi.focus(); return; }
+      applyJobScan(id, code, '');
+      return;
+    }
     if (btn.dataset.act === 'livescan') {
       const sjInp = btn.closest('li').querySelector('input[data-scanjob]');
       openLiveScan({title: 'สแกนเลขพัสดุ · ' + ((list.find(x => x.id === id) || {}).no || ''),
