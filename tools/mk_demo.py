@@ -21,6 +21,6 @@ def uri(path, mime, size=None):
     return 'data:%s;base64,%s' % (mime, base64.b64encode(open(path, 'rb').read()).decode())
 h = h.replace('logo-160-transparent.png', uri(R + '/logo-160-transparent.png', 'image/png', (200, 200)))
 h = h.replace('logo-160.webp', uri(R + '/logo-160.webp', 'image/webp'))
-tpl = open(R + '/tools/iphone-frame.tpl.html', encoding='utf8').read()
+tpl = open(R + '/tools/' + os.environ.get('BS_FRAME', 'iphone-frame.tpl.html'), encoding='utf8').read()
 open(out, 'w', encoding='utf8').write(tpl.replace('__APPSRC__', h.replace('</script', '<\\/script')))
 print('wrote', out, os.path.getsize(out) // 1024, 'KB')

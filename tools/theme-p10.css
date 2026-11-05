@@ -1,0 +1,76 @@
+/* p10 "Maximalism" — เขียวมะนาว เส้นขอบหนา เงาแข็ง มุมโค้งใหญ่ ลายเส้นการ์ตูน (แรงบันดาลใจจากสไตล์ maximalism ที่เจ้าของร้านส่งมา — ไม่ได้ก๊อปงานของใคร) */
+:root,:root[data-theme],:root[data-theme="dark"]{--ink:#161616;--navy:#161616;--muted:#4f5043;--line:#161616;--field-line:#161616;--yline:#161616;--ytint:#f4fbb8;--shadow-1:3px 3px 0 #161616;--shadow-2:4px 4px 0 #161616;--r-card:22px;--r-field:14px;--lime:#cdf03a;--cream:#fbf8ea;--sky:#bfe9ff;--pink:#ffc9e8;--lav:#dcd2ff;--surface:#fbf8ea;--bg:#cdf03a;--field:#fff;color-scheme:light}
+html,html body{background:var(--lime)!important;background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160' fill='none' stroke='%23161616' stroke-opacity='.13' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M24 28v10M19 33h10'/%3E%3Cpath d='M112 120c6-10 12 10 18 0s12 10 18 0'/%3E%3Cpath d='M120 30c-6-8-16 0-9 8l9 9 9-9c7-8-3-16-9-8z'/%3E%3Ccircle cx='40' cy='118' r='5'/%3E%3Cpath d='M78 70l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z'/%3E%3C/svg%3E")!important;background-attachment:fixed!important;color:var(--ink)!important;font-weight:500}
+/* หัว */
+html body header.top{background:transparent!important;border:0!important;box-shadow:none!important}
+html body header.top .brand b{font-weight:800;letter-spacing:.06em}
+html body .bver{background:#161616!important;color:var(--lime)!important;border-radius:999px}
+html body .page-head h1,html body .card h2,html body h1,html body h2,html body h3{font-weight:800!important;letter-spacing:-.01em;color:var(--ink)!important}
+html body .page-head h1{font-size:30px;line-height:1.15;display:inline;background:linear-gradient(transparent 62%,#fff36b 62% 92%,transparent 92%);padding:0 4px}
+html body .page-head h1:after{content:"";display:inline-block;width:26px;height:26px;margin-left:8px;vertical-align:-3px;background:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23161616' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M12 2v6M12 16v6M2 12h6M16 12h6M5 5l4 4M15 15l4 4M19 5l-4 4M9 15l-4 4'/%3E%3C/svg%3E") center/contain no-repeat}
+/* การ์ด */
+html body .card,html body .dash-stat-card,html body .lock-card,html body .tdy,html body .jc,html body li.jc,html body .owed-row,html body .dash-cat-item{background:var(--cream)!important;border:2px solid var(--ink)!important;border-radius:22px!important;box-shadow:4px 4px 0 var(--ink)!important;color:var(--ink)!important}
+html body .tdy{background:#161616!important;color:#fff!important;position:relative;overflow:hidden}
+html body .tdy *{color:inherit}
+html body .tdy .tdy-t,html body .tdy b{color:var(--lime)!important}
+html body .tdy .tdy-head h2,html body .tdy .tdy-head h3,html body .tdy h2{color:#fff!important}
+html body .fab-newjob svg,html body .fab-newjob svg *{stroke:var(--ink)!important;color:var(--ink)!important}
+html body .fab-newjob{color:var(--ink)!important}
+html body .jc.st-pending{border-left:2px solid var(--ink)!important}
+html body .jc:nth-child(3n+2){background:#eaf8ff!important}
+html body .jc:nth-child(3n+3){background:#fff0f8!important}
+html body .jc .jc-ph{border:2px solid var(--ink)!important;border-radius:16px!important;box-shadow:2px 2px 0 var(--ink)}
+html body .jc .jc-no{font-weight:800}
+html body .jc-chip{background:#fff!important;border:1.5px solid var(--ink)!important;border-radius:999px!important;color:var(--ink)!important;font-weight:600}
+html body .jc-chip.money{background:var(--lime)!important}
+html body .jc-chip.warn{background:#ffe27a!important}
+html body .jc-chip.tg{background:var(--sky)!important}
+html body .status-pill{border:2px solid var(--ink)!important;border-radius:999px!important;font-weight:800!important;color:var(--ink)!important;background:#ffe27a!important;box-shadow:2px 2px 0 var(--ink)}
+html body .status-pill.billdone,html body .status-pill.shipped,html body .status-pill.done{background:var(--lime)!important}
+html body .status-pill.filed{background:var(--sky)!important}
+html body .status-pill.printed{background:var(--lav)!important}
+html body .status-pill.pending{background:var(--pink)!important}
+/* ช่องกรอก */
+html body .in,html body select,html body .txt,html body textarea,html body input[type=text],html body input[type=tel],html body input[type=number],html body input[type=date],html body input[type=search]{background:#fff!important;border:2px solid var(--ink)!important;border-radius:14px!important;min-height:50px;font-weight:600;box-shadow:none!important;color:var(--ink)!important}
+html body .in:focus-within,html body select:focus-visible,html body .txt:focus-visible,html body textarea:focus-visible{box-shadow:3px 3px 0 var(--ink)!important;background:#fffde0!important}
+html body .in input,html body .in select{border:0!important;background:transparent!important;box-shadow:none!important}
+html body label.f>span,html body .f>span{font-weight:800!important;color:var(--ink)!important}
+/* ปุ่ม */
+html body .btn,html body .jc-b,html body button.btn{background:#fff!important;color:var(--ink)!important;border:2px solid var(--ink)!important;border-radius:14px!important;box-shadow:3px 3px 0 var(--ink)!important;font-weight:800!important;min-height:48px;transition:transform .08s,box-shadow .08s}
+html body .btn:active,html body .jc-b:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)!important}
+html body .btn.primary,html body .btn.good,html body .jc-b.main{background:var(--lime)!important}
+html body .btn.dark{background:#161616!important;color:var(--lime)!important}
+html body .btn.danger,html body .btn.bad{background:#ffb4a8!important}
+html body .fold{border:2px solid var(--ink)!important;border-radius:18px!important;background:#fff!important;box-shadow:3px 3px 0 var(--ink)}
+html body .fold>summary{font-weight:800}
+/* แท็บ / เมนู */
+html body .tabs button,html body .tab-trigger{border:2px solid var(--ink)!important;border-radius:999px!important;background:#fff!important;color:var(--ink)!important;font-weight:800;box-shadow:2px 2px 0 var(--ink)}
+html body .tabs button[aria-selected="true"],html body .tab-group.has-active .tab-trigger{background:#161616!important;color:var(--lime)!important}
+html body .bnav{background:var(--cream)!important;border:2px solid var(--ink)!important;border-bottom:0!important;border-radius:26px 26px 0 0!important;box-shadow:0 -4px 0 var(--ink)!important}
+html body .btab{color:var(--ink)!important;font-weight:800}
+html body .btab[aria-selected="true"],html body .btab.on,html body .btab.active{color:var(--ink)!important}
+html body .btab[aria-selected="true"] svg,html body .btab.on svg,html body .btab.active svg{background:var(--lime);border:2px solid var(--ink);border-radius:14px;padding:5px;box-sizing:content-box;box-shadow:2px 2px 0 var(--ink)}
+html body .btab-fab .btab-fab-circle{background:var(--lime)!important;border:2.5px solid var(--ink)!important;box-shadow:4px 4px 0 var(--ink)!important;color:var(--ink)!important}
+html body .btab-fab .btab-fab-circle svg{color:var(--ink)!important;stroke:var(--ink)!important}
+html body .fab-newjob{background:var(--lime)!important;color:var(--ink)!important;border:2.5px solid var(--ink)!important;border-radius:999px!important;box-shadow:4px 4px 0 var(--ink)!important;font-weight:800!important}
+/* ลายเส้นการ์ตูนมุมการ์ด */
+html body .card:before{content:"";position:absolute}
+html body .card{position:relative}
+html body #panel-wholesale .card:after,html body .dash-stat-card:after{content:"";position:absolute;right:12px;top:10px;width:22px;height:22px;opacity:.9;background:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23161616' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21s-7-4.6-9-9.2C1.8 8.3 4 5 7 5c2 0 3.5 1.2 5 3 1.5-1.8 3-3 5-3 3 0 5.200 3.300 4 6.800-2 4.600-9 9.200-9 9.200z'/%3E%3C/svg%3E") center/contain no-repeat;pointer-events:none}
+html body hr,html body .hint{color:var(--muted)}
+html body ::selection{background:#fff36b;color:#161616}
+
+/* การ์ดที่สร้างจาก JS */
+html body .acd-card,html body .dash-tile,html body .dash-cat-card,html body .dash-rev-card,html body .ov-card,html body .price-card,html body .shopcard,html body .chat-card,html body .scan-card,html body .warn-tile,html body .blue-tile,html body .acc-sum,html body .bankin-sum{border:2px solid var(--ink)!important;border-radius:22px!important;box-shadow:4px 4px 0 var(--ink)!important}
+html body .dash-tile,html body .dash-cat-card,html body .ci{background:#fff!important;border:2px solid var(--ink)!important;border-radius:16px!important;box-shadow:3px 3px 0 var(--ink)!important}
+html body .kp,html body .acd-wrap,html body .acd-mb{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important}
+html body .kp{gap:10px}
+html body .ci{padding:10px 12px}
+html body .acd-seg,html body .acd-seg button{border-radius:999px!important}
+html body .acd-seg{background:var(--cream)!important;border:2px solid var(--ink)!important;padding:3px}
+html body .acd-seg button{font-weight:800;color:var(--ink)!important}
+html body .acd-seg button[aria-selected="true"],html body .acd-seg button.on{background:var(--lime)!important;border:2px solid var(--ink)!important;box-shadow:2px 2px 0 var(--ink)}
+html body .bnav{background:transparent!important;border:0!important;box-shadow:none!important}
+html body .bnav::after{background:var(--cream)!important;border:2.5px solid var(--ink)!important;border-bottom:0!important;border-radius:26px 26px 0 0!important;box-shadow:0 -4px 0 var(--ink)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html body .bell-panel{border:2px solid var(--ink)!important;border-radius:20px!important;box-shadow:4px 4px 0 var(--ink)!important}
+html body .fab-newjob *,html body .fab-newjob:before,html body .fab-newjob:after{color:var(--ink)!important;-webkit-text-fill-color:var(--ink)!important;background-color:transparent}

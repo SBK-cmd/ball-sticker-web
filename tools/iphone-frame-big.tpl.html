@@ -1,0 +1,45 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>iPhone — Ball Sticker (เดโมใช้งานได้)</title>
+<style>
+*{box-sizing:border-box;margin:0}html,body{height:100%}
+body{background:#eef0f4;font-family:'IBM Plex Sans Thai','Prompt',system-ui,sans-serif;color:#1b1b2f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:10px;overflow:hidden}
+#slot{position:relative}
+.phone{position:absolute;left:0;top:0;width:452px;height:954px;transform-origin:0 0;padding:11px;background:#15151b;border-radius:58px;box-shadow:0 0 0 2px #3a3a44,0 0 0 5px #0d0d12,0 30px 60px -20px rgba(0,0,0,.55)}
+.phone:before,.phone:after{content:"";position:absolute;width:3px;background:#2b2b34;border-radius:2px}
+.phone:before{left:-5px;top:19%;height:7%;box-shadow:0 52px 0 #2b2b34,0 104px 0 #2b2b34}
+.phone:after{right:-5px;top:27%;height:12%}
+.screen{position:relative;width:430px;height:932px;border-radius:47px;overflow:hidden;background:#fff}
+.sb{position:absolute;left:0;right:0;top:0;height:44px;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:6px 34px 0;font-size:15px;font-weight:600;background:#cdf03a;color:#111}
+.sb svg{height:12px}
+.isl{position:absolute;z-index:4;left:50%;top:11px;transform:translateX(-50%);width:118px;height:34px;background:#000;border-radius:99px}
+iframe{position:absolute;left:0;top:44px;width:430px;height:878px;border:0;background:#fff}
+.home{position:absolute;z-index:4;left:50%;bottom:8px;transform:translateX(-50%);width:134px;height:5px;border-radius:99px;background:#111;opacity:.85;pointer-events:none}
+.bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
+.bar button,.bar a{border:0;border-radius:999px;padding:8px 15px;font:inherit;font-size:13.5px;background:#fff;color:#1b1b2f;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.1);text-decoration:none}
+.bar .on{background:#ffc300;font-weight:600}
+.note{font-size:12.5px;color:#5d5d70;text-align:center;max-width:380px;line-height:1.5}
+</style></head><body>
+<div id="slot"><div class="phone" id="phone"><div class="screen"><div class="isl"></div>
+<div class="sb"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><svg viewBox="0 0 18 11" fill="#111"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="10" y="2.5" width="3" height="8.5" rx="1"/><rect x="15" y="0" width="3" height="11" rx="1"/></svg><svg viewBox="0 0 26 12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="#111" opacity=".5"/><rect x="2" y="2" width="17" height="8" rx="2" fill="#111"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="#111" opacity=".5"/></svg></span></div>
+<iframe id="f" title="Ball Sticker" allow="camera; microphone; clipboard-write; web-share"></iframe><div class="home"></div></div></div></div>
+<div class="bar"><button id="b1" class="on">เดโมเจ้าของ</button><button id="b2">เดโมพนักงาน</button><button id="rl">รีเซ็ต</button></div>
+<p class="note">โหมดเดโม: กดใช้ได้จริงในกรอบนี้ ใช้ข้อมูลตัวอย่าง ไม่ได้เชื่อมกับข้อมูลจริงของร้าน และข้อมูลที่กรอกจะหายเมื่อกดรีเซ็ต</p>
+<script type="text/plain" id="appsrc">__APPSRC__</script>
+<script>
+const SRC=document.getElementById('appsrc').textContent.replace(/<\\\/script/g,'</script');
+function mkp(c,w,h){const k=document.createElement('canvas');k.width=w;k.height=h;const g=k.getContext('2d');g.fillStyle=c;g.fillRect(0,0,w,h);g.fillStyle='#ffc300';g.beginPath();g.arc(w/2,h/2,Math.min(w,h)*.38,0,7);g.fill();g.fillStyle='#1d1d2b';g.beginPath();g.arc(w/2,h/2,Math.min(w,h)*.2,0,7);g.fill();return k.toDataURL('image/jpeg',.8)}
+function seeds(role){
+ const jobs=[{id:'j1',no:'JB261102-001',date:'2026-11-02',due:'2026-11-06',page:'ball',jName:'คุณตัวอย่าง ใจดี',jPhone:'081-234-5678',jAddr:'99 ถนนตัวอย่าง อ.เมือง จ.ตัวอย่าง 10000',account:'กิติพงษ์',slipAmount:650,recv:{name:'สมชาย ใจดี',phone:'082-222-2222',addr:'99 ม.1 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140'},items:[{name:'7cm',qty:140,note:'แบบละ70ชิ้น'}],note:'UV ด้าน',photos:[mkp('#2878dc',500,500),mkp('#dc4646',500,500)],status:'filed',savedAt:2},
+ {id:'j2',no:'JB261101-002',date:'2026-11-01',page:'roll',jName:'ร้านตัวอย่าง',wholesale:true,items:[{name:'พ่อค้าผักหนีเที่ยว 1 ตรม',qty:1,note:''},{name:'หมู่ทัด V2 - 1 ตรม.',qty:1,note:''},{name:'แบบที่ 3',qty:200,note:'ลายขาว'}],photos:[mkp('#3ca064',500,300)],status:'pending',savedAt:1}];
+ const u=role==='staff'?{id:'u2',username:'staff1',name:'พนักงาน (เดโม)',role:'staff'}:{id:'u1',username:'ball',name:'เจ้าของ (เดโม)',role:'owner'};
+ var H=3600000,N=Date.now(),bi=[],bo=[];[['กิติพงษ์',[[1,480,'คุณตัวอย่าง'],[3,1250,'ร้านตัวอย่าง'],[6,320,''],[9,2100,'TN SHOP'],[12,760,'']]],['วันทิม',[[0,91,'โน๊ต'],[2,1189.5,'โน๊ต สติ๊กเกอร์'],[5,400,'PS sticker'],[8,2071.98,'TN SHOP สติ๊กเกอร์'],[11,9.85,'']]]].forEach(function(a){a[1].forEach(function(r,i){bi.push({id:'bi'+a[0]+i,account:a[0],amount:r[1],from:r[2],createdAt:N-r[0]*24*H-3*H,source:'sms'})});bo.push({id:'bo'+a[0]+'1',account:a[0],amount:a[0]=='วันทิม'?640:310,note:a[0]=='วันทิม'?'โฆษณา Facebook':'ค่ากระดาษ',createdAt:N-24*H-H,source:'sms'},{id:'bo'+a[0]+'2',account:a[0],amount:a[0]=='วันทิม'?1500:870,note:a[0]=='วันทิม'?'โฆษณา Facebook':'ค่าไฟ',createdAt:N-4*24*H,source:'sms'})});
+ return {bs_bank_in:JSON.stringify(bi),bs_bank_out:JSON.stringify(bo),bs_bank_balance:JSON.stringify([{id:'bb-k',account:'กิติพงษ์',balance:18452.3,smsTime:N-3*H,updatedAt:N-3*H,source:'sms'},{id:'bb-w',account:'วันทิม',balance:30678.77,smsTime:N-2*H,updatedAt:N-2*H,source:'sms'}]),bs_users:JSON.stringify([u]),bs_session:JSON.stringify({id:u.id}),bs_jobs:JSON.stringify(jobs),bs_wholesale:JSON.stringify([{id:'ww1',ref:'WS-001',date:'2026-10-29',buyerName:'ร้านตัวอย่าง',items:[{name:'สติ๊กเกอร์ส่ง 5cm',qty:500,price:1.5}],discount:0,paid:false,savedAt:Date.now()-86400000*4},{id:'ww2',ref:'WS-002',date:'2026-10-20',buyerName:'ร้านตัวอย่าง',items:[{name:'ฉลากส่ง',qty:300,price:1}],discount:0,paid:true,savedAt:Date.now()-86400000*13}]),bs_bills:JSON.stringify([{id:'bb1',no:'INV2611-001',date:'2026-10-30',cName:'คุณตัวอย่าง ใจดี',cPhone:'081-234-5678',cAddr:'99 ถนนตัวอย่าง',items:[{name:'สติ๊กเกอร์ PVC 5cm',qty:100,price:5}],total:500,paid:false,savedAt:Date.now()-86400000*3},{id:'bb2',no:'INV2611-002',date:'2026-10-25',cName:'ร้านตัวอย่าง',items:[{name:'ฉลากสินค้า',qty:200,price:2}],total:400,paid:false,savedAt:Date.now()-86400000*8},{id:'bb3',no:'INV2611-003',date:'2026-10-31',cName:'ร้านตัวอย่าง',items:[{name:'สติ๊กเกอร์โฮโลแกรม',qty:50,price:8}],total:400,paid:false,savedAt:Date.now()-86400000*2},{id:'bb4',no:'INV2610-009',date:'2026-10-10',cName:'ร้านตัวอย่าง',items:[{name:'ป้าย',qty:1,price:300}],total:300,paid:true,savedAt:Date.now()-86400000*20}]),bs_purchases:JSON.stringify([{id:'p1',date:'2026-10-20',vendor:'ร้านวัสดุตัวอย่าง ABC',vendorTax:'0105500000001',amount:'1070',vat:'70',savedAt:Date.now()-86400000*12},{id:'p2',date:'2026-10-28',vendor:'ร้านหมึกพิมพ์ตัวอย่าง',vendorTax:'',amount:'535',vat:'35',savedAt:Date.now()-86400000*4},{id:'p3',date:'2026-10-30',vendor:'ร้านวัสดุตัวอย่าง ABC',vendorTax:'0105500000001',amount:'214',vat:'14',savedAt:Date.now()-86400000*2}]),bs_tracking:JSON.stringify([{id:'t1',code:'TH09028M5NDY0F',carrier:'Flash Express',customer:'คุณตัวอย่าง ใจดี',message:'',status:'transit',savedAt:Date.now()-3600000,ishipStatusName:'In Transit'},{id:'t2',code:'TH77001ABCDE1X',carrier:'Flash Express',customer:'ร้านตัวอย่าง',message:'',status:'transit',savedAt:Date.now()-7200000}])};
+}
+function shim(role){const s=seeds(role);return '<script>(function(){var d='+JSON.stringify(s).replace(/</g,'\\u003c')+';function mk(i){var m=Object.assign({},i);return{getItem:function(k){return k in m?m[k]:null},setItem:function(k,v){m[k]=String(v)},removeItem:function(k){delete m[k]},clear:function(){m={}},key:function(i){return Object.keys(m)[i]||null},get length(){return Object.keys(m).length}}}try{Object.defineProperty(window,"localStorage",{value:mk(d),configurable:true});Object.defineProperty(window,"sessionStorage",{value:mk({}),configurable:true})}catch(e){}})();<\/script>'}
+let role='owner';
+const f=document.getElementById('f'),phone=document.getElementById('phone'),slot=document.getElementById('slot');
+function fit(){const s=Math.min((innerWidth-20)/452,(innerHeight-120)/954,1.6);phone.style.transform='scale('+s+')';slot.style.width=452*s+'px';slot.style.height=954*s+'px'}
+function load(r){role=r;f.srcdoc=SRC.replace(/<head[^>]*>/,function(m){return m+shim(r)});b1.classList.toggle('on',r==='owner');b2.classList.toggle('on',r==='staff')}
+b1.onclick=()=>load('owner');b2.onclick=()=>load('staff');rl.onclick=()=>load(role);
+addEventListener('resize',fit);fit();load('owner');
+</script>
+</body></html>
