@@ -9854,8 +9854,8 @@ function bahtText(value) {
         : '<p class="hint">ติ๊กเลือกงานด้านบนก่อน แคปชันจะแต่งให้อัตโนมัติ</p>') + '</div>' +
       '<div class="card ap-card"><h2>3) รูปโพสต์ <small>(แตะรูปเพื่อไม่เอา · ได้สูงสุด 10 รูป)</small></h2>' +
       (photos.length ? '<div class="ap-ph">' + photos.map(u => '<button type="button" class="' + (apOff[u] ? 'off' : '') + '" data-apimg="' + esc(u) + '"><img src="' + esc(u) + '" alt="รูปงานเสร็จ" loading="lazy"></button>').join('') + '</div>' : '<p class="hint">ยังไม่มีรูป</p>') +
-      '<div class="ap-btns"><button class="btn primary" data-apa="save" type="button"' + (on.length ? '' : ' disabled') + '>💾 บันทึกรูป (' + on.length + ')</button><a class="btn" href="https://business.facebook.com/" target="_blank" rel="noopener">เปิด Meta Business Suite</a></div>' +
-      '<p class="hint" style="margin:10px 0 0">ในมือถือ: กดบันทึกรูป → คัดลอกแคปชัน → เปิด Facebook สร้างโพสต์ วางแคปชันแล้วเลือกรูป</p></div>' +
+      '<div class="ap-btns"><button class="btn primary" data-apa="save" type="button"' + (on.length ? '' : ' disabled') + '>💾 บันทึกลงเครื่อง (' + on.length + ')</button><button class="btn" data-apa="share" type="button"' + (on.length ? '' : ' disabled') + '>📤 แชร์รูป</button><a class="btn" href="https://business.facebook.com/" target="_blank" rel="noopener">เปิด Meta Business Suite</a></div>' +
+      '<p class="hint" style="margin:10px 0 0">ในมือถือ: กดบันทึกลงเครื่อง → คัดลอกแคปชัน → เปิด Facebook สร้างโพสต์ วางแคปชันแล้วเลือกรูปจากอัลบั้ม (หรือกดแชร์รูปแล้วเลือกแอป Facebook / Business Suite)</p></div>' +
       '<div class="card ap-card"><h2>4) โพสต์เสร็จแล้ว</h2><button class="btn good" data-apa="done" type="button"' + (sel.length ? '' : ' disabled') + '>✅ โพสต์แล้ว (เอางานเหล่านี้ออกจากคิว)</button></div>' +
       '<details class="card ap-card"><summary><b>ตั้งค่าข้อความท้ายโพสต์</b></summary><label class="f" style="margin-top:10px"><span>ข้อความท้ายโพสต์ (ช่องทางติดต่อ)</span><textarea class="txt" id="apFooter" rows="5">' + esc(cfg.footer) + '</textarea></label><div class="ap-btns"><button class="btn small" data-apa="footer" type="button">บันทึกข้อความท้าย</button><button class="btn small" data-apa="footerdef" type="button">ใช้ค่าเริ่มต้น</button></div></details>' +
       (cfg.history.length ? '<details class="card ap-card"><summary><b>ประวัติโพสต์ล่าสุด (' + cfg.history.length + ')</b></summary><ul class="ap-hist">' + cfg.history.slice(0, 10).map(h => '<li><small>' + esc(new Date(h.at).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + ' · ' + h.n + ' งาน</small><div>' + esc(String(h.text || '').split('\n')[0]) + '</div></li>').join('') + '</ul></details>' : '');
@@ -9865,18 +9865,21 @@ function bahtText(value) {
     list[i].postOk = !!v; store.set('bs_jobs', list); cloudSave('jobs', list[i]);
     renderAutopost();
   }
-  async function apSavePhotos() {
+  async function apSavePhotos(share) {
     const sel = apSelected(), urls = []; sel.forEach(j => apPhotos(j).forEach(u => { if (!apOff[u]) urls.push(u); }));
     const use = urls.slice(0, 10); if (!use.length) return;
     try {
       const files = [];
       for (let i = 0; i < use.length; i++) { const blob = await (await fetch(use[i])).blob(); files.push(new File([blob], 'โพสต์-' + (i + 1) + '.jpg', {type: blob.type || 'image/jpeg'})); }
-      if (PHONE_SHARE && navigator.canShare && navigator.canShare({files})) {
-        try { await navigator.share({files, title: 'รูปโพสต์'}); toast('เลือก “บันทึกรูปภาพ” หรือแชร์ไป Facebook ได้เลย'); return; }
-        catch (e) { if (e && e.name === 'AbortError') return; }
+      if (share) {   // ปุ่ม "แชร์" เท่านั้นที่เปิดหน้าแชร์ของมือถือ (ปุ่มบันทึกดาวน์โหลดลงเครื่องตรงๆ)
+        if (navigator.canShare && navigator.canShare({files})) {
+          try { await navigator.share({files, title: 'รูปโพสต์'}); return; }
+          catch (e) { if (e && e.name === 'AbortError') return; }
+        }
+        toast('เครื่องนี้แชร์รูปตรงๆ ไม่ได้ ใช้ปุ่มบันทึกลงเครื่องแทน'); return;
       }
-      files.forEach((f, i) => setTimeout(() => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }, i * 350));
-      toast('กำลังบันทึกรูป ' + files.length + ' รูปลงเครื่อง');
+      files.forEach((f, i) => setTimeout(() => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }, i * 600));
+      toast('กำลังบันทึกรูป ' + files.length + ' รูปลงเครื่อง (ดูในโฟลเดอร์ ดาวน์โหลด / อัลบั้ม) ถ้ามือถือถาม “อนุญาตดาวน์โหลดหลายไฟล์” ให้กดอนุญาต');
     } catch (err) { toast('บันทึกรูปไม่สำเร็จ: ' + ((err && err.message) || err)); }
   }
   (function apWire() {
@@ -9895,7 +9898,8 @@ function bahtText(value) {
         apSeed = (apSeed * 48271 + Date.now()) % 2147483647;
         const sel = apSelected(); if (!sel.length) return;
         const r = apCompose(sel); const c = apCfg(); c.lastIntro = r.intro; apSave(c); apCaption = r.text; apSig = sel.map(j => j.id).join(','); renderAutopost();
-      } else if (a === 'save') { apSavePhotos(); }
+      } else if (a === 'save') { apSavePhotos(false); }
+      else if (a === 'share') { apSavePhotos(true); }
       else if (a === 'done') {
         const sel = apSelected(); if (!sel.length) return;
         if (!confirm('ยืนยันว่าโพสต์ ' + sel.length + ' งานนี้แล้ว? งานเหล่านี้จะหายจากคิว')) return;
