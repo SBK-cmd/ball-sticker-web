@@ -1886,6 +1886,20 @@ function bahtText(value) {
   setTimeout(screenStatsTick, 15000);
   setInterval(screenStatsTick, 60000);
 
+  // กล่องที่ส่งวันนี้ = พัสดุที่บันทึกวันนี้ + พัสดุของใบงานที่ตั้ง "จัดส่งแล้ว" วันนี้ (นับเลขพัสดุไม่ซ้ำ ไม่ต้องรอให้มีรายการในหน้าพัสดุ)
+  function boxesTodayList(today, jobs) {
+    const seen = new Set(), out = [];
+    (store.get('bs_tracking', []) || []).filter(t => localISO(new Date(t.boxAt || t.savedAt || 0)) === today)
+      .sort((a, b) => (b.boxAt || b.savedAt || 0) - (a.boxAt || a.savedAt || 0))
+      .forEach(t => { const k = normCode(t.code); if (k && !seen.has(k)) { seen.add(k); out.push({code: t.code, t, job: null}); } });
+    jobs.filter(j => j.status === 'shipped' && (j.shippedAt ? localISO(new Date(j.shippedAt)) === today : j.date === today)).forEach(j => {
+      [j.trackCode].concat(Array.isArray(j.recvMore) ? j.recvMore.map(r => r && r.code) : []).forEach(c => {
+        const k = normCode(c); if (k && !seen.has(k)) { seen.add(k); out.push({code: String(c).trim(), t: null, job: j}); }
+      });
+    });
+    return out;
+  }
+
   function renderTodayJobs() {
     const boxes_ = document.querySelectorAll('.tdy'); if (!boxes_.length) return;
     const today = todayISO(), jobs = store.get('bs_jobs', []) || [];
@@ -1894,7 +1908,7 @@ function bahtText(value) {
     jobs.filter(j => j.date === today).forEach(j => { const k = nm(j.jName); if (k) custs[k] = 1; });
     (store.get('bs_bills', []) || []).filter(b => b.date === today).forEach(b => { const k = nm(b.cName); if (k) custs[k] = 1; });
     const jobsToday = jobs.filter(j => j.date === today).length;
-    const boxes = (store.get('bs_tracking', []) || []).filter(t => localISO(new Date(t.boxAt || t.savedAt || 0)) === today).length;
+    const boxes = boxesTodayList(today, jobs).length;
     const open = jobs.filter(j => (j.status || 'pending') !== 'shipped' && j.status !== 'pickup' && j.status !== 'received');
     const cnt = k => open.filter(j => (j.status || 'pending') === k).length;
     const dueToday = open.filter(j => j.due && j.due === today).length, late = open.filter(j => j.due && j.due < today).length;
@@ -1932,10 +1946,10 @@ function bahtText(value) {
       rows = L.length ? L.map(c => '<div class="tl-r static col"><b>' + esc(c.n) + '</b><span class="tl-links">' + c.jobs.map(j => '<button type="button" class="tl-lk" data-job="' + esc(j.id) + '">ใบงาน ' + esc(j.no) + ' ›</button>').join('') + (c.bills ? '<button type="button" class="tl-lk" data-goto="bill">บิล ' + c.bills + ' ใบ ›</button>' : '') + '</span></div>').join('') : '<p class="tl-none">วันนี้ยังไม่มีลูกค้า</p>';
     } else if (kind === 'box') {
       title = 'ส่งวันนี้ (กล่อง)';
-      const L = (store.get('bs_tracking', []) || []).filter(t => localISO(new Date(t.boxAt || t.savedAt || 0)) === today).sort((a, b) => (b.boxAt || b.savedAt || 0) - (a.boxAt || a.savedAt || 0));
-      const jobOf = t => jobs.find(j => j.trackCode && normCode(j.trackCode) === normCode(t.code));
-      rows = L.length ? L.map(t => { const j = jobOf(t), who = nm(t.customer) || (j ? nm(j.jName) : ''); return '<button type="button" class="tl-r" ' + (j ? 'data-job="' + esc(j.id) + '"' : 'data-goto="track"') + '><span class="tl-m1"><b>' + esc(t.code || '') + '</b><span>' + esc(who || 'ยังไม่ผูกลูกค้า') + '</span><small>' + esc(t.carrier || '') + (j ? ' · ใบงาน ' + esc(j.no) : ' · ดูในหน้าติดตาม') + '</small></span><span class="tl-go">›</span></button>'; }).join('') : '<p class="tl-none">ยังไม่มีกล่องที่บันทึกวันนี้</p>';
-      foot = 'นับจากเลขพัสดุที่สแกน/บันทึกวันนี้';
+      const L = boxesTodayList(today, jobs);
+      const jobOf = x => x.job || jobs.find(j => j.trackCode && normCode(j.trackCode) === normCode(x.code));
+      rows = L.length ? L.map(x => { const t = x.t || {}, j = jobOf(x), who = nm(t.customer) || (j ? nm(j.jName) : ''); return '<button type="button" class="tl-r" ' + (j ? 'data-job="' + esc(j.id) + '"' : 'data-goto="track"') + '><span class="tl-m1"><b>' + esc(x.code || '') + '</b><span>' + esc(who || 'ยังไม่ผูกลูกค้า') + '</span><small>' + esc(t.carrier || '') + (j ? ' · ใบงาน ' + esc(j.no) : ' · ดูในหน้าติดตาม') + '</small></span><span class="tl-go">›</span></button>'; }).join('') : '<p class="tl-none">ยังไม่มีกล่องที่บันทึกวันนี้</p>';
+      foot = 'นับจากเลขพัสดุที่บันทึกวันนี้ และใบงานที่ตั้งจัดส่งแล้ววันนี้';
     } else if (kind === 'open') {
       title = 'งานที่เหลือ';
       const L = open.slice().sort((a, b) => dueKey(a).localeCompare(dueKey(b)) || String(a.date || '').localeCompare(String(b.date || '')));
@@ -4672,6 +4686,7 @@ function bahtText(value) {
     if (idx < 0) return;
     const prevStatus = list[idx].status || 'pending';
     list[idx].status = status;
+    if (status === 'shipped' && prevStatus !== 'shipped') list[idx].shippedAt = Date.now();
     store.set('bs_jobs', list);
     cloudSave('jobs', list[idx]);
     if (prevStatus !== status) pushJobNotif(list[idx], status);
@@ -5040,8 +5055,9 @@ function bahtText(value) {
     const prevBankInIds = idx >= 0 ? jobBankIdsOf(list[idx]) : [];
     const rec = Object.assign({id, savedAt: Date.now(), createdBy}, data);
     const prevJobStatus = idx >= 0 ? (list[idx].status || 'pending') : null;
+    if (rec.status === 'shipped' && prevJobStatus !== 'shipped') rec.shippedAt = Date.now();
     // ฟิลด์ที่ไม่ได้อยู่ในฟอร์ม (รูปงานเสร็จ เลขพัสดุ ประวัติใส่ใบราคาส่ง) ต้องไม่หายตอนบันทึกทับ
-    if (idx >= 0) ['donePhotos', 'trackCode', 'whAdded', 'trackToken'].forEach(k => { if (list[idx][k] != null && rec[k] == null) rec[k] = list[idx][k]; });
+    if (idx >= 0) ['donePhotos', 'trackCode', 'whAdded', 'trackToken', 'shippedAt'].forEach(k => { if (list[idx][k] != null && rec[k] == null) rec[k] = list[idx][k]; });
     if (idx >= 0) list[idx] = rec; else list.push(rec);
     const wasEditing = idx >= 0;
     currentJobId = rec.id;
