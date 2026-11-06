@@ -6351,6 +6351,22 @@ function bahtText(value) {
     list[i].postOk = !!v; store.set('bs_jobs', list); cloudSave('jobs', list[i]);
     renderAutopost();
   }
+  // จัดรูปให้เป็นสี่เหลี่ยมจัตุรัสขนาดเท่ากันทุกรูป (1080px พื้นขาว ไม่ตัดขอบชิ้นงาน) เพื่อให้ Facebook เรียงกริดสวยเท่ากัน
+  async function apPrepPhotos(urls) {
+    const out = [];
+    for (let i = 0; i < urls.length; i++) {
+      toast('กำลังจัดรูปให้เท่ากัน ' + (i + 1) + '/' + urls.length + '…');
+      const img = await new Promise((res, rej) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = () => rej(new Error('โหลดรูปไม่ได้')); im.src = urls[i]; });
+      const S = 1080, c = document.createElement('canvas'); c.width = c.height = S;
+      const x = c.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, S, S);
+      const k = Math.max(S / img.naturalWidth, S / img.naturalHeight), w = img.naturalWidth * k, h = img.naturalHeight * k;   // เติมเต็มกรอบ (ตัดขอบส่วนเกินตรงกลาง) ไม่มีขอบขาว
+      x.drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
+      const u = cloudDb ? await uploadPhotoToCloudinary(c.toDataURL('image/jpeg', 0.9)) : null;
+      if (!u) throw new Error('อัปโหลดรูปที่จัดแล้วไม่ได้ (ต้องเชื่อมคลาวด์)');
+      out.push(u);
+    }
+    return out;
+  }
   // ส่งโพสต์ไปที่ Cloudflare Worker (ซึ่งโพสต์เข้าเพจผ่าน Graph API) · ต้องได้ ok:true จึงจะถือว่าโพสต์แล้ว
   async function apSendToWorker() {
     const cfg = apCfg(), sel = apSelected(), urls = []; sel.forEach(j => apPhotos(j).forEach(u => { if (!apOff[u]) urls.push(u); }));
@@ -6358,9 +6374,10 @@ function bahtText(value) {
     if (!cfg.worker || !cfg.key) { toast('ยังไม่ได้ตั้งค่า Worker ในหัวข้อ “ตั้งค่าโพสต์อัตโนมัติ”'); return; }
     if (!sel.length || !photos.length || !text) { toast('เลือกงาน รูป และแคปชันให้ครบก่อน'); return; }
     if (!confirm('ส่งโพสต์นี้เข้าเพจเลยไหม?\n' + sel.length + ' งาน · ' + photos.length + ' รูป')) return;
-    let data = {};
+    let data = {}, ready = [];
+    try { ready = await apPrepPhotos(photos); } catch (e) { toast('เตรียมรูปไม่สำเร็จ: ' + ((e && e.message) || e)); return; }
     try {
-      const res = await fetch(cfg.worker, {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': cfg.key}, body: JSON.stringify({text, photos})});
+      const res = await fetch(cfg.worker, {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': cfg.key}, body: JSON.stringify({text, photos: ready})});
       data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) { toast('โพสต์ไม่สำเร็จ: ' + (data.error || ('HTTP ' + res.status))); return; }
     } catch (e) { toast('เชื่อมต่อ Worker ไม่ได้ เช็กอินเทอร์เน็ตหรือลิงก์'); return; }
