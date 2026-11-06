@@ -83,7 +83,7 @@ function bahtText(value) {
     {title: 'หน้าที่เปิดได้', items: [
       ['calc', 'คำนวณสติ๊กเกอร์'], ['vat', 'คำนวณ VAT'], ['confirm', 'ใบคอนเฟิร์มงาน'], ['track', 'ติดตามพัสดุ'],
       ['wholesale', 'ใบราคาส่ง'], ['quote', 'ใบเสนอราคา'], ['bill', 'ใบเสร็จ / ใบกำกับภาษี'], ['purchase', 'ภาษีซื้อ'],
-      ['dash', 'แดชบอร์ด'], ['report', 'รายงานภาษี']]},
+      ['dash', 'แดชบอร์ด'], ['report', 'รายงานภาษี'], ['autopost', 'โพสต์ออโต้']]},
     {title: 'ข้อมูลสำคัญ', items: [
       ['price', 'ราคาในหน้าคำนวณสติ๊กเกอร์'], ['bank', 'เงินเข้า-ออก · ยอดคงเหลือ · กระดิ่ง'], ['shop', 'แก้ข้อมูลร้าน']]}
   ];
@@ -5126,7 +5126,7 @@ function bahtText(value) {
     const prevJobStatus = idx >= 0 ? (list[idx].status || 'pending') : null;
     if (rec.status === 'shipped' && prevJobStatus !== 'shipped') rec.shippedAt = Date.now();
     // ฟิลด์ที่ไม่ได้อยู่ในฟอร์ม (รูปงานเสร็จ เลขพัสดุ ประวัติใส่ใบราคาส่ง) ต้องไม่หายตอนบันทึกทับ
-    if (idx >= 0) ['donePhotos', 'trackCode', 'whAdded', 'trackToken', 'shippedAt'].forEach(k => { if (list[idx][k] != null && rec[k] == null) rec[k] = list[idx][k]; });
+    if (idx >= 0) ['donePhotos', 'trackCode', 'whAdded', 'trackToken', 'shippedAt', 'postOk', 'postedAt'].forEach(k => { if (list[idx][k] != null && rec[k] == null) rec[k] = list[idx][k]; });
     if (idx >= 0) list[idx] = rec; else list.push(rec);
     const wasEditing = idx >= 0;
     currentJobId = rec.id;
@@ -6254,8 +6254,141 @@ function bahtText(value) {
     catch (e) { return false; }
   };
 
+
+  /* ---------------- โพสต์ออโต้ (Facebook) · แบบกึ่งอัตโนมัติ ----------------
+     เลือกงานที่ติ๊ก "ใช้โพสต์" (ติ๊กเองทีละใบ ไม่ติ๊ก = ไม่โพสต์เด็ดขาด) → รวมรูปงานเสร็จ + แต่งแคปชันจากแม่แบบตามประเภทงาน (ไม่เรียก AI · ไม่ใส่ชื่อลูกค้า)
+     → คัดลอกแคปชัน / บันทึกรูป ไปโพสต์เพจ · กด "โพสต์แล้ว" ใบงานจะหลุดจากคิว
+     โครงโพสต์ = {text, photos[], jobIds[]} เตรียมไว้ให้ต่อกับ Facebook API ภายหลัง
+     ตั้งค่า/ประวัติเก็บที่ bs_autopost · ใบงานเก็บ postOk (เลือกโพสต์) / postedAt (โพสต์แล้ว) */
+  const AP_TYPES = [
+    ['holo', /โฮโล|holo|ฮอโล/i, 'สติ๊กเกอร์โฮโลแกรม', ['#สติ๊กเกอร์โฮโลแกรม']],
+    ['reflect', /สะท้อนแสง|reflect/i, 'สติ๊กเกอร์สะท้อนแสง', ['#สติ๊กเกอร์สะท้อนแสง']],
+    ['uv', /\buv\b|ยูวี/i, 'งานพิมพ์ UV', ['#พิมพ์UV']],
+    ['label', /ฉลาก|label|ม้วน|roll/i, 'สติ๊กเกอร์ฉลาก', ['#ฉลากสินค้า', '#สติ๊กเกอร์ฉลาก']],
+    ['sticker', /[\s\S]*/, 'สติ๊กเกอร์ไดคัท', ['#สติ๊กเกอร์ไดคัท']]
+  ];
+  const AP_INTRO_ONE = ['ส่งงานให้ลูกค้าเรียบร้อยแล้ว 📦', 'อีกหนึ่งงานที่ส่งถึงมือลูกค้าแล้ว 📦', 'งานเสร็จ แพ็คส่งเรียบร้อยครับ 📦', 'ส่งของให้ลูกค้าแล้วนะครับ 📦', 'ส่งงานออกจากร้านเรียบร้อย 📦'];
+  const AP_INTRO_MANY = ['ส่งงานให้ลูกค้าแล้ว {n} งาน 📦', 'สรุปงานที่ส่งออกจากร้าน {n} งาน 📦', '{n} งานนี้ส่งถึงมือลูกค้าเรียบร้อยครับ 📦', 'งานเสร็จ ส่งออกแล้ว {n} งาน 📦', 'อัปเดตงานที่ส่งแล้ว {n} งาน 📦'];
+  const AP_BODY = {
+    sticker: ['สติ๊กเกอร์ไดคัทตามรูปของลูกค้า ตัดตามรูปทรงทุกชิ้น', 'ส่งแบบมา ร้านไดคัทตามรูปให้ครับ', 'สั่งทำสติ๊กเกอร์ตามแบบของตัวเองได้เลย'],
+    label: ['ฉลากสินค้าสั่งทำ ทำตามแบบของแบรนด์ลูกค้า', 'อยากมีฉลากแบรนด์ของตัวเอง ส่งแบบมาได้เลยครับ', 'ฉลากสติ๊กเกอร์ตามสั่ง จำนวนตามที่ต้องการ'],
+    holo: ['สติ๊กเกอร์โฮโลแกรม เงาวิบวับ สะดุดตา', 'งานโฮโลแกรมตามแบบลูกค้า สั่งทำได้ครับ'],
+    reflect: ['สติ๊กเกอร์สะท้อนแสง เห็นเด่นชัดเวลาโดนไฟ', 'งานสะท้อนแสงตามแบบลูกค้า สั่งทำได้ครับ'],
+    uv: ['งานพิมพ์ UV ตามแบบลูกค้า', 'พิมพ์ UV สั่งทำได้ ส่งแบบมาคุยกันได้ครับ']
+  };
+  const AP_THANKS = ['ขอบคุณลูกค้าที่ไว้วางใจให้ร้านบอลสติ๊กเกอร์ทำครับ 🙏', 'ขอบคุณที่สั่งทำกับเราครับ 🙏', 'ขอบคุณลูกค้าที่ไว้ใจครับ 🙏'];
+  const AP_DEF_FOOTER = 'รับทำสติ๊กเกอร์สั่งทำ ไดคัทตามรูป ฉลาก โฮโลแกรม สะท้อนแสง พิมพ์ UV ส่งทั่วประเทศ\n📍 บางระกำ พิษณุโลก\n💬 ทักแชทเพจ หรือ LINE @bk25\n📞 093-535-3555, 096-669-7495';
+  const AP_BASE_TAGS = ['#บอลสติ๊กเกอร์', '#สติ๊กเกอร์สั่งทำ', '#พิษณุโลก'];
+  let apSeed = Date.now() % 2147483647, apCaption = '', apOff = {}, apSig = '';
+  const apCfg = () => Object.assign({footer: AP_DEF_FOOTER, history: [], lastIntro: -1}, store.get('bs_autopost', {}) || {});
+  const apSave = c => store.set('bs_autopost', c);
+  function apRand(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  const apJobText = j => (j.items || []).map(i => (i.name || '') + ' ' + (i.note || '')).join(' ') + ' ' + (j.note || '');
+  const apTypeOf = j => AP_TYPES.find(t => t[1].test(apJobText(j)));
+  const apPhotos = j => (Array.isArray(j.donePhotos) ? j.donePhotos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u));
+  const apJobAt = j => j.shippedAt || j.savedAt || Date.parse(j.date) || 0;
+  function apJobLine(j) {
+    const its = (j.items || []).filter(i => (i.name || '').trim() && !/ค่าส่ง|ค่าขนส่ง|ค่าจัดส่ง/.test(i.name)).slice(0, 2);
+    if (!its.length) return apTypeOf(j)[2];
+    return its.map(i => {
+      let n = String(i.name).trim().replace(/^สตก\.?\s*/i, 'สติ๊กเกอร์ ');
+      const q = num(i.qty);
+      if (q > 1 && !/\d+\s*(ชิ้น|แผ่น|ดวง|ใบ|ม้วน|ชุด|ดวง)/.test(n)) n += ' × ' + fmt(q);
+      return n;
+    }).join(' + ');
+  }
+  function apCompose(jobs) {
+    const cfg = apCfg(), rnd = apRand(apSeed), pick = a => a[Math.floor(rnd() * a.length)];
+    const many = jobs.length > 1, pool = many ? AP_INTRO_MANY : AP_INTRO_ONE;
+    let ii = Math.floor(rnd() * pool.length); if (pool.length > 1 && ii === cfg.lastIntro) ii = (ii + 1) % pool.length;
+    const intro = pool[ii].replace('{n}', jobs.length);
+    const types = []; jobs.forEach(j => { const t = apTypeOf(j); if (types.indexOf(t) < 0) types.push(t); });
+    const lines = jobs.map(j => (many ? '▪️ ' : '✅ ') + apJobLine(j));
+    const body = types.slice(0, 2).map(t => pick(AP_BODY[t[0]]));
+    const tags = AP_BASE_TAGS.slice(); types.forEach(t => t[3].forEach(h => { if (tags.indexOf(h) < 0) tags.push(h); }));
+    return {text: [intro, lines.join('\n'), body.join('\n') + '\n' + pick(AP_THANKS), String(cfg.footer || '').trim(), tags.join(' ')].filter(Boolean).join('\n\n'), intro: ii};
+  }
+  function apCandidates() {
+    const cut = Date.now() - 21 * 86400000;
+    return store.get('bs_jobs', []).filter(j => !j.postedAt && apPhotos(j).length && ['printed', 'shipped', 'completed'].indexOf(j.status) >= 0 && apJobAt(j) >= cut)
+      .sort((a, b) => apJobAt(b) - apJobAt(a));
+  }
+  function apSelected() { return apCandidates().filter(j => j.postOk); }
+  function renderAutopost(regen) {
+    const box = $('apBody'); if (!box) return;
+    const cand = apCandidates(), sel = cand.filter(j => j.postOk), cfg = apCfg();
+    const photos = []; sel.forEach(j => apPhotos(j).forEach(u => photos.push(u)));
+    const on = photos.filter(u => !apOff[u]).slice(0, 10);
+    const sig = sel.map(j => j.id).join(',');
+    if (regen || sig !== apSig) { apSig = sig; apCaption = sel.length ? apCompose(sel).text : ''; }
+    const thumb = j => '<img src="' + esc(apPhotos(j)[0]) + '" alt="" loading="lazy">';
+    box.innerHTML =
+      '<div class="card ap-card"><h2>1) เลือกงานที่จะโพสต์</h2><p class="hint" style="margin:0 0 10px">ขึ้นเฉพาะงานที่มีรูปงานเสร็จ สถานะผลิตแล้วขึ้นไป ย้อนหลัง 21 วัน ติ๊กเองทีละใบ ไม่ติ๊กจะไม่ถูกโพสต์</p>' +
+      (cand.length ? '<ul class="ap-list">' + cand.map(j => '<li><label class="ap-row"><input type="checkbox" data-apj="' + esc(j.id) + '"' + (j.postOk ? ' checked' : '') + '>' + thumb(j) + '<span class="ap-m"><b>' + esc(j.no || '') + ' · ' + esc(apTypeOf(j)[2]) + '</b><small>' + esc(apJobLine(j)) + ' · ' + esc(j.jName || '') + '</small></span><em>' + apPhotos(j).length + ' รูป</em></label></li>').join('') + '</ul>'
+        : '<p class="hint">ยังไม่มีงานที่พร้อมโพสต์ (ต้องมีรูปงานเสร็จในใบงาน)</p>') + '</div>' +
+      '<div class="card ap-card"><h2>2) แคปชัน</h2>' +
+      (sel.length ? '<textarea class="txt ap-ta" id="apText" rows="12" spellcheck="false">' + esc(apCaption) + '</textarea>' +
+        '<div class="ap-btns"><button class="btn primary" data-apa="copy" type="button">📋 คัดลอกแคปชัน</button><button class="btn" data-apa="regen" type="button">🎲 สุ่มแคปชันใหม่</button></div>'
+        : '<p class="hint">ติ๊กเลือกงานด้านบนก่อน แคปชันจะแต่งให้อัตโนมัติ</p>') + '</div>' +
+      '<div class="card ap-card"><h2>3) รูปโพสต์ <small>(แตะรูปเพื่อไม่เอา · ได้สูงสุด 10 รูป)</small></h2>' +
+      (photos.length ? '<div class="ap-ph">' + photos.map(u => '<button type="button" class="' + (apOff[u] ? 'off' : '') + '" data-apimg="' + esc(u) + '"><img src="' + esc(u) + '" alt="รูปงานเสร็จ" loading="lazy"></button>').join('') + '</div>' : '<p class="hint">ยังไม่มีรูป</p>') +
+      '<div class="ap-btns"><button class="btn primary" data-apa="save" type="button"' + (on.length ? '' : ' disabled') + '>💾 บันทึกรูป (' + on.length + ')</button><a class="btn" href="https://business.facebook.com/" target="_blank" rel="noopener">เปิด Meta Business Suite</a></div>' +
+      '<p class="hint" style="margin:10px 0 0">ในมือถือ: กดบันทึกรูป → คัดลอกแคปชัน → เปิด Facebook สร้างโพสต์ วางแคปชันแล้วเลือกรูป</p></div>' +
+      '<div class="card ap-card"><h2>4) โพสต์เสร็จแล้ว</h2><button class="btn good" data-apa="done" type="button"' + (sel.length ? '' : ' disabled') + '>✅ โพสต์แล้ว (เอางานเหล่านี้ออกจากคิว)</button></div>' +
+      '<details class="card ap-card"><summary><b>ตั้งค่าข้อความท้ายโพสต์</b></summary><label class="f" style="margin-top:10px"><span>ข้อความท้ายโพสต์ (ช่องทางติดต่อ)</span><textarea class="txt" id="apFooter" rows="5">' + esc(cfg.footer) + '</textarea></label><div class="ap-btns"><button class="btn small" data-apa="footer" type="button">บันทึกข้อความท้าย</button><button class="btn small" data-apa="footerdef" type="button">ใช้ค่าเริ่มต้น</button></div></details>' +
+      (cfg.history.length ? '<details class="card ap-card"><summary><b>ประวัติโพสต์ล่าสุด (' + cfg.history.length + ')</b></summary><ul class="ap-hist">' + cfg.history.slice(0, 10).map(h => '<li><small>' + esc(new Date(h.at).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + ' · ' + h.n + ' งาน</small><div>' + esc(String(h.text || '').split('\n')[0]) + '</div></li>').join('') + '</ul></details>' : '');
+  }
+  function apToggleJob(id, v) {
+    const list = store.get('bs_jobs', []), i = list.findIndex(x => x.id === id); if (i < 0) return;
+    list[i].postOk = !!v; store.set('bs_jobs', list); cloudSave('jobs', list[i]);
+    renderAutopost();
+  }
+  async function apSavePhotos() {
+    const sel = apSelected(), urls = []; sel.forEach(j => apPhotos(j).forEach(u => { if (!apOff[u]) urls.push(u); }));
+    const use = urls.slice(0, 10); if (!use.length) return;
+    try {
+      const files = [];
+      for (let i = 0; i < use.length; i++) { const blob = await (await fetch(use[i])).blob(); files.push(new File([blob], 'โพสต์-' + (i + 1) + '.jpg', {type: blob.type || 'image/jpeg'})); }
+      if (PHONE_SHARE && navigator.canShare && navigator.canShare({files})) {
+        try { await navigator.share({files, title: 'รูปโพสต์'}); toast('เลือก “บันทึกรูปภาพ” หรือแชร์ไป Facebook ได้เลย'); return; }
+        catch (e) { if (e && e.name === 'AbortError') return; }
+      }
+      files.forEach((f, i) => setTimeout(() => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }, i * 350));
+      toast('กำลังบันทึกรูป ' + files.length + ' รูปลงเครื่อง');
+    } catch (err) { toast('บันทึกรูปไม่สำเร็จ: ' + ((err && err.message) || err)); }
+  }
+  (function apWire() {
+    const root = $('panel-autopost'); if (!root) return;
+    root.addEventListener('change', e => { const c = e.target.closest('input[data-apj]'); if (c) apToggleJob(c.dataset.apj, c.checked); });
+    root.addEventListener('input', e => { if (e.target.id === 'apText') apCaption = e.target.value; });
+    root.addEventListener('click', e => {
+      const im = e.target.closest('button[data-apimg]');
+      if (im) { const u = im.dataset.apimg; if (apOff[u]) delete apOff[u]; else apOff[u] = 1; renderAutopost(); return; }
+      const b = e.target.closest('[data-apa]'); if (!b) return;
+      const a = b.dataset.apa;
+      if (a === 'copy') {
+        const t = ($('apText') || {}).value || apCaption;
+        (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('คัดลอกแคปชันแล้ว'), () => { const ta = $('apText'); if (ta) { ta.focus(); ta.select(); try { document.execCommand('copy'); toast('คัดลอกแคปชันแล้ว'); } catch (er) { toast('คัดลอกไม่ได้ ลองกดค้างที่ข้อความแล้วเลือกคัดลอก'); } } });
+      } else if (a === 'regen') {
+        apSeed = (apSeed * 48271 + Date.now()) % 2147483647;
+        const sel = apSelected(); if (!sel.length) return;
+        const r = apCompose(sel); const c = apCfg(); c.lastIntro = r.intro; apSave(c); apCaption = r.text; apSig = sel.map(j => j.id).join(','); renderAutopost();
+      } else if (a === 'save') { apSavePhotos(); }
+      else if (a === 'done') {
+        const sel = apSelected(); if (!sel.length) return;
+        if (!confirm('ยืนยันว่าโพสต์ ' + sel.length + ' งานนี้แล้ว? งานเหล่านี้จะหายจากคิว')) return;
+        const list = store.get('bs_jobs', []), now = Date.now();
+        sel.forEach(s => { const i = list.findIndex(x => x.id === s.id); if (i >= 0) { list[i].postedAt = now; list[i].postOk = false; cloudSave('jobs', list[i]); } });
+        store.set('bs_jobs', list);
+        const c = apCfg(); c.history = [{at: now, n: sel.length, text: ($('apText') || {}).value || apCaption, jobs: sel.map(x => x.no)}].concat(c.history || []).slice(0, 30); apSave(c);
+        apCaption = ''; apSig = ''; apOff = {}; renderAutopost(); toast('บันทึกว่าโพสต์แล้ว ' + sel.length + ' งาน');
+      } else if (a === 'footer') { const c = apCfg(); c.footer = String(($('apFooter') || {}).value || '').trim(); apSave(c); apSig = '#'; renderAutopost(); toast('บันทึกข้อความท้ายแล้ว'); }
+      else if (a === 'footerdef') { const c = apCfg(); c.footer = AP_DEF_FOOTER; apSave(c); apSig = '#'; renderAutopost(); toast('ใช้ข้อความเริ่มต้นแล้ว'); }
+    });
+  })();
+
   /* ---------------- events ---------------- */
-  const TAX_TABS = ['bill', 'purchase', 'dash', 'report'];
+  const TAX_TABS = ['bill', 'purchase', 'dash', 'report', 'autopost'];
 
   /* ---------------- งานออกแบบ: โน้ต + รูป (แปะรูปแชท/แบบ) → ส่งไปใบคอนเฟิร์มงาน ----------------
      เก็บที่ bs_designs ซิงก์คลาวด์คอลเลกชัน 'designs' · โน้ต = {text, photos[], approved[] (รูปที่ติ๊กใช้), sentAt}
@@ -6416,7 +6549,7 @@ function bahtText(value) {
   function showTab(name) {
     closeJobModal();
     if (!can(name)) name = firstAllowedTab(); // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้ หรือโค้ดส่วนอื่นที่สั่งเปิดหน้า
-    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report'].forEach(n => {
+    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
@@ -6438,6 +6571,7 @@ function bahtText(value) {
     if (name === 'report') renderReport();
     if (name === 'chat') renderChat();
     if (name === 'design') renderDesign();
+    if (name === 'autopost') renderAutopost();
     const activeTab = isTax ? $('taxTrigger') : $('tab-' + name);
     if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
   }
@@ -7645,7 +7779,7 @@ function bahtText(value) {
     });
     if (!can('confirm') && $('sidebarCta')) $('sidebarCta').hidden = true;
     if ($('taxTrigger') && !TAX_TABS.some(can)) { const grp = $('taxTrigger').closest('.tab-group'); if (grp) grp.hidden = true; }
-    if ($('bnavTaxTrigger') && !['wholesale', 'quote', 'vat', 'bill', 'purchase', 'dash', 'report'].some(can)) $('bnavTaxTrigger').hidden = true;
+    if ($('bnavTaxTrigger') && !['wholesale', 'quote', 'vat', 'bill', 'purchase', 'dash', 'report', 'autopost'].some(can)) $('bnavTaxTrigger').hidden = true;
     if (!can('shop') && $('shopSettings')) $('shopSettings').hidden = true;
     if (!can('price') && $('priceCard')) $('priceCard').hidden = true;
     if (!can('calc')) setTimeout(() => showTab(firstAllowedTab()), 0); // หน้าแรกปกติคือ "คำนวณ" ถ้าไม่มีสิทธิ์ให้เปิดหน้าแรกที่เข้าได้
