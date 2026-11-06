@@ -8402,13 +8402,27 @@ function bahtText(value) {
     renderJobEditState();
   }
   let jobOpenIds = {};
+  let jdEdit = null;   // {id, sect} การ์ดในหน้าดูใบงานที่กำลังแก้ไข (cust | recv | items)
   function jobDetailHTML(j) {
     const its = (j.items || []).filter(i => (i.name || '').trim());
+    const ed = sect => '<button class="btn small jd-ed" data-act="jdedit" data-sect="' + sect + '" type="button">✏️ แก้ไข</button>';
+    const editing = sect => !!jdEdit && jdEdit.id === j.id && jdEdit.sect === sect;
+    const fld = (lab, f, v, ta) => '<label class="jd-f"><small>' + lab + '</small>' + (ta ? '<textarea class="txt" data-f="' + f + '" rows="3">' + esc(v || '') + '</textarea>' : '<input class="txt" type="text" data-f="' + f + '" value="' + esc(v || '') + '" autocomplete="off">') + '</label>';
+    const edBtns = '<div class="jd-edbtn"><button class="btn small good" data-act="jdsave" type="button">💾 บันทึก</button> <button class="btn small" data-act="jdcancel" type="button">ยกเลิก</button></div>';
+    const custBlock = editing('cust')
+      ? '<div class="jd-editing"><span class="jd-k">ลูกค้า · กำลังแก้ไข</span>' + fld('ชื่อ', 'jName', j.jName) + fld('เบอร์', 'jPhone', j.jPhone) + fld('ที่อยู่', 'jAddr', j.jAddr, true) + edBtns + '</div>'
+      : '';
+    const recvBlock = editing('recv')
+      ? '<div class="jd-editing"><span class="jd-k">ฝากส่งถึง · กำลังแก้ไข</span>' + fld('ผู้รับ', 'name', (j.recv || {}).name) + fld('เบอร์', 'phone', (j.recv || {}).phone) + fld('ที่อยู่', 'addr', (j.recv || {}).addr, true) + edBtns + '</div>'
+      : '';
+    const itemsBlock = editing('items')
+      ? '<div class="jd-editing"><span class="jd-k">รายการงาน · กำลังแก้ไข</span>' + its.map(i => '<div class="jd-irow" data-idx="' + (j.items || []).indexOf(i) + '"><input class="txt" type="text" data-f="name" value="' + esc(i.name) + '" aria-label="ชื่อรายการ" autocomplete="off"><input class="txt" type="text" inputmode="decimal" data-f="qty" value="' + esc(i.qty == null ? '' : i.qty) + '" aria-label="จำนวน" autocomplete="off">' + (canBank ? '<input class="txt" type="text" inputmode="decimal" data-f="price" value="' + esc(i.price == null ? '' : i.price) + '" placeholder="ราคา/หน่วย" aria-label="ราคาต่อหน่วย" autocomplete="off">' : '') + '</div>').join('') + (its.some(i => (j.whAdded || {})[jobItemKey(i, (j.items || []).indexOf(i))]) ? '<small class="jd-warn">รายการที่ใส่ใบราคาส่งแล้ว ใบราคาส่งจะไม่เปลี่ยนตาม ต้องแก้ในใบราคาส่งเอง</small>' : '') + edBtns + '</div>'
+      : '';
     const cust = [j.jName, j.jPhone ? '<a href="tel:' + esc(String(j.jPhone).replace(/[^\d+]/g, '')) + '">' + esc(j.jPhone) + '</a>' : ''].filter(Boolean).join(' · ');
     return '<div class="jd"><div class="jd-head"><b>' + esc(j.no || 'ใบงาน') + '</b><button class="btn small" data-act="closejd" type="button">✕ ปิด</button></div>' +
-      (cust || j.jAddr ? '<div><span class="jd-k">ลูกค้า</span><span class="jd-cust">' + (cust ? cust : '') + '</span>' + (j.jAddr ? '<br>' + esc(j.jAddr) + '<br><button class="btn small good" data-act="copyaddr" data-who="cust" type="button" style="margin-top:6px">📋 คัดลอกที่อยู่ (ไปคีย์ iship)</button> <button class="btn small" data-act="copyphone" data-who="cust" type="button" style="margin-top:6px">📞 คัดลอกเบอร์</button>' : '') + '</div>' : '') +
-      '<div><span class="jd-k">รายการงาน</span>' + (its.length ? '<ol>' + its.map(i => '<li style="display:list-item;padding:0;border:0;background:none;box-shadow:none;border-radius:0">' + esc(i.name) + ' × ' + esc(fmt(num(i.qty))) + (i.note && i.note.trim() ? ' <small>(' + esc(i.note) + ')</small>' : '') + ((j.whAdded && j.whAdded[jobItemKey(i, (j.items || []).indexOf(i))]) ? ' <small style="color:#0a7a3b;font-weight:700">✔ ใส่ใบราคาส่งแล้ว</small>' : '') + '</li>').join('') + '</ol>' : '—') + '</div>' +
-      (j.recv && (j.recv.name || j.recv.addr) ? '<div><span class="jd-k">ฝากส่งถึง</span><b>' + esc(j.recv.name || '') + '</b>' + (j.recv.phone ? ' · <a href="tel:' + esc(String(j.recv.phone).replace(/[^\d+]/g, '')) + '">' + esc(j.recv.phone) + '</a>' : '') + (j.recv.addr ? '<br>' + esc(j.recv.addr) + '<br><button class="btn small good" data-act="copyaddr" data-who="recv" type="button" style="margin-top:6px">📋 คัดลอกที่อยู่ (ไปคีย์ iship)</button> <button class="btn small" data-act="copyphone" data-who="recv" type="button" style="margin-top:6px">📞 คัดลอกเบอร์</button>' : '') + '</div>' : '') +
+      (editing('cust') ? custBlock : (cust || j.jAddr) ? '<div>' + ed('cust') + '<span class="jd-k">ลูกค้า</span><span class="jd-cust">' + (cust ? cust : '') + '</span>' + (j.jAddr ? '<br>' + esc(j.jAddr) + '<br><button class="btn small good" data-act="copyaddr" data-who="cust" type="button" style="margin-top:6px">📋 คัดลอกที่อยู่ (ไปคีย์ iship)</button> <button class="btn small" data-act="copyphone" data-who="cust" type="button" style="margin-top:6px">📞 คัดลอกเบอร์</button>' : '') + '</div>' : '') +
+      (editing('items') ? itemsBlock : '<div>' + ed('items') + '<span class="jd-k">รายการงาน</span>' + (its.length ? '<ol>' + its.map(i => '<li style="display:list-item;padding:0;border:0;background:none;box-shadow:none;border-radius:0">' + esc(i.name) + ' × ' + esc(fmt(num(i.qty))) + ((canBank && itemLineAmt(i) > 0) ? ' <small style="font-weight:700">· ' + esc(money(itemLineAmt(i))) + ' บาท</small>' : '') + (i.note && i.note.trim() ? ' <small>(' + esc(i.note) + ')</small>' : '') + ((j.whAdded && j.whAdded[jobItemKey(i, (j.items || []).indexOf(i))]) ? ' <small style="color:#0a7a3b;font-weight:700">✔ ใส่ใบราคาส่งแล้ว</small>' : '') + '</li>').join('') + '</ol>' : '—') + '</div>') +
+      (editing('recv') ? recvBlock : (j.recv && (j.recv.name || j.recv.addr)) ? '<div>' + ed('recv') + '<span class="jd-k">ฝากส่งถึง</span><b>' + esc(j.recv.name || '') + '</b>' + (j.recv.phone ? ' · <a href="tel:' + esc(String(j.recv.phone).replace(/[^\d+]/g, '')) + '">' + esc(j.recv.phone) + '</a>' : '') + (j.recv.addr ? '<br>' + esc(j.recv.addr) + '<br><button class="btn small good" data-act="copyaddr" data-who="recv" type="button" style="margin-top:6px">📋 คัดลอกที่อยู่ (ไปคีย์ iship)</button> <button class="btn small" data-act="copyphone" data-who="recv" type="button" style="margin-top:6px">📞 คัดลอกเบอร์</button>' : '') + '</div>' : '') +
       (Array.isArray(j.recvMore) && j.recvMore.length ? j.recvMore.map((r, i) => '<div><span class="jd-k">กล่องที่ ' + (i + 2) + '</span><b>' + esc(r.name || '') + '</b>' + (r.phone ? ' · ' + esc(r.phone) : '') + (r.addr ? '<br>' + esc(r.addr) : '') + (r.note ? '<br><small>' + esc(r.note) + '</small>' : '') + (r.code ? '<br>📦 ' + esc(r.carrier || '') + ' ' + esc(r.code) : '') + '</div>').join('') : '') +
       (j.note && j.note.trim() ? '<div><span class="jd-k">หมายเหตุ</span>' + esc(j.note).replace(/\n/g, '<br>') + '</div>' : '') +
       (j.due ? '<div><span class="jd-k">กำหนดส่ง</span>' + esc(thDate(j.due)) + '</div>' : '') +
@@ -8429,6 +8443,59 @@ function bahtText(value) {
       (Array.isArray(j.recvMore) && j.recvMore.some(r => !String(r.code || '').trim() && String((r.name || '') + (r.addr || '')).trim()) ? '<div class="jd-trk"><small>มีกล่องที่ยังไม่มีเลขพัสดุ — กดสแกนต่อได้เลย ระบบใส่ให้กล่องถัดไป</small></div>' : '') +
       ((isSuper && (j.jName || '').trim() && (j.items || []).some(i => (i.name || '').trim())) ? '<button class="jd-wide" data-act="tobill" type="button">🧾 ใส่ใน' + (j.wholesale ? 'ใบราคาส่ง' : 'บิล') + 'ที่ยังไม่จ่าย · ' + esc(String(j.jName).trim()) + '</button>' : '') +
       '</div>';
+  }
+  // บันทึกการแก้ไขการ์ดในหน้าดูใบงาน (ลูกค้า / ฝากส่งถึง / รายการงาน) แล้วให้ข้อมูลที่เกี่ยวข้องเปลี่ยนตาม:
+  // ใบงาน · รายชื่อลูกค้า · รายการพัสดุที่ผูกเลขพัสดุของใบนี้ (เฉพาะที่ชื่อตรงกับของเดิม) · หน้าติดตามของลูกค้า
+  function saveJdEdit(id, li) {
+    const sect = jdEdit && jdEdit.id === id ? jdEdit.sect : '';
+    const list = store.get('bs_jobs', []), idx = list.findIndex(x => x.id === id);
+    if (!sect || idx < 0 || !li) return;
+    const j = list[idx], prevBankInIds = jobBankIdsOf(j);
+    const oldCust = String(j.jName || '').trim(), oldRecv = String((j.recv || {}).name || '').trim();
+    const val = (root, f) => { const el = root.querySelector('[data-f="' + f + '"]'); return el ? String(el.value).replace(/[ \t]+/g, ' ').trim() : ''; };
+    const root = li.querySelector('.jd-editing'); if (!root) return;
+    if (sect === 'cust') {
+      const nm = val(root, 'jName'); if (!nm) { toast('ใส่ชื่อลูกค้าก่อน'); return; }
+      j.jName = nm; j.jPhone = val(root, 'jPhone'); j.jAddr = String((root.querySelector('[data-f="jAddr"]') || {}).value || '').trim();
+    } else if (sect === 'recv') {
+      j.recv = Object.assign({}, j.recv || {}, {name: val(root, 'name'), phone: val(root, 'phone'), addr: String((root.querySelector('[data-f="addr"]') || {}).value || '').trim()});
+    } else if (sect === 'items') {
+      const rows = Array.from(root.querySelectorAll('.jd-irow')), next = (j.items || []).map(x => Object.assign({}, x)), oldKeys = {}, newKeys = {};
+      for (const r of rows) {
+        const k = +r.dataset.idx, it = next[k]; if (!it) continue;
+        const nm = val(r, 'name'); if (!nm) { toast('ใส่ชื่อรายการให้ครบ'); return; }
+        const q = val(r, 'qty'), pr = val(r, 'price');
+        if (q !== '' && !(num(q) >= 0)) { toast('จำนวนไม่ถูกต้อง'); return; }
+        if (pr !== '' && !(num(pr) >= 0)) { toast('ราคาไม่ถูกต้อง'); return; }
+        oldKeys[k] = jobItemKey(j.items[k], k);
+        it.name = nm; it.qty = q; if (r.querySelector('[data-f="price"]')) it.price = pr;   // ไม่มีสิทธิ์เห็นราคา = ไม่แตะราคาเดิม
+        newKeys[k] = jobItemKey(it, k);
+      }
+      if (j.whAdded) { const wa = Object.assign({}, j.whAdded); Object.keys(oldKeys).forEach(k => { if (oldKeys[k] !== newKeys[k] && wa[oldKeys[k]]) { wa[newKeys[k]] = wa[oldKeys[k]]; delete wa[oldKeys[k]]; } }); j.whAdded = wa; }   // ย้ายป้าย "ใส่ใบราคาส่งแล้ว" ตามชื่อใหม่ ไม่งั้นระบบจะใส่ซ้ำ
+      j.items = next;
+    }
+    j.savedAt = Date.now();
+    store.set('bs_jobs', list); cloudSave('jobs', j);
+    let synced = 0;
+    if (sect === 'cust' || sect === 'recv') {
+      const newCust = String(j.jName || '').trim(), newRecv = String((j.recv || {}).name || '').trim();
+      if (sect === 'cust') upsertCustomer(j.jName, j.jPhone, j.jAddr);
+      const tl = store.get('bs_tracking', []), c1 = normCode(j.trackCode);
+      if (c1) tl.forEach(t => {
+        if (normCode(t.code) !== c1) return;
+        const was = String(t.customer || '').trim();
+        let to = null;
+        if (sect === 'cust' && oldCust && was === oldCust && newCust !== oldCust) to = newCust;
+        if (sect === 'recv' && oldRecv && was === oldRecv && newRecv && newRecv !== oldRecv) to = newRecv;
+        if (to == null) return;
+        t.customer = to; t.message = buildTrackingMessage(t.code, t.carrier, to); cloudSave('tracking', t); synced++;
+      });
+      if (synced) store.set('bs_tracking', tl);
+    }
+    if (sect === 'items') linkBankIn(j, prevBankInIds);
+    try { publicJobMirror(j); } catch (e) {}   // หน้าติดตามของลูกค้า (ชื่อ ผู้รับ รายการ ราคา) อัปเดตตาม
+    jdEdit = null; renderJobHistory(); try { if (isTrackPanelActive()) renderTrackingHistory(); } catch (e) {}
+    toast('บันทึกแล้ว' + (synced ? ' · อัปเดตรายการพัสดุ ' + synced + ' รายการ' : '') + (/^JBS/i.test(String(j.no || '').trim()) ? ' · หน้าติดตามลูกค้าอัปเดตตามแล้ว' : ''));
   }
   function renderJobHistory() {
     try { renderOwedCard(); } catch (e) {}
@@ -10466,8 +10533,11 @@ function bahtText(value) {
       const id = li.dataset.id; jobOpenIds[id] = !jobOpenIds[id]; renderJobHistory(); return;
     }
     const id = btn.closest('li').dataset.id;
-    if (btn.dataset.act === 'closejd') { jobOpenIds[id] = false; renderJobHistory(); return; }
-    if (btn.dataset.act === 'view') { jobOpenIds[id] = !jobOpenIds[id]; renderJobHistory(); return; }
+    if (btn.dataset.act === 'closejd') { jobOpenIds[id] = false; jdEdit = null; renderJobHistory(); return; }
+    if (btn.dataset.act === 'view') { jobOpenIds[id] = !jobOpenIds[id]; jdEdit = null; renderJobHistory(); return; }
+    if (btn.dataset.act === 'jdedit') { jdEdit = {id, sect: btn.dataset.sect}; renderJobHistory(); return; }
+    if (btn.dataset.act === 'jdcancel') { jdEdit = null; renderJobHistory(); return; }
+    if (btn.dataset.act === 'jdsave') { saveJdEdit(id, btn.closest('li')); return; }
     const list = store.get('bs_jobs', []);
     if (btn.dataset.act === 'mancode') {
       const mi = btn.closest('li').querySelector('input[data-mancode]');
