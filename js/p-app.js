@@ -6280,7 +6280,7 @@ function bahtText(value) {
   const AP_DEF_FOOTER = 'รับทำสติ๊กเกอร์สั่งทำ ไดคัทตามรูป ฉลาก โฮโลแกรม สะท้อนแสง พิมพ์ UV ส่งทั่วประเทศ\n📍 บางระกำ พิษณุโลก\n💬 ทักแชทเพจ หรือ LINE @bk25\n📞 093-535-3555, 096-669-7495';
   const AP_BASE_TAGS = ['#บอลสติ๊กเกอร์', '#สติ๊กเกอร์สั่งทำ', '#พิษณุโลก'];
   let apSeed = Date.now() % 2147483647, apCaption = '', apOff = {}, apSig = '';
-  const apCfg = () => Object.assign({footer: AP_DEF_FOOTER, history: [], lastIntro: -1, hook: ''}, store.get('bs_autopost', {}) || {});
+  const apCfg = () => Object.assign({footer: AP_DEF_FOOTER, history: [], lastIntro: -1, worker: '', key: ''}, store.get('bs_autopost', {}) || {});
   const apSave = c => store.set('bs_autopost', c);
   function apRand(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
   const apJobText = j => (j.items || []).map(i => (i.name || '') + ' ' + (i.note || '')).join(' ') + ' ' + (j.note || '');
@@ -6334,41 +6334,42 @@ function bahtText(value) {
       (photos.length ? '<div class="ap-ph">' + photos.map(u => '<button type="button" class="' + (apOff[u] ? 'off' : '') + '" data-apimg="' + esc(u) + '"><img src="' + esc(u) + '" alt="รูปงานเสร็จ" loading="lazy"></button>').join('') + '</div>' : '<p class="hint">ยังไม่มีรูป</p>') +
       '<div class="ap-btns"><button class="btn primary" data-apa="save" type="button"' + (on.length ? '' : ' disabled') + '>💾 บันทึกลงเครื่อง (' + on.length + ')</button><button class="btn" data-apa="share" type="button"' + (on.length ? '' : ' disabled') + '>📤 แชร์รูป</button><a class="btn" href="https://business.facebook.com/" target="_blank" rel="noopener">เปิด Meta Business Suite</a></div>' +
       '<p class="hint" style="margin:10px 0 0">ในมือถือ: กดบันทึกลงเครื่อง → คัดลอกแคปชัน → เปิด Facebook สร้างโพสต์ วางแคปชันแล้วเลือกรูปจากอัลบั้ม (หรือกดแชร์รูปแล้วเลือกแอป Facebook / Business Suite)</p></div>' +
-      '<div class="card ap-card ap-send"><h2>🚀 โพสต์เข้าเพจอัตโนมัติ <small>(ผ่าน Make)</small></h2>' +
-      (cfg.hook ? '<p class="hint" style="margin:0 0 10px">ส่งแคปชันกับรูปที่เลือกไปให้ Make โพสต์เข้าเพจ ไม่ต้องบันทึกรูปหรือวางแคปชันเอง · ' + (on.length ? on.length + ' รูป' : 'ยังไม่มีรูป') + '</p><button class="btn primary" data-apa="send" type="button"' + (sel.length && on.length ? '' : ' disabled') + '>🚀 โพสต์เข้าเพจเลย</button>'
-        : '<p class="hint" style="margin:0">ยังไม่ได้ตั้งลิงก์ Webhook ของ Make ตั้งได้ในหัวข้อ “ตั้งค่าโพสต์อัตโนมัติ” ด้านล่าง ระหว่างนี้ใช้แบบคัดลอก-วางด้านบนได้ตามปกติ</p>') + '</div>' +
+      '<div class="card ap-card ap-send"><h2>🚀 โพสต์เข้าเพจอัตโนมัติ <small>(ผ่าน Worker)</small></h2>' +
+      (cfg.worker && cfg.key ? '<p class="hint" style="margin:0 0 10px">ส่งแคปชันกับรูปที่เลือกไปให้ Worker โพสต์เข้าเพจ ไม่ต้องบันทึกรูปหรือวางแคปชันเอง · ' + (on.length ? on.length + ' รูป' : 'ยังไม่มีรูป') + '</p><button class="btn primary" data-apa="send" type="button"' + (sel.length && on.length ? '' : ' disabled') + '>🚀 โพสต์เข้าเพจเลย</button>'
+        : '<p class="hint" style="margin:0">ยังไม่ได้ตั้งค่า Worker ตั้งได้ในหัวข้อ “ตั้งค่าโพสต์อัตโนมัติ” ด้านล่าง ระหว่างนี้ใช้แบบคัดลอก-วางด้านบนได้ตามปกติ</p>') + '</div>' +
       '<div class="card ap-card"><h2>4) โพสต์เสร็จแล้ว (กรณีโพสต์เอง)</h2><button class="btn good" data-apa="done" type="button"' + (sel.length ? '' : ' disabled') + '>✅ โพสต์แล้ว (เอางานเหล่านี้ออกจากคิว)</button></div>' +
-      '<details class="card ap-card"><summary><b>ตั้งค่าโพสต์อัตโนมัติ (Make)</b>' + (cfg.hook ? ' <small>· ตั้งแล้ว ✓</small>' : '') + '</summary>' +
-      '<label class="f" style="margin-top:10px"><span>ลิงก์ Webhook จาก Make (เป็นความลับ ใครได้ไปก็โพสต์เข้าเพจได้ · เก็บในเครื่องนี้เท่านั้น)</span><input class="txt" id="apHook" type="password" autocomplete="off" placeholder="https://hook.eu2.make.com/…" value="' + esc(cfg.hook || '') + '"></label>' +
-      '<div class="ap-btns"><button class="btn small" data-apa="hooksave" type="button">บันทึกลิงก์</button>' + (cfg.hook ? '<button class="btn small" data-apa="hookdel" type="button">ลบลิงก์</button>' : '') + '</div>' +
-      '<ol class="ap-guide"><li>สมัคร make.com แล้วสร้าง Scenario ใหม่</li><li>เพิ่มโมดูล <b>Webhooks → Custom webhook</b> กด Add ตั้งชื่อแล้วคัดลอกลิงก์มาวางด้านบน กดบันทึก</li><li>ใน Make กด <b>Run once</b> แล้วกลับมากด “โพสต์เข้าเพจเลย” 1 ครั้ง เพื่อให้ Make เรียนรู้ข้อมูลที่ส่ง (<code>text</code> แคปชัน · <code>photos</code> รายการลิงก์รูป · <code>photo1…photo10</code> ลิงก์รูปทีละรูป · <code>jobs</code> เลขใบงาน)</li><li>เพิ่มโมดูล <b>Facebook Pages → Create a Post with Photos</b> เชื่อมเพจบอลสติ๊กเกอร์ พิษณุโลก ใส่ข้อความ = <code>text</code> รูป = ลิงก์รูปจาก Webhook</li><li>เปิดสวิตช์ <b>Immediately as data arrives</b> ของ Scenario</li></ol>' +
-      '<p class="hint">แอปส่งคำสั่งให้ Make แล้วเท่านั้น ไม่เห็นผลตอบกลับ ให้ดูผลที่เพจ (หรือให้ Make แจ้ง LINE ตอนโพสต์เสร็จ) ถ้าโพสต์ไม่ขึ้น กด “คืนเข้าคิว” ในประวัติแล้วลองใหม่</p></details>' +
+      '<details class="card ap-card"><summary><b>ตั้งค่าโพสต์อัตโนมัติ (Worker)</b>' + (cfg.worker && cfg.key ? ' <small>· ตั้งแล้ว ✓</small>' : '') + '</summary>' +
+      '<label class="f" style="margin-top:10px"><span>ลิงก์ Worker (เช่น https://ball-fb-post.xxx.workers.dev)</span><input class="txt" id="apWorker" type="url" autocomplete="off" value="' + esc(cfg.worker || '') + '"></label>' +
+      '<label class="f" style="margin-top:10px"><span>APP_KEY (เก็บในเครื่องนี้เท่านั้น ไม่อยู่ในโค้ด)</span><input class="txt" id="apKey" type="password" autocomplete="new-password" value="' + esc(cfg.key || '') + '"></label>' +
+      '<div class="ap-btns"><button class="btn small" data-apa="workersave" type="button">บันทึกการตั้งค่า</button>' + (cfg.worker ? '<button class="btn small" data-apa="workerdel" type="button">ลบการตั้งค่า</button>' : '') + '</div>' +
+      '<p class="hint">โทเคนเพจอยู่ใน Cloudflare เท่านั้น แอปไม่เก็บโทเคน ถ้าโพสต์ไม่สำเร็จ ระบบจะบอกสาเหตุตอนกด</p></details>' +
       '<details class="card ap-card"><summary><b>ตั้งค่าข้อความท้ายโพสต์</b></summary><label class="f" style="margin-top:10px"><span>ข้อความท้ายโพสต์ (ช่องทางติดต่อ)</span><textarea class="txt" id="apFooter" rows="5">' + esc(cfg.footer) + '</textarea></label><div class="ap-btns"><button class="btn small" data-apa="footer" type="button">บันทึกข้อความท้าย</button><button class="btn small" data-apa="footerdef" type="button">ใช้ค่าเริ่มต้น</button></div></details>' +
-      (cfg.history.length ? '<details class="card ap-card"><summary><b>ประวัติโพสต์ล่าสุด (' + cfg.history.length + ')</b></summary><ul class="ap-hist">' + cfg.history.slice(0, 10).map(h => '<li><small>' + esc(new Date(h.at).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + ' · ' + h.n + ' งาน' + (h.via === 'make' ? ' · ส่งผ่าน Make' : '') + '</small><div>' + esc(String(h.text || '').split('\n')[0]) + '</div>' + (Array.isArray(h.jobIds) && h.jobIds.length && !h.undone ? '<button class="btn small" data-apa="undo" data-ap-at="' + h.at + '" type="button">↩ คืนเข้าคิว</button>' : '') + '</li>').join('') + '</ul></details>' : '');
+      (cfg.history.length ? '<details class="card ap-card"><summary><b>ประวัติโพสต์ล่าสุด (' + cfg.history.length + ')</b></summary><ul class="ap-hist">' + cfg.history.slice(0, 10).map(h => '<li><small>' + esc(new Date(h.at).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + ' · ' + h.n + ' งาน' + (h.via === 'worker' ? ' · ส่งผ่าน Worker' : '') + '</small><div>' + esc(String(h.text || '').split('\n')[0]) + '</div>' + (Array.isArray(h.jobIds) && h.jobIds.length && !h.undone ? '<button class="btn small" data-apa="undo" data-ap-at="' + h.at + '" type="button">↩ คืนเข้าคิว</button>' : '') + '</li>').join('') + '</ul></details>' : '');
   }
   function apToggleJob(id, v) {
     const list = store.get('bs_jobs', []), i = list.findIndex(x => x.id === id); if (i < 0) return;
     list[i].postOk = !!v; store.set('bs_jobs', list); cloudSave('jobs', list[i]);
     renderAutopost();
   }
-  // ส่งโพสต์ไปที่ Webhook ของ Make → Make โพสต์เข้าเพจ (ใช้แอป Facebook ของ Make เอง ร้านไม่ต้องสร้างแอป Meta)
-  async function apSendToMake() {
+  // ส่งโพสต์ไปที่ Cloudflare Worker (ซึ่งโพสต์เข้าเพจผ่าน Graph API) · ต้องได้ ok:true จึงจะถือว่าโพสต์แล้ว
+  async function apSendToWorker() {
     const cfg = apCfg(), sel = apSelected(), urls = []; sel.forEach(j => apPhotos(j).forEach(u => { if (!apOff[u]) urls.push(u); }));
     const photos = urls.slice(0, 10), text = String(($('apText') || {}).value || apCaption || '').trim();
-    if (!cfg.hook) { toast('ยังไม่ได้ตั้งลิงก์ Webhook'); return; }
+    if (!cfg.worker || !cfg.key) { toast('ยังไม่ได้ตั้งค่า Worker ในหัวข้อ “ตั้งค่าโพสต์อัตโนมัติ”'); return; }
     if (!sel.length || !photos.length || !text) { toast('เลือกงาน รูป และแคปชันให้ครบก่อน'); return; }
     if (!confirm('ส่งโพสต์นี้เข้าเพจเลยไหม?\n' + sel.length + ' งาน · ' + photos.length + ' รูป')) return;
-    const body = {text, photos, jobs: sel.map(j => j.no || ''), count: photos.length, sentAt: new Date().toISOString()};
-    photos.forEach((u, i) => { body['photo' + (i + 1)] = u; });
+    let data = {};
     try {
-      await fetch(cfg.hook, {method: 'POST', mode: 'no-cors', headers: {'content-type': 'text/plain;charset=UTF-8'}, body: JSON.stringify(body)});   // no-cors: ส่งออกได้แต่อ่านผลตอบกลับไม่ได้
-    } catch (e) { toast('ส่งไม่สำเร็จ เช็กอินเทอร์เน็ตแล้วลองใหม่'); return; }
+      const res = await fetch(cfg.worker, {method: 'POST', headers: {'content-type': 'application/json', 'x-app-key': cfg.key}, body: JSON.stringify({text, photos})});
+      data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) { toast('โพสต์ไม่สำเร็จ: ' + (data.error || ('HTTP ' + res.status))); return; }
+    } catch (e) { toast('เชื่อมต่อ Worker ไม่ได้ เช็กอินเทอร์เน็ตหรือลิงก์'); return; }
     const list = store.get('bs_jobs', []), now = Date.now();
     sel.forEach(x => { const i = list.findIndex(y => y.id === x.id); if (i >= 0) { list[i].postedAt = now; list[i].postOk = false; cloudSave('jobs', list[i]); } });
     store.set('bs_jobs', list);
-    cfg.history = [{at: now, n: sel.length, text, jobs: sel.map(x => x.no), jobIds: sel.map(x => x.id), via: 'make'}].concat(cfg.history || []).slice(0, 30); apSave(cfg);
+    cfg.history = [{at: now, n: sel.length, text, jobs: sel.map(x => x.no), jobIds: sel.map(x => x.id), via: 'worker', postId: data.id || ''}].concat(cfg.history || []).slice(0, 30); apSave(cfg);
     apCaption = ''; apSig = ''; apOff = {}; renderAutopost();
-    toast('ส่งให้ Make แล้ว · ตรวจที่เพจว่าโพสต์ขึ้นไหม ถ้าไม่ขึ้นกด “คืนเข้าคิว” ในประวัติ');
+    toast('โพสต์เข้าเพจแล้ว');
   }
   async function apSavePhotos(share) {
     const sel = apSelected(), urls = []; sel.forEach(j => apPhotos(j).forEach(u => { if (!apOff[u]) urls.push(u); }));
@@ -6403,12 +6404,14 @@ function bahtText(value) {
         apSeed = (apSeed * 48271 + Date.now()) % 2147483647;
         const sel = apSelected(); if (!sel.length) return;
         const r = apCompose(sel); const c = apCfg(); c.lastIntro = r.intro; apSave(c); apCaption = r.text; apSig = sel.map(j => j.id).join(','); renderAutopost();
-      } else if (a === 'send') { apSendToMake(); }
-      else if (a === 'hooksave') {
-        const v = String(($('apHook') || {}).value || '').trim();
-        if (v && !/^https:\/\/[a-z0-9.-]*make\.com\//i.test(v) && !/^https:\/\/[a-z0-9.-]*integromat\.com\//i.test(v)) { toast('ลิงก์ต้องเป็นลิงก์ Webhook ของ Make (https://hook.….make.com/…)'); return; }
-        const c = apCfg(); c.hook = v; apSave(c); renderAutopost(); toast(v ? 'บันทึกลิงก์ Webhook แล้ว' : 'ล้างลิงก์แล้ว');
-      } else if (a === 'hookdel') { const c = apCfg(); c.hook = ''; apSave(c); renderAutopost(); toast('ลบลิงก์แล้ว'); }
+      } else if (a === 'send') { apSendToWorker(); }
+      else if (a === 'workersave') {
+        const url = String(($('apWorker') || {}).value || '').trim(), key = String(($('apKey') || {}).value || '').trim();
+        if (url && !/^https:\/\/[a-z0-9.-]+\.[a-z]{2,}\//i.test(url)) { toast('ลิงก์ Worker ต้องขึ้นต้นด้วย https://'); return; }
+        if (!!url !== !!key) { toast('ใส่ทั้งลิงก์ Worker และ APP_KEY'); return; }
+        const c = apCfg(); c.worker = url; c.key = key; apSave(c); renderAutopost(); toast(url ? 'บันทึกการตั้งค่าแล้ว (เก็บในเครื่องนี้)' : 'ล้างการตั้งค่าแล้ว');
+      }
+      else if (a === 'workerdel') { const c = apCfg(); c.worker = ''; c.key = ''; apSave(c); renderAutopost(); toast('ลบการตั้งค่าแล้ว'); }
       else if (a === 'undo') {
         const c = apCfg(), h = (c.history || []).find(x => String(x.at) === b.dataset.apAt); if (!h) return;
         const list = store.get('bs_jobs', []);
