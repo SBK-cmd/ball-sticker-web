@@ -5347,6 +5347,34 @@ function bahtText(value) {
     sel.value = months.indexOf(prev) >= 0 ? prev : '';
   }
   /* ---------- สรุปงานวันนี้: ลูกค้า · กล่องที่ส่ง · งานที่เหลือ · งานด่วน (ครบกำหนดวันนี้/เลยกำหนด) ---------- */
+  /* ---------------- ตัวเลขสรุปสำหรับจอเล็กตั้งโต๊ะ (screenStats/today) ----------------
+     แอปคำนวณ 4 ตัวเลข (ไม่มีชื่อ/ที่อยู่ลูกค้า) แล้วเขียนเอกสารเดียว ให้สคริปต์บนคอมที่เสียบจอ Turing อ่านไปวาดภาพ
+     นิยามเดียวกับแดชบอร์ดเดิม: งานค้าง = ยังไม่ shipped/pickup/received · เงินเข้า = bankInAll() (ไม่รวมบัญชีที่ซ่อน)
+     เขียนเฉพาะตอนค่าเปลี่ยน (เทียบกับค่าที่เขียนล่าสุดในเครื่อง) เพื่อไม่กินโควตาเขียน */
+  function screenStatsCalc() {
+    const today = todayISO(), jobs = store.get('bs_jobs', []) || [];
+    const open = jobs.filter(j => (j.status || 'pending') !== 'shipped' && j.status !== 'pickup' && j.status !== 'received');
+    const dueToday = open.filter(j => j.due && j.due === today).length;
+    const late = open.filter(j => j.due && j.due < today).length;
+    const shipping = jobs.filter(j => j.status === 'shipped' && j.trackCode && !jobDelivered(j)).length;
+    const cents = bankInAll().filter(x => localISO(new Date(x.createdAt || 0)) === today).reduce((t, x) => t + Math.round(num(x.amount) * 100), 0);
+    return {date: today, dueToday, late, shipping, moneyToday: cents / 100};
+  }
+  function screenStatsTick() {
+    try {
+      if (!cloudDb || !canBank) return;
+      const v = screenStatsCalc(), sig = JSON.stringify(v);
+      if (localStorage.getItem('bs_screen_sig') === sig) return;
+      (window.__bsAuthReady || Promise.resolve()).then(() => {
+        cloudDb.collection('screenStats').doc('today').set(Object.assign({}, v, {updatedAt: Date.now()}))
+          .then(() => { try { localStorage.setItem('bs_screen_sig', sig); } catch (e) {} })
+          .catch(e => console.error('screenStats save error', e));
+      });
+    } catch (e) { console.error('screenStats', e); }
+  }
+  setTimeout(screenStatsTick, 15000);
+  setInterval(screenStatsTick, 60000);
+
   function renderTodayJobs() {
     const boxes_ = document.querySelectorAll('.tdy'); if (!boxes_.length) return;
     const today = todayISO(), jobs = store.get('bs_jobs', []) || [];

@@ -1,0 +1,6 @@
+{
+  "projectId": "ball-sticker-d95c2",
+  "apiKey": "ใส่ web API key ของโปรเจกต์ (ค่า apiKey ใน firebaseConfig ของแอป)",
+  "outPath": "C:/Users/<ชื่อผู้ใช้>/Pictures/ball-screen/mini-landscape-bg.png",
+  "intervalSec": 30
+}
