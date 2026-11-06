@@ -1856,6 +1856,36 @@ function bahtText(value) {
     sel.value = months.indexOf(prev) >= 0 ? prev : '';
   }
   /* ---------- สรุปงานวันนี้: ลูกค้า · กล่องที่ส่ง · งานที่เหลือ · งานด่วน (ครบกำหนดวันนี้/เลยกำหนด) ---------- */
+  /* ---------------- ตัวเลขสรุปสำหรับจอเล็กตั้งโต๊ะ (screenStats/today) ----------------
+     แอปคำนวณ 4 ตัวเลข (ไม่มีชื่อ/ที่อยู่ลูกค้า) แล้วเขียนเอกสารเดียว ให้สคริปต์บนคอมที่เสียบจอ Turing อ่านไปวาดภาพ
+     นิยามเดียวกับแดชบอร์ดเดิม: งานค้าง = ยังไม่ shipped/pickup/received · เงินเข้า = bankInAll() (ไม่รวมบัญชีที่ซ่อน)
+     เขียนเฉพาะตอนค่าเปลี่ยน (เทียบกับค่าที่เขียนล่าสุดในเครื่อง) เพื่อไม่กินโควตาเขียน */
+  function screenStatsCalc() {
+    const today = todayISO(), jobs = store.get('bs_jobs', []) || [];
+    const open = jobs.filter(j => (j.status || 'pending') !== 'shipped' && j.status !== 'pickup' && j.status !== 'received');
+    const dueToday = open.filter(j => j.due && j.due === today).length;
+    const late = open.filter(j => j.due && j.due < today).length;
+    const shipping = jobs.filter(j => j.status === 'shipped' && j.trackCode && !jobDelivered(j)).length;
+    const cents = bankInAll().filter(x => localISO(new Date(x.createdAt || 0)) === today).reduce((t, x) => t + Math.round(num(x.amount) * 100), 0);
+    return {date: today, dueToday, late, shipping, moneyToday: cents / 100};
+  }
+  let screenStatsFailAt = 0;   // เขียนไม่ผ่าน (เช่น กฎ Firestore ยังไม่เปิด) → รอ 30 นาทีค่อยลองใหม่ ไม่ยิงซ้ำทุกนาที
+  function screenStatsTick() {
+    try {
+      if (!cloudDb || !canBank) return;
+      if (screenStatsFailAt && Date.now() - screenStatsFailAt < 30 * 60000) return;
+      const v = screenStatsCalc(), sig = JSON.stringify(v);
+      if (localStorage.getItem('bs_screen_sig') === sig) return;
+      (window.__bsAuthReady || Promise.resolve()).then(() => {
+        cloudDb.collection('screenStats').doc('today').set(Object.assign({}, v, {updatedAt: Date.now()}))
+          .then(() => { try { localStorage.setItem('bs_screen_sig', sig); } catch (e) {} })
+          .catch(e => { screenStatsFailAt = Date.now(); console.error('screenStats save error', e); });
+      });
+    } catch (e) { console.error('screenStats', e); }
+  }
+  setTimeout(screenStatsTick, 15000);
+  setInterval(screenStatsTick, 60000);
+
   function renderTodayJobs() {
     const boxes_ = document.querySelectorAll('.tdy'); if (!boxes_.length) return;
     const today = todayISO(), jobs = store.get('bs_jobs', []) || [];
@@ -4928,6 +4958,43 @@ function bahtText(value) {
 
     return rvHtml ? '<div class="jc-det">' + rvHtml + '</div>' : '';   // การ์ดโชว์แค่สถานะพัสดุ (รายละเอียดงานอยู่ในปุ่ม เปิดดู)   // การ์ดไม่โชว์ยอดเงิน (ดูในรายละเอียด/บิล)
   }
+  /* ---------------- ลิงก์ติดตามงานให้ลูกค้า: สร้างโทเคน + ข้อความ (ใช้ร่วมกันทั้งปุ่มในใบงานและป๊อปอัปหลังคีย์ใบใหม่) ---------------- */
+  function trackMsgFor(jt, url) {
+    const raw = firstNameOf(jt.jName);
+    const nm = raw ? ((NAME_TITLES.indexOf(raw.split(' ')[0]) >= 0 || /^(คุณ|พี่|น้อง)/.test(raw)) ? raw : 'คุณ' + raw) : '';
+    return nm ? nm + ' ติดตามงาน ' + (jt.no || '') + ' ที่นี่ค่ะ 👇\n' + url
+              : 'ติดตามสถานะงาน ' + (jt.no || '') + ' ของบอลสติ๊กเกอร์ได้ที่นี่ค่ะ 👇\n' + url;
+  }
+  function ensureTrackLink(id) {   // คืน {rec,url} · ใบยังไม่มีโทเคนจะสร้างให้ แล้วซิงก์ขึ้นคลาวด์ (ทำให้หน้าลูกค้าอัปเดตได้)
+    const list = store.get('bs_jobs', []), li = list.findIndex(x => x.id === id); if (li < 0) return null;
+    if (!list[li].trackToken) {
+      const a = new Uint8Array(12); (window.crypto || window.msCrypto).getRandomValues(a);
+      list[li].trackToken = Array.from(a, b => (b % 36).toString(36)).join('') + Date.now().toString(36).slice(-4);
+      store.set('bs_jobs', list);
+    }
+    cloudSave('jobs', list[li]);
+    return {rec: list[li], url: 'https://www.ballsticker.co.th/track.html?t=' + list[li].trackToken};
+  }
+  async function shareTrackMsg(msg) {
+    try { if (PHONE_SHARE && navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือกแชตของลูกค้าส่งได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(msg); toast('คัดลอกข้อความพร้อมลิงก์แล้ว ไปวางส่งให้ลูกค้าได้เลย'); }
+    catch (e) { try { const ta = document.createElement('textarea'); ta.value = msg; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); toast(ok ? 'คัดลอกข้อความพร้อมลิงก์แล้ว' : 'คัดลอกอัตโนมัติไม่ได้'); } catch (e2) { toast('คัดลอกอัตโนมัติไม่ได้'); } }
+  }
+  // หลังคีย์ใบใหม่ที่มีชื่อลูกค้า: ถามว่าจะส่งลิงก์ติดตามให้เลยไหม (แตะครั้งเดียว) — ส่งอัตโนมัติผ่านเพจไม่ได้ (Meta จำกัด) จึงใช้ปุ่มแตะส่ง
+  function askSendTrackLink(rec) {
+    if (!rec || !String(rec.jName || '').trim()) return;
+    const old = document.getElementById('trkAsk'); if (old) old.remove();
+    const box = document.createElement('div'); box.id = 'trkAsk'; box.className = 'trk-ask no-print';
+    box.innerHTML = '<div class="ta-t">ส่งลิงก์ติดตามงานให้ <b>' + esc(firstNameOf(rec.jName)) + '</b> เลยไหม</div><div class="ta-b"><button type="button" class="ta-go" data-ta="go">ส่งลิงก์ให้ลูกค้า</button><button type="button" class="ta-x" data-ta="x">ไว้ทีหลัง</button></div>';
+    box.addEventListener('click', ev => {
+      const b = ev.target.closest('[data-ta]'); if (!b) return;
+      if (b.dataset.ta === 'go') { const r = ensureTrackLink(rec.id); if (r) shareTrackMsg(trackMsgFor(r.rec, r.url)); }
+      box.remove();
+    });
+    document.body.appendChild(box);
+    setTimeout(() => { if (box.isConnected) box.remove(); }, 25000);
+  }
+
   function saveJob() {
     const list = store.get('bs_jobs', []);
     const data = collectJob();
@@ -4958,6 +5025,7 @@ function bahtText(value) {
     setWhCust(rec.jName, !!rec.wholesale);   // จำไว้ว่าลูกค้าคนนี้ราคาส่งหรือไม่
     renderJobHistory(); renderJobEditState(); closeJobModal();
     syncRecordPhotosToCloud('bs_jobs', 'jobs', rec.id, 'photos', renderJobHistory);
+    if (idx < 0) setTimeout(() => askSendTrackLink(rec), 400);
     if (idx < 0) pushJobNotif(rec, 'new'); else if (prevJobStatus !== (rec.status || 'pending')) pushJobNotif(rec, rec.status || 'pending');
     let whMsg = '';
     if (rec.wholesale && can('wholesale')) { const m = autoMergeWholesale(rec.id); if (m) { lastWhMerge = m.doc; renderJobHistory(); whMsg = ' · รวมเข้าใบราคาส่งของ ' + String(rec.jName).trim() + (m.isNew ? ' (เปิดใบใหม่)' : '') + ' ' + m.n + ' รายการ'; } }
@@ -6914,7 +6982,7 @@ function bahtText(value) {
         setTimeout(() => { if (!pop.isConnected) return; const fr = document.createElement('iframe'); fr.title = 'หน้าสถานะงานของลูกค้า'; fr.src = url + '&_=' + Date.now(); fr.addEventListener('load', () => { const l = pop.querySelector('.tp-ld'); if (l) l.remove(); }); pop.querySelector('.tp-box').appendChild(fr); }, 900);   // รอให้ข้อมูลล่าสุดซิงก์ขึ้นหน้าลูกค้าก่อน
         return;
       }
-      const msg = btn.dataset.act === 'copyurl' ? url : 'ติดตามสถานะงาน ' + (jt.no || '') + ' ของบอลสติ๊กเกอร์ได้ที่นี่ค่ะ 👇\n' + url;
+      const msg = btn.dataset.act === 'copyurl' ? url : trackMsgFor(jt, url);
       (async () => {
         try { if (btn.dataset.act === 'tracklink' && PHONE_SHARE && navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือก LINE / ข้อความ ส่งให้ลูกค้าได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
         try { await navigator.clipboard.writeText(msg); toast('คัดลอกลิงก์ติดตามงานแล้ว ไปวางส่งให้ลูกค้าได้เลย'); }
