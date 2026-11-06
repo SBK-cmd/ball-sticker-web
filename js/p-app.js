@@ -6407,7 +6407,7 @@ function bahtText(value) {
       } else if (a === 'send') { apSendToWorker(); }
       else if (a === 'workersave') {
         const url = String(($('apWorker') || {}).value || '').trim(), key = String(($('apKey') || {}).value || '').trim();
-        if (url && !/^https:\/\/[a-z0-9.-]+\.[a-z]{2,}\//i.test(url)) { toast('ลิงก์ Worker ต้องขึ้นต้นด้วย https://'); return; }
+        if (url && !/^https:\/\/[a-z0-9.-]+\.[a-z]{2,}(\/\S*)?$/i.test(url)) { toast('ลิงก์ Worker ต้องขึ้นต้นด้วย https://'); return; }
         if (!!url !== !!key) { toast('ใส่ทั้งลิงก์ Worker และ APP_KEY'); return; }
         const c = apCfg(); c.worker = url; c.key = key; apSave(c); renderAutopost(); toast(url ? 'บันทึกการตั้งค่าแล้ว (เก็บในเครื่องนี้)' : 'ล้างการตั้งค่าแล้ว');
       }
