@@ -31,7 +31,7 @@ function cleanPhotos(list) {
 }
 
 async function graph(env, path, params) {
-  const v = env.GRAPH_VERSION || 'v23.0';
+  const v = env.GRAPH_VERSION || 'v26.0';
   const body = new URLSearchParams({...params, access_token: env.PAGE_TOKEN});
   const res = await fetch(`https://graph.facebook.com/${v}/${path}`, {method: 'POST', body});
   const data = await res.json().catch(() => ({}));

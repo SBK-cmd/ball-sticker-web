@@ -4,7 +4,7 @@ compatibility_date = "2024-09-01"
 
 [vars]
 PAGE_ID = "108503502205863"          # ใส่ Page ID ของเพจบอลสติ๊กเกอร์ พิษณุโลก (ไม่ใช่ลับ)
-GRAPH_VERSION = "v23.0"  # ยังไม่ได้เช็กว่าเวอร์ชันนี้ยังรองรับอยู่ ตรวจก่อนใช้งาน
+GRAPH_VERSION = "v26.0"  # ตรงกับเวอร์ชันใน Graph API Explorer ตอนตั้งค่า
 
 # ค่าลับ ตั้งด้วยคำสั่งนี้ ห้ามใส่ในไฟล์:
 #   npx wrangler secret put PAGE_TOKEN
