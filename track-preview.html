@@ -220,7 +220,7 @@ details.jc>.jb{padding:4px 14px 14px}
     var head = '<summary>' + (o.thumb ? '<img class="jt" src="' + esc(o.thumb) + '" alt="" loading="lazy">' : '') + '<span class="jn"><b>' + esc(o.no) + '</b>' + ((o.date || sub) ? '<small>' + esc([thDate(o.date), sub].filter(Boolean).join(' · ')) + '</small>' : '') + '</span><span class="js' + (k === 4 ? ' rcv' : k === 3 ? ' done' : '') + '">' + esc(pk ? 'พร้อมรับหน้าร้าน' : STEPS[k][1]) + '</span>' +
       '<span class="pb" aria-hidden="true">' + SHORT.map(function (s, n) { return '<i class="' + (n <= k ? 'on' : '') + '"></i>'; }).join('') + '</span></summary>';
     var b = stepper(k, pk);
-    if (o.items && o.items.length) b += '<ul class="it">' + o.items.map(function (i) { return '<li><span>' + esc(i.n) + '</span><b>' + (i.q ? '× ' + esc(i.q) : '') + '</b></li>'; }).join('') + '</ul>';
+    if (o.items && o.items.length) b += '<ul class="it">' + o.items.map(function (i) { return '<li><span>' + esc(i.n) + '</span><b>' + (+i.p > 0 ? fmt(i.p) + ' ฿' : (i.q ? '× ' + esc(i.q) : '')) + '</b></li>'; }).join('') + '</ul>';
     if (o.amt > 0) b += '<div class="row"><span>ยอดเงิน</span><b>' + fmt(o.amt) + ' บาท</b></div>';
     if (o.due && k < 3) b += '<div class="row"><span>กำหนดส่ง</span><b>' + esc(thDate(o.due)) + '</b></div>';
     if (pk) b += pickupBlock(); else if (o.boxes && o.boxes.length) b += '<div class="sec"><h2>📦 ' + (o.boxes.length > 1 ? 'พัสดุ ' + o.boxes.length + ' กล่อง' : 'จัดส่งถึง') + '</h2>' + boxRows(o.boxes, k >= 4) + '</div>';
