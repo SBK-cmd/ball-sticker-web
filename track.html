@@ -96,6 +96,12 @@ details.jc>.jb{padding:4px 14px 14px}
 .sec{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}.sec h2{font-size:14.5px;margin:0 0 8px}
 .bx{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#fafbfc}
 .bxl{display:flex;align-items:center;gap:8px;font-size:15px}.bxl em{font-style:normal;font-size:12px;font-weight:700;background:#111827;color:#fff;border-radius:99px;padding:2px 9px}
+.lbx{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.97);display:flex;flex-direction:column}
+.lbx .lb-sc{flex:1;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;touch-action:pan-x pinch-zoom;scrollbar-width:none}.lbx .lb-sc::-webkit-scrollbar{display:none}
+.lbx .lb-s{flex:0 0 100%;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;padding:64px 10px 56px}
+.lbx .lb-s img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;background:#fff}
+.lbx .lb-x{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;width:48px;height:48px;border-radius:50%;border:0;background:#fff;color:#111;font-size:22px;font-weight:700;line-height:1;box-shadow:0 2px 10px rgba(0,0,0,.45);z-index:2}
+.lbx .lb-n{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom));text-align:center;color:#fff;font-size:14px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.6)}
 .zoom{position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:14px;cursor:zoom-out}.zoom img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;background:#fff}.zoom button{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;border:0;background:#fff;font-size:20px;font-weight:700}
 .pk-a{line-height:1.55;font-size:14.5px;margin-bottom:10px}.pk-a b{display:block;font-size:15.5px}.pk-a small{display:block;color:var(--mut);font-size:12.5px;font-weight:600}.pk-r{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.pk-b{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--ink,#111);font-weight:800;font-size:14px;text-decoration:none}.pk-b.ln{grid-column:1/-1;background:#06c755;border-color:#06c755;color:#fff}
 .bxf{display:flex;align-items:center;gap:8px;font-size:14.5px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed var(--line)}.bxf em{font-style:normal;font-size:12px;font-weight:700;background:#e5e7eb;color:#111827;border-radius:99px;padding:2px 9px}
@@ -260,6 +266,28 @@ details.jc>.jb{padding:4px 14px 14px}
     });
     [].forEach.call(document.querySelectorAll('.copy[data-cp]'), function (c) { c.onclick = function () { try { navigator.clipboard.writeText(c.getAttribute('data-cp')); c.textContent = 'คัดลอกแล้ว'; } catch (e) {} }; });
   }
+  // ดูรูปขยายในหน้าเดียวกัน: เลื่อนซ้าย-ขวาดูรูปอื่นได้ มีปุ่ม ✕ ปิดเสมอ (ปุ่มย้อนกลับของมือถือ/Esc/แตะพื้นหลังก็ปิดได้) — ไม่เปิดแท็บใหม่ จึงไม่ต้องกดลิงก์ใหม่
+  function openLightbox(urls, idx) {
+    var old = document.querySelector('.lbx'); if (old) old.remove();
+    var z = document.createElement('div'); z.className = 'lbx'; z.setAttribute('role', 'dialog'); z.setAttribute('aria-label', 'รูปขยาย');
+    z.innerHTML = '<button type="button" class="lb-x" aria-label="ปิดรูป">✕</button><div class="lb-sc">' + urls.map(function (u, i) { return '<div class="lb-s" data-i="' + i + '"><img alt="รูป ' + (i + 1) + '" src="' + esc(u) + '"></div>'; }).join('') + '</div>' + (urls.length > 1 ? '<div class="lb-n"></div>' : '');
+    document.body.appendChild(z);
+    var sc = z.querySelector('.lb-sc'), n = z.querySelector('.lb-n'), pushed = false, closed = false;
+    function mark() { if (n) n.textContent = (Math.round(sc.scrollLeft / Math.max(1, sc.clientWidth)) + 1) + ' / ' + urls.length; }
+    function close(fromPop) { if (closed) return; closed = true; document.removeEventListener('keydown', onKey); window.removeEventListener('popstate', onPop); z.remove(); if (pushed && !fromPop) { try { history.back(); } catch (e) {} } }
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    function onPop() { close(true); }
+    z.querySelector('.lb-x').addEventListener('click', function (e) { e.stopPropagation(); close(); });
+    z.addEventListener('click', function (e) { if (e.target === z || e.target.classList.contains('lb-s')) close(); });   // แตะพื้นหลังดำ = ปิด (แตะที่รูปไม่ปิด จะได้ซูมนิ้วได้)
+    document.addEventListener('keydown', onKey);
+    try { history.pushState({lbx: 1}, ''); pushed = true; window.addEventListener('popstate', onPop); } catch (e) {}
+    sc.scrollLeft = idx * sc.clientWidth; mark(); sc.addEventListener('scroll', mark, {passive: true});
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('.pr figure > a:first-child'); if (!a) return;
+    var row = a.closest('.pr'), links = [].slice.call(row.querySelectorAll('figure > a:first-child'));
+    e.preventDefault(); openLightbox(links.map(function (x) { return x.getAttribute('href'); }), Math.max(0, links.indexOf(a)));
+  });
   var t = (new URLSearchParams(location.search).get('t') || '').trim();
   if (!/^[a-z0-9]{12,40}$/i.test(t)) { fail('ลิงก์ไม่ถูกต้อง', 'กรุณาเปิดลิงก์ที่ร้านส่งให้ หรือสอบถามร้านทาง LINE'); return; }
   if (typeof firebase === 'undefined') { fail('เปิดหน้านี้ไม่ได้ชั่วคราว', 'ลองรีเฟรชหรือสอบถามร้านทาง LINE'); return; }

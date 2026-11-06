@@ -3914,16 +3914,42 @@ function bahtText(value) {
   async function syncIshipStatuses(manual) {
     if (!ISHIP_ORDERS_PROXY_URL || ishipSyncing) return null;
     const open = store.get('bs_tracking', []).filter(t => (t.status || 'transit') !== 'delivered');
-    if (!open.length) { if (manual) toast('ทุกรายการถึงลูกค้าแล้ว ไม่มีอะไรต้องเช็ก'); return 0; }
+    // เลขพัสดุที่พิมพ์ไว้ในใบงานที่ยังไม่จบ แต่ยังไม่มีรายการในหน้าพัสดุ → ต้องดึงจาก iship เข้ามาเอง ไม่งั้นสถานะจะค้าง "รอสถานะขนส่ง"
+    const haveCodes = new Set(store.get('bs_tracking', []).map(t => normCode(t.code)));
+    const missing = new Map();   // normCode -> วันที่ใบงาน (ms)
+    store.get('bs_jobs', []).forEach(j => {
+      if ((j.status || '') !== 'shipped') return;
+      const at = Date.parse(j.date) || Date.now();
+      [j.trackCode].concat(Array.isArray(j.recvMore) ? j.recvMore.map(r => r && r.code) : []).forEach(c => {
+        const k = normCode(c); if (k && !haveCodes.has(k) && !missing.has(k)) missing.set(k, at);
+      });
+    });
+    if (!open.length && !missing.size) { if (manual) toast('ทุกรายการถึงลูกค้าแล้ว ไม่มีอะไรต้องเช็ก'); return 0; }
     // ย้อนหลังถึงรายการเก่าสุดที่ยังไม่ถึงลูกค้า (อย่างน้อย 7 วัน ไม่เกิน 30 วัน)
-    const oldest = Math.min.apply(null, open.map(t => t.ishipCreatedAt != null ? t.ishipCreatedAt : (t.savedAt || Date.now())));
+    const oldest = Math.min.apply(null, open.map(t => t.ishipCreatedAt != null ? t.ishipCreatedAt : (t.savedAt || Date.now())).concat(Array.from(missing.values())));
     const days = Math.max(7, Math.min(30, Math.ceil((Date.now() - oldest) / 86400000) + 1));
     ishipSyncing = true;
     if (manual) toast('กำลังเช็กสถานะล่าสุดจาก iship...');
     try {
       const orders = await fetchIshipOrders(days);
       const list = store.get('bs_tracking', []);
-      const changed = applyIshipStatuses(orders, list);
+      const added = [];
+      orders.forEach(o => {
+        const code = o.track_no, k = normCode(code);
+        if (!k || !missing.has(k) || haveCodes.has(k)) return;
+        haveCodes.add(k);
+        const carrier = mapIshipCourierLabel(o.courier_code), customer = o.dst_name || '';
+        const created = o.created || o.updated || '';
+        const rec = {
+          id: 't' + Date.now() + '_m' + added.length, code, carrier, customer, message: buildTrackingMessage(code, carrier, customer),
+          status: mapIshipStatusToLocal(o.status_name), savedAt: Date.now(), ishipStatusName: o.status_name || '', ishipStatusAt: Date.now(),
+          ishipId: o.id != null ? o.id : null, ishipCreatedAt: created ? new Date(created.replace(' ', 'T')).getTime() || null : null,
+          sender: o.label_name || o.src_name || '', senderPhone: o.label_phone || o.src_phone || '',
+          senderAddress: o.label_address || [o.src_address, o.src_district, o.src_area, o.src_province, o.src_zipcode].filter(Boolean).join(' ')
+        };
+        list.unshift(rec); added.push(rec);
+      });
+      const changed = applyIshipStatuses(orders, list).concat(added);
       if (changed.length) { store.set('bs_tracking', list); changed.forEach(rec => cloudSave('tracking', rec)); }
       try { changed.forEach(rec => store.get('bs_jobs', []).filter(j => j.trackToken && j.trackCode && normCode(j.trackCode) === normCode(rec.code)).forEach(j => publicJobMirror(j))); } catch (e) {}   // อัปเดตหน้าติดตามลูกค้า (เสร็จสิ้นเมื่อพัสดุถึง)
       try { localStorage.setItem(ISHIP_SYNC_KEY, String(Date.now())); } catch (e) {}
