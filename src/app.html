@@ -9885,7 +9885,7 @@ function bahtText(value) {
       const img = await new Promise((res, rej) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = () => rej(new Error('โหลดรูปไม่ได้')); im.src = urls[i]; });
       const S = 1080, c = document.createElement('canvas'); c.width = c.height = S;
       const x = c.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, S, S);
-      const k = Math.min(S / img.naturalWidth, S / img.naturalHeight), w = img.naturalWidth * k, h = img.naturalHeight * k;
+      const k = Math.max(S / img.naturalWidth, S / img.naturalHeight), w = img.naturalWidth * k, h = img.naturalHeight * k;   // เติมเต็มกรอบ (ตัดขอบส่วนเกินตรงกลาง) ไม่มีขอบขาว
       x.drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
       const u = cloudDb ? await uploadPhotoToCloudinary(c.toDataURL('image/jpeg', 0.9)) : null;
       if (!u) throw new Error('อัปโหลดรูปที่จัดแล้วไม่ได้ (ต้องเชื่อมคลาวด์)');
