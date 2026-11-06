@@ -7435,9 +7435,10 @@ function bahtText(value) {
         haveCodes.add(k);
         const carrier = mapIshipCourierLabel(o.courier_code), customer = o.dst_name || '';
         const created = o.created || o.updated || '';
+        const ca = created ? new Date(created.replace(' ', 'T')).getTime() || null : null;   // นับกล่องตามวันที่สร้างใน iship ไม่ใช่วันที่ดึงเข้ามา
         const rec = {
           id: 't' + Date.now() + '_m' + added.length, code, carrier, customer, message: buildTrackingMessage(code, carrier, customer),
-          status: mapIshipStatusToLocal(o.status_name), savedAt: Date.now(), ishipStatusName: o.status_name || '', ishipStatusAt: Date.now(),
+          status: mapIshipStatusToLocal(o.status_name), savedAt: ca || Date.now(), ishipStatusName: o.status_name || '', ishipStatusAt: Date.now(),
           ishipId: o.id != null ? o.id : null, ishipCreatedAt: created ? new Date(created.replace(' ', 'T')).getTime() || null : null,
           sender: o.label_name || o.src_name || '', senderPhone: o.label_phone || o.src_phone || '',
           senderAddress: o.label_address || [o.src_address, o.src_district, o.src_area, o.src_province, o.src_zipcode].filter(Boolean).join(' ')
