@@ -339,6 +339,7 @@
       if (r.error) { $('stkPvMsg').textContent = '⚠ ' + r.error; toast('⚠ ' + r.error); return; }
       $('stkPvMsg').textContent = '✓ ' + r.msg + (r.warn && r.warn.length ? ' · ⚠ ' + r.warn.join(' · ') : '') + ' · ถูกใจแล้วกด ② สร้างแผ่นงาน';
       $('stkPvClear').classList.remove('hidden'); toast('✓ ' + r.msg);
+      if (!items.length) $('stkRead').onclick();   // ดูเส้นตัดแล้วแต่ยังไม่ได้อ่านลาย → อ่านให้เลย (ไม่ต้องกด ① เอง)
     });
   };
   $('stkPvClear').onclick = function () {
