@@ -90,7 +90,9 @@
     }
     page('jobs', FIELDS, '').then(function () {
       return page('wholesale', ['ref', 'date', 'buyerName', 'items', 'discount', 'note', 'paid', 'stq', 'savedAt', 'createdBy'], '').catch(function (e) { lastErr = 'ใบราคาส่ง: ' + e.message; });
-    }).then(function () { jobs = dedupe(all).concat(localJobs()); if (!/ราคาส่ง/.test(lastErr)) lastErr = ''; loadedAt = Date.now(); }, function (e) { lastErr = e.message; })
+    }).then(function () { jobs = dedupe(all).concat(localJobs()); if (!/ราคาส่ง/.test(lastErr)) lastErr = ''; loadedAt = Date.now();
+      document.dispatchEvent(new CustomEvent('st:qrjobs', {detail:jobs.filter(function(j){return window.STJobQR && STJobQR.eligible(j);}).map(function(j){return {id:j.id,no:j.no,jName:j.jName};})}));
+    }, function (e) { lastErr = e.message; })
       .then(function () { loading = false; render(); });
   }
   // รายการในใบราคาส่งที่มีใบคอนเฟิร์มงานของลูกค้าคนเดียวกัน + ชื่องานเดียวกันอยู่แล้ว → ไม่แสดงซ้ำ (ใช้ใบงานแทน)
@@ -248,6 +250,33 @@
   var CQK = 'st_cutq';
   function cqAll() { try { var d = JSON.parse(localStorage.getItem(CQK) || '{}'); return d && typeof d === 'object' ? d : {}; } catch (e) { return {}; } }
   function cqSaveAll(d) { try { localStorage.setItem(CQK, JSON.stringify(d)); return true; } catch (e) { return false; } }
+  var REMOTE_SHEETS='st_remote_sheets_v1';
+  function remoteSheets(){try {var a=JSON.parse(localStorage.getItem(REMOTE_SHEETS)||'[]');return Array.isArray(a)?a:[];}catch(e){return [];}}
+  function archiveRemote(q){
+    var c=window.ST_core,meta;
+    if(!c||!c.hash||!q.scanVerified||!q.snap||q.snap.src!=='cut'||!q.mtime)return;
+    try{meta=JSON.parse(q.snap.jobNote||'');}catch(e){return;}
+    if(meta.kind!=='st-job-qr'||meta.jobId!==q.jid||!Number.isInteger(meta.sheet)||!Number.isInteger(meta.total)||meta.sheet<1||meta.sheet>meta.total)return;
+    q.rid=c.hash(JSON.stringify([q.jid,q.p,q.mtime,q.savedAt,q.snap]));q.sheet=meta.sheet;q.total=meta.total;
+    var a=remoteSheets().filter(function(x){return !(x.jid===q.jid&&x.p===q.p&&x.sheet===q.sheet);});a.unshift(q);
+    try{localStorage.setItem(REMOTE_SHEETS,JSON.stringify(a.slice(0,200)));}catch(e){toast('พื้นที่เก็บแผ่นมือถือเต็ม สแกนไฟล์ได้แต่ยังส่งจากมือถือไม่ได้');}
+  }
+  function remoteEntries(){
+    return remoteSheets().filter(function(q){
+      var j=jobs.filter(function(j){return j.id===q.jid&&window.STJobQR&&STJobQR.eligible(j);})[0];
+      if(!j||!q.rid||!q.scanVerified||!q.snap||q.snap.src!=='cut'||!q.snap.n||!q.snap.marks||[1,7].indexOf(q.snap.marks.style)<0)return false;
+      if(!filesOf(j).some(function(f){return f.p===q.p;}))return false;
+      var mt=fileMtime(q.p);return !!(mt&&q.mtime&&Math.abs(mt-q.mtime)<1);
+    }).slice(0,100);
+  }
+  window.ST_queueRemote={
+    catalog:function(){return remoteEntries().map(function(q){return{id:q.rid,job:q.jid,no:q.no,name:String(q.n||q.p).split(/[\\/]/).pop().slice(0,180),sheet:q.sheet,total:q.total,thumb:q.thumb&&q.thumb.length<=60000?q.thumb:''};});},
+    prepare:function(ref,machine){
+      var q=remoteEntries().filter(function(q){return q.rid===ref;})[0];
+      if(!q)throw new Error('ไฟล์เปลี่ยน ถูกยกเลิกการผูก หรือยังไม่ได้สแกนแผ่นนี้ใหม่');
+      return window.ST_cutApi.remotePrepare(machine,q.snap,{key:q.jid+'|'+q.p});
+    }
+  };
   function cqKey(j, f) { return j.id + '|' + f.p; }
   function cqGet(j, f) { return cqAll()[cqKey(j, f)] || null; }
   function cqTime(t) { var d = new Date(t); return d.toTimeString().slice(0, 5) + (new Date().toDateString() === d.toDateString() ? '' : ' ' + d.getDate() + '/' + (d.getMonth() + 1)); }
@@ -262,8 +291,8 @@
     return '<span class="cqchip' + (sent && sent === fs.length ? ' done' : '') + '">' + (sent ? '✅ ส่งตัดแล้ว ' + sent + '/' + fs.length : '') + (sent && wait ? ' · ' : '') + (wait ? '⏳ รอตัด ' + wait : '') + '</span>';
   }
   // รูปพรีวิวเล็กของไฟล์: ให้ Illustrator ส่งออก PNG ชั่วคราว → ย่อเหลือ ~160px ด้วย canvas → เก็บเป็น data URL (ล้มเหลวก็ไม่มีรูป ไม่กระทบการสแกน)
-  function makeThumb() {
-    return host('st_thumb').then(function (r) {
+  function makeThumb(captured) {
+    return (captured ? Promise.resolve(captured) : host('st_thumb')).then(function (r) {
       if (!r || r.error || !r.path) return '';
       var R = window.cep_node && window.cep_node.require; if (!R) return '';
       var fs = R('fs'), b64 = '';
@@ -329,6 +358,7 @@
   function onChange(e) { var t = e.target; if (t.dataset.act !== 'st') return; var j = find(t); if (j) setStatus(j, t.value); }
   function openUrl(u) { try { if (window.cep && window.cep.util) return window.cep.util.openURLInDefaultBrowser(u); } catch (e) {} window.open(u); }
   function onClick(e) {
+    if(window.ST_remoteBusy)return toast('กำลังจัดการคำสั่งจากมือถือ กรุณารอสักครู่');
     var b = e.target.closest('[data-act]');
     if (!b) { var card = e.target.closest('#cqList .qjob'); if (card) { var jj = find(card); if (jj) showDetail(jj); } return; }
     if (b.tagName === 'SELECT') return;
@@ -340,6 +370,12 @@
     else if (a === 'copy') { try { navigator.clipboard.writeText(b.dataset.t); toast('✓ คัดลอกแล้ว'); } catch (ec) { toast(b.dataset.t); } }
     else if (a === 'fold') { var fm = foldMap(); fm[j.id] = !isFolded(j); try { localStorage.setItem(FOLDK, JSON.stringify(fm)); } catch (ef) {} render(); }
     else if (a === 'filed') setStatus(j, 'filed');
+    else if (a === 'jobqr') {
+      if (!window.STJobQR || !STJobQR.eligible(j) || !window.__stk || !window.__stk.selectJob) return toast('เลือกใบงานจากแอปร้านก่อน');
+      if (!window.__stk.selectJob(j.id)) return toast('โหลดคิวงานใหม่ก่อน');
+      hideDetail(); var stkTab = document.querySelector('.tab[data-tab="stk"]'); if (stkTab) stkTab.click();
+      toast('เลือก QR ใบงาน ' + j.no + ' แล้ว · ตรวจชื่อก่อนสร้างแผ่น');
+    }
     else if (a === 'ldel') {         // ลบใบที่เพิ่มเองในแผง (2 ครั้ง) · ลบรายการรอตัดของใบนั้นด้วย · ไม่ลบไฟล์จริง
       if (armed !== 'L:' + j.id) { armed = 'L:' + j.id; clearTimeout(armT); armT = setTimeout(function () { armed = ''; refreshDetail(); }, 4000); b.textContent = 'กดอีกครั้งเพื่อลบ'; return; }
       armed = ''; clearTimeout(armT); localSave(localJobs().filter(function (x) { return x.id !== j.id; }));
@@ -352,15 +388,25 @@
       toast('กำลังเปิดไฟล์และสแกนเส้นตัด…');
       host('st_openFile', cf.p).then(function (r) {
         if (r.error) return toast('⚠ ' + r.error);
-        return window.ST_cutApi.read().then(function (rd) {
+        var before=fileMtime(cf.p),capture=!!window.ST_cutApi.snapshot;
+        var read=capture?window.ST_cutApi.snapshot(cf.p):window.ST_cutApi.read();
+        return read.then(function (packet) {
+          if(packet.error)return toast('⚠ '+packet.error);
+          var rd=capture?packet.read:packet;
           if (rd.error) return toast('⚠ ' + rd.error);
           if (!rd.n) return toast('⚠ ไม่พบเส้นตัด (Kiss Cut / Die Cut) ในไฟล์นี้');
-          return Promise.all([window.ST_cutApi.markCheck(), makeThumb()]).then(function (pair) {
+          return Promise.all([capture?Promise.resolve(packet.mark):window.ST_cutApi.markCheck(), makeThumb(capture?packet.thumb:null)]).then(function (pair) {
             var mv = pair[0], thumb = pair[1];   // จุดมาร์คทุกจุด + artboard ไว้วาดพรีวิว (ไม่มีมาร์คก็ได้)
+            var after=fileMtime(cf.p);
+            if(before&&after&&Math.abs(before-after)>=1)return toast('⚠ ไฟล์ถูกแก้ระหว่างสแกน กรุณาบันทึกและสแกนใหม่');
+            if(capture&&(!packet.scan||packet.scan.path!==cf.p))return toast('⚠ ไฟล์ที่สแกนไม่ตรงกับไฟล์ที่ผูกไว้');
+            var verified=!!(capture&&before&&after&&Math.abs(before-after)<1);
             var view = (mv && !mv.error && mv.why === 'ok' && mv.marks && mv.marks.length) ? { ab: mv.ab, marks: mv.marks } : null;
+            if(!thumb){try{var cv=document.createElement('canvas');cv.width=240;cv.height=320;drawPrev(cv,{snap:rd,view:view});thumb=cv.toDataURL('image/png');if(thumb.length>60000)thumb=cv.toDataURL('image/jpeg',0.7);}catch(eth){thumb='';}}
             var all = cqAll();
-            all[cqKey(j, cf)] = { jid: j.id, p: cf.p, n: cf.n || '', no: j.no || '', jName: j.jName || '', savedAt: Date.now(), mtime: fileMtime(cf.p), snap: rd, view: view, thumb: thumb || '', viewNote: view ? '' : String(mv && (mv.error || mv.why) || 'no-reply') };
+            all[cqKey(j, cf)] = { jid: j.id, p: cf.p, n: cf.n || '', no: j.no || '', jName: j.jName || '', savedAt: Date.now(), mtime: verified?after:null, scanVerified:verified, snap: rd, view: view, thumb: thumb || '', viewNote: view ? '' : String(mv && (mv.error || mv.why) || 'no-reply') };
             if (!cqSaveAll(all)) return toast('⚠ เก็บไม่ได้ (พื้นที่เก็บของแผงเต็ม) — ลบรายการรอตัดเก่าออกก่อน');
+            archiveRemote(all[cqKey(j,cf)]);
             render(); refreshDetail();
             toast('✓ สแกนแล้ว ' + rd.n + ' เส้น' + (rd.marks ? ' + มาร์ค' : ' (ไม่พบมาร์ค)') + ' — เก็บไว้ในรอตัด');
           });
@@ -381,7 +427,9 @@
     }
     else if (a === 'cutdrop') {
       var df = filesOf(j)[+b.dataset.i || 0]; if (!df) return;
-      var al = cqAll(); delete al[cqKey(j, df)]; cqSaveAll(al); render(); refreshDetail(); toast('ลบรายการรอตัดแล้ว');
+      var al = cqAll(); delete al[cqKey(j, df)]; cqSaveAll(al);
+      try{localStorage.setItem(REMOTE_SHEETS,JSON.stringify(remoteSheets().filter(function(q){return !(q.jid===j.id&&q.p===df.p);})));}catch(er){}
+      render(); refreshDetail(); toast('ลบรายการรอตัดแล้ว');
     }
     else if (a === 'open') { var of = filesOf(j)[+b.dataset.i || 0]; if (!of) return toast('⚠ ไม่พบไฟล์ที่ผูกไว้'); host('st_openFile', of.p).then(function (r) { toast(r.error ? '⚠ ' + r.error : '✓ ' + r.msg); }); }
     else if (a === 'unlink') {
@@ -432,6 +480,7 @@
       (ph.length ? '<div class="cqk">รูปอ้างอิง</div><div class="cqph">' + ph.map(function (p) { return '<img src="' + h(p) + '" data-act="img" data-src="' + h(p) + '" alt="">'; }).join('') + '</div>' : '') +
       '<div class="cqv mut small">' + [j.date ? 'วันที่ ' + thFull(j.date) : '', j.createdBy ? 'โดย ' + h(j.createdBy) : ''].filter(Boolean).join(' · ') + '</div>' +
       '<div class="qact">' +
+        (window.STJobQR && STJobQR.eligible(j) ? '<button class="btn ghost sm" data-act="jobqr">QR ใบงาน → เรียงไฟล์</button>' : '') +
         '<button class="btn ghost sm" data-act="link">' + linkLabel(j) + '</button>' +
         (s === 'pending' ? '<button class="btn sm" data-act="filed">✓ ทำไฟล์แล้ว</button>' : '') +
         (j._col === 'local' ? '<button class="btn ghost sm" data-act="ldel">🗑 ลบงานนี้</button>' : '') + '</div></div>';
@@ -561,7 +610,7 @@
     cfg = f.queue; window.ST_cloudQueue = true;
     var btn = document.querySelector('.tab[data-tab="queue"]');
     if (btn) { btn.classList.remove('hidden'); var sp = btn.querySelector('span'); if (sp) sp.textContent = 'ใบงานจากแอปร้าน · เบต้า'; }
-    build(); jobs = localJobs(); render(); load();
+    build(); window.ST_queueReady=true; jobs = localJobs(); render(); load();
     if (btn) btn.addEventListener('click', function () { if (Date.now() - loadedAt > 30000) load(true); });
     setInterval(function () { var p = $('tab-queue'); if (p && p.classList.contains('active') && !document.hidden) load(true); }, 60000);
   }

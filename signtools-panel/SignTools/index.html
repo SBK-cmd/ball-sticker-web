@@ -578,6 +578,11 @@
   <div class="card">
     <div class="stkres" id="stkRes">ยังไม่มีสติ๊กเกอร์</div>
     <div class="hint warn" id="stkWarn"></div>
+    <div id="stkJobQRCard" class="card hidden">
+      <label class="chk"><input id="stkJobQROn" type="checkbox"> <b>QR ใบงานบนแผ่นพิมพ์ · ทดลอง</b></label>
+      <label>ใบงานจากแอปร้าน<select id="stkJobQRJob"><option value="">เลือกใบงานก่อน</option></select></label>
+      <div class="hint" id="stkJobQRHint">หนึ่งแผ่นต่อหนึ่งใบงาน รองรับหลายลาย/ขนาด · เผื่อขอบล่างเพิ่มสำหรับ QR · สแกนแล้วล็อกอินเข้าแอปร้าน</div>
+    </div>
     <canvas id="stkCanvas" class="stkcanvas" width="300" height="420"></canvas>
     <div class="stknav hidden" id="stkNav"><button class="btn ghost sm" id="stkPrev">‹</button><span id="stkPage"></span><button class="btn ghost sm" id="stkNext">›</button></div>
     <div class="pvrow"><button class="btn ghost" id="stkPv">ดูเส้นตัดบนงานก่อน</button><button class="btn ghost sm hidden" id="stkPvClear" title="ลบตัวอย่าง">ลบ</button></div>
@@ -619,6 +624,7 @@
 <script src="js/promptpay.js"></script>
 <script src="js/tools.js"></script>
 <script src="js/pack.js"></script>
+<script src="js/job-qr.js"></script>
 <script src="js/sticker.js"></script>
 <script src="js/cutjob.js"></script>
 <script src="js/cut.js"></script>
@@ -629,6 +635,7 @@
 <script src="js/name.js"></script>
 <script src="js/license.js"></script>
 <script src="js/queue.js"></script>
+<script src="js/remote-cut.js"></script>
 <script src="js/home.js"></script>
 <script src="js/toolgate.js"></script>
 <script src="js/fold.js"></script>

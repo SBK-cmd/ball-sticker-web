@@ -218,6 +218,25 @@
   };
   window.ST_cutApi = {
     read: function () { return host('st_cutRead'); },
+    readSheet: function () { return host('st_cutReadSheet'); },
+    snapshot: function (path) { return host('st_cutSnapshot',path); },
+    remoteMachines: function () {
+      if(!window.ST_core||!window.ST_core.hash)return [];
+      mSync();
+      return machines.filter(function(m){return validIp(m.ip||'')&&+m.port>0&&+m.port<65536;}).map(function(m,i){return {id:window.ST_core.hash(JSON.stringify(m)),name:m.name||('เครื่อง '+(i+1))};});
+    },
+    remotePrepare: function (machineId,snap,ctx) {
+      var index=-1;
+      machines.forEach(function(m,i){if(window.ST_core.hash(JSON.stringify(m))===machineId)index=i;});
+      if(index<0)throw new Error('เครื่องหรือการตั้งค่าเปลี่ยน กรุณาตรวจใหม่');
+      if(!snap||snap.src!=='cut'||!snap.marks||[1,7].indexOf(snap.marks.style)<0)throw new Error('มือถือส่งได้เฉพาะแผ่นที่อ่านมาร์คครบแล้ว');
+      if(sending)throw new Error('คอมกำลังส่งตัด');
+      $('cutMachine').value=String(index);$('cutMachine').onchange();
+      if(window.ST_core.hash(JSON.stringify(machines[index]))!==machineId)throw new Error('มีการแก้ค่าเครื่องตัด กรุณารีเฟรชมือถือ');
+      applyRead(JSON.parse(JSON.stringify(snap)),ctx);$('cutUseMk').checked=true;rebuild();
+      if(!job||blockMk||!marks||!validIp(ip())||!port())throw new Error('ไฟล์ มาร์ค หรือเครื่องยังไม่พร้อม');
+      return sendNow;
+    },
     load: function (snap, ctx) { applyRead(JSON.parse(JSON.stringify(snap)), ctx); },
     markCheck: function () { return host('st_markCheck'); },
     sim: function (cv, btn, done) {   // จำลองการตัดบน canvas ที่ส่งมา (ป็อบอัพในคิวงาน) · เรียกซ้ำ = หยุด
@@ -390,27 +409,30 @@
   };
   // ส่งงานที่อ่านไว้เข้าเครื่องตัด (ใช้ร่วมกับปุ่ม "ส่งตัด" และปุ่ม "ตัด" ในคิวงาน — การยืนยัน 2 ครั้งทำที่ผู้เรียก)
   function sendNow() {
+    if (sending) return Promise.reject(new Error('คอมกำลังส่งตัดอยู่'));
     var b = $('cutGo'), h = ip(), p = port();
     if (!job || blockMk) return Promise.reject(new Error(blockMk ? 'มาร์คแบบนี้ยังส่งตัดจากแผงไม่ได้' : 'ยังไม่มีงานให้ส่ง'));
     if (!validIp(h) || !p) { status('ตั้ง IP และพอร์ตก่อน (กด "ตรวจหา")', 'warn'); return Promise.reject(new Error('ยังไม่ได้ตั้ง IP/พอร์ตเครื่องตัด — ตั้งในหน้า "ส่งตัด" ก่อน')); }
     if (!req()) { status('ใช้ได้เฉพาะใน Illustrator', 'warn'); return Promise.reject(new Error('ใช้ได้เฉพาะใน Illustrator')); }
-    b.disabled = true; status('กำลังส่งงานไป ' + h + ':' + p + ' …', '');
+    sending = true; b.disabled = true; status('กำลังส่งงานไป ' + h + ':' + p + ' …', '');
     try {   // ส่งสรุปงานให้ร้านดู (คำสั่งที่ไม่ใช่การเดินมีด + จำนวนเส้นแต่ละชนิด) — ไว้ตรวจปัญหา
       var hdr = job.data.split('\x03').filter(function (x) { return !/^(D|M\d|BZ)/.test(x); }).join(' | ').replace(/[\x00-\x1f]/g, '');
       var kinds = (raw || []).reduce(function (a, q) { a[q.k || 'kiss'] = (a[q.k || 'kiss'] || 0) + 1; return a; }, {});
       if (window.ST_core && window.ST_core.report) window.ST_core.report('sendcut ' + h + ':' + p + ' drv=' + $('cutDrv').checked + ' kinds=' + JSON.stringify(kinds) + ' n=' + job.n + ' :: ' + hdr.slice(0, 600));
     } catch (er) {}
-    return send(h, p, job.data).then(function (n) {
-      b.disabled = false;
+    var data=job.data;
+    return Promise.resolve().then(function(){return send(h, p, data);}).then(function (n) {
+      sending = false; b.disabled = false;
       status('✓ ส่งแล้ว ' + Math.round(n / 1024 * 10) / 10 + ' KB · ' + job.n + ' เส้น', 'ok'); toast('✓ ส่งงานเข้าเครื่องตัดแล้ว');
       try { if (window.ST_cutCtx) document.dispatchEvent(new CustomEvent('st:cutsent', { detail: window.ST_cutCtx })); } catch (e2) {}
       return { n: n, lines: job.n, ip: h, port: p };
     }, function (e) {
-      b.disabled = false; status('⚠ ส่งไม่ได้: ' + e.message + ' · ถ้า Cutting Master เปิดค้างอยู่ให้ปิดก่อน', 'warn');
+      sending = false; b.disabled = false; status('⚠ ส่งไม่ได้: ' + e.message + ' · ถ้า Cutting Master เปิดค้างอยู่ให้ปิดก่อน', 'warn');
       throw e;
     });
   }
   function disarm() { clearTimeout(armT); var b = $('cutGo'); b.classList.remove('arm'); b.textContent = 'ส่งตัด'; }
+  var sending = false;
 
   langUI(); draw();
 
@@ -419,10 +441,11 @@
   function mLoad() { try { var d = JSON.parse(localStorage.getItem(MKEY)); if (d && d.list && d.list.length) { machines = d.list; cur = Math.min(d.cur || 0, machines.length - 1); } } catch (e) {} }
   function mSave() { try { localStorage.setItem(MKEY, JSON.stringify({ list: machines, cur: cur })); } catch (e) {} }
   var DRVF = ['cutDrv', 'dDieS', 'dDieA', 'dDieF', 'dKisS', 'dKisA', 'dKisF', 'cutFirst', 'nmW', 'nmX', 'nmY', 'nmGX', 'nmGY'];
-  function mFromUI() { var m = { name: $('cutMName').value.trim(), ip: $('cutIp').value.trim(), port: $('cutPort').value, lang: seg('cutLang') || 'gpgl', step: $('cutStep').value, cond: $('cutCond') ? $('cutCond').value : '2', drv: {} }; DRVF.forEach(function (id) { m.drv[id] = $(id).type === 'checkbox' ? $(id).checked : $(id).value; }); return m; }
+  function mFromUI() { var m = { name: $('cutMName').value.trim(), ip: $('cutIp').value.trim(), port: $('cutPort').value, lang: seg('cutLang') || 'gpgl', step: $('cutStep').value, over:$('cutOver').value, cond: $('cutCond') ? $('cutCond').value : '2', drv: {} }; DRVF.forEach(function (id) { m.drv[id] = $(id).type === 'checkbox' ? $(id).checked : $(id).value; }); return m; }
   function mToUI(m) {
     $('cutMName').value = m.name || ''; $('cutIp').value = m.ip || ''; $('cutPort').value = m.port || '';
     if (m.step) $('cutStep').value = m.step; if ($('cutCond') && m.cond) $('cutCond').value = m.cond;
+    $('cutOver').value=m.over==null?'0':m.over;
     if (m.drv) DRVF.forEach(function (id) { if (m.drv[id] === undefined) return; if ($(id).type === 'checkbox') $(id).checked = !!m.drv[id]; else $(id).value = m.drv[id]; });
     drvUI();
     document.querySelectorAll('.seg[data-name="cutLang"] button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === (m.lang || 'gpgl')); });
@@ -435,9 +458,10 @@
   }
   function mSync() { machines[cur] = mFromUI(); mSave(); mRender(); }
   mLoad();
+  machines.forEach(function(m){if(m.over==null)m.over='0';});
   if (!machines.length) { machines = [mFromUI()]; if (!machines[0].name) machines[0].name = 'เครื่อง 1'; }
   mRender(); mToUI(machines[cur]);
-  ['cutMName', 'cutIp', 'cutPort', 'cutStep', 'cutCond'].concat(DRVF).forEach(function (id) { if ($(id)) $(id).addEventListener('change', mSync); });
+  ['cutMName', 'cutIp', 'cutPort', 'cutStep', 'cutCond', 'cutOver'].concat(DRVF).forEach(function (id) { if ($(id)) $(id).addEventListener('change', mSync); });
   $('cutMName').addEventListener('input', function () { machines[cur].name = $('cutMName').value; mSave(); mRender(); });
   document.querySelectorAll('.seg[data-name="cutLang"] button').forEach(function (b) { b.addEventListener('click', function () { setTimeout(mSync, 0); }); });
   $('cutMachine').onchange = function () { var nx = parseInt($('cutMachine').value, 10) || 0; mSync(); cur = nx; mSave(); mToUI(machines[cur]); mRender(); status('เลือก ' + (machines[cur].name || 'เครื่อง ' + (cur + 1)), ''); };

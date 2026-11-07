@@ -1,0 +1,9 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
+let R;const f='signtools-panel/SignTools/js/remote-cut.js';if(fs.existsSync(f))R=require('../'+f);
+const command={id:'request-123456789',file:'f',machine:'m',version:'version',expires:1030};
+function make(overrides={}){assert.ok(R,'remote dispatcher missing');let sent=0;const ids=new Set(),acks=[];const ex=R.executor({now:()=>1000,guard:()=>true,remember:id=>{if(ids.has(id))return false;ids.add(id);return true},prepare:()=>()=>{sent++;return Promise.resolve()},ack:r=>{acks.push(r);return Promise.resolve()},...overrides});return {ex,sent:()=>sent,acks};}
+test('repeated command and ack loss never sends twice',async()=>{const a=make({ack:()=>Promise.reject(Error('offline'))});await a.ex.run(command);await a.ex.run(command);assert.equal(a.sent(),1);});
+test('expired, disabled or changed files never reach sender',async()=>{for(const o of [{now:()=>1040},{guard:()=>false},{prepare:()=>{throw Error('changed file')}}]){const a=make(o);await a.ex.run(command);assert.equal(a.sent(),0);assert.equal(a.acks[0].state,'rejected');}});
+test('durable journal failure blocks physical dispatch',async()=>{const a=make({remember:()=>{throw Error('disk full')}});await a.ex.run(command);assert.equal(a.sent(),0);assert.equal(a.acks[0].state,'rejected');});
+test('TCP error is unknown, never automatically retried',async()=>{let n=0;const a=make({prepare:()=>()=>{n++;return Promise.reject(Error('connection reset'))}});await a.ex.run(command);await a.ex.run(command);assert.equal(n,1);assert.equal(a.acks[0].state,'unknown');});
+test('rechecks guard after async preparation',async()=>{let enabled=true;const a=make({guard:()=>enabled,prepare:async()=>{enabled=false;return ()=>{throw Error('must not run')}}});await a.ex.run(command);assert.equal(a.acks[0].state,'rejected');});

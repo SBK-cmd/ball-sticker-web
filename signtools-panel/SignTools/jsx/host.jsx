@@ -983,8 +983,42 @@ function st_freeSpot(doc, W, H, L0, T0, gap) {
         for (var L = minX + pad; L + W + pad <= maxX; L += step) if (ok(L, T)) return [L, T];
     return null;
 }
+// QR ประจำใบงาน: พิมพ์เป็นเวกเตอร์ในเลเยอร์แยก ไม่มี stroke/สีเส้นตัด
+function st_jobQR(doc, layer, o, L, T) {
+    var n = o && o.rows ? o.rows.length : 0, i, c;
+    if (n < 21 || n > 177 || (n - 21) % 4 || o.quiet !== 4 || !isFinite(o.size) || o.size <= 0 || !isFinite(o.x) || !isFinite(o.y)) throw new Error('ข้อมูล QR ใบงานไม่ถูกต้อง');
+    for (i = 0; i < n; i++) if (o.rows[i].length !== n || /[^01]/.test(o.rows[i])) throw new Error('ช่อง QR ใบงานไม่ครบ');
+    var g = null;
+    try {
+        g = layer.groupItems.add(); g.name = 'ST Job QR ' + o.no + ' ' + o.sheet + '/' + o.total;
+        var left = L + o.x, top = T - o.y, m = o.size / (n + 8);
+        var bg = g.pathItems.rectangle(top,left,o.size,o.size);
+        bg.name = 'Job QR white quiet zone'; bg.stroked = false; bg.filled = true; bg.fillColor = st_color(doc,[255,255,255],[0,0,0,0]);
+        var ink = st_color(doc,[0,0,0],[0,0,0,100]), cp = g.compoundPathItems.add(); cp.name = 'Job QR modules';
+        for (i = 0; i < n; i++) {
+            c = 0;
+            while (c < n) {
+                if (o.rows[i].charAt(c) === '1') {
+                    var start = c; while (c < n && o.rows[i].charAt(c) === '1') c++;
+                    var p = cp.pathItems.rectangle(top-(i+4)*m,left+(start+4)*m,(c-start)*m,m+Math.min(P(0.01),m*0.03));
+                    p.stroked = false; p.filled = true; p.fillColor = ink;
+                } else c++;
+            }
+        }
+        var cap = g.textFrames.add(); cap.contents = o.caption;
+        var ca = cap.textRange.characterAttributes; ca.size = P(8); ca.fillColor = ink;
+        var tf = st_thaiFont(); if (tf) { try { ca.textFont = tf; } catch(ef) {} }
+        // ตั้ง leading แน่นอนให้คำบรรยาย 2 บรรทัดอยู่ในพื้นที่ที่เผื่อไว้
+        ca.autoLeading = false; ca.leading = P(10);
+        while (cap.width > o.maxWidth && ca.size > P(5)) ca.size -= P(0.5);
+        if (cap.width > o.maxWidth || cap.height > U(7)) throw new Error('ข้อความใต้ QR ยาวเกินขอบแผ่น');
+        cap.left = left; cap.top = top-o.size-U(2);
+        g.note = '{"kind":"st-job-qr","jobId":'+st_q(o.jobId)+',"url":'+st_q(o.url)+',"sheet":'+o.sheet+',"total":'+o.total+'}';
+        return g;
+    } catch(e) { if (g) { try { g.remove(); } catch(er) {} } throw e; }
+}
 function st_stkPlace(o) {
-    var doc, stage = null, warn = [], step = 'เริ่ม', newABs = [], newLayers = [], newSyms = [], tmp = null;
+    var doc, stage = null, warn = [], step = 'เริ่ม', newABs = [], newLayers = [], newSyms = [], newQRs = [], newPlaced = [], tmp = null;
     try {
         doc = st_doc();
         var sel = st_designs(st_selection(doc));
@@ -1049,6 +1083,12 @@ function st_stkPlace(o) {
         var printL = st_layer(doc, 'Print', false), cutL = st_layer(doc, 'Kiss Cut', true), dieL = null;
         if (!hadPrint) newLayers.push(printL);
         if (!hadCut) newLayers.push(cutL);
+        var jobQRL = null;
+        if (o.jobQR) {
+            if (o.jobQR.length !== o.sheets.length) throw new Error('ข้อมูล QR ไม่ตรงกับจำนวนแผ่น');
+            var hadJobQR = st_hasLayer(doc,'Job QR'); jobQRL = st_layer(doc,'Job QR',false); jobQRL.printable = true;
+            if (!hadJobQR) newLayers.push(jobQRL);
+        }
         if (o.die) { var hadDie = st_hasLayer(doc, 'DieCut'); dieL = st_layer(doc, 'DieCut', true); if (!hadDie) newLayers.push(dieL); }
         var marksL = null;
         if (o.marks) { var hadMarks = st_hasLayer(doc, 'Marks'); marksL = st_layer(doc, 'Marks', false); if (!hadMarks) newLayers.push(marksL); }
@@ -1069,6 +1109,7 @@ function st_stkPlace(o) {
             if (o.notes && o.notes[s]) {
                 step = 'ใส่ข้อความจำนวนแผ่นที่ ' + (s + 1); st_bc(step);
                 var nL = st_layer(doc, 'Slug', true), nt = st_txt(nL, o.notes[s].text, P(9), st_color(doc, [0, 0, 0], [0, 0, 0, 100]));
+                newPlaced.push(nt);
                 nt.name = 'ST จำนวน';
                 nt.left = L + o.notes[s].x; nt.top = T - o.notes[s].y + nt.height / 2;
             }
@@ -1088,6 +1129,7 @@ function st_stkPlace(o) {
                     if (crSym) cr2 = tmp.symbolItems.add(crSym); else cr2 = credit.duplicate(tmp, ElementPlacement.PLACEATEND);
                     st_putCredit(cr2, (d2 || c2).geometricBounds, o.credit);
                 }
+                newPlaced.push(a2); newPlaced.push(c2); if (d2) newPlaced.push(d2); if (cr2) newPlaced.push(cr2);
                 if (pl.r) tmp.rotate(90);
                 var cb = (d2 || c2).geometricBounds;
                 tmp.translate((L + pl.x) - cb[0], (T - pl.y) - cb[1]);
@@ -1099,6 +1141,12 @@ function st_stkPlace(o) {
                 if (cr2) cr2.move(printL, ElementPlacement.PLACEATEND);
                 tmp.remove(); tmp = null;
                 made++;
+            }
+            if (jobQRL && o.jobQR[s]) {
+                step = 'ใส่ QR ใบงานแผ่นที่ ' + (s + 1); st_bc(step);
+                var qd = o.jobQR[s];
+                if (qd.x < 0 || qd.y < 0 || qd.x+qd.size > o.sheetW || qd.y+qd.size+U(9) > SH+0.001) throw new Error('QR ใบงานอยู่นอกแผ่น');
+                var qg = st_jobQR(doc,jobQRL,qd,L,T); newQRs.push(qg); grow(qg);
             }
             if (o.cm5 && sb) {
                 step = 'ใส่มาร์ค CM5 แผ่นที่ ' + (s + 1); st_bc(step);
@@ -1134,6 +1182,8 @@ function st_stkPlace(o) {
         // ย้อนกลับ: ลบของที่เพิ่งสร้าง ไม่ให้เหลือแผ่นว่าง
         try { if (tmp) tmp.remove(); } catch (e1) {}
         try { if (stage) stage.remove(); } catch (e2) {}
+        for (var z = newQRs.length - 1; z >= 0; z--) { try { newQRs[z].remove(); } catch(eqr) {} }
+        for (var zp = newPlaced.length - 1; zp >= 0; zp--) { try { newPlaced[zp].remove(); } catch(epl) {} }
         for (var r = newABs.length - 1; r >= 0; r--) { try { newABs[r].remove(); } catch (e3) {} }
         for (var q = 0; q < newLayers.length; q++) { try { if (newLayers[q].pageItems.length === 0) newLayers[q].remove(); } catch (e4) {} }
         for (var y = 0; y < newSyms.length; y++) { try { newSyms[y].remove(); } catch (e5) {} }
@@ -1406,6 +1456,43 @@ function st_thumb() {
         return st_err(e.message);
     }
 }
+function st_cutJobNote(doc) {
+    var ab=doc.artboards[doc.artboards.getActiveArtboardIndex()].artboardRect, found=null, layer;
+    try { layer=doc.layers.getByName('Job QR'); } catch(e) { return null; }
+    for(var i=0;i<layer.groupItems.length;i++) {
+        var g=layer.groupItems[i], note=String(g.note||'');
+        if(note.indexOf('"kind":"st-job-qr"')<0)continue;
+        var b=g.geometricBounds,cx=(b[0]+b[2])/2,cy=(b[1]+b[3])/2;
+        if(cx<ab[0]||cx>ab[2]||cy>ab[1]||cy<ab[3])continue;
+        if(found)throw new Error('แผ่นนี้มี QR ใบงานมากกว่าหนึ่งชุด กรุณาตรวจไฟล์');
+        found=note;
+    }
+    return found;
+}
+function st_scanIdentity(doc,path,ab) {
+    if(!doc.saved)throw new Error('บันทึกไฟล์ก่อนสแกนทั้งแผ่น');
+    var current=doc.fullName.fsName,index=doc.artboards.getActiveArtboardIndex();
+    if(path&&current!==path)throw new Error('ไฟล์ที่เปิดอยู่ไม่ตรงกับใบงาน กรุณาเปิดและสแกนใหม่');
+    if(typeof ab==='number'&&index!==ab)throw new Error('เปลี่ยนแผ่นระหว่างสแกน กรุณาสแกนใหม่');
+    return {path:current,ab:index};
+}
+function st_cutReadSheet(path) {
+    var doc=st_doc(), keep=doc.selection;
+    try { st_scanIdentity(doc,path);doc.selection=null; return st_cutRead(); }
+    catch(e){return st_err(e.message);}
+    finally { try { doc.selection=keep; } catch(e) {} }
+}
+function st_cutSnapshot(path) {
+    var doc=st_doc(),keep=doc.selection;
+    try {
+        var scan=st_scanIdentity(doc,path);doc.selection=null;
+        var rd=st_cutRead(),marks=st_markCheck(),thumb=st_thumb();
+        if(st_doc()!==doc)throw new Error('เปลี่ยนเอกสารระหว่างสแกน กรุณาสแกนใหม่');
+        st_scanIdentity(doc,scan.path,scan.ab);
+        return '{"read":'+rd+',"mark":'+marks+',"thumb":'+thumb+',"scan":{"path":'+st_q(scan.path)+',"ab":'+scan.ab+'}}';
+    } catch(e){return st_err(e.message);}
+    finally {try{doc.selection=keep;}catch(er){}}
+}
 function st_cutRead() {
     try {
         var doc = st_doc(), sel = st_selection(doc), paths = [], info = { text: 0, other: 0 }, src, i;
@@ -1441,7 +1528,7 @@ function st_cutRead() {
             out.push('{"c":' + (paths[i].closed ? 1 : 0) + ',"k":"' + kd + '","p":[' + pts.join(',') + ']}');
         }
         var mk = st_cutMarks(doc);
-        return '{"mkWhy":"' + st_lastMkWhy + '","src":"' + src + '","text":' + info.text + ',"other":' + info.other + ',"n":' + out.length + ',"pts":' + npts + ',"paths":[' + out.join(',') + ']' + (mk ? ',"marks":' + mk : '') + '}';
+        return '{"jobNote":'+st_q(st_cutJobNote(doc)||'')+',"mkWhy":"' + st_lastMkWhy + '","src":"' + src + '","text":' + info.text + ',"other":' + info.other + ',"n":' + out.length + ',"pts":' + npts + ',"paths":[' + out.join(',') + ']' + (mk ? ',"marks":' + mk : '') + '}';
     } catch (e) { return st_err(e.message); }
 }
 

@@ -40,6 +40,34 @@
   }
 
   var items = [], qty = {}, result = null, page = 0;
+  var qrJobs = [], jobQR = null, qrError = '';
+  function selectJob(id) {
+    var j = qrJobs.filter(function(x){ return x.id === id; })[0];
+    if (!j) return false;
+    $('stkJobQRJob').value=id; $('stkJobQROn').checked=true; recalc(); return true;
+  }
+  document.addEventListener('st:qrjobs',function(e){
+    if (window.ST_COREL) return;
+    var prev=$('stkJobQRJob').value; qrJobs=(e.detail||[]).filter(STJobQR.eligible);
+    $('stkJobQRCard').classList.remove('hidden');
+    $('stkJobQRJob').innerHTML='<option value="">เลือกใบงานก่อน</option>';
+    qrJobs.forEach(function(j){var o=document.createElement('option');o.value=j.id;o.textContent=j.no+' · '+(j.jName||'ไม่ระบุชื่อ');$('stkJobQRJob').appendChild(o);});
+    $('stkJobQRJob').value=prev; recalc();
+  });
+  function updateJobQR() {
+    jobQR=null; qrError='';
+    if (!$('stkJobQROn').checked) { $('stkJobQRHint').textContent='หนึ่งแผ่นต่อหนึ่งใบงาน รองรับหลายลาย/ขนาด · เลือกใบงานแล้วเปิด QR เพื่อเผื่อขอบล่าง';return; }
+    try {
+      if (window.ST_COREL) throw new Error('QR ใบงานรุ่นทดลองรองรับ Illustrator เท่านั้น');
+      var j=qrJobs.filter(function(x){return x.id===$('stkJobQRJob').value;})[0];
+      jobQR=STJobQR.create(j,qrcode);
+    } catch(e) { qrError=e.message; }
+    $('stkJobQRHint').textContent=qrError||('QR '+jobQR.no+' · เผื่อขอบล่างเพิ่ม '+STJobQR.reserveMM(jobQR,bleedOut()).toFixed(1)+' มม. · ตรวจใบงานให้ตรงก่อนสร้าง · มือถือต้องจับคู่คอมก่อนส่งตัด');
+  }
+  function qrFooters(r,sh,hs) {
+    if (!jobQR) return null;
+    return r.sheets.map(function(s,i){return STJobQR.footer(jobQR,s,sh.w*MM,hs?hs[i]:sh.h*MM,effMargin(),MM,bleedOut(),i,r.sheets.length);});
+  }
 
   // ---------- ขนาดเส้นตัดของแต่ละลาย (มม.) ----------
   // ขยายออก: ติดลบได้ = หดเส้นตัดเข้าในงาน (ให้งานพิมพ์เลยเส้นตัด ไม่เห็นขอบขาว) สูงสุด -10 มม.
@@ -86,6 +114,8 @@
 
   // ---------- คำนวณ + แสดงตัวอย่าง ----------
   function recalc() {
+    if (qrError && $('stkWarn').textContent === '⚠ '+qrError) $('stkWarn').textContent='';
+    updateJobQR();
     var custom = $('stkSheet').value === 'custom', isRect = $('stkCut').value === 'rect';
     document.querySelectorAll('#tab-stk .onlyCustom').forEach(function (e) { e.classList.toggle('hidden', !custom); });
     $('stkOrient').parentNode.classList.toggle('hidden', custom);
@@ -110,7 +140,7 @@
       var s = cutSize(it);
       return { w: s.w * MM, h: s.h * MM, qty: m === 'fill' ? 0 : (qty[i] == null ? 10 : qty[i]) };
     });
-    result = STPack.pack({ sheetW: sh.w * MM, sheetH: sh.h * MM, margin: effMargin() * MM,
+    result = STPack.pack({ sheetW: sh.w * MM, sheetH: (sh.h - STJobQR.reserveMM(jobQR,bleedOut())) * MM, margin: effMargin() * MM,
       gap: effGap() * MM, rotate: $('stkRot').checked, fill: m === 'fill', items: list });
     var msg = '', sub = '', need = Math.max(0, Math.floor(parseFloat($('stkNeed').value) || 0));
     if (m === 'fill' && !result.error && result.perSheet && need > 0) applyNeed(result, need, $('stkFullRow').checked);
@@ -139,7 +169,9 @@
     $('stkRes').innerHTML = '';
     $('stkRes').appendChild(document.createTextNode(msg));
     var sm = document.createElement('small'); sm.textContent = sub; $('stkRes').appendChild(sm);
-    $('stkGo').disabled = !(result && result.placed);
+    if (jobQR && result.placed) { try { qrFooters(result,sh,sheetHeights(result,sh,!!(result.need||mode()==='multi'))); } catch(eq) { qrError=eq.message; } }
+    if (qrError) $('stkWarn').textContent='⚠ '+qrError;
+    $('stkGo').disabled = !(result && result.placed) || !!qrError;
     draw();
   }
 
@@ -169,7 +201,7 @@
     var m = effMargin();
     return (r.sheets || []).map(function (s) {
       var bottom = 0; s.forEach(function (p) { bottom = Math.max(bottom, (p.y + p.h) / MM); });
-      return Math.min(sh.h, bottom + Math.max(m, withNote ? 7 : 0)) * MM;
+      return Math.min(sh.h, bottom + Math.max(m, withNote ? 7 : 0) + STJobQR.reserveMM(jobQR,bleedOut())) * MM;
     });
   }
   function needNotes(r, sh, hs) {
@@ -180,7 +212,7 @@
     return sheets.map(function (s, i) {
       var bottom = 0; s.forEach(function (p) { bottom = Math.max(bottom, (p.y + p.h) / MM); });
       var H = hs ? hs[i] / MM : sh.h;
-      var yMM = H - bottom >= 6 ? bottom + Math.min(gap + 1, (H - bottom) / 2) : H - 3;
+      var yMM = jobQR ? bottom + bleedOut() + 3 : (H - bottom >= 6 ? bottom + Math.min(gap + 1, (H - bottom) / 2) : H - 3);
       var text;
       if (multi) {         // หลายลาย: บอกแยกทีละลาย (แผ่นนี้ / ทั้งหมด / ที่ต้องการ)
         var here = {}; s.forEach(function (p) { here[p.d] = (here[p.d] || 0) + 1; });
@@ -267,12 +299,22 @@
       }
       ctx.fill(); ctx.stroke();
     });
+    if (jobQR && s.length && !qrError) {
+      try {
+        var hs=sheetHeights(result,sh,!!(result.need||mode()==='multi'));
+        var f=qrFooters(result,sh,hs)[page], qk=k/MM, px=f.size*qk/(f.rows.length+8);
+        ctx.fillStyle='#fff';ctx.fillRect(f.x*qk,f.y*qk,f.size*qk,f.size*qk);
+        ctx.fillStyle='#000';f.rows.forEach(function(row,y){for(var x=0;x<row.length;x++)if(row[x]==='1')ctx.fillRect((f.x*qk)+(x+4)*px,(f.y*qk)+(y+4)*px,px+.1,px+.1);});
+        ctx.font='9px sans-serif';ctx.fillText(f.no+' · '+f.sheet+'/'+f.total,f.x*qk,(f.y+f.size)*qk+10);
+      } catch(eqr) {}
+    }
   }
 
   // ---------- คำสั่ง ----------
   $('stkRead').onclick = function () {
     host('st_stkRead').then(function (r) {
       if (r.error) { toast('⚠ ' + r.error); return; }
+      if (items.length) { $('stkJobQROn').checked=false; $('stkJobQRJob').value=''; } // อ่านชุดใหม่ต้องเลือกใบงานใหม่ ป้องกัน QR จากงานก่อนติดไปด้วย
       items = r.items; qty = {};
       MM = r.unit === 'mm' ? 1 : MM0 / (r.sf || 1);   // CorelDRAW ส่งค่าเป็น มม. อยู่แล้ว
       $('stkHint').textContent = 'อ่านได้ ' + items.length + ' ลาย' + (r.sf > 1 && r.unit !== 'mm' ? ' · ไฟล์ Large Canvas (สเกล 1:' + r.sf + ')' : '') + (items.length > 1 && mode() === 'fill' ? ' — เลือก "หลายลาย" เพื่อใส่จำนวนแต่ละลาย' : '');
@@ -305,6 +347,11 @@
   $('stkGo').onclick = function () {
     if (!result || !result.placed) return;
     var sh = sheetSize(), go = $('stkGo');
+    var qrWasOn=!!jobQR; updateJobQR();
+    if (qrError || (qrWasOn && !jobQR)) { toast('⚠ '+(qrError||'เลือกใบงาน QR ใหม่')); return; }
+    var footerData=null;
+    try { footerData=qrFooters(result,sh,sheetHeights(result,sh,!!(result.need||mode()==='multi'))); }
+    catch(eq) {toast('⚠ '+eq.message);return;}
     var hasRaster = items.some(function (it) { return it.raster; }), sym = $('stkSym').checked;
     var limit = hasRaster && !sym ? 60 : 400;
     if (result.placed > limit && !bigArm) {
@@ -331,10 +378,10 @@
     });
     var hasNote = !!(result.need || mode() === 'multi'), hs = sheetHeights(result, sh, hasNote);
     // ความสูงแผ่นหลังใส่มาร์ค CM5 (ไว้เลือกแบบมาร์ค: เกิน 50 ซม. = Segment)
-    var hs2 = result.sheets.map(function (s) { var t = Infinity, b = 0; s.forEach(function (p) { t = Math.min(t, p.y); b = Math.max(b, p.y + p.h); }); return (b - t) + 37 * MM; });
+    var hs2 = result.sheets.map(function (s,i) { var t = Infinity, b = 0; s.forEach(function (p) { t = Math.min(t, p.y); b = Math.max(b, p.y + p.h); }); if(footerData)b=Math.max(b,footerData[i].y+footerData[i].size+9*MM);return (b - t) + 37 * MM; });
     host('st_stkPlace', {
       cutType: $('stkCut').value, offsetMM: kissOff(), radiusMM: Math.max(0, mmv('stkRad', 0)),
-      sheetW: sh.w * MM, sheetH: sh.h * MM, sheetHs: hs, sheetHs2: hs2, cm5: cm5On() ? { thrMM: 500 } : null, delEmptyAB: $('stkDelAB').checked, count: items.length, sheets: sheets, marks: marks(), symbol: $('stkSym').checked ? null : false, die: die(), credit: credit(), notes: needNotes(result, sh, hs)
+      sheetW: sh.w * MM, sheetH: sh.h * MM, sheetHs: hs, sheetHs2: hs2, cm5: cm5On() ? { thrMM: 500 } : null, delEmptyAB: $('stkDelAB').checked, count: items.length, sheets: sheets, marks: marks(), symbol: $('stkSym').checked ? null : false, die: die(), credit: credit(), notes: needNotes(result, sh, hs), jobQR: footerData
     }).then(function (r) {
       go.disabled = false; go.textContent = '② สร้างแผ่นงาน'; $('stkPvClear').classList.add('hidden'); $('stkPv').textContent = 'ดูเส้นตัดบนงานก่อน';
       if (r.error) { toast('⚠ ' + r.error); $('stkWarn').textContent = '⚠ ' + r.error; return; }
@@ -353,7 +400,7 @@
     });
   };
   $('stkCrClear').onclick = function () { $('stkCrFile').value = ''; $('stkCrFile').dispatchEvent(new Event('change')); recalc(); };
-  ['stkCut', 'stkOff', 'stkRad', 'stkGap', 'stkSheet', 'stkOrient', 'stkW', 'stkH', 'stkMargin', 'stkRot', 'stkMarks', 'stkCm5', 'stkMkIn', 'stkMkLen', 'stkMkW', 'stkMkGap', 'stkDie', 'stkDieShape', 'stkDieOff', 'stkDieRad', 'stkDieOnly', 'stkCredit', 'stkCrPos', 'stkNeed', 'stkFullRow'].forEach(function (id) {
+  ['stkJobQROn', 'stkJobQRJob', 'stkCut', 'stkOff', 'stkRad', 'stkGap', 'stkSheet', 'stkOrient', 'stkW', 'stkH', 'stkMargin', 'stkRot', 'stkMarks', 'stkCm5', 'stkMkIn', 'stkMkLen', 'stkMkW', 'stkMkGap', 'stkDie', 'stkDieShape', 'stkDieOff', 'stkDieRad', 'stkDieOnly', 'stkCredit', 'stkCrPos', 'stkNeed', 'stkFullRow'].forEach(function (id) {
     $(id).addEventListener('input', recalcSoon); $(id).addEventListener('change', recalcSoon);
   });
   document.querySelectorAll('.seg[data-name="stkMode"] button').forEach(function (b) { b.addEventListener('click', function () { setTimeout(recalc, 0); }); });
@@ -363,5 +410,5 @@
   applyUnit(unit());
   setTimeout(recalc, 0);
 
-  window.__stk = { setItems: function (x) { items = x; qty = {}; recalc(); }, result: function () { return result; } };   // สำหรับทดสอบ
+  window.__stk = { setItems: function (x) { items = x; qty = {}; recalc(); }, result: function () { return result; }, selectJob:selectJob };   // สำหรับคิวงานและทดสอบ
 })();

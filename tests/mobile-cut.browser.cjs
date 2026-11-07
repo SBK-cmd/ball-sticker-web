@@ -1,0 +1,32 @@
+// Browser -> real relay state machine -> desktop dispatcher -> fake cutter. No network/cutter output.
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {DatabaseSync}=require('node:sqlite'),{chromium}=require('playwright');
+const Dispatcher=require('../signtools-panel/SignTools/js/remote-cut.js');
+(async()=>{
+ const {initRemoteCut,createRemoteCut}=await import('file://'+path.resolve('signtools-worker/src/remote-cut.mjs'));
+ const {mobileCutPage}=await import('file://'+path.resolve('signtools-worker/src/mobile-cut-page.mjs'));
+ const sql=new DatabaseSync(':memory:'),db={prepare(s){return{bind(...a){return{first:async()=>sql.prepare(s).get(...a)||null,run:async()=>{const r=sql.prepare(s).run(...a);return{meta:{changes:Number(r.changes)}}}}},run:async()=>sql.exec(s)}}};
+ await initRemoteCut(db);const host='a'.repeat(64),file='b'.repeat(64),machine='c'.repeat(64);
+ const service=createRemoteCut(db,async()=>({id:host}),{now:()=>1000});
+ const desktop=(action,o={})=>service.desktop({action,token:'test-only',...o},'https://cut.test');
+ const thumb=fs.readFileSync('job-qr-scan-test.png').toString('base64');
+ await desktop('cut_sync',{enabled:true,catalog:[{id:file,job:'job-test',no:'JB-TEST',name:'ตัวอย่างหลายขนาด.ai',sheet:1,total:2,thumb:'data:image/png;base64,'+thumb}],machines:[{id:machine,name:'CE7000-130'}]});
+ const pair=await desktop('cut_pair');
+ const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
+ const context=await browser.newContext({viewport:{width:390,height:1000},locale:'th-TH'}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await context.route('https://cut.test/**',async route=>{try{const r=route.request();const req=new Request(r.url(),{method:r.method(),headers:r.headers(),...(r.method()==='POST'?{body:r.postData()}: {})});const res=new URL(r.url()).pathname==='/cut/api'?await service.mobile(req):mobileCutPage();await route.fulfill({status:res.status,headers:Object.fromEntries(res.headers),body:await res.text()});}catch(e){console.error('ROUTE ERROR',e.message);await route.abort();}});
+ await page.goto('https://cut.test/cut?job=job-test');await page.locator('#pairHelp').waitFor({state:'visible'});
+ await page.goto(pair.url);await page.locator('#work').waitFor({state:'visible'});assert(!page.url().includes('#pair='));
+ await page.goto('https://cut.test/cut?job=job-test');await page.locator('#file option[value="'+file+'"]').waitFor({state:'attached'});
+ assert(await page.locator('#submit').isDisabled());
+ await page.locator('#file').selectOption(file);await page.locator('#machine').selectOption(machine);await page.locator('#ready').check();assert(await page.locator('#submit').isEnabled());
+ await page.screenshot({path:'mobile-cut-ready.png',fullPage:true});
+ page.once('dialog',d=>d.accept());await page.locator('#submit').click();
+ await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('รอคอมรับ'));
+ const polled=await desktop('cut_poll');assert(polled.command);let sent=0;const journal=new Set();
+ const exec=Dispatcher.executor({now:()=>1000,guard:()=>true,remember:id=>{if(journal.has(id))return false;journal.add(id);return true;},prepare:cmd=>{assert.equal(cmd.file,file);assert.equal(cmd.machine,machine);return()=>{sent++;return Promise.resolve();}},ack:r=>desktop('cut_ack',r)});
+ await exec.run(polled.command);await page.locator('#check').click();await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('ส่งข้อมูลเข้าเครื่องแล้ว'));
+ await page.reload();await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('ส่งข้อมูลเข้าเครื่องแล้ว'));assert.equal(sent,1);assert(await page.locator('#submit').isDisabled());
+ assert(!await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth));assert.deepEqual(errors,[]);
+ await browser.close();console.log('PASS: mobile pairing cookie, explicit file/sheet/machine/readiness, confirmation -> real relay -> desktop -> fake cutter, reload does not resend; no browser errors');
+})().catch(e=>{console.error(e);process.exit(1)});

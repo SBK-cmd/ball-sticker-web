@@ -272,6 +272,22 @@ module.exports = function createCore(opt) {
     if (!lic || !lic.token) return Promise.resolve({});
     return api({ action: 'features', token: lic.token }).then(function (j) { var f = (j && j.features) || {}; f.tools_off = (j && j.tools_off) || []; return f; }, function () { return {}; });
   }
+  function remoteCut(action, body) {
+    if (['cut_sync','cut_pair','cut_poll','cut_ack','cut_clear'].indexOf(action) < 0) return Promise.reject(new Error('unknown remote action'));
+    var lic=readLic();if(!lic||!lic.token)return Promise.reject(new Error('เข้าสู่ระบบ SignTools ก่อน'));
+    var data=Object.assign({},body||{},{action:action,token:lic.token});return api(data).then(function(j){if(!j||!j.ok)throw new Error(j&&j.error||'ต่อระบบมือถือไม่ได้');return j;});
+  }
+  function remoteRemember(id) {
+    if (!/^[a-zA-Z0-9_-]{16,80}$/.test(id)) throw new Error('รหัสคำสั่งไม่ถูกต้อง');
+    var f=path.join(dataDir,'remote-cut-journal.json'),d={};
+    if(fs.existsSync(f)){try{d=JSON.parse(fs.readFileSync(f,'utf8'));}catch(e){throw new Error('อ่านประวัติคำสั่งไม่ได้ ให้ตรวจคอมก่อนส่งตัด');}}
+    if(d[id])return false;
+    Object.keys(d).forEach(function(k){if(d[k]<Date.now()-2*86400000)delete d[k];});
+    if(Object.keys(d).length>2000)throw new Error('ประวัติคำสั่งเต็ม');
+    d[id]=Date.now();mkdirp(dataDir);var temp=f+'.tmp',fd=fs.openSync(temp,'w');
+    try{fs.writeFileSync(fd,JSON.stringify(d));fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
+    fs.renameSync(temp,f);return true;
+  }
   function checkUpdate() {
     var lic = readLic();          // ส่งโทเคนไปด้วย → เครื่องทดสอบเบต้าได้รุ่นเบต้า
     return api(lic && lic.token ? { action: 'latest', token: lic.token } : { action: 'latest' }).then(function (j) {
@@ -333,6 +349,7 @@ module.exports = function createCore(opt) {
 
   return {
     machineId: machineId, machineName: machineName, version: readVersion, localStatus: localStatus,
-    activate: activate, activateAccount: activateAccount, refresh: refresh, via: function () { return via.last; }, deactivate: deactivate, memberLink: memberLink, diag: diag, report: function (t) { return api({ action: 'diag', text: String(t).slice(0, 900) }).catch(function () {}); }, checkUpdate: checkUpdate, applyUpdate: applyUpdate, cmpVer: cmpVer, features: features
+    activate: activate, activateAccount: activateAccount, refresh: refresh, via: function () { return via.last; }, deactivate: deactivate, memberLink: memberLink, diag: diag, report: function (t) { return api({ action: 'diag', text: String(t).slice(0, 900) }).catch(function () {}); }, checkUpdate: checkUpdate, applyUpdate: applyUpdate, cmpVer: cmpVer, features: features,
+    remoteCut:remoteCut, remoteRemember:remoteRemember, hash:function(s){return crypto.createHash('sha256').update(String(s),'utf8').digest('hex');}
   };
 };
