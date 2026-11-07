@@ -216,7 +216,16 @@
     $('cutRead').disabled = true;
     host('st_cutRead').then(function (r) { $('cutRead').disabled = false; applyRead(r, null); });
   };
-  window.ST_cutApi = { read: function () { return host('st_cutRead'); }, load: function (snap, ctx) { applyRead(JSON.parse(JSON.stringify(snap)), ctx); } };
+  window.ST_cutApi = {
+    read: function () { return host('st_cutRead'); },
+    load: function (snap, ctx) { applyRead(JSON.parse(JSON.stringify(snap)), ctx); },
+    markCheck: function () { return host('st_markCheck'); },
+    send: function () { return sendNow(); },
+    info: function () {   // สรุปว่าจะส่งอะไรเข้าเครื่องไหน (ให้หน้าคิวงานโชว์ก่อนกดตัด)
+      var m = machines[cur] || {};
+      return { ok: !!job && !blockMk, blocked: blockMk, n: job ? job.n : 0, w: job ? job.w : 0, h: job ? job.h : 0, machine: m.name || '', ip: ip(), port: port(), useMk: !!(marks && $('cutUseMk').checked), mkSeg: !!(marks && marks.seg), drv: !!$('cutDrv').checked };
+    }
+  };
   $('cutTest').onclick = function () {
     window.ST_cutCtx = null; marks = null; blockMk = false; $('cutMkRow').classList.add('hidden');
     isTest = true; raw = STCut.testPaths(); rawLabel = 'ชิ้นทดสอบ 20×20 มม.'; $('cutWarn').textContent = '';
@@ -362,20 +371,30 @@
       b.classList.add('arm'); b.textContent = 'กดอีกครั้งเพื่อตัด · ' + job.w.toFixed(0) + '×' + job.h.toFixed(0) + ' มม.';
       clearTimeout(armT); armT = setTimeout(disarm, 4000); return;
     }
-    disarm(); b.disabled = true; status('กำลังส่งงานไป ' + h + ':' + p + ' …', '');
+    disarm(); sendNow().catch(function () {});
+  };
+  // ส่งงานที่อ่านไว้เข้าเครื่องตัด (ใช้ร่วมกับปุ่ม "ส่งตัด" และปุ่ม "ตัด" ในคิวงาน — การยืนยัน 2 ครั้งทำที่ผู้เรียก)
+  function sendNow() {
+    var b = $('cutGo'), h = ip(), p = port();
+    if (!job || blockMk) return Promise.reject(new Error(blockMk ? 'มาร์คแบบนี้ยังส่งตัดจากแผงไม่ได้' : 'ยังไม่มีงานให้ส่ง'));
+    if (!validIp(h) || !p) { status('ตั้ง IP และพอร์ตก่อน (กด "ตรวจหา")', 'warn'); return Promise.reject(new Error('ยังไม่ได้ตั้ง IP/พอร์ตเครื่องตัด — ตั้งในหน้า "ส่งตัด" ก่อน')); }
+    if (!req()) { status('ใช้ได้เฉพาะใน Illustrator', 'warn'); return Promise.reject(new Error('ใช้ได้เฉพาะใน Illustrator')); }
+    b.disabled = true; status('กำลังส่งงานไป ' + h + ':' + p + ' …', '');
     try {   // ส่งสรุปงานให้ร้านดู (คำสั่งที่ไม่ใช่การเดินมีด + จำนวนเส้นแต่ละชนิด) — ไว้ตรวจปัญหา
       var hdr = job.data.split('\x03').filter(function (x) { return !/^(D|M\d|BZ)/.test(x); }).join(' | ').replace(/[\x00-\x1f]/g, '');
       var kinds = (raw || []).reduce(function (a, q) { a[q.k || 'kiss'] = (a[q.k || 'kiss'] || 0) + 1; return a; }, {});
       if (window.ST_core && window.ST_core.report) window.ST_core.report('sendcut ' + h + ':' + p + ' drv=' + $('cutDrv').checked + ' kinds=' + JSON.stringify(kinds) + ' n=' + job.n + ' :: ' + hdr.slice(0, 600));
     } catch (er) {}
-    send(h, p, job.data).then(function (n) {
+    return send(h, p, job.data).then(function (n) {
       b.disabled = false;
       status('✓ ส่งแล้ว ' + Math.round(n / 1024 * 10) / 10 + ' KB · ' + job.n + ' เส้น', 'ok'); toast('✓ ส่งงานเข้าเครื่องตัดแล้ว');
       try { if (window.ST_cutCtx) document.dispatchEvent(new CustomEvent('st:cutsent', { detail: window.ST_cutCtx })); } catch (e2) {}
+      return { n: n, lines: job.n, ip: h, port: p };
     }, function (e) {
       b.disabled = false; status('⚠ ส่งไม่ได้: ' + e.message + ' · ถ้า Cutting Master เปิดค้างอยู่ให้ปิดก่อน', 'warn');
+      throw e;
     });
-  };
+  }
   function disarm() { clearTimeout(armT); var b = $('cutGo'); b.classList.remove('arm'); b.textContent = 'ส่งตัด'; }
 
   langUI(); draw();
