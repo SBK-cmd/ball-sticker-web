@@ -1385,6 +1385,27 @@ function st_markCheck() {
             ',"ab":[' + [ab[0] * k, ab[1] * k, ab[2] * k, ab[3] * k].join(',') + '],"marks":[' + pts.join(',') + ']}';
     } catch (e) { return st_err(e.message); }
 }
+// รูปพรีวิวเล็กของ artboard ที่เปิดอยู่ (PNG ชั่วคราว แผงจะย่อแล้วลบไฟล์เอง) — ใช้แสดงหน้าไฟล์ในคิวงาน · พังก็แค่ไม่มีรูป
+function st_thumb() {
+    var uil = null;
+    try {
+        var doc = st_doc();
+        try { uil = app.userInteractionLevel; app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS; } catch (eu) {}
+        var r = doc.artboards[doc.artboards.getActiveArtboardIndex()].artboardRect, m = Math.max(r[2] - r[0], r[1] - r[3]);
+        if (!(m > 0)) return st_err('artboard ว่าง');
+        var sc = Math.min(800, Math.max(20, 400 / m * 100));
+        var o = new ExportOptionsPNG24();
+        o.antiAliasing = true; o.transparency = true; o.artBoardClipping = true; o.horizontalScale = sc; o.verticalScale = sc;
+        var f = new File(Folder.temp.fsName + '/st_thumb_' + new Date().getTime() + '.png');
+        doc.exportFile(f, ExportType.PNG24, o);
+        try { if (uil !== null) app.userInteractionLevel = uil; } catch (e2) {}
+        if (!f.exists) return st_err('ส่งออกรูปไม่สำเร็จ');
+        return '{"path":' + st_q(f.fsName) + '}';
+    } catch (e) {
+        try { if (uil !== null) app.userInteractionLevel = uil; } catch (e3) {}
+        return st_err(e.message);
+    }
+}
 function st_cutRead() {
     try {
         var doc = st_doc(), sel = st_selection(doc), paths = [], info = { text: 0, other: 0 }, src, i;

@@ -374,3 +374,5 @@ body.intool .topbar{display:flex}
 .cqdg{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:6px;align-items:center;margin:6px 0 4px;font-size:12px}
 .cqdg input{width:100%;padding:5px 6px;font-size:13px;border-radius:6px;border:1px solid rgba(255,255,255,.18);background:#1b1b20;color:#eee;box-sizing:border-box}
 .cqdg input:disabled{opacity:.4}
+.cqth2{width:44px;height:44px;object-fit:contain;vertical-align:middle;margin-right:8px;border-radius:6px;background:#e9e9ee;cursor:pointer}
+.cqf .cqfn:has(.cqth2){white-space:normal}

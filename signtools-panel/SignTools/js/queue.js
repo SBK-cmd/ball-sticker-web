@@ -231,12 +231,35 @@
     if (!sent && !wait) return '';
     return '<span class="cqchip' + (sent && sent === fs.length ? ' done' : '') + '">' + (sent ? '✅ ส่งตัดแล้ว ' + sent + '/' + fs.length : '') + (sent && wait ? ' · ' : '') + (wait ? '⏳ รอตัด ' + wait : '') + '</span>';
   }
+  // รูปพรีวิวเล็กของไฟล์: ให้ Illustrator ส่งออก PNG ชั่วคราว → ย่อเหลือ ~160px ด้วย canvas → เก็บเป็น data URL (ล้มเหลวก็ไม่มีรูป ไม่กระทบการสแกน)
+  function makeThumb() {
+    return host('st_thumb').then(function (r) {
+      if (!r || r.error || !r.path) return '';
+      var R = window.cep_node && window.cep_node.require; if (!R) return '';
+      var fs = R('fs'), b64 = '';
+      try { b64 = fs.readFileSync(r.path).toString('base64'); } catch (e) { return ''; }
+      try { fs.unlinkSync(r.path); } catch (e2) {}
+      return new Promise(function (resolve) {
+        var im = new Image();
+        im.onload = function () {
+          try {
+            var m = Math.max(im.naturalWidth, im.naturalHeight, 1), k = Math.min(1, 160 / m), cv = document.createElement('canvas');
+            cv.width = Math.max(1, Math.round(im.naturalWidth * k)); cv.height = Math.max(1, Math.round(im.naturalHeight * k));
+            cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+            var u = cv.toDataURL('image/png'); resolve(u.length < 120000 ? u : cv.toDataURL('image/jpeg', 0.8));
+          } catch (e3) { resolve(''); }
+        };
+        im.onerror = function () { resolve(''); };
+        im.src = 'data:image/png;base64,' + b64;
+      });
+    }).catch(function () { return ''; });
+  }
   function fileBlock(j, withRemove) {
     var fs = filesOf(j);
     if (!fs.length) return '';
     return '<div class="cqfiles">' + fs.map(function (f, i) {
       var cq = cqGet(j, f);
-      return '<div class="cqf"><span class="cqfn" title="' + h(f.p) + '">📄 ' + h(f.n || String(f.p).split(/[\\/]/).pop()) + '</span>' +
+      return '<div class="cqf"><span class="cqfn" title="' + h(f.p) + '">' + (cq && cq.thumb ? '<img class="cqth2" data-act="cutprev" data-i="' + i + '" src="' + h(cq.thumb) + '" alt="">' : '📄 ') + h(f.n || String(f.p).split(/[\\/]/).pop()) + '</span>' +
         '<button class="btn ghost sm" data-act="open" data-i="' + i + '">เปิด</button>' +
         '<button class="btn ghost sm cqcut" data-act="scan" data-i="' + i + '">' + (cq ? '✂ สแกนใหม่' : '✂ สแกนตัด') + '</button>' +
         (withRemove ? '<button class="btn ghost sm" data-act="unlink" data-i="' + i + '" aria-label="เอาไฟล์นี้ออก">✕</button>' : '') + '</div>' +
@@ -280,10 +303,11 @@
         return window.ST_cutApi.read().then(function (rd) {
           if (rd.error) return toast('⚠ ' + rd.error);
           if (!rd.n) return toast('⚠ ไม่พบเส้นตัด (Kiss Cut / Die Cut) ในไฟล์นี้');
-          return window.ST_cutApi.markCheck().then(function (mv) {   // จุดมาร์คทุกจุด + artboard ไว้วาดพรีวิว (ไม่มีมาร์คก็ได้)
+          return Promise.all([window.ST_cutApi.markCheck(), makeThumb()]).then(function (pair) {
+            var mv = pair[0], thumb = pair[1];   // จุดมาร์คทุกจุด + artboard ไว้วาดพรีวิว (ไม่มีมาร์คก็ได้)
             var view = (mv && !mv.error && mv.why === 'ok' && mv.marks && mv.marks.length) ? { ab: mv.ab, marks: mv.marks } : null;
             var all = cqAll();
-            all[cqKey(j, cf)] = { jid: j.id, p: cf.p, n: cf.n || '', no: j.no || '', jName: j.jName || '', savedAt: Date.now(), mtime: fileMtime(cf.p), snap: rd, view: view, viewNote: view ? '' : String(mv && (mv.error || mv.why) || 'no-reply') };
+            all[cqKey(j, cf)] = { jid: j.id, p: cf.p, n: cf.n || '', no: j.no || '', jName: j.jName || '', savedAt: Date.now(), mtime: fileMtime(cf.p), snap: rd, view: view, thumb: thumb || '', viewNote: view ? '' : String(mv && (mv.error || mv.why) || 'no-reply') };
             if (!cqSaveAll(all)) return toast('⚠ เก็บไม่ได้ (พื้นที่เก็บของแผงเต็ม) — ลบรายการรอตัดเก่าออกก่อน');
             render(); refreshDetail();
             toast('✓ สแกนแล้ว ' + rd.n + ' เส้น' + (rd.marks ? ' + มาร์ค' : ' (ไม่พบมาร์ค)') + ' — เก็บไว้ในรอตัด');
