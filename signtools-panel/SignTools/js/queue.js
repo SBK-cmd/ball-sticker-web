@@ -258,15 +258,19 @@
     var fs = filesOf(j);
     if (!fs.length) return '';
     return '<div class="cqfiles">' + fs.map(function (f, i) {
-      var cq = cqGet(j, f);
-      return '<div class="cqf"><span class="cqfn" title="' + h(f.p) + '">' + (cq && cq.thumb ? '<img class="cqth2" data-act="cutprev" data-i="' + i + '" src="' + h(cq.thumb) + '" alt="">' : '📄 ') + h(f.n || String(f.p).split(/[\\/]/).pop()) + '</span>' +
-        '<button class="btn ghost sm" data-act="open" data-i="' + i + '">เปิด</button>' +
-        '<button class="btn ghost sm cqcut" data-act="scan" data-i="' + i + '">' + (cq ? '✂ สแกนใหม่' : '✂ สแกนตัด') + '</button>' +
-        (withRemove ? '<button class="btn ghost sm" data-act="unlink" data-i="' + i + '" aria-label="เอาไฟล์นี้ออก">✕</button>' : '') + '</div>' +
-        (cq ? '<div class="cqf cqwait' + (cq.sentAt ? ' done' : '') + '"><span class="cqfn">' + (cq.sentAt ? '✅ ส่งตัดแล้ว ' + h(cqTime(cq.sentAt)) + ' · ' : '⏳ รอตัด · ') + 'สแกน ' + h(cqTime(cq.savedAt)) + ' · ' + h(cq.snap && cq.snap.n || 0) + ' เส้น</span>' +
+      var cq = cqGet(j, f), key = cqKey(j, f), nm = f.n || String(f.p).split(/[\\/]/).pop(), st = cq ? (cq.sentAt ? 'sent' : 'wait') : 'none', ar = armed === key;
+      var th = cq && cq.thumb ? '<img class="cqth3" data-act="cutprev" data-i="' + i + '" src="' + h(cq.thumb) + '" alt="">' : '<div class="cqth3 ph">' + (/\.eps$/i.test(nm) ? 'EPS' : /\.pdf$/i.test(nm) ? 'PDF' : 'AI') + '</div>';
+      var badge = st === 'sent' ? '<span class="cqbd sent">✅ ส่งตัดแล้ว ' + h(cqTime(cq.sentAt)) + '</span>' : st === 'wait' ? '<span class="cqbd wait">⏳ รอตัด</span>' : '<span class="cqbd none">ยังไม่สแกน</span>';
+      var meta = cq ? '<span class="cqmeta">สแกน ' + h(cqTime(cq.savedAt)) + ' · ' + h(cq.snap && cq.snap.n || 0) + ' เส้น</span>' : '';
+      var acts = (cq ? '<button class="btn sm cqmain' + (ar ? ' arm' : '') + '" data-act="cutnow" data-i="' + i + '">' + (ar ? 'กดอีกครั้งเพื่อตัด' : cq.sentAt ? '✂ ตัดอีกครั้ง' : '✂ ตัด') + '</button>' +
           '<button class="btn ghost sm" data-act="cutprev" data-i="' + i + '">👁 พรีวิว</button>' +
-          '<button class="btn sm' + (armed === cqKey(j, f) ? ' arm' : '') + '" data-act="cutnow" data-i="' + i + '">' + (armed === cqKey(j, f) ? 'กดอีกครั้งเพื่อตัด' : cq.sentAt ? '✂ ตัดอีกครั้ง' : '✂ ตัด') + '</button>' +
-          '<button class="btn ghost sm" data-act="cutdrop" data-i="' + i + '" aria-label="ลบรอตัด">✕</button></div>' : '');
+          '<button class="btn ghost sm" data-act="scan" data-i="' + i + '">↻ สแกนใหม่</button>'
+        : '<button class="btn sm cqmain scan" data-act="scan" data-i="' + i + '">✂ สแกนตัด</button>') +
+        '<button class="btn ghost sm" data-act="open" data-i="' + i + '">เปิด</button>' +
+        (cq ? '<button class="btn ghost sm cqx" data-act="cutdrop" data-i="' + i + '" title="ล้างรายการรอตัด" aria-label="ล้างรายการรอตัด">✕</button>' : '');
+      return '<div class="cqfc ' + st + '">' + th + '<div class="cqfb"><div class="cqfnm" title="' + h(f.p) + '">' + h(nm) + '</div>' +
+        '<div class="cqfst">' + badge + meta + '</div><div class="cqfa">' + acts + '</div></div>' +
+        (withRemove ? '<button class="cqunl" data-act="unlink" data-i="' + i + '" title="เอาไฟล์นี้ออกจากใบงาน" aria-label="เอาไฟล์นี้ออกจากใบงาน">✕</button>' : '') + '</div>';
     }).join('') + '</div>';
   }
   function linkLabel(j) { return filesOf(j).length ? '+ ผูกไฟล์เพิ่ม' : 'ผูกไฟล์ที่เปิดอยู่'; }
