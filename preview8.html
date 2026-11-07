@@ -1446,6 +1446,15 @@ tr{break-inside:avoid}
 .chg-q{text-align:center}.chg-q canvas{width:min(260px,70vw);height:auto;border:1px solid #eee;border-radius:12px}.chg-q small{display:block;color:#888;margin-top:4px}
 .chg-link{margin-top:12px}.chg-link label{font-size:13px;color:#666;display:block;margin-bottom:4px}.chg-link input{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #ddd;border-radius:10px;font-size:13px}
 .chg-a{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.chg-a .btn{flex:1;min-width:130px}
+.wk-k{font-weight:700;margin:12px 0 6px;color:#1f4e79}
+.wk-acc{display:grid;gap:8px}.wk-acc label{display:flex;align-items:center;gap:10px;border:2px solid #e3e3e3;border-radius:12px;padding:10px 12px;cursor:pointer}
+.wk-acc label:has(input:checked){border-color:#1f4e79;background:#eef4fa}.wk-acc input{width:20px;height:20px;flex:none}.wk-acc span{display:flex;flex-direction:column}.wk-acc small{color:#777}
+.wk-f{display:grid;grid-template-columns:1fr 1fr;gap:10px}.wk-f label,.wk-n{display:flex;flex-direction:column;gap:4px;font-size:13px;color:#555}.wk-n{margin-top:10px}
+.wk-f input,.wk-n input{font-size:18px;padding:10px;border:1px solid #cfcfcf;border-radius:10px;color:#222;background:#fff}.wk-f small,.wk-n small{color:#999}
+.wk-sum{flex-direction:column;align-items:stretch;gap:2px;margin-top:8px}.wk-sum>div{display:flex;justify-content:space-between;font-size:15px}.wk-sum .wk-bal{font-size:18px;border-top:1px solid #eee;margin-top:4px;padding-top:6px}.wk-sum .wk-bal b{font-size:24px;color:#1f4e79}
+.wk-msg{margin:8px 0;color:#b26a00;font-weight:600}.wk-msg:empty,.wk-msg[hidden]{display:none}
+.wk-stat{margin-top:10px;padding:10px 12px;border-radius:12px;background:#fff6e0;color:#8a5a00;font-weight:600;text-align:center}.wk-stat.paid{background:#e4f7ea;color:#14753a}
+@media (max-width:420px){.wk-f{grid-template-columns:1fr}}
 body.chg-open{overflow:hidden}
 #nameSuggest{position:fixed;z-index:1300;background:#fff;border:1px solid #ddd;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.25);overflow:auto;-webkit-overflow-scrolling:touch}
 #nameSuggest button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #f0f0f0;background:#fff;padding:12px 14px;font:inherit;font-size:16px;color:#222;cursor:pointer}
@@ -2527,11 +2536,15 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.17</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.17 · พรีวิว</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
       <span>ติดตามพัสดุ</span>
+    </button>
+    <button type="button" class="top-track wk-top no-print" id="wkBtn" aria-label="จ่าย QR หน้าร้าน">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1"></rect><path d="M14 14h3v3h-3zM19 14v0M14 20h2M19 18v3"></path></svg>
+      <span>QR หน้าร้าน</span>
     </button>
     <a class="sidebar-cta no-print" href="#" data-tab="confirm" id="sidebarCta">
       <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -2655,6 +2668,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
 
   <div class="tax-sheet-backdrop no-print" id="taxSheetBackdrop" hidden></div>
   <div class="tax-sheet no-print" id="taxSheet" role="menu" aria-label="เมนูเพิ่มเติม: ใบเสนอราคาและภาษี" hidden>
+    <button type="button" class="tax-sheet-item" id="wkBtn2">💳 จ่าย QR หน้าร้าน</button>
     <button type="button" class="tax-sheet-item" data-tab="track">ติดตามพัสดุ</button>
     <button type="button" class="tax-sheet-item" data-tab="wholesale">ใบราคาส่ง</button>
     <button type="button" class="tax-sheet-item" data-tab="quote">ใบเสนอราคา</button>
@@ -3963,7 +3977,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=d0608d223a",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=75fc455635",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
