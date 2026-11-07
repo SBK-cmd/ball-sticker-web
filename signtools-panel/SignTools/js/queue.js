@@ -270,11 +270,18 @@
     }).slice(0,100);
   }
   window.ST_queueRemote={
-    catalog:function(){return remoteEntries().map(function(q){return{id:q.rid,job:q.jid,no:q.no,name:String(q.n||q.p).split(/[\\/]/).pop().slice(0,180),sheet:q.sheet,total:q.total,thumb:q.thumb&&q.thumb.length<=60000?q.thumb:''};});},
-    prepare:function(ref,machine){
+    catalog:function(){return remoteEntries().map(function(q){
+      var j=jobs.filter(function(x){return x.id===q.jid;})[0]||{},m=q.snap&&q.snap.marks||{},kinds={kiss:0,die:0};
+      ((q.snap&&q.snap.paths)||[]).forEach(function(p){kinds[p.k==='die'?'die':'kiss']++;});
+      var cl=function(s,n){return String(s==null?'':s).replace(/[\u0000-\u001f]/g,' ').trim().slice(0,n);};
+      var items=(j.items||[]).filter(function(i){return i&&cl(i.name,1);}).slice(0,6).map(function(i){return cl(i.name,100)+(i.qty?' × '+cl(i.qty,16):'');});
+      var wd=Math.round(m.dy*10)/10,ht=Math.round(m.dx*10)/10;
+      return{id:q.rid,job:q.jid,no:q.no,name:String(q.n||q.p).split(/[\\/]/).pop().slice(0,180),sheet:q.sheet,total:q.total,thumb:q.thumb&&q.thumb.length<=60000?q.thumb:'',
+        cust:cl(j.jName||q.jName,120),items:items,kinds:kinds,w:wd>0&&wd<100000?wd:0,h:ht>0&&ht<100000?ht:0};});},
+    prepare:function(ref,machine,drv){
       var q=remoteEntries().filter(function(q){return q.rid===ref;})[0];
       if(!q)throw new Error('ไฟล์เปลี่ยน ถูกยกเลิกการผูก หรือยังไม่ได้สแกนแผ่นนี้ใหม่');
-      return window.ST_cutApi.remotePrepare(machine,q.snap,{key:q.jid+'|'+q.p});
+      return window.ST_cutApi.remotePrepare(machine,q.snap,{key:q.jid+'|'+q.p},drv);
     }
   };
   function cqKey(j, f) { return j.id + '|' + f.p; }

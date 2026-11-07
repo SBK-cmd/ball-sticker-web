@@ -16,6 +16,14 @@
       });
     });
   }
+  // เรียก Illustrator แบบมีเวลาจำกัด: ถ้าไม่ตอบกลับ ให้บอกบนหน้าจอ แทนที่จะเงียบ
+  function hostT(fn, arg, ms) {
+    var lim = ms || 20000;
+    return new Promise(function (resolve) {
+      var done = false, t = setTimeout(function () { if (!done) { done = true; resolve({ error: 'Illustrator ไม่ตอบกลับภายใน ' + Math.round(lim / 1000) + ' วินาที (' + fn + ')' }); } }, lim);
+      host(fn, arg).then(function (r) { if (!done) { done = true; clearTimeout(t); resolve(r); } });
+    });
+  }
   var toastT;
   function toast(t) { var el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { el.classList.remove('show'); }, 3200); }
   function num(id, d) { var v = parseFloat($(id).value); return isNaN(v) ? d : v; }
@@ -134,7 +142,7 @@
     var m = mode();
     renderList(m);
     result = null; page = 0;
-    if (!items.length) { $('stkRes').textContent = 'ยังไม่มีสติ๊กเกอร์'; $('stkGo').disabled = true; draw(); return; }
+    if (!items.length) { $('stkRes').textContent = 'ยังไม่มีสติ๊กเกอร์ — เลือกงานแล้วกด ② ได้เลย (หรือกด ① อ่านก่อน)'; $('stkGo').disabled = false; draw(); return; }
     var sh = sheetSize();
     var list = (m === 'fill' ? [items[0]] : items).map(function (it, i) {
       var s = cutSize(it);
@@ -311,17 +319,26 @@
   }
 
   // ---------- คำสั่ง ----------
-  $('stkRead').onclick = function () {
-    host('st_stkRead').then(function (r) {
-      if (r.error) { toast('⚠ ' + r.error); return; }
+  function doRead() {
+    $('stkWarn').textContent = '';
+    if (!items.length) $('stkRes').textContent = 'กำลังอ่านลายที่เลือก…';
+    return hostT('st_stkRead').then(function (r) {
+      if (r.error) { toast('⚠ ' + r.error); $('stkWarn').textContent = '⚠ อ่านลายไม่ได้: ' + r.error; recalc(); return false; }
+      if (!r.items || !r.items.length) { $('stkWarn').textContent = '⚠ อ่านได้ 0 ลาย · Illustrator ตอบ: ' + JSON.stringify(r).slice(0, 240); recalc(); return false; }
       if (items.length) { $('stkJobQROn').checked=false; $('stkJobQRJob').value=''; } // อ่านชุดใหม่ต้องเลือกใบงานใหม่ ป้องกัน QR จากงานก่อนติดไปด้วย
       items = r.items; qty = {};
       MM = r.unit === 'mm' ? 1 : MM0 / (r.sf || 1);   // CorelDRAW ส่งค่าเป็น มม. อยู่แล้ว
       $('stkHint').textContent = 'อ่านได้ ' + items.length + ' ลาย' + (r.sf > 1 && r.unit !== 'mm' ? ' · ไฟล์ Large Canvas (สเกล 1:' + r.sf + ')' : '') + (items.length > 1 && mode() === 'fill' ? ' — เลือก "หลายลาย" เพื่อใส่จำนวนแต่ละลาย' : '');
       $('stkWarn').textContent = '';
       recalc();
+      return true;
+    }).catch(function (e) {   // ข้อผิดพลาดในแผงเอง (เดิมเงียบหายไป) → แสดงให้เห็น
+      $('stkWarn').textContent = '⚠ แผงทำงานผิดพลาดตอนอ่านลาย: ' + (e && e.message || e) + (e && e.stack ? ' @ ' + String(e.stack).split('\n')[1].trim().slice(-80) : '');
+      try { recalc(); } catch (e2) {}
+      return false;
     });
-  };
+  }
+  $('stkRead').onclick = doRead;
   var bigArm = false;
   ['stkTrim'].forEach(function (id) { $(id).addEventListener('change', draw); });
   // Illustrator เด้งระหว่างสร้างแผ่นครั้งก่อน → บอกขั้นที่ค้าง + ส่งให้ร้านดู
@@ -346,7 +363,17 @@
     host('st_stkPreviewClear').then(function (r) { $('stkPvClear').classList.add('hidden'); $('stkPv').textContent = 'ดูเส้นตัดบนงานก่อน'; $('stkPvMsg').textContent = r.error ? '⚠ ' + r.error : r.msg; });
   };
   $('stkGo').onclick = function () {
-    if (!result || !result.placed) return;
+    if (!items.length) {   // ยังไม่ได้อ่านลาย (ไม่ได้กด ①) → อ่านสติ๊กเกอร์ที่เลือกให้เอง แล้วสร้างต่อ ไม่ปล่อยให้ปุ่มกดไม่ได้เฉยๆ
+      var g0 = $('stkGo'); g0.disabled = true; g0.textContent = 'กำลังอ่านลายที่เลือก…';
+      doRead().then(function (ok) {
+        g0.textContent = '② สร้างแผ่นงาน';
+        if (!ok) { g0.disabled = false; return; }
+        if (result && result.placed) $('stkGo').onclick();
+        else { g0.disabled = false; $('stkWarn').textContent = '⚠ อ่านลายแล้วแต่วางลงแผ่นไม่ได้ — ' + $('stkRes').textContent.replace(/\s+/g, ' ').slice(0, 160); }
+      });
+      return;
+    }
+    if (!result || !result.placed) { $('stkWarn').textContent = '⚠ ยังวางลงแผ่นไม่ได้ — ' + $('stkRes').textContent.replace(/\s+/g, ' ').slice(0, 160); return; }
     var sh = sheetSize(), go = $('stkGo');
     var qrWasOn=!!jobQR; updateJobQR();
     if (qrError || (qrWasOn && !jobQR)) { toast('⚠ '+(qrError||'เลือกใบงาน QR ใหม่')); return; }
@@ -386,9 +413,9 @@
     }).then(function (r) {
       go.disabled = false; go.textContent = '② สร้างแผ่นงาน'; $('stkPvClear').classList.add('hidden'); $('stkPv').textContent = 'ดูเส้นตัดบนงานก่อน';
       if (r.error) { toast('⚠ ' + r.error); $('stkWarn').textContent = '⚠ ' + r.error; return; }
-      toast('✓ ' + r.msg);
+      toast('✓ ' + r.msg); $('stkPvMsg').textContent = '✓ ' + r.msg + ' · แผ่นใหม่อยู่ทางขวาของ artboard เดิม';
       if (r.warn && r.warn.length) $('stkWarn').textContent = '⚠ ' + r.warn.join(' · ');
-    });
+    }).catch(function (e) { go.disabled = false; go.textContent = '② สร้างแผ่นงาน'; $('stkWarn').textContent = '⚠ แผงทำงานผิดพลาดตอนสร้างแผ่น: ' + (e && e.message || e); });
   };
   $('stkPrev').onclick = function () { if (page > 0) { page--; draw(); } };
   $('stkNext').onclick = function () { if (result && page < result.sheets.length - 1) { page++; draw(); } };

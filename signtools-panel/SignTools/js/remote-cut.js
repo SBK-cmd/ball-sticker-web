@@ -17,7 +17,7 @@
    var ex=w.STRemoteCut.executor({now:function(){return Math.floor(Date.now()/1000);},guard:enabled,remember:c.remoteRemember,
     prepare:function(cmd){
      if(cmd.version!==lastVersion)throw new Error('รายการไฟล์เปลี่ยน กรุณารีเฟรชมือถือ');
-     return w.ST_queueRemote.prepare(cmd.file,cmd.machine);
+     return w.ST_queueRemote.prepare(cmd.file,cmd.machine,cmd.drv||null);
     },ack:function(result){return c.remoteCut('cut_ack',result).catch(function(e){ackPending=result;throw e;});}
    });
    function tick(){

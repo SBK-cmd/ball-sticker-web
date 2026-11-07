@@ -1168,6 +1168,7 @@ function st_stkPlace(o) {
         for (i = emptyABs.length - 1; i >= 0; i--) { try { if (doc.artboards.length > 1) { doc.artboards.remove(emptyABs[i]); removed++; } } catch (er2) {} }
         abFirst -= removed;
         try { doc.artboards.setActiveArtboardIndex(abFirst); } catch (ea) {}
+        try { app.executeMenuCommand('fitin'); } catch (ef) {}   // มุมมองไปที่แผ่นใหม่ (อยู่ทางขวาของ artboard เดิม)
         if (removed) warn.push('ลบ artboard เดิมที่ว่าง ' + removed + ' อัน');
         if (cm5L) warn.push('มาร์ค CM5: ' + (cm5Seg ? 'Segment Area Type1 ทุก 25 ซม. (' + cm5N.join(', ') + ' ช่วง)' : '4 Points Type1') + (o.sheets.length > 1 ? ' · หลายแผ่นในไฟล์เดียว — ลองส่งตัดทีละแผ่นก่อน' : ''));
         if (o.die && o.die.only) warn.push('เลือก "Die Cut อย่างเดียว" ไว้ → ไม่สร้างเส้น Kiss Cut (เลเยอร์ Kiss Cut จะว่าง) · ปิดช่องนี้ถ้าต้องการเส้นตัดตามรูปด้วย');

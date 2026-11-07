@@ -13,7 +13,7 @@ rm -rf "$DEST"; rm -rf "$HOME/Library/Application Support/Adobe/CEP/extensions/T
 cp -R "$SRC" "$DEST"
 xattr -dr com.apple.quarantine "$DEST" 2>/dev/null
 if [ -f "$DEST/CSXS/manifest.xml" ]; then
-  echo ""; echo " OK - Sign Tools 1.13.54 installed to: $DEST"
+  echo ""; echo " OK - Sign Tools 1.13.57 installed to: $DEST"
   echo " Restart Illustrator, then open: Window > Extensions > Sign Tools"
 else
   echo "[ERROR] Copy failed."

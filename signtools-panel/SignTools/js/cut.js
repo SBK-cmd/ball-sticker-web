@@ -25,10 +25,11 @@
     var mk = marks && $('cutUseMk').checked ? { ox: marks.ox, oy: marks.oy, dx: marks.dx, dy: marks.dy, lenMM: marks.lenMM, cond: parseInt($('cutCond').value, 10) || 2 } : null;
     if (mk) { mk.seg = !!marks.seg; mk.stepMM = marks.stepMM || 250; }
     var cond = parseInt($('cutCond').value, 10) || 2, drv = null;
-    if ($('cutDrv').checked) {
+    var o2 = ovrActive() ? ovr : null;   // มือถือสั่งแรง/ความเร็วมา: ใช้ครั้งเดียว ไม่เขียนทับค่าที่ตั้งไว้ในเครื่องตัด
+    if ($('cutDrv').checked || o2) {
       var n = function (id, d) { var v = parseFloat($(id).value); return v > 0 ? v : d; };
-      var die = { k: 'die', cond: cond, speed: n('dDieS', 50), accel: n('dDieA', 2), force: n('dDieF', 25) };
-      var kis = { k: 'kiss', cond: cond, speed: n('dKisS', 71), accel: n('dKisA', 2), force: n('dKisF', 38) };
+      var die = { k: 'die', cond: cond, speed: o2 ? o2.dS : n('dDieS', 50), accel: n('dDieA', 2), force: o2 ? o2.dF : n('dDieF', 25) };
+      var kis = { k: 'kiss', cond: cond, speed: o2 ? o2.kS : n('dKisS', 71), accel: n('dKisA', 2), force: o2 ? o2.kF : n('dKisF', 38) };
       drv = $('cutFirst').value === 'die' ? [die, kis] : [kis, die];
     }
     return { lang: seg('cutLang') || 'gpgl', step: parseFloat($('cutStep').value) || 0.1, rotate: $('cutRot').checked, mirror: $('cutMirror').checked, overcut: Math.max(0, parseFloat($('cutOver').value) || 0), marks: mk, drv: drv, perPiece: !!drv && $('cutFirst').value === 'piece', nm: mk || isTest ? null : nmOpt() };
@@ -40,6 +41,8 @@
     return { rollW: v('nmW', 0), x0: v('nmX', 0), y0: v('nmY', 0), copies: Math.max(1, parseInt($('nmN').value, 10) || 1), gx: v('nmGX', 0), gy: v('nmGY', 0) };
   }
   var isTest = false;
+  var ovr = null;   // { kS,kF,dS,dF,t } จากมือถือ · หมดอายุใน 2 นาที
+  function ovrActive() { return !!ovr && Date.now() - ovr.t < 120000; }
   function nmUI() { $('cutNmBox').classList.toggle('hidden', !!(marks && $('cutUseMk').checked) || isTest); }
   function tryPort(h, p, ms) { return STCut.net(req()).tryPort(h, p, ms); }
   function send(h, p, data) { return STCut.net(req(), window.cep_node && window.cep_node.Buffer).send(h, p, data); }
@@ -223,9 +226,10 @@
     remoteMachines: function () {
       if(!window.ST_core||!window.ST_core.hash)return [];
       mSync();
-      return machines.filter(function(m){return validIp(m.ip||'')&&+m.port>0&&+m.port<65536;}).map(function(m,i){return {id:window.ST_core.hash(JSON.stringify(m)),name:m.name||('เครื่อง '+(i+1))};});
+      var num=function(v,d){v=Math.round(parseFloat(v));return v>0?v:d;};
+      return machines.filter(function(m){return validIp(m.ip||'')&&+m.port>0&&+m.port<65536;}).map(function(m,i){var d=m.drv||{};return {id:window.ST_core.hash(JSON.stringify(m)),name:m.name||('เครื่อง '+(i+1)),drv:{kS:Math.min(100,num(d.dKisS,71)),kF:Math.min(60,num(d.dKisF,38)),dS:Math.min(100,num(d.dDieS,50)),dF:Math.min(60,num(d.dDieF,25))}};});
     },
-    remotePrepare: function (machineId,snap,ctx) {
+    remotePrepare: function (machineId,snap,ctx,drv) {
       var index=-1;
       machines.forEach(function(m,i){if(window.ST_core.hash(JSON.stringify(m))===machineId)index=i;});
       if(index<0)throw new Error('เครื่องหรือการตั้งค่าเปลี่ยน กรุณาตรวจใหม่');
@@ -233,9 +237,16 @@
       if(sending)throw new Error('คอมกำลังส่งตัด');
       $('cutMachine').value=String(index);$('cutMachine').onchange();
       if(window.ST_core.hash(JSON.stringify(machines[index]))!==machineId)throw new Error('มีการแก้ค่าเครื่องตัด กรุณารีเฟรชมือถือ');
+      ovr=null;
+      if(drv){
+        var okn=function(v,lo,hi){return typeof v==='number'&&isFinite(v)&&Math.floor(v)===v&&v>=lo&&v<=hi;};
+        if(typeof drv!=='object'||!okn(drv.kF,1,60)||!okn(drv.dF,1,60)||!okn(drv.kS,1,100)||!okn(drv.dS,1,100))throw new Error('ค่าแรงกด/ความเร็วจากมือถือไม่ถูกต้อง');
+        ovr={kS:drv.kS,kF:drv.kF,dS:drv.dS,dF:drv.dF,t:Date.now()};
+      }
       applyRead(JSON.parse(JSON.stringify(snap)),ctx);$('cutUseMk').checked=true;rebuild();
-      if(!job||blockMk||!marks||!validIp(ip())||!port())throw new Error('ไฟล์ มาร์ค หรือเครื่องยังไม่พร้อม');
-      return sendNow;
+      if(!job||blockMk||!marks||!validIp(ip())||!port()){ovr=null;rebuild();throw new Error('ไฟล์ มาร์ค หรือเครื่องยังไม่พร้อม');}
+      var done=function(){ovr=null;rebuild();};
+      return function(){return sendNow().then(function(r){done();return r;},function(e){done();throw e;});};
     },
     load: function (snap, ctx) { applyRead(JSON.parse(JSON.stringify(snap)), ctx); },
     markCheck: function () { return host('st_markCheck'); },
@@ -257,7 +268,7 @@
     send: function () { return sendNow(); },
     info: function () {   // สรุปว่าจะส่งอะไรเข้าเครื่องไหน (ให้หน้าคิวงานโชว์ก่อนกดตัด)
       var m = machines[cur] || {};
-      return { ok: !!job && !blockMk, blocked: blockMk, n: job ? job.n : 0, w: job ? job.w : 0, h: job ? job.h : 0, machine: m.name || '', ip: ip(), port: port(), useMk: !!(marks && $('cutUseMk').checked), mkSeg: !!(marks && marks.seg), drv: !!$('cutDrv').checked };
+      return { ok: !!job && !blockMk, blocked: blockMk, n: job ? job.n : 0, w: job ? job.w : 0, h: job ? job.h : 0, machine: m.name || '', ip: ip(), port: port(), useMk: !!(marks && $('cutUseMk').checked), mkSeg: !!(marks && marks.seg), drv: !!$('cutDrv').checked || ovrActive() };
     }
   };
   $('cutTest').onclick = function () {
