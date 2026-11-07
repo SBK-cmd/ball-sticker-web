@@ -79,11 +79,12 @@ function bahtText(value) {
      ถ้ายังไม่เคยตั้ง perms: role "owner" = ทุกอย่าง, "staff" = ค่าเริ่มต้นพนักงาน
      ตอนบันทึกสิทธิ์จะตั้ง role = owner เฉพาะคนที่ได้ทุกอย่าง — เว็บเวอร์ชันเก่าที่ดูแค่ role จะไม่ให้สิทธิ์เกินที่ตั้งไว้ */
   const SUPER_ADMIN = 'ball';
+  const PAGECHAT_ENABLED = false; // แชตเพจ (Messenger) ปิดไว้ก่อน — โค้ดอยู่ครบ ตั้งเป็น true เพื่อเปิดกลับ (ต้องตั้ง Worker/KV/Webhook ตาม worker/README.md ก่อน)
   const PERM_GROUPS = [
     {title: 'หน้าที่เปิดได้', items: [
       ['calc', 'คำนวณสติ๊กเกอร์'], ['vat', 'คำนวณ VAT'], ['confirm', 'ใบคอนเฟิร์มงาน'], ['track', 'ติดตามพัสดุ'],
       ['wholesale', 'ใบราคาส่ง'], ['quote', 'ใบเสนอราคา'], ['bill', 'ใบเสร็จ / ใบกำกับภาษี'], ['purchase', 'ภาษีซื้อ'],
-      ['dash', 'แดชบอร์ด'], ['report', 'รายงานภาษี'], ['autopost', 'โพสต์ออโต้'], ['pagechat', 'แชตเพจ']]},
+      ['dash', 'แดชบอร์ด'], ['report', 'รายงานภาษี'], ['autopost', 'โพสต์ออโต้']].concat(PAGECHAT_ENABLED ? [['pagechat', 'แชตเพจ']] : [])},
     {title: 'ข้อมูลสำคัญ', items: [
       ['price', 'ราคาในหน้าคำนวณสติ๊กเกอร์'], ['bank', 'เงินเข้า-ออก · ยอดคงเหลือ · กระดิ่ง'], ['shop', 'แก้ข้อมูลร้าน']]}
   ];
@@ -114,7 +115,7 @@ function bahtText(value) {
   const isSuper = !window.BSAuth || (!!currentUser && isSuperUser(meRec)); // ไม่มีระบบบัญชีเลย (โหมดเก่า) ให้ถือว่าเป็นผู้ดูแล
   const myPerms = isSuper ? permsOf(null) : (currentUser ? permsOf(meRec) : {}); // ยังไม่ล็อกอิน = ยังไม่เห็นอะไร (หน้าล็อกอินบังอยู่)
   const CHAT_ENABLED = false; // แชทลูกค้า (LINE/เพจ) ปิดไว้ — แยกออกไปทำเป็นของตัวเอง ตั้งเป็น true เพื่อเปิดกลับ
-  const can = k => (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
+  const can = k => (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'pagechat' && !PAGECHAT_ENABLED) ? false : (k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
   const canBank = can('bank');
   // พนักงาน (ไม่ใช่เจ้าของ) ดูประวัติใบคอนเฟิร์มงานได้อย่างเดียว คีย์/แก้/ลบไม่ได้
   const canKey = isSuper || isOwnerFixed(meRec) || !!(meRec && meRec.role === 'owner');
@@ -3529,8 +3530,9 @@ function bahtText(value) {
   // จับคู่ยอดที่เรียกเก็บกับเงินเข้า (ยอดเท่ากัน · หลังเวลาที่ส่ง QR · ภายใน 7 วัน) แล้วแจ้งเตือน
   function matchPayCharges() {
     if (!canBank) return;
-    const pend = payCharges().filter(x => x.status !== 'paid' && Date.now() - (x.createdAt || 0) < 7 * 86400000);
-    if (!pend.length) { matchOwedBankIns(); return; }
+    // จับเฉพาะ QR ที่เรากดส่งให้ลูกค้าจริง (ไม่รวมรายการรอรับเงินที่ระบบสร้างเอง by:'auto') — กันเงินเข้ายอดเท่ากันไปตัดบิลงานส่งผิด
+    const pend = payCharges().filter(x => x.status !== 'paid' && x.by !== 'auto' && Date.now() - (x.createdAt || 0) < 7 * 86400000);
+    if (!pend.length) return;
     const used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
     const ins = wantimPoolAll();
     const done = [];
@@ -3547,7 +3549,6 @@ function bahtText(value) {
     done.forEach(r => { if (r.docs && r.docs.length) markDocsPaid(r.docs); flagBankInOwed(r.bankInId, (r.docs || []).map(d => d.no).filter(Boolean).join(', ') || r.name); });
     toast('✅ ' + done.map(r => (r.name || 'ลูกค้า') + ' ชำระ ' + money(r.amount) + ' บาทแล้ว').join(' · ')); playChime();
     renderPayHist();
-    matchOwedBankIns();
   }
   // เงินเข้าทั้งหมด (รวมบัญชีวันทิมที่ซ่อนจากพนักงาน) ไว้ใช้จับคู่เท่านั้น ไม่ได้โชว์
   const wantimPoolAll = () => (store.get('bs_bank_in', []) || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -3561,6 +3562,7 @@ function bahtText(value) {
   // เงินเข้าบัญชีวันทิมที่ยังไม่ผูกอะไร ยอดตรงกับ "ใบค้าง" ของลูกค้างานส่ง (ทั้งก้อนหรือบางใบรวมกัน) → ตัดใบนั้นเป็นชำระแล้วอัตโนมัติ
   function matchOwedBankIns() {
     try {
+      return;   // ปิดแล้ว: ห้ามตัดบิลค้างจากยอดเงินเท่ากันอย่างเดียว (ต้องมี QR ที่ส่งจริง)
       if (!canBank) return;
       const since = Date.now() - 14 * 86400000, used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
       const ins = wantimPoolAll().filter(b => b.account === 'วันทิม' && !b.matchedJobId && !used.has(b.id) && (b.createdAt || 0) >= since && num(b.amount) > 0).reverse();
@@ -3624,7 +3626,7 @@ function bahtText(value) {
           if (charges.some(c => c.id === id)) return;
           fresh.push({id, ref: payRef(Date.now()), chatId: '', name: x.name, channel: 'owed', amount: x.total, note: 'ยอดค้างรวม ' + x.docs.length + ' ใบ', status: 'pending', createdAt: Date.now(), by: 'auto', docs: x.docs.map(d => ({k: d.k, id: d.id}))});
         });
-        if (fresh.length) { store.set('bs_pay_charges', charges.concat(fresh)); fresh.forEach(r => cloudSave('payCharges', r)); }
+        // ไม่สร้างรายการรอรับเงินอัตโนมัติอีก (เดิมทำให้ยอดเท่ากันไปเข้างานส่งหมด)
       } catch (e) { console.error('refreshOwedMirrors', e); }
     }, 2500);
   }
@@ -6539,6 +6541,8 @@ function bahtText(value) {
       else if (a === 'send') { pcSend(); }
     });
   })();
+
+  if (!PAGECHAT_ENABLED) document.querySelectorAll('[data-tab="pagechat"]').forEach(el => { el.hidden = true; });   // ซ่อนปุ่มเมนูแชตเพจทุกที่ (รวมผู้ดูแลสูงสุด)
 
   /* ---------------- events ---------------- */
   const TAX_TABS = ['bill', 'purchase', 'dash', 'report', 'autopost', 'pagechat'];

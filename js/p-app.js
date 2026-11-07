@@ -3530,8 +3530,9 @@ function bahtText(value) {
   // จับคู่ยอดที่เรียกเก็บกับเงินเข้า (ยอดเท่ากัน · หลังเวลาที่ส่ง QR · ภายใน 7 วัน) แล้วแจ้งเตือน
   function matchPayCharges() {
     if (!canBank) return;
-    const pend = payCharges().filter(x => x.status !== 'paid' && Date.now() - (x.createdAt || 0) < 7 * 86400000);
-    if (!pend.length) { matchOwedBankIns(); return; }
+    // จับเฉพาะ QR ที่เรากดส่งให้ลูกค้าจริง (ไม่รวมรายการรอรับเงินที่ระบบสร้างเอง by:'auto') — กันเงินเข้ายอดเท่ากันไปตัดบิลงานส่งผิด
+    const pend = payCharges().filter(x => x.status !== 'paid' && x.by !== 'auto' && Date.now() - (x.createdAt || 0) < 7 * 86400000);
+    if (!pend.length) return;
     const used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
     const ins = wantimPoolAll();
     const done = [];
@@ -3548,7 +3549,6 @@ function bahtText(value) {
     done.forEach(r => { if (r.docs && r.docs.length) markDocsPaid(r.docs); flagBankInOwed(r.bankInId, (r.docs || []).map(d => d.no).filter(Boolean).join(', ') || r.name); });
     toast('✅ ' + done.map(r => (r.name || 'ลูกค้า') + ' ชำระ ' + money(r.amount) + ' บาทแล้ว').join(' · ')); playChime();
     renderPayHist();
-    matchOwedBankIns();
   }
   // เงินเข้าทั้งหมด (รวมบัญชีวันทิมที่ซ่อนจากพนักงาน) ไว้ใช้จับคู่เท่านั้น ไม่ได้โชว์
   const wantimPoolAll = () => (store.get('bs_bank_in', []) || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -3562,6 +3562,7 @@ function bahtText(value) {
   // เงินเข้าบัญชีวันทิมที่ยังไม่ผูกอะไร ยอดตรงกับ "ใบค้าง" ของลูกค้างานส่ง (ทั้งก้อนหรือบางใบรวมกัน) → ตัดใบนั้นเป็นชำระแล้วอัตโนมัติ
   function matchOwedBankIns() {
     try {
+      return;   // ปิดแล้ว: ห้ามตัดบิลค้างจากยอดเงินเท่ากันอย่างเดียว (ต้องมี QR ที่ส่งจริง)
       if (!canBank) return;
       const since = Date.now() - 14 * 86400000, used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
       const ins = wantimPoolAll().filter(b => b.account === 'วันทิม' && !b.matchedJobId && !used.has(b.id) && (b.createdAt || 0) >= since && num(b.amount) > 0).reverse();
@@ -3625,7 +3626,7 @@ function bahtText(value) {
           if (charges.some(c => c.id === id)) return;
           fresh.push({id, ref: payRef(Date.now()), chatId: '', name: x.name, channel: 'owed', amount: x.total, note: 'ยอดค้างรวม ' + x.docs.length + ' ใบ', status: 'pending', createdAt: Date.now(), by: 'auto', docs: x.docs.map(d => ({k: d.k, id: d.id}))});
         });
-        if (fresh.length) { store.set('bs_pay_charges', charges.concat(fresh)); fresh.forEach(r => cloudSave('payCharges', r)); }
+        // ไม่สร้างรายการรอรับเงินอัตโนมัติอีก (เดิมทำให้ยอดเท่ากันไปเข้างานส่งหมด)
       } catch (e) { console.error('refreshOwedMirrors', e); }
     }, 2500);
   }
