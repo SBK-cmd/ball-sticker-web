@@ -158,3 +158,19 @@
   renderQ();
   setInterval(renderQ, 10 * 60 * 1000);   // อัปเดตป้าย "เลยกำหนด/วันนี้" เมื่อข้ามวัน
 })();
+
+// เมนูหน้าแรก: ซ่อนหัวข้อกลุ่มที่ไม่มีปุ่มให้เห็น (ปุ่มบางอันซ่อน/โชว์ตามสิทธิ์)
+(function () {
+  var box = document.querySelector('.tools'); if (!box) return;
+  function sync() {
+    var g = null, any = false;
+    function fin() { if (g) g.classList.toggle('hidden', !any); }
+    Array.prototype.forEach.call(box.children, function (el) {
+      if (el.classList.contains('tgrp')) { fin(); g = el; any = false; }
+      else if (!el.classList.contains('hidden')) any = true;
+    });
+    fin();
+  }
+  sync();
+  try { new MutationObserver(sync).observe(box, { attributes: true, attributeFilter: ['class'], subtree: true }); } catch (e) {}
+})();

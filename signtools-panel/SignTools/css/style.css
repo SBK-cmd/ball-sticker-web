@@ -400,3 +400,8 @@ body.intool .topbar{display:flex}
 .cqfa .btn.cqmain.arm{background:#ff4fa3;color:#111}
 .cqunl{position:absolute;top:4px;right:6px;width:24px;height:24px;border:0;border-radius:50%;background:transparent;color:#9a9aa3;font-size:13px;cursor:pointer}
 .cqunl:hover{background:rgba(255,255,255,.1);color:#eee}
+
+/* เมนูหน้าแรก: จัดกลุ่มตามขั้นตอนงาน */
+.tgrp{grid-column:1/-1;margin:10px 2px 0;font-size:11px;font-weight:700;letter-spacing:.3px;color:var(--mut)}
+.tgrp:first-child{margin-top:0}
+.tgrp.hidden{display:none}
