@@ -3531,13 +3531,13 @@ function bahtText(value) {
   function matchPayCharges() {
     if (!canBank) return;
     // จับเฉพาะ QR ที่เรากดส่งให้ลูกค้าจริง (ไม่รวมรายการรอรับเงินที่ระบบสร้างเอง by:'auto') — กันเงินเข้ายอดเท่ากันไปตัดบิลงานส่งผิด
-    const pend = payCharges().filter(x => x.status !== 'paid' && x.by !== 'auto' && Date.now() - (x.createdAt || 0) < 7 * 86400000);
+    const pend = payCharges().filter(x => x.status !== 'paid' && x.by !== 'auto' && Date.now() - (x.createdAt || 0) < (x.channel === 'walkin' ? 12 * 3600000 : 7 * 86400000));   // QR หน้าร้านรอเงินเข้าไม่เกิน 12 ชม.
     if (!pend.length) return;
     const used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
     const ins = wantimPoolAll();
     const done = [];
     pend.slice().reverse().forEach(x => {
-      const hit = ins.slice().reverse().find(b => !used.has(b.id) && (x.channel !== 'owed' || b.account === 'วันทิม') && Math.abs(num(b.amount) - x.amount) < 0.005 && (b.createdAt || 0) >= (x.createdAt || 0) - 60000);
+      const hit = ins.slice().reverse().find(b => !used.has(b.id) && (x.channel !== 'owed' || b.account === 'วันทิม') && (x.channel !== 'walkin' || b.account === x.account) && Math.abs(num(b.amount) - x.amount) < 0.005 && (b.createdAt || 0) >= (x.createdAt || 0) - 60000);
       if (!hit) return;
       used.add(hit.id);
       const rec = Object.assign({}, x, {status: 'paid', paidAt: hit.createdAt || Date.now(), bankInId: hit.id});
@@ -3548,7 +3548,7 @@ function bahtText(value) {
     store.set('bs_pay_charges', all); done.forEach(r => cloudSave('payCharges', r));
     done.forEach(r => { if (r.docs && r.docs.length) markDocsPaid(r.docs); flagBankInOwed(r.bankInId, (r.docs || []).map(d => d.no).filter(Boolean).join(', ') || r.name); });
     toast('✅ ' + done.map(r => (r.name || 'ลูกค้า') + ' ชำระ ' + money(r.amount) + ' บาทแล้ว').join(' · ')); playChime();
-    renderPayHist();
+    renderPayHist(); if (typeof wkSync === 'function') wkSync();
   }
   // เงินเข้าทั้งหมด (รวมบัญชีวันทิมที่ซ่อนจากพนักงาน) ไว้ใช้จับคู่เท่านั้น ไม่ได้โชว์
   const wantimPoolAll = () => (store.get('bs_bank_in', []) || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -5488,6 +5488,94 @@ function bahtText(value) {
     });
     refreshOwedMirrors();
   }
+  /* ---------- จ่าย QR หน้าร้าน: เลือกบัญชีก่อน → ยอดงาน − มัดจำ = ยอดที่ต้องจ่าย → QR + บันทึกรอเงินเข้า ---------- */
+  let wkCh = null;   // รายการเรียกเก็บที่บันทึกแล้ว (null = ยังเป็นร่าง)
+  const wkAccounts = () => ['วันทิม', 'กิติพงษ์'].filter(a => VISIBLE_ACCOUNTS.indexOf(a) >= 0);
+  function wkDrawQr(cv, payload) {
+    const mt = qrEncode(payload), n = mt.length, q = 4, sz = cv.width, cell = Math.floor(sz / (n + q * 2)), off = Math.floor((sz - cell * n) / 2), c2 = cv.getContext('2d');
+    c2.fillStyle = '#fff'; c2.fillRect(0, 0, sz, sz); c2.fillStyle = '#000';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (mt[r][c]) c2.fillRect(off + c * cell, off + r * cell, cell, cell);
+  }
+  function wkVals() {
+    const g = id => num(String(($(id) || {}).value || '').replace(/,/g, ''));
+    const total = round2(g('wkTotal')), dep = round2(g('wkDep')), bal = round2(total - dep), acc = ((document.querySelector('#wkModal input[name=wkAcc]:checked') || {}).value) || '';
+    return {total, dep, bal, acc, name: String(($('wkName') || {}).value || '').trim()};
+  }
+  function wkCalc() {
+    const m = document.getElementById('wkModal'); if (!m) return;
+    const v = wkCh ? {total: wkCh.total, dep: wkCh.deposit, bal: wkCh.amount, acc: wkCh.account, name: wkCh.name} : wkVals();
+    const bad = v.dep < 0 || v.total < 0 || v.bal < 0, ok = !bad && v.total > 0 && v.bal > 0 && !!v.acc;
+    m.querySelector('#wkSum').innerHTML = '<div><span>ยอดงานรวม</span><b>' + money(v.total) + '</b></div>' + (v.dep > 0 ? '<div><span>หักมัดจำที่รับแล้ว</span><b>− ' + money(v.dep) + '</b></div>' : '') +
+      '<div class="wk-bal"><span>ยอดที่ต้องชำระ</span><b>' + money(Math.max(v.bal, 0)) + ' บาท</b></div>';
+    const msg = m.querySelector('#wkMsg'), qbox = m.querySelector('#wkQrBox');
+    let t = '';
+    if (!v.acc) t = '① เลือกบัญชีรับเงินก่อน';
+    else if (bad) t = '⚠ มัดจำมากกว่ายอดงาน — ตรวจตัวเลขอีกครั้ง';
+    else if (!(v.total > 0)) t = '② ใส่ยอดงานรวม';
+    else if (!(v.bal > 0)) t = 'ไม่มียอดคงเหลือให้ชำระ (มัดจำครบแล้ว)';
+    msg.textContent = t; msg.hidden = !t; qbox.hidden = !ok;
+    m.querySelector('#wkSave').hidden = !ok || !!wkCh;
+    m.querySelector('#wkAfter').hidden = !wkCh;
+    if (ok) {
+      const acct = payAcct(v.acc);
+      wkDrawQr(m.querySelector('#wkQr'), promptPayPayload(acct.id, v.bal));
+      m.querySelector('#wkQrCap').textContent = 'พร้อมเพย์ ' + acct.name + ' (' + v.acc + ')' + (wkCh ? ' · อ้างอิง ' + wkCh.ref : '');
+    }
+    wkSync();
+  }
+  function wkSync() {
+    const m = document.getElementById('wkModal'); if (!m) return;
+    const st = m.querySelector('#wkStat'); if (!st) return;
+    if (!wkCh) { st.hidden = true; return; }
+    const cur = payCharges().find(x => x.id === wkCh.id); if (cur) wkCh = cur;
+    st.hidden = false; st.className = 'wk-stat' + (wkCh.status === 'paid' ? ' paid' : '');
+    st.textContent = wkCh.status === 'paid' ? '✅ ได้รับเงินแล้ว ฿' + money(wkCh.amount) + (wkCh.manual ? ' (ยืนยันเอง)' : ' (จับคู่เงินเข้าอัตโนมัติ)') : '⏳ รอเงินเข้าบัญชี' + wkCh.account + ' ฿' + money(wkCh.amount) + ' … ระบบจะแจ้งเมื่อเงินเข้า';
+    const mb = m.querySelector('#wkManual'); if (mb) mb.hidden = wkCh.status === 'paid';
+  }
+  function openWalkInPay() {
+    wkCh = null;
+    let m = document.getElementById('wkModal'); if (m) m.remove();
+    m = document.createElement('div'); m.id = 'wkModal'; m.className = 'chg-m';
+    const accs = wkAccounts();
+    m.innerHTML = '<div class="chg-s"><div class="chg-t"><b>💳 จ่าย QR หน้าร้าน</b><button type="button" data-x="1" aria-label="ปิด">✕</button></div><div class="chg-b">' +
+      '<div class="wk-k">① บัญชีรับเงิน</div><div class="wk-acc">' + accs.map(a => { const ac = payAcct(a); return '<label><input type="radio" name="wkAcc" value="' + esc(a) + '"' + (accs.length === 1 ? ' checked' : '') + '><span><b>' + esc(a) + '</b><small>' + esc(ac.name) + ' · ' + esc(ppMask(ac.id)) + '</small></span></label>'; }).join('') + '</div>' +
+      '<div class="wk-k">② ยอด</div><div class="wk-f"><label>ยอดงานรวม (บาท)<input id="wkTotal" type="text" inputmode="decimal" autocomplete="off"></label>' +
+      '<label>มัดจำที่รับแล้ว (บาท) <small>ไม่มีเว้นว่าง</small><input id="wkDep" type="text" inputmode="decimal" autocomplete="off"></label></div>' +
+      '<label class="wk-n">ชื่อลูกค้า / รายการ <small>ไม่บังคับ</small><input id="wkName" type="text" autocomplete="off" placeholder="เช่น คุณสมชาย สติ๊กเกอร์ 10 แผ่น"></label>' +
+      '<div class="chg-sum wk-sum" id="wkSum"></div><p class="wk-msg" id="wkMsg"></p>' +
+      '<div class="chg-q" id="wkQrBox" hidden><canvas id="wkQr" width="440" height="440" aria-label="QR พร้อมเพย์"></canvas><small id="wkQrCap"></small></div>' +
+      '<div class="wk-stat" id="wkStat" hidden></div>' +
+      '<div class="chg-a"><button class="btn good" type="button" id="wkSave" hidden>✓ ยืนยันยอด · เริ่มรอเงินเข้า</button></div>' +
+      '<div class="chg-a" id="wkAfter" hidden><button class="btn" type="button" data-a="img">บันทึกรูป QR</button><button class="btn" type="button" data-a="manual" id="wkManual">ลูกค้าจ่ายแล้ว (ยืนยันเอง)</button><button class="btn" type="button" data-a="new">รายการใหม่</button></div>' +
+      '</div></div>';
+    document.body.appendChild(m); document.body.classList.add('chg-open');
+    const close = () => { m.remove(); document.body.classList.remove('chg-open'); wkCh = null; };
+    const lock = on => ['wkTotal', 'wkDep', 'wkName'].forEach(id => { $(id).disabled = on; }) || m.querySelectorAll('input[name=wkAcc]').forEach(r => { r.disabled = on; });
+    m.addEventListener('input', wkCalc); m.addEventListener('change', wkCalc);
+    m.addEventListener('click', async e => {
+      if (e.target === m || e.target.closest('[data-x]')) { close(); return; }
+      if (e.target.closest('#wkSave')) {
+        const v = wkVals(); if (!v.acc || !(v.total > 0) || !(v.bal > 0) || v.dep < 0) return;
+        const at = Date.now();
+        wkCh = {id: 'pay' + at, ref: payRef(at), chatId: '', name: v.name || 'ลูกค้าหน้าร้าน', channel: 'walkin', account: v.acc, total: v.total, deposit: v.dep, amount: v.bal,
+          note: 'หน้าร้าน · ยอดงาน ' + money(v.total) + (v.dep > 0 ? ' หักมัดจำ ' + money(v.dep) : ''), status: 'pending', createdAt: at, by: chatBy() || 'app'};
+        store.set('bs_pay_charges', payCharges().concat([wkCh])); cloudSave('payCharges', wkCh);
+        lock(true); wkCalc(); toast('บันทึกแล้ว รอเงินเข้า ฿' + money(wkCh.amount)); return;
+      }
+      const b = e.target.closest('[data-a]'); if (!b) return;
+      if (b.dataset.a === 'new') { openWalkInPay(); return; }
+      if (b.dataset.a === 'manual' && wkCh) {
+        if (b.dataset.arm !== '1') { b.dataset.arm = '1'; b.textContent = 'กดอีกครั้งเพื่อยืนยันว่าได้รับเงินแล้ว'; setTimeout(() => { b.dataset.arm = ''; b.textContent = 'ลูกค้าจ่ายแล้ว (ยืนยันเอง)'; }, 4000); return; }
+        const rec = Object.assign({}, wkCh, {status: 'paid', paidAt: Date.now(), manual: true});
+        store.set('bs_pay_charges', payCharges().map(x => x.id === rec.id ? rec : x)); cloudSave('payCharges', rec); wkCh = rec; wkSync(); return;
+      }
+      if (b.dataset.a === 'img' && wkCh) {
+        try { const url = await payCardDataUrl(wkCh.amount, ('ยอดงาน ' + money(wkCh.total) + (wkCh.deposit > 0 ? ' หักมัดจำ ' + money(wkCh.deposit) : '')).slice(0, 44), wkCh.ref, wkCh.createdAt, payAcct(wkCh.account)); const a = document.createElement('a'); a.href = url; a.download = 'QR-หน้าร้าน-' + wkCh.amount + '.png'; document.body.appendChild(a); a.click(); a.remove(); }
+        catch (er) { toast('สร้างรูปไม่ได้'); }
+      }
+    });
+    wkCalc();
+  }
   function saveWholesale() {
     const list = store.get('bs_wholesale', []);
     const data = collectWholesale();
@@ -6828,6 +6916,8 @@ function bahtText(value) {
     });
     document.body.appendChild(ov);
   });
+  $('wkBtn').addEventListener('click', openWalkInPay);
+  $('wkBtn2').addEventListener('click', () => { const sh = $('taxSheet'), bd = $('taxSheetBackdrop'); if (sh) sh.hidden = true; if (bd) bd.hidden = true; openWalkInPay(); });
   $('jobSlipPending').addEventListener('change', () => { try { renderJob(); } catch (e) {} });
   ['jobNo', 'jobDate', 'jobDue', 'jobAccount', 'jobPage', 'jobSlipAmount', 'jName', 'jPhone', 'jAddr', 'jobNote'].forEach(id => $(id).addEventListener((id === 'jobAccount' || id === 'jobPage') ? 'change' : 'input', renderJob));
 
