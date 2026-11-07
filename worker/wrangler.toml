@@ -6,6 +6,14 @@ compatibility_date = "2024-09-01"
 PAGE_ID = "108503502205863"          # ใส่ Page ID ของเพจบอลสติ๊กเกอร์ พิษณุโลก (ไม่ใช่ลับ)
 GRAPH_VERSION = "v26.0"  # ตรงกับเวอร์ชันใน Graph API Explorer ตอนตั้งค่า
 
+# ที่เก็บแชต Messenger (Workers KV) — สร้าง namespace ใน Cloudflare dashboard (Storage & Databases → KV)
+# แล้วผูกกับ Worker ใช้ชื่อตัวแปร CHAT_KV (ถ้าใช้ wrangler ให้เอา id มาใส่แล้วเอาเครื่องหมาย # ออก)
+# [[kv_namespaces]]
+# binding = "CHAT_KV"
+# id = "ใส่ id ของ namespace"
+
 # ค่าลับ ตั้งด้วยคำสั่งนี้ ห้ามใส่ในไฟล์:
-#   npx wrangler secret put PAGE_TOKEN
-#   npx wrangler secret put APP_KEY
+#   npx wrangler secret put PAGE_TOKEN      # โทเคนเพจ (ชนิด PAGE, ต้องมีสิทธิ์ pages_messaging สำหรับแชต)
+#   npx wrangler secret put APP_KEY         # รหัสที่แอปหลังร้านใช้เรียก Worker
+#   npx wrangler secret put VERIFY_TOKEN    # ข้อความที่ตั้งเองสุ่มๆ ใช้ตอนกรอกในหน้า Webhooks ของ Meta
+#   npx wrangler secret put APP_SECRET      # App Secret ของแอป Meta (Settings → Basic) ใช้ตรวจลายเซ็น webhook

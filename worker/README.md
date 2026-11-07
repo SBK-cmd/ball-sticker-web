@@ -14,3 +14,27 @@
 
 ## ทดสอบ
 ยังไม่ได้ทดสอบกับ Facebook จริง ทดสอบครั้งแรกควรใช้เพจทดสอบหรือโพสต์แบบ unpublished ก่อน
+
+## แชตเพจ (Messenger) — เพิ่มใน Worker ตัวเดียวกัน
+Worker รับข้อความลูกค้าผ่าน webhook เก็บใน Workers KV ให้แอปหลังร้านอ่านและตอบ (เมนู "แชตเพจ" ในแอป)
+ส่วนนี้ทดสอบด้วยข้อมูลจำลองเท่านั้น ยังไม่ได้ทดสอบกับ Facebook จริง
+
+### สิ่งที่ต้องทำใน Cloudflare (เจ้าของทำเอง)
+1. สร้าง KV namespace (Storage & Databases → KV → Create) ตั้งชื่ออะไรก็ได้ เช่น `ball-chat`
+2. เปิด Worker → Settings → Bindings → Add → KV namespace → ตัวแปรชื่อ `CHAT_KV` เลือก namespace ที่สร้าง
+3. Settings → Variables and Secrets เพิ่ม Secret 2 ตัว:
+   - `VERIFY_TOKEN` ข้อความที่ตั้งเองสุ่มๆ (ใช้กรอกฝั่ง Meta ให้ตรงกัน)
+   - `APP_SECRET` App Secret ของแอป Meta (Meta App → Settings → Basic → App secret)
+4. วางโค้ดใหม่จาก `fb-post-worker.js` แล้ว Deploy (เส้นทางโพสต์เดิมยังทำงานเหมือนเดิม)
+
+### สิ่งที่ต้องทำที่ Meta (developers.facebook.com)
+1. แอป → เพิ่มผลิตภัณฑ์ Messenger → ตั้งค่า
+2. Webhooks → Callback URL: `https://<worker>.workers.dev/webhook` · Verify token: ค่า `VERIFY_TOKEN` ที่ตั้งไว้ → Verify and Save
+3. Subscribe ฟิลด์ `messages` (และ `message_echoes` ถ้ามีให้เลือก เพื่อให้เห็นข้อความที่ตอบจาก Business Suite)
+4. Add Page → เลือกเพจ → Subscribe เพจกับแอป
+5. โทเคนเพจ (`PAGE_TOKEN`) ต้องมีสิทธิ์ `pages_messaging` (ออกโทเคนใหม่ใน Graph API Explorer โดยติ๊กสิทธิ์นี้ แล้วอัปเดต Secret)
+
+### จุดที่อาจติด (ยังไม่ยืนยัน)
+- แอปในโหมดพัฒนาอาจรับ-ส่งแชตได้เฉพาะบัญชีที่มี role ในแอป (แอดมิน/นักพัฒนา/ผู้ทดสอบ) ถ้าแชตลูกค้าจริงไม่เข้า อาจต้องขอสิทธิ์ `pages_messaging` แบบ Advanced Access ผ่าน App Review (อาจต้องยืนยันธุรกิจด้วย)
+- ตอบได้ภายใน 24 ชม. หลังลูกค้าส่งข้อความล่าสุด (Worker ตรวจให้ ถ้าเกินจะตอบ 409)
+- KV อ่านค่าล่าสุดอาจช้าได้ถึงประมาณ 1 นาทีเมื่ออ่านจากคนละพื้นที่ แอปดึงใหม่ทุก 30 วินาที ไม่ใช่แจ้งเตือนทันที

@@ -83,7 +83,7 @@ function bahtText(value) {
     {title: 'หน้าที่เปิดได้', items: [
       ['calc', 'คำนวณสติ๊กเกอร์'], ['vat', 'คำนวณ VAT'], ['confirm', 'ใบคอนเฟิร์มงาน'], ['track', 'ติดตามพัสดุ'],
       ['wholesale', 'ใบราคาส่ง'], ['quote', 'ใบเสนอราคา'], ['bill', 'ใบเสร็จ / ใบกำกับภาษี'], ['purchase', 'ภาษีซื้อ'],
-      ['dash', 'แดชบอร์ด'], ['report', 'รายงานภาษี'], ['autopost', 'โพสต์ออโต้']]},
+      ['dash', 'แดชบอร์ด'], ['report', 'รายงานภาษี'], ['autopost', 'โพสต์ออโต้'], ['pagechat', 'แชตเพจ']]},
     {title: 'ข้อมูลสำคัญ', items: [
       ['price', 'ราคาในหน้าคำนวณสติ๊กเกอร์'], ['bank', 'เงินเข้า-ออก · ยอดคงเหลือ · กระดิ่ง'], ['shop', 'แก้ข้อมูลร้าน']]}
   ];
@@ -6450,8 +6450,98 @@ function bahtText(value) {
     });
   })();
 
+  /* ---------------- แชตเพจ (Messenger): อ่าน/ตอบผ่าน Worker เดียวกับโพสต์ออโต้ ----------------
+     ข้อความเก็บที่ Worker (Workers KV) ไม่ได้เก็บในเครื่อง · ดึงใหม่ทุก 30 วินาทีเฉพาะตอนเปิดหน้านี้ค้างไว้ (ไม่ใช่แจ้งเตือนทันที)
+     ตอบได้ภายใน 24 ชม. หลังลูกค้าส่งข้อความล่าสุด Worker เป็นคนตรวจซ้ำอีกชั้น */
+  const PC_QUICK = ['สวัสดีครับ ร้านบอลสติ๊กเกอร์ยินดีให้บริการครับ รบกวนแจ้งขนาด จำนวน วัสดุ และส่งไฟล์หรือไอเดียที่ต้องการได้เลยครับ', 'รบกวนขอชื่อ เบอร์โทร และที่อยู่จัดส่งด้วยนะครับ', 'ขอเช็กรายละเอียดและแจ้งกลับให้นะครับ'];
+  let pcTimer = null, pcSel = '', pcSending = false, pcDraft = '', pcFail = '';
+  const pcBase = () => { const c = apCfg(); return (c.worker && c.key) ? {url: String(c.worker).replace(/\/+$/, ''), key: c.key} : null; };
+  async function pcApi(path, opt) {
+    const b = pcBase(); if (!b) throw new Error('ยังไม่ได้ตั้งค่า Worker ในหน้าโพสต์ออโต้');
+    let res; try { res = await fetch(b.url + path, Object.assign({headers: {'x-app-key': b.key, 'content-type': 'application/json'}}, opt || {})); }
+    catch (e) { throw new Error('เชื่อมต่อ Worker ไม่ได้ เช็กอินเทอร์เน็ตหรือลิงก์'); }
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok || !d.ok) { const e = new Error(d.error || ('HTTP ' + res.status)); e.code = d.error || ''; throw e; }
+    return d;
+  }
+  function pcStop() { if (pcTimer) { clearInterval(pcTimer); pcTimer = null; } }
+  function pcStart() { pcStop(); pcTimer = setInterval(() => { if (document.hidden || !$('panel-pagechat').classList.contains('active')) return; pcRefresh(false); }, 30000); }
+  const pcTime = t => { if (!t) return ''; const d = new Date(t), n = new Date(); return d.toDateString() === n.toDateString() ? d.toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit'}) : d.toLocaleDateString('th-TH', {day: 'numeric', month: 'short'}) + ' ' + d.toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit'}); };
+  const PC_KIND = {image: 'รูปภาพ', video: 'วิดีโอ', audio: 'ข้อความเสียง', file: 'ไฟล์', fallback: 'ข้อความพิเศษ', template: 'ข้อความพิเศษ'};
+  const pcLastTxt = s => String(s || '').replace(/^(ร้าน: )?\[([a-z_]+)\]$/, (m, a, k) => (a || '') + '[' + (PC_KIND[k] || k) + ']');
+  const pcName = x => (x && x.name) ? x.name : ('ลูกค้า …' + String((x && x.id) || '').slice(-4));
+  function pcWinHtml(canReply, lastUserAt, now) {
+    if (!canReply) return '<p class="pc-win off">เกิน 24 ชั่วโมงหลังลูกค้าส่งข้อความล่าสุด ส่งผ่านระบบนี้ไม่ได้แล้ว (Meta ไม่อนุญาต) ถ้าลูกค้าทักมาใหม่จะตอบได้อีกครั้ง</p>';
+    const left = Math.max(0, lastUserAt + 86400000 - (now || Date.now())), h = Math.floor(left / 3600000), m = Math.floor(left % 3600000 / 60000);
+    return '<p class="pc-win">ตอบได้อีก ' + h + ' ชม. ' + m + ' นาที (นับจากข้อความล่าสุดของลูกค้า)</p>';
+  }
+  function pcMsgHtml(m) {
+    const att = (m.att || []).map(a => (a.type === 'image' && /^https:\/\//.test(a.url)) ? '<img src="' + esc(a.url) + '" alt="รูปจากลูกค้า" loading="lazy" referrerpolicy="no-referrer">' : '<div>' + esc(pcLastTxt('[' + (a.type || 'file') + ']')) + '</div>').join('');
+    return '<div class="pc-b' + (m.from === 'page' ? ' me' : '') + '">' + (m.text ? esc(m.text) : '') + att + '<small>' + esc(pcTime(m.t)) + (m.from === 'page' ? (m.by === 'app' ? ' · ตอบจากแอป' : ' · ตอบจากเพจ') : '') + '</small></div>';
+  }
+  function renderPageChat() {
+    const box = $('pcBody'); if (!box) return;
+    if (!pcBase()) { pcStop(); box.innerHTML = '<div class="card ap-card"><p class="hint" style="margin:0">ยังไม่ได้ตั้งค่า Worker ไปที่เมนู “โพสต์ออโต้” → “ตั้งค่าโพสต์อัตโนมัติ (Worker)” ใส่ลิงก์ Worker กับ APP_KEY ก่อน (ใช้ชุดเดียวกับโพสต์เข้าเพจ)</p></div>'; return; }
+    pcStart(); pcRefresh(true);
+  }
+  async function pcRefresh(first) {
+    const box = $('pcBody'); if (!box || !pcBase()) return;
+    try {
+      if (!pcSel) {
+        const d = await pcApi('/chat/inbox');
+        pcFail = '';
+        box.innerHTML = '<div class="card ap-card"><div class="pc-top"><h2>แชตทั้งหมด</h2><button class="btn small" data-pca="reload" type="button">รีเฟรช</button></div>' +
+          (d.items.length ? '<ul class="pc-list">' + d.items.map(x => '<li><button type="button" class="pc-row" data-pca="open" data-pcid="' + esc(x.id) + '"><span class="pc-av">' + esc(pcName(x).charAt(0)) + '</span><span class="pc-m"><b>' + esc(pcName(x)) + '</b><small>' + esc(pcLastTxt(x.last)) + '</small></span><span class="pc-meta"><span>' + esc(pcTime(x.lastAt)) + '</span>' + (x.unread ? '<span class="pc-badge">' + x.unread + '</span>' : '') + (x.canReply ? '' : '<span>เกิน 24 ชม.</span>') + '</span></button></li>').join('') + '</ul>'
+            : '<p class="hint" style="margin:0">ยังไม่มีแชตเข้ามา แชตจะขึ้นเมื่อลูกค้าทักเพจหลังตั้งค่า Webhook กับ Meta แล้ว</p>') + '</div>';
+      } else {
+        const d = await pcApi('/chat/conv?id=' + encodeURIComponent(pcSel)), c = d.conv;
+        pcFail = '';
+        let msgs = $('pcMsgs');
+        if (!msgs || msgs.dataset.id !== pcSel) {
+          box.innerHTML = '<div class="card ap-card"><div class="pc-top"><button class="btn small" data-pca="back" type="button">← กลับ</button><h2>' + esc(pcName(c)) + '</h2></div><div id="pcWin"></div><div class="pc-msgs" id="pcMsgs" data-id="' + esc(pcSel) + '"></div>' +
+            '<div class="pc-q">' + PC_QUICK.map((q, i) => '<button type="button" data-pca="quick" data-pcq="' + i + '">' + esc(q.length > 22 ? q.slice(0, 22) + '…' : q) + '</button>').join('') + '</div>' +
+            '<div class="pc-send"><textarea class="txt" id="pcText" rows="3" placeholder="พิมพ์ข้อความตอบลูกค้า" spellcheck="false"></textarea><button class="btn primary" data-pca="send" type="button" id="pcSendBtn">ส่งข้อความ</button><div id="pcErr" class="hint"></div></div></div>';
+          msgs = $('pcMsgs'); if ($('pcText')) $('pcText').value = pcDraft;
+        }
+        const atEnd = msgs.scrollHeight - msgs.scrollTop - msgs.clientHeight < 60 || first;
+        const sig = c.msgs.length + ':' + ((c.msgs[c.msgs.length - 1] || {}).mid || '');
+        if (msgs.dataset.sig !== sig) { msgs.innerHTML = c.msgs.map(pcMsgHtml).join('') || '<p class="hint" style="margin:0">ยังไม่มีข้อความ</p>'; msgs.dataset.sig = sig; if (atEnd) msgs.scrollTop = msgs.scrollHeight; }
+        $('pcWin').innerHTML = pcWinHtml(c.canReply, c.lastUserAt, d.now);
+        $('pcText').disabled = !c.canReply; $('pcSendBtn').disabled = !c.canReply || pcSending;
+        if (first) pcApi('/chat/read', {method: 'POST', body: JSON.stringify({id: pcSel})}).catch(() => {});
+      }
+    } catch (e) {
+      if (first || !pcFail) { pcFail = e.message; if (!pcSel || !$('pcMsgs')) box.innerHTML = '<div class="card ap-card"><p class="hint" style="margin:0">โหลดแชตไม่สำเร็จ: ' + esc(e.message) + '</p><div class="ap-btns"><button class="btn small" data-pca="reload" type="button">ลองใหม่</button></div></div>'; else toast('โหลดแชตไม่สำเร็จ: ' + e.message); }
+    }
+  }
+  async function pcSend() {
+    const ta = $('pcText'); if (!ta || pcSending) return;
+    const text = ta.value.trim(); if (!text) { toast('พิมพ์ข้อความก่อน'); return; }
+    pcSending = true; $('pcSendBtn').disabled = true; $('pcErr').textContent = '';
+    try {
+      await pcApi('/chat/reply', {method: 'POST', body: JSON.stringify({id: pcSel, text})});
+      pcDraft = ''; ta.value = ''; pcSending = false; await pcRefresh(true);
+    } catch (e) {
+      pcSending = false; $('pcSendBtn').disabled = false;
+      $('pcErr').textContent = e.code === 'window' ? 'เกิน 24 ชั่วโมงแล้ว ส่งไม่ได้' : ('ส่งไม่สำเร็จ: ' + e.message + ' (ข้อความยังอยู่ในช่อง กดส่งใหม่เองได้)');
+    }
+  }
+  (function pcWire() {
+    const root = $('panel-pagechat'); if (!root) return;
+    root.addEventListener('input', e => { if (e.target.id === 'pcText') pcDraft = e.target.value; });
+    root.addEventListener('click', e => {
+      const b = e.target.closest('[data-pca]'); if (!b) return;
+      const a = b.dataset.pca;
+      if (a === 'open') { pcSel = b.dataset.pcid; pcDraft = ''; $('pcBody').innerHTML = ''; pcRefresh(true); }
+      else if (a === 'back') { pcSel = ''; pcDraft = ''; pcRefresh(true); }
+      else if (a === 'reload') { pcRefresh(true); }
+      else if (a === 'quick') { const ta = $('pcText'); if (ta && !ta.disabled) { ta.value = (ta.value ? ta.value + '\n' : '') + PC_QUICK[+b.dataset.pcq]; pcDraft = ta.value; ta.focus(); } }
+      else if (a === 'send') { pcSend(); }
+    });
+  })();
+
   /* ---------------- events ---------------- */
-  const TAX_TABS = ['bill', 'purchase', 'dash', 'report', 'autopost'];
+  const TAX_TABS = ['bill', 'purchase', 'dash', 'report', 'autopost', 'pagechat'];
 
   /* ---------------- งานออกแบบ: โน้ต + รูป (แปะรูปแชท/แบบ) → ส่งไปใบคอนเฟิร์มงาน ----------------
      เก็บที่ bs_designs ซิงก์คลาวด์คอลเลกชัน 'designs' · โน้ต = {text, photos[], approved[] (รูปที่ติ๊กใช้), sentAt}
@@ -6612,7 +6702,7 @@ function bahtText(value) {
   function showTab(name) {
     closeJobModal();
     if (!can(name)) name = firstAllowedTab(); // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้ หรือโค้ดส่วนอื่นที่สั่งเปิดหน้า
-    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost'].forEach(n => {
+    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost', 'pagechat'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
@@ -6635,6 +6725,7 @@ function bahtText(value) {
     if (name === 'chat') renderChat();
     if (name === 'design') renderDesign();
     if (name === 'autopost') renderAutopost();
+    if (name === 'pagechat') renderPageChat(); else pcStop();
     const activeTab = isTax ? $('taxTrigger') : $('tab-' + name);
     if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
   }
@@ -7827,7 +7918,7 @@ function bahtText(value) {
 
   /* ---------------- บัญชีผู้ใช้งาน (ล็อกอิน/สิทธิ์/จัดการบัญชี) ---------------- */
   const PERM_SHORT = {calc: 'คำนวณ', vat: 'VAT', confirm: 'ใบคอนเฟิร์ม', track: 'ติดตามพัสดุ', wholesale: 'ราคาส่ง', quote: 'ใบเสนอราคา',
-    bill: 'ใบเสร็จ', purchase: 'ภาษีซื้อ', dash: 'แดชบอร์ด', report: 'รายงานภาษี', chat: 'แชทลูกค้า', price: 'ราคา', bank: 'เงินเข้า-ออก', shop: 'ข้อมูลร้าน'};
+    bill: 'ใบเสร็จ', purchase: 'ภาษีซื้อ', dash: 'แดชบอร์ด', report: 'รายงานภาษี', chat: 'แชทลูกค้า', autopost: 'โพสต์ออโต้', pagechat: 'แชตเพจ', price: 'ราคา', bank: 'เงินเข้า-ออก', shop: 'ข้อมูลร้าน'};
   // ใครเปิด "จัดการผู้ใช้งานและสิทธิ์" ได้: ผู้ดูแลระบบสูงสุด (@ball) คนเดียว
   // (กันล็อกตัวเอง: ถ้าในระบบไม่มีบัญชี @ball เลย ให้บัญชีเจ้าของร้านเดิมจัดการแทนได้)
   const canManageUsers = isSuper || (!!meRec && !isOwnerFixed(meRec) && meRec.role === 'owner' && !(window.BSAuth ? window.BSAuth.getUsers() : []).some(isSuperUser));
@@ -7842,7 +7933,7 @@ function bahtText(value) {
     });
     if (!can('confirm') && $('sidebarCta')) $('sidebarCta').hidden = true;
     if ($('taxTrigger') && !TAX_TABS.some(can)) { const grp = $('taxTrigger').closest('.tab-group'); if (grp) grp.hidden = true; }
-    if ($('bnavTaxTrigger') && !['wholesale', 'quote', 'vat', 'bill', 'purchase', 'dash', 'report', 'autopost'].some(can)) $('bnavTaxTrigger').hidden = true;
+    if ($('bnavTaxTrigger') && !['wholesale', 'quote', 'vat', 'bill', 'purchase', 'dash', 'report', 'autopost', 'pagechat'].some(can)) $('bnavTaxTrigger').hidden = true;
     if (!can('shop') && $('shopSettings')) $('shopSettings').hidden = true;
     if (!can('price') && $('priceCard')) $('priceCard').hidden = true;
     if (!can('calc')) setTimeout(() => showTab(firstAllowedTab()), 0); // หน้าแรกปกติคือ "คำนวณ" ถ้าไม่มีสิทธิ์ให้เปิดหน้าแรกที่เข้าได้
