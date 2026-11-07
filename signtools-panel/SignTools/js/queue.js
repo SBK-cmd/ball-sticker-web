@@ -276,7 +276,7 @@
           return window.ST_cutApi.markCheck().then(function (mv) {   // จุดมาร์คทุกจุด + artboard ไว้วาดพรีวิว (ไม่มีมาร์คก็ได้)
             var view = (mv && !mv.error && mv.why === 'ok' && mv.marks && mv.marks.length) ? { ab: mv.ab, marks: mv.marks } : null;
             var all = cqAll();
-            all[cqKey(j, cf)] = { jid: j.id, p: cf.p, n: cf.n || '', no: j.no || '', jName: j.jName || '', savedAt: Date.now(), mtime: fileMtime(cf.p), snap: rd, view: view };
+            all[cqKey(j, cf)] = { jid: j.id, p: cf.p, n: cf.n || '', no: j.no || '', jName: j.jName || '', savedAt: Date.now(), mtime: fileMtime(cf.p), snap: rd, view: view, viewNote: view ? '' : String(mv && (mv.error || mv.why) || 'no-reply') };
             if (!cqSaveAll(all)) return toast('⚠ เก็บไม่ได้ (พื้นที่เก็บของแผงเต็ม) — ลบรายการรอตัดเก่าออกก่อน');
             render(); refreshDetail();
             toast('✓ สแกนแล้ว ' + rd.n + ' เส้น' + (rd.marks ? ' + มาร์ค' : ' (ไม่พบมาร์ค)') + ' — เก็บไว้ในรอตัด');
@@ -373,6 +373,8 @@
     var xs = [], ys = [];
     paths.forEach(function (pt) { var a = pt.p || []; for (var i = 0; i + 1 < a.length; i += 6) { xs.push(a[i]); ys.push(a[i + 1]); } });
     if (v) { xs.push(v.ab[0], v.ab[2]); ys.push(v.ab[1], v.ab[3]); v.marks.forEach(function (m) { xs.push(m[0]); ys.push(m[1]); }); }
+    var est = (!v && cq.snap && cq.snap.marks) ? estMarks(cq.snap.marks) : null;   // สแกนไว้ด้วยรุ่นเก่า ไม่มีจุดมาร์คจริง → ประมาณจากมุมมาร์ค
+    if (est) est.forEach(function (m) { xs.push(m[0]); ys.push(m[1]); });
     if (!xs.length) return;
     var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs), y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
     var W = Math.max(x1 - x0, 1), H = Math.max(y1 - y0, 1), sc = Math.min((cv.width - 2 * pad) / W, (cv.height - 2 * pad) / H);
@@ -388,6 +390,12 @@
       if (pt.c) g.closePath(); g.stroke();
     });
     if (v) v.marks.forEach(function (m) { g.fillStyle = m[2] === 1 ? '#4da3ff' : '#ff5d5d'; g.fillRect(X(m[0]) - 4, Y(m[1]) - 4, 8, 8); });
+    if (est) { g.strokeStyle = '#4da3ff'; g.lineWidth = 2; est.forEach(function (m) { g.strokeRect(X(m[0]) - 5, Y(m[1]) - 5, 10, 10); }); }
+  }
+  // มุมทั้ง 4 ของกรอบมาร์ค (ประมาณ) จากข้อมูลที่แผงเก็บไว้: เริ่ม (ox,oy) · กว้างตามแกน X = dy · สูงตามแกน Y = dx
+  function estMarks(m) {
+    if (!m || !isFinite(m.ox) || !isFinite(m.oy) || !isFinite(m.dx) || !isFinite(m.dy)) return null;
+    return [[m.ox, m.oy], [m.ox + m.dy, m.oy], [m.ox, m.oy + m.dx], [m.ox + m.dy, m.oy + m.dx]];
   }
   var prevCtx = null;
   function showPrev(j, f, cq) {
@@ -409,7 +417,7 @@
     M.innerHTML = '<div class="qjob cqbox"><div class="cqhead"><b>พรีวิว · ' + h(j.no || '') + ' ' + h(j.jName || '') + '</b><button class="btn ghost sm" data-pv="x" type="button">✕</button></div>' +
       '<canvas id="cqPrevCv" width="620" height="380" style="width:100%;background:#2b2b31;border-radius:8px"></canvas>' +
       '<div class="cqv mut small"><span style="color:#ff4fa3">▬ Kiss Cut</span> · <span style="color:#2fd27a">▬ Die Cut</span> · <span style="color:#4da3ff">■ มาร์ค</span><br>' +
-      h(f.n || '') + ' · ' + h(sn.n || 0) + ' เส้น · ' + (mk ? 'มาร์ค ' + (mk.seg ? 'Segment' : '4 Points') + (cq.view ? ' (' + cq.view.marks.length + ' จุด)' : '') + ' — เครื่องสแกนมาร์คก่อนตัด' : 'ไม่พบมาร์ค (ตัดแบบไม่อ่านมาร์ค)') + ' · สแกน ' + h(cqTime(cq.savedAt)) + '</div>' +
+      h(f.n || '') + ' · ' + h(sn.n || 0) + ' เส้น · ' + (mk ? 'มาร์ค ' + (mk.seg ? 'Segment' : '4 Points') + (cq.view ? ' (' + cq.view.marks.length + ' จุด)' : '') + ' — เครื่องสแกนมาร์คก่อนตัด' + (cq.view ? '' : '<br><span style="color:#ffd23f">⚠ ' + (cq.viewNote ? 'อ่านจุดมาร์คมาวาดพรีวิวไม่ได้ (' + h(cq.viewNote) + ')' : 'สแกนไว้ก่อนรุ่น 1.13.44 จึงไม่มีจุดมาร์คจริง') + ' · กรอบสี่เหลี่ยมโปร่งคือตำแหน่งโดยประมาณ' + (cq.viewNote ? '' : ' — กด "สแกนใหม่" เพื่อดูตำแหน่งจริง') + '</span>') : 'ไม่พบมาร์ค (ตัดแบบไม่อ่านมาร์ค)') + ' · สแกน ' + h(cqTime(cq.savedAt)) + '</div>' +
       '<div class="qact"><button class="btn" data-pv="go" type="button">✂ ส่งตัด</button><button class="btn ghost sm" data-pv="x" type="button">ปิด</button></div></div>';
     M.classList.add('show');
     drawPrev($('cqPrevCv'), cq);
