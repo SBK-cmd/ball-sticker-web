@@ -49,8 +49,8 @@
   // ---------- ภาพตัวอย่าง: สีตามเลเยอร์ (Kiss ชมพู · Die เขียว) + จำลองการตัดตามลำดับจริง ----------
   var COL = { kiss: '#ff4fa3', die: '#2fd27a' }, anim = null;
   // มีมาร์ค: วาดตามแนวงานใน Illustrator (บน = ทางป้อน X, จุดเริ่มเครื่องอยู่มุมขวาล่าง) จะได้เห็นลำดับตัดตรงกับงานจริง
-  function geom() {
-    var cv = $('cutCanvas'), pad = 14, mx = 1, my = 1;
+  function geom(cvo) {
+    var cv = cvo || $('cutCanvas'), pad = 14, mx = 1, my = 1;
     if (job.art) job.polys.forEach(function (pl) { pl.forEach(function (q) { if (q[0] > mx) mx = q[0]; if (q[1] > my) my = q[1]; }); });
     if (job.roll && job.roll > my) my = job.roll;   // ไม่อ่านมาร์ค: กรอบ = หน้ากว้างวัสดุ
     var W = job.art ? my : job.w, H = job.art ? mx : job.h;
@@ -87,17 +87,17 @@
     job.polys.forEach(function (pl, i) { stroke(G, pl, COL[(job.kinds && job.kinds[i]) || 'kiss'], 1); });
     axes(G);
   }
-  function play() {
+  function play(cvo, btn, onEnd) {
     if (!job) return;
     markView = null;   // ออกจากภาพตรวจมาร์ค กลับมาดูเส้นตัดตามงาน
     if (anim) { cancelAnimationFrame(anim.raf); anim = null; draw(); return; }
-    var G = geom(), segs = [], cur = [0, 0], total = 0;
+    var G = geom(cvo), segs = [], cur = [0, 0], total = 0;
     job.polys.forEach(function (pl, i) {   // ยกมีดไปจุดเริ่ม แล้วตัดตามเส้น
       var d0 = Math.hypot(pl[0][0] - cur[0], pl[0][1] - cur[1]); segs.push({ up: true, a: cur, b: pl[0], len: d0 }); total += d0 * 0.25;
       for (var j = 1; j < pl.length; j++) { var L = Math.hypot(pl[j][0] - pl[j - 1][0], pl[j][1] - pl[j - 1][1]); segs.push({ i: i, j: j, a: pl[j - 1], b: pl[j], len: L }); total += L; }
       cur = pl[pl.length - 1];
     });
-    var dur = Math.min(14000, Math.max(4000, job.n * 120)), t0 = null, b = $('cutPlay');
+    var dur = Math.min(14000, Math.max(4000, job.n * 120)), t0 = null, b = btn || $('cutPlay');
     b.textContent = '■ หยุด';
     anim = { raf: 0 };
     function step(ts) {
@@ -120,7 +120,7 @@
       var h = P(G, head); G.g.fillStyle = '#ffd23f'; G.g.beginPath(); G.g.arc(h[0], h[1], 3.5, 0, 7); G.g.fill();
       axes(G);
       if (target < total) anim.raf = requestAnimationFrame(step);
-      else { anim = null; b.textContent = '▶ จำลองการตัด'; }
+      else { anim = null; b.textContent = '▶ จำลองการตัด'; if (onEnd) onEnd(); }
     }
     anim.raf = requestAnimationFrame(step);
   }
@@ -220,6 +220,11 @@
     read: function () { return host('st_cutRead'); },
     load: function (snap, ctx) { applyRead(JSON.parse(JSON.stringify(snap)), ctx); },
     markCheck: function () { return host('st_markCheck'); },
+    sim: function (cv, btn, done) {   // จำลองการตัดบน canvas ที่ส่งมา (ป็อบอัพในคิวงาน) · เรียกซ้ำ = หยุด
+      if (anim) { cancelAnimationFrame(anim.raf); anim = null; if (btn) btn.textContent = '▶ จำลองการตัด'; if (done) done(); return false; }
+      if (!job) return false; play(cv, btn, done); return true;
+    },
+    stopSim: function () { if (anim) { cancelAnimationFrame(anim.raf); anim = null; } },
     send: function () { return sendNow(); },
     info: function () {   // สรุปว่าจะส่งอะไรเข้าเครื่องไหน (ให้หน้าคิวงานโชว์ก่อนกดตัด)
       var m = machines[cur] || {};

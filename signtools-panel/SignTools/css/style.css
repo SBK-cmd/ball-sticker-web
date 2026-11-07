@@ -366,3 +366,7 @@ body.intool .topbar{display:flex}
 .cqf.cqwait .cqfn{color:#ffd23f}
 .cqf .btn.arm{background:#ff4fa3;color:#111}
 #cqPrev .btn.arm{background:#ff4fa3;color:#111}
+.cqf.cqwait.done{background:rgba(47,210,122,.14)}
+.cqf.cqwait.done .cqfn{color:#2fd27a;font-weight:600}
+.cqchip{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:rgba(255,210,63,.15);color:#ffd23f}
+.cqchip.done{background:rgba(47,210,122,.18);color:#2fd27a}

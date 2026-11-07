@@ -189,12 +189,12 @@
       var thumb = (j.photos || []).filter(function (p) { return /^https:/.test(p); })[0];
       if (compact) {   // มุมมองย่อ: 2 บรรทัดต่อใบ · แตะเพื่อเปิดหน้าต่างรายละเอียด
         var firstIt = its[0] ? h(its[0].name) + (its[0].qty ? ' × ' + h(its[0].qty) : '') + (its.length > 1 ? ' <i>+' + (its.length - 1) + '</i>' : '') : '';
-        return '<div class="qjob cq cmp" data-id="' + h(j.id) + '"><div class="cmp1"><span class="cqst ' + s + '">' + SN[s] + '</span><b>' + h(j.jName || '(ไม่ระบุลูกค้า)') + '</b>' + dueTag(j) + '</div>' +
+        return '<div class="qjob cq cmp" data-id="' + h(j.id) + '"><div class="cmp1"><span class="cqst ' + s + '">' + SN[s] + '</span><b>' + h(j.jName || '(ไม่ระบุลูกค้า)') + '</b>' + dueTag(j) + cutChip(j) + '</div>' +
           '<div class="cmp2"><span class="mut">' + h(j.no || (j.ws && j.date ? fmtD(j.date) : '')) + '</span>' + (j.ws ? '<span class="cqws">ราคาส่ง</span>' : '') + '<span class="cmpit">' + firstIt + '</span>' + (filesOf(j).length ? '<span title="ผูกไฟล์แล้ว">📄</span>' : '') + '</div></div>';
       }
       return '<div class="qjob cq" data-id="' + h(j.id) + '">' +
         '<div class="qtop"><select class="cqst ' + s + '" data-act="st">' + ST.map(function (k) { return '<option value="' + k + '"' + (k === s ? ' selected' : '') + '>' + SN[k] + '</option>'; }).join('') + '</select>' +
-          '<span class="mut">' + h(j.no || (j.ws && j.date ? fmtD(j.date) : '')) + '</span>' + (j.ws ? '<span class="cqws">ราคาส่ง' + (j.wsN > 1 ? ' ' + j.wsI + '/' + j.wsN : '') + '</span>' : '') + dueTag(j) + '</div>' +
+          '<span class="mut">' + h(j.no || (j.ws && j.date ? fmtD(j.date) : '')) + '</span>' + (j.ws ? '<span class="cqws">ราคาส่ง' + (j.wsN > 1 ? ' ' + j.wsI + '/' + j.wsN : '') + '</span>' : '') + dueTag(j) + cutChip(j) + '</div>' +
         '<div class="cqrow">' + (thumb ? '<img class="cqth" src="' + h(thumb) + '" alt="">' : '') +
           '<div><div class="qmain"><b>' + h(j.jName || '(ไม่ระบุลูกค้า)') + '</b></div>' +
           '<div class="qsub">' + (its.length ? its.slice(0, openIds[j.id] ? 99 : 3).map(function (i) { return h(i.name) + (i.qty ? ' × ' + h(i.qty) : ''); }).join('<br>') + (!openIds[j.id] && its.length > 3 ? '<br><a href="#" data-act="more">+ อีก ' + (its.length - 3) + ' รายการ</a>' : '') : '—') + '</div>' +
@@ -224,6 +224,13 @@
   function fileMtime(path) {   // เวลาแก้ไขไฟล์ล่าสุดบนดิสก์ (null = อ่านไม่ได้ เช่น ไดรฟ์เครือข่ายไม่ตอบ)
     try { var R = window.cep_node && window.cep_node.require; if (!R) return null; return R('fs').statSync(path).mtimeMs || null; } catch (e) { return null; }
   }
+  // สรุปบนหัวใบงาน: กี่ไฟล์ที่ส่งตัดเข้าเครื่องแล้ว / กี่ไฟล์ที่สแกนไว้รอตัด ("ส่งตัดแล้ว" = ส่งข้อมูลเข้าเครื่องสำเร็จ แผงรู้ไม่ได้ว่าเครื่องตัดเสร็จจริงหรือยัง)
+  function cutChip(j) {
+    var fs = filesOf(j), all = cqAll(), sent = 0, wait = 0;
+    fs.forEach(function (f) { var q = all[cqKey(j, f)]; if (q) { if (q.sentAt) sent++; else wait++; } });
+    if (!sent && !wait) return '';
+    return '<span class="cqchip' + (sent && sent === fs.length ? ' done' : '') + '">' + (sent ? '✅ ส่งตัดแล้ว ' + sent + '/' + fs.length : '') + (sent && wait ? ' · ' : '') + (wait ? '⏳ รอตัด ' + wait : '') + '</span>';
+  }
   function fileBlock(j, withRemove) {
     var fs = filesOf(j);
     if (!fs.length) return '';
@@ -233,7 +240,7 @@
         '<button class="btn ghost sm" data-act="open" data-i="' + i + '">เปิด</button>' +
         '<button class="btn ghost sm cqcut" data-act="scan" data-i="' + i + '">' + (cq ? '✂ สแกนใหม่' : '✂ สแกนตัด') + '</button>' +
         (withRemove ? '<button class="btn ghost sm" data-act="unlink" data-i="' + i + '" aria-label="เอาไฟล์นี้ออก">✕</button>' : '') + '</div>' +
-        (cq ? '<div class="cqf cqwait"><span class="cqfn">⏳ รอตัด · สแกน ' + h(cqTime(cq.savedAt)) + ' · ' + h(cq.snap && cq.snap.n || 0) + ' เส้น' + (cq.sentAt ? ' · ส่งตัดแล้ว ' + h(cqTime(cq.sentAt)) : '') + '</span>' +
+        (cq ? '<div class="cqf cqwait' + (cq.sentAt ? ' done' : '') + '"><span class="cqfn">' + (cq.sentAt ? '✅ ส่งตัดแล้ว ' + h(cqTime(cq.sentAt)) + ' · ' : '⏳ รอตัด · ') + 'สแกน ' + h(cqTime(cq.savedAt)) + ' · ' + h(cq.snap && cq.snap.n || 0) + ' เส้น</span>' +
           '<button class="btn ghost sm" data-act="cutprev" data-i="' + i + '">👁 พรีวิว</button>' +
           '<button class="btn sm' + (armed === cqKey(j, f) ? ' arm' : '') + '" data-act="cutnow" data-i="' + i + '">' + (armed === cqKey(j, f) ? 'กดอีกครั้งเพื่อตัด' : cq.sentAt ? '✂ ตัดอีกครั้ง' : '✂ ตัด') + '</button>' +
           '<button class="btn ghost sm" data-act="cutdrop" data-i="' + i + '" aria-label="ลบรอตัด">✕</button></div>' : '');
@@ -335,7 +342,7 @@
     var tel = String(j.jPhone || '').trim();
     M.innerHTML = '<div class="qjob cqbox" data-id="' + h(j.id) + '">' +
       '<div class="cqhead"><b>' + h(j.no || (j.ws ? 'ใบราคาส่ง ' + fmtD(j.date) : 'ใบงาน')) + (j.ws ? ' <span class="cqws">ราคาส่ง</span> <span class="mut">' + (j.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</span>' : '') + '</b><button class="btn ghost sm" data-act="close">✕</button></div>' +
-      '<div class="qtop"><select class="cqst ' + s + '" data-act="st">' + ST.map(function (k) { return '<option value="' + k + '"' + (k === s ? ' selected' : '') + '>' + SN[k] + '</option>'; }).join('') + '</select>' + dueTag(j) + '</div>' +
+      '<div class="qtop"><select class="cqst ' + s + '" data-act="st">' + ST.map(function (k) { return '<option value="' + k + '"' + (k === s ? ' selected' : '') + '>' + SN[k] + '</option>'; }).join('') + '</select>' + dueTag(j) + cutChip(j) + '</div>' +
       '<div class="cqk">ลูกค้า</div><div class="cqv"><b>' + h(j.jName || '(ไม่ระบุ)') + '</b>' +
         (tel ? ' · ' + h(tel) + ' <a href="#" data-act="copy" data-t="' + h(tel) + '">คัดลอก</a>' : '') +
         (j.jAddr ? '<div class="mut">' + h(j.jAddr).replace(/\n/g, '<br>') + '</div>' : '') + '</div>' +
@@ -405,6 +412,16 @@
       M = document.createElement('div'); M.id = 'cqPrev'; M.className = 'cqmodal';
       M.addEventListener('click', function (e) {
         if (e.target === M || e.target.closest('[data-pv="x"]')) return hidePrev();
+        var sb = e.target.closest('[data-pv="sim"]');
+        if (sb && prevCtx) {   // จำลองลำดับการตัด (ไม่ส่งเข้าเครื่อง) ใช้ค่าของหน้า "ส่งตัด" เช่น หมุน/กลับซ้ายขวา/ตัด Die ทีหลัง
+          var cv = $('cqPrevCv'), pc2 = prevCtx;
+          if (sb.dataset.on === '1') { window.ST_cutApi.stopSim(); sb.dataset.on = ''; sb.textContent = '▶ จำลองการตัด'; drawPrev(cv, pc2.cq); return; }
+          window.ST_cutApi.load(pc2.cq.snap, null);
+          if (!window.ST_cutApi.info().ok) return toast('⚠ ไม่มีเส้นให้จำลอง');
+          sb.dataset.on = '1'; sb.textContent = '■ หยุด';
+          window.ST_cutApi.sim(cv, sb, function () { sb.dataset.on = ''; sb.textContent = '▶ จำลองการตัด'; });
+          return;
+        }
         var b = e.target.closest('[data-pv="go"]'); if (!b || !prevCtx) return;
         if (!b.classList.contains('arm')) { b.classList.add('arm'); b.textContent = 'กดอีกครั้งเพื่อตัด'; clearTimeout(armT); armT = setTimeout(function () { b.classList.remove('arm'); b.textContent = '✂ ส่งตัด'; }, 4000); return; }
         b.classList.remove('arm'); b.disabled = true; b.textContent = 'กำลังส่ง…';
@@ -418,11 +435,11 @@
       '<canvas id="cqPrevCv" width="620" height="380" style="width:100%;background:#2b2b31;border-radius:8px"></canvas>' +
       '<div class="cqv mut small"><span style="color:#ff4fa3">▬ Kiss Cut</span> · <span style="color:#2fd27a">▬ Die Cut</span> · <span style="color:#4da3ff">■ มาร์ค</span><br>' +
       h(f.n || '') + ' · ' + h(sn.n || 0) + ' เส้น · ' + (mk ? 'มาร์ค ' + (mk.seg ? 'Segment' : '4 Points') + (cq.view ? ' (' + cq.view.marks.length + ' จุด)' : '') + ' — เครื่องสแกนมาร์คก่อนตัด' + (cq.view ? '' : '<br><span style="color:#ffd23f">⚠ ' + (cq.viewNote ? 'อ่านจุดมาร์คมาวาดพรีวิวไม่ได้ (' + h(cq.viewNote) + ')' : 'สแกนไว้ก่อนรุ่น 1.13.44 จึงไม่มีจุดมาร์คจริง') + ' · กรอบสี่เหลี่ยมโปร่งคือตำแหน่งโดยประมาณ' + (cq.viewNote ? '' : ' — กด "สแกนใหม่" เพื่อดูตำแหน่งจริง') + '</span>') : 'ไม่พบมาร์ค (ตัดแบบไม่อ่านมาร์ค)') + ' · สแกน ' + h(cqTime(cq.savedAt)) + '</div>' +
-      '<div class="qact"><button class="btn" data-pv="go" type="button">✂ ส่งตัด</button><button class="btn ghost sm" data-pv="x" type="button">ปิด</button></div></div>';
+      '<div class="qact"><button class="btn" data-pv="go" type="button">✂ ส่งตัด</button><button class="btn ghost sm" data-pv="sim" type="button">▶ จำลองการตัด</button><button class="btn ghost sm" data-pv="x" type="button">ปิด</button></div></div>';
     M.classList.add('show');
     drawPrev($('cqPrevCv'), cq);
   }
-  function hidePrev() { prevCtx = null; var M = $('cqPrev'); if (M) M.classList.remove('show'); }
+  function hidePrev() { try { window.ST_cutApi.stopSim(); } catch (e) {} prevCtx = null; var M = $('cqPrev'); if (M) M.classList.remove('show'); }
   document.addEventListener('st:cutsent', function (e) {   // ส่งตัดสำเร็จ → จดเวลาไว้ที่รายการรอตัด (ไม่ลบ เผื่อต้องตัดซ้ำ)
     var k = e.detail && e.detail.key; if (!k) return;
     var all = cqAll(); if (!all[k]) return; all[k].sentAt = Date.now(); cqSaveAll(all); render(); refreshDetail();
