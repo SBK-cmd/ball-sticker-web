@@ -4953,6 +4953,7 @@ function bahtText(value) {
       '<label class="btn small jd-t">📷 ถ่ายรูปงานเสร็จ<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '"></label>' +
       ((j.donePhotos && j.donePhotos.length) ? '<button class="btn small jd-t" data-act="savephotos" type="button">💾 บันทึกรูป (' + j.donePhotos.length + ')</button>' : '') +
       '<button class="btn small jd-t" data-act="livescan" type="button">📦 สแกนพัสดุ</button>' +
+      (canBank ? '<button class="btn small jd-t" data-act="jobcharge" type="button">💳 เรียกเก็บเงิน</button>' : '') +
       '<button class="btn small jd-t jd-main" data-act="tracklink" type="button">🔗 ส่งลิงก์ติดตาม</button>' +
       '<button class="btn small jd-t" data-act="copyurl" type="button">📋 คัดลอกลิงก์</button>' +
       (j.trackCode && j.status === 'shipped' ? '<button class="btn small jd-t" data-act="sendtrk" type="button">📤 ส่งเลขพัสดุ</button>' : '') +
@@ -5532,12 +5533,13 @@ function bahtText(value) {
     st.textContent = wkCh.status === 'paid' ? '✅ ได้รับเงินแล้ว ฿' + money(wkCh.amount) + (wkCh.manual ? ' (ยืนยันเอง)' : ' (จับคู่เงินเข้าอัตโนมัติ)') : '⏳ รอเงินเข้าบัญชี' + wkCh.account + ' ฿' + money(wkCh.amount) + ' … ระบบจะแจ้งเมื่อเงินเข้า';
     const mb = m.querySelector('#wkManual'); if (mb) mb.hidden = wkCh.status === 'paid';
   }
-  function openWalkInPay() {
+  function openWalkInPay(opts) {
+    opts = opts || {}; const job = opts.job || null;
     wkCh = null;
     let m = document.getElementById('wkModal'); if (m) m.remove();
     m = document.createElement('div'); m.id = 'wkModal'; m.className = 'chg-m';
     const accs = wkAccounts();
-    m.innerHTML = '<div class="chg-s"><div class="chg-t"><b>💳 จ่าย QR หน้าร้าน</b><button type="button" data-x="1" aria-label="ปิด">✕</button></div><div class="chg-b">' +
+    m.innerHTML = '<div class="chg-s"><div class="chg-t"><b>💳 ' + (job ? 'เรียกเก็บเงิน · ' + esc(job.no || 'ใบงาน') : 'จ่าย QR หน้าร้าน') + '</b><button type="button" data-x="1" aria-label="ปิด">✕</button></div><div class="chg-b">' +
       '<div class="wk-k">① บัญชีรับเงิน</div><div class="wk-acc">' + accs.map(a => { const ac = payAcct(a); return '<label><input type="radio" name="wkAcc" value="' + esc(a) + '"' + (accs.length === 1 ? ' checked' : '') + '><span><b>' + esc(a) + '</b><small>' + esc(ac.name) + ' · ' + esc(ppMask(ac.id)) + '</small></span></label>'; }).join('') + '</div>' +
       '<div class="wk-k">② ยอด</div><div class="wk-f"><label>ยอดงานรวม (บาท)<input id="wkTotal" type="text" inputmode="decimal" autocomplete="off"></label>' +
       '<label>มัดจำที่รับแล้ว (บาท) <small>ไม่มีเว้นว่าง</small><input id="wkDep" type="text" inputmode="decimal" autocomplete="off"></label></div>' +
@@ -5551,6 +5553,17 @@ function bahtText(value) {
     document.body.appendChild(m); document.body.classList.add('chg-open');
     const close = () => { m.remove(); document.body.classList.remove('chg-open'); wkCh = null; };
     const lock = on => ['wkTotal', 'wkDep', 'wkName'].forEach(id => { $(id).disabled = on; }) || m.querySelectorAll('input[name=wkAcc]').forEach(r => { r.disabled = on; });
+    let wkDocs = [];
+    if (job) {   // เรียกเก็บจากใบงาน: ดึงยอดงาน/มัดจำ(จากเงินเข้าที่ผูกกับใบนี้)/บัญชี ให้ก่อน แก้ได้
+      const tot = jobAmountOf(job), ids = jobBankIdsOf(job), pool = wantimPoolAll();
+      const dep = round2(ids.reduce((a, id) => { const b = pool.find(x => x.id === id); return a + (b ? num(b.amount) : 0); }, 0));
+      if (tot > 0) $('wkTotal').value = String(tot);
+      if (dep > 0) { $('wkDep').value = String(dep); $('wkDep').closest('label').insertAdjacentHTML('beforeend', '<small>ดึงจากเงินเข้าที่ผูกกับใบนี้ — แก้ได้</small>'); }
+      $('wkName').value = [job.jName, job.no].filter(Boolean).join(' · ');
+      const ac = m.querySelector('input[name=wkAcc][value="' + (job.account || '') + '"]'); if (ac) ac.checked = true;
+      wkDocs = [{k: 'jobs', id: job.id}];
+      if (!(tot > 0)) toast('ใบนี้ยังไม่มีราคา — ใส่ยอดงานเอง');
+    }
     m.addEventListener('input', wkCalc); m.addEventListener('change', wkCalc);
     m.addEventListener('click', async e => {
       if (e.target === m || e.target.closest('[data-x]')) { close(); return; }
@@ -5558,7 +5571,8 @@ function bahtText(value) {
         const v = wkVals(); if (!v.acc || !(v.total > 0) || !(v.bal > 0) || v.dep < 0) return;
         const at = Date.now();
         wkCh = {id: 'pay' + at, ref: payRef(at), chatId: '', name: v.name || 'ลูกค้าหน้าร้าน', channel: 'walkin', account: v.acc, total: v.total, deposit: v.dep, amount: v.bal,
-          note: 'หน้าร้าน · ยอดงาน ' + money(v.total) + (v.dep > 0 ? ' หักมัดจำ ' + money(v.dep) : ''), status: 'pending', createdAt: at, by: chatBy() || 'app'};
+          note: (job ? 'ใบงาน ' + (job.no || '') + ' · ' : 'หน้าร้าน · ') + 'ยอดงาน ' + money(v.total) + (v.dep > 0 ? ' หักมัดจำ ' + money(v.dep) : ''), status: 'pending', createdAt: at, by: chatBy() || 'app'};
+        if (wkDocs.length) wkCh.docs = wkDocs;
         store.set('bs_pay_charges', payCharges().concat([wkCh])); cloudSave('payCharges', wkCh);
         lock(true); wkCalc(); toast('บันทึกแล้ว รอเงินเข้า ฿' + money(wkCh.amount)); return;
       }
@@ -5567,7 +5581,7 @@ function bahtText(value) {
       if (b.dataset.a === 'manual' && wkCh) {
         if (b.dataset.arm !== '1') { b.dataset.arm = '1'; b.textContent = 'กดอีกครั้งเพื่อยืนยันว่าได้รับเงินแล้ว'; setTimeout(() => { b.dataset.arm = ''; b.textContent = 'ลูกค้าจ่ายแล้ว (ยืนยันเอง)'; }, 4000); return; }
         const rec = Object.assign({}, wkCh, {status: 'paid', paidAt: Date.now(), manual: true});
-        store.set('bs_pay_charges', payCharges().map(x => x.id === rec.id ? rec : x)); cloudSave('payCharges', rec); wkCh = rec; wkSync(); return;
+        store.set('bs_pay_charges', payCharges().map(x => x.id === rec.id ? rec : x)); cloudSave('payCharges', rec); wkCh = rec; if (rec.docs && rec.docs.length) markDocsPaid(rec.docs); wkSync(); return;
       }
       if (b.dataset.a === 'img' && wkCh) {
         try { const url = await payCardDataUrl(wkCh.amount, ('ยอดงาน ' + money(wkCh.total) + (wkCh.deposit > 0 ? ' หักมัดจำ ' + money(wkCh.deposit) : '')).slice(0, 44), wkCh.ref, wkCh.createdAt, payAcct(wkCh.account)); const a = document.createElement('a'); a.href = url; a.download = 'QR-หน้าร้าน-' + wkCh.amount + '.png'; document.body.appendChild(a); a.click(); a.remove(); }
@@ -7484,6 +7498,7 @@ function bahtText(value) {
       })();
       return;
     }
+    if (btn.dataset.act === 'jobcharge') { const jj = list.find(x => x.id === id); if (jj) openWalkInPay({job: jj}); return; }   // เรียกเก็บเงินจากใบงาน (หักมัดจำ)
     if (btn.dataset.act === 'tracklink' || btn.dataset.act === 'copylink' || btn.dataset.act === 'copyurl' || btn.dataset.act === 'openlink') {   // ลิงก์ติดตามงานของลูกค้า: รหัสสุ่มต่อใบ (สร้างครั้งแรกที่กด) ไม่ต้องล็อกอิน
       const li = list.findIndex(x => x.id === id); if (li < 0) return;
       if (!list[li].trackToken) {
