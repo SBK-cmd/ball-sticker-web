@@ -409,3 +409,9 @@ body.intool .topbar{display:flex}
 #cqAdd{margin:8px 0}#cqAdd summary{cursor:pointer;list-style:none;padding:2px 0}#cqAdd summary::-webkit-details-marker{display:none}
 #cqAdd[open] summary{margin-bottom:8px}#cqAdd .btn{margin-top:8px}#cqAdd .chk{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px}
 .cqws.lcl{background:rgba(255,255,255,.1);color:#cfcfd6}
+
+.cqfold{display:flex;align-items:center;gap:8px;width:100%;margin-top:8px;padding:8px 10px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.05);color:var(--tx,#eee);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-align:left;box-sizing:border-box}
+.cqfold .cqfs{flex:1;display:flex;gap:6px;flex-wrap:wrap;font-weight:600}.cqfold .cqfs i{font-style:normal;font-size:11px;padding:1px 7px;border-radius:9px;background:rgba(255,255,255,.08);color:#9a9aa3}
+.cqfold .cqfs i.s{background:rgba(47,210,122,.2);color:#2fd27a}.cqfold .cqfs i.w{background:rgba(255,210,63,.18);color:#ffd23f}
+.cqfold .cqch{color:#9a9aa3}.cqfold+.cqfiles{margin-top:8px}
+.cqrow>div{flex:1;min-width:0}

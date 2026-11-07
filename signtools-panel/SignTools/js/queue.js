@@ -229,7 +229,7 @@
           '<div><div class="qmain"><b>' + h(j.jName || '(ไม่ระบุลูกค้า)') + '</b></div>' +
           '<div class="qsub">' + (its.length ? its.slice(0, openIds[j.id] ? 99 : 3).map(function (i) { return h(i.name) + (i.qty ? ' × ' + h(i.qty) : ''); }).join('<br>') + (!openIds[j.id] && its.length > 3 ? '<br><a href="#" data-act="more">+ อีก ' + (its.length - 3) + ' รายการ</a>' : '') : '—') + '</div>' +
           (j.note && openIds[j.id] ? '<div class="qsub">📝 ' + h(j.note) + '</div>' : '') +
-          fileBlock(j, false) + '</div></div>' +
+          foldFiles(j) + '</div></div>' +
         '<div class="qact">' +
           '<button class="btn ghost sm" data-act="link">' + linkLabel(j) + '</button>' +
           (s === 'pending' ? '<button class="btn sm" data-act="filed">✓ ทำไฟล์แล้ว</button>' : '') + '</div></div>';
@@ -284,6 +284,17 @@
       });
     }).catch(function () { return ''; });
   }
+  // ยุบ/ขยายรายการไฟล์ในการ์ดใบงาน: ค่าเริ่มต้น = ใบที่มี 2 ไฟล์ขึ้นไปยุบไว้ · กดหัวข้อเพื่อสลับ (จำต่อใบ)
+  var FOLDK = 'st_cq_fold';
+  function foldMap() { try { var d = JSON.parse(localStorage.getItem(FOLDK) || '{}'); return d && typeof d === 'object' ? d : {}; } catch (e) { return {}; } }
+  function isFolded(j) { var m = foldMap(), v = m[j.id]; return v == null ? filesOf(j).length >= 2 : !!v; }
+  function foldFiles(j) {
+    var fs = filesOf(j); if (!fs.length) return '';
+    var folded = isFolded(j), all = cqAll(), sent = 0, wait = 0, none = 0;
+    fs.forEach(function (f) { var q = all[cqKey(j, f)]; if (!q) none++; else if (q.sentAt) sent++; else wait++; });
+    var sum = [sent ? '<i class="s">✅ ' + sent + '</i>' : '', wait ? '<i class="w">⏳ ' + wait + '</i>' : '', none ? '<i class="n">ยังไม่สแกน ' + none + '</i>' : ''].filter(Boolean).join(' ');
+    return '<button type="button" class="cqfold" data-act="fold" aria-expanded="' + (!folded) + '"><span>📄 ไฟล์งาน ' + fs.length + ' ไฟล์</span><span class="cqfs">' + sum + '</span><span class="cqch">' + (folded ? '▾' : '▴') + '</span></button>' + (folded ? '' : fileBlock(j, false));
+  }
   function fileBlock(j, withRemove) {
     var fs = filesOf(j);
     if (!fs.length) return '';
@@ -327,6 +338,7 @@
     else if (a === 'close') hideDetail();
     else if (a === 'img') openUrl(b.dataset.src);
     else if (a === 'copy') { try { navigator.clipboard.writeText(b.dataset.t); toast('✓ คัดลอกแล้ว'); } catch (ec) { toast(b.dataset.t); } }
+    else if (a === 'fold') { var fm = foldMap(); fm[j.id] = !isFolded(j); try { localStorage.setItem(FOLDK, JSON.stringify(fm)); } catch (ef) {} render(); }
     else if (a === 'filed') setStatus(j, 'filed');
     else if (a === 'ldel') {         // ลบใบที่เพิ่มเองในแผง (2 ครั้ง) · ลบรายการรอตัดของใบนั้นด้วย · ไม่ลบไฟล์จริง
       if (armed !== 'L:' + j.id) { armed = 'L:' + j.id; clearTimeout(armT); armT = setTimeout(function () { armed = ''; refreshDetail(); }, 4000); b.textContent = 'กดอีกครั้งเพื่อลบ'; return; }
