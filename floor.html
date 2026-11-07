@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ผังร้าน 3 มิติ · บอลสติ๊กเกอร์</title>
+<style>
+:root{--bg1:#dfe9f2;--bg2:#f6efe4;--card:rgba(255,255,255,.93);--ink:#1f2933;--mut:#6b7280;--line:#e3ded2;--acc:#1f4e79;--bad:#b42318}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg1:#1d2430;--bg2:#2a2722;--card:rgba(34,36,40,.93);--ink:#eceff3;--mut:#98a1ad;--line:#3a3d44;--acc:#7fb2e5;--bad:#f2766b}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--ink);font:14px/1.45 "Noto Sans Thai","Sarabun",system-ui,sans-serif;overflow:hidden}
+#stage{position:fixed;inset:0}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+.hud{position:fixed;left:0;right:0;top:0;padding:10px 12px;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.title b{font-size:17px}.title span{display:block;color:var(--mut);font-size:12px}
+.demo.real{background:#dff5e6;color:#14532d;border-color:#9ad7ae}
+.demo{background:#fff3cd;color:#7a5200;border:1px solid #f0d58a;border-radius:8px;padding:3px 9px;font-size:12px;font-weight:600;pointer-events:auto}
+.kpis{display:flex;gap:6px;flex-wrap:wrap}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:5px 10px;min-width:84px;backdrop-filter:blur(4px)}
+.kpi b{display:block;font-size:19px;font-variant-numeric:tabular-nums;line-height:1.2}.kpi span{font-size:11px;color:var(--mut)}
+.kpi.late b{color:var(--bad)}
+.ctl{position:fixed;left:12px;bottom:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:6px 12px;cursor:pointer;min-height:36px}
+button.on{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}
+.staff{position:fixed;right:12px;bottom:12px;width:230px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 10px;backdrop-filter:blur(4px)}
+.staff h3{margin:0 0 4px;font-size:12px;color:var(--mut);font-weight:600}
+.sp1{display:flex;gap:8px;align-items:center;padding:4px 0;border-top:1px dashed var(--line)}
+.sp1:first-of-type{border-top:0}
+.dot{width:12px;height:12px;border-radius:50%;flex:none}
+.sp1 b{font-size:13px}.sp1 small{display:block;color:var(--mut);font-size:11.5px;line-height:1.3}
+.hint{position:fixed;left:12px;bottom:56px;color:var(--mut);font-size:11.5px;background:var(--card);border-radius:8px;padding:2px 8px}
+.lab{position:fixed;left:0;top:0;transform:translate(-50%,-100%);background:var(--card);border:1px solid var(--line);border-radius:9px;padding:2px 8px;font-size:12px;white-space:nowrap;pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.lab b{font-weight:700}.lab i{font-style:normal;color:var(--mut);margin-left:4px}
+.lab.room{background:#7a12d6;color:#fff;border-color:#7a12d6;font-weight:600}
+.lab.w{background:#1f2933;color:#fff;border-color:#1f2933;font-size:11.5px}
+.lab.w .tag{color:#ffd23f}.lab.w em{font-style:normal;opacity:.7;margin-left:3px;font-size:10.5px}
+.card{position:fixed;right:12px;top:96px;width:250px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;backdrop-filter:blur(4px)}
+.card h2{margin:0 0 4px;font-size:14px}.card .r{display:flex;justify-content:space-between;gap:8px;padding:2px 0;border-bottom:1px dashed var(--line)}.card .r span:first-child{color:var(--mut)}
+.card[hidden]{display:none}
+@media(max-width:640px){.lab{font-size:10px;padding:1px 5px}.lab.room{background:#7a12d6;color:#fff;border-color:#7a12d6;font-weight:600}
+.lab.w{font-size:10px}.card{top:auto;bottom:150px;right:12px;left:12px;width:auto}.staff{left:12px;width:auto;bottom:56px}.hint{display:none}.sp1 small{display:inline;margin-left:4px}}
+body.emb .title,body.emb .hint{display:none}
+body.emb .hud{padding:6px 8px}body.emb .top{justify-content:flex-start}
+@media(max-width:560px){.lab{font-size:9.5px;padding:1px 4px}.lab.w{font-size:9.5px}.lab.room{display:none}.kpi{min-width:64px;padding:3px 7px}.kpi b{font-size:16px}.demo{font-size:10.5px}}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div class="hud">
+  <div class="top">
+    <div class="title"><b>ผังร้าน 3 มิติ · บอลสติ๊กเกอร์ พิษณุโลก</b><span>ผังตามแปลนร้านจริง · ใบงานเดิน แอดมิน → ออกแบบ → พิมพ์ → เคลือบ → ตัด → แพ็ก → ส่ง</span></div>
+    <div class="demo" id="banner">ตัวอย่างเท่านั้น · ใบงานและการเดินเป็นข้อมูลสมมติ ยังไม่ใช่ของจริง</div>
+  </div>
+  <div class="kpis" id="kpis"></div>
+</div>
+<div class="ctl">
+  <button id="pp" class="on">⏸ หยุด</button>
+  <button data-sp="1" class="on sp">1×</button><button data-sp="2" class="sp">2×</button><button data-sp="5" class="sp">5×</button>
+  <button id="view">มุมมอง: เฉียง</button>
+</div>
+<div class="hint">ลากเพื่อหมุน · ล้อเมาส์/บีบนิ้วเพื่อซูม · แตะพนักงานดูงานที่ถือ</div>
+<div class="staff" id="staff"><h3>ทีมงาน (จำลอง)</h3></div>
+<div class="card" id="card" hidden></div>
+
+<script src="js/three.min.js"></script>
+<script>
+(function(){
+function isoLocal(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
+var TODAY='2026-11-07',REAL=false,RC=null;
+var STN=[
+ {id:'admin', name:'โต๊ะแอดมิน',      lx:-7.3,lz:-10.3,col:0xd9468f,rug:[-7.3,-9.4,5,3.8], slot:{x0:-8.0,dx:.7,cols:3,y:1.07,z:-10.05,dy:.36}},
+ {id:'design',name:'โต๊ะออกแบบ',      lx:3.1,lz:-10.3, col:0x1f6fb2,rug:[3.1,-9.4,5,3.8],  slot:{x0:2.4,dx:.7,cols:3,y:1.07,z:-10.05,dy:.36}},
+ {id:'print', name:'เครื่องพิมพ์ (YF-1700 / Epson)',lx:-4.7,lz:5.9,col:0xc98a00,rug:[-2.7,5.9,11,7.6], slot:{x0:-1.2,dx:.8,cols:3,y:1.1,z:5.8,dy:.36}},
+ {id:'lam',   name:'เครื่องเคลือบ',   lx:9.4,lz:5.9,  col:0x2f55c9,rug:[9.6,4.9,5.4,6.4], slot:{x0:8.7,dx:.8,cols:3,y:1.1,z:3.7,dy:.36}},
+ {id:'cut',   name:'เครื่องตัด Graphtec CE7000',lx:-0.8,lz:-2.4,col:0xc2417a,rug:[-0.8,-3.6,10,4.6], slot:{x0:-3.6,dx:.8,cols:8,y:1.1,z:-4.3,dy:.36}},
+ {id:'pack',  name:'จุดแพ็ก',         lx:8.0,lz:-8.8, col:0x1f8f55,rug:[8.8,-8.6,5.4,4.2], slot:{x0:6.8,dx:.7,cols:4,y:1.12,z:-8.8,dy:.36}},
+ {id:'out',   name:'ชั้นรอรับ/ส่งแล้ว',lx:10.5,lz:-4.0,col:0x6a55c4,rug:[10.8,-3.6,4.6,3.6], slot:{x0:9.3,dx:.8,cols:4,y:.66,z:-4.0,dy:.9}}
+];
+// เส้นทางเดิน (จุดยืน + ทางเดิน + ประตูผนังกั้นห้องที่ x=8)
+var NODES={admin:[-7.3,-8.6],adm_c:[-7.3,-5.6],cut:[-.8,-5.6],des_c:[3.1,-5.6],design:[3.1,-8.6],dN:[8,-5.6],pack:[8,-7.3],dM:[8,-2.4],out:[10.5,-2.4],dS:[8,-.8],H:[8,2.4],P1:[-.4,2.4],print:[-.4,4.6],lam:[9.9,2.4]};
+var EDGES=[['admin','adm_c'],['adm_c','cut'],['cut','des_c'],['des_c','dN'],['design','des_c'],['dN','pack'],['dN','dM'],['dM','out'],['dM','dS'],['dS','H'],['H','P1'],['P1','print'],['H','lam']];
+var ADJ={};EDGES.forEach(function(e){(ADJ[e[0]]=ADJ[e[0]]||[]).push(e[1]);(ADJ[e[1]]=ADJ[e[1]]||[]).push(e[0])});
+function bfs(a,b){var prev={},q=[a];prev[a]=null;while(q.length){var c=q.shift();if(c===b)break;ADJ[c].forEach(function(n){if(!(n in prev)){prev[n]=c;q.push(n)}})}var p=[],c=b;while(c!==null&&c!==undefined){p.unshift(c);c=prev[c]}return p}
+var SHORT={admin:'แอดมิน',design:'ออกแบบ',print:'พิมพ์',lam:'เคลือบ',cut:'ตัด',pack:'แพ็ก',out:'ส่ง'};
+var ORDER=['admin','design','print','lam','cut','pack','out'];
+var PWAIT={admin:2.5,design:6,print:4.5,lam:3.5,cut:4.5,pack:3.5};
+var VERB={admin:'รับออเดอร์/ตอบลูกค้า',design:'ทำไฟล์',print:'ดูงานพิมพ์',lam:'เคลือบงาน',cut:'ตัดงาน',pack:'แพ็กของ'};
+var JOBS=[
+ {no:'JB261107-003',cust:'ร้านพีพี',  due:'2026-11-09',zone:'admin'},
+ {no:'JB261107-001',cust:'TN SHOP',   due:'2026-11-07',zone:'design'},
+ {no:'JB261107-002',cust:'Mew_wanasan',due:'2026-11-08',zone:'design'},
+ {no:'JB261106-003',cust:'MR.MAN',    due:'2026-11-06',zone:'print'},
+ {no:'JB261105-004',cust:'KO BOWM',   due:'2026-11-07',zone:'print'},
+ {no:'JB261105-006',cust:'ร้านใบเตย', due:'2026-11-08',zone:'lam'},
+ {no:'JBS261107-001',cust:'TN SHOP',  due:'2026-11-09',zone:'cut',cutWait:2},
+ {no:'JB261104-007',cust:'ณรงค์ฤทธิ์',due:'2026-11-05',zone:'cut',cutWait:1},
+ {no:'JB261104-005',cust:'พี่หน่อย',  due:'2026-11-07',zone:'pack'},
+ {no:'JB261103-002',cust:'ร้านฟ้าใส', due:'2026-11-06',zone:'out'}
+];
+var NEWC=['ร้านพีพี','คุณเอ','บ.สยามพริ้นท์','น้องบอล','ร้านดอกไม้','ฟาร์มสุข'];
+var jobSeq=10,newSeq=0;
+function stn(id){return STN.filter(function(s){return s.id===id})[0]}
+function isLate(j){return j.zone!=='out'&&j.due<TODAY}
+
+// ===== renderer =====
+var W=innerWidth,H=innerHeight;
+var renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(W,H);
+renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+document.getElementById('stage').appendChild(renderer.domElement);
+var scene=new THREE.Scene();
+var cam=new THREE.PerspectiveCamera(40,W/H,.1,300);
+scene.add(new THREE.HemisphereLight(0xffffff,0xc9c2b2,.9));
+var sun=new THREE.DirectionalLight(0xfff4e0,1.0);sun.position.set(-14,28,14);sun.castShadow=true;sun.shadow.bias=-.0004;
+sun.shadow.mapSize.set(4096,4096);var sc=sun.shadow.camera;sc.left=-24;sc.right=24;sc.top=22;sc.bottom=-22;sc.near=1;sc.far=80;scene.add(sun);
+var fill=new THREE.DirectionalLight(0xbfd6ff,.25);fill.position.set(14,10,-8);scene.add(fill);
+
+function M(c,o){return new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.7,metalness:.05},o||{}))}
+function box(w,h,d,c,x,y,z,p,o){var m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c,o));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;(p||scene).add(m);return m}
+function cyl(r,h,c,x,y,z,p,rot,o){var m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,20),M(c,o));m.position.set(x,y,z);if(rot)m.rotation.z=Math.PI/2;m.castShadow=true;m.receiveShadow=true;(p||scene).add(m);return m}
+function tex(w,h,fn,rx,ry){var c=document.createElement('canvas');c.width=w;c.height=h;fn(c.getContext('2d'),w,h);var t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;if(rx){t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry)}return t}
+function plane(w,h,map,x,y,z,ry,o){var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial(Object.assign({map:map,roughness:.9},o||{})));m.position.set(x,y,z);m.rotation.y=ry||0;m.receiveShadow=true;scene.add(m);return m}
+
+// ===== ห้อง (ตามแปลนที่เจ้าของส่งมา: ห้องบน = คอม+เครื่องตัด · ห้องล่าง = เครื่องพิมพ์+เคลือบ) =====
+var floorT=tex(256,256,function(g,w,h){g.fillStyle='#eceae4';g.fillRect(0,0,w,h);for(var i=0;i<2;i++)for(var j=0;j<2;j++){g.fillStyle=(i+j)%2?'#e8e6df':'#efede8';g.fillRect(i*128,j*128,128,128)}g.strokeStyle='#cfccc2';g.lineWidth=3;g.strokeRect(0,0,w,h);g.beginPath();g.moveTo(128,0);g.lineTo(128,h);g.moveTo(0,128);g.lineTo(w,128);g.stroke()},22,20);
+var floor=new THREE.Mesh(new THREE.PlaneGeometry(26,24),new THREE.MeshStandardMaterial({map:floorT,roughness:.45}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+box(26.4,.18,.3,0x9a9484,0,.09,-12.1);box(.3,.18,24.2,0x9a9484,-13.1,.09,0);box(26.4,.18,.3,0x9a9484,0,.09,12.1);box(.3,.18,24.2,0x9a9484,13.1,.09,0);
+box(26,3.4,.3,0xefe6d2,0,1.7,-12.1);
+var wallT=tex(2048,136,function(g,w,h){g.fillStyle='#efe6d2';g.fillRect(0,0,w,h);var cols=['#e5483b','#f2a900','#1f8f55','#1f6fb2','#8a4fd0','#e8338a','#111111','#00a6a6','#ff7a1a'];var s=7;function r(){s=(s*9301+49297)%233280;return s/233280}
+ for(var i=0;i<80;i++){var x=r()*w,y=h*(.12+r()*.78),rx=10+r()*12,ry=rx*(.8+r()*.2);var c=cols[Math.floor(r()*cols.length)];g.fillStyle=c;g.beginPath();g.ellipse(x,y,rx,ry,0,0,7);g.fill();g.fillStyle='rgba(255,255,255,.88)';g.beginPath();g.ellipse(x,y,rx*.72,ry*.66,0,0,7);g.fill();g.fillStyle=cols[Math.floor(r()*cols.length)];g.beginPath();g.ellipse(x,y,rx*.4,ry*.38,0,0,7);g.fill()}});
+plane(26,1.7,wallT,0,1.4,-11.93);
+var signT=tex(1024,128,function(g,w,h){g.fillStyle='#1f4e79';g.fillRect(0,0,w,h);g.fillStyle='#fff';g.font='700 70px "Noto Sans Thai","Sarabun",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('บอลสติ๊กเกอร์ พิษณุโลก',w/2,h/2+4)});
+plane(7,.9,signT,-2,2.85,-11.93);
+box(.3,3.4,24,0xf2eee3,-13.1,1.7,0);
+[-9,-3,3,9].forEach(function(zz){box(.08,1.7,3.2,0xbfe0f2,-12.92,1.7,zz,null,{transparent:true,opacity:.45,roughness:.1,metalness:.3});box(.12,.08,3.4,0x333333,-12.9,2.58,zz);box(.12,.08,3.4,0x333333,-12.9,.82,zz)});
+// ผนังกั้นห้อง (เตี้ย + กระจกใส เพื่อให้มองเห็นห้องบน) เว้นช่องประตูที่ x=8
+(function(){var segs=[[-13,6.8],[9.2,13]];segs.forEach(function(a){var w=a[1]-a[0],cx=(a[0]+a[1])/2;box(w,.7,.25,0xe6dfcf,cx,.35,0);box(w,1.9,.06,0xcfe8f5,cx,1.65,0,null,{transparent:true,opacity:.2,roughness:.05});box(w,.07,.28,0x9a9484,cx,2.62,0)});
+ box(.2,2.6,.3,0x9a9484,6.8,1.3,0);box(.2,2.6,.3,0x9a9484,9.2,1.3,0);box(2.6,.1,.3,0x9a9484,8,2.6,0)})();
+// เส้นทางเดิน (แถบจางๆ ให้เห็นทางเดิน)
+EDGES.forEach(function(e){var a=NODES[e[0]],b=NODES[e[1]],L=Math.hypot(b[0]-a[0],b[1]-a[1]);var m=new THREE.Mesh(new THREE.PlaneGeometry(L,.55),new THREE.MeshStandardMaterial({color:0xdcd6c6,roughness:.7}));m.rotation.order='YXZ';m.rotation.x=-Math.PI/2;m.rotation.y=-Math.atan2(b[1]-a[1],b[0]-a[0]);m.position.set((a[0]+b[0])/2,.015,(a[1]+b[1])/2);m.receiveShadow=true;scene.add(m)});
+STN.forEach(function(s){var r=s.rug,z=new THREE.Mesh(new THREE.PlaneGeometry(r[2],r[3]),new THREE.MeshStandardMaterial({color:s.col,transparent:true,opacity:.13,roughness:1}));z.rotation.x=-Math.PI/2;z.position.set(r[0],.02,r[1]);scene.add(z)});
+function plant(x,z){cyl(.32,.5,0xb06a3b,x,.25,z);var l=new THREE.Mesh(new THREE.SphereGeometry(.55,14,12),M(0x2f8a4a,{roughness:.9}));l.position.set(x,.95,z);l.scale.y=1.2;l.castShadow=true;scene.add(l);var l2=new THREE.Mesh(new THREE.SphereGeometry(.38,12,10),M(0x3da35c,{roughness:.9}));l2.position.set(x+.2,1.4,z);scene.add(l2)}
+plant(-12.2,-11);plant(12.2,-11);plant(-12.2,11);plant(12.2,11);plant(-12.2,.9);
+box(3.4,.05,.3,0xf5c518,-8,.06,12.1);
+// ม้วนไวนิล/สติ๊กเกอร์ มุมห้องล่างขวา
+[0xff7a1a,0xe8338a,0xf2a900,0x2fb04a,0xd6e8ff,0x8a8f96].forEach(function(c,i){cyl(.2,2,c,12.4,1.0,8.5+i*.5)});
+
+// ===== ชุดโต๊ะ/เครื่องจักร =====
+function stand(x,z,w,d,h,c){[-1,1].forEach(function(a){[-1,1].forEach(function(b){box(.1,h,.1,c,x+a*(w/2-.1),h/2,z+b*(d/2-.1))})})}
+var anim={};
+function deskSet(cx,cz,mon){box(2.6,.08,1.2,0xb98b5c,cx,.95,cz);stand(cx,cz,2.5,1.0,.92,0x555555);
+ box(1.0,.6,.06,0x15171b,cx,1.45,cz-.35);box(.95,.52,.03,0x9ad0ff,cx,1.45,cz-.31,null,{emissive:0x2e6aa8,emissiveIntensity:.55});box(.1,.3,.1,0x444444,cx,1.1,cz-.32);
+ if(mon)box(.7,.5,.03,0x69b7ff,cx+.9,1.35,cz-.35,null,{emissive:0x2a6fb0,emissiveIntensity:.5});
+ box(.45,.03,.3,0x2b2f36,cx,1.0,cz+.05);box(.14,.02,.2,0x222222,cx+.6,1.0,cz+.1);
+ cyl(.28,.08,0x2a2d33,cx,.55,cz+1.0);cyl(.04,.45,0x777777,cx,.3,cz+1.0);box(.5,.5,.08,0x2a2d33,cx,.9,cz+1.27)}
+deskSet(-7.3,-10.3,true);box(.35,.28,.3,0xc59a62,-5.7,1.14,-10.5);
+deskSet(3.1,-10.3,false);
+// --- เครื่องพิมพ์ YF-1700 (ฟ้า) ---
+(function(){var cx=-4.5,z=2.8;var g=new THREE.Group();scene.add(g);
+ box(4.4,.7,1.2,0x23262b,cx,.95,z,g);box(4.5,.62,1.32,0x86aedb,cx,1.6,z-.02,g);box(.95,.8,1.34,0x7ea6d3,cx+1.75,1.55,z-.02,g);box(.7,.28,.04,0x15171c,cx+1.75,1.8,z+.67,g,{emissive:0x274a7a,emissiveIntensity:.35});
+ for(var i=0;i<4;i++)for(var j=0;j<3;j++)box(.1,.07,.03,0xeeeeee,cx+1.5+j*.18,1.5-i*.12,z+.67,g);
+ cyl(.28,3.5,0xf2f3f4,cx-.1,1.15,z+.55,g,true);
+ anim.yf=box(.22,.2,.3,0x111111,cx,1.45,z+.35,g);anim.yfx=cx;
+ box(.1,.8,1,0x1b1d21,cx-2.1,.4,z+.2,g);box(.1,.8,1,0x1b1d21,cx+1.6,.4,z+.2,g);
+ box(3.6,.5,.04,0xf4f4f4,cx-.2,.85,z+.95,g);
+ cyl(.13,3.8,0xb98a5a,cx-.1,.42,z+1.1,g,true);cyl(.05,4.2,0xb7bcc2,cx-.1,.22,z+1.15,g,true,{metalness:.8,roughness:.25});
+ box(.9,.7,.7,0xaab0b6,cx+2.7,.4,z+1.0,g);cyl(.12,.1,0x2f8f55,cx+2.7,.78,z+1.0,g);
+ anim.yfLed=box(.14,.14,.04,0x20e070,cx+1.5,1.9,z+.69,g,{emissive:0x20e070,emissiveIntensity:1});
+ anim.yfPaper=box(3.4,.03,.0,0xffffff,cx-.1,.74,z+1.15,g)})();
+// --- เครื่องพิมพ์ Epson ---
+(function(){var cx=-5.0,z=8.6;var g=new THREE.Group();scene.add(g);
+ box(4.2,.95,1.2,0xe8ebee,cx,1.2,z,g);box(4.4,.45,1.3,0x1f2f6b,cx,1.9,z-.02,g);box(.95,1.0,.7,0xdfe3e8,cx+1.85,1.3,z+.35,g);
+ [0x111111,0x08a4ea,0xe6007e,0xffe600].forEach(function(c,i){box(.1,.34,.04,c,cx+1.6+i*.15,1.5,z+.72,g)});
+ var tray=box(3.0,.05,1.3,0xb5bac0,cx-.2,1.25,z+.65,g);tray.rotation.x=.55;
+ box(.1,1.0,1,0x1b1d21,cx-2.0,.5,z+.25,g);box(.1,1.0,1,0x1b1d21,cx+1.65,.5,z+.25,g);
+ cyl(.12,3.6,0xf2f3f4,cx-.2,1.05,z+.9,g,true);cyl(.13,3.7,0xb98a5a,cx-.2,.45,z+1.15,g,true);cyl(.05,4.2,0xb7bcc2,cx-.2,.22,z+1.2,g,true,{metalness:.8,roughness:.25});
+ anim.epLed=box(.14,.1,.04,0x4aa3ff,cx+1.9,1.9,z+.35,g,{emissive:0x2a7fff,emissiveIntensity:1})})();
+function table(cx,cz,w,d){box(w,.07,d,0xd8d2c4,cx,.88,cz);stand(cx,cz,w-.1,d-.1,.86,0x6c7078)}
+table(-.4,5.8,2.8,.9);table(9.9,3.7,3.2,.8);table(-.8,-4.3,8.4,.8);
+// --- เครื่องเคลือบ ---
+(function(){var cx=9.4,z=5.9;var g=new THREE.Group();scene.add(g);
+ box(3.4,.4,.8,0xf4f6f8,cx,1.25,z,g);[-1.85,1.85].forEach(function(a){box(.55,.95,.95,0xf8f9fb,cx+a,1.3,z,g);box(.06,.97,.97,0x2f55c9,cx+a+(a<0?.3:-.3),1.3,z,g);box(.5,.12,.12,0xff2a2a,cx+a,1.55,z+.5,g)});
+ cyl(.26,2.9,0xfdfdfd,cx,2.0,z-.2,g,true,{transparent:true,opacity:.92});cyl(.2,3.1,0x9aa0a6,cx,1.55,z+.15,g,true);
+ box(3.2,.06,.7,0xc6cbd1,cx,1.0,z+.55,g,{metalness:.6,roughness:.3});
+ cyl(.09,3.5,0xcfd4da,cx,.78,z+.95,g,true,{metalness:.8,roughness:.25});cyl(.09,3.5,0xcfd4da,cx,2.25,z-.55,g,true,{metalness:.8,roughness:.25});
+ [-1.7,1.7].forEach(function(a){box(.12,.95,.1,0xe9ecee,cx+a,.47,z+.8,g);box(.12,.95,.1,0xe9ecee,cx+a,.47,z-.4,g)})})();
+// --- Graphtec CE7000-130 (ตัวใหญ่ + ตะกร้าน้ำเงิน) ---
+(function(){var cx=2.3,z=-2.4;var g=new THREE.Group();scene.add(g);
+ box(3.8,.55,.8,0x3a3d42,cx,1.65,z,g);[-1,1].forEach(function(a){box(.38,.95,.85,0x72767c,cx+a*1.95,1.55,z+.02,g)});
+ box(3.4,.04,.08,0x3a8bff,cx,1.88,z+.42,g,{emissive:0x2060ff,emissiveIntensity:.8});box(.6,.28,.04,0x15171c,cx+1.5,1.88,z+.2,g,{emissive:0x31506a,emissiveIntensity:.5});
+ cyl(.2,3.5,0x15161a,cx,1.3,z+.45,g,true);
+ anim.cut=box(.26,.32,.3,0x15171c,cx-.5,1.62,z+.3,g);anim.cutx=cx;
+ box(.12,.8,.8,0x15161a,cx-1.7,.4,z+.3,g);box(.12,.8,.8,0x15161a,cx+1.7,.4,z+.3,g);
+ box(3.3,.95,.04,0x1b2a55,cx,.75,z+.55,g,{roughness:1});
+ plane(2.2,.55,tex(512,128,function(c,w,h){c.fillStyle='#1b2a55';c.fillRect(0,0,w,h);c.fillStyle='#eef2ff';c.font='italic 800 78px Arial';c.textAlign='center';c.textBaseline='middle';c.fillText('GRAPHTEC',w/2,h/2+4)}),cx,.6,z+.585,0);
+ cyl(.04,3.4,0xcdd2d8,cx,.98,z+.98,g,true,{metalness:.8,roughness:.25});
+ var mat=new THREE.Mesh(new THREE.PlaneGeometry(1.5,.75),new THREE.MeshStandardMaterial({color:0x1f7a63,roughness:.9}));mat.rotation.x=-Math.PI/2;mat.position.set(cx,.03,z+1.5);scene.add(mat)})();
+// --- Graphtec CE7000-60 (ตัวเล็ก บนขาตั้งเงิน) ---
+(function(){var cx=-4.0,z=-2.4;var g=new THREE.Group();scene.add(g);
+ box(2.8,.06,1.0,0xc9ced4,cx,1.1,z,g,{metalness:.5,roughness:.35});stand(cx,z,2.7,.9,1.08,0xbfc4ca);
+ box(2.5,.4,.65,0x4a4d52,cx,1.35,z,g);box(.28,.45,.7,0x6a6d72,cx-1.3,1.35,z,g);box(.28,.45,.7,0x6a6d72,cx+1.3,1.35,z,g);box(.5,.2,.04,0x15171c,cx+.6,1.55,z+.34,g,{emissive:0x2e4a5f,emissiveIntensity:.5});
+ cyl(.15,2.3,0x1a1b1f,cx,1.3,z+.35,g,true);anim.cut2=box(.2,.25,.25,0x15171c,cx+.6,1.48,z+.2,g);anim.cut2x=cx;
+ [[0xffffff,-.9],[0xc7d6e2,-.45],[0x101114,.2],[0xe9eef2,.7]].forEach(function(a){cyl(.17,.95,a[0],cx+a[1],.55,z,g)});
+ cyl(.2,1.5,0xb98a5a,cx-1.6,.75,z+.6,g);cyl(.18,1.3,0xb98a5a,cx-1.95,.65,z+.2,g)})();
+// --- จุดแพ็ก ---
+(function(){var pk=stn('pack'),x=pk.lx,z=pk.lz;box(3.8,.1,1.4,0xb98b5c,x,.95,z);stand(x,z,3.7,1.3,.92,0x5a5e65);
+ box(.9,.5,.7,0xc59a62,x+1.0,1.25,z-.4);cyl(.18,.35,0xdd3333,x-1.5,1.18,z-.3);
+ box(.9,.9,.7,0xc59a62,x+2.7,.45,z+.4);box(.8,.6,.6,0xc59a62,x+2.7,.3,z-.4);box(.6,.5,.6,0xd8b27a,x+2.7,1.05,z+.4)})();
+// --- ชั้นรอรับ ---
+(function(){var so=stn('out');[0,.9,1.8].forEach(function(y){box(3.7,.08,.95,0x8a9099,so.lx,.5+y,so.lz)});[-1.85,1.85].forEach(function(a){box(.1,2.4,.95,0x5a6068,so.lx+a,1.2,so.lz)});box(3.7,2.4,.05,0xa7adb4,so.lx,1.2,so.lz-.5)})();
+
+// ===== กล่องใบงาน =====
+var jobGroup=new THREE.Group();scene.add(jobGroup);
+function mkJobMesh(j){var g=new THREE.Group();box(.62,.34,.46,0xf0f3f7,0,0,0,g);j.top=box(.64,.06,.48,0x1f6fb2,0,.19,0,g);j.mesh=g;jobGroup.add(g);return g}
+JOBS.forEach(function(j){mkJobMesh(j);j.carried=null});
+function slotPos(j){var s=stn(j.zone),c=s.slot,list=JOBS.filter(function(x){return x.zone===j.zone&&!x.carried}),i=list.indexOf(j),row=Math.floor(i/c.cols),col=i%c.cols;
+ return new THREE.Vector3(c.x0+col*c.dx,c.y+row*c.dy,c.z)}
+function paintJob(j){j.top.material.color.setHex(isLate(j)?0xb42318:stn(j.zone).col)}
+function relayout(){JOBS.forEach(function(j){if(!j.carried){j.mesh.position.copy(slotPos(j));j.mesh.rotation.y=0}paintJob(j)})}
+relayout();
+
+// ===== ตัวละคร (การ์ตูนเรียบๆ — ยังไม่ใช้หน้าจริง) =====
+function person(o){
+  var g=new THREE.Group();
+  box(.52,.72,.32,o.shirt,0,1.08,0,g);
+  var head=new THREE.Mesh(new THREE.SphereGeometry(.22,20,16),M(o.skin,{roughness:.6}));head.position.set(0,1.66,0);head.castShadow=true;g.add(head);
+  [-.075,.075].forEach(function(x){var e=new THREE.Mesh(new THREE.SphereGeometry(.028,8,8),M(0x111111));e.position.set(x,1.68,.2);g.add(e)});
+  box(.08,.015,.02,0x8a4a3a,0,1.6,.215,g);
+  if(o.hair==='short'){var hr=new THREE.Mesh(new THREE.SphereGeometry(.235,20,12,0,Math.PI*2,0,Math.PI*.55),M(o.hc));hr.position.set(0,1.68,-.015);g.add(hr)}
+  if(o.hair==='long'){var hr2=new THREE.Mesh(new THREE.SphereGeometry(.24,20,12,0,Math.PI*2,0,Math.PI*.6),M(o.hc));hr2.position.set(0,1.68,-.02);g.add(hr2);box(.4,.5,.1,o.hc,0,1.5,-.2,g)}
+  if(o.hair==='cap'){var cp=new THREE.Mesh(new THREE.SphereGeometry(.245,20,12,0,Math.PI*2,0,Math.PI*.5),M(o.cap));cp.position.set(0,1.7,-.01);g.add(cp);box(.3,.03,.22,o.cap,0,1.72,.24,g)}
+  if(o.apron)box(.5,.55,.03,o.apron,0,1.0,.17,g);
+  function limb(w,h,d,c,x,y){var p=new THREE.Group();p.position.set(x,y,0);box(w,h,d,c,0,-h/2,0,p);g.add(p);return p}
+  g.legL=limb(.19,.72,.2,o.pants,-.13,.74);g.legR=limb(.19,.72,.2,o.pants,.13,.74);
+  g.armL=limb(.14,.58,.16,o.shirt,-.35,1.38);g.armR=limb(.14,.58,.16,o.shirt,.35,1.38);
+  return g}
+// บอล = เจ้าของร้าน/ทำไฟล์ · ท็อป = ผลิต/จัดส่ง · กุ้ง = แอดมิน  (หน้าตา/สีเสื้อเป็นแบบสมมติ)
+var WORK=[
+ {name:'บอล',role:'เจ้าของร้าน · ทำไฟล์',zones:['design'],home:'design',col:0x1f6fb2,look:{shirt:0x1f6fb2,skin:0xe8b98f,hair:'short',hc:0x1d1812,pants:0x2b3a55}},
+ {name:'ท็อป',role:'ผลิต · จัดส่ง',zones:['print','lam','cut','pack'],home:'cut',col:0xe8791a,look:{shirt:0xe8791a,skin:0xd9a273,hair:'cap',cap:0x222831,pants:0x2f3640,apron:0x3b4048}},
+ {name:'กุ้ง',role:'แอดมิน',zones:['admin'],home:'admin',col:0xd9468f,look:{shirt:0xd9468f,skin:0xf1c9a5,hair:'long',hc:0x241812,pants:0x3a3340}}
+].map(function(w){w.mesh=person(w.look);scene.add(w.mesh);w.path=[];w.state='idle';w.task=null;w.wait=0;w.t=Math.random()*10;w.carry=null;w.pos=new THREE.Vector3();w.face=w.home;w.node=w.home;w.act='เตรียมงาน';return w});
+WORK.forEach(function(w){var b=NODES[w.home];w.pos.set(b[0],0,b[1]);w.mesh.position.copy(w.pos)});
+function pathFromHere(w,toId){var ids=bfs(w.node,toId).slice(1);w.node=toId;return ids.map(function(id){return new THREE.Vector3(NODES[id][0],0,NODES[id][1])})}
+function assign(w){
+  if(REAL){var zs=w.zones.filter(function(z){return (RC&&RC[z])>0});var tz=zs.length&&Math.random()<.85?zs[Math.floor(Math.random()*zs.length)]:w.home;w.task=null;w.face=tz;w.path=pathFromHere(w,tz);w.state='stroll';w.wait=3+Math.random()*3;w.act=(tz===w.home&&!zs.length)?'รอใบงานใหม่':'ดูใบงานที่'+stn(tz).name;return}
+  var avail=JOBS.filter(function(j){return w.zones.indexOf(j.zone)>=0&&!j.carried&&!j.taken});
+  avail.sort(function(a,b){return (isLate(b)-isLate(a))||(ORDER.indexOf(b.zone)-ORDER.indexOf(a.zone))});
+  var j=avail[0];
+  if(!j){var idle=(w.name==='ท็อป'&&Math.random()<.5)?w.zones[Math.floor(Math.random()*w.zones.length)]:w.home;
+    w.path=pathFromHere(w,idle);w.face=idle;w.task=null;w.state='stroll';w.wait=2+Math.random()*3;w.act=(w.name==='ท็อป'&&idle!==w.home)?'เดินเช็คเครื่อง':'รอใบงานใหม่';return}
+  j.taken=w;w.task={job:j,phase:'toPick'};w.face=j.zone;w.path=pathFromHere(w,j.zone);w.state='walk';w.act='เดินไปรับใบงาน '+j.no}
+function arrive(w){
+  if(w.state==='stroll'){w.state='work';w.act=(w.face===w.home?'รอใบงานใหม่':'ตรวจเครื่อง/จัดของ');return}
+  var t=w.task;if(!t){assign(w);return}
+  if(t.phase==='toPick'){w.carry=t.job;t.job.carried=w;w.state='work';w.wait=PWAIT[t.job.zone]||2;t.phase='pickDone';w.act=VERB[t.job.zone]+' '+t.job.no;return}
+  if(t.phase==='toDrop'){var j=t.job;j.zone=ORDER[ORDER.indexOf(j.zone)+1];j.carried=null;j.taken=null;w.carry=null;w.task=null;relayout();updateHud();w.state='work';w.wait=1.2;w.act='วางใบงานแล้ว';return}}
+function afterWork(w){var t=w.task;
+  if(t&&t.phase==='pickDone'){var nxt=ORDER[ORDER.indexOf(t.job.zone)+1];t.phase='toDrop';w.face=nxt;w.path=pathFromHere(w,nxt);w.state='walk';w.act='ส่งใบงาน '+t.job.no+' ไป'+stn(nxt).name;return}
+  assign(w)}
+var spawnT=0;
+function spawn(dt){if(REAL)return;spawnT+=dt;if(spawnT<13)return;spawnT=0;
+  if(JOBS.filter(function(j){return j.zone==='admin'}).length>=3)return;
+  var outs=JOBS.filter(function(j){return j.zone==='out'});if(outs.length>3){var o=outs[0];jobGroup.remove(o.mesh);JOBS.splice(JOBS.indexOf(o),1)}
+  var j={no:'JB261107-0'+(10+(++jobSeq)),cust:NEWC[newSeq++%NEWC.length],due:(newSeq%3===0?'2026-11-06':'2026-11-08'),zone:'admin'};mkJobMesh(j);j.carried=null;JOBS.push(j);relayout();updateHud()}
+
+// ===== ป้าย / HUD =====
+var labs={};
+STN.forEach(function(s){var d=document.createElement('div');d.className='lab';document.body.appendChild(d);labs[s.id]=d});
+var roomLabs=[['ห้องออกแบบ · ตัด · แพ็ก',9.5,-11.4],['ห้องพิมพ์ · เคลือบ',9.5,11.4]].map(function(r){var d=document.createElement('div');d.className='lab room';d.textContent=r[0];document.body.appendChild(d);return {el:d,p:new THREE.Vector3(r[1],0,r[2])}});
+WORK.forEach(function(w){var d=document.createElement('div');d.className='lab w';document.body.appendChild(d);w.lab=d});
+var staffEl=document.getElementById('staff');
+WORK.forEach(function(w){var d=document.createElement('div');d.className='sp1';d.innerHTML='<span class="dot" style="background:#'+('000000'+w.col.toString(16)).slice(-6)+'"></span><div><b>'+w.name+'</b> <small style="display:inline">'+w.role+'</small><small class="act"></small></div>';staffEl.appendChild(d);w.panel=d.querySelector('.act')});
+function updateHud(){
+  STN.forEach(function(s){var n=REAL&&RC?(RC[s.id]||0):JOBS.filter(function(j){return j.zone===s.id}).length;labs[s.id].innerHTML='<b>'+(innerWidth<560?SHORT[s.id]:s.name)+'</b><i>'+n+(innerWidth<560?'':' ใบ')+'</i>'});
+  var open=JOBS.filter(function(j){return j.zone!=='out'}),lt=open.filter(isLate).length,cw=JOBS.reduce(function(a,j){return a+(j.zone==='cut'?(j.cutWait||0):0)},0),nOut=JOBS.filter(function(j){return j.zone==='out'}).length,nOpen=open.length;
+  if(REAL&&RC){nOpen=0;ORDER.forEach(function(z){if(z!=='out')nOpen+=RC[z]||0});nOut=RC.out||0;lt=RC.late||0}
+  document.getElementById('kpis').innerHTML='<div class="kpi"><b>'+nOpen+'</b><span>ใบงานค้างในร้าน</span></div><div class="kpi late"><b>'+lt+'</b><span>เลยกำหนด</span></div>'+(REAL?'':'<div class="kpi"><b>'+cw+'</b><span>ไฟล์รอตัด</span></div>')+'<div class="kpi"><b>'+nOut+'</b><span>'+(REAL?'ส่งแล้ว (ล่าสุด)':'ส่งแล้ว')+'</span></div>'}
+updateHud();
+var selW=null;
+function showCard(w){selW=w;var c=document.getElementById('card');if(!w){c.hidden=true;return}c.hidden=false;
+  var j=w.carry||(w.task&&w.task.job);
+  c.innerHTML='<h2>'+w.name+' <small style="font-weight:400;color:var(--mut)">'+w.role+'</small></h2><div class="r"><span>ตอนนี้</span><span>'+w.act+'</span></div>'+(j?'<div class="r"><span>ใบงาน</span><span>'+j.no+'</span></div><div class="r"><span>ลูกค้า</span><span>'+j.cust+'</span></div><div class="r"><span>กำหนดส่ง</span><span>'+j.due.split('-').reverse().join('/')+(isLate(j)?' ⚠ เลยกำหนด':'')+'</span></div>':'<div class="r"><span>งาน</span><span>ว่าง</span></div>')}
+
+// ===== กล้อง =====
+var yaw=-.45,pitch=.95,dist=34,tgt=new THREE.Vector3(0,0,0),mode=0;
+var VIEWS=[{n:'เฉียง',yaw:-.45,pitch:.95,dist:34},{n:'มองจากด้านบน',yaw:0,pitch:1.5,dist:36},{n:'ใกล้',yaw:-.35,pitch:.6,dist:23}];
+function setCam(){var cp=Math.cos(pitch),dd=dist*(cam.aspect<1.3?Math.min(2.4,1.7/cam.aspect):1);cam.position.set(tgt.x+dd*cp*Math.sin(yaw),tgt.y+dd*Math.sin(pitch),tgt.z+dd*cp*Math.cos(yaw));cam.lookAt(tgt)}
+var dragging=false,lx=0,ly=0,moved=0,pts={};var cv=renderer.domElement;
+cv.addEventListener('pointerdown',function(e){pts[e.pointerId]=e;dragging=true;lx=e.clientX;ly=e.clientY;moved=0;cv.setPointerCapture(e.pointerId)});
+cv.addEventListener('pointermove',function(e){if(!pts[e.pointerId])return;var ids=Object.keys(pts);
+  if(ids.length===2){var a=pts[ids[0]],b=pts[ids[1]],d0=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);pts[e.pointerId]=e;var a2=pts[ids[0]],b2=pts[ids[1]],d1=Math.hypot(a2.clientX-b2.clientX,a2.clientY-b2.clientY);dist=Math.max(14,Math.min(80,dist*d0/Math.max(d1,1)));setCam();return}
+  pts[e.pointerId]=e;if(!dragging)return;var dx=e.clientX-lx,dy=e.clientY-ly;lx=e.clientX;ly=e.clientY;moved+=Math.abs(dx)+Math.abs(dy);yaw-=dx*.006;pitch=Math.max(.25,Math.min(1.5,pitch+dy*.005));setCam()});
+function up(e){delete pts[e.pointerId];if(!Object.keys(pts).length){dragging=false;if(moved<6)pick(e)}}
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',function(e){delete pts[e.pointerId];dragging=false});
+cv.addEventListener('wheel',function(e){e.preventDefault();dist=Math.max(14,Math.min(80,dist*(1+Math.sign(e.deltaY)*.08)));setCam()},{passive:false});
+var ray=new THREE.Raycaster(),mv=new THREE.Vector2();
+function pick(e){mv.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ray.setFromCamera(mv,cam);
+  var best=null,bd=1e9;WORK.forEach(function(w){var hits=ray.intersectObject(w.mesh,true);if(hits.length&&hits[0].distance<bd){bd=hits[0].distance;best=w}});showCard(best)}
+document.getElementById('view').onclick=function(){mode=(mode+1)%VIEWS.length;var v=VIEWS[mode];yaw=v.yaw;pitch=v.pitch;dist=v.dist;this.textContent='มุมมอง: '+v.n;setCam()};
+var speed=1,paused=false;
+document.getElementById('pp').onclick=function(){paused=!paused;this.textContent=paused?'▶ เล่น':'⏸ หยุด';this.classList.toggle('on',!paused)};
+[].forEach.call(document.querySelectorAll('.sp'),function(b){b.onclick=function(){speed=+b.dataset.sp;[].forEach.call(document.querySelectorAll('.sp'),function(x){x.classList.toggle('on',x===b)})}});
+addEventListener('resize',function(){try{updateHud()}catch(e){}W=innerWidth;H=innerHeight;renderer.setSize(W,H);cam.aspect=W/H;cam.updateProjectionMatrix()});
+var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ===== วนลูป =====
+var clock=new THREE.Clock(),v3=new THREE.Vector3(),T=0;
+function turn(w,tx,tz,dt,k){var want=Math.atan2(tx-w.pos.x,tz-w.pos.z),diff=((want-w.mesh.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;w.mesh.rotation.y+=diff*Math.min(1,dt*k)}
+function step(w,dt){
+  w.t+=dt;var m=w.mesh;
+  if(w.state==='walk'||(w.state==='stroll'&&w.path.length)){
+    var tp=w.path[0];if(!tp){arrive(w)}
+    else{var dx=tp.x-w.pos.x,dz=tp.z-w.pos.z,d=Math.hypot(dx,dz),sp=2.0*dt;
+      if(d<=sp){w.pos.set(tp.x,0,tp.z);w.path.shift();if(!w.path.length)arrive(w)}
+      else{w.pos.x+=dx/d*sp;w.pos.z+=dz/d*sp;turn(w,tp.x,tp.z,dt,10)}
+      var sw=Math.sin(w.t*9)*.7;m.legL.rotation.x=sw;m.legR.rotation.x=-sw;m.armL.rotation.x=w.carry?-1.2:-sw;m.armR.rotation.x=w.carry?-1.2:sw;m.position.y=Math.abs(Math.sin(w.t*9))*.04}}
+  else if(w.state==='work'){w.wait-=dt;m.legL.rotation.x=m.legR.rotation.x=0;m.armL.rotation.x=w.carry?-1.2:Math.sin(w.t*6)*.25;m.armR.rotation.x=w.carry?-1.2:-Math.sin(w.t*6)*.25;m.position.y=0;
+    var s=stn(w.face);turn(w,s.lx,s.lz,dt,6);
+    if(w.wait<=0)afterWork(w)}
+  else if(w.state==='stroll'){m.legL.rotation.x=m.legR.rotation.x=0;m.armL.rotation.x=m.armR.rotation.x=0}
+  else if(w.state==='idle'){assign(w)}
+  m.position.x=w.pos.x;m.position.z=w.pos.z;
+  if(w.carry){var fx=Math.sin(m.rotation.y)*.45,fz=Math.cos(m.rotation.y)*.45;w.carry.mesh.position.set(w.pos.x+fx,1.2,w.pos.z+fz);w.carry.mesh.rotation.y=m.rotation.y}}
+function animMachines(dt){T+=dt;
+  var pr=JOBS.some(function(j){return j.zone==='print'}),ct=JOBS.some(function(j){return j.zone==='cut'});
+  anim.yf.position.x=anim.yfx+(pr?Math.sin(T*3)*1.4:0);anim.cut.position.x=anim.cutx+(ct?Math.sin(T*2.2)*1.4:-1.0);anim.cut2.position.x=anim.cut2x+(ct?Math.sin(T*2.6+1)*.9:.6);
+  anim.yfLed.material.emissiveIntensity=pr?.5+.5*Math.abs(Math.sin(T*4)):.15;anim.epLed.material.emissiveIntensity=.6+.4*Math.sin(T*2);
+  var len=pr?Math.abs(Math.sin(T*.6))*.6:0;anim.yfPaper.scale.z=Math.max(.001,len*30);anim.yfPaper.position.z=2.8+1.15+len*.15}
+function proj(obj,y,el){v3.copy(obj);v3.y=y;v3.project(cam);if(v3.z>1){el.style.display='none';return}el.style.display='';el.style.left=((v3.x+1)/2*innerWidth)+'px';el.style.top=((1-v3.y)/2*innerHeight)+'px'}
+var cardT=0;
+function loop(){requestAnimationFrame(loop);var dt=Math.min(clock.getDelta(),.05);
+  if(!paused&&!reduce){dt*=speed;WORK.forEach(function(w){step(w,dt)});spawn(dt);animMachines(dt)}
+  setCam();
+  STN.forEach(function(s){proj(new THREE.Vector3(s.lx,0,s.lz),3.2,labs[s.id])});roomLabs.forEach(function(r){proj(r.p,3.3,r.el)});
+  WORK.forEach(function(w){var j=w.carry;w.lab.innerHTML=w.name+'<em>'+w.role.split(' · ')[0]+'</em>'+(j?' <span class="tag">▸ '+j.no+'</span>':'');proj(w.pos,2.2,w.lab);w.panel.textContent=w.act});
+  cardT+=dt;if(selW&&cardT>.4){cardT=0;showCard(selW)}
+  renderer.render(scene,cam)}
+setCam();loop();
+
+var MAPZ={pending:'design',filed:'print',printed:'pack',shipped:'out',pickup:'out',received:'out'};
+function applyReal(list){
+  WORK.forEach(function(w){w.act='เตรียมงาน'});
+  REAL=true;TODAY=isoLocal(new Date());
+  JOBS.forEach(function(j){jobGroup.remove(j.mesh)});JOBS.length=0;
+  WORK.forEach(function(w){w.carry=null;w.task=null;if(w.state==='walk'){w.state='idle';w.path=[]}});
+  RC={late:0};ORDER.forEach(function(z){RC[z]=0});
+  var shown={};
+  (list||[]).forEach(function(r){var z=MAPZ[r.status||'pending']||'design';RC[z]++;
+    if(z!=='out'&&r.due&&r.due<TODAY)RC.late++;
+    shown[z]=(shown[z]||0);if(shown[z]>=12)return;shown[z]++;
+    var j={no:r.no||'',cust:r.cust||'',due:r.due||'9999-12-31',zone:z};mkJobMesh(j);j.carried=null;JOBS.push(j)});
+  relayout();updateHud();
+  var b=document.getElementById('banner');b.className='demo real';b.textContent='ข้อมูลจริงจากแอป · ใบงานวางตามสถานะ (รอทำ→โต๊ะออกแบบ · ทำไฟล์แล้ว→เครื่องพิมพ์ · ผลิตแล้ว→จุดแพ็ก · ส่งแล้ว→ชั้นส่ง) · การเดินของพนักงานเป็นภาพจำลอง'}
+addEventListener('message',function(e){if(e.source!==parent||parent===window)return;var d=e.data;if(d&&d.type==='floor-jobs')applyReal(d.jobs)});
+if(parent!==window){document.body.classList.add('emb');try{parent.postMessage({type:'floor-ready'},'*')}catch(x){}}
+window.__dbg={WORK:WORK,JOBS:JOBS,applyReal:applyReal};
+})();
+</script>
+</body>
+</html>

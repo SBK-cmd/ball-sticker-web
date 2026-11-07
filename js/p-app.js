@@ -115,7 +115,7 @@ function bahtText(value) {
   const isSuper = !window.BSAuth || (!!currentUser && isSuperUser(meRec)); // ไม่มีระบบบัญชีเลย (โหมดเก่า) ให้ถือว่าเป็นผู้ดูแล
   const myPerms = isSuper ? permsOf(null) : (currentUser ? permsOf(meRec) : {}); // ยังไม่ล็อกอิน = ยังไม่เห็นอะไร (หน้าล็อกอินบังอยู่)
   const CHAT_ENABLED = false; // แชทลูกค้า (LINE/เพจ) ปิดไว้ — แยกออกไปทำเป็นของตัวเอง ตั้งเป็น true เพื่อเปิดกลับ
-  const can = k => (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'pagechat' && !PAGECHAT_ENABLED) ? false : (k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
+  const can = k => (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'pagechat' && !PAGECHAT_ENABLED) ? false : (k === 'floor' ? (isSuper || !!myPerms.dash) : k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
   const canBank = can('bank');
   // พนักงาน (ไม่ใช่เจ้าของ) ดูประวัติใบคอนเฟิร์มงานได้อย่างเดียว คีย์/แก้/ลบไม่ได้
   const canKey = isSuper || isOwnerFixed(meRec) || !!(meRec && meRec.role === 'owner');
@@ -1787,6 +1787,27 @@ function bahtText(value) {
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับเอกสาร ' : 'บันทึกเอกสาร ') + rec.no + ' แล้ว'
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
   }
+
+  /* ---------------- ผังร้าน 3 มิติ (iframe floor.html) ---------------- */
+  function floorJobs() {
+    const nm = v => String(v || '').replace(/\s+/g, ' ').trim();
+    const all = (store.get('bs_jobs', []) || []).filter(j => !accHidden(j));
+    const isOut = j => ['shipped', 'pickup', 'received'].indexOf(j.status) >= 0;
+    const open = all.filter(j => !isOut(j));
+    const outs = all.filter(isOut).sort((a, b) => (b.shippedAt || b.savedAt || 0) - (a.shippedAt || a.savedAt || 0)).slice(0, 6);
+    return open.concat(outs).map(j => ({no: j.no || '', cust: nm(j.jName), due: j.due || '', status: j.status || 'pending'}));
+  }
+  function pushFloor() {
+    const f = $('floorFrame'); if (!f || !f.contentWindow || (!f.getAttribute('src') && !f.hasAttribute('srcdoc'))) return;
+    try { f.contentWindow.postMessage({type: 'floor-jobs', jobs: floorJobs()}, '*'); } catch (e) {}
+  }
+  function renderFloor() {
+    const f = $('floorFrame'); if (!f) return;
+    if (!f.getAttribute('src') && !f.hasAttribute('srcdoc')) f.setAttribute('src', f.dataset.src);
+    else pushFloor();
+  }
+  window.addEventListener('message', e => { if (e.data && e.data.type === 'floor-ready' && $('floorFrame') && e.source === $('floorFrame').contentWindow) pushFloor(); });
+  setInterval(() => { if ($('panel-floor') && $('panel-floor').classList.contains('active')) pushFloor(); }, 15000);
 
   /* ---------------- แดชบอร์ด ---------------- */
   function billCalc(b) {
@@ -6841,7 +6862,7 @@ function bahtText(value) {
   function showTab(name) {
     closeJobModal();
     if (!can(name)) name = firstAllowedTab(); // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้ หรือโค้ดส่วนอื่นที่สั่งเปิดหน้า
-    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost', 'pagechat'].forEach(n => {
+    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost', 'pagechat', 'floor'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
@@ -6860,6 +6881,7 @@ function bahtText(value) {
     if (name === 'track') renderTrackingHistory();
     if (name === 'vat') renderVatCalc();
     if (name === 'dash') renderDash();
+    if (name === 'floor') renderFloor();
     if (name === 'report') renderReport();
     if (name === 'chat') renderChat();
     if (name === 'design') renderDesign();
@@ -8068,14 +8090,14 @@ function bahtText(value) {
   function applyRoleUI() {
     if (isSuper) return;
     // ซ่อนหน้าที่ไม่ได้รับสิทธิ์ ทั้งแถบเมนูบน เมนูภาษี เมนูล่างบนมือถือ และแผ่น "เพิ่มเติม"
-    PAGE_KEYS.concat(['design']).forEach(n => {
+    PAGE_KEYS.concat(['design', 'floor']).forEach(n => {
       if (can(n)) return;
       const t = $('tab-' + n); if (t) t.hidden = true;
       document.querySelectorAll('.btab[data-tab="' + n + '"], .tax-sheet-item[data-tab="' + n + '"], .top-track[data-tab="' + n + '"]').forEach(el => { el.hidden = true; });
     });
     if (!can('confirm') && $('sidebarCta')) $('sidebarCta').hidden = true;
     if ($('taxTrigger') && !TAX_TABS.some(can)) { const grp = $('taxTrigger').closest('.tab-group'); if (grp) grp.hidden = true; }
-    if ($('bnavTaxTrigger') && !['wholesale', 'quote', 'vat', 'bill', 'purchase', 'dash', 'report', 'autopost', 'pagechat'].some(can)) $('bnavTaxTrigger').hidden = true;
+    if ($('bnavTaxTrigger') && !['wholesale', 'quote', 'vat', 'bill', 'purchase', 'dash', 'floor', 'report', 'autopost', 'pagechat'].some(can)) $('bnavTaxTrigger').hidden = true;
     if (!can('shop') && $('shopSettings')) $('shopSettings').hidden = true;
     if (!can('price') && $('priceCard')) $('priceCard').hidden = true;
     if (!can('calc')) setTimeout(() => showTab(firstAllowedTab()), 0); // หน้าแรกปกติคือ "คำนวณ" ถ้าไม่มีสิทธิ์ให้เปิดหน้าแรกที่เข้าได้

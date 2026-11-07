@@ -21,6 +21,11 @@ def uri(path, mime, size=None):
     return 'data:%s;base64,%s' % (mime, base64.b64encode(open(path, 'rb').read()).decode())
 h = h.replace('logo-160-transparent.png', uri(R + '/logo-160-transparent.png', 'image/png', (200, 200)))
 h = h.replace('logo-160.webp', uri(R + '/logo-160.webp', 'image/webp'))
+# ผังร้าน 3 มิติ: ในโหมดเดโมไม่มีไฟล์ floor.html ให้โหลด → ฝังเป็น srcdoc (พร้อม three.js) ไว้ในแท็บเลย
+import html as _html
+if 'data-src="floor.html"' in h:
+    fl = open(R + '/floor.html', encoding='utf8').read().replace('<script src="js/three.min.js"></script>', '<script>' + open(R + '/js/three.min.js', encoding='utf8').read().replace('</script', '<\\/script') + '</script>')
+    h = h.replace('data-src="floor.html"', 'srcdoc="' + _html.escape(fl, quote=True) + '"')
 tpl = open(R + '/tools/' + os.environ.get('BS_FRAME', 'iphone-frame.tpl.html'), encoding='utf8').read()
 open(out, 'w', encoding='utf8').write(tpl.replace('__APPSRC__', h.replace('</script', '<\\/script')))
 print('wrote', out, os.path.getsize(out) // 1024, 'KB')
