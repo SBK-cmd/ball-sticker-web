@@ -234,7 +234,7 @@
         '<button class="btn ghost sm cqcut" data-act="scan" data-i="' + i + '">' + (cq ? '✂ สแกนใหม่' : '✂ สแกนตัด') + '</button>' +
         (withRemove ? '<button class="btn ghost sm" data-act="unlink" data-i="' + i + '" aria-label="เอาไฟล์นี้ออก">✕</button>' : '') + '</div>' +
         (cq ? '<div class="cqf cqwait"><span class="cqfn">⏳ รอตัด · สแกน ' + h(cqTime(cq.savedAt)) + ' · ' + h(cq.snap && cq.snap.n || 0) + ' เส้น' + (cq.sentAt ? ' · ส่งตัดแล้ว ' + h(cqTime(cq.sentAt)) : '') + '</span>' +
-          '<button class="btn sm cqcut" data-act="cutnow" data-i="' + i + '">' + (cq.sentAt ? '✂ ตัดอีกครั้ง' : '✂ ตัด') + '</button>' +
+          '<button class="btn sm" data-act="cutnow" data-i="' + i + '">' + (cq.sentAt ? '✂ ตัดอีกครั้ง' : '✂ ตัด') + '</button>' +
           '<button class="btn ghost sm" data-act="cutdrop" data-i="' + i + '" aria-label="ลบรอตัด">✕</button></div>' : '');
     }).join('') + '</div>';
   }
