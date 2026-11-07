@@ -2,6 +2,8 @@
 // Same protocol as the PHP version, so the Illustrator panel is unchanged.
 import { unzipSync } from 'fflate';
 import qrcode from 'qrcode-generator';
+import { initRemoteCut, createRemoteCut } from './remote-cut.mjs';
+import { mobileCutPage } from './mobile-cut-page.mjs';
 
 const TOKEN_DAYS = 3;
 const enc = new TextEncoder(), dec = new TextDecoder();
@@ -86,6 +88,7 @@ async function init(db) {
     try { await db.prepare('ALTER TABLE users ADD COLUMN tools_off TEXT').run(); } catch (e) { /* มีแล้ว */ }
     await setSetting(db, 'schema_v', '7');
   }
+  await initRemoteCut(db);
   ready = true;
 }
 // เครื่องมือในแผง (รหัสตรงกับ data-tab ในแผง) — ใช้ทำช่องติ๊กเปิด/ปิดรายสมาชิกในหน้าแอดมิน
@@ -165,6 +168,20 @@ async function prices(db) {
   return out;
 }
 
+// Mobile cutting is restricted to Ball's active Illustrator beta license.
+function remoteCutService(db) {
+  return createRemoteCut(db, async token => {
+    const t=await readToken(db,token);
+    if(!t||!t.exp||t.exp<now())return null;
+    const k=await db.prepare('SELECT * FROM keys WHERE key=?').bind(t.k).first();
+    if(!k||k.status!=='active'||prodOf(k.product)!=='ai'||k.machine!==t.m||(k.expires_at&&k.expires_at<now())||!k.user_id)return null;
+    const u=await db.prepare('SELECT phone,status,tools_off FROM users WHERE id=?').bind(k.user_id).first();
+    if(!u||u.status!=='active'||u.phone!=='0935353555'||!(await isBetaUser(db,k.user_id)))return null;
+    const off=toolsOffOf(u);if(off.includes('queue')||off.includes('cut'))return null;
+    return {id:await sha256(t.k+'|'+t.m)};
+  });
+}
+
 // ---------- API (used by the panel) ----------
 async function api(req, env) {
   const db = env.DB, ip = req.headers.get('CF-Connecting-IP') || '';
@@ -174,6 +191,11 @@ async function api(req, env) {
   if (req.method === 'POST') { try { inp = await req.json(); } catch { inp = {}; } }
   else inp = Object.fromEntries(new URL(req.url).searchParams);
   const action = inp.action || '', product = prodOf(inp.product);
+
+  if (action.startsWith('cut_')) {
+    try { return json(await remoteCutService(db).desktop(inp,'https://signtools.organic-parmesan.workers.dev')); }
+    catch(e) { return json({ok:false,error:e.status?e.message:'ระบบรับคำสั่งขัดข้อง'},e.status||500); }
+  }
 
   if (action === 'diag') {                               // ผลทดสอบการเชื่อมต่อจากแผง (ปุ่ม 🔑 › ทดสอบการเชื่อมต่อ)
     await log('', 'diag', String(inp.text || '').slice(0, 900));
@@ -238,9 +260,9 @@ async function api(req, env) {
     if (!t) return json({ ok: true, features: {}, tools_off: [] });
     const k = await db.prepare('SELECT user_id, machine FROM keys WHERE key=?').bind(t.k).first();
     if (!k || k.machine !== t.m) return json({ ok: true, features: {}, tools_off: [] });
-    const uo = k.user_id ? await db.prepare('SELECT tools_off FROM users WHERE id=?').bind(k.user_id).first() : null, tools_off = toolsOffOf(uo);
+    const uo = k.user_id ? await db.prepare('SELECT phone, tools_off FROM users WHERE id=?').bind(k.user_id).first() : null, tools_off = toolsOffOf(uo);
     if (!(await isBetaUser(db, k.user_id))) return json({ ok: true, features: {}, tools_off });
-    return json({ ok: true, tools_off, features: { queue: { apiKey: 'AIzaSyDgIyeVed6xnG7A8YLRhbvZfxJOoHYpVco', projectId: 'ball-sticker-d95c2', app: 'https://app.ballsticker.co.th/' } } });
+    return json({ ok: true, tools_off, features: { remoteCut: !!(uo && uo.phone === '0935353555'), queue: { apiKey: 'AIzaSyDgIyeVed6xnG7A8YLRhbvZfxJOoHYpVco', projectId: 'ball-sticker-d95c2', app: 'https://app.ballsticker.co.th/' } } });
   }
   if (action === 'member_link') {                         // ปุ่ม "หน้าสมาชิก" ในโปรแกรม → ลิงก์เข้าระบบอัตโนมัติ (ใช้ได้ 5 นาที)
     const t = await readToken(db, inp.token), base = new URL(req.url).origin + '/member';
@@ -996,6 +1018,8 @@ export default {
     const url = new URL(req.url);
     try {
       await init(env.DB);
+      if (url.pathname === '/cut' || url.pathname === '/cut/') return mobileCutPage();
+      if (url.pathname === '/cut/api') return await remoteCutService(env.DB).mobile(req);
       if (url.pathname === '/api') {
         if (req.method === 'OPTIONS') return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' } });
         return await api(req, env);
