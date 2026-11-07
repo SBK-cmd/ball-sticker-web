@@ -187,35 +187,38 @@
     $('cutNmWarn').textContent = r.warn || '';
     draw();
   }
+  // อ่านผลจาก st_cutRead (หรือเส้นที่สแกนเก็บไว้ในรอตัด) มาใช้ที่หน้านี้
+  function applyRead(r, ctx) {
+    window.ST_cutCtx = ctx || null;
+    if (r.error) { raw = null; $('cutRes').textContent = '⚠ ' + r.error; rebuild(); return; }
+    var w = [];
+    if (r.text) w.push('มีตัวอักษร ' + r.text + ' ชิ้นที่ยังไม่ได้ Create Outlines — ไม่ได้ส่งตัด');
+    if (r.other) w.push('ข้าม ' + r.other + ' ชิ้นที่ไม่ใช่เส้น (รูปภาพ/อื่นๆ)');
+    $('cutWarn').textContent = w.join(' · ');
+    if (!r.n) {
+      raw = null; rebuild();
+      $('cutRes').textContent = r.src === 'sel' ? 'ไม่มีเส้นในสิ่งที่เลือก' : 'ไม่พบเส้นตัด (Kiss Cut / Die Cut) ใน artboard นี้ — เลือกเส้นที่จะตัดแล้วกดอ่าน';
+      return;
+    }
+    isTest = false; raw = r.paths; rawLabel = r.src === 'sel' ? 'เส้นที่เลือก' : 'เส้นตัด (Kiss Cut / Die Cut) ใน artboard';
+    marks = r.marks || null; markView = null;
+    if (!marks && r.mkWhy && r.mkWhy !== 'nolayer') w.push('มีเลเยอร์มาร์ค (reg_1) แต่อ่านไม่ได้ — กด "ตรวจมาร์ค" ดูสาเหตุ');
+    blockMk = !!(marks && marks.style !== 1 && marks.style !== 7);
+    if (blockMk) { w.push('มาร์คแบบนี้ (รหัส ' + marks.style + ') ยังส่งตัดจากแผงไม่ได้ — ใช้ Cutting Master ไปก่อน'); marks = null; }
+    $('cutMkRow').classList.toggle('hidden', !marks);
+    if (marks) $('cutMkInfo').textContent = 'พบมาร์ค ' + (marks.seg ? 'Segment ทุก 25 ซม.' : '4 Points') + ' · ห่างกัน ' + (marks.dy / 10).toFixed(1) + ' × ' + (marks.dx / 10).toFixed(1) + ' ซม. · เครื่องจะสแกนมาร์คก่อนตัด';
+    var nd = (r.paths || []).filter(function (p) { return p.k === 'die'; }).length;
+    if (nd && !$('cutDrv').checked) w.push('มีเส้น Die Cut ' + nd + ' เส้น — ติ๊ก "ตั้งความเร็ว / แรงกดแยกตามเส้น" เพื่อใช้แรงกดต่างจาก Kiss Cut');
+    $('cutWarn').textContent = w.join(' · ');
+    rebuild();
+  }
   $('cutRead').onclick = function () {
     $('cutRead').disabled = true;
-    host('st_cutRead').then(function (r) {
-      $('cutRead').disabled = false;
-      if (r.error) { raw = null; $('cutRes').textContent = '⚠ ' + r.error; rebuild(); return; }
-      var w = [];
-      if (r.text) w.push('มีตัวอักษร ' + r.text + ' ชิ้นที่ยังไม่ได้ Create Outlines — ไม่ได้ส่งตัด');
-      if (r.other) w.push('ข้าม ' + r.other + ' ชิ้นที่ไม่ใช่เส้น (รูปภาพ/อื่นๆ)');
-      $('cutWarn').textContent = w.join(' · ');
-      if (!r.n) {
-        raw = null; rebuild();
-        $('cutRes').textContent = r.src === 'sel' ? 'ไม่มีเส้นในสิ่งที่เลือก' : 'ไม่พบเส้นตัด (Kiss Cut / Die Cut) ใน artboard นี้ — เลือกเส้นที่จะตัดแล้วกดอ่านใหม่';
-        return;
-      }
-      isTest = false; raw = r.paths; rawLabel = r.src === 'sel' ? 'เส้นที่เลือก' : 'เส้นตัด (Kiss Cut / Die Cut) ใน artboard';
-      marks = r.marks || null; markView = null;
-      if (!marks && r.mkWhy && r.mkWhy !== 'nolayer') w.push('มีเลเยอร์มาร์ค (reg_1) แต่อ่านไม่ได้ — กด "ตรวจมาร์ค" ดูสาเหตุ');
-      blockMk = !!(marks && marks.style !== 1 && marks.style !== 7);
-      if (blockMk) { w.push('มาร์คแบบนี้ (รหัส ' + marks.style + ') ยังส่งตัดจากแผงไม่ได้ — ใช้ Cutting Master ไปก่อน'); marks = null; }
-      $('cutMkRow').classList.toggle('hidden', !marks);
-      if (marks) $('cutMkInfo').textContent = 'พบมาร์ค ' + (marks.seg ? 'Segment ทุก 25 ซม.' : '4 Points') + ' · ห่างกัน ' + (marks.dy / 10).toFixed(1) + ' × ' + (marks.dx / 10).toFixed(1) + ' ซม. · เครื่องจะสแกนมาร์คก่อนตัด';
-      var nd = (r.paths || []).filter(function (p) { return p.k === 'die'; }).length;
-      if (nd && !$('cutDrv').checked) w.push('มีเส้น Die Cut ' + nd + ' เส้น — ติ๊ก "ตั้งความเร็ว / แรงกดแยกตามเส้น" เพื่อใช้แรงกดต่างจาก Kiss Cut');
-      $('cutWarn').textContent = w.join(' · ');
-      rebuild();
-    });
+    host('st_cutRead').then(function (r) { $('cutRead').disabled = false; applyRead(r, null); });
   };
+  window.ST_cutApi = { read: function () { return host('st_cutRead'); }, load: function (snap, ctx) { applyRead(JSON.parse(JSON.stringify(snap)), ctx); } };
   $('cutTest').onclick = function () {
-    marks = null; blockMk = false; $('cutMkRow').classList.add('hidden');
+    window.ST_cutCtx = null; marks = null; blockMk = false; $('cutMkRow').classList.add('hidden');
     isTest = true; raw = STCut.testPaths(); rawLabel = 'ชิ้นทดสอบ 20×20 มม.'; $('cutWarn').textContent = '';
     rebuild();
     status('ชิ้นทดสอบ: กรอบ 20 มม. · ลูกศรชี้ทาง X · ขีดสั้นชี้ทาง Y — วัดว่าได้ 20 มม. จริงไหม', '');
@@ -368,6 +371,7 @@
     send(h, p, job.data).then(function (n) {
       b.disabled = false;
       status('✓ ส่งแล้ว ' + Math.round(n / 1024 * 10) / 10 + ' KB · ' + job.n + ' เส้น', 'ok'); toast('✓ ส่งงานเข้าเครื่องตัดแล้ว');
+      try { if (window.ST_cutCtx) document.dispatchEvent(new CustomEvent('st:cutsent', { detail: window.ST_cutCtx })); } catch (e2) {}
     }, function (e) {
       b.disabled = false; status('⚠ ส่งไม่ได้: ' + e.message + ' · ถ้า Cutting Master เปิดค้างอยู่ให้ปิดก่อน', 'warn');
     });

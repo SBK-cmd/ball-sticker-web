@@ -362,3 +362,5 @@ body.intool .topbar{display:flex}
 .cmp1 .cqst{padding:1px 7px;font-size:11px;pointer-events:none}
 .cmp2{display:flex;align-items:center;gap:8px;min-width:0;font-size:11px;color:var(--mut,#999)}.cmpit{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cmpit i{opacity:.7;font-style:normal}
 #cqCmp.on{border-color:rgba(255,210,63,.6);color:#ffd23f}
+.cqf.cqwait{margin:-2px 0 4px 18px;padding:4px 8px;border-radius:8px;background:rgba(255,210,63,.1)}
+.cqf.cqwait .cqfn{color:#ffd23f}
