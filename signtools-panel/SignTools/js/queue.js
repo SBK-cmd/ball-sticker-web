@@ -90,7 +90,7 @@
     }
     page('jobs', FIELDS, '').then(function () {
       return page('wholesale', ['ref', 'date', 'buyerName', 'items', 'discount', 'note', 'paid', 'stq', 'savedAt', 'createdBy'], '').catch(function (e) { lastErr = 'ใบราคาส่ง: ' + e.message; });
-    }).then(function () { jobs = dedupe(all); if (!/ราคาส่ง/.test(lastErr)) lastErr = ''; loadedAt = Date.now(); }, function (e) { lastErr = e.message; })
+    }).then(function () { jobs = dedupe(all).concat(localJobs()); if (!/ราคาส่ง/.test(lastErr)) lastErr = ''; loadedAt = Date.now(); }, function (e) { lastErr = e.message; })
       .then(function () { loading = false; render(); });
   }
   // รายการในใบราคาส่งที่มีใบคอนเฟิร์มงานของลูกค้าคนเดียวกัน + ชื่องานเดียวกันอยู่แล้ว → ไม่แสดงซ้ำ (ใช้ใบงานแทน)
@@ -118,7 +118,31 @@
     return out;
   }
   var dupHidden = 0;
+  // ใบงานที่เพิ่มเองในแผงนี้ (ไม่ส่งเข้าระบบร้าน ไม่มีเลขใบ) — เก็บในเครื่องนี้เท่านั้น
+  var LQK = 'st_qlocal';
+  function localJobs() { try { var a = JSON.parse(localStorage.getItem(LQK) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function localSave(a) { try { localStorage.setItem(LQK, JSON.stringify(a)); return true; } catch (e) { return false; } }
+  function localSet(id, fields) { var a = localJobs(); a.forEach(function (x) { if (x.id === id) Object.keys(fields).forEach(function (k) { x[k] = fields[k]; }); }); return localSave(a); }
+  function lclTag(j) { return j._col === 'local' ? '<span class="cqws lcl" title="เก็บในแผงนี้เท่านั้น ไม่อยู่ในระบบร้าน">เฉพาะแผงนี้</span>' : ''; }
+  function addLocal() {
+    var cust = $('cqAC').value.trim(), job = $('cqAJ').value.trim(), useFile = $('cqAF').checked;
+    (useFile ? host('st_docInfo') : Promise.resolve(null)).then(function (r) {
+      var files = [];
+      if (r && !r.error && r.path) files.push({ p: r.path, n: String(r.path).split(/[\\/]/).pop() });
+      var nm = cust || (files[0] ? files[0].n.replace(/\.[^.]+$/, '') : '');
+      if (!nm && !job) return toast('⚠ ใส่ชื่อลูกค้าหรือชื่องาน หรือเปิดไฟล์ไว้ใน Illustrator ก่อน');
+      if (useFile && !files.length) toast('ไม่ได้ผูกไฟล์ (' + ((r && r.error) || 'ไฟล์ยังไม่ได้บันทึก') + ') — เพิ่มงานให้แล้ว');
+      var now = Date.now(), nj = { id: 'L' + now, _col: 'local', no: '', jName: nm, items: job ? [{ name: job }] : [], status: 'pending', savedAt: now, createdBy: 'แผง',
+        aiFiles: files.length ? JSON.stringify(files) : '', aiFile: files[0] ? files[0].p : '', aiFileName: files[0] ? files[0].n : '' };
+      var a = localJobs(); a.push(nj);
+      if (!localSave(a)) return toast('⚠ บันทึกในแผงไม่ได้');
+      jobs.push(nj); $('cqAC').value = ''; $('cqAJ').value = ''; $('cqAdd').open = false;
+      if (filter === 'done') { filter = 'open'; [].forEach.call($('cqSeg').children, function (x) { x.classList.toggle('on', x.dataset.v === 'open'); }); }
+      render(); toast('✓ เพิ่มงาน ' + nm + ' แล้ว' + (files.length ? ' · ผูกไฟล์ ' + files[0].n : ''));
+    });
+  }
   function patch(j, fields) {
+    if (j._col === 'local') return localSet(j.id, fields) ? Promise.resolve() : Promise.reject(new Error('บันทึกในแผงไม่ได้'));
     if (j._doc) {                        // รายการในใบราคาส่ง → stq.i<ลำดับ>.<ช่อง>
       var key = 'i' + j._idx, inner = {};
       Object.keys(fields).forEach(function (k) { inner[k] = { stringValue: String(fields[k]) }; });
@@ -147,6 +171,10 @@
       '<div class="qsum" id="cqSum"></div>' +
       '<div class="seg" id="cqSeg"><button data-v="open" class="on">ยังไม่ส่ง</button><button data-v="done">จัดส่งแล้ว</button><button data-v="all">ทั้งหมด</button></div>' +
       '<div class="cqbar"><input id="cqQ" type="text" placeholder="ค้นหา ชื่อลูกค้า / เลขใบ / งาน"><button class="btn ghost sm" id="cqCmp" title="ย่อ/ขยายรายการ">▤ ย่อ</button><button class="btn ghost sm" id="cqRe">รีเฟรช</button></div>' +
+      '<details class="card" id="cqAdd"><summary><b>+ เพิ่มงานเอง</b> <span class="mut">ไม่ต้องคีย์ในระบบ · เก็บในแผงนี้</span></summary>' +
+        '<div class="grid"><label>ลูกค้า<input id="cqAC" type="text" placeholder="เว้นว่าง = ใช้ชื่อไฟล์"></label><label>งาน / ขนาด × จำนวน<input id="cqAJ" type="text" placeholder="เช่น สะท้อนแสง 50cm × 6"></label></div>' +
+        '<label class="chk"><input type="checkbox" id="cqAF" checked> ผูกไฟล์ที่เปิดอยู่ใน Illustrator</label>' +
+        '<button class="btn" id="cqAddGo">เพิ่มเข้าคิว</button></details>' +
       '<div id="cqList" class="qlist"></div>' +
       '<div class="hint" id="cqHint"></div>';
     $('cqSeg').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; [].forEach.call($('cqSeg').children, function (x) { x.classList.toggle('on', x === b); }); filter = b.dataset.v; render(); });
@@ -156,6 +184,7 @@
     paintCmp();
     $('cqCmp').onclick = function () { compact = !compact; try { localStorage.setItem('st_cq_compact', compact ? '1' : '0'); } catch (e) {} paintCmp(); render(); };
     $('cqRe').onclick = function () { load(); };
+    $('cqAddGo').onclick = addLocal;
     $('cqList').addEventListener('click', onClick);
     $('cqList').addEventListener('change', onChange);
   }
@@ -180,6 +209,7 @@
       return txt.indexOf(q) >= 0;
     });
     list.sort(function (a, b) {
+      if ((a._col === 'local') !== (b._col === 'local')) return a._col === 'local' ? -1 : 1;   // ใบที่เพิ่มเองในแผงอยู่บนสุด เห็นทันที
       if (filter !== 'open') return (b.savedAt || 0) - (a.savedAt || 0);
       return bornOf(a) - bornOf(b);      // ยังไม่ส่ง: ใบที่เข้ามาก่อนอยู่บน ใบหลังอยู่ล่าง (เวลาสร้างใบ ไม่ใช่เวลาที่แก้ล่าสุด)
     });
@@ -189,12 +219,12 @@
       var thumb = (j.photos || []).filter(function (p) { return /^https:/.test(p); })[0];
       if (compact) {   // มุมมองย่อ: 2 บรรทัดต่อใบ · แตะเพื่อเปิดหน้าต่างรายละเอียด
         var firstIt = its[0] ? h(its[0].name) + (its[0].qty ? ' × ' + h(its[0].qty) : '') + (its.length > 1 ? ' <i>+' + (its.length - 1) + '</i>' : '') : '';
-        return '<div class="qjob cq cmp" data-id="' + h(j.id) + '"><div class="cmp1"><span class="cqst ' + s + '">' + SN[s] + '</span><b>' + h(j.jName || '(ไม่ระบุลูกค้า)') + '</b>' + dueTag(j) + cutChip(j) + '</div>' +
+        return '<div class="qjob cq cmp" data-id="' + h(j.id) + '"><div class="cmp1"><span class="cqst ' + s + '">' + SN[s] + '</span><b>' + h(j.jName || '(ไม่ระบุลูกค้า)') + '</b>' + dueTag(j) + cutChip(j) + lclTag(j) + '</div>' +
           '<div class="cmp2"><span class="mut">' + h(j.no || (j.ws && j.date ? fmtD(j.date) : '')) + '</span>' + (j.ws ? '<span class="cqws">ราคาส่ง</span>' : '') + '<span class="cmpit">' + firstIt + '</span>' + (filesOf(j).length ? '<span title="ผูกไฟล์แล้ว">📄</span>' : '') + '</div></div>';
       }
       return '<div class="qjob cq" data-id="' + h(j.id) + '">' +
         '<div class="qtop"><select class="cqst ' + s + '" data-act="st">' + ST.map(function (k) { return '<option value="' + k + '"' + (k === s ? ' selected' : '') + '>' + SN[k] + '</option>'; }).join('') + '</select>' +
-          '<span class="mut">' + h(j.no || (j.ws && j.date ? fmtD(j.date) : '')) + '</span>' + (j.ws ? '<span class="cqws">ราคาส่ง' + (j.wsN > 1 ? ' ' + j.wsI + '/' + j.wsN : '') + '</span>' : '') + dueTag(j) + cutChip(j) + '</div>' +
+          '<span class="mut">' + h(j.no || (j.ws && j.date ? fmtD(j.date) : '')) + '</span>' + (j.ws ? '<span class="cqws">ราคาส่ง' + (j.wsN > 1 ? ' ' + j.wsI + '/' + j.wsN : '') + '</span>' : '') + dueTag(j) + cutChip(j) + lclTag(j) + '</div>' +
         '<div class="cqrow">' + (thumb ? '<img class="cqth" src="' + h(thumb) + '" alt="">' : '') +
           '<div><div class="qmain"><b>' + h(j.jName || '(ไม่ระบุลูกค้า)') + '</b></div>' +
           '<div class="qsub">' + (its.length ? its.slice(0, openIds[j.id] ? 99 : 3).map(function (i) { return h(i.name) + (i.qty ? ' × ' + h(i.qty) : ''); }).join('<br>') + (!openIds[j.id] && its.length > 3 ? '<br><a href="#" data-act="more">+ อีก ' + (its.length - 3) + ' รายการ</a>' : '') : '—') + '</div>' +
@@ -298,6 +328,12 @@
     else if (a === 'img') openUrl(b.dataset.src);
     else if (a === 'copy') { try { navigator.clipboard.writeText(b.dataset.t); toast('✓ คัดลอกแล้ว'); } catch (ec) { toast(b.dataset.t); } }
     else if (a === 'filed') setStatus(j, 'filed');
+    else if (a === 'ldel') {         // ลบใบที่เพิ่มเองในแผง (2 ครั้ง) · ลบรายการรอตัดของใบนั้นด้วย · ไม่ลบไฟล์จริง
+      if (armed !== 'L:' + j.id) { armed = 'L:' + j.id; clearTimeout(armT); armT = setTimeout(function () { armed = ''; refreshDetail(); }, 4000); b.textContent = 'กดอีกครั้งเพื่อลบ'; return; }
+      armed = ''; clearTimeout(armT); localSave(localJobs().filter(function (x) { return x.id !== j.id; }));
+      var qa = cqAll(); Object.keys(qa).forEach(function (k) { if (k.indexOf(j.id + '|') === 0) delete qa[k]; }); cqSaveAll(qa);
+      jobs = jobs.filter(function (x) { return x.id !== j.id; }); hideDetail(); render(); toast('✓ ลบงาน ' + (j.jName || '') + ' แล้ว (ไม่ได้ลบไฟล์จริง)');
+    }
     else if (a === 'scan') {         // เปิดไฟล์ → อ่านเส้นตัด → เก็บเข้า "รอตัด" (ยังไม่ส่งเครื่อง)
       var cf = filesOf(j)[+b.dataset.i || 0]; if (!cf) return toast('⚠ ไม่พบไฟล์ที่ผูกไว้');
       if (!window.ST_cutApi) return toast('⚠ หน้าส่งตัดยังไม่พร้อม');
@@ -370,7 +406,7 @@
     var tel = String(j.jPhone || '').trim();
     M.innerHTML = '<div class="qjob cqbox" data-id="' + h(j.id) + '">' +
       '<div class="cqhead"><b>' + h(j.no || (j.ws ? 'ใบราคาส่ง ' + fmtD(j.date) : 'ใบงาน')) + (j.ws ? ' <span class="cqws">ราคาส่ง</span> <span class="mut">' + (j.paid ? 'ชำระแล้ว' : 'รอชำระ') + '</span>' : '') + '</b><button class="btn ghost sm" data-act="close">✕</button></div>' +
-      '<div class="qtop"><select class="cqst ' + s + '" data-act="st">' + ST.map(function (k) { return '<option value="' + k + '"' + (k === s ? ' selected' : '') + '>' + SN[k] + '</option>'; }).join('') + '</select>' + dueTag(j) + cutChip(j) + '</div>' +
+      '<div class="qtop"><select class="cqst ' + s + '" data-act="st">' + ST.map(function (k) { return '<option value="' + k + '"' + (k === s ? ' selected' : '') + '>' + SN[k] + '</option>'; }).join('') + '</select>' + dueTag(j) + cutChip(j) + lclTag(j) + '</div>' +
       '<div class="cqk">ลูกค้า</div><div class="cqv"><b>' + h(j.jName || '(ไม่ระบุ)') + '</b>' +
         (tel ? ' · ' + h(tel) + ' <a href="#" data-act="copy" data-t="' + h(tel) + '">คัดลอก</a>' : '') +
         (j.jAddr ? '<div class="mut">' + h(j.jAddr).replace(/\n/g, '<br>') + '</div>' : '') + '</div>' +
@@ -385,7 +421,8 @@
       '<div class="cqv mut small">' + [j.date ? 'วันที่ ' + thFull(j.date) : '', j.createdBy ? 'โดย ' + h(j.createdBy) : ''].filter(Boolean).join(' · ') + '</div>' +
       '<div class="qact">' +
         '<button class="btn ghost sm" data-act="link">' + linkLabel(j) + '</button>' +
-        (s === 'pending' ? '<button class="btn sm" data-act="filed">✓ ทำไฟล์แล้ว</button>' : '') + '</div></div>';
+        (s === 'pending' ? '<button class="btn sm" data-act="filed">✓ ทำไฟล์แล้ว</button>' : '') +
+        (j._col === 'local' ? '<button class="btn ghost sm" data-act="ldel">🗑 ลบงานนี้</button>' : '') + '</div></div>';
     M.classList.add('show');
   }
   function hideDetail() { detailId = null; var M = $('cqModal'); if (M) M.classList.remove('show'); }
@@ -512,7 +549,7 @@
     cfg = f.queue; window.ST_cloudQueue = true;
     var btn = document.querySelector('.tab[data-tab="queue"]');
     if (btn) { btn.classList.remove('hidden'); var sp = btn.querySelector('span'); if (sp) sp.textContent = 'ใบงานจากแอปร้าน · เบต้า'; }
-    build(); load();
+    build(); jobs = localJobs(); render(); load();
     if (btn) btn.addEventListener('click', function () { if (Date.now() - loadedAt > 30000) load(true); });
     setInterval(function () { var p = $('tab-queue'); if (p && p.classList.contains('active') && !document.hidden) load(true); }, 60000);
   }
