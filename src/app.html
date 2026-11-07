@@ -7112,6 +7112,19 @@ function bahtText(value) {
     const patch = {matchedJobId: 'owed', matchedJobNo: String(label || '').slice(0, 80)};
     list[i] = Object.assign({}, list[i], patch); store.set('bs_bank_in', list); cloudSave('bankIn', Object.assign({id}, patch));
   }
+  // ผูกเลขอ้างอิงเรียกเก็บ (BS…) เข้ากับใบราคาส่ง/บิลแต่ละใบ — ไม่แตะ QR, ใช้ค้นย้อนหลังและตรวจสลิป
+  function stampChargeRef(docs, ref, at) {
+    try {
+      (docs || []).forEach(d => {
+        if (!d || d.k === 'jobs') return;
+        const col = d.k === 'bills' ? 'bills' : 'wholesale', list = store.get('bs_' + col, []), i = list.findIndex(x => x.id === d.id);
+        if (i < 0) return;
+        const hist = (list[i].chargeRefs || []).filter(r => r.ref !== ref).concat([{ref, at}]).slice(-10);
+        list[i] = Object.assign({}, list[i], {chargeRef: ref, chargeRefs: hist});
+        store.set('bs_' + col, list); cloudSave(col, list[i]);
+      });
+    } catch (e) { console.error('stampChargeRef', e); }
+  }
   // เงินเข้าบัญชีวันทิมที่ยังไม่ผูกอะไร ยอดตรงกับ "ใบค้าง" ของลูกค้างานส่ง (ทั้งก้อนหรือบางใบรวมกัน) → ตัดใบนั้นเป็นชำระแล้วอัตโนมัติ
   function matchOwedBankIns() {
     try {
@@ -7244,7 +7257,7 @@ function bahtText(value) {
         const acc = $('owedAcc').value; lastUrl = await payCardDataUrl(t, grp.name + ' · ' + note, ref, at, payAcct(acc));
         $('owedQrImg').src = lastUrl; $('owedQr').hidden = false; $('owedShare').disabled = false;
         const rec = {id: 'pay' + at, ref, chatId: '', name: grp.name, channel: 'owed', amount: t, note, status: 'pending', createdAt: at, by: chatBy(), docs: ds.map(d => ({k: d.k, id: d.id}))};
-        store.set('bs_pay_charges', payCharges().concat([rec])); cloudSave('payCharges', rec);
+        store.set('bs_pay_charges', payCharges().concat([rec])); cloudSave('payCharges', rec); stampChargeRef(ds, ref, at);
         return;
       }
       if (ev.target.id === 'owedShare' && lastUrl) {
@@ -8928,7 +8941,7 @@ function bahtText(value) {
       const rows = its.map((i, k) => (i.name || '').trim() ? '<div class="wd-r" data-k="' + k + '"><span class="wd-n">' + esc(i.name) + '<small>× ' + esc(i.qty === '' || i.qty == null ? 1 : i.qty) + (i.job ? ' · ' + esc(i.job) : '') + '</small></span>' +
         '<input class="num wd-p" type="number" inputmode="decimal" step="any" min="0" placeholder="รอราคา" aria-label="ราคาต่อชิ้น" value="' + (num(i.price) > 0 ? esc(i.price) : '') + '">' +
         '<b class="wd-t">' + (num(i.price) > 0 ? money(round2(num(i.qty || 1) * num(i.price))) : '–') + '</b></div>' : '').join('');
-      h += '<div class="wd-bill" data-doc="' + esc(w.id) + '"><div class="wd-h">บิล ' + esc(w.no || '') + ' <small>' + esc(thDate(w.date)) + ' · ใส่ราคาทีหลังได้ ช่องว่าง = รอราคา</small></div>' + (rows || '<p class="hint">ยังไม่มีรายการ</p>') +
+      h += '<div class="wd-bill" data-doc="' + esc(w.id) + '"><div class="wd-h">บิล ' + esc(w.no || '') + ' <small>' + esc(thDate(w.date)) + ' · ใส่ราคาทีหลังได้ ช่องว่าง = รอราคา' + (w.chargeRef ? ' · อ้างอิงเก็บเงิน ' + esc(w.chargeRef) : '') + '</small></div>' + (rows || '<p class="hint">ยังไม่มีรายการ</p>') +
         '<div class="wd-sum"><span>' + esc(sumLine(w)) + '</span></div>' +
         '<div class="wd-btns"><button class="btn small" type="button" data-act="addship">＋ ค่าส่ง</button><button class="btn small good" type="button" data-act="togglepaid">จ่ายแล้ว ✓</button><button class="btn small" type="button" data-act="open">แก้ไขเต็ม</button><button class="btn small del" type="button" data-act="del">ลบ</button></div></div>';
     });
@@ -8988,7 +9001,17 @@ function bahtText(value) {
     const nm = String(w.buyerName || '').trim() || 'ไม่ระบุชื่อ';
     const g = owedGroups().find(x => x.name === nm);
     if (!g || !(g.total > 0)) { toast('ลูกค้านี้ไม่มียอดค้างชำระ'); return; }
-    const acct = payAcct('วันทิม'), payload = promptPayPayload(acct.id, g.total), ref = payRef(Date.now());
+    const acct = payAcct('วันทิม'), payload = promptPayPayload(acct.id, g.total);
+    // บันทึกรายการเรียกเก็บจริง (ให้เงินเข้าจับคู่ได้) · เปิดซ้ำยอดเดิม/บิลชุดเดิมใน 7 วัน ใช้เลขอ้างอิงเดิม ไม่สร้างซ้ำ
+    const dkey = g.docs.map(d => d.id).sort().join(',');
+    let ch = payCharges().find(x => x.status !== 'paid' && x.by !== 'auto' && x.channel === 'owed' && x.name === nm && Math.abs(num(x.amount) - g.total) < 0.005 && (x.docs || []).map(d => d.id).sort().join(',') === dkey && Date.now() - (x.createdAt || 0) < 7 * 86400000);
+    if (!ch) {
+      const at0 = Date.now();
+      ch = {id: 'pay' + at0, ref: payRef(at0), chatId: '', name: nm, channel: 'owed', amount: g.total, note: 'ยอดค้างรวม ' + g.docs.length + ' ใบ', status: 'pending', createdAt: at0, by: chatBy() || 'app', docs: g.docs.map(d => ({k: d.k, id: d.id}))};
+      store.set('bs_pay_charges', payCharges().concat([ch])); cloudSave('payCharges', ch);
+      stampChargeRef(ch.docs, ch.ref, at0);
+    }
+    const ref = ch.ref;
     const link = chargeLinkFor(nm);
     let m = document.getElementById('chgModal'); if (m) m.remove();
     m = document.createElement('div'); m.id = 'chgModal'; m.className = 'chg-m';
@@ -9029,6 +9052,7 @@ function bahtText(value) {
     const paid = idx >= 0 ? !!list[idx].paid : false;
     const rec = Object.assign({id, savedAt: Date.now(), createdBy, paid}, data);
     if (idx >= 0 && list[idx].jobId) rec.jobId = list[idx].jobId;
+    if (idx >= 0 && list[idx].chargeRef) { rec.chargeRef = list[idx].chargeRef; rec.chargeRefs = list[idx].chargeRefs || []; }   // เก็บเลขอ้างอิงเรียกเก็บไว้เมื่อแก้ไขเต็ม
     if (!rec.jobId && whPendingJobId) rec.jobId = whPendingJobId;
     // ใบใหม่ หรือใบเก่าที่กรอกข้อมูลส่ง/ผลิตเพิ่ม → สร้างใบสั่งงานให้ (ใบเก่าที่ไม่ได้กรอกอะไรเพิ่มไม่แตะ กันงานซ้ำ)
     let jr = null;
