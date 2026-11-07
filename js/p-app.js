@@ -79,11 +79,12 @@ function bahtText(value) {
      ถ้ายังไม่เคยตั้ง perms: role "owner" = ทุกอย่าง, "staff" = ค่าเริ่มต้นพนักงาน
      ตอนบันทึกสิทธิ์จะตั้ง role = owner เฉพาะคนที่ได้ทุกอย่าง — เว็บเวอร์ชันเก่าที่ดูแค่ role จะไม่ให้สิทธิ์เกินที่ตั้งไว้ */
   const SUPER_ADMIN = 'ball';
+  const PAGECHAT_ENABLED = false; // แชตเพจ (Messenger) ปิดไว้ก่อน — โค้ดอยู่ครบ ตั้งเป็น true เพื่อเปิดกลับ (ต้องตั้ง Worker/KV/Webhook ตาม worker/README.md ก่อน)
   const PERM_GROUPS = [
     {title: 'หน้าที่เปิดได้', items: [
       ['calc', 'คำนวณสติ๊กเกอร์'], ['vat', 'คำนวณ VAT'], ['confirm', 'ใบคอนเฟิร์มงาน'], ['track', 'ติดตามพัสดุ'],
       ['wholesale', 'ใบราคาส่ง'], ['quote', 'ใบเสนอราคา'], ['bill', 'ใบเสร็จ / ใบกำกับภาษี'], ['purchase', 'ภาษีซื้อ'],
-      ['dash', 'แดชบอร์ด'], ['report', 'รายงานภาษี'], ['autopost', 'โพสต์ออโต้'], ['pagechat', 'แชตเพจ']]},
+      ['dash', 'แดชบอร์ด'], ['report', 'รายงานภาษี'], ['autopost', 'โพสต์ออโต้']].concat(PAGECHAT_ENABLED ? [['pagechat', 'แชตเพจ']] : [])},
     {title: 'ข้อมูลสำคัญ', items: [
       ['price', 'ราคาในหน้าคำนวณสติ๊กเกอร์'], ['bank', 'เงินเข้า-ออก · ยอดคงเหลือ · กระดิ่ง'], ['shop', 'แก้ข้อมูลร้าน']]}
   ];
@@ -114,7 +115,7 @@ function bahtText(value) {
   const isSuper = !window.BSAuth || (!!currentUser && isSuperUser(meRec)); // ไม่มีระบบบัญชีเลย (โหมดเก่า) ให้ถือว่าเป็นผู้ดูแล
   const myPerms = isSuper ? permsOf(null) : (currentUser ? permsOf(meRec) : {}); // ยังไม่ล็อกอิน = ยังไม่เห็นอะไร (หน้าล็อกอินบังอยู่)
   const CHAT_ENABLED = false; // แชทลูกค้า (LINE/เพจ) ปิดไว้ — แยกออกไปทำเป็นของตัวเอง ตั้งเป็น true เพื่อเปิดกลับ
-  const can = k => (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
+  const can = k => (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'pagechat' && !PAGECHAT_ENABLED) ? false : (k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
   const canBank = can('bank');
   // พนักงาน (ไม่ใช่เจ้าของ) ดูประวัติใบคอนเฟิร์มงานได้อย่างเดียว คีย์/แก้/ลบไม่ได้
   const canKey = isSuper || isOwnerFixed(meRec) || !!(meRec && meRec.role === 'owner');
@@ -6539,6 +6540,8 @@ function bahtText(value) {
       else if (a === 'send') { pcSend(); }
     });
   })();
+
+  if (!PAGECHAT_ENABLED) document.querySelectorAll('[data-tab="pagechat"]').forEach(el => { el.hidden = true; });   // ซ่อนปุ่มเมนูแชตเพจทุกที่ (รวมผู้ดูแลสูงสุด)
 
   /* ---------------- events ---------------- */
   const TAX_TABS = ['bill', 'purchase', 'dash', 'report', 'autopost', 'pagechat'];
