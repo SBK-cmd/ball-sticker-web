@@ -404,6 +404,38 @@
     if (!m || !isFinite(m.ox) || !isFinite(m.oy) || !isFinite(m.dx) || !isFinite(m.dy)) return null;
     return [[m.ox, m.oy], [m.ox + m.dy, m.oy], [m.ox, m.oy + m.dx], [m.ox + m.dy, m.oy + m.dx]];
   }
+  // ตั้งความเร็ว/แรงกด Kiss Cut และ Die Cut ในป็อบอัพ (ค่าเดียวกับหน้า "ส่งตัด") — ไม่ติ๊ก = ใช้ค่าที่ตั้งไว้ในตัวเครื่อง
+  var DRV_LIM = { kS: [1, 100], kA: [1, 3], kF: [1, 60], dS: [1, 100], dA: [1, 3], dF: [1, 60] };
+  var DRV_DEF = { kS: 71, kA: 2, kF: 38, dS: 50, dA: 2, dF: 25 };
+  function drvBlock(cq) {
+    var d = window.ST_cutApi.getDrv(), ps = (cq.snap && cq.snap.paths) || [], nk = 0, nd = 0;
+    ps.forEach(function (x) { if (x.k === 'die') nd++; else nk++; });
+    function inp(k) { return '<input type="number" data-dv="' + k + '" min="' + DRV_LIM[k][0] + '" max="' + DRV_LIM[k][1] + '" placeholder="' + DRV_DEF[k] + '" value="' + h(d[k]) + '"' + (d.on ? '' : ' disabled') + '>'; }
+    return '<div class="cqdrv"><label class="chk"><input type="checkbox" data-dv="on"' + (d.on ? ' checked' : '') + '> <b>ตั้งแรงกด / ความเร็ว แยก Kiss Cut – Die Cut</b></label>' +
+      '<div class="cqdg"><span></span><span class="mut">ความเร็ว cm/s</span><span class="mut">อัตราเร่ง</span><span class="mut">แรงกด</span>' +
+        '<b style="color:#ff4fa3">Kiss Cut <small class="mut">' + nk + ' เส้น</small></b>' + inp('kS') + inp('kA') + inp('kF') +
+        '<b style="color:#2fd27a">Die Cut <small class="mut">' + nd + ' เส้น</small></b>' + inp('dS') + inp('dA') + inp('dF') + '</div>' +
+      '<div class="cqdn mut small" id="cqDrvNote">' + drvNote(d, nd) + '</div></div>';
+  }
+  function drvNote(d, nd) {
+    if (!d.on) return nd ? '⚠ มีเส้น Die Cut ' + nd + ' เส้น แต่ยังไม่ได้ติ๊ก — จะตัดทุกเส้นด้วยแรงกดที่ตั้งไว้ที่ตัวเครื่อง' : 'ไม่ติ๊ก = ใช้แรงกดที่ตั้งไว้ที่ตัวเครื่อง';
+    var empty = Object.keys(DRV_DEF).filter(function (k) { return !(parseFloat(d[k]) > 0); });
+    return empty.length ? '⚠ ช่องที่เว้นว่างจะใช้ค่าเริ่มต้นของแผง (ตามตัวเลขจางในช่อง)' : 'ค่าจะถูกจำไว้กับเครื่องตัดที่เลือกในหน้า "ส่งตัด"';
+  }
+  function onDrv(e) {
+    var t = e.target, k = t && t.dataset && t.dataset.dv; if (!k || !window.ST_cutApi) return;
+    var M = $('cqPrev');
+    if (k === 'on') {
+      window.ST_cutApi.setDrv({ on: t.checked });
+      [].forEach.call(M.querySelectorAll('input[data-dv]:not([data-dv="on"])'), function (x) { x.disabled = !t.checked; });
+    } else {
+      var v = parseFloat(t.value), lim = DRV_LIM[k];
+      if (e.type === 'change' && t.value !== '' && !(v >= lim[0] && v <= lim[1])) { v = Math.min(lim[1], Math.max(lim[0], isFinite(v) ? v : DRV_DEF[k])); t.value = v; toast('ปรับเป็น ' + v + ' (ช่วงที่ตั้งได้ ' + lim[0] + '–' + lim[1] + ')'); }
+      if (e.type === 'change') { var o = {}; o[k] = t.value; window.ST_cutApi.setDrv(o); }
+    }
+    var d = window.ST_cutApi.getDrv(), nd = ((prevCtx && prevCtx.cq.snap.paths) || []).filter(function (x) { return x.k === 'die'; }).length, n = $('cqDrvNote');
+    if (n) n.textContent = drvNote(d, nd);
+  }
   var prevCtx = null;
   function showPrev(j, f, cq) {
     prevCtx = { j: j, f: f, cq: cq };
@@ -428,6 +460,7 @@
         var pc = prevCtx;
         doCut(pc.j, pc.f, pc.cq).then(function (r) { toast('✓ ส่งตัดแล้ว ' + r.lines + ' เส้น → ' + r.ip); hidePrev(); }, function (er) { toast('⚠ ' + er.message); b.disabled = false; b.textContent = '✂ ส่งตัด'; });
       });
+      M.addEventListener('input', onDrv); M.addEventListener('change', onDrv);
       document.body.appendChild(M);
     }
     var sn = cq.snap || {}, mk = sn.marks;
@@ -435,7 +468,7 @@
       '<canvas id="cqPrevCv" width="620" height="380" style="width:100%;background:#2b2b31;border-radius:8px"></canvas>' +
       '<div class="cqv mut small"><span style="color:#ff4fa3">▬ Kiss Cut</span> · <span style="color:#2fd27a">▬ Die Cut</span> · <span style="color:#4da3ff">■ มาร์ค</span><br>' +
       h(f.n || '') + ' · ' + h(sn.n || 0) + ' เส้น · ' + (mk ? 'มาร์ค ' + (mk.seg ? 'Segment' : '4 Points') + (cq.view ? ' (' + cq.view.marks.length + ' จุด)' : '') + ' — เครื่องสแกนมาร์คก่อนตัด' + (cq.view ? '' : '<br><span style="color:#ffd23f">⚠ ' + (cq.viewNote ? 'อ่านจุดมาร์คมาวาดพรีวิวไม่ได้ (' + h(cq.viewNote) + ')' : 'สแกนไว้ก่อนรุ่น 1.13.44 จึงไม่มีจุดมาร์คจริง') + ' · กรอบสี่เหลี่ยมโปร่งคือตำแหน่งโดยประมาณ' + (cq.viewNote ? '' : ' — กด "สแกนใหม่" เพื่อดูตำแหน่งจริง') + '</span>') : 'ไม่พบมาร์ค (ตัดแบบไม่อ่านมาร์ค)') + ' · สแกน ' + h(cqTime(cq.savedAt)) + '</div>' +
-      '<div class="qact"><button class="btn" data-pv="go" type="button">✂ ส่งตัด</button><button class="btn ghost sm" data-pv="sim" type="button">▶ จำลองการตัด</button><button class="btn ghost sm" data-pv="x" type="button">ปิด</button></div></div>';
+      drvBlock(cq) + '<div class="qact"><button class="btn" data-pv="go" type="button">✂ ส่งตัด</button><button class="btn ghost sm" data-pv="sim" type="button">▶ จำลองการตัด</button><button class="btn ghost sm" data-pv="x" type="button">ปิด</button></div></div>';
     M.classList.add('show');
     drawPrev($('cqPrevCv'), cq);
   }

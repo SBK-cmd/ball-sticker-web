@@ -224,6 +224,16 @@
       if (anim) { cancelAnimationFrame(anim.raf); anim = null; if (btn) btn.textContent = '▶ จำลองการตัด'; if (done) done(); return false; }
       if (!job) return false; play(cv, btn, done); return true;
     },
+    // ความเร็ว/แรงกดแยก Kiss–Die (ช่องเดียวกับหน้า "ส่งตัด" — แก้จากคิวงานแล้วหน้านั้นเปลี่ยนตาม และจำไว้กับเครื่องตัดที่เลือก)
+    getDrv: function () {
+      var v = function (id) { return $(id).value; };
+      return { on: !!$('cutDrv').checked, kS: v('dKisS'), kA: v('dKisA'), kF: v('dKisF'), dS: v('dDieS'), dA: v('dDieA'), dF: v('dDieF') };
+    },
+    setDrv: function (o) {
+      var map = { kS: 'dKisS', kA: 'dKisA', kF: 'dKisF', dS: 'dDieS', dA: 'dDieA', dF: 'dDieF' };
+      if ('on' in o && $('cutDrv').checked !== !!o.on) { $('cutDrv').checked = !!o.on; $('cutDrv').dispatchEvent(new Event('change')); }
+      Object.keys(map).forEach(function (k) { if (k in o) { var el = $(map[k]); if (el.value !== String(o[k])) { el.value = o[k]; el.dispatchEvent(new Event('change')); } } });
+    },
     stopSim: function () { if (anim) { cancelAnimationFrame(anim.raf); anim = null; } },
     send: function () { return sendNow(); },
     info: function () {   // สรุปว่าจะส่งอะไรเข้าเครื่องไหน (ให้หน้าคิวงานโชว์ก่อนกดตัด)
