@@ -351,6 +351,10 @@ function bahtText(value) {
       // ยอดค้างรวมของลูกค้า (ใบราคาส่งที่ยังไม่จ่าย) + payload พร้อมเพย์ ให้ลูกค้าสแกนจ่ายเองจากหน้าติดตาม
       if (isJbs) { const ow = owedGroups().find(x => x.name === (String(rec.jName || '').trim() || 'ไม่ระบุชื่อ')); if (ow && ow.total > 0) doc.pay = {total: ow.total, payee: payAcct('วันทิม').name || '', ref: payRef(Date.now()), payload: promptPayPayload(payAcct('วันทิม').id, ow.total),   // งาน JBS เข้าบัญชีวันทิมทั้งหมด
       docs: ow.docs.slice(0, 30).map(d => { const o = {no: d.no, amount: d.total, items: (d.items || []).slice(0, 20)}; if (d.photo) o.photo = d.photo; return o; })}; }
+      if (!doc.pay) {   // ยอดเรียกเก็บของใบงานนี้ (ปุ่ม 💳 เรียกเก็บเงิน · หักมัดจำแล้ว) → ให้ลูกค้าสแกนจ่ายจากหน้าติดตาม
+        const jc = payCharges().find(x => x.status !== 'paid' && x.by !== 'auto' && x.channel === 'walkin' && (x.docs || []).some(d => d.k === 'jobs' && d.id === rec.id) && Date.now() - (x.createdAt || 0) < 7 * 86400000);
+        if (jc && jc.amount > 0) { const ac = payAcct(jc.account); doc.pay = {total: jc.amount, dep: jc.deposit || 0, payee: ac.name || '', ref: jc.ref, payload: promptPayPayload(ac.id, jc.amount, jc.refInQr ? jc.ref : ''), docs: [{no: String(rec.no || ''), amount: jc.total || jc.amount}]}; }
+      }
       const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
       if (refs.length) doc.refPhotos = refs;
       { const th = (photos[0] || refs[0] || ''); if (th) doc.thumb = th; }   // รูปย่อหัวการ์ด
@@ -3462,11 +3466,11 @@ function bahtText(value) {
     return best;
   }
   const ppMask = v => { const d = String(v || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 3) + '-XXX-' + d.slice(6) : d.length === 13 ? 'X-XXXX-XXXXX-' + d.slice(10, 12) + '-' + d.slice(12) : d.length === 15 ? 'e-wallet XXXXXXXXXXX' + d.slice(11) : d; };
-  function promptPayPayload(id, amount) {
+  function promptPayPayload(id, amount, ref) {   // ref (ไม่บังคับ) = เลขอ้างอิงใส่ช่อง 62/05 (Reference Label) — ทดลอง: แอปธนาคารอาจไม่แสดง และ SMS ไม่ส่งกลับ
     const f = (t, v) => t + String(v.length).padStart(2, '0') + v;
     const d = String(id || '').replace(/\D/g, '');
     const acc = d.length === 15 ? f('03', d) : d.length === 13 ? f('02', d) : f('01', '0066' + d.replace(/^0/, ''));
-    let p = f('00', '01') + f('01', amount ? '12' : '11') + f('29', f('00', 'A000000677010111') + acc) + f('53', '764') + (amount ? f('54', (+amount).toFixed(2)) : '') + f('58', 'TH') + '6304';   // ลำดับแท็กตามมาตรฐาน EMVCo (เหมือน QR ของธนาคาร)
+    let p = f('00', '01') + f('01', amount ? '12' : '11') + f('29', f('00', 'A000000677010111') + acc) + f('53', '764') + (amount ? f('54', (+amount).toFixed(2)) : '') + f('58', 'TH') + (ref ? f('62', f('05', String(ref).replace(/[^A-Za-z0-9\-]/g, '').slice(0, 25))) : '') + '6304';   // ลำดับแท็กตามมาตรฐาน EMVCo (เหมือน QR ของธนาคาร)
     let c = 0xFFFF;
     for (let i = 0; i < p.length; i++) { c ^= p.charCodeAt(i) << 8; for (let k = 0; k < 8; k++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; }
     return p + c.toString(16).toUpperCase().padStart(4, '0');
@@ -3474,7 +3478,7 @@ function bahtText(value) {
   let payLogo = null;
   const payLoadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
   // รูปเรียกเก็บเงิน: เรียบ สะอาด แบบหน้ารับเงินของแอปธนาคาร — ฟอนต์ Noto Sans Thai (วางสระ/วรรณยุกต์ถูกตำแหน่ง)
-  async function payCardDataUrl(amount, note, ref, at, acct) {
+  async function payCardDataUrl(amount, note, ref, at, acct, refInQr) {
     acct = acct || payAcct('');
     const FN = 'Noto Sans Thai';
     try { await Promise.all(['400', '500', '600', '700'].map(w => document.fonts.load(w + " 40px '" + FN + "'", 'กขต้อง฿1'))); await document.fonts.ready; } catch (e) {}
@@ -3495,7 +3499,7 @@ function bahtText(value) {
     g.fillStyle = NAVY; font(700, 96); g.fillText(money(amount) + ' บาท', W / 2, 395);
     if (note) { g.fillStyle = INK; font(400, 32); g.fillText(String(note).slice(0, 44), W / 2, 450); }
     // QR
-    const m = qrEncode(promptPayPayload(acct.id, amount)), n = m.length;
+    const m = qrEncode(promptPayPayload(acct.id, amount, refInQr ? ref : '')), n = m.length;
     const qs = 560, cell = Math.floor(qs / n), q = cell * n, qx = Math.round((W - q) / 2), qy = note ? 500 : 470;
     g.fillStyle = '#000';
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (m[r][c]) g.fillRect(qx + c * cell, qy + r * cell, cell, cell);
@@ -3511,7 +3515,7 @@ function bahtText(value) {
     const d = at ? new Date(at) : new Date();
     g.fillText('รับเงินได้จากทุกธนาคาร · ' + d.toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'}), W / 2, fy + 70);
     font(400, 26); g.fillText('โปรดตรวจชื่อผู้รับให้ตรงก่อนยืนยันการโอน · ติดต่อร้าน ' + String(shop.phone || '').split(/\s*[,/]\s*/)[0], W / 2, fy + 118);
-    try { return cv.toDataURL('image/png'); } catch (e) { if (payLogo) { payLogo = false; return payCardDataUrl(amount, note, ref, at, acct); } throw e; }
+    try { return cv.toDataURL('image/png'); } catch (e) { if (payLogo) { payLogo = false; return payCardDataUrl(amount, note, ref, at, acct, refInQr); } throw e; }
   }
   const payRef = t => 'BS' + new Date(t).toISOString().slice(2, 10).replace(/-/g, '') + '-' + String(t).slice(-4);
   const payCharges = () => (store.get('bs_pay_charges', []) || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -3531,7 +3535,7 @@ function bahtText(value) {
   function matchPayCharges() {
     if (!canBank) return;
     // จับเฉพาะ QR ที่เรากดส่งให้ลูกค้าจริง (ไม่รวมรายการรอรับเงินที่ระบบสร้างเอง by:'auto') — กันเงินเข้ายอดเท่ากันไปตัดบิลงานส่งผิด
-    const pend = payCharges().filter(x => x.status !== 'paid' && x.by !== 'auto' && Date.now() - (x.createdAt || 0) < (x.channel === 'walkin' ? 12 * 3600000 : 7 * 86400000));   // QR หน้าร้านรอเงินเข้าไม่เกิน 12 ชม.
+    const pend = payCharges().filter(x => x.status !== 'paid' && x.by !== 'auto' && Date.now() - (x.createdAt || 0) < (x.channel === 'walkin' && !(x.docs && x.docs.length) ? 12 * 3600000 : 7 * 86400000));   // QR หน้าร้านล้วนรอเงินเข้าไม่เกิน 12 ชม. · ที่ผูกใบงาน (ลูกค้าจ่ายทีหลังได้) 7 วัน
     if (!pend.length) return;
     const used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
     const ins = wantimPoolAll();
@@ -3655,6 +3659,7 @@ function bahtText(value) {
       if (d.k === 'jobs') {   // ยอดที่คีย์ไว้ในใบงาน (ยังไม่เข้าใบราคาส่ง) → รับแล้ว
         const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === d.id);
         if (ji >= 0 && !jl[ji].owedPaid) { jl[ji] = Object.assign({}, jl[ji], {owedPaid: true, slipPending: false}); store.set('bs_jobs', jl); cloudSave('jobs', jl[ji]); }
+        if (ji >= 0 && jl[ji].trackToken) { try { publicJobMirror(jl[ji]); } catch (e) {} }   // จ่ายแล้ว → ยอดหายจากหน้าติดตามของลูกค้า
         return;
       }
       const list = store.get('bs_' + (d.k === 'bills' ? 'bills' : 'wholesale'), []), i = list.findIndex(x => x.id === d.id);
@@ -5491,6 +5496,7 @@ function bahtText(value) {
   }
   /* ---------- จ่าย QR หน้าร้าน: เลือกบัญชีก่อน → ยอดงาน − มัดจำ = ยอดที่ต้องจ่าย → QR + บันทึกรอเงินเข้า ---------- */
   let wkCh = null;   // รายการเรียกเก็บที่บันทึกแล้ว (null = ยังเป็นร่าง)
+  let wkPreRef = '';   // เลขอ้างอิงของรายการที่กำลังเปิด (ออกตอนเปิดหน้าต่าง ใช้ซ้ำตอนบันทึก ให้ QR ตรงกัน)
   const wkAccounts = () => ['วันทิม', 'กิติพงษ์'].filter(a => VISIBLE_ACCOUNTS.indexOf(a) >= 0);
   function wkDrawQr(cv, payload) {
     const mt = qrEncode(payload), n = mt.length, q = 4, sz = cv.width, cell = Math.floor(sz / (n + q * 2)), off = Math.floor((sz - cell * n) / 2), c2 = cv.getContext('2d');
@@ -5519,8 +5525,9 @@ function bahtText(value) {
     m.querySelector('#wkAfter').hidden = !wkCh;
     if (ok) {
       const acct = payAcct(v.acc);
-      wkDrawQr(m.querySelector('#wkQr'), promptPayPayload(acct.id, v.bal));
-      m.querySelector('#wkQrCap').textContent = 'พร้อมเพย์ ' + acct.name + ' (' + v.acc + ')' + (wkCh ? ' · อ้างอิง ' + wkCh.ref : '');
+      const inRef = wkCh ? !!wkCh.refInQr : !!(m.querySelector('#wkRefQr') || {}).checked, rf = wkCh ? wkCh.ref : wkPreRef;
+      wkDrawQr(m.querySelector('#wkQr'), promptPayPayload(acct.id, v.bal, inRef ? rf : ''));
+      m.querySelector('#wkQrCap').textContent = 'พร้อมเพย์ ' + acct.name + ' (' + v.acc + ') · อ้างอิง ' + rf + (inRef ? ' (ฝังใน QR)' : '');
     }
     wkSync();
   }
@@ -5535,7 +5542,7 @@ function bahtText(value) {
   }
   function openWalkInPay(opts) {
     opts = opts || {}; const job = opts.job || null;
-    wkCh = null;
+    wkCh = null; wkPreRef = payRef(Date.now());
     let m = document.getElementById('wkModal'); if (m) m.remove();
     m = document.createElement('div'); m.id = 'wkModal'; m.className = 'chg-m';
     const accs = wkAccounts();
@@ -5545,6 +5552,7 @@ function bahtText(value) {
       '<label>มัดจำที่รับแล้ว (บาท) <small>ไม่มีเว้นว่าง</small><input id="wkDep" type="text" inputmode="decimal" autocomplete="off"></label></div>' +
       '<label class="wk-n">ชื่อลูกค้า / รายการ <small>ไม่บังคับ</small><input id="wkName" type="text" autocomplete="off" placeholder="เช่น คุณสมชาย สติ๊กเกอร์ 10 แผ่น"></label>' +
       '<div class="chg-sum wk-sum" id="wkSum"></div><p class="wk-msg" id="wkMsg"></p>' +
+      '<label class="wk-rq"><input type="checkbox" id="wkRefQr" checked> ใส่เลขอ้างอิงใน QR <small>ทดลอง: แอปธนาคารบางแอปอาจไม่แสดง · ถ้าสแกนไม่ติดให้เอาเครื่องหมายออก</small></label>' +
       '<div class="chg-q" id="wkQrBox" hidden><canvas id="wkQr" width="440" height="440" aria-label="QR พร้อมเพย์"></canvas><small id="wkQrCap"></small></div>' +
       '<div class="wk-stat" id="wkStat" hidden></div>' +
       '<div class="chg-a"><button class="btn good" type="button" id="wkSave" hidden>✓ ยืนยันยอด · เริ่มรอเงินเข้า</button></div>' +
@@ -5552,7 +5560,7 @@ function bahtText(value) {
       '</div></div>';
     document.body.appendChild(m); document.body.classList.add('chg-open');
     const close = () => { m.remove(); document.body.classList.remove('chg-open'); wkCh = null; };
-    const lock = on => ['wkTotal', 'wkDep', 'wkName'].forEach(id => { $(id).disabled = on; }) || m.querySelectorAll('input[name=wkAcc]').forEach(r => { r.disabled = on; });
+    const lock = on => ['wkTotal', 'wkDep', 'wkName', 'wkRefQr'].forEach(id => { $(id).disabled = on; }) || m.querySelectorAll('input[name=wkAcc]').forEach(r => { r.disabled = on; });
     let wkDocs = [];
     if (job) {   // เรียกเก็บจากใบงาน: ดึงยอดงาน/มัดจำ(จากเงินเข้าที่ผูกกับใบนี้)/บัญชี ให้ก่อน แก้ได้
       const tot = jobAmountOf(job), ids = jobBankIdsOf(job), pool = wantimPoolAll();
@@ -5570,11 +5578,12 @@ function bahtText(value) {
       if (e.target.closest('#wkSave')) {
         const v = wkVals(); if (!v.acc || !(v.total > 0) || !(v.bal > 0) || v.dep < 0) return;
         const at = Date.now();
-        wkCh = {id: 'pay' + at, ref: payRef(at), chatId: '', name: v.name || 'ลูกค้าหน้าร้าน', channel: 'walkin', account: v.acc, total: v.total, deposit: v.dep, amount: v.bal,
+        wkCh = {id: 'pay' + at, ref: wkPreRef, refInQr: !!$('wkRefQr').checked, chatId: '', name: v.name || 'ลูกค้าหน้าร้าน', channel: 'walkin', account: v.acc, total: v.total, deposit: v.dep, amount: v.bal,
           note: (job ? 'ใบงาน ' + (job.no || '') + ' · ' : 'หน้าร้าน · ') + 'ยอดงาน ' + money(v.total) + (v.dep > 0 ? ' หักมัดจำ ' + money(v.dep) : ''), status: 'pending', createdAt: at, by: chatBy() || 'app'};
         if (wkDocs.length) wkCh.docs = wkDocs;
         store.set('bs_pay_charges', payCharges().concat([wkCh])); cloudSave('payCharges', wkCh);
-        lock(true); wkCalc(); toast('บันทึกแล้ว รอเงินเข้า ฿' + money(wkCh.amount)); return;
+        lock(true); wkCalc(); try { if (job && job.trackToken) publicJobMirror(job); } catch (e5) {}
+        toast('บันทึกแล้ว รอเงินเข้า ฿' + money(wkCh.amount) + (job ? (job.trackToken ? ' · ลูกค้าเห็นยอดและสแกนจ่ายได้ในหน้าติดตามแล้ว' : ' · กด "ส่งลิงก์ติดตาม" เพื่อให้ลูกค้าสแกนจ่ายเองได้') : '')); return;
       }
       const b = e.target.closest('[data-a]'); if (!b) return;
       if (b.dataset.a === 'new') { openWalkInPay(); return; }
@@ -5584,7 +5593,7 @@ function bahtText(value) {
         store.set('bs_pay_charges', payCharges().map(x => x.id === rec.id ? rec : x)); cloudSave('payCharges', rec); wkCh = rec; if (rec.docs && rec.docs.length) markDocsPaid(rec.docs); wkSync(); return;
       }
       if (b.dataset.a === 'img' && wkCh) {
-        try { const url = await payCardDataUrl(wkCh.amount, ('ยอดงาน ' + money(wkCh.total) + (wkCh.deposit > 0 ? ' หักมัดจำ ' + money(wkCh.deposit) : '')).slice(0, 44), wkCh.ref, wkCh.createdAt, payAcct(wkCh.account)); const a = document.createElement('a'); a.href = url; a.download = 'QR-หน้าร้าน-' + wkCh.amount + '.png'; document.body.appendChild(a); a.click(); a.remove(); }
+        try { const url = await payCardDataUrl(wkCh.amount, ('ยอดงาน ' + money(wkCh.total) + (wkCh.deposit > 0 ? ' หักมัดจำ ' + money(wkCh.deposit) : '')).slice(0, 44), wkCh.ref, wkCh.createdAt, payAcct(wkCh.account), wkCh.refInQr); const a = document.createElement('a'); a.href = url; a.download = 'QR-หน้าร้าน-' + wkCh.amount + '.png'; document.body.appendChild(a); a.click(); a.remove(); }
         catch (er) { toast('สร้างรูปไม่ได้'); }
       }
     });
