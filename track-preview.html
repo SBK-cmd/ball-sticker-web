@@ -151,6 +151,7 @@ details.jc>.jb{padding:4px 14px 14px}
       return '<div class="pmd"><div class="pmh">' + ph + '<b class="pmn">' + esc(d.no || 'ใบ') + '</b><b>' + money(d.amount) + '</b></div>' + (its ? '<ul>' + its + '</ul>' : '') + '</div>';
     }).join('');
     payM.innerHTML = '<div class="pms"><div class="pmt"><b>รายการค้างชำระ</b><button type="button" data-pmx="1" aria-label="ปิด">✕</button></div>' + docs +
+      (+p.dep > 0 ? '<div class="pmsum"><span>หักมัดจำที่ชำระแล้ว</span><b>− ' + money(p.dep) + '</b></div>' : '') +
       '<div class="pmsum"><span>ยอดที่ยังไม่ได้จ่าย</span><b>' + money(p.total) + ' บาท</b></div>' +
       '<div class="pmq"><canvas id="payQr" width="480" height="480" aria-label="QR พร้อมเพย์"></canvas><br><a class="sv" id="payQrSave" download="QR-ชำระเงิน.png" href="#">บันทึกรูป QR</a></div>' +
       '<small>สแกนด้วยแอปธนาคาร · ชื่อบัญชี ' + esc(p.payee || '') + '<br>โอนแล้วร้านจะตรวจยอดให้อัตโนมัติ รายการที่จ่ายแล้วจะหายไปจากหน้านี้ (หากไม่หาย แจ้งร้านทาง LINE @bk25)</small></div>';
@@ -240,7 +241,7 @@ details.jc>.jb{padding:4px 14px 14px}
   }
   function show(j) {
     var isJbs = /^JBS/i.test(String(j.no || ''));
-    var payOk = isJbs && j.pay && +j.pay.total > 0 && typeof j.pay.payload === 'string' && /^000201/.test(j.pay.payload);
+    var payOk = j.pay && +j.pay.total > 0 && typeof j.pay.payload === 'string' && /^000201/.test(j.pay.payload);
     var others = (isJbs && Array.isArray(j.others)) ? j.others.filter(function (o) { return o && o.no; }) : [];
     var cards = [jobCard(recOf(j), !others.length)];   // มีใบเดียว = เปิดให้เลย · หลายใบ = พับไว้ กดดูทีละใบ
     others.forEach(function (o) {

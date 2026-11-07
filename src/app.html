@@ -3918,6 +3918,10 @@ function bahtText(value) {
       // ยอดค้างรวมของลูกค้า (ใบราคาส่งที่ยังไม่จ่าย) + payload พร้อมเพย์ ให้ลูกค้าสแกนจ่ายเองจากหน้าติดตาม
       if (isJbs) { const ow = owedGroups().find(x => x.name === (String(rec.jName || '').trim() || 'ไม่ระบุชื่อ')); if (ow && ow.total > 0) doc.pay = {total: ow.total, payee: payAcct('วันทิม').name || '', ref: payRef(Date.now()), payload: promptPayPayload(payAcct('วันทิม').id, ow.total),   // งาน JBS เข้าบัญชีวันทิมทั้งหมด
       docs: ow.docs.slice(0, 30).map(d => { const o = {no: d.no, amount: d.total, items: (d.items || []).slice(0, 20)}; if (d.photo) o.photo = d.photo; return o; })}; }
+      if (!doc.pay) {   // ยอดเรียกเก็บของใบงานนี้ (ปุ่ม 💳 เรียกเก็บเงิน · หักมัดจำแล้ว) → ให้ลูกค้าสแกนจ่ายจากหน้าติดตาม
+        const jc = payCharges().find(x => x.status !== 'paid' && x.by !== 'auto' && x.channel === 'walkin' && (x.docs || []).some(d => d.k === 'jobs' && d.id === rec.id) && Date.now() - (x.createdAt || 0) < 7 * 86400000);
+        if (jc && jc.amount > 0) { const ac = payAcct(jc.account); doc.pay = {total: jc.amount, dep: jc.deposit || 0, payee: ac.name || '', ref: jc.ref, payload: promptPayPayload(ac.id, jc.amount), docs: [{no: String(rec.no || ''), amount: jc.total || jc.amount}]}; }
+      }
       const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
       if (refs.length) doc.refPhotos = refs;
       { const th = (photos[0] || refs[0] || ''); if (th) doc.thumb = th; }   // รูปย่อหัวการ์ด
@@ -7098,7 +7102,7 @@ function bahtText(value) {
   function matchPayCharges() {
     if (!canBank) return;
     // จับเฉพาะ QR ที่เรากดส่งให้ลูกค้าจริง (ไม่รวมรายการรอรับเงินที่ระบบสร้างเอง by:'auto') — กันเงินเข้ายอดเท่ากันไปตัดบิลงานส่งผิด
-    const pend = payCharges().filter(x => x.status !== 'paid' && x.by !== 'auto' && Date.now() - (x.createdAt || 0) < (x.channel === 'walkin' ? 12 * 3600000 : 7 * 86400000));   // QR หน้าร้านรอเงินเข้าไม่เกิน 12 ชม.
+    const pend = payCharges().filter(x => x.status !== 'paid' && x.by !== 'auto' && Date.now() - (x.createdAt || 0) < (x.channel === 'walkin' && !(x.docs && x.docs.length) ? 12 * 3600000 : 7 * 86400000));   // QR หน้าร้านล้วนรอเงินเข้าไม่เกิน 12 ชม. · ที่ผูกใบงาน (ลูกค้าจ่ายทีหลังได้) 7 วัน
     if (!pend.length) return;
     const used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
     const ins = wantimPoolAll();
@@ -7222,6 +7226,7 @@ function bahtText(value) {
       if (d.k === 'jobs') {   // ยอดที่คีย์ไว้ในใบงาน (ยังไม่เข้าใบราคาส่ง) → รับแล้ว
         const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === d.id);
         if (ji >= 0 && !jl[ji].owedPaid) { jl[ji] = Object.assign({}, jl[ji], {owedPaid: true, slipPending: false}); store.set('bs_jobs', jl); cloudSave('jobs', jl[ji]); }
+        if (ji >= 0 && jl[ji].trackToken) { try { publicJobMirror(jl[ji]); } catch (e) {} }   // จ่ายแล้ว → ยอดหายจากหน้าติดตามของลูกค้า
         return;
       }
       const list = store.get('bs_' + (d.k === 'bills' ? 'bills' : 'wholesale'), []), i = list.findIndex(x => x.id === d.id);
@@ -9141,7 +9146,8 @@ function bahtText(value) {
           note: (job ? 'ใบงาน ' + (job.no || '') + ' · ' : 'หน้าร้าน · ') + 'ยอดงาน ' + money(v.total) + (v.dep > 0 ? ' หักมัดจำ ' + money(v.dep) : ''), status: 'pending', createdAt: at, by: chatBy() || 'app'};
         if (wkDocs.length) wkCh.docs = wkDocs;
         store.set('bs_pay_charges', payCharges().concat([wkCh])); cloudSave('payCharges', wkCh);
-        lock(true); wkCalc(); toast('บันทึกแล้ว รอเงินเข้า ฿' + money(wkCh.amount)); return;
+        lock(true); wkCalc(); try { if (job && job.trackToken) publicJobMirror(job); } catch (e5) {}
+        toast('บันทึกแล้ว รอเงินเข้า ฿' + money(wkCh.amount) + (job ? (job.trackToken ? ' · ลูกค้าเห็นยอดและสแกนจ่ายได้ในหน้าติดตามแล้ว' : ' · กด "ส่งลิงก์ติดตาม" เพื่อให้ลูกค้าสแกนจ่ายเองได้') : '')); return;
       }
       const b = e.target.closest('[data-a]'); if (!b) return;
       if (b.dataset.a === 'new') { openWalkInPay(); return; }
