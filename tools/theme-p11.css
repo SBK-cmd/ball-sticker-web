@@ -124,3 +124,14 @@ html body .status-pill.shipped,html body .status-pill.billdone,html body .status
 html body .status-pill.recv,html body .status-pill.received,html body .status-pill.accepted{background-color:#0E1E5B!important}
 html body .status-pill option{color:#0F1B3D;background:#fff}
 html body .status-pill.pending,html body .status-pill.filed,html body .status-pill.printed,html body .status-pill.shipped,html body .status-pill.billdone,html body .status-pill.done,html body .status-pill.recv,html body .status-pill.received,html body .status-pill.accepted,html body select.status-pill.pending,html body select.status-pill.filed,html body select.status-pill.printed,html body select.status-pill.shipped,html body select.status-pill.billdone,html body select.status-pill.done{color:#fff!important;-webkit-text-fill-color:#fff!important}
+/* หลอดความคืบหน้าบนการ์ดงาน: เต็มหลอด = เสร็จ (แทนการแยกสีสถานะหลายสี) */
+html body .jc-prog{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:2px 0 4px}
+html body .jc-prog i{display:block;height:8px;border-radius:99px;background:#DCE3F3}
+html body .jc-prog i.on{background:#2447D6}
+html body .jc-prog.done i.on{background:#15803D}
+html body li.jc .status-pill,html body li.jc select.status-pill{background-color:#0E1E5B!important}
+html body li.jc select.status-pill.rcvd,html body li.jc select.status-pill.received,html body li.jc select.status-pill.pickup{background-color:#15803D!important}
+html body #jobHistory li.jc::after{background:#2447D6!important}
+html body #jobHistory li.jc:has(.jc-prog.done)::after{background:#15803D!important}
+html body li.jc.st-pending,html body li.jc.st-filed,html body li.jc.st-printed,html body li.jc.st-shipped{border-left-color:#2447D6!important}
+html body li.jc:has(.jc-prog.done){border-left-color:#15803D!important}

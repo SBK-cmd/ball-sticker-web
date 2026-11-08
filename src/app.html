@@ -8759,6 +8759,10 @@ function bahtText(value) {
       '<select class="job-status-select status-pill ' + st + (jobDelivered(j) ? ' rcvd' : '') + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +   // ขนส่งแจ้งถึงลูกค้าแล้ว → ป้าย "รับแล้ว ✓" (ค่าสถานะยังเป็น shipped)
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + ((k === 'received' || (k === 'shipped' && st === 'shipped' && jobDelivered(j))) ? 'รับแล้ว ✓' : JOB_STATUS_LABEL[k]) + '</option>').join('') +
       '</select></div>' +
+      (function () {   // หลอดความคืบหน้า 5 ช่อง: รอทำ → ทำไฟล์ → ผลิต → จัดส่ง → รับแล้ว (เต็มหลอด = งานเสร็จ)
+        const n = ({pending: 1, filed: 2, printed: 3, shipped: 4, pickup: 5, received: 5})[st] || 1, k = (n === 4 && jobDelivered(j)) ? 5 : n;
+        return '<div class="jc-prog' + (k === 5 ? ' done' : '') + '" role="progressbar" aria-label="ความคืบหน้างาน" aria-valuemin="0" aria-valuemax="5" aria-valuenow="' + k + '">' + [1, 2, 3, 4, 5].map(i => '<i' + (i <= k ? ' class="on"' : '') + '></i>').join('') + '</div>';
+      })() +
       jobCardDetail(j) +
       (chips ? '<div class="jc-chips">' + chips + '</div>' : '') +
       (canKey ? '<div class="jc-act">' +
