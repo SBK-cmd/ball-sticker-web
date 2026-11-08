@@ -149,3 +149,23 @@ html body li.jc:has(.jc-prog.s1){border-left-color:#EA580C!important}
 html body li.jc:has(.jc-prog.s2){border-left-color:#D97706!important}
 html body li.jc:has(.jc-prog.s3){border-left-color:#65A30D!important}
 html body li.jc:has(.jc-prog.s4){border-left-color:#16A34A!important}
+/* ช่องกรอกอ่านง่าย: พื้นขาว ขอบชัด ตัวหนังสือเข้ม (ใช้ทั้งแอป รวมหน้าต่างแก้ไขใบ) */
+html body .in,html body select,html body .txt,html body textarea,html body input[type=text],html body input[type=tel],html body input[type=number],html body input[type=date],html body input[type=search],html body input[type=email]{background:#fff!important;border:1.5px solid #AEBBDD!important;color:#0F1B3D!important;font-size:16px!important}
+html body .in input,html body .in select{border:0!important;background:transparent!important}
+html body .in:focus-within,html body select:focus-visible,html body .txt:focus-visible,html body textarea:focus-visible,html body input:focus-visible{border-color:#2447D6!important;box-shadow:0 0 0 3px rgba(36,71,214,.16)!important}
+html body ::placeholder{color:#5A6788!important}
+html body .item,html body .item.job{background:#F3F6FD!important;border:1px solid #BFCBE8!important;box-shadow:none!important;border-radius:16px!important}
+html body .jf-h{color:#0F1B3D;font-weight:700}
+html body .jf-h i{background:#0E1E5B;color:#fff}
+/* สีเน้นเหลืองทองจากโลโก้ร้าน: ปุ่มหลัก/ปุ่มลอย/แท็บที่เลือก — น้ำเงินเป็นพื้นนิ่ง */
+:root{--gold:#F5B301;--gold-soft:#FFF4CC}
+html body .btn.primary,html body .btn.good,html body .jc-b.main{background:var(--gold)!important;color:#0E1E5B!important;box-shadow:0 6px 14px rgba(245,179,1,.35)!important}
+html body .btab-fab .btab-fab-circle,html body .fab-newjob{background:var(--gold)!important;box-shadow:0 8px 18px rgba(245,179,1,.45)!important}
+html body .btab-fab .btab-fab-circle svg,html body .btab-fab .btab-fab-circle svg *,html body .fab-newjob svg,html body .fab-newjob svg *{color:#0E1E5B!important;stroke:#0E1E5B!important}
+html body .btab.active .btab-ico{background:var(--gold-soft)!important;color:#0E1E5B!important}
+html body .btab.active::after{background:var(--gold)!important}
+html body .btab.active,html body .btab[aria-selected="true"]{color:#0E1E5B!important}
+html body .tabs button[aria-selected="true"],html body .tab-group.has-active .tab-trigger{background:#0E1E5B!important;color:#fff!important}
+html body .tdy,html body .result,html body .hero{background:#0E1E5B!important;box-shadow:0 10px 24px rgba(14,30,91,.22)!important}
+html body .btn.primary:active{filter:brightness(.95)}
+html body .ic-e{display:inline-block;vertical-align:-.15em}
