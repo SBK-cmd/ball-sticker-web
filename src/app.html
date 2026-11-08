@@ -1245,6 +1245,15 @@ table.lines tfoot .r{text-align:right;font-variant-numeric:tabular-nums;white-sp
 .cutq-vals{display:grid;gap:4px;font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .cutq-vals div{display:flex;justify-content:space-between;gap:10px}.cutq-vals span{color:var(--muted)}
 .cutq-vals small{color:var(--muted);font-size:12px;line-height:1.4}
+.cutq-ed{display:grid;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px}
+.cutq-ed h4{margin:0;font-size:13px}
+.cutq-ed .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.cutq-ed label{display:grid;gap:2px;font-size:11px;color:var(--muted)}
+.cutq-ed input,.cutq-ed select{width:100%;min-height:40px;font-size:15px;padding:4px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg,#fff);color:inherit;box-sizing:border-box}
+.cutq-ed input.chg,.cutq-ed select.chg{border-color:#e6a100;background:#fff7dc;color:#222}
+.cutq-ed .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cutq-est{font-size:12px;color:var(--muted);line-height:1.4}
+.cutq-ed small{color:var(--muted);font-size:12px;line-height:1.4}
 .cutq-empty{color:var(--muted);font-size:14px;padding:18px 4px;text-align:center}
 
 .sh-doc h2{font:700 19px/1.25 'Prompt',sans-serif;margin:0 0 4px}
@@ -11995,21 +12004,110 @@ function bahtText(value) {
       if (c) g.closePath(); g.stroke();
     });
     if (v && v.marks) v.marks.forEach(m => { g.fillStyle = m[2] === 1 ? '#4da3ff' : '#ff5d5d'; g.fillRect(X(m[0]) - 4, Y(m[1]) - 4, 8, 8); });
+    return {X, Y, list};
   }
-  function cutqVals(cut) {
-    const d = cut.drv || {}, t = cut.settings || {}, n = x => (x == null ? '—' : esc(x));
-    const row = (a, b) => '<div><span>' + a + '</span><b>' + b + '</b></div>';
-    return '<div class="cutq-vals">' +
-      row('Kiss Cut', n(d.kS) + ' cm/s · แรง ' + n(d.kF) + ' · เร่ง ' + n(d.kA)) +
-      row('Die Cut', n(d.dS) + ' cm/s · แรง ' + n(d.dF) + ' · เร่ง ' + n(d.dA)) +
-      row('หมุน 90°', t.rotate ? 'ใช่' : 'ไม่') + row('กลับซ้าย-ขวา', t.mirror ? 'ใช่' : 'ไม่') +
-      row('ตัดเกิน', n(t.overcut) + ' มม.') + row('ลำดับตัด', t.first === 'piece' ? 'ตัดทีละชิ้น' : 'Kiss Cut ทั้งแผ่นก่อน แล้ว Die Cut') +
-      row('อ่านมาร์ค', t.useMk ? 'อ่านก่อนตัด' : 'ไม่อ่าน') +
-      '<small>ค่าที่บันทึกไว้กับใบงาน — ปรับค่าที่แผงในร้านแล้วบันทึกใบงานใหม่ ก่อนสั่งตัด</small></div>';
+  // ---- ปรับค่าตัดเฉพาะครั้งนี้ (ไม่บันทึกใบงาน) + จำลองการตัด ----
+  const CUTQ_F = {kS: [1, 100, 'ความเร็ว cm/s'], kF: [1, 60, 'แรงกด'], kA: [1, 3, 'เร่ง'], dS: [1, 100, 'ความเร็ว cm/s'], dF: [1, 60, 'แรงกด'], dA: [1, 3, 'เร่ง']};
+  const cutqOv = {};      // key → { kS.., first } เฉพาะที่แก้
+  let cutqSimTok = 0;
+  function cutqEff(cut, key) {
+    const d = Object.assign({}, cut.drv || {}), t = cut.settings || {}, o = cutqOv[key] || {};
+    Object.keys(CUTQ_F).forEach(k => { if (o[k] != null) d[k] = o[k]; });
+    return {d, first: o.first || (t.first === 'piece' ? 'piece' : 'kiss')};
+  }
+  function cutqDiff(cut, key) {      // ค่าที่ต่างจากที่บันทึกไว้ (ผ่านช่วงที่อนุญาตเท่านั้น)
+    const o = cutqOv[key] || {}, d = cut.drv || {}, t = cut.settings || {}, out = {};
+    Object.keys(CUTQ_F).forEach(k => { const v = o[k]; if (v != null && isFinite(v) && v >= CUTQ_F[k][0] && v <= CUTQ_F[k][1] && v !== +d[k]) out[k] = v; });
+    const f0 = t.first === 'piece' ? 'piece' : 'kiss';
+    if (o.first && o.first !== f0 && (o.first === 'kiss' || o.first === 'piece')) out.first = o.first;
+    return out;
+  }
+  function cutqVals(cut, key) {
+    const e = cutqEff(cut, key), d = cut.drv || {}, t = cut.settings || {}, o = cutqOv[key] || {};
+    const inp = (k) => '<label>' + CUTQ_F[k][2] + '<input type="number" inputmode="decimal" class="cutq-in' + (o[k] != null && o[k] !== +d[k] ? ' chg' : '') + '" data-key="' + esc(key) + '" data-k="' + k + '" min="' + CUTQ_F[k][0] + '" max="' + CUTQ_F[k][1] + '" step="' + (k.slice(1) === 'A' ? 1 : 1) + '" value="' + esc(e.d[k] == null ? '' : e.d[k]) + '"></label>';
+    const f0 = t.first === 'piece' ? 'piece' : 'kiss';
+    return '<div class="cutq-ed"><h4>ค่าตัด (ปรับเฉพาะครั้งนี้ ไม่บันทึกใบงาน)</h4>' +
+      '<h4 style="color:#e0457f">Kiss Cut</h4><div class="g3">' + inp('kS') + inp('kF') + inp('kA') + '</div>' +
+      '<h4 style="color:#1fa866">Die Cut</h4><div class="g3">' + inp('dS') + inp('dF') + inp('dA') + '</div>' +
+      '<label>ลำดับตัด<select class="cutq-in' + (e.first !== f0 ? ' chg' : '') + '" data-key="' + esc(key) + '" data-k="first"><option value="kiss"' + (e.first === 'kiss' ? ' selected' : '') + '>Kiss Cut ทั้งแผ่นก่อน แล้ว Die Cut</option><option value="piece"' + (e.first === 'piece' ? ' selected' : '') + '>ตัดทีละชิ้น (Kiss แล้ว Die ทีละดวง)</option></select></label>' +
+      '<div class="row2"><button type="button" class="btn cutq-sim" data-key="' + esc(key) + '">▶ จำลองการตัด</button><button type="button" class="btn cutq-rst" data-key="' + esc(key) + '">↺ ใช้ค่าเดิม</button></div>' +
+      '<div class="cutq-est" id="est-' + esc(key) + '">' + cutqEst(cut, key) + '</div>' +
+      '<div class="cutq-vals" style="border:0;padding:0">' +
+      '<div><span>หมุน 90°</span><b>' + (t.rotate ? 'ใช่' : 'ไม่') + '</b></div><div><span>กลับซ้าย-ขวา</span><b>' + (t.mirror ? 'ใช่' : 'ไม่') + '</b></div>' +
+      '<div><span>ตัดเกิน</span><b>' + esc(t.overcut == null ? '—' : t.overcut) + ' มม.</b></div><div><span>อ่านมาร์ค</span><b>' + (t.useMk ? 'อ่านก่อนตัด' : 'ไม่อ่าน') + '</b></div></div>' +
+      '<small>ค่าที่แก้มีผลกับการส่งตัดครั้งนี้เท่านั้น (ช่องสีเหลือง) · ค่าถาวรของใบงานแก้ที่แผงในร้าน · เครื่องในร้านต้องใช้ Sign Tools 1.13.75 ขึ้นไปถึงจะรับค่าที่แก้</small></div>';
+  }
+  function cutqPaths(cut) {
+    const out = [];
+    ((cut.snap && cut.snap.paths) || []).forEach(pt => {
+      const a = Array.isArray(pt.p) ? pt.p : cutqDecode(pt.pz); if (!a || a.length < 12) return;
+      out.push({a, k: pt.k === 'die' ? 'die' : 'kiss', c: !!pt.c});
+    });
+    return out;
+  }
+  function cutqSample(it) {      // เส้นโค้ง → จุดต่อเนื่อง (มม.)
+    const a = it.a, np = a.length / 6, pts = [[a[0], a[1]]];
+    for (let j = 0; j < (it.c ? np : np - 1); j++) {
+      const A = j * 6, B = ((j + 1) % np) * 6, p0 = [a[A], a[A + 1]], p1 = [a[A + 4], a[A + 5]], p2 = [a[B + 2], a[B + 3]], p3 = [a[B], a[B + 1]];
+      for (let s = 1; s <= 12; s++) { const t = s / 12, u = 1 - t; pts.push([u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0], u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1]]); }
+    }
+    return pts;
+  }
+  function cutqOrder(list, first) {      // ลำดับเส้นตามโหมด: kiss ทั้งหมดก่อน หรือ ทีละชิ้น (kiss ของดวงนั้น แล้ว die ของดวงนั้น)
+    const kiss = list.filter(x => x.k === 'kiss'), die = list.filter(x => x.k === 'die');
+    if (first !== 'piece' || !die.length) return kiss.concat(die);
+    const bb = it => { let x0 = 1e18, y0 = 1e18, x1 = -1e18, y1 = -1e18; for (let i = 0; i + 1 < it.a.length; i += 6) { x0 = Math.min(x0, it.a[i]); x1 = Math.max(x1, it.a[i]); y0 = Math.min(y0, it.a[i + 1]); y1 = Math.max(y1, it.a[i + 1]); } return [x0, y0, x1, y1]; };
+    const groups = die.map(dd => ({dd, b: bb(dd), ks: []})), rest = [];
+    kiss.forEach(k => { const b = bb(k), cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2; const g = groups.find(g => cx >= g.b[0] && cx <= g.b[2] && cy >= g.b[1] && cy <= g.b[3]); (g ? g.ks : rest).push(k); });
+    const out = rest.slice(); groups.forEach(g => { g.ks.forEach(k => out.push(k)); out.push(g.dd); });
+    return out;
+  }
+  function cutqLen(pts) { let L = 0; for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); return L; }
+  function cutqEst(cut, key) {      // เวลาตัดโดยประมาณ (ไม่รวมปากกาเคลื่อนที่ว่าง)
+    const e = cutqEff(cut, key), ps = cutqPaths(cut); let tk = 0, td = 0, lk = 0, ld = 0;
+    ps.forEach(it => { const L = cutqLen(cutqSample(it)); if (it.k === 'die') { ld += L; td += L / ((+e.d.dS || 1) * 10); } else { lk += L; tk += L / ((+e.d.kS || 1) * 10); } });
+    const f = s => { s = Math.round(s); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+    return 'ระยะตัด Kiss ' + (lk / 1000).toFixed(2) + ' ม. · Die ' + (ld / 1000).toFixed(2) + ' ม. → เวลาตัดประมาณ ' + f(tk + td) + ' นาที (Kiss ' + f(tk) + ' · Die ' + f(td) + ') ไม่รวมช่วงยกปากกา';
+  }
+  function cutqSim(key, cut) {
+    const cv = document.querySelector('canvas.cutq-cv[data-key="' + (window.CSS && CSS.escape ? CSS.escape(key) : key) + '"]'); if (!cv) return;
+    const tok = ++cutqSimTok, tf = cutqDraw(cv, cut); if (!tf) return;
+    const e = cutqEff(cut, key), ord = cutqOrder(tf.list, e.first), g = cv.getContext('2d');
+    const moves = []; let pen = null, total = 0;
+    ord.forEach(it => {
+      const pts = cutqSample(it), spd = ((it.k === 'die' ? e.d.dS : e.d.kS) || 10) * 10;
+      if (pen) { const L = Math.hypot(pts[0][0] - pen[0], pts[0][1] - pen[1]); if (L > 0.01) { const t = L / 400; moves.push({pts: [pen, pts[0]], t, up: true, k: it.k}); total += t; } }
+      const t = cutqLen(pts) / spd; moves.push({pts, t, up: false, k: it.k}); total += t; pen = pts[pts.length - 1];
+    });
+    if (!moves.length) return;
+    const play = Math.max(1, total / 14), t0 = performance.now();
+    const clr = {kiss: '#ffffff', die: '#ffffff'};
+    function frame(now) {
+      if (tok !== cutqSimTok) return;
+      let el = (now - t0) / 1000 * play, hx = null;
+      cutqDraw(cv, cut);
+      g.lineWidth = 2.2; g.lineCap = 'round';
+      for (let m = 0; m < moves.length && el > 0; m++) {
+        const mv = moves[m], fr = Math.min(1, el / (mv.t || 1e-6)); el -= mv.t;
+        const n = Math.max(1, Math.floor((mv.pts.length - 1) * fr)), frac = (mv.pts.length - 1) * fr - Math.floor((mv.pts.length - 1) * fr);
+        g.beginPath(); g.moveTo(tf.X(mv.pts[0][0]), tf.Y(mv.pts[0][1]));
+        for (let i = 1; i <= n && i < mv.pts.length; i++) g.lineTo(tf.X(mv.pts[i][0]), tf.Y(mv.pts[i][1]));
+        let last = mv.pts[Math.min(n, mv.pts.length - 1)];
+        if (fr < 1 && n < mv.pts.length - 1) { const A = mv.pts[n], B = mv.pts[n + 1]; last = [A[0] + (B[0] - A[0]) * frac, A[1] + (B[1] - A[1]) * frac]; g.lineTo(tf.X(last[0]), tf.Y(last[1])); }
+        g.strokeStyle = mv.up ? 'rgba(255,255,255,.35)' : (mv.k === 'die' ? '#7dffb8' : '#ffd1e8'); g.setLineDash(mv.up ? [3, 4] : []); g.stroke(); g.setLineDash([]);
+        hx = last; if (fr < 1) break;
+      }
+      if (hx) { g.fillStyle = '#ffd400'; g.beginPath(); g.arc(tf.X(hx[0]), tf.Y(hx[1]), 5, 0, 6.2832); g.fill(); }
+      if (el < 0 || (now - t0) / 1000 * play < total) requestAnimationFrame(frame);
+      else { const b = document.getElementById('est-' + key); if (b) b.dataset.done = '1'; }
+    }
+    requestAnimationFrame(frame);
   }
   const cutqOpen = {};
   function renderCutq() {
     const box = $('cutqList'); if (!box) return;
+    { const ae = document.activeElement; if (ae && ae.classList && ae.classList.contains('cutq-in') && box.contains(ae)) return; }   // กำลังพิมพ์ค่า → ไม่วาดใหม่ทับ
+    cutqSimTok++;
     if (!canCutRemote) { box.innerHTML = '<div class="cutq-empty">บัญชีนี้ไม่มีสิทธิ์สั่งตัด</div>'; return; }
     const all = store.get('bs_jobs', []) || [];
     if (!all.length) { box.innerHTML = '<div class="cutq-empty">กำลังโหลดใบงาน…</div>'; return; }
@@ -12036,15 +12134,19 @@ function bahtText(value) {
             (f.cut.savedAt ? '<br>สแกน ' + cutqClock(f.cut.savedAt) : '') + (f.cut.sentAt ? ' · ตัดล่าสุด ' + cutqClock(f.cut.sentAt) : '') + '</div></div>' +
             (st ? '<div class="cutq-st ' + st.c + '">' + esc(st.t) + '</div>' : '') +
             '<button type="button" class="btn cutq-pv" data-key="' + esc(key) + '">' + (cutqOpen[key] ? '▲ ซ่อนพรีวิว' : '👁 พรีวิว / ค่าตัด') + '</button>' +
-            (cutqOpen[key] ? '<div class="cutq-prev"><canvas class="cutq-cv" width="640" height="380" data-key="' + esc(key) + '"></canvas><div class="cutq-leg"><span style="color:#ff4fa3">▬ Kiss</span> <span style="color:#2fd27a">▬ Die</span> <span style="color:#4da3ff">■ มาร์ค</span></div>' + cutqVals(f.cut) + '</div>' : '') +
+            (cutqOpen[key] ? '<div class="cutq-prev"><canvas class="cutq-cv" width="640" height="380" data-key="' + esc(key) + '"></canvas><div class="cutq-leg"><span style="color:#ff4fa3">▬ Kiss</span> <span style="color:#2fd27a">▬ Die</span> <span style="color:#4da3ff">■ มาร์ค</span></div>' + cutqVals(f.cut, key) + '</div>' : '') +
             '<button type="button" class="btn primary cutq-go' + (arm ? ' arm' : '') + '" data-id="' + esc(j.id) + '" data-fi="' + fi + '"' + (busy ? ' disabled' : '') + '>' +
-            (arm ? 'กดอีกครั้งเพื่อสั่งตัดจริง' : '✂ ส่งตัด') + '</button></div>';
+            (arm ? 'กดอีกครั้งเพื่อสั่งตัดจริง' : '✂ ส่งตัด' + (Object.keys(cutqDiff(f.cut, key)).length ? ' (ใช้ค่าที่ปรับ)' : '')) + '</button></div>';
         }).join('') + '</div>';
     }).join('');
     box.innerHTML = html;
     const byKey = {};
     rows.forEach(({j, rec}) => rec.files.forEach((f, fi) => { if (f && f.cut) byKey[j.id + '|' + fi] = f.cut; }));
     box.querySelectorAll('canvas.cutq-cv').forEach(cv => { const c = byKey[cv.dataset.key]; if (c) { try { cutqDraw(cv, c); } catch (e) { console.error(e); } } });
+  }
+  function cutqCutOf(key) {
+    const m = String(key).split('|'), j = (store.get('bs_jobs', []) || []).find(x => String(x.id) === m[0]); if (!j) return null;
+    const rec = cutqParse(j), f = rec && rec.files[+m[1]]; return f && f.cut && f.cut.snap ? f.cut : null;
   }
   async function cutqSend(j, fi) {
     const rec = cutqParse(j), f = rec && rec.files[fi];
@@ -12053,6 +12155,7 @@ function bahtText(value) {
     if (cutqBusy(j.cutReq)) { toast('มีคำสั่งตัดค้างอยู่ รอผลก่อน'); return; }
     const req = {rid: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), status: 'pending', file: String(f.p), fileName: String(f.n || ''),
       jobNo: String(j.no || ''), by: String(currentUser.username || ''), at: Date.now()};
+    const ov = cutqDiff(f.cut, j.id + '|' + fi); if (Object.keys(ov).length) req.ov = ov;
     try {
       await (window.__bsAuthReady || Promise.resolve());
       await cloudDb.collection('jobs').doc(String(j.id)).update({cutReq: req});
@@ -12063,6 +12166,10 @@ function bahtText(value) {
     $('cutqList').addEventListener('click', e => {
       const pv = e.target.closest('.cutq-pv');
       if (pv) { cutqOpen[pv.dataset.key] = !cutqOpen[pv.dataset.key]; renderCutq(); return; }
+      const sm = e.target.closest('.cutq-sim');
+      if (sm) { const c = cutqCutOf(sm.dataset.key); if (c) cutqSim(sm.dataset.key, c); return; }
+      const rs = e.target.closest('.cutq-rst');
+      if (rs) { delete cutqOv[rs.dataset.key]; renderCutq(); return; }
       const b = e.target.closest('.cutq-go'); if (!b || b.disabled || !canCutRemote) return;
       const key = b.dataset.id + '|' + b.dataset.fi;
       if (cutqArmed !== key) { cutqArmed = key; clearTimeout(cutqArmT); cutqArmT = setTimeout(() => { cutqArmed = ''; renderCutq(); }, 4000); renderCutq(); return; }
@@ -12070,8 +12177,20 @@ function bahtText(value) {
       const j = (store.get('bs_jobs', []) || []).find(x => String(x.id) === b.dataset.id);
       renderCutq(); if (j) cutqSend(j, +b.dataset.fi);
     });
+    $('cutqList').addEventListener('input', e => {
+      const t = e.target; if (!t.classList || !t.classList.contains('cutq-in')) return;
+      const key = t.dataset.key, k = t.dataset.k, c = cutqCutOf(key); if (!c) return;
+      const o = cutqOv[key] || (cutqOv[key] = {});
+      if (k === 'first') o.first = t.value; else { const v = t.value === '' ? null : +t.value; o[k] = v; }
+      const d = c.drv || {}, base = k === 'first' ? (c.settings && c.settings.first === 'piece' ? 'piece' : 'kiss') : +d[k];
+      const cur = k === 'first' ? o.first : o[k];
+      t.classList.toggle('chg', cur != null && cur !== base);
+      const bad = k !== 'first' && cur != null && !(cur >= CUTQ_F[k][0] && cur <= CUTQ_F[k][1]);
+      t.style.borderColor = bad ? '#d33' : '';
+      const est = document.getElementById('est-' + key); if (est) est.textContent = cutqEst(c, key);
+    });
     $('cutqSearch').addEventListener('input', e => { cutqQ = e.target.value; renderCutq(); });
-    setInterval(() => { const p = $('panel-cutq'); if (canCutRemote && p && p.classList.contains('active') && !document.hidden) renderCutq(); }, 15000);
+    setInterval(() => { const p = $('panel-cutq'); if (canCutRemote && p && p.classList.contains('active') && !document.hidden) renderCutq(); }, 15000);   // renderCutq ข้ามเองถ้ากำลังพิมพ์ค่า
   }
   function applyCutUI() {
     if (!canCutRemote) return;
