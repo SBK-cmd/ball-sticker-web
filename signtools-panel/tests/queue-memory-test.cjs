@@ -65,7 +65,7 @@ async function simulator(database) {
     const value = arg ? JSON.parse(arg) : undefined;
     calls.push({ fn, arg: value });
     let result;
-    if (fn === 'st_openFile') { active = value; result = { ok: true, msg: 'mock open' }; }
+    if (fn === 'st_openFile') { if (value in times) { active = value; result = { ok: true, msg: 'mock open' }; } else result = { error: 'ไม่พบไฟล์: ' + value }; }
     else if (fn === 'st_cutRead') { result = makeSnap(active === '/test/b.ai' ? 40 : 0); if (noMarks) delete result.marks; }
     else if (fn === 'st_markCheck') result = noMarks ? { why: 'nolayer' } : { why: 'ok', style: 1, ab: [0, 100, 100, 0], marks: [[0, 0, 1], [100, 0, 1], [0, 100, 1], [100, 100, 1]] };
     else if (fn === 'st_thumb') result = { error: 'no thumbnail in mock' };
@@ -185,6 +185,29 @@ test('sending restores saved driver values and persists sent-not-finished state'
     assert(!sim.sends[0].data.includes('*2,59,2\x03'), 'previous job/global force must not leak');
     assert(JSON.parse(db.jobs.jobA.stProduction).files[0].cut.sentAt > 0);
     assert.equal(db.jobs.jobA.status, 'pending');
+    sim.assertNoErrors();
+  } finally { sim.close(); }
+});
+test('fresh machine without source files or NAS previews and cuts the stored snapshot', async () => {
+  const db = clone(persisted), record = JSON.parse(db.jobs.jobA.stProduction);
+  record.files[0].p = '\\\\test-nas\\share\\sample.eps'; record.files[0].n = 'sample.eps';
+  record.files[1].p = '\\\\test-nas\\share\\second.eps'; record.files[1].n = 'second.eps';
+  db.jobs.jobA.stProduction = JSON.stringify(record);
+  db.jobs.jobA.aiFiles = JSON.stringify(record.files.map(f => ({ p: f.p, n: f.n })));
+  const sim = await simulator(db);
+  try {
+    Object.keys(sim.times).forEach(key => delete sim.times[key]);
+    assert.equal(Object.keys(sim.times).length, 0, 'mock machine must have zero source files');
+    assert.equal(sim.w.localStorage.getItem('st_cutq'), null, 'no previous local cut cache');
+    sim.set('cutIp', '192.0.2.123'); sim.set('cutPort', '9100'); sim.set('dKisF', 59);
+    await sim.preview(0);
+    assert.equal(sim.w.document.querySelector('#cqPrev input[data-dv="kF"]').value, '31');
+    await sim.click('cutnow', 0); await sim.click('cutnow', 0);
+    assert.equal(sim.sends.length, 1);
+    assert(sim.sends[0].data.includes('*2,31,2\x03'), 'must use stored force without reading source');
+    assert(JSON.parse(db.jobs.jobA.stProduction).files[0].cut.sentAt > 0);
+    assert.deepEqual(JSON.parse(db.jobs.jobA.stProduction).files[0].cut.snap, makeSnap(), 'paths and marks unchanged');
+    assert.equal(sim.calls.filter(c => ['st_openFile', 'st_cutRead', 'st_markCheck', 'st_docInfo'].includes(c.fn)).length, 0, 'must not open, rescan or inspect a source document');
     sim.assertNoErrors();
   } finally { sim.close(); }
 });
