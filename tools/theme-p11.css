@@ -135,3 +135,17 @@ html body #jobHistory li.jc::after{background:#2447D6!important}
 html body #jobHistory li.jc:has(.jc-prog.done)::after{background:#15803D!important}
 html body li.jc.st-pending,html body li.jc.st-filed,html body li.jc.st-printed,html body li.jc.st-shipped{border-left-color:#2447D6!important}
 html body li.jc:has(.jc-prog.done){border-left-color:#15803D!important}
+/* สีหลอดไล่ตามขั้น: ส้ม → เหลืองอำพัน → เขียวมะนาว → เขียว → เขียวเข้ม (เต็มหลอด) */
+html body .jc-prog.s1 i.on{background:#EA580C}
+html body .jc-prog.s2 i.on{background:#D97706}
+html body .jc-prog.s3 i.on{background:#65A30D}
+html body .jc-prog.s4 i.on{background:#16A34A}
+html body .jc-prog.s5 i.on{background:#15803D}
+html body #jobHistory li.jc:has(.jc-prog.s1)::after{background:#EA580C!important}
+html body #jobHistory li.jc:has(.jc-prog.s2)::after{background:#D97706!important}
+html body #jobHistory li.jc:has(.jc-prog.s3)::after{background:#65A30D!important}
+html body #jobHistory li.jc:has(.jc-prog.s4)::after{background:#16A34A!important}
+html body li.jc:has(.jc-prog.s1){border-left-color:#EA580C!important}
+html body li.jc:has(.jc-prog.s2){border-left-color:#D97706!important}
+html body li.jc:has(.jc-prog.s3){border-left-color:#65A30D!important}
+html body li.jc:has(.jc-prog.s4){border-left-color:#16A34A!important}
