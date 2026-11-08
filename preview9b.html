@@ -1217,6 +1217,29 @@ table.lines tfoot .r{text-align:right;font-variant-numeric:tabular-nums;white-sp
 .sh-name{font:700 18px/1.25 'Prompt',sans-serif}
 .sh-lines{font-size:12.5px;color:#3a4a63;line-height:1.55}
 .sh-doc{text-align:right;flex:none}
+/* ---- QR บนใบงาน + แท็บสั่งตัดมือถือ ---- */
+.sh-qr{margin-top:8px;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.sh-qr svg{width:66px;height:66px;display:block}
+.sh-qr small{font:600 9.5px/1.2 'Prompt',sans-serif;color:#4a5a72}
+.cutq{padding:16px}
+.cutq-h{margin:0 0 6px;font:700 18px/1.3 'Prompt','Sarabun',sans-serif}
+.cutq-note{margin:0 0 12px;font-size:13px;color:var(--muted)}
+.cutq-list{display:grid;gap:12px;margin-top:12px}
+.cutq-job{border:1.5px solid var(--line);border-radius:14px;background:var(--surface);padding:12px 14px;display:grid;gap:10px}
+.cutq-job.focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,210,63,.35)}
+.cutq-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.cutq-top b{font:700 15px 'Prompt',sans-serif}
+.cutq-top span{font-size:13px;color:var(--muted);text-align:right}
+.cutq-file{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:center;background:var(--field);border-radius:10px;padding:8px}
+.cutq-file img,.cutq-file .ph{width:64px;height:64px;object-fit:contain;border-radius:8px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;font-size:22px}
+.cutq-fn{font-weight:700;font-size:14px;word-break:break-all}
+.cutq-meta{font-size:12.5px;color:var(--muted);line-height:1.5}
+.cutq-st{grid-column:1/-1;font-size:13px;font-weight:600;border-radius:8px;padding:6px 10px;background:var(--surface);border:1px solid var(--line)}
+.cutq-st.ok{color:#0a7a3d;border-color:#0a7a3d}.cutq-st.bad{color:#c0282d;border-color:#c0282d}.cutq-st.wait{color:#9a6b00;border-color:#d9a400}
+.cutq-go{grid-column:1/-1;min-height:48px;font-size:16px;font-weight:700}
+.cutq-go.arm{background:#d81f66;color:#fff;border-color:#d81f66}
+.cutq-empty{color:var(--muted);font-size:14px;padding:18px 4px;text-align:center}
+
 .sh-doc h2{font:700 19px/1.25 'Prompt',sans-serif;margin:0 0 4px}
 .sh-copy{display:inline-block;border:1.5px solid #10233f;border-radius:999px;padding:0 12px;font-weight:700;font-size:12.5px;margin-bottom:6px}
 .cust{margin-bottom:20px;font-size:13.5px;border:1px solid #e3e9f0;background:#f8fafc;border-radius:8px;padding:12px 16px}
@@ -2613,6 +2636,7 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
       <button role="tab" id="tab-track" data-tab="track" aria-selected="false" aria-controls="panel-track"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg><span>ติดตามพัสดุ</span></button>
       <button role="tab" id="tab-chat" data-tab="chat" aria-selected="false" aria-controls="panel-chat"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path></svg><span>แชทลูกค้า</span><span class="tab-badge" id="chatTabBadge" hidden></span></button>
       <button role="tab" id="tab-floor" data-tab="floor" aria-selected="false" aria-controls="panel-floor"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l2-6h14l2 6"></path><path d="M4 10v10h16V10"></path><path d="M9 20v-6h6v6"></path></svg><span>ผังร้าน</span></button>
+      <button role="tab" id="tab-cutq" data-tab="cutq" aria-selected="false" aria-controls="panel-cutq" hidden><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.1" y2="15.9"></line><line x1="14.5" y1="14.5" x2="20" y2="20"></line><line x1="8.1" y1="8.1" x2="12" y2="12"></line></svg><span>สั่งตัด</span></button>
       <div class="tab-group">
         <button type="button" class="tab-trigger" id="taxTrigger" aria-haspopup="true" aria-expanded="false">
           <svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7L6 7z"></path><path d="M9 7a3 3 0 0 1 6 0"></path></svg>
@@ -2724,6 +2748,7 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
   <div class="tax-sheet no-print" id="taxSheet" role="menu" aria-label="เมนูเพิ่มเติม: ใบเสนอราคาและภาษี" hidden>
     <button type="button" class="tax-sheet-item" id="wkBtn2">💳 จ่าย QR หน้าร้าน</button>
     <button type="button" class="tax-sheet-item" data-tab="track">ติดตามพัสดุ</button>
+    <button type="button" class="tax-sheet-item" data-tab="cutq" id="sheetCutq" hidden>✂ สั่งตัด (มือถือ)</button>
     <button type="button" class="tax-sheet-item" data-tab="wholesale">ใบราคาส่ง</button>
     <button type="button" class="tax-sheet-item" data-tab="quote">ใบเสนอราคา</button>
     <button type="button" class="tax-sheet-item" data-tab="vat">คำนวณ VAT</button>
@@ -3394,6 +3419,16 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
       </div>
       <div id="pcBody"></div>
     </section>
+    <!-- ================= สั่งตัดจากมือถือ (เฉพาะ ball / top) ================= -->
+    <section id="panel-cutq" class="panel" role="tabpanel" aria-labelledby="tab-cutq">
+      <div class="card cutq">
+        <h2 class="cutq-h">✂ สั่งตัดจากมือถือ</h2>
+        <p class="hint cutq-note">สแกน QR บนใบงานหรือเลือกงานด้านล่าง → กด “ส่งตัด” (ยืนยัน 2 ครั้ง) · เครื่องในร้านต้องเปิด Illustrator + แผง Sign Tools และเปิด “รับคำสั่งตัดจากมือถือ” ไว้ · ใส่วัสดุก่อนสั่งเสมอ</p>
+        <input class="txt" id="cutqSearch" type="search" placeholder="ค้นหาเลขใบงาน / ชื่อลูกค้า" autocomplete="off">
+        <div id="cutqList" class="cutq-list"></div>
+      </div>
+    </section>
+
     <section id="panel-track" class="panel" role="tabpanel" aria-labelledby="tab-track">
       <div class="page-head">
         <h1>สร้างข้อความแจ้งลูกค้า.</h1>
@@ -4041,7 +4076,7 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=1628f73248",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=eeab184792",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

@@ -115,7 +115,10 @@ function bahtText(value) {
   const isSuper = !window.BSAuth || (!!currentUser && isSuperUser(meRec)); // ไม่มีระบบบัญชีเลย (โหมดเก่า) ให้ถือว่าเป็นผู้ดูแล
   const myPerms = isSuper ? permsOf(null) : (currentUser ? permsOf(meRec) : {}); // ยังไม่ล็อกอิน = ยังไม่เห็นอะไร (หน้าล็อกอินบังอยู่)
   const CHAT_ENABLED = false; // แชทลูกค้า (LINE/เพจ) ปิดไว้ — แยกออกไปทำเป็นของตัวเอง ตั้งเป็น true เพื่อเปิดกลับ
-  const can = k => (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'pagechat' && !PAGECHAT_ENABLED) ? false : (k === 'floor' ? (isSuper || !!myPerms.dash) : k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
+  // สั่งตัดจากมือถือ: เปิดเฉพาะบัญชี ball กับ top (ไม่ขึ้นกับตารางสิทธิ์รายหน้า)
+  const CUT_USERS = ['ball', 'top'];
+  const canCutRemote = !!currentUser && CUT_USERS.indexOf(String(currentUser.username || '').trim().toLowerCase()) >= 0;
+  const can = k => k === 'cutq' ? canCutRemote : (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'pagechat' && !PAGECHAT_ENABLED) ? false : (k === 'floor' ? (isSuper || !!myPerms.dash) : k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
   const canBank = can('bank');
   // พนักงาน (ไม่ใช่เจ้าของ) ดูประวัติใบคอนเฟิร์มงานได้อย่างเดียว คีย์/แก้/ลบไม่ได้
   const canKey = isSuper || isOwnerFixed(meRec) || !!(meRec && meRec.role === 'owner');
@@ -3486,6 +3489,14 @@ function bahtText(value) {
     let best = null, bp = Infinity; for (let m = 0; m < 8; m++) { const A = build(m), p = penalty(A); if (p < bp) { bp = p; best = A; } }
     return best;
   }
+  const CUT_LINK_BASE = 'https://app.ballsticker.co.th/#cut/';
+  const cutLink = no => CUT_LINK_BASE + encodeURIComponent(String(no || '').trim());
+  function qrSvg(text) {
+    const m = qrEncode(text), n = m.length, q = 2; let d = '';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (m[r][c]) d += 'M' + (c + q) + ' ' + (r + q) + 'h1v1h-1z';
+    const w = n + 2 * q;
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + w + '" shape-rendering="crispEdges" role="img" aria-label="QR สั่งตัด"><rect width="' + w + '" height="' + w + '" fill="#fff"/><path d="' + d + '" fill="#000"/></svg>';
+  }
   const ppMask = v => { const d = String(v || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 3) + '-XXX-' + d.slice(6) : d.length === 13 ? 'X-XXXX-XXXXX-' + d.slice(10, 12) + '-' + d.slice(12) : d.length === 15 ? 'e-wallet XXXXXXXXXXX' + d.slice(11) : d; };
   function promptPayPayload(id, amount, ref) {   // ref (ไม่บังคับ) = เลขอ้างอิงใส่ช่อง 62/05 (Reference Label) — ทดลอง: แอปธนาคารอาจไม่แสดง และ SMS ไม่ส่งกลับ
     const f = (t, v) => t + String(v.length).padStart(2, '0') + v;
@@ -4820,7 +4831,8 @@ function bahtText(value) {
     $('jobSheet').innerHTML =
       '<header class="sh-head"><div class="sh-brand">' + logoImg() + '<div><div class="sh-name">' + esc(shop.name) + '</div><div class="sh-lines">' + shopLines() + '</div></div></div>' +
       '<div class="sh-doc"><h2>ใบคอนเฟิร์มงาน</h2><div class="sh-lines">เลขที่ <b>' + esc($('jobNo').value) + '</b><br>วันที่สั่ง ' + esc(thDate($('jobDate').value)) +
-      '<br>กำหนดส่ง ' + ($('jobDue').value ? esc(thDate($('jobDue').value)) : '—') + '</div></div></header>' +
+      '<br>กำหนดส่ง ' + ($('jobDue').value ? esc(thDate($('jobDue').value)) : '—') + '</div>' +
+      (String($('jobNo').value).trim() ? '<div class="sh-qr">' + qrSvg(cutLink($('jobNo').value)) + '<small>สแกนเพื่อสั่งตัด (ทีมงาน)</small></div>' : '') + '</div></header>' +
       '<section class="cust"><h3>ลูกค้า</h3><div><b>' + dash($('jName').value) + '</b></div><div>' + dash($('jPhone').value) + '</div>' +
       ($('jAddr').value.trim() ? '<div>' + esc($('jAddr').value.trim()) + '</div>' : '') + '</section>' +
       '<div class="tbl-wrap"><table class="lines"><thead><tr><th class="n">ลำดับ</th><th>รายการงาน / สเปก</th><th class="r">จำนวน</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
@@ -5726,7 +5738,7 @@ function bahtText(value) {
     return out;
   }
 
-  function drawHeader(x, title, rightLines, copy) {
+  function drawHeader(x, title, rightLines, copy, qrText) {
     const lw = 26, lh = lw * logoEl.naturalHeight / logoEl.naturalWidth;
     x.drawImage(logoEl, M * S, M * S, lw * S, lh * S);
     const tx = M + lw + 4; let y = M + 4.6;
@@ -5743,6 +5755,13 @@ function bahtText(value) {
       T(x, copy, PW - M - w / 2, ry + 3.8, {s: 3.3, w: 700, a: 'center'}); ry += 8.6;
     } else ry += 2;
     rightLines.forEach(l => { T(x, l, PW - M, ry, {s: 3.5, c: MUTED, a: 'right'}); ry += 4.3; });
+    if (qrText) {            // QR สั่งตัดจากมือถือ (ใบคอนเฟิร์มงาน)
+      const m = qrEncode(qrText), n = m.length, qs = 17, cell = qs / (n + 4), qx = PW - M - qs, qy = ry + 0.6;
+      x.fillStyle = '#fff'; x.fillRect(qx * S, qy * S, qs * S, qs * S);
+      x.fillStyle = '#000';
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (m[r][c]) x.fillRect(Math.floor((qx + (c + 2) * cell) * S), Math.floor((qy + (r + 2) * cell) * S), Math.ceil(cell * S) + 1, Math.ceil(cell * S) + 1);
+      T(x, 'สแกนเพื่อสั่งตัด (ทีมงาน)', PW - M, qy + qs + 3, {s: 2.7, c: MUTED, a: 'right'}); ry = qy + qs + 4;
+    }
     const bottom = Math.max(M + lh, y - 1.5, ry - 2) + 2;
     HL(x, M, PW - M, bottom, INK, 0.55);
     return bottom + 6;
@@ -5892,7 +5911,7 @@ function bahtText(value) {
     let y = drawHeader(x, 'ใบคอนเฟิร์มงาน', [
       'เลขที่ ' + $('jobNo').value, 'วันที่สั่ง ' + thDate($('jobDate').value),
       'กำหนดส่ง ' + ($('jobDue').value ? thDate($('jobDue').value) : '—')
-    ], null);
+    ], null, String($('jobNo').value).trim() ? cutLink($('jobNo').value) : '');
     // ลูกค้า
     T(x, 'ลูกค้า', M, y, {s: 3.3, w: 600, h: 1, c: MUTED}); y += 4.8;
     T(x, $('jName').value.trim() || '—', M, y, {s: 3.9, w: 700}); y += 4.7;
@@ -6862,7 +6881,7 @@ function bahtText(value) {
   function showTab(name) {
     closeJobModal();
     if (!can(name)) name = firstAllowedTab(); // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้ หรือโค้ดส่วนอื่นที่สั่งเปิดหน้า
-    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost', 'pagechat', 'floor'].forEach(n => {
+    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost', 'pagechat', 'floor', 'cutq'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
@@ -6887,6 +6906,7 @@ function bahtText(value) {
     if (name === 'design') renderDesign();
     if (name === 'autopost') renderAutopost();
     if (name === 'pagechat') renderPageChat(); else pcStop();
+    if (name === 'cutq') renderCutq();
     const activeTab = isTax ? $('taxTrigger') : $('tab-' + name);
     if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
   }
@@ -8279,7 +8299,110 @@ function bahtText(value) {
     });
   }
 
+  /* ---------------- สั่งตัดจากมือถือ (เฉพาะ ball / top) ----------------
+     มือถือไม่ได้ส่งเข้าเครื่องตัดเอง: เขียน "คำสั่ง" cutReq ลงใบงานใน Firestore (jobs/<id>.cutReq)
+     แผง Sign Tools ในร้านที่เปิดโหมดรับคำสั่งจะรับไปส่งเข้า Graphtec แล้วเขียนผลกลับมา
+     cutReq = {rid, status: pending|claimed|done|error|expired|rejected, file, fileName, jobNo, by, at(ms), msg, lines, ip, doneAt} */
+  let cutqFocus = '', cutqArmed = '', cutqArmT = 0, cutqQ = '';
+  const CUTQ_TTL = 5 * 60000;
+  function cutqParse(j) {
+    try {
+      const r = typeof j.stProduction === 'string' ? JSON.parse(j.stProduction) : j.stProduction;
+      return (r && r.v === 1 && Array.isArray(r.files)) ? r : null;
+    } catch (e) { return null; }
+  }
+  function cutqCount(cut) {
+    let k = 0, d = 0;
+    ((cut && cut.snap && cut.snap.paths) || []).forEach(p => { if (p && p.k === 'die') d++; else k++; });
+    return {k, d};
+  }
+  const cutqClock = ms => { try { return new Date(ms).toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit'}); } catch (e) { return ''; } };
+  function cutqStatus(req, f) {
+    if (!req || !req.status || req.file !== f.p) return null;
+    const age = Date.now() - (+req.at || 0);
+    const live = age < CUTQ_TTL;
+    if (req.status === 'pending') return live
+      ? (age < 45000 ? {c: 'wait', t: '⏳ ส่งคำสั่งแล้ว รอเครื่องในร้านรับ…'} : {c: 'bad', t: '⚠ เครื่องในร้านยังไม่ตอบ — เปิด Illustrator + แผง และเปิด “รับคำสั่งตัดจากมือถือ” หรือยัง? (คำสั่งหมดอายุใน ' + Math.max(1, Math.ceil((CUTQ_TTL - age) / 60000)) + ' นาที)'})
+      : {c: 'bad', t: '⚠ คำสั่งหมดอายุ ไม่ได้ตัด (' + cutqClock(req.at) + ')'};
+    if (req.status === 'claimed') return live ? {c: 'wait', t: '⚙ เครื่องรับแล้ว กำลังส่งเข้า Graphtec…'} : {c: 'bad', t: '⚠ เครื่องรับคำสั่งแล้วแต่ไม่รายงานผล — ไปดูที่เครื่องตัดก่อนสั่งซ้ำ'};
+    if (req.status === 'done') return {c: 'ok', t: '✓ ส่งตัดแล้ว ' + cutqClock(req.doneAt || req.at) + (req.lines ? ' · ' + req.lines + ' เส้น' : '') + (req.ip ? ' → ' + req.ip : '')};
+    return {c: 'bad', t: '⚠ ' + (req.msg || 'ไม่ได้ตัด') + ' (' + cutqClock(req.doneAt || req.at) + ')'};
+  }
+  function cutqBusy(req) { return !!req && (req.status === 'pending' || req.status === 'claimed') && (Date.now() - (+req.at || 0)) < CUTQ_TTL; }
+  function renderCutq() {
+    const box = $('cutqList'); if (!box) return;
+    if (!canCutRemote) { box.innerHTML = '<div class="cutq-empty">บัญชีนี้ไม่มีสิทธิ์สั่งตัด</div>'; return; }
+    const all = store.get('bs_jobs', []) || [];
+    if (!all.length) { box.innerHTML = '<div class="cutq-empty">กำลังโหลดใบงาน…</div>'; return; }
+    const q = cutqQ.trim().toLowerCase();
+    let rows = all.map(j => ({j, rec: cutqParse(j)})).filter(x => x.rec && x.rec.files.some(f => f && f.cut && f.cut.snap));
+    const miss = cutqFocus && !rows.some(x => String(x.j.no) === cutqFocus);
+    if (q) rows = rows.filter(x => (String(x.j.no) + ' ' + String(x.j.jName || '')).toLowerCase().indexOf(q) >= 0);
+    rows.sort((a, b) => (String(b.j.no) === cutqFocus) - (String(a.j.no) === cutqFocus) || (b.j.savedAt || 0) - (a.j.savedAt || 0));
+    rows = rows.slice(0, 30);
+    let html = '';
+    if (miss) {
+      const exists = all.some(j => String(j.no) === cutqFocus);
+      html += '<div class="cutq-st bad">' + (exists ? '⚠ ใบงาน ' + esc(cutqFocus) + ' ยังไม่มีไฟล์ตัดที่สแกนไว้ — สแกนจากแผง Sign Tools แล้วกด “บันทึกใบงาน” ก่อน' : '⚠ ไม่พบใบงาน ' + esc(cutqFocus) + ' (ยังไม่ได้บันทึกใบงาน หรือซิงก์ยังไม่ครบ)') + '</div>';
+    }
+    if (!rows.length) { box.innerHTML = html + '<div class="cutq-empty">ยังไม่มีงานที่พร้อมสั่งตัด</div>'; return; }
+    html += rows.map(({j, rec}) => {
+      const busy = cutqBusy(j.cutReq);
+      const files = rec.files.map((f, fi) => ({f, fi})).filter(x => x.f && x.f.cut && x.f.cut.snap);
+      return '<div class="cutq-job' + (String(j.no) === cutqFocus ? ' focus' : '') + '"><div class="cutq-top"><b>' + esc(j.no || '—') + '</b><span>' + esc(j.jName || '') + '</span></div>' +
+        files.map(({f, fi}) => {
+          const c = cutqCount(f.cut), st = cutqStatus(j.cutReq, f), key = j.id + '|' + fi, arm = cutqArmed === key;
+          const thumb = f.cut.thumb && /^data:image\//.test(f.cut.thumb) ? '<img src="' + esc(f.cut.thumb) + '" alt="">' : '<span class="ph">✂</span>';
+          return '<div class="cutq-file">' + thumb + '<div><div class="cutq-fn">' + esc(f.n || 'ไฟล์') + '</div><div class="cutq-meta">Kiss ' + c.k + ' เส้น · Die ' + c.d + ' เส้น' +
+            (f.cut.savedAt ? '<br>สแกน ' + cutqClock(f.cut.savedAt) : '') + (f.cut.sentAt ? ' · ตัดล่าสุด ' + cutqClock(f.cut.sentAt) : '') + '</div></div>' +
+            (st ? '<div class="cutq-st ' + st.c + '">' + esc(st.t) + '</div>' : '') +
+            '<button type="button" class="btn primary cutq-go' + (arm ? ' arm' : '') + '" data-id="' + esc(j.id) + '" data-fi="' + fi + '"' + (busy ? ' disabled' : '') + '>' +
+            (arm ? 'กดอีกครั้งเพื่อสั่งตัดจริง' : '✂ ส่งตัด') + '</button></div>';
+        }).join('') + '</div>';
+    }).join('');
+    box.innerHTML = html;
+  }
+  async function cutqSend(j, fi) {
+    const rec = cutqParse(j), f = rec && rec.files[fi];
+    if (!f || !f.cut) { toast('ไม่พบข้อมูลตัดของไฟล์นี้'); return; }
+    if (!cloudDb) { toast('ยังไม่ได้เชื่อมคลาวด์'); return; }
+    if (cutqBusy(j.cutReq)) { toast('มีคำสั่งตัดค้างอยู่ รอผลก่อน'); return; }
+    const req = {rid: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), status: 'pending', file: String(f.p), fileName: String(f.n || ''),
+      jobNo: String(j.no || ''), by: String(currentUser.username || ''), at: Date.now()};
+    try {
+      await (window.__bsAuthReady || Promise.resolve());
+      await cloudDb.collection('jobs').doc(String(j.id)).update({cutReq: req});
+      toast('ส่งคำสั่งตัดแล้ว รอเครื่องในร้านรับ');
+    } catch (e) { toast('ส่งคำสั่งไม่สำเร็จ: ' + (e && e.message || e)); }
+  }
+  if ($('cutqList')) {
+    $('cutqList').addEventListener('click', e => {
+      const b = e.target.closest('.cutq-go'); if (!b || b.disabled || !canCutRemote) return;
+      const key = b.dataset.id + '|' + b.dataset.fi;
+      if (cutqArmed !== key) { cutqArmed = key; clearTimeout(cutqArmT); cutqArmT = setTimeout(() => { cutqArmed = ''; renderCutq(); }, 4000); renderCutq(); return; }
+      cutqArmed = ''; clearTimeout(cutqArmT);
+      const j = (store.get('bs_jobs', []) || []).find(x => String(x.id) === b.dataset.id);
+      renderCutq(); if (j) cutqSend(j, +b.dataset.fi);
+    });
+    $('cutqSearch').addEventListener('input', e => { cutqQ = e.target.value; renderCutq(); });
+    setInterval(() => { const p = $('panel-cutq'); if (canCutRemote && p && p.classList.contains('active') && !document.hidden) renderCutq(); }, 15000);
+  }
+  function applyCutUI() {
+    if (!canCutRemote) return;
+    ['tab-cutq', 'sheetCutq', 'bnavTaxTrigger'].forEach(id => { if ($(id)) $(id).hidden = false; });
+  }
+  // เปิดจาก QR บนใบงาน: https://app.ballsticker.co.th/#cut/<เลขใบงาน>
+  function cutqFromHash() {
+    const m = /^#cut\/(.+)$/.exec(location.hash || ''); if (!m || !currentUser) return;
+    let no = ''; try { no = decodeURIComponent(m[1]); } catch (e) { return; }
+    if (!canCutRemote) { toast('บัญชีนี้ไม่มีสิทธิ์สั่งตัด (เฉพาะ ball / top)'); return; }
+    cutqFocus = no; cutqQ = ''; if ($('cutqSearch')) $('cutqSearch').value = ''; showTab('cutq');
+  }
+  window.addEventListener('hashchange', cutqFromHash);
+  setTimeout(cutqFromHash, 700);
+
   applyRoleUI();
+  applyCutUI();
   renderUserChip();
   // เปิดแอปมาเจอหน้า ใบคอนเฟิร์มงาน ก่อน (เฉพาะคนที่มีสิทธิ์) — คนอื่นเปิดหน้าแรกที่ตัวเองเข้าได้
   if (can('confirm')) setTimeout(() => showTab('confirm'), 0);   // เปิดแอปมาหน้า "ใบคอนเฟิร์มงาน" (เจ้าของสั่งเปลี่ยนจากแดชบอร์ด) — ไปแดชบอร์ดเองได้จากแท็บ
@@ -8316,7 +8439,7 @@ function bahtText(value) {
   // กันไม่ให้ยิง request ไปตอนยังไม่ได้ล็อกอิน ซึ่งจะโดนกฎความปลอดภัยของ Firestore ปฏิเสธ
   (window.__bsAuthReady || Promise.resolve()).then(function () {
     watchCloud('bills', 'bs_bills', renderHistory);
-    watchCloud('jobs', 'bs_jobs', renderJobHistory);
+    watchCloud('jobs', 'bs_jobs', () => { renderJobHistory(); if (canCutRemote) { try { renderCutq(); } catch (e) { console.error(e); } } });
     if (can('design')) watchCloud('designs', 'bs_designs', renderDesign);
     watchCloud('notifs', NOTIF_KEY, onNotifsChanged);
     watchCloud('wholesale', 'bs_wholesale', renderWholesaleHistory);
