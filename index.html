@@ -2861,6 +2861,117 @@ html body #jobHistory .jd .jd-irow:has(input:nth-child(2):last-child){grid-templ
 html body #jobHistory .jd .jd-edbtn{display:flex;gap:8px;margin-top:4px}
 html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:600;line-height:1.4}
 </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap">
+<style id="bs-theme-p11">
+/* p11 "Navy Cards" — โทนน้ำเงินเข้ม การ์ดมุมโค้ง เงานุ่ม (ออกแบบเอง แรงบันดาลใจจากสไตล์แอปการเงินที่เจ้าของร้านส่งมา) ซ้อนบน p10 */
+:root,:root[data-theme],:root[data-theme="dark"]{--ink:#0F1B3D;--navy:#0E1E5B;--muted:#6B7794;--line:#E3E9F6;--field-line:#D5DDF0;--yline:#E3E9F6;--ytint:#E5ECFF;--shadow-1:0 1px 2px rgba(15,27,61,.06);--shadow-2:0 8px 22px rgba(20,40,140,.12);--r-card:20px;--r-field:14px;--lime:#22C997;--cream:#fff;--sky:#E5ECFF;--pink:#FFE9F2;--lav:#E7E3FF;--surface:#fff;--bg:#EEF2FB;--field:#F3F6FD;--blue:#2447D6;--blue2:#1B2F9C;color-scheme:light}
+html,html body{background:#EEF2FB!important;background-image:none!important;color:var(--ink)!important;font-weight:500}
+html body header.top{background:transparent!important}
+html body .bver{background:#E5ECFF!important;color:#2447D6!important}
+html body .page-head h1{display:block;background:none;padding:0;font-size:24px}
+html body .page-head h1:after{display:none}
+html body #panel-wholesale .card:after,html body .dash-stat-card:after{display:none}
+/* การ์ด */
+html body .card,html body .dash-stat-card,html body .lock-card,html body .jc,html body li.jc,html body .owed-row,html body .dash-cat-item{background:#fff!important;border:0!important;border-radius:20px!important;box-shadow:0 1px 2px rgba(15,27,61,.05),0 6px 18px rgba(20,40,140,.06)!important;color:var(--ink)!important}
+html body .tdy{background:linear-gradient(150deg,#2A4FE0 0%,#1B2F9C 55%,#0E1E5B 100%)!important;color:#fff!important;border:0!important;border-radius:24px!important;box-shadow:0 14px 30px rgba(20,40,140,.28)!important}
+html body .tdy .tdy-t,html body .tdy b{color:#fff!important}
+html body .jc.st-pending{border-left:0!important}
+html body .jc:nth-child(3n+2),html body .jc:nth-child(3n+3){background:#fff!important}
+html body .jc .jc-ph{border:0!important;border-radius:14px!important;box-shadow:none!important}
+html body .jc-chip{background:#EEF2FB!important;border:0!important;color:#3B4A73!important;font-weight:600}
+html body .jc-chip.money{background:#DDF7EE!important;color:#0E8A66!important}
+html body .jc-chip.warn{background:#FFF1D6!important;color:#B36B00!important}
+html body .jc-chip.tg{background:#E5ECFF!important;color:#2447D6!important}
+html body .status-pill{border:0!important;box-shadow:none!important;font-weight:700!important;background:#FFF1D6!important;color:#B36B00!important}
+html body .status-pill.billdone,html body .status-pill.shipped,html body .status-pill.done{background:#DDF7EE!important;color:#0E8A66!important}
+html body .status-pill.filed{background:#E5ECFF!important;color:#2447D6!important}
+html body .status-pill.printed{background:#E7E3FF!important;color:#5B3FD6!important}
+html body .status-pill.pending{background:#FFE9F2!important;color:#C0306E!important}
+/* ช่องกรอก */
+html body .in,html body select,html body .txt,html body textarea,html body input[type=text],html body input[type=tel],html body input[type=number],html body input[type=date],html body input[type=search]{background:#F3F6FD!important;border:1.5px solid transparent!important;border-radius:14px!important;min-height:48px;font-weight:500;color:var(--ink)!important;box-shadow:none!important}
+html body .in:focus-within,html body select:focus-visible,html body .txt:focus-visible,html body textarea:focus-visible{border-color:#2447D6!important;box-shadow:0 0 0 3px rgba(36,71,214,.14)!important;background:#fff!important}
+html body label.f>span,html body .f>span{font-weight:600!important;color:#3B4A73!important}
+/* ปุ่ม */
+html body .btn,html body .jc-b,html body button.btn{background:#EEF2FB!important;color:#1B2F9C!important;border:0!important;border-radius:14px!important;box-shadow:none!important;font-weight:700!important;min-height:48px}
+html body .btn:active,html body .jc-b:active{transform:scale(.98);box-shadow:none!important}
+html body .btn.primary,html body .btn.good,html body .jc-b.main{background:linear-gradient(150deg,#2A4FE0,#1B2F9C)!important;color:#fff!important;box-shadow:0 8px 18px rgba(36,71,214,.28)!important}
+html body .btn.dark{background:#0E1E5B!important;color:#fff!important}
+html body .btn.danger,html body .btn.bad{background:#FFE5E2!important;color:#C0392B!important}
+html body .fold{border:0!important;border-radius:18px!important;background:#fff!important;box-shadow:0 1px 2px rgba(15,27,61,.05)!important}
+/* แท็บ / เมนู */
+html body .tabs button,html body .tab-trigger{border:0!important;border-radius:999px!important;background:#fff!important;color:#4A5675!important;font-weight:700;box-shadow:none!important}
+html body .tabs button[aria-selected="true"],html body .tab-group.has-active .tab-trigger{background:#1B2F9C!important;color:#fff!important}
+html body .bnav{background:#fff!important;border:0!important;border-radius:26px 26px 0 0!important;box-shadow:0 -6px 24px rgba(15,27,61,.08)!important}
+html body .btab{color:#8A94AD!important;font-weight:600}
+html body .btab[aria-selected="true"],html body .btab.on,html body .btab.active{color:#2447D6!important}
+html body .btab[aria-selected="true"] svg,html body .btab.on svg,html body .btab.active svg{background:#E5ECFF;border:0;border-radius:14px;padding:5px;box-sizing:content-box;box-shadow:none}
+html body .btab-fab .btab-fab-circle,html body .fab-newjob{background:#22C997!important;border:0!important;box-shadow:0 8px 18px rgba(34,201,151,.4)!important;color:#fff!important}
+html body .btab-fab .btab-fab-circle svg,html body .btab-fab .btab-fab-circle svg *,html body .fab-newjob svg,html body .fab-newjob svg *{color:#fff!important;stroke:#fff!important;background:none!important}
+html body .fab-newjob{border-radius:999px!important}
+html body .acd-card,html body .dash-tile,html body .dash-cat-card,html body .dash-rev-card,html body .ov-card,html body .price-card,html body .shopcard,html body .chat-card,html body .scan-card,html body .warn-tile,html body .blue-tile,html body .acc-sum,html body .bankin-sum{border:0!important;border-radius:20px!important;box-shadow:0 1px 2px rgba(15,27,61,.05),0 6px 18px rgba(20,40,140,.06)!important}
+html body .dash-tile,html body .dash-cat-card,html body .ci{background:#fff!important;border:0!important;border-radius:16px!important;box-shadow:0 1px 2px rgba(15,27,61,.05)!important}
+html body .acd-seg{background:#fff!important;border:0!important}
+html body ::selection{background:#C9D6FF;color:#0F1B3D}
+/* แก้วงแหวนเหลืองแท็บล่าง / การ์ดยอดเงิน / ขอบแถบเมนู */
+html body .btab .btab-ico,html body .btab.active .btab-ico{background:transparent!important;box-shadow:none!important;border:0!important;outline:0!important}
+html body .btab.active .btab-ico{background:#E5ECFF!important;color:#2447D6!important;border-radius:14px}
+html body .btab.active::after{background:#2447D6!important}
+html body .btab[aria-selected="true"] svg,html body .btab.on svg,html body .btab.active svg{background:none!important;padding:0!important;border:0!important}
+html body .btab-fab.active .btab-fab-circle{box-shadow:0 0 0 4px #fff,0 0 0 7px #C9D6FF,0 10px 18px rgba(34,201,151,.4)!important}
+html body .bnav,html body nav.bnav{border-top:0!important;outline:0!important}
+html body .bkc,html body .wk-bal,html body .bell-bal,html body .bkc-hero{background:linear-gradient(150deg,#2A4FE0 0%,#1B2F9C 55%,#0E1E5B 100%)!important;color:#fff!important;border:0!important}
+html body .bkc-bal span,html body .bkc-bal b,html body .bkc-name,html body .bkc-when{color:#fff!important}
+/* ผลคำนวณ / การ์ดยอดเงิน → น้ำเงินเข้มตามธีม */
+html body .result,html body .hero{background:linear-gradient(150deg,#2A4FE0 0%,#1B2F9C 55%,#0E1E5B 100%)!important;color:#fff!important;border:0!important;border-radius:20px!important;box-shadow:0 12px 26px rgba(20,40,140,.25)!important}
+html body .result *,html body .hero *{color:inherit}
+html body .res-actions .btn{background:rgba(255,255,255,.14)!important;color:#fff!important}
+html body .res-actions .btn.primary,html body .res-actions .btn:first-child{background:#fff!important;color:#1B2F9C!important}
+/* หลักการ UI: เป้าสัมผัส ≥44px, ระยะห่างตาม 8pt, โฟกัสชัด, ลดแอนิเมชันตามระบบ */
+html body button,html body .btn,html body select,html body .btab{min-height:44px}
+html body .jc-b,html body .jc button{min-width:44px;min-height:44px}
+html body h1{font-size:24px;line-height:1.25;font-weight:800}
+html body h2{font-size:18px;line-height:1.3;font-weight:700}
+html body .hint,html body small{color:#5A6788!important}
+html body :is(a,button,[role=button],summary,.btab,.btn,input,select,textarea):focus-visible{outline:3px solid #2447D6!important;outline-offset:2px}
+html body .card{padding:18px}
+html body .btn,html body .jc-b,html body .btab,html body .card,html body .jc{transition:transform .12s ease,background-color .15s ease,box-shadow .15s ease}
+@media (prefers-reduced-motion:reduce){html body *{transition:none!important;animation:none!important}}
+html body header.top{background:#EEF2FB!important;backdrop-filter:none}
+/* ตามเช็กลิสต์ UI/UX Pro Max: คอนทราสต์ ≥4.5:1, ตัวอักษรเล็กสุด 12px, placeholder อ่านออก */
+html body .btab{color:#5A6788!important}
+html body .btab-label{font-size:12px!important;color:#5A6788}
+html body .btab.active .btab-label,html body .btab[aria-selected="true"] .btab-label{color:#1B2F9C!important}
+html body .jc-chip,html body .status-pill,html body .chip{font-size:12px!important}
+html body ::placeholder{color:#6B7794!important;opacity:1}
+html body .muted,html body .sub,html body .jc-sub{color:#5A6788!important}
+/* กระชับระยะห่าง: เดิมการ์ดเป็น grid gap + margin ซ้อนกัน เลยห่างเกินไป */
+html body .card{padding:16px!important;row-gap:4px!important}
+html body .viz-head{margin-bottom:4px!important}
+html body .viz-head h2{margin:0!important}
+html body .tip-q{min-height:28px!important;min-width:28px!important;position:relative}
+html body .tip-q::after{content:"";position:absolute;inset:-8px}
+html body label.f{margin-bottom:6px!important}
+html body label.f>span{margin-bottom:4px!important}
+html body .jf-filt{margin:4px 0 8px!important}
+html body ul>li.jc{margin-bottom:0!important}
+html body .jc{padding:12px!important;row-gap:4px!important}
+html body .jc-act{margin-top:2px!important}
+html body .page-head{margin-bottom:8px!important}
+/* หน้าใบคอนเฟิร์ม: ย่อหัว/ค้นหา/ตัวกรองให้เห็นการ์ดงานทันทีที่เปิด */
+html body .viz-head h2{font-size:16px!important}
+html body label.hist-search>span{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+html body label.hist-search{margin:0 0 6px!important}
+html body label.hist-search .txt,html body .jf-filt select{min-height:40px!important;height:40px;font-size:14px}
+html body .jf-filt{margin:0 0 6px!important}
+html body .jc-top{padding-bottom:0}
+html body .jc-act{padding-top:0!important;margin-top:0!important}
+html body .jc{padding:10px 12px!important}
+/* ฟอนต์: Noto Sans Thai ทั้งแอป */
+html body{--bs-font:'Noto Sans Thai','Noto Sans',system-ui,sans-serif}
+html body,html body :where(button,input,select,textarea,h1,h2,h3,h4,h5,h6,p,span,div,label,li,td,th,a,b,strong,em,small,summary,legend){font-family:'Noto Sans Thai','Noto Sans',system-ui,-apple-system,'Segoe UI',sans-serif!important}
+html body :where(code,pre,kbd,samp){font-family:ui-monospace,Menlo,Consolas,monospace!important}
+html body :where(svg,svg *){font-family:inherit}
+</style>
 </head>
 <body>
 <div id="lockScreen" class="lock-screen no-print">
@@ -2930,7 +3041,7 @@ html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:60
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.21</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.22</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
@@ -3098,7 +3209,7 @@ html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:60
               <div class="ratio-row">
                 <label class="rlock"><input type="checkbox" id="rlock"><span>ล็อกสัดส่วน กว้าง:สูง</span></label>
                 <button type="button" id="rimgBtn">ใช้สัดส่วนจากรูปงาน</button>
-                <input type="file" id="rimg" accept="image/*" hidden>
+                <input type="file" id="rimg" accept="image/*" hidden aria-label="เลือกรูป">
               </div>
               <div class="rthumb-wrap"><canvas id="rthumb" hidden aria-label="รูปงานที่ตัดขอบแล้ว"></canvas><p class="hint" id="rhint" hidden></p></div>
               <div class="row2">
@@ -3622,7 +3733,7 @@ html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:60
           <h2 id="wholesalehist-h">ประวัติใบราคาส่ง</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้ (แยกจากประวัติเอกสาร/ใบเสร็จ)</span>
         </div>
-        <div class="whadd no-print"><input class="txt" id="whAddName" type="text" autocomplete="off" placeholder="พิมพ์ชื่อร้านราคาส่ง เพื่อเพิ่มการ์ด"><button class="btn good" id="whAddBtn" type="button">＋ เพิ่มร้าน</button></div>
+        <div class="whadd no-print"><input class="txt" id="whAddName" type="text" autocomplete="off" placeholder="พิมพ์ชื่อร้านราคาส่ง เพื่อเพิ่มการ์ด" aria-label="ชื่อร้านราคาส่ง"><button class="btn good" id="whAddBtn" type="button">＋ เพิ่มร้าน</button></div>
         <p class="hint no-print" style="margin:-4px 0 12px">เพิ่มชื่อร้านไว้ก่อน แล้วเวลาลูกค้าสั่ง คีย์งานที่หน้า “สั่งงาน” ตามปกติ งานจะเข้าการ์ดของร้านนั้นเอง</p>
         <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="whHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
         <div id="wholesaleHistory"></div>
@@ -3743,7 +3854,7 @@ html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:60
         <h2 class="cutq-h">✂ สั่งตัดจากมือถือ</h2>
         <p class="hint cutq-note">สแกน QR บนใบงานหรือเลือกงานด้านล่าง → กด “ส่งตัด” (ยืนยัน 2 ครั้ง) · เครื่องในร้านต้องเปิด Illustrator + แผง Sign Tools และเปิด “รับคำสั่งตัดจากมือถือ” ไว้ · ใส่วัสดุก่อนสั่งเสมอ</p>
         <button type="button" class="btn primary cutq-scan" id="cutqScan">📷 สแกน QR / บาร์โค้ดใบงาน</button>
-        <input class="txt" id="cutqSearch" type="search" placeholder="ค้นหาเลขใบงาน / ชื่อลูกค้า" autocomplete="off">
+        <input class="txt" id="cutqSearch" type="search" placeholder="ค้นหาเลขใบงาน / ชื่อลูกค้า" autocomplete="off" aria-label="ค้นหาเลขใบงานหรือชื่อลูกค้า">
         <div id="cutqList" class="cutq-list"></div>
       </div>
     </section>
@@ -3793,7 +3904,7 @@ html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:60
         <div class="preview-col">
           <h2 class="no-print">ข้อความที่สร้าง</h2>
           <div class="card">
-            <textarea id="trackMessage" rows="9" readonly placeholder="ข้อความที่สร้างจะแสดงที่นี่…" style="width:100%;resize:vertical;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--field);font:inherit;color:inherit"></textarea>
+            <textarea id="trackMessage" rows="9" readonly placeholder="ข้อความที่สร้างจะแสดงที่นี่…" style="width:100%;resize:vertical;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--field);font:inherit;color:inherit" aria-label="ข้อความแจ้งพัสดุ"></textarea>
             <div class="actions" style="margin-top:12px">
               <button class="btn" id="track-copy" type="button">📋 คัดลอกข้อความ</button>
             </div>
@@ -4185,8 +4296,8 @@ html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:60
       <div class="ds-wrap no-print">
         <div id="dsListView">
           <div class="ds-comp card" id="dsNew">
-            <textarea id="dsNewTxt" rows="4" placeholder="จดโน้ตงานใหม่ เช่น ชื่อลูกค้า เบอร์ รายละเอียดงาน แล้วแนบรูปแชท/แบบได้ในช่องเดียว"></textarea>
-            <textarea id="dsNewAddr" class="ds-addr" rows="2" placeholder="ที่อยู่จัดส่ง (ถ้ามี)"></textarea>
+            <textarea id="dsNewTxt" rows="4" placeholder="จดโน้ตงานใหม่ เช่น ชื่อลูกค้า เบอร์ รายละเอียดงาน แล้วแนบรูปแชท/แบบได้ในช่องเดียว" aria-label="โน้ตงานใหม่"></textarea>
+            <textarea id="dsNewAddr" class="ds-addr" rows="2" placeholder="ที่อยู่จัดส่ง (ถ้ามี)" aria-label="ที่อยู่จัดส่ง"></textarea>
             <div class="ds-ph" id="dsNewPh"></div>
             <div class="ds-cbar">
               <label class="ds-btn">📷 แนบรูป<input type="file" accept="image/*" multiple hidden id="dsNewFile"></label>
@@ -4194,7 +4305,7 @@ html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:60
             </div>
           </div>
           <div class="ds-tools">
-            <input class="txt" id="dsSearch" type="search" placeholder="ค้นหาชื่อ / ข้อความ" autocomplete="off">
+            <input class="txt" id="dsSearch" type="search" placeholder="ค้นหาชื่อ / ข้อความ" autocomplete="off" aria-label="ค้นหาโน้ต">
           </div>
           <div id="dsFeed"></div>
         </div>
@@ -4213,7 +4324,7 @@ html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:60
       <div class="card chat-card no-print">
         <div class="chat-shell" id="chatShell">
           <aside class="chat-list-pane">
-            <div class="chat-list-head"><input class="txt" id="chatSearch" type="search" placeholder="ค้นหาชื่อลูกค้า / ข้อความ" autocomplete="off"><small class="chat-quota" id="chatQuota"></small><button type="button" class="btn small push-btn" data-push-enable hidden>🔔 เปิดแจ้งเตือนเด้งบนมือถือ</button><button type="button" class="btn small push-btn" data-push-test hidden>🔔 ส่งแจ้งเตือนทดสอบ</button><small class="push-status" data-push-status></small></div>
+            <div class="chat-list-head"><input class="txt" id="chatSearch" type="search" placeholder="ค้นหาชื่อลูกค้า / ข้อความ" autocomplete="off" aria-label="ค้นหาแชต"><small class="chat-quota" id="chatQuota"></small><button type="button" class="btn small push-btn" data-push-enable hidden>🔔 เปิดแจ้งเตือนเด้งบนมือถือ</button><button type="button" class="btn small push-btn" data-push-test hidden>🔔 ส่งแจ้งเตือนทดสอบ</button><small class="push-status" data-push-status></small></div>
             <div class="chat-list" id="chatList"></div>
           </aside>
           <div class="chat-conv">
@@ -4230,9 +4341,9 @@ html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:60
               <div class="chat-plus" id="chatPlus" hidden></div>
               <form class="chat-send" id="chatSendForm">
                 <button type="button" class="chat-attach" id="chatPlusBtn" aria-label="เพิ่มเติม: รูป ไฟล์ การ์ด คูปอง" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-                <input type="file" id="chatCamInput" accept="image/*" capture="environment" hidden>
-                <input type="file" id="chatMediaInput" accept="image/*,video/*" multiple hidden>
-                <input type="file" id="chatFileInput" hidden>
+                <input type="file" id="chatCamInput" accept="image/*" capture="environment" hidden aria-label="ถ่ายรูปส่งแชต">
+                <input type="file" id="chatMediaInput" accept="image/*,video/*" multiple hidden aria-label="เลือกรูปหรือวิดีโอส่งแชต">
+                <input type="file" id="chatFileInput" hidden aria-label="เลือกไฟล์ส่งแชต">
                 <textarea id="chatInput" rows="1" placeholder="พิมพ์ข้อความตอบลูกค้า..." aria-label="ข้อความ"></textarea>
                 <button type="button" class="chat-attach chat-mic" id="chatMicBtn" aria-label="พิมพ์ด้วยเสียง" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button>
                 <button class="btn primary chat-sendbtn" type="submit" id="chatSendBtn" aria-label="ส่ง"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/></svg><span>ส่ง</span></button>
