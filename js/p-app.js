@@ -8405,12 +8405,11 @@ function bahtText(value) {
       '<div class="cutq-tbl"><span></span><span class="h">ความเร็ว cm/s</span><span class="h">แรงกด</span><span class="h">เร่ง</span>' +
         '<span class="r"><i style="background:#ff4fa3"></i>Kiss</span>' + inp('kS') + inp('kF') + inp('kA') +
         '<span class="r"><i style="background:#2fd27a"></i>Die</span>' + inp('dS') + inp('dF') + inp('dA') + '</div>' +
-      '<div><div class="cutq-est" style="margin-bottom:6px">ลำดับตัด</div><div class="cutq-seg">' + seg('kiss', 'Kiss ทั้งแผ่นก่อน<br>แล้ว Die') + seg('piece', 'ทีละชิ้น<br>(Kiss→Die ทีละดวง)') + '</div></div>' +
-      '<label class="cutq-sw' + (mkChg ? ' chg' : '') + (hasMk ? '' : ' dis') + '"><span>อ่านมาร์คก่อนตัด<small>' + (hasMk ? 'ให้เครื่องอ่านจุดมาร์คแล้วตัดตามตำแหน่ง' : 'ไฟล์นี้ไม่มีมาร์ค') + '</small></span><input type="checkbox" class="cutq-in" data-key="' + esc(key) + '" data-k="useMk"' + (e.mk && hasMk ? ' checked' : '') + (hasMk ? '' : ' disabled') + '></label>' +
+      '<div class="cutq-seg">' + seg('kiss', 'Kiss ก่อน<br>แล้ว Die ทั้งแผ่น') + seg('piece', 'ตัดทีละชิ้น<br>Kiss→Die ต่อดวง') + '</div>' +
+      '<label class="cutq-sw' + (mkChg ? ' chg' : '') + (hasMk ? '' : ' dis') + '"><span>อ่านมาร์คก่อนตัด' + (hasMk ? '' : ' (ไม่มีมาร์ค)') + '</span><input type="checkbox" class="cutq-in" data-key="' + esc(key) + '" data-k="useMk"' + (e.mk && hasMk ? ' checked' : '') + (hasMk ? '' : ' disabled') + '></label>' +
       '<div class="cutq-acts"><button type="button" class="btn cutq-sim" data-key="' + esc(key) + '">▶ จำลองการตัด</button><button type="button" class="btn cutq-rst" data-key="' + esc(key) + '">↺ ค่าเดิม</button></div>' +
       '<div class="cutq-est" id="est-' + esc(key) + '">' + cutqEst(cut, key) + '</div>' +
-      '<div class="cutq-fx"><span>หมุน 90°: <b>' + (t.rotate ? 'ใช่' : 'ไม่') + '</b></span><span>กลับซ้าย-ขวา: <b>' + (t.mirror ? 'ใช่' : 'ไม่') + '</b></span><span>ตัดเกิน: <b>' + esc(t.overcut == null ? '—' : t.overcut) + ' มม.</b></span></div>' +
-      '<small class="n">ปรับเฉพาะการส่งตัดครั้งนี้ ไม่บันทึกใบงาน (ช่องสีเหลือง = ต่างจากใบงาน) · เครื่องในร้านต้องใช้ Sign Tools 1.13.76 ขึ้นไป</small></div>';
+      '</div>';
   }
   function cutqPaths(cut) {
     const out = [];
@@ -8442,7 +8441,7 @@ function bahtText(value) {
     const e = cutqEff(cut, key), ps = cutqPaths(cut); let tk = 0, td = 0, lk = 0, ld = 0;
     ps.forEach(it => { const L = cutqLen(cutqSample(it)); if (it.k === 'die') { ld += L; td += L / ((+e.d.dS || 1) * 10); } else { lk += L; tk += L / ((+e.d.kS || 1) * 10); } });
     const f = s => { s = Math.round(s); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
-    return 'ระยะตัด Kiss ' + (lk / 1000).toFixed(2) + ' ม. · Die ' + (ld / 1000).toFixed(2) + ' ม. → เวลาตัดประมาณ ' + f(tk + td) + ' นาที (Kiss ' + f(tk) + ' · Die ' + f(td) + ') ไม่รวมช่วงยกปากกา';
+    return 'เวลาตัดประมาณ ' + f(tk + td) + ' นาที · Kiss ' + (lk / 1000).toFixed(1) + ' ม. · Die ' + (ld / 1000).toFixed(1) + ' ม.';
   }
   function cutqSim(key, cut) {
     const cv = document.querySelector('canvas.cutq-cv[data-key="' + (window.CSS && CSS.escape ? CSS.escape(key) : key) + '"]'); if (!cv) return;
@@ -8478,10 +8477,10 @@ function bahtText(value) {
     }
     requestAnimationFrame(frame);
   }
-  const cutqOpen = {};
+  let cutqModalKey = '';
   function renderCutq() {
     const box = $('cutqList'); if (!box) return;
-    { const ae = document.activeElement; if (ae && ae.classList && ae.classList.contains('cutq-in') && box.contains(ae)) return; }   // กำลังพิมพ์ค่า → ไม่วาดใหม่ทับ
+    { const ae = document.activeElement; if (ae && ae.classList && ae.classList.contains('cutq-in') && ae.closest('#cutqList,#cutqModal')) return; }   // กำลังพิมพ์ค่า → ไม่วาดใหม่ทับ
     cutqSimTok++;
     if (!canCutRemote) { box.innerHTML = '<div class="cutq-empty">บัญชีนี้ไม่มีสิทธิ์สั่งตัด</div>'; return; }
     const all = store.get('bs_jobs', []) || [];
@@ -8508,16 +8507,31 @@ function bahtText(value) {
           return '<div class="cutq-file">' + thumb + '<div><div class="cutq-fn">' + esc(f.n || 'ไฟล์') + '</div><div class="cutq-meta">Kiss ' + c.k + ' เส้น · Die ' + c.d + ' เส้น' +
             (f.cut.savedAt ? '<br>สแกน ' + cutqClock(f.cut.savedAt) : '') + (f.cut.sentAt ? ' · ตัดล่าสุด ' + cutqClock(f.cut.sentAt) : '') + '</div></div>' +
             (st ? '<div class="cutq-st ' + st.c + '">' + esc(st.t) + '</div>' : '') +
-            '<button type="button" class="btn cutq-pv" data-key="' + esc(key) + '">' + (cutqOpen[key] ? '▲ ซ่อนพรีวิว' : '👁 พรีวิว / ค่าตัด') + '</button>' +
-            (cutqOpen[key] ? '<div class="cutq-prev"><canvas class="cutq-cv" width="640" height="380" data-key="' + esc(key) + '"></canvas><div class="cutq-leg"><span style="color:#ff4fa3">▬ Kiss</span> <span style="color:#2fd27a">▬ Die</span> <span style="color:#4da3ff">■ มาร์ค</span></div>' + cutqVals(f.cut, key) + '</div>' : '') +
-            '<button type="button" class="btn primary cutq-go' + (arm ? ' arm' : '') + '" data-id="' + esc(j.id) + '" data-fi="' + fi + '"' + (busy ? ' disabled' : '') + '>' +
-            (arm ? 'กดอีกครั้งเพื่อสั่งตัดจริง' : '✂ ส่งตัด' + (Object.keys(cutqDiff(f.cut, key)).length ? ' (ใช้ค่าที่ปรับ)' : '')) + '</button></div>';
+            '<button type="button" class="btn cutq-pv" data-key="' + esc(key) + '">👁 พรีวิว / ค่าตัด / ส่งตัด</button></div>';
         }).join('') + '</div>';
     }).join('');
     box.innerHTML = html;
-    const byKey = {};
-    rows.forEach(({j, rec}) => rec.files.forEach((f, fi) => { if (f && f.cut) byKey[j.id + '|' + fi] = f.cut; }));
-    box.querySelectorAll('canvas.cutq-cv').forEach(cv => { const c = byKey[cv.dataset.key]; if (c) { try { cutqDraw(cv, c); } catch (e) { console.error(e); } } });
+    renderCutqModal();
+  }
+  function renderCutqModal() {      // หน้าต่างเด้ง: พรีวิว + ปรับค่า + ส่งตัด
+    let m = $('cutqModal');
+    if (!cutqModalKey || !canCutRemote) { if (m) m.classList.remove('show'); document.body.classList.remove('cutq-lock'); return; }
+    const parts = cutqModalKey.split('|'), j = (store.get('bs_jobs', []) || []).find(x => String(x.id) === parts[0]), rec = j && cutqParse(j), f = rec && rec.files[+parts[1]];
+    if (!f || !f.cut || !f.cut.snap) { cutqModalKey = ''; if (m) m.classList.remove('show'); document.body.classList.remove('cutq-lock'); return; }
+    if (!m) { m = document.createElement('div'); m.id = 'cutqModal'; m.className = 'cutq-modal'; document.body.appendChild(m); }
+    { const ae = document.activeElement; if (ae && ae.classList && ae.classList.contains('cutq-in') && m.contains(ae)) return; }
+    const key = cutqModalKey, st = cutqStatus(j.cutReq, f), busy = cutqBusy(j.cutReq), arm = cutqArmed === key, c = cutqCount(f.cut);
+    const nchg = Object.keys(cutqDiff(f.cut, key)).length;
+    m.innerHTML = '<div class="cutq-sheet" role="dialog" aria-modal="true"><div class="cutq-mh"><div><b>' + esc(j.no || '—') + '</b><span>' + esc(j.jName || '') + '</span></div><button type="button" class="cutq-x" aria-label="ปิด">✕</button></div>' +
+      '<div class="cutq-mfn">' + esc(f.n || 'ไฟล์') + ' · Kiss ' + c.k + ' · Die ' + c.d + '</div>' +
+      '<canvas class="cutq-cv" width="640" height="380" data-key="' + esc(key) + '"></canvas>' +
+      '<div class="cutq-leg"><span style="color:#ff4fa3">▬ Kiss</span> <span style="color:#2fd27a">▬ Die</span> <span style="color:#4da3ff">■ มาร์ค</span></div>' +
+      cutqVals(f.cut, key) +
+      (st ? '<div class="cutq-st ' + st.c + '">' + esc(st.t) + '</div>' : '') +
+      '<button type="button" class="btn primary cutq-go' + (arm ? ' arm' : '') + '" data-id="' + esc(j.id) + '" data-fi="' + parts[1] + '"' + (busy ? ' disabled' : '') + '>' +
+      (arm ? 'กดอีกครั้งเพื่อสั่งตัดจริง' : '✂ ส่งตัด' + (nchg ? ' (ใช้ค่าที่ปรับ)' : '')) + '</button></div>';
+    m.classList.add('show'); document.body.classList.add('cutq-lock');
+    const cv = m.querySelector('canvas.cutq-cv'); if (cv) { try { cutqDraw(cv, f.cut); } catch (e) { console.error(e); } }
   }
   function cutqCutOf(key) {
     const m = String(key).split('|'), j = (store.get('bs_jobs', []) || []).find(x => String(x.id) === m[0]); if (!j) return null;
@@ -8538,9 +8552,11 @@ function bahtText(value) {
     } catch (e) { toast('ส่งคำสั่งไม่สำเร็จ: ' + (e && e.message || e)); }
   }
   if ($('cutqList')) {
-    $('cutqList').addEventListener('click', e => {
+    document.addEventListener('click', e => {
+      if (!e.target.closest || !e.target.closest('#cutqList,#cutqModal')) return;
+      if (e.target.closest('.cutq-x') || e.target.id === 'cutqModal') { cutqModalKey = ''; cutqSimTok++; renderCutq(); return; }
       const pv = e.target.closest('.cutq-pv');
-      if (pv) { cutqOpen[pv.dataset.key] = !cutqOpen[pv.dataset.key]; renderCutq(); return; }
+      if (pv) { cutqModalKey = pv.dataset.key; cutqSimTok++; renderCutq(); return; }
       const sm = e.target.closest('.cutq-sim');
       if (sm) { const c = cutqCutOf(sm.dataset.key); if (c) cutqSim(sm.dataset.key, c); return; }
       const rs = e.target.closest('.cutq-rst');
@@ -8552,7 +8568,8 @@ function bahtText(value) {
       const j = (store.get('bs_jobs', []) || []).find(x => String(x.id) === b.dataset.id);
       renderCutq(); if (j) cutqSend(j, +b.dataset.fi);
     });
-    $('cutqList').addEventListener('input', e => {
+    document.addEventListener('input', e => {
+      if (!e.target.closest || !e.target.closest('#cutqModal')) return;
       const t = e.target; if (!t.classList || !t.classList.contains('cutq-in')) return;
       const key = t.dataset.key, k = t.dataset.k, c = cutqCutOf(key); if (!c) return;
       const o = cutqOv[key] || (cutqOv[key] = {});
@@ -8574,6 +8591,44 @@ function bahtText(value) {
     if (!canCutRemote) return;
     ['tab-cutq', 'sheetCutq', 'bnavTaxTrigger'].forEach(id => { if ($(id)) $(id).hidden = false; });
   }
+  // ---- สแกน QR/บาร์โค้ดบนใบงานจากในแอป (ใช้ BarcodeDetector ของเบราว์เซอร์ + กล้องหลัง) ----
+  function cutqParseCode(txt) {
+    txt = String(txt || '').trim(); if (!txt) return '';
+    const m = /#cut\/(.+)$/.exec(txt);
+    if (m) { try { return decodeURIComponent(m[1]).trim(); } catch (e) { return ''; } }
+    return /^https?:\/\//i.test(txt) ? '' : txt;      // บาร์โค้ด = เลขใบงานตรงๆ · ลิงก์อื่นที่ไม่ใช่ใบงาน = ไม่เอา
+  }
+  let cutqCamStream = null, cutqCamTimer = 0;
+  function cutqCamStop() {
+    clearInterval(cutqCamTimer); cutqCamTimer = 0;
+    if (cutqCamStream) { try { cutqCamStream.getTracks().forEach(t => t.stop()); } catch (e) {} cutqCamStream = null; }
+    const o = $('cutqCam'); if (o) { o.classList.remove('show'); const v = o.querySelector('video'); if (v) v.srcObject = null; }
+  }
+  async function cutqCamStart() {
+    if (!canCutRemote) { toast('บัญชีนี้ไม่มีสิทธิ์สั่งตัด'); return; }
+    if (!('BarcodeDetector' in window) || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { toast('เบราว์เซอร์นี้สแกนในแอปไม่ได้ — ใช้กล้องมือถือสแกน QR บนใบงานแทน หรือพิมพ์เลขใบงานค้นหา'); return; }
+    let det; try { det = new BarcodeDetector({formats: ['qr_code', 'code_128']}); } catch (e) { try { det = new BarcodeDetector(); } catch (e2) { toast('เปิดตัวสแกนไม่ได้'); return; } }
+    let o = $('cutqCam');
+    if (!o) {
+      o = document.createElement('div'); o.id = 'cutqCam'; o.className = 'cutq-cam';
+      o.innerHTML = '<div class="bar"><span>เล็งที่ QR หรือบาร์โค้ดบนใบงาน</span><button type="button" id="cutqCamX">ปิด</button></div><video playsinline muted></video><div class="frame"></div>';
+      document.body.appendChild(o); o.querySelector('#cutqCamX').addEventListener('click', cutqCamStop);
+    }
+    try {
+      cutqCamStream = await navigator.mediaDevices.getUserMedia({video: {facingMode: {ideal: 'environment'}}, audio: false});
+    } catch (e) { toast('เปิดกล้องไม่ได้ — อนุญาตการใช้กล้องให้เบราว์เซอร์ก่อน'); return; }
+    const v = o.querySelector('video'); v.srcObject = cutqCamStream; o.classList.add('show');
+    try { await v.play(); } catch (e) {}
+    let busy = false;
+    cutqCamTimer = setInterval(async () => {
+      if (busy || !v.videoWidth) return; busy = true;
+      try {
+        const r = await det.detect(v);
+        for (const b of r || []) { const no = cutqParseCode(b.rawValue); if (no) { cutqCamStop(); cutqFocus = no; cutqQ = ''; if ($('cutqSearch')) $('cutqSearch').value = ''; renderCutq(); toast('พบใบงาน ' + no); return; } }
+      } catch (e) {} finally { busy = false; }
+    }, 250);
+  }
+  if ($('cutqScan')) $('cutqScan').addEventListener('click', cutqCamStart);
   // เปิดจาก QR บนใบงาน: https://app.ballsticker.co.th/#cut/<เลขใบงาน>
   function cutqFromHash() {
     const m = /^#cut\/(.+)$/.exec(location.hash || ''); if (!m || !currentUser) return;
