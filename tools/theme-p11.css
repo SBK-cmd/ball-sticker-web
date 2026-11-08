@@ -1,0 +1,58 @@
+/* p11 "Navy Cards" — โทนน้ำเงินเข้ม การ์ดมุมโค้ง เงานุ่ม (ออกแบบเอง แรงบันดาลใจจากสไตล์แอปการเงินที่เจ้าของร้านส่งมา) ซ้อนบน p10 */
+:root,:root[data-theme],:root[data-theme="dark"]{--ink:#0F1B3D;--navy:#0E1E5B;--muted:#6B7794;--line:#E3E9F6;--field-line:#D5DDF0;--yline:#E3E9F6;--ytint:#E5ECFF;--shadow-1:0 1px 2px rgba(15,27,61,.06);--shadow-2:0 8px 22px rgba(20,40,140,.12);--r-card:20px;--r-field:14px;--lime:#22C997;--cream:#fff;--sky:#E5ECFF;--pink:#FFE9F2;--lav:#E7E3FF;--surface:#fff;--bg:#EEF2FB;--field:#F3F6FD;--blue:#2447D6;--blue2:#1B2F9C;color-scheme:light}
+html,html body{background:#EEF2FB!important;background-image:none!important;color:var(--ink)!important;font-weight:500}
+html body header.top{background:transparent!important}
+html body .bver{background:#E5ECFF!important;color:#2447D6!important}
+html body .page-head h1{display:block;background:none;padding:0;font-size:24px}
+html body .page-head h1:after{display:none}
+html body #panel-wholesale .card:after,html body .dash-stat-card:after{display:none}
+/* การ์ด */
+html body .card,html body .dash-stat-card,html body .lock-card,html body .jc,html body li.jc,html body .owed-row,html body .dash-cat-item{background:#fff!important;border:0!important;border-radius:20px!important;box-shadow:0 1px 2px rgba(15,27,61,.05),0 6px 18px rgba(20,40,140,.06)!important;color:var(--ink)!important}
+html body .tdy{background:linear-gradient(150deg,#2A4FE0 0%,#1B2F9C 55%,#0E1E5B 100%)!important;color:#fff!important;border:0!important;border-radius:24px!important;box-shadow:0 14px 30px rgba(20,40,140,.28)!important}
+html body .tdy .tdy-t,html body .tdy b{color:#fff!important}
+html body .jc.st-pending{border-left:0!important}
+html body .jc:nth-child(3n+2),html body .jc:nth-child(3n+3){background:#fff!important}
+html body .jc .jc-ph{border:0!important;border-radius:14px!important;box-shadow:none!important}
+html body .jc-chip{background:#EEF2FB!important;border:0!important;color:#3B4A73!important;font-weight:600}
+html body .jc-chip.money{background:#DDF7EE!important;color:#0E8A66!important}
+html body .jc-chip.warn{background:#FFF1D6!important;color:#B36B00!important}
+html body .jc-chip.tg{background:#E5ECFF!important;color:#2447D6!important}
+html body .status-pill{border:0!important;box-shadow:none!important;font-weight:700!important;background:#FFF1D6!important;color:#B36B00!important}
+html body .status-pill.billdone,html body .status-pill.shipped,html body .status-pill.done{background:#DDF7EE!important;color:#0E8A66!important}
+html body .status-pill.filed{background:#E5ECFF!important;color:#2447D6!important}
+html body .status-pill.printed{background:#E7E3FF!important;color:#5B3FD6!important}
+html body .status-pill.pending{background:#FFE9F2!important;color:#C0306E!important}
+/* ช่องกรอก */
+html body .in,html body select,html body .txt,html body textarea,html body input[type=text],html body input[type=tel],html body input[type=number],html body input[type=date],html body input[type=search]{background:#F3F6FD!important;border:1.5px solid transparent!important;border-radius:14px!important;min-height:48px;font-weight:500;color:var(--ink)!important;box-shadow:none!important}
+html body .in:focus-within,html body select:focus-visible,html body .txt:focus-visible,html body textarea:focus-visible{border-color:#2447D6!important;box-shadow:0 0 0 3px rgba(36,71,214,.14)!important;background:#fff!important}
+html body label.f>span,html body .f>span{font-weight:600!important;color:#3B4A73!important}
+/* ปุ่ม */
+html body .btn,html body .jc-b,html body button.btn{background:#EEF2FB!important;color:#1B2F9C!important;border:0!important;border-radius:14px!important;box-shadow:none!important;font-weight:700!important;min-height:48px}
+html body .btn:active,html body .jc-b:active{transform:scale(.98);box-shadow:none!important}
+html body .btn.primary,html body .btn.good,html body .jc-b.main{background:linear-gradient(150deg,#2A4FE0,#1B2F9C)!important;color:#fff!important;box-shadow:0 8px 18px rgba(36,71,214,.28)!important}
+html body .btn.dark{background:#0E1E5B!important;color:#fff!important}
+html body .btn.danger,html body .btn.bad{background:#FFE5E2!important;color:#C0392B!important}
+html body .fold{border:0!important;border-radius:18px!important;background:#fff!important;box-shadow:0 1px 2px rgba(15,27,61,.05)!important}
+/* แท็บ / เมนู */
+html body .tabs button,html body .tab-trigger{border:0!important;border-radius:999px!important;background:#fff!important;color:#4A5675!important;font-weight:700;box-shadow:none!important}
+html body .tabs button[aria-selected="true"],html body .tab-group.has-active .tab-trigger{background:#1B2F9C!important;color:#fff!important}
+html body .bnav{background:#fff!important;border:0!important;border-radius:26px 26px 0 0!important;box-shadow:0 -6px 24px rgba(15,27,61,.08)!important}
+html body .btab{color:#8A94AD!important;font-weight:600}
+html body .btab[aria-selected="true"],html body .btab.on,html body .btab.active{color:#2447D6!important}
+html body .btab[aria-selected="true"] svg,html body .btab.on svg,html body .btab.active svg{background:#E5ECFF;border:0;border-radius:14px;padding:5px;box-sizing:content-box;box-shadow:none}
+html body .btab-fab .btab-fab-circle,html body .fab-newjob{background:#22C997!important;border:0!important;box-shadow:0 8px 18px rgba(34,201,151,.4)!important;color:#fff!important}
+html body .btab-fab .btab-fab-circle svg,html body .btab-fab .btab-fab-circle svg *,html body .fab-newjob svg,html body .fab-newjob svg *{color:#fff!important;stroke:#fff!important;background:none!important}
+html body .fab-newjob{border-radius:999px!important}
+html body .acd-card,html body .dash-tile,html body .dash-cat-card,html body .dash-rev-card,html body .ov-card,html body .price-card,html body .shopcard,html body .chat-card,html body .scan-card,html body .warn-tile,html body .blue-tile,html body .acc-sum,html body .bankin-sum{border:0!important;border-radius:20px!important;box-shadow:0 1px 2px rgba(15,27,61,.05),0 6px 18px rgba(20,40,140,.06)!important}
+html body .dash-tile,html body .dash-cat-card,html body .ci{background:#fff!important;border:0!important;border-radius:16px!important;box-shadow:0 1px 2px rgba(15,27,61,.05)!important}
+html body .acd-seg{background:#fff!important;border:0!important}
+html body ::selection{background:#C9D6FF;color:#0F1B3D}
+/* แก้วงแหวนเหลืองแท็บล่าง / การ์ดยอดเงิน / ขอบแถบเมนู */
+html body .btab .btab-ico,html body .btab.active .btab-ico{background:transparent!important;box-shadow:none!important;border:0!important;outline:0!important}
+html body .btab.active .btab-ico{background:#E5ECFF!important;color:#2447D6!important;border-radius:14px}
+html body .btab.active::after{background:#2447D6!important}
+html body .btab[aria-selected="true"] svg,html body .btab.on svg,html body .btab.active svg{background:none!important;padding:0!important;border:0!important}
+html body .btab-fab.active .btab-fab-circle{box-shadow:0 0 0 4px #fff,0 0 0 7px #C9D6FF,0 10px 18px rgba(34,201,151,.4)!important}
+html body .bnav,html body nav.bnav{border-top:0!important;outline:0!important}
+html body .bkc,html body .wk-bal,html body .bell-bal,html body .bkc-hero{background:linear-gradient(150deg,#2A4FE0 0%,#1B2F9C 55%,#0E1E5B 100%)!important;color:#fff!important;border:0!important}
+html body .bkc-bal span,html body .bkc-bal b,html body .bkc-name,html body .bkc-when{color:#fff!important}
