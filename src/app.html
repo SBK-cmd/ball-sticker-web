@@ -11974,7 +11974,7 @@ function bahtText(value) {
      มือถือไม่ได้ส่งเข้าเครื่องตัดเอง: เขียน "คำสั่ง" cutReq ลงใบงานใน Firestore (jobs/<id>.cutReq)
      แผง Sign Tools ในร้านที่เปิดโหมดรับคำสั่งจะรับไปส่งเข้า Graphtec แล้วเขียนผลกลับมา
      cutReq = {rid, status: pending|claimed|done|error|expired|rejected, file, fileName, jobNo, by, at(ms), msg, lines, ip, doneAt} */
-  let cutqFocus = '', cutqArmed = '', cutqArmT = 0, cutqQ = '';
+  let cutqFocus = '', cutqArmed = '', cutqArmT = 0, cutqQ = '', cutqPendingOpen = '';   // cutqPendingOpen = เลขใบงานที่สแกน/เปิดจากลิงก์ → เปิดหน้าต่างพรีวิวให้ทันทีที่ข้อมูลพร้อม (ถ้ามีไฟล์ตัดไฟล์เดียว)
   const CUTQ_TTL = 5 * 60000;
   function cutqParse(j) {
     try {
@@ -12156,6 +12156,11 @@ function bahtText(value) {
     if (!canCutRemote) { box.innerHTML = '<div class="cutq-empty">บัญชีนี้ไม่มีสิทธิ์สั่งตัด</div>'; return; }
     const all = store.get('bs_jobs', []) || [];
     if (!all.length) { box.innerHTML = '<div class="cutq-empty">กำลังโหลดใบงาน…</div>'; return; }
+    if (cutqPendingOpen) {
+      const hit = []; all.forEach(j => { if (String(j.no) !== cutqPendingOpen) return; const rec = cutqParse(j); if (rec) rec.files.forEach((f, fi) => { if (f && f.cut && f.cut.snap) hit.push(j.id + '|' + fi); }); });
+      if (hit.length === 1) cutqModalKey = hit[0];
+      cutqPendingOpen = '';
+    }
     const q = cutqQ.trim().toLowerCase();
     let rows = all.map(j => ({j, rec: cutqParse(j)})).filter(x => x.rec && x.rec.files.some(f => f && f.cut && f.cut.snap));
     const miss = cutqFocus && !rows.some(x => String(x.j.no) === cutqFocus);
@@ -12272,7 +12277,7 @@ function bahtText(value) {
   function cutqApplyCode(code) {
     const no = cutqParseCode(code);
     if (!no) { toast('รหัสนี้ไม่ใช่ใบงาน: ' + String(code || '').slice(0, 40)); return; }
-    cutqFocus = no; cutqQ = ''; if ($('cutqSearch')) $('cutqSearch').value = ''; renderCutq(); toast('พบใบงาน ' + no);
+    cutqFocus = no; cutqPendingOpen = no; cutqQ = ''; if ($('cutqSearch')) $('cutqSearch').value = ''; renderCutq(); toast('พบใบงาน ' + no);
   }
   async function cutqPhoto(file) {      // ถ่ายรูปด้วยกล้องเครื่องแล้วอ่านจากรูป (ใช้ได้ทั้ง Android/iOS)
     let code = '';
@@ -12294,7 +12299,7 @@ function bahtText(value) {
     const m = /^#cut\/(.+)$/.exec(location.hash || ''); if (!m || !currentUser) return;
     let no = ''; try { no = decodeURIComponent(m[1]); } catch (e) { return; }
     if (!canCutRemote) { toast('บัญชีนี้ไม่มีสิทธิ์สั่งตัด (เฉพาะ ball / top)'); return; }
-    cutqFocus = no; cutqQ = ''; if ($('cutqSearch')) $('cutqSearch').value = ''; showTab('cutq');
+    cutqFocus = no; cutqPendingOpen = no; cutqQ = ''; if ($('cutqSearch')) $('cutqSearch').value = ''; showTab('cutq');
   }
   window.addEventListener('hashchange', cutqFromHash);
   setTimeout(cutqFromHash, 700);
