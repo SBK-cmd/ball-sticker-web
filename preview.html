@@ -2068,7 +2068,7 @@ body.jm-open .fab-newjob{display:none!important}
               <div class="ratio-row">
                 <label class="rlock"><input type="checkbox" id="rlock"><span>ล็อกสัดส่วน กว้าง:สูง</span></label>
                 <button type="button" id="rimgBtn">ใช้สัดส่วนจากรูปงาน</button>
-                <input type="file" id="rimg" accept="image/*" hidden>
+                <input type="file" id="rimg" accept="image/*" hidden aria-label="เลือกรูป">
               </div>
               <div class="rthumb-wrap"><canvas id="rthumb" hidden aria-label="รูปงานที่ตัดขอบแล้ว"></canvas><p class="hint" id="rhint" hidden></p></div>
               <div class="row2">
@@ -2592,7 +2592,7 @@ body.jm-open .fab-newjob{display:none!important}
           <h2 id="wholesalehist-h">ประวัติใบราคาส่ง</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้ (แยกจากประวัติเอกสาร/ใบเสร็จ)</span>
         </div>
-        <div class="whadd no-print"><input class="txt" id="whAddName" type="text" autocomplete="off" placeholder="พิมพ์ชื่อร้านราคาส่ง เพื่อเพิ่มการ์ด"><button class="btn good" id="whAddBtn" type="button">＋ เพิ่มร้าน</button></div>
+        <div class="whadd no-print"><input class="txt" id="whAddName" type="text" autocomplete="off" placeholder="พิมพ์ชื่อร้านราคาส่ง เพื่อเพิ่มการ์ด" aria-label="ชื่อร้านราคาส่ง"><button class="btn good" id="whAddBtn" type="button">＋ เพิ่มร้าน</button></div>
         <p class="hint no-print" style="margin:-4px 0 12px">เพิ่มชื่อร้านไว้ก่อน แล้วเวลาลูกค้าสั่ง คีย์งานที่หน้า “สั่งงาน” ตามปกติ งานจะเข้าการ์ดของร้านนั้นเอง</p>
         <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="whHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
         <div id="wholesaleHistory"></div>
@@ -2713,7 +2713,7 @@ body.jm-open .fab-newjob{display:none!important}
         <h2 class="cutq-h">✂ สั่งตัดจากมือถือ</h2>
         <p class="hint cutq-note">สแกน QR บนใบงานหรือเลือกงานด้านล่าง → กด “ส่งตัด” (ยืนยัน 2 ครั้ง) · เครื่องในร้านต้องเปิด Illustrator + แผง Sign Tools และเปิด “รับคำสั่งตัดจากมือถือ” ไว้ · ใส่วัสดุก่อนสั่งเสมอ</p>
         <button type="button" class="btn primary cutq-scan" id="cutqScan">📷 สแกน QR / บาร์โค้ดใบงาน</button>
-        <input class="txt" id="cutqSearch" type="search" placeholder="ค้นหาเลขใบงาน / ชื่อลูกค้า" autocomplete="off">
+        <input class="txt" id="cutqSearch" type="search" placeholder="ค้นหาเลขใบงาน / ชื่อลูกค้า" autocomplete="off" aria-label="ค้นหาเลขใบงานหรือชื่อลูกค้า">
         <div id="cutqList" class="cutq-list"></div>
       </div>
     </section>
@@ -2763,7 +2763,7 @@ body.jm-open .fab-newjob{display:none!important}
         <div class="preview-col">
           <h2 class="no-print">ข้อความที่สร้าง</h2>
           <div class="card">
-            <textarea id="trackMessage" rows="9" readonly placeholder="ข้อความที่สร้างจะแสดงที่นี่…" style="width:100%;resize:vertical;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--field);font:inherit;color:inherit"></textarea>
+            <textarea id="trackMessage" rows="9" readonly placeholder="ข้อความที่สร้างจะแสดงที่นี่…" style="width:100%;resize:vertical;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--field);font:inherit;color:inherit" aria-label="ข้อความแจ้งพัสดุ"></textarea>
             <div class="actions" style="margin-top:12px">
               <button class="btn" id="track-copy" type="button">📋 คัดลอกข้อความ</button>
             </div>
@@ -3155,8 +3155,8 @@ body.jm-open .fab-newjob{display:none!important}
       <div class="ds-wrap no-print">
         <div id="dsListView">
           <div class="ds-comp card" id="dsNew">
-            <textarea id="dsNewTxt" rows="4" placeholder="จดโน้ตงานใหม่ เช่น ชื่อลูกค้า เบอร์ รายละเอียดงาน แล้วแนบรูปแชท/แบบได้ในช่องเดียว"></textarea>
-            <textarea id="dsNewAddr" class="ds-addr" rows="2" placeholder="ที่อยู่จัดส่ง (ถ้ามี)"></textarea>
+            <textarea id="dsNewTxt" rows="4" placeholder="จดโน้ตงานใหม่ เช่น ชื่อลูกค้า เบอร์ รายละเอียดงาน แล้วแนบรูปแชท/แบบได้ในช่องเดียว" aria-label="โน้ตงานใหม่"></textarea>
+            <textarea id="dsNewAddr" class="ds-addr" rows="2" placeholder="ที่อยู่จัดส่ง (ถ้ามี)" aria-label="ที่อยู่จัดส่ง"></textarea>
             <div class="ds-ph" id="dsNewPh"></div>
             <div class="ds-cbar">
               <label class="ds-btn">📷 แนบรูป<input type="file" accept="image/*" multiple hidden id="dsNewFile"></label>
@@ -3164,7 +3164,7 @@ body.jm-open .fab-newjob{display:none!important}
             </div>
           </div>
           <div class="ds-tools">
-            <input class="txt" id="dsSearch" type="search" placeholder="ค้นหาชื่อ / ข้อความ" autocomplete="off">
+            <input class="txt" id="dsSearch" type="search" placeholder="ค้นหาชื่อ / ข้อความ" autocomplete="off" aria-label="ค้นหาโน้ต">
           </div>
           <div id="dsFeed"></div>
         </div>
@@ -3183,7 +3183,7 @@ body.jm-open .fab-newjob{display:none!important}
       <div class="card chat-card no-print">
         <div class="chat-shell" id="chatShell">
           <aside class="chat-list-pane">
-            <div class="chat-list-head"><input class="txt" id="chatSearch" type="search" placeholder="ค้นหาชื่อลูกค้า / ข้อความ" autocomplete="off"><small class="chat-quota" id="chatQuota"></small><button type="button" class="btn small push-btn" data-push-enable hidden>🔔 เปิดแจ้งเตือนเด้งบนมือถือ</button><button type="button" class="btn small push-btn" data-push-test hidden>🔔 ส่งแจ้งเตือนทดสอบ</button><small class="push-status" data-push-status></small></div>
+            <div class="chat-list-head"><input class="txt" id="chatSearch" type="search" placeholder="ค้นหาชื่อลูกค้า / ข้อความ" autocomplete="off" aria-label="ค้นหาแชต"><small class="chat-quota" id="chatQuota"></small><button type="button" class="btn small push-btn" data-push-enable hidden>🔔 เปิดแจ้งเตือนเด้งบนมือถือ</button><button type="button" class="btn small push-btn" data-push-test hidden>🔔 ส่งแจ้งเตือนทดสอบ</button><small class="push-status" data-push-status></small></div>
             <div class="chat-list" id="chatList"></div>
           </aside>
           <div class="chat-conv">
@@ -3200,9 +3200,9 @@ body.jm-open .fab-newjob{display:none!important}
               <div class="chat-plus" id="chatPlus" hidden></div>
               <form class="chat-send" id="chatSendForm">
                 <button type="button" class="chat-attach" id="chatPlusBtn" aria-label="เพิ่มเติม: รูป ไฟล์ การ์ด คูปอง" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-                <input type="file" id="chatCamInput" accept="image/*" capture="environment" hidden>
-                <input type="file" id="chatMediaInput" accept="image/*,video/*" multiple hidden>
-                <input type="file" id="chatFileInput" hidden>
+                <input type="file" id="chatCamInput" accept="image/*" capture="environment" hidden aria-label="ถ่ายรูปส่งแชต">
+                <input type="file" id="chatMediaInput" accept="image/*,video/*" multiple hidden aria-label="เลือกรูปหรือวิดีโอส่งแชต">
+                <input type="file" id="chatFileInput" hidden aria-label="เลือกไฟล์ส่งแชต">
                 <textarea id="chatInput" rows="1" placeholder="พิมพ์ข้อความตอบลูกค้า..." aria-label="ข้อความ"></textarea>
                 <button type="button" class="chat-attach chat-mic" id="chatMicBtn" aria-label="พิมพ์ด้วยเสียง" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button>
                 <button class="btn primary chat-sendbtn" type="submit" id="chatSendBtn" aria-label="ส่ง"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/></svg><span>ส่ง</span></button>
