@@ -2971,6 +2971,49 @@ html body{--bs-font:'Noto Sans Thai','Noto Sans',system-ui,sans-serif}
 html body,html body :where(button,input,select,textarea,h1,h2,h3,h4,h5,h6,p,span,div,label,li,td,th,a,b,strong,em,small,summary,legend){font-family:'Noto Sans Thai','Noto Sans',system-ui,-apple-system,'Segoe UI',sans-serif!important}
 html body :where(code,pre,kbd,samp){font-family:ui-monospace,Menlo,Consolas,monospace!important}
 html body :where(svg,svg *){font-family:inherit}
+/* รายการใบงาน: ถอดการ์ดขาวชั้นนอกออก ให้การ์ดงานแต่ละใบลอยบนพื้นฟ้าอ่อน แบ่งชัด */
+html body .card:has(>div>ul>li.jc),html body .card:has(ul>li.jc){background:transparent!important;box-shadow:none!important;padding:0!important}
+html body .card:has(ul>li.jc) label.hist-search .txt,html body .card:has(ul>li.jc) .jf-filt select{background:#fff!important;box-shadow:0 1px 2px rgba(15,27,61,.08)!important}
+html body ul>li.jc{background:#fff!important;border:1px solid #D5DDF0!important;box-shadow:0 2px 4px rgba(15,27,61,.06),0 10px 22px rgba(20,40,140,.10)!important;border-radius:18px!important}
+html body ul:has(>li.jc){gap:14px!important}
+html body li.jc.st-pending{border-left:5px solid #E0A12B!important}
+html body li.jc.st-filed{border-left:5px solid #2F6BE0!important}
+html body li.jc.st-printed{border-left:5px solid #7B5CE0!important}
+html body li.jc.st-shipped,html body li.jc.st-billdone,html body li.jc.st-done{border-left:5px solid #2FA66B!important}
+/* สีสถานะ: ทึบ ตัวขาว คอนทราสต์ ≥4.5:1 */
+html body .status-pill,html body select.status-pill{background-color:#B45309!important;color:#fff!important;font-weight:700!important;border:0!important;box-shadow:none!important;background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:right 10px center!important;background-size:16px!important}
+html body .status-pill.pending{background-color:#B45309!important}
+html body .status-pill.filed{background-color:#1D4ED8!important}
+html body .status-pill.printed{background-color:#6D28D9!important}
+html body .status-pill.shipped,html body .status-pill.billdone,html body .status-pill.done{background-color:#15803D!important}
+html body .status-pill.recv,html body .status-pill.received,html body .status-pill.accepted{background-color:#0E1E5B!important}
+html body .status-pill option{color:#0F1B3D;background:#fff}
+html body .status-pill.pending,html body .status-pill.filed,html body .status-pill.printed,html body .status-pill.shipped,html body .status-pill.billdone,html body .status-pill.done,html body .status-pill.recv,html body .status-pill.received,html body .status-pill.accepted,html body select.status-pill.pending,html body select.status-pill.filed,html body select.status-pill.printed,html body select.status-pill.shipped,html body select.status-pill.billdone,html body select.status-pill.done{color:#fff!important;-webkit-text-fill-color:#fff!important}
+/* หลอดความคืบหน้าบนการ์ดงาน: เต็มหลอด = เสร็จ (แทนการแยกสีสถานะหลายสี) */
+html body .jc-prog{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:2px 0 4px}
+html body .jc-prog i{display:block;height:8px;border-radius:99px;background:#DCE3F3}
+html body .jc-prog i.on{background:#2447D6}
+html body .jc-prog.done i.on{background:#15803D}
+html body li.jc .status-pill,html body li.jc select.status-pill{background-color:#0E1E5B!important}
+html body li.jc select.status-pill.rcvd,html body li.jc select.status-pill.received,html body li.jc select.status-pill.pickup{background-color:#15803D!important}
+html body #jobHistory li.jc::after{background:#2447D6!important}
+html body #jobHistory li.jc:has(.jc-prog.done)::after{background:#15803D!important}
+html body li.jc.st-pending,html body li.jc.st-filed,html body li.jc.st-printed,html body li.jc.st-shipped{border-left-color:#2447D6!important}
+html body li.jc:has(.jc-prog.done){border-left-color:#15803D!important}
+/* สีหลอดไล่ตามขั้น: ส้ม → เหลืองอำพัน → เขียวมะนาว → เขียว → เขียวเข้ม (เต็มหลอด) */
+html body .jc-prog.s1 i.on{background:#EA580C}
+html body .jc-prog.s2 i.on{background:#D97706}
+html body .jc-prog.s3 i.on{background:#65A30D}
+html body .jc-prog.s4 i.on{background:#16A34A}
+html body .jc-prog.s5 i.on{background:#15803D}
+html body #jobHistory li.jc:has(.jc-prog.s1)::after{background:#EA580C!important}
+html body #jobHistory li.jc:has(.jc-prog.s2)::after{background:#D97706!important}
+html body #jobHistory li.jc:has(.jc-prog.s3)::after{background:#65A30D!important}
+html body #jobHistory li.jc:has(.jc-prog.s4)::after{background:#16A34A!important}
+html body li.jc:has(.jc-prog.s1){border-left-color:#EA580C!important}
+html body li.jc:has(.jc-prog.s2){border-left-color:#D97706!important}
+html body li.jc:has(.jc-prog.s3){border-left-color:#65A30D!important}
+html body li.jc:has(.jc-prog.s4){border-left-color:#16A34A!important}
 </style>
 </head>
 <body>
@@ -3041,7 +3084,7 @@ html body :where(svg,svg *){font-family:inherit}
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.22</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.23</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
@@ -4506,7 +4549,7 @@ html body :where(svg,svg *){font-family:inherit}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=f14b70108e",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=5793dcdfad",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
