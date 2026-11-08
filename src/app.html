@@ -1283,7 +1283,10 @@ table.lines tfoot .r{text-align:right;font-variant-numeric:tabular-nums;white-sp
 .cutq-cam video{flex:1;min-height:0;width:100%;object-fit:cover}
 .cutq-cam .bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;color:#fff;background:rgba(0,0,0,.7)}
 .cutq-cam .frame{position:absolute;left:50%;top:50%;width:62vmin;height:62vmin;transform:translate(-50%,-50%);border:3px solid #ffd400;border-radius:18px;box-shadow:0 0 0 100vmax rgba(0,0,0,.45);pointer-events:none}
-.cutq-cam .bar button{min-height:44px;padding:0 18px;border-radius:10px;border:0;font-size:15px;font-weight:700}
+.cutq-cam .tools{position:absolute;left:0;right:0;bottom:0;display:grid;gap:8px;padding:12px 16px 18px;background:rgba(0,0,0,.7);color:#fff}
+.cutq-cam .tools input[type=range]{width:100%}
+.cutq-cam .tools .hintx{font-size:12.5px;opacity:.85;text-align:center}
+.cutq-cam .bar button,.cutq-cam .tools button{min-height:44px;padding:0 18px;border-radius:10px;border:0;font-size:15px;font-weight:700}
 .cutq-ed{gap:10px;padding:10px}
 .cutq-tbl{grid-template-columns:54px repeat(3,1fr);gap:4px 6px}
 .cutq-tbl input{min-height:40px;font-size:16px;border-radius:9px}
@@ -12272,29 +12275,56 @@ function bahtText(value) {
     if (cutqCamStream) { try { cutqCamStream.getTracks().forEach(t => t.stop()); } catch (e) {} cutqCamStream = null; }
     const o = $('cutqCam'); if (o) { o.classList.remove('show'); const v = o.querySelector('video'); if (v) v.srcObject = null; }
   }
+  function cutqFound(list) {
+    for (const b of list || []) { const no = cutqParseCode(b.rawValue); if (no) { cutqCamStop(); cutqFocus = no; cutqQ = ''; if ($('cutqSearch')) $('cutqSearch').value = ''; renderCutq(); toast('พบใบงาน ' + no); return true; } }
+    return false;
+  }
+  function cutqDetector() {
+    try { return new BarcodeDetector({formats: ['qr_code', 'code_128']}); } catch (e) { try { return new BarcodeDetector(); } catch (e2) { return null; } }
+  }
+  async function cutqPhoto(file) {      // ถ่ายด้วยกล้องเครื่อง (โฟกัสอัตโนมัติ ความละเอียดสูง) แล้วอ่านจากรูป
+    const det = cutqDetector(); if (!det) { toast('เปิดตัวสแกนไม่ได้'); return; }
+    let bmp; try { bmp = await createImageBitmap(file); } catch (e) { toast('เปิดรูปไม่ได้'); return; }
+    try {
+      let r = await det.detect(bmp); if (cutqFound(r)) return;
+      for (const sc of [0.5, 0.25]) {           // รูปใหญ่มากบางเครื่องอ่านไม่ติด → ย่อลองใหม่
+        const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * sc); cv.height = Math.round(bmp.height * sc);
+        cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height); r = await det.detect(cv); if (cutqFound(r)) return;
+      }
+      toast('อ่านรหัสจากรูปไม่ได้ — ถ่ายใหม่ให้ QR/บาร์โค้ดอยู่กลางภาพและคม');
+    } catch (e) { toast('อ่านรูปไม่ได้'); }
+  }
   async function cutqCamStart() {
     if (!canCutRemote) { toast('บัญชีนี้ไม่มีสิทธิ์สั่งตัด'); return; }
     if (!('BarcodeDetector' in window) || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { toast('เบราว์เซอร์นี้สแกนในแอปไม่ได้ — ใช้กล้องมือถือสแกน QR บนใบงานแทน หรือพิมพ์เลขใบงานค้นหา'); return; }
-    let det; try { det = new BarcodeDetector({formats: ['qr_code', 'code_128']}); } catch (e) { try { det = new BarcodeDetector(); } catch (e2) { toast('เปิดตัวสแกนไม่ได้'); return; } }
+    const det = cutqDetector(); if (!det) { toast('เปิดตัวสแกนไม่ได้'); return; }
     let o = $('cutqCam');
     if (!o) {
       o = document.createElement('div'); o.id = 'cutqCam'; o.className = 'cutq-cam';
-      o.innerHTML = '<div class="bar"><span>เล็งที่ QR หรือบาร์โค้ดบนใบงาน</span><button type="button" id="cutqCamX">ปิด</button></div><video playsinline muted></video><div class="frame"></div>';
+      o.innerHTML = '<div class="bar"><span>เล็งที่ QR หรือบาร์โค้ด</span><button type="button" id="cutqCamX">ปิด</button></div><video playsinline muted></video><div class="frame"></div>' +
+        '<div class="tools"><label id="cutqZoomBox" style="display:none">ซูม <input type="range" id="cutqZoom"></label><button type="button" id="cutqShot">📸 ถ่ายรูปแล้วอ่าน (ชัดกว่า)</button><div class="hintx">ถือห่าง 15–25 ซม. รอให้ภาพคมก่อน · ไม่ติดให้กดถ่ายรูป</div><input type="file" id="cutqFile" accept="image/*" capture="environment" hidden></div>';
       document.body.appendChild(o); o.querySelector('#cutqCamX').addEventListener('click', cutqCamStop);
+      o.querySelector('#cutqShot').addEventListener('click', () => o.querySelector('#cutqFile').click());
+      o.querySelector('#cutqFile').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) cutqPhoto(f); });
+      o.querySelector('#cutqZoom').addEventListener('input', e => { const t = cutqCamStream && cutqCamStream.getVideoTracks()[0]; if (t) t.applyConstraints({advanced: [{zoom: +e.target.value}]}).catch(() => {}); });
     }
     try {
-      cutqCamStream = await navigator.mediaDevices.getUserMedia({video: {facingMode: {ideal: 'environment'}}, audio: false});
+      cutqCamStream = await navigator.mediaDevices.getUserMedia({video: {facingMode: {ideal: 'environment'}, width: {ideal: 1920}, height: {ideal: 1080}}, audio: false});
     } catch (e) { toast('เปิดกล้องไม่ได้ — อนุญาตการใช้กล้องให้เบราว์เซอร์ก่อน'); return; }
     const v = o.querySelector('video'); v.srcObject = cutqCamStream; o.classList.add('show');
+    try {      // โฟกัสต่อเนื่อง + ซูมเริ่มต้นเล็กน้อย (ถ้าเครื่องรองรับ)
+      const tr = cutqCamStream.getVideoTracks()[0], caps = (tr.getCapabilities && tr.getCapabilities()) || {}, adv = {};
+      if (caps.focusMode && caps.focusMode.indexOf('continuous') >= 0) adv.focusMode = 'continuous';
+      const zb = o.querySelector('#cutqZoomBox'), zr = o.querySelector('#cutqZoom');
+      if (caps.zoom && caps.zoom.max > caps.zoom.min) { zr.min = caps.zoom.min; zr.max = caps.zoom.max; zr.step = caps.zoom.step || 0.1; const z0 = Math.min(caps.zoom.max, Math.max(caps.zoom.min, 2)); zr.value = z0; adv.zoom = z0; zb.style.display = ''; } else zb.style.display = 'none';
+      if (Object.keys(adv).length) await tr.applyConstraints({advanced: [adv]});
+    } catch (e) {}
     try { await v.play(); } catch (e) {}
     let busy = false;
     cutqCamTimer = setInterval(async () => {
       if (busy || !v.videoWidth) return; busy = true;
-      try {
-        const r = await det.detect(v);
-        for (const b of r || []) { const no = cutqParseCode(b.rawValue); if (no) { cutqCamStop(); cutqFocus = no; cutqQ = ''; if ($('cutqSearch')) $('cutqSearch').value = ''; renderCutq(); toast('พบใบงาน ' + no); return; } }
-      } catch (e) {} finally { busy = false; }
-    }, 250);
+      try { cutqFound(await det.detect(v)); } catch (e) {} finally { busy = false; }
+    }, 200);
   }
   if ($('cutqScan')) $('cutqScan').addEventListener('click', cutqCamStart);
   // เปิดจาก QR บนใบงาน: https://app.ballsticker.co.th/#cut/<เลขใบงาน>
