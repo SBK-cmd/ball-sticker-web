@@ -2861,6 +2861,7 @@ html body #jobHistory .jd .jd-irow:has(input:nth-child(2):last-child){grid-templ
 html body #jobHistory .jd .jd-edbtn{display:flex;gap:8px;margin-top:4px}
 html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:600;line-height:1.4}
 </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap">
 <style id="bs-theme-p11">
 /* p11 "Navy Cards" — โทนน้ำเงินเข้ม การ์ดมุมโค้ง เงานุ่ม (ออกแบบเอง แรงบันดาลใจจากสไตล์แอปการเงินที่เจ้าของร้านส่งมา) ซ้อนบน p10 */
 :root,:root[data-theme],:root[data-theme="dark"]{--ink:#0F1B3D;--navy:#0E1E5B;--muted:#6B7794;--line:#E3E9F6;--field-line:#D5DDF0;--yline:#E3E9F6;--ytint:#E5ECFF;--shadow-1:0 1px 2px rgba(15,27,61,.06);--shadow-2:0 8px 22px rgba(20,40,140,.12);--r-card:20px;--r-field:14px;--lime:#22C997;--cream:#fff;--sky:#E5ECFF;--pink:#FFE9F2;--lav:#E7E3FF;--surface:#fff;--bg:#EEF2FB;--field:#F3F6FD;--blue:#2447D6;--blue2:#1B2F9C;color-scheme:light}
@@ -2965,6 +2966,11 @@ html body .jf-filt{margin:0 0 6px!important}
 html body .jc-top{padding-bottom:0}
 html body .jc-act{padding-top:0!important;margin-top:0!important}
 html body .jc{padding:10px 12px!important}
+/* ฟอนต์: Noto Sans Thai ทั้งแอป */
+:root{--bs-font:'Noto Sans Thai','Noto Sans',system-ui,-apple-system,'Segoe UI',sans-serif}
+html body,html body :where(button,input,select,textarea,h1,h2,h3,h4,h5,h6,p,span,div,label,li,td,th,a,b,strong,em,small,summary,legend){font-family:var(--bs-font)!important}
+html body :where(code,pre,kbd,samp){font-family:ui-monospace,Menlo,Consolas,monospace!important}
+html body :where(svg,svg *){font-family:inherit}
 </style>
 </head>
 <body>
