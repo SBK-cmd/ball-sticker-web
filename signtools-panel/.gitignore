@@ -1,0 +1,3 @@
+# Local rollback artifacts; keep scripts/docs/tests in Git.
+rollback-output/
+tests/__pycache__/
