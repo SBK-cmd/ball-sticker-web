@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "test:memory": "node job-memory-test.cjs",
+    "test:paths": "node path-map-test.cjs",
     "test:queue": "node queue-memory-test.cjs .."
   },
   "devDependencies": {

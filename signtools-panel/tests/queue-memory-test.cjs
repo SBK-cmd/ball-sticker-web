@@ -4,6 +4,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 const { JSDOM } = require('jsdom');
 const root = path.resolve(process.argv[2] || path.join(__dirname, '..'));
 const clone = v => JSON.parse(JSON.stringify(v));
@@ -43,7 +44,7 @@ function baseDb() {
       note: 'app note must survive', unrelated: { keep: true } }
   }, wholesale: {} };
 }
-async function simulator(database) {
+async function simulator(database, options = {}) {
   const html = fs.readFileSync(path.join(root, 'SignTools/index.html'), 'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
   const dom = new JSDOM(html, { url: 'https://offline-signtools.invalid/', runScripts: 'outside-only', pretendToBeVisual: true });
   const w = dom.window;
@@ -55,12 +56,25 @@ async function simulator(database) {
   w.HTMLCanvasElement.prototype.getContext = () => context;
   w.HTMLCanvasElement.prototype.toDataURL = () => 'data:image/png;base64,AA==';
   const times = { '/test/a.ai': 1000, '/test/b.ai': 1000 };
+  const dirs = new Set(options.directories || []), fsErrors = options.errors || {};
+  function statInfo(p) {
+    if (fsErrors[p]) throw Object.assign(new Error(fsErrors[p]), { code: fsErrors[p] });
+    if (p in times) return { mtimeMs: times[p], isFile: () => true, isDirectory: () => false };
+    if (dirs.has(p)) return { isFile: () => false, isDirectory: () => true };
+    throw Object.assign(new Error('test file absent'), { code: 'ENOENT' });
+  }
   let active = '/test/a.ai';
   w.cep_node = { Buffer, require: mod => {
-    if (mod === 'fs') return { statSync: p => { if (!(p in times)) throw Error('test file absent'); return { mtimeMs: times[p] }; } };
+    if (mod === 'os') return { platform: () => options.platform || 'linux' };
+    if (mod === 'fs') return { statSync: statInfo, stat: (p, cb) => { setTimeout(() => { let value; try { value = statInfo(p); } catch (e) { cb(e); return; } cb(null, value); }, 0); } };
     throw Error('forbidden module in mock: ' + mod);
   } };
   w.__adobe_cep__ = { evalScript(source, cb) {
+    if (source.includes('Folder.selectDialog')) {
+      calls.push({ fn: 'Folder.selectDialog' });
+      cb(vm.runInNewContext(source, { Folder: { selectDialog: () => options.pickFolder ? { fsName: options.pickFolder } : null }, st_q: JSON.stringify, st_err: e => JSON.stringify({ error: String(e) }) }));
+      return;
+    }
     const pos = source.indexOf('('), fn = source.slice(0, pos), arg = source.slice(pos + 1, -1);
     const value = arg ? JSON.parse(arg) : undefined;
     calls.push({ fn, arg: value });
@@ -113,7 +127,7 @@ async function simulator(database) {
       } catch (error) { errors.push(error); this.status = 500; this.responseText = JSON.stringify({ error: { message: error.message } }); this.onload(); }
     }, 0); }
   };
-  for (const file of ['cutjob.js', 'cut.js', 'job-memory.js', 'queue.js']) {
+  for (const file of ['cutjob.js', 'cut.js', 'job-memory.js', 'path-map.js', 'path-io.js', 'queue.js']) {
     w.eval(fs.readFileSync(path.join(root, 'SignTools/js', file), 'utf8'));
     if (file === 'cutjob.js') w.STCut.net = () => ({ tryPort: () => Promise.resolve(false), send: (ip, port, data) => { sends.push({ ip, port, data }); return Promise.resolve(data.length); } });
   }
@@ -129,7 +143,7 @@ async function simulator(database) {
     assert(el, 'missing action ' + action); el.click(); await delay(70);
   }
   async function preview(index = 0) { await click('cutprev', index); assert(w.document.querySelector('#cqPrev.show')); }
-  return { w, calls, patches, sends, errors, set, row, click, preview, times,
+  return { w, calls, patches, sends, errors, set, row, click, preview, times, dirs, fsErrors,
     offline(value) { failPatch = value; }, close() { w.close(); },
     markless(value) { noMarks = value; },
     async scan(index = 0, force = 31) { set('cutDrv', true); set('dKisF', force); await click('scan', index); },
@@ -303,6 +317,85 @@ test('corrupt production payload is surfaced and never sent', async () => {
     sim.row().click(); await delay(30);
     assert(sim.w.document.querySelector('#cqModal').textContent.includes('ผิดปกติ'));
     assert.equal(sim.sends.length, 0); sim.assertNoErrors();
+  } finally { sim.close(); }
+});
+
+test('Mac folder picker maps Windows NAS files for open/scan/print without rewriting job paths', async () => {
+  const db = baseDb(), winRoot = '\\\\B-NAS\\ballsticker', macRoot = '/Volumes/ballsticker';
+  const source = winRoot + '\\S40670\\ท้ายเจ้าสมุทร.eps', local = macRoot + '/S40670/ท้ายเจ้าสมุทร.eps';
+  db.jobs.jobA.aiFiles = JSON.stringify([{ p: source, n: 'ท้ายเจ้าสมุทร.eps' }]);
+  db.jobs.jobA.printFiles = [{ p: winRoot + '\\S40670\\print.tif', n: 'print.tif' }];
+  const originalLinks = db.jobs.jobA.aiFiles;
+  const sim = await simulator(db, { platform: 'darwin', directories: [macRoot], pickFolder: macRoot });
+  try {
+    sim.times[local] = 1000; sim.times[macRoot + '/S40670/print.tif'] = 1000;
+    sim.w.document.getElementById('cqPathOpen').click();
+    assert.equal(sim.w.document.getElementById('cqWinRoot').value, winRoot);
+    sim.w.document.getElementById('cqPickPath').click(); await delay(50);
+    assert.equal(sim.w.document.getElementById('cqMacRoot').value, macRoot);
+    sim.w.document.getElementById('cqSavePath').click();
+    assert.equal(sim.w.STPathIO.readMaps().length, 1);
+    await sim.click('open', 0);
+    assert.equal(sim.calls.filter(c => c.fn === 'st_openFile').at(-1).arg, local);
+    assert.equal(sim.patches.length, 0); assert.equal(db.jobs.jobA.aiFiles, originalLinks);
+    await sim.scan(0, 31);
+    const record = JSON.parse(db.jobs.jobA.stProduction);
+    assert.equal(record.files[0].p, source); assert.equal(record.files[0].cut.mtime, 1000);
+    const before = sim.patches.length;
+    await sim.click('link'); assert.equal(sim.patches.length, before, 'Mac reference must not duplicate existing Windows reference');
+    sim.row().click(); await delay(30);
+    sim.w.document.querySelector('#cqModal [data-act="openprint"]').click(); await delay(60);
+    assert.equal(sim.calls.filter(c => c.fn === 'st_openFile').at(-1).arg, macRoot + '/S40670/print.tif');
+    assert.equal(JSON.parse(db.jobs.jobA.stProduction).printFiles[0].p, winRoot + '\\S40670\\print.tif');
+    sim.assertNoErrors();
+  } finally { sim.close(); }
+});
+test('Windows maps a stored Mac path for scan and detects changed mapped source before cutting', async () => {
+  const db = baseDb(), winRoot = '\\\\B-NAS\\ballsticker', macRoot = '/Volumes/ballsticker';
+  const source = macRoot + '/S40670/design.eps', local = winRoot + '\\S40670\\design.eps';
+  db.jobs.jobA.aiFiles = JSON.stringify([{ p: source, n: 'design.eps' }]);
+  const sim = await simulator(db, { platform: 'win32', directories: [winRoot] });
+  try {
+    sim.w.STPathIO.saveMaps([{ windows: winRoot, mac: macRoot }]); sim.times[local] = 1000;
+    await sim.scan(0, 29);
+    assert.equal(sim.calls.filter(c => c.fn === 'st_openFile').at(-1).arg, local);
+    assert.equal(JSON.parse(db.jobs.jobA.stProduction).files[0].p, source);
+    sim.set('cutIp', '192.0.2.123'); sim.set('cutPort', '9100'); sim.times[local] = 100000;
+    await sim.click('cutnow', 0); await sim.click('cutnow', 0);
+    assert.equal(sim.sends.length, 0); assert(sim.w.document.getElementById('toast').textContent.includes('สแกนใหม่'));
+    sim.assertNoErrors();
+  } finally { sim.close(); }
+});
+test('offline mapped NAS blocks source opening but never blocks a complete stored cut', async () => {
+  const db = clone(persisted), record = JSON.parse(db.jobs.jobA.stProduction), winRoot = '\\\\B-NAS\\ballsticker';
+  record.files[0].p = winRoot + '\\S40670\\design.eps';
+  db.jobs.jobA.stProduction = JSON.stringify(record); db.jobs.jobA.aiFiles = JSON.stringify(record.files.map(f => ({ p: f.p, n: f.n })));
+  const sim = await simulator(db, { platform: 'darwin' });
+  try {
+    sim.w.STPathIO.saveMaps([{ windows: winRoot, mac: '/Volumes/ballsticker' }]);
+    Object.keys(sim.times).forEach(key => delete sim.times[key]);
+    await sim.click('open', 0); assert(sim.w.document.getElementById('toast').textContent.includes('ราก NAS'));
+    assert.equal(sim.calls.filter(c => c.fn === 'st_openFile').length, 0);
+    await sim.preview(0); sim.set('cutIp', '192.0.2.123'); sim.set('cutPort', '9100');
+    await sim.click('cutnow', 0); await sim.click('cutnow', 0); assert.equal(sim.sends.length, 1);
+    assert.deepEqual(JSON.parse(db.jobs.jobA.stProduction).files[0].cut.snap, makeSnap());
+    sim.assertNoErrors();
+  } finally { sim.close(); }
+});
+test('ambiguous mapped files or inaccessible alternatives never select a guessed source', async () => {
+  const db = baseDb(), winRoot = '\\\\B-NAS\\ballsticker';
+  db.jobs.jobA.aiFiles = JSON.stringify([{ p: winRoot + '\\design.eps', n: 'design.eps' }]);
+  const sim = await simulator(db, { platform: 'darwin', directories: ['/Volumes/a', '/Volumes/b'] });
+  try {
+    sim.w.STPathIO.saveMaps([{ windows: winRoot, mac: '/Volumes/a' }, { windows: winRoot, mac: '/Volumes/b' }]);
+    sim.times['/Volumes/a/design.eps'] = 1000; sim.times['/Volumes/b/design.eps'] = 1000;
+    await sim.click('open', 0); assert(sim.w.document.getElementById('toast').textContent.includes('มากกว่า 1'));
+    sim.fsErrors['/Volumes/b/design.eps'] = 'EACCES';
+    await sim.click('open', 0); assert(sim.w.document.getElementById('toast').textContent.includes('EACCES'));
+    delete sim.fsErrors['/Volumes/b/design.eps']; delete sim.times['/Volumes/b/design.eps']; sim.dirs.delete('/Volumes/b');
+    await sim.click('open', 0); assert(sim.w.document.getElementById('toast').textContent.includes('ราก NAS'), 'offline alternative must not be ignored');
+    assert.equal(sim.calls.filter(c => c.fn === 'st_openFile').length, 0); assert.equal(sim.patches.length, 0);
+    sim.assertNoErrors();
   } finally { sim.close(); }
 });
 

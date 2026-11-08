@@ -147,6 +147,14 @@
       '<div class="qsum" id="cqSum"></div>' +
       '<div class="seg" id="cqSeg"><button data-v="open" class="on">ยังไม่ส่ง</button><button data-v="done">จัดส่งแล้ว</button><button data-v="all">ทั้งหมด</button></div>' +
       '<div class="cqbar"><input id="cqQ" type="text" placeholder="ค้นหา ชื่อลูกค้า / เลขใบ / งาน"><button class="btn ghost sm" id="cqCmp" title="ย่อ/ขยายรายการ">▤ ย่อ</button><button class="btn ghost sm" id="cqRe">รีเฟรช</button></div>' +
+      '<button class="btn ghost sm" id="cqPathOpen">ตั้งค่า NAS / พาธ</button>' +
+      '<div class="card hidden" id="cqPathBox"><b>เทียบโฟลเดอร์ Windows ↔ Mac</b>' +
+      '<div class="hint">เลือกโฟลเดอร์เดียวกันบน NAS ครั้งเดียว เครื่องนี้จะต่อพาธย่อยให้ทุกไฟล์ ไม่แก้พาธในใบงาน และไม่จำเป็นสำหรับการตัดจาก snapshot</div>' +
+      '<label>โฟลเดอร์ราก Windows<input id="cqWinRoot" type="text" list="cqWinRoots" spellcheck="false" placeholder="เช่น \\&#92;B-NAS&#92;ballsticker หรือ S:&#92;"></label><datalist id="cqWinRoots"></datalist>' +
+      '<label>โฟลเดอร์ราก Mac<input id="cqMacRoot" type="text" list="cqMacRoots" spellcheck="false" placeholder="เลือกโฟลเดอร์ที่เมานต์จริง เช่น /Volumes/ballsticker"></label><datalist id="cqMacRoots"></datalist>' +
+      '<div class="row"><button class="btn ghost sm" id="cqPickPath">เลือกโฟลเดอร์ของเครื่องนี้</button><button class="btn sm" id="cqSavePath">บันทึกคู่นี้</button></div>' +
+      '<div id="cqPathRules"></div><div class="hint" id="cqPathMsg"></div>' +
+      '<button class="btn ghost sm" id="cqResetPaths">ล้างการเทียบพาธของเครื่องนี้ (ไม่ลบใบงาน)</button></div>' +
       '<div id="cqList" class="qlist"></div>' +
       '<div class="hint" id="cqHint"></div>';
     $('cqSeg').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; [].forEach.call($('cqSeg').children, function (x) { x.classList.toggle('on', x === b); }); filter = b.dataset.v; render(); });
@@ -158,6 +166,50 @@
     $('cqRe').onclick = function () { load(); };
     $('cqList').addEventListener('click', onClick);
     $('cqList').addEventListener('change', onChange);
+    setupPaths();
+  }
+  var pathEdit = null;
+  function setupPaths() {
+    function paint() {
+      try {
+        var rules = window.STPathIO.readMaps();
+        $('cqPathRules').innerHTML = rules.map(function (r, i) { return '<div class="hint"><code>' + h(r.windows) + '</code> ↔ <code>' + h(r.mac) + '</code><div class="row"><button class="btn ghost sm" data-path-edit="' + i + '">แก้ไข</button><button class="btn ghost sm" data-path-remove="' + i + '">เอาคู่นี้ออก</button></div></div>'; }).join('');
+        $('cqPathMsg').textContent = 'จำเฉพาะเครื่องนี้ · ' + rules.length + ' คู่ · หาก NAS เปลี่ยนชื่อเมานต์ให้เลือกโฟลเดอร์ใหม่ ไม่เดาไฟล์แทน';
+      } catch (e) { $('cqPathRules').innerHTML = ''; $('cqPathMsg').textContent = '⚠ ' + e.message; }
+    }
+    function suggestions() {
+      var win = [], mac = [];
+      jobs.forEach(function (j) { filesOf(j).concat(printFilesOf(j)).forEach(function (f) {
+        try { var n = window.STPathMap.normalize(f.p), root = window.STPathMap.rootOf(f.p), list = n.kind === 'windows' ? win : mac; if (root && list.indexOf(root) < 0) list.push(root); } catch (e) {}
+      }); });
+      $('cqWinRoots').innerHTML = win.map(function (p) { return '<option value="' + h(p) + '"></option>'; }).join('');
+      $('cqMacRoots').innerHTML = mac.map(function (p) { return '<option value="' + h(p) + '"></option>'; }).join('');
+      if (!$('cqWinRoot').value && win.length === 1) $('cqWinRoot').value = win[0];
+      if (!$('cqMacRoot').value && mac.length === 1) $('cqMacRoot').value = mac[0];
+    }
+    $('cqPathOpen').onclick = function () { $('cqPathBox').classList.toggle('hidden'); if (!$('cqPathBox').classList.contains('hidden')) { suggestions(); paint(); } };
+    $('cqPickPath').onclick = function () {
+      var button = this; button.disabled = true;
+      window.STPathIO.pickFolder().then(function (r) {
+        if (!r.cancel) { $(window.STPathIO.platform() === 'win32' ? 'cqWinRoot' : 'cqMacRoot').value = r.path; $('cqPathMsg').textContent = 'เลือกแล้ว — ตรวจว่าทั้งสองรากเป็นโฟลเดอร์เดียวกัน แล้วกดบันทึกคู่นี้'; }
+      }, function (e) { $('cqPathMsg').textContent = '⚠ ' + e.message; }).then(function () { button.disabled = false; });
+    };
+    $('cqSavePath').onclick = function () {
+      try {
+        var rules = window.STPathIO.readMaps(), pair = { windows: $('cqWinRoot').value.trim(), mac: $('cqMacRoot').value.trim() };
+        if (pathEdit == null) rules.push(pair); else rules[pathEdit] = pair;
+        window.STPathIO.saveMaps(rules); pathEdit = null; paint(); toast('✓ จำรากพาธแล้ว ใช้กับทุกไฟล์ใต้โฟลเดอร์นี้ (ใบงานไม่ถูกแก้)');
+      } catch (e) { $('cqPathMsg').textContent = '⚠ ไม่บันทึก: ' + e.message; }
+    };
+    $('cqPathRules').onclick = function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      try {
+        var rules = window.STPathIO.readMaps(), edit = b.dataset.pathEdit, remove = b.dataset.pathRemove;
+        if (edit != null && rules[+edit]) { pathEdit = +edit; $('cqWinRoot').value = rules[pathEdit].windows; $('cqMacRoot').value = rules[pathEdit].mac; $('cqPathMsg').textContent = 'กำลังแก้ไขคู่เดิม — กดบันทึกคู่นี้เพื่อแทนที่'; }
+        else if (remove != null && rules[+remove]) { rules.splice(+remove, 1); window.STPathIO.saveMaps(rules); pathEdit = null; paint(); }
+      } catch (er) { $('cqPathMsg').textContent = '⚠ ' + er.message; }
+    };
+    $('cqResetPaths').onclick = function () { try { window.STPathIO.clearMaps(); pathEdit = null; paint(); toast('ล้างเฉพาะการเทียบพาธเครื่องนี้แล้ว ใบงาน/ไฟล์จริงไม่ถูกลบ'); } catch (e) { $('cqPathMsg').textContent = '⚠ ' + e.message; } };
   }
   // เวลาที่สร้างใบ: id ของใบเป็น 'j'/'w' + เวลา (ms) ตอนสร้าง · ไม่มี → ใช้วันที่สั่งงาน/เวลาบันทึก
   function bornOf(j) {
@@ -234,7 +286,17 @@
   }
   function cqTime(t) { var d = new Date(t); return d.toTimeString().slice(0, 5) + (new Date().toDateString() === d.toDateString() ? '' : ' ' + d.getDate() + '/' + (d.getMonth() + 1)); }
   function fileMtime(path) {   // เวลาแก้ไขไฟล์ล่าสุดบนดิสก์ (null = อ่านไม่ได้ เช่น ไดรฟ์เครือข่ายไม่ตอบ)
-    try { var R = window.cep_node && window.cep_node.require; if (!R) return null; return R('fs').statSync(path).mtimeMs || null; } catch (e) { return null; }
+    if (window.STPathIO) return window.STPathIO.mtime(path);
+    try { var R = window.cep_node && window.cep_node.require; return Promise.resolve(R ? R('fs').statSync(path).mtimeMs || null : null); } catch (e) { return Promise.resolve(null); }
+  }
+  function openFileRef(path) {
+    if (!window.STPathIO) return host('st_openFile', path);
+    return window.STPathIO.resolveFile(path).then(function (file) {
+      return host('st_openFile', file.path).then(function (r) { if (!r.error) { r._resolvedPath = file.path; r._mtime = file.mtime; } return r; });
+    });
+  }
+  function sameFileRef(a, b) {
+    return window.STPathIO ? window.STPathIO.equivalent(a, b) : a === b;
   }
   // สรุปบนหัวใบงาน: กี่ไฟล์ที่ส่งตัดเข้าเครื่องแล้ว / กี่ไฟล์ที่สแกนไว้รอตัด ("ส่งตัดแล้ว" = ส่งข้อมูลเข้าเครื่องสำเร็จ แผงรู้ไม่ได้ว่าเครื่องตัดเสร็จจริงหรือยัง)
   function cutChip(j) {
@@ -346,7 +408,7 @@
       var cf = filesOf(j)[+b.dataset.i || 0]; if (!cf) return toast('⚠ ไม่พบไฟล์ที่ผูกไว้');
       if (!window.ST_cutApi) return toast('⚠ หน้าส่งตัดยังไม่พร้อม');
       toast('กำลังเปิดไฟล์และสแกนเส้นตัด…');
-      host('st_openFile', cf.p).then(function (r) {
+      openFileRef(cf.p).then(function (r) {
         if (r.error) return toast('⚠ ' + r.error);
         return window.ST_cutApi.read().then(function (rd) {
           if (rd.error) return toast('⚠ ' + rd.error);
@@ -355,7 +417,7 @@
             var mv = pair[0], thumb = pair[1];   // จุดมาร์คทุกจุด + artboard ไว้วาดพรีวิว (ไม่มีมาร์คก็ได้)
             var view = (mv && !mv.error && mv.why === 'ok' && mv.marks && mv.marks.length) ? { ab: mv.ab, marks: mv.marks } : null;
             var all = cqAll();
-            var captured = { jid: j.id, p: cf.p, n: cf.n || '', no: j.no || '', jName: j.jName || '', savedAt: Date.now(), mtime: fileMtime(cf.p), snap: rd, view: view, thumb: thumb || '', viewNote: view ? '' : String(mv && (mv.error || mv.why) || 'no-reply'),
+            var captured = { jid: j.id, p: cf.p, n: cf.n || '', no: j.no || '', jName: j.jName || '', savedAt: Date.now(), mtime: r._mtime == null ? null : r._mtime, snap: rd, view: view, thumb: thumb || '', viewNote: view ? '' : String(mv && (mv.error || mv.why) || 'no-reply'),
               drv: window.STJobMemory.normalizeDrv(window.ST_cutApi.getDrv()), settings: window.STJobMemory.normalizeSettings(window.ST_cutApi.getSettings()), sentAt: null, unsynced: true };
             window.STJobMemory.validateCut(captured);
             all[cqKey(j, cf)] = captured;
@@ -397,13 +459,13 @@
       host('st_pickFile', 'เลือกไฟล์พิมพ์ของใบงานนี้ (ไม่เดาจับคู่กับไฟล์ตัด)').then(function (r) {
         if (r.cancel) return; if (r.error) return toast('⚠ ' + r.error); if (!r.path) return;
         return saveMemory(j, function (record) {
-          if (!record.printFiles.some(function (f) { return f.p === r.path; })) record.printFiles.push({ p: r.path, n: r.name || r.path.split(/[\\/]/).pop() });
+          if (!record.printFiles.some(function (f) { return sameFileRef(f.p, r.path); })) record.printFiles.push({ p: r.path, n: r.name || r.path.split(/[\/]/).pop() });
           return record;
         }).then(function () { render(); refreshDetail(); toast('✓ จำไฟล์พิมพ์ไว้กับใบงานแล้ว'); });
       }).catch(function (er) { toast('⚠ บันทึกไฟล์พิมพ์ไม่ได้: ' + er.message); });
     }
-    else if (a === 'openprint') { var pr = printFilesOf(j)[+b.dataset.i || 0]; if (pr) host('st_openFile', pr.p).then(function (r) { toast(r.error ? '⚠ ' + r.error : '✓ ' + r.msg); }); }
-    else if (a === 'open') { var of = filesOf(j)[+b.dataset.i || 0]; if (!of) return toast('⚠ ไม่พบไฟล์ที่ผูกไว้'); host('st_openFile', of.p).then(function (r) { toast(r.error ? '⚠ ' + r.error : '✓ ' + r.msg); }); }
+    else if (a === 'openprint') { var pr = printFilesOf(j)[+b.dataset.i || 0]; if (pr) openFileRef(pr.p).then(function (r) { toast(r.error ? '⚠ ' + r.error : '✓ ' + r.msg); }, function (er) { toast('⚠ ' + er.message); }); }
+    else if (a === 'open') { var of = filesOf(j)[+b.dataset.i || 0]; if (!of) return toast('⚠ ไม่พบไฟล์ที่ผูกไว้'); openFileRef(of.p).then(function (r) { toast(r.error ? '⚠ ' + r.error : '✓ ' + r.msg); }, function (er) { toast('⚠ ' + er.message); }); }
     else if (a === 'unlink') {
       var ul = filesOf(j), ui = +b.dataset.i, gone = ul[ui]; if (!gone) return;
       ul.splice(ui, 1);
@@ -412,8 +474,9 @@
     else if (a === 'link') host('st_docInfo').then(function (r) {
       if (r.error) return toast('⚠ ' + r.error);
       if (!r.path) return toast('⚠ บันทึกไฟล์ก่อน แล้วค่อยผูกกับใบงาน');
-      var nm = r.path.split(/[\\/]/).pop(), cur = filesOf(j);
-      if (cur.some(function (f) { return f.p === r.path; })) return toast('ไฟล์ ' + nm + ' ผูกกับใบงานนี้อยู่แล้ว');
+      var nm = r.path.split(/[\/]/).pop(), cur = filesOf(j);
+      try { if (cur.some(function (f) { return sameFileRef(f.p, r.path); })) return toast('ไฟล์ ' + nm + ' ผูกกับใบงานนี้อยู่แล้ว (Windows/Mac อ้างอิงเดียวกัน)'); }
+      catch (er) { return toast('⚠ ตรวจการผูกซ้ำไม่ได้: ' + er.message); }
       cur.push({ p: r.path, n: nm });
       saveFiles(j, cur).then(function () { render(); refreshDetail(); toast('✓ ผูกไฟล์ ' + nm + ' กับ ' + (j.no || 'ใบงาน') + ' (รวม ' + cur.length + ' ไฟล์)'); }, function (er) { toast('⚠ ' + er.message); });
     });
@@ -476,13 +539,15 @@
     if (j._stMemoryErr) return Promise.reject(new Error('ข้อมูลผลิตของใบงานผิดปกติ — ยังไม่ส่งตัด'));
     if (memoryWrites[j.id]) return Promise.reject(new Error('กำลังบันทึกค่าใบงาน — รอสักครู่แล้วกดตัดใหม่'));
     if (cq.unsynced) return Promise.reject(new Error('ข้อมูลล่าสุดยังไม่บันทึกใบงาน — กดบันทึกใบงานก่อนตัด'));
-    var mt = fileMtime(f.p);
-    if (mt && cq.mtime && Math.abs(mt - cq.mtime) > 1500) return Promise.reject(new Error('ไฟล์ถูกแก้/บันทึกหลังสแกน (' + cqTime(cq.savedAt) + ') — กด "สแกนใหม่" ก่อนตัด'));
-    try { restoreCut(cq); } catch (e) { return Promise.reject(e); }
-    window.ST_cutApi.load(cq.snap, { key: cqKey(j, f) });
-    var inf = window.ST_cutApi.info();
-    if (!inf.ok) return Promise.reject(new Error(inf.blocked ? 'มาร์คแบบนี้ยังส่งตัดจากแผงไม่ได้ — ใช้ Cutting Master' : 'ไม่มีเส้นให้ตัด'));
-    return window.ST_cutApi.send();
+    return fileMtime(f.p).then(function (mt) {
+      if (memoryWrites[j.id] || cq.unsynced) throw new Error('ข้อมูลตัดกำลังเปลี่ยน/บันทึก — รอแล้วกดตัดใหม่');
+      if (mt && cq.mtime && Math.abs(mt - cq.mtime) > 1500) throw new Error('ไฟล์ถูกแก้/บันทึกหลังสแกน (' + cqTime(cq.savedAt) + ') — กด "สแกนใหม่" ก่อนตัด');
+      restoreCut(cq);
+      window.ST_cutApi.load(cq.snap, { key: cqKey(j, f) });
+      var inf = window.ST_cutApi.info();
+      if (!inf.ok) throw new Error(inf.blocked ? 'มาร์คแบบนี้ยังส่งตัดจากแผงไม่ได้ — ใช้ Cutting Master' : 'ไม่มีเส้นให้ตัด');
+      return window.ST_cutApi.send();
+    });
   }
   // ---------- ป็อบอัพพรีวิว ----------
   var COLK = { kiss: '#ff4fa3', die: '#2fd27a' };
