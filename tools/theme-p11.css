@@ -106,3 +106,12 @@ html body{--bs-font:'Noto Sans Thai','Noto Sans',system-ui,sans-serif}
 html body,html body :where(button,input,select,textarea,h1,h2,h3,h4,h5,h6,p,span,div,label,li,td,th,a,b,strong,em,small,summary,legend){font-family:'Noto Sans Thai','Noto Sans',system-ui,-apple-system,'Segoe UI',sans-serif!important}
 html body :where(code,pre,kbd,samp){font-family:ui-monospace,Menlo,Consolas,monospace!important}
 html body :where(svg,svg *){font-family:inherit}
+/* รายการใบงาน: ถอดการ์ดขาวชั้นนอกออก ให้การ์ดงานแต่ละใบลอยบนพื้นฟ้าอ่อน แบ่งชัด */
+html body .card:has(>div>ul>li.jc),html body .card:has(ul>li.jc){background:transparent!important;box-shadow:none!important;padding:0!important}
+html body .card:has(ul>li.jc) label.hist-search .txt,html body .card:has(ul>li.jc) .jf-filt select{background:#fff!important;box-shadow:0 1px 2px rgba(15,27,61,.08)!important}
+html body ul>li.jc{background:#fff!important;border:1px solid #D5DDF0!important;box-shadow:0 2px 4px rgba(15,27,61,.06),0 10px 22px rgba(20,40,140,.10)!important;border-radius:18px!important}
+html body ul:has(>li.jc){gap:14px!important}
+html body li.jc.st-pending{border-left:5px solid #E0A12B!important}
+html body li.jc.st-filed{border-left:5px solid #2F6BE0!important}
+html body li.jc.st-printed{border-left:5px solid #7B5CE0!important}
+html body li.jc.st-shipped,html body li.jc.st-billdone,html body li.jc.st-done{border-left:5px solid #2FA66B!important}
