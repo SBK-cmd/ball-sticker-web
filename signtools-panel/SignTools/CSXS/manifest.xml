@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExtensionManifest Version="9.0" ExtensionBundleId="com.ballsticker.signtools" ExtensionBundleVersion="1.13.48" ExtensionBundleName="Sign Tools" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<ExtensionManifest Version="9.0" ExtensionBundleId="com.ballsticker.signtools" ExtensionBundleVersion="1.13.60" ExtensionBundleName="Sign Tools" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <ExtensionList>
-    <Extension Id="com.ballsticker.signtools.panel" Version="1.13.48"/>
+    <Extension Id="com.ballsticker.signtools.panel" Version="1.13.60"/>
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList><Host Name="ILST" Version="[22.0,99.9]"/></HostList>

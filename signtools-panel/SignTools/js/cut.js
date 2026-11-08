@@ -234,6 +234,24 @@
       if ('on' in o && $('cutDrv').checked !== !!o.on) { $('cutDrv').checked = !!o.on; $('cutDrv').dispatchEvent(new Event('change')); }
       Object.keys(map).forEach(function (k) { if (k in o) { var el = $(map[k]); if (el.value !== String(o[k])) { el.value = o[k]; el.dispatchEvent(new Event('change')); } } });
     },
+    // ค่าตัดของใบงาน ไม่รวมชื่อ/IP เครื่อง และไม่ใช่การซิงก์รีโมท
+    getSettings: function () {
+      var o = opts();
+      return { lang: o.lang, step: o.step, rotate: o.rotate, mirror: o.mirror, overcut: o.overcut,
+        useMk: !!$('cutUseMk').checked, cond: parseInt($('cutCond').value, 10) || 2,
+        first: $('cutFirst').value, nm: nmOpt() };
+    },
+    setSettings: function (o) {
+      if (!o) return;
+      var map = { step: 'cutStep', rotate: 'cutRot', mirror: 'cutMirror', overcut: 'cutOver', useMk: 'cutUseMk', cond: 'cutCond', first: 'cutFirst' };
+      Object.keys(map).forEach(function (k) { if (k in o) { var el = $(map[k]); if (el.type === 'checkbox') el.checked = o[k]; else el.value = String(o[k]); } });
+      if (o.lang) document.querySelectorAll('.seg[data-name="cutLang"] button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === o.lang); });
+      if (o.nm) {
+        var nm = { rollW: 'nmW', x0: 'nmX', y0: 'nmY', gx: 'nmGX', gy: 'nmGY', copies: 'nmN' };
+        Object.keys(nm).forEach(function (k) { if (k in o.nm) $(nm[k]).value = String(k === 'copies' ? o.nm[k] : o.nm[k] / 10); });
+      }
+      langUI(); rebuild();
+    },
     stopSim: function () { if (anim) { cancelAnimationFrame(anim.raf); anim = null; } },
     send: function () { return sendNow(); },
     info: function () {   // สรุปว่าจะส่งอะไรเข้าเครื่องไหน (ให้หน้าคิวงานโชว์ก่อนกดตัด)

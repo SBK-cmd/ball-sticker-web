@@ -60,7 +60,7 @@
     if ('mapValue' in v) { var o = {}, f = v.mapValue.fields || {}; Object.keys(f).forEach(function (k) { o[k] = fv(f[k]); }); return o; }
     return null;
   }
-  var FIELDS = ['no', 'date', 'jName', 'jPhone', 'jAddr', 'page', 'account', 'items', 'note', 'due', 'status', 'savedAt', 'aiFile', 'aiFileName', 'aiFiles', 'photos', 'createdBy'];
+  var FIELDS = ['no', 'date', 'jName', 'jPhone', 'jAddr', 'page', 'account', 'items', 'note', 'due', 'status', 'savedAt', 'aiFile', 'aiFileName', 'aiFiles', 'stProduction', 'printFiles', 'photos', 'createdBy'];
   function load(quiet) {
     if (loading) return; loading = true; if (!quiet) render();
     var all = [];
@@ -79,7 +79,7 @@
             its.forEach(function (x, pos) {
               var q = stq['i' + x.ix] || {};
               all.push({ id: o.id + '#' + x.ix, _col: col, _doc: o.id, _idx: x.ix, ws: true, wsN: its.length, wsI: pos + 1, jName: o.buyerName, no: o.ref || '', date: o.date, savedAt: o.savedAt, createdBy: o.createdBy,
-                note: o.note, paid: o.paid, items: [x.it], status: q.status || (fresh ? 'pending' : 'shipped'), aiFile: q.aiFile || '', aiFileName: q.aiFileName || '' });   // ใบเก่าที่ยังไม่เคยตั้งสถานะ = ถือว่าส่งแล้ว
+                note: o.note, paid: o.paid, items: [x.it], status: q.status || (fresh ? 'pending' : 'shipped'), aiFile: q.aiFile || '', aiFileName: q.aiFileName || '', aiFiles: q.aiFiles || '', stProduction: q.stProduction || '', printFiles: q.printFiles || [] });   // ใบเก่าที่ยังไม่เคยตั้งสถานะ = ถือว่าส่งแล้ว
             });
             return;
           }
@@ -208,8 +208,12 @@
   }
   // ไฟล์ที่ผูกกับใบงาน: เก็บเป็น JSON ในช่อง aiFiles (หลายไฟล์) · ช่องเดิม aiFile/aiFileName = ไฟล์แรก (ให้ใบงานเก่ายังใช้ได้)
   function filesOf(j) {
+    if (window.STJobMemory) {
+      try { var record = window.STJobMemory.read(j); j._stMemoryErr = ''; return record.files; }
+      catch (e) { j._stMemoryErr = e.message; }
+    }
     var a = [];
-    try { a = JSON.parse(j.aiFiles || '[]'); } catch (e) { a = []; }
+    try { a = Array.isArray(j.aiFiles) ? j.aiFiles : JSON.parse(j.aiFiles || '[]'); } catch (e) { a = []; }
     a = (Array.isArray(a) ? a : []).filter(function (f) { return f && f.p; });
     if (!a.length && j.aiFile) a = [{ p: j.aiFile, n: j.aiFileName || String(j.aiFile).split(/[\\/]/).pop() }];
     return a;
@@ -219,7 +223,15 @@
   function cqAll() { try { var d = JSON.parse(localStorage.getItem(CQK) || '{}'); return d && typeof d === 'object' ? d : {}; } catch (e) { return {}; } }
   function cqSaveAll(d) { try { localStorage.setItem(CQK, JSON.stringify(d)); return true; } catch (e) { return false; } }
   function cqKey(j, f) { return j.id + '|' + f.p; }
-  function cqGet(j, f) { return cqAll()[cqKey(j, f)] || null; }
+  function cqGet(j, f) {
+    if (j._stMemoryErr) return null;  // ห้ามส่ง snapshot ที่ข้อมูลใบงานเสีย
+    var local = cqAll()[cqKey(j, f)], cloud = f.cut || null;
+    if (local && (!cloud || local.unsynced || local.savedAt > cloud.savedAt)) return local;
+    if (!cloud) return local || null;
+    var out = JSON.parse(JSON.stringify(cloud));
+    out.jid = j.id; out.p = f.p; out.n = f.n || ''; out.no = j.no || ''; out.jName = j.jName || '';
+    return out;
+  }
   function cqTime(t) { var d = new Date(t); return d.toTimeString().slice(0, 5) + (new Date().toDateString() === d.toDateString() ? '' : ' ' + d.getDate() + '/' + (d.getMonth() + 1)); }
   function fileMtime(path) {   // เวลาแก้ไขไฟล์ล่าสุดบนดิสก์ (null = อ่านไม่ได้ เช่น ไดรฟ์เครือข่ายไม่ตอบ)
     try { var R = window.cep_node && window.cep_node.require; if (!R) return null; return R('fs').statSync(path).mtimeMs || null; } catch (e) { return null; }
@@ -227,7 +239,7 @@
   // สรุปบนหัวใบงาน: กี่ไฟล์ที่ส่งตัดเข้าเครื่องแล้ว / กี่ไฟล์ที่สแกนไว้รอตัด ("ส่งตัดแล้ว" = ส่งข้อมูลเข้าเครื่องสำเร็จ แผงรู้ไม่ได้ว่าเครื่องตัดเสร็จจริงหรือยัง)
   function cutChip(j) {
     var fs = filesOf(j), all = cqAll(), sent = 0, wait = 0;
-    fs.forEach(function (f) { var q = all[cqKey(j, f)]; if (q) { if (q.sentAt) sent++; else wait++; } });
+    fs.forEach(function (f) { var q = cqGet(j, f); if (q) { if (q.sentAt) sent++; else wait++; } });
     if (!sent && !wait) return '';
     return '<span class="cqchip' + (sent && sent === fs.length ? ' done' : '') + '">' + (sent ? '✅ ส่งตัดแล้ว ' + sent + '/' + fs.length : '') + (sent && wait ? ' · ' : '') + (wait ? '⏳ รอตัด ' + wait : '') + '</span>';
   }
@@ -265,16 +277,52 @@
         (withRemove ? '<button class="btn ghost sm" data-act="unlink" data-i="' + i + '" aria-label="เอาไฟล์นี้ออก">✕</button>' : '') + '</div>' +
         (cq ? '<div class="cqf cqwait' + (cq.sentAt ? ' done' : '') + '"><span class="cqfn">' + (cq.sentAt ? '✅ ส่งตัดแล้ว ' + h(cqTime(cq.sentAt)) + ' · ' : '⏳ รอตัด · ') + 'สแกน ' + h(cqTime(cq.savedAt)) + ' · ' + h(cq.snap && cq.snap.n || 0) + ' เส้น</span>' +
           '<button class="btn ghost sm" data-act="cutprev" data-i="' + i + '">👁 พรีวิว</button>' +
+          (cq.unsynced || !f.cut ? '<button class="btn ghost sm" data-act="cutsave" data-i="' + i + '">บันทึกใบงาน</button>' : '') +
           '<button class="btn sm' + (armed === cqKey(j, f) ? ' arm' : '') + '" data-act="cutnow" data-i="' + i + '">' + (armed === cqKey(j, f) ? 'กดอีกครั้งเพื่อตัด' : cq.sentAt ? '✂ ตัดอีกครั้ง' : '✂ ตัด') + '</button>' +
-          '<button class="btn ghost sm" data-act="cutdrop" data-i="' + i + '" aria-label="ลบรอตัด">✕</button></div>' : '');
+          '<button class="btn ghost sm" data-act="cutdrop" data-i="' + i + '" aria-label="ลบรอตัด">✕</button></div>' +
+          '<div class="hint">' + (cq.unsynced ? '⚠ ข้อมูลล่าสุดยังอยู่เฉพาะเครื่องนี้ — กดบันทึกใบงาน' : f.cut ? 'จำเส้นตัด/มาร์ค/ค่าตัดไว้กับใบงานแล้ว' : 'ข้อมูลรุ่นเก่าอยู่เฉพาะเครื่องนี้ — กดบันทึกใบงานก่อนใช้ข้ามเครื่อง') + '</div>' : '');
     }).join('') + '</div>';
   }
   function linkLabel(j) { return filesOf(j).length ? '+ ผูกไฟล์เพิ่ม' : 'ผูกไฟล์ที่เปิดอยู่'; }
-  function saveFiles(j, arr) {
-    var first = arr[0] || null;
-    return patch(j, { aiFiles: JSON.stringify(arr), aiFile: first ? first.p : '', aiFileName: first ? first.n : '' }).then(function () {
-      j.aiFiles = JSON.stringify(arr); j.aiFile = first ? first.p : ''; j.aiFileName = first ? first.n : '';
+  function printFilesOf(j) {
+    try {
+      var record = window.STJobMemory.read(j), arr = record.printFiles.slice();
+      record.files.forEach(function (f) { (f.prints || []).forEach(function (p) { if (!arr.some(function (x) { return x.p === p.p; })) arr.push(p); }); });
+      return arr;
+    } catch (e) { return []; }
+  }
+  function printBlock(j) {
+    var arr = printFilesOf(j);
+    if (!arr.length) return '';
+    return '<div class="cqk">ไฟล์พิมพ์ (' + arr.length + ')</div><div class="cqfiles">' + arr.map(function (f, i) {
+      return '<div class="cqf"><span class="cqfn" title="' + h(f.p) + '">' + h(f.n || String(f.p).split(/[\\/]/).pop()) + '</span><button class="btn ghost sm" data-act="openprint" data-i="' + i + '">เปิด</button></div>';
+    }).join('') + '</div>';
+  }
+  var memoryWrites = {};
+  function saveMemory(j, update) {
+    if (!window.STJobMemory) return Promise.reject(new Error('โมดูลใบงานยังไม่พร้อม'));
+    var before = memoryWrites[j.id] || Promise.resolve();
+    var work = before.catch(function () {}).then(function () {
+      var record = update(window.STJobMemory.read(j));
+      var data = window.STJobMemory.stringify(record), first = record.files[0] || null;
+      var legacy = record.files.map(function (f) { return { p: f.p, n: f.n || '' }; });
+      var fields = { stProduction: data, aiFiles: JSON.stringify(legacy), aiFile: first ? first.p : '', aiFileName: first ? first.n || '' : '' };
+      return patch(j, fields).then(function () { Object.keys(fields).forEach(function (k) { j[k] = fields[k]; }); j._stMemoryErr = ''; });
     });
+    memoryWrites[j.id] = work;
+    var clear = function () { if (memoryWrites[j.id] === work) delete memoryWrites[j.id]; };
+    work.then(clear, clear);
+    return work;
+  }
+  function saveCut(j, f, cq) {
+    var saved = JSON.parse(JSON.stringify(cq)); delete saved.unsynced;
+    return saveMemory(j, function (record) { return window.STJobMemory.setFile(record, { p: f.p, n: f.n || '', cut: saved }); }).then(function () {
+      cq.unsynced = false;
+      var all = cqAll(); all[cqKey(j, f)] = JSON.parse(JSON.stringify(cq)); cqSaveAll(all);
+    });
+  }
+  function saveFiles(j, arr) {
+    return saveMemory(j, function (record) { record.files = arr; return record; });
   }
   function find(el) { var c = el.closest('.qjob'); if (!c) return null; var id = c.dataset.id; return jobs.filter(function (x) { return x.id === id; })[0] || null; }
   function setStatus(j, s) {
@@ -307,13 +355,19 @@
             var mv = pair[0], thumb = pair[1];   // จุดมาร์คทุกจุด + artboard ไว้วาดพรีวิว (ไม่มีมาร์คก็ได้)
             var view = (mv && !mv.error && mv.why === 'ok' && mv.marks && mv.marks.length) ? { ab: mv.ab, marks: mv.marks } : null;
             var all = cqAll();
-            all[cqKey(j, cf)] = { jid: j.id, p: cf.p, n: cf.n || '', no: j.no || '', jName: j.jName || '', savedAt: Date.now(), mtime: fileMtime(cf.p), snap: rd, view: view, thumb: thumb || '', viewNote: view ? '' : String(mv && (mv.error || mv.why) || 'no-reply') };
+            var captured = { jid: j.id, p: cf.p, n: cf.n || '', no: j.no || '', jName: j.jName || '', savedAt: Date.now(), mtime: fileMtime(cf.p), snap: rd, view: view, thumb: thumb || '', viewNote: view ? '' : String(mv && (mv.error || mv.why) || 'no-reply'),
+              drv: window.STJobMemory.normalizeDrv(window.ST_cutApi.getDrv()), settings: window.STJobMemory.normalizeSettings(window.ST_cutApi.getSettings()), sentAt: null, unsynced: true };
+            window.STJobMemory.validateCut(captured);
+            all[cqKey(j, cf)] = captured;
             if (!cqSaveAll(all)) return toast('⚠ เก็บไม่ได้ (พื้นที่เก็บของแผงเต็ม) — ลบรายการรอตัดเก่าออกก่อน');
             render(); refreshDetail();
-            toast('✓ สแกนแล้ว ' + rd.n + ' เส้น' + (rd.marks ? ' + มาร์ค' : ' (ไม่พบมาร์ค)') + ' — เก็บไว้ในรอตัด');
+            return saveCut(j, cf, captured).then(function () {
+              render(); refreshDetail();
+              toast('✓ ใบงานจำแล้ว: ' + rd.n + ' เส้น + มาร์ค/ค่าตัด — เปิดจากแอปได้โดยไม่ต้องสแกนใหม่');
+            }, function (er) { render(); refreshDetail(); toast('⚠ เก็บในเครื่องแล้ว แต่บันทึกใบงานไม่ได้: ' + er.message + ' — กดบันทึกใบงานอีกครั้ง'); });
           });
         });
-      });
+      }).catch(function (er) { toast('⚠ สแกน/บันทึกไม่ได้: ' + er.message); });
     }
     else if (a === 'cutprev') {      // ป็อบอัพพรีวิวเส้นตัด + มาร์ค (ส่งตัดจากในป็อบอัพได้เลย)
       var pf = filesOf(j)[+b.dataset.i || 0]; if (!pf) return;
@@ -329,8 +383,26 @@
     }
     else if (a === 'cutdrop') {
       var df = filesOf(j)[+b.dataset.i || 0]; if (!df) return;
-      var al = cqAll(); delete al[cqKey(j, df)]; cqSaveAll(al); render(); refreshDetail(); toast('ลบรายการรอตัดแล้ว');
+      saveMemory(j, function (record) { record.files.forEach(function (f) { if (f.p === df.p) f.cut = null; }); return record; }).then(function () {
+        var al = cqAll(); delete al[cqKey(j, df)]; cqSaveAll(al); render(); refreshDetail(); toast('เอา snapshot ตัดออกจากใบงานแล้ว (ไม่ลบไฟล์จริง)');
+      }, function (er) { toast('⚠ ยังไม่ลบ snapshot: ' + er.message); });
     }
+    else if (a === 'cutsave') {
+      var sf = filesOf(j)[+b.dataset.i || 0], sq = sf && cqGet(j, sf); if (!sq) return;
+      try { sq.drv = window.STJobMemory.normalizeDrv(sq.drv || window.ST_cutApi.getDrv()); sq.settings = window.STJobMemory.normalizeSettings(sq.settings || window.ST_cutApi.getSettings()); }
+      catch (er) { return toast('⚠ ' + er.message); }
+      saveCut(j, sf, sq).then(function () { render(); refreshDetail(); toast('✓ บันทึกข้อมูลตัดไว้กับใบงานแล้ว'); }, function (er) { toast('⚠ บันทึกใบงานไม่ได้: ' + er.message); });
+    }
+    else if (a === 'printlink') {
+      host('st_pickFile', 'เลือกไฟล์พิมพ์ของใบงานนี้ (ไม่เดาจับคู่กับไฟล์ตัด)').then(function (r) {
+        if (r.cancel) return; if (r.error) return toast('⚠ ' + r.error); if (!r.path) return;
+        return saveMemory(j, function (record) {
+          if (!record.printFiles.some(function (f) { return f.p === r.path; })) record.printFiles.push({ p: r.path, n: r.name || r.path.split(/[\\/]/).pop() });
+          return record;
+        }).then(function () { render(); refreshDetail(); toast('✓ จำไฟล์พิมพ์ไว้กับใบงานแล้ว'); });
+      }).catch(function (er) { toast('⚠ บันทึกไฟล์พิมพ์ไม่ได้: ' + er.message); });
+    }
+    else if (a === 'openprint') { var pr = printFilesOf(j)[+b.dataset.i || 0]; if (pr) host('st_openFile', pr.p).then(function (r) { toast(r.error ? '⚠ ' + r.error : '✓ ' + r.msg); }); }
     else if (a === 'open') { var of = filesOf(j)[+b.dataset.i || 0]; if (!of) return toast('⚠ ไม่พบไฟล์ที่ผูกไว้'); host('st_openFile', of.p).then(function (r) { toast(r.error ? '⚠ ' + r.error : '✓ ' + r.msg); }); }
     else if (a === 'unlink') {
       var ul = filesOf(j), ui = +b.dataset.i, gone = ul[ui]; if (!gone) return;
@@ -377,10 +449,12 @@
       (j.note && String(j.note).trim() ? '<div class="cqk">หมายเหตุ</div><div class="cqv cqnote">' + h(j.note).replace(/\n/g, '<br>') + '</div>' : '') +
       (j.due ? '<div class="cqk">กำหนดส่ง</div><div class="cqv">' + thFull(j.due) + '</div>' : '') +
       (filesOf(j).length ? '<div class="cqk">ไฟล์งาน (' + filesOf(j).length + ')</div>' + fileBlock(j, true) : '') +
+      (j._stMemoryErr ? '<div class="hint warn">⚠ ข้อมูลผลิตของใบงานผิดปกติ: ' + h(j._stMemoryErr) + ' — ยังไม่โหลดเส้นตัด</div>' : '') + printBlock(j) +
       (ph.length ? '<div class="cqk">รูปอ้างอิง</div><div class="cqph">' + ph.map(function (p) { return '<img src="' + h(p) + '" data-act="img" data-src="' + h(p) + '" alt="">'; }).join('') + '</div>' : '') +
       '<div class="cqv mut small">' + [j.date ? 'วันที่ ' + thFull(j.date) : '', j.createdBy ? 'โดย ' + h(j.createdBy) : ''].filter(Boolean).join(' · ') + '</div>' +
       '<div class="qact">' +
         '<button class="btn ghost sm" data-act="link">' + linkLabel(j) + '</button>' +
+        '<button class="btn ghost sm" data-act="printlink">+ จำไฟล์พิมพ์</button>' +
         (s === 'pending' ? '<button class="btn sm" data-act="filed">✓ ทำไฟล์แล้ว</button>' : '') + '</div></div>';
     M.classList.add('show');
   }
@@ -388,10 +462,23 @@
   function refreshDetail() { if (!detailId) return; var j = jobs.filter(function (x) { return x.id === detailId; })[0]; if (j) showDetail(j); else hideDetail(); }
 
   var armed = '', armT = 0;
+  function restoreCut(cq) {
+    if (!cq.drv || !cq.settings) throw new Error('รายการรุ่นเก่ายังไม่ได้จำค่าตัด — กดบันทึกใบงาน/สแกนใหม่ก่อนตัด');
+    window.STJobMemory.validateCut(cq);
+    var drv = window.STJobMemory.normalizeDrv(cq.drv), settings = window.STJobMemory.normalizeSettings(cq.settings);
+    ['on', 'kS', 'kA', 'kF', 'dS', 'dA', 'dF'].forEach(function (k) { if (!(k in drv)) throw new Error('ค่าแรง/ความเร็วใบงานไม่ครบ (' + k + ') — ยังไม่ใช้ค่าของใบก่อนหน้า'); });
+    ['lang', 'step', 'rotate', 'mirror', 'overcut', 'useMk', 'cond', 'first', 'nm'].forEach(function (k) { if (!(k in settings)) throw new Error('ตัวเลือกตัดใบงานไม่ครบ (' + k + ') — กดสแกนใหม่'); });
+    ['rollW', 'x0', 'y0', 'gx', 'gy', 'copies'].forEach(function (k) { if (!settings.nm || !(k in settings.nm)) throw new Error('ตัวเลือกตัดไม่อ่านมาร์คไม่ครบ (' + k + ')'); });
+    window.ST_cutApi.setSettings(settings); window.ST_cutApi.setDrv(drv);
+  }
   // โหลดเส้นที่สแกนไว้เข้าตัวส่งตัด (เช็กไฟล์เปลี่ยน) แล้วส่งเข้าเครื่อง
   function doCut(j, f, cq) {
+    if (j._stMemoryErr) return Promise.reject(new Error('ข้อมูลผลิตของใบงานผิดปกติ — ยังไม่ส่งตัด'));
+    if (memoryWrites[j.id]) return Promise.reject(new Error('กำลังบันทึกค่าใบงาน — รอสักครู่แล้วกดตัดใหม่'));
+    if (cq.unsynced) return Promise.reject(new Error('ข้อมูลล่าสุดยังไม่บันทึกใบงาน — กดบันทึกใบงานก่อนตัด'));
     var mt = fileMtime(f.p);
     if (mt && cq.mtime && Math.abs(mt - cq.mtime) > 1500) return Promise.reject(new Error('ไฟล์ถูกแก้/บันทึกหลังสแกน (' + cqTime(cq.savedAt) + ') — กด "สแกนใหม่" ก่อนตัด'));
+    try { restoreCut(cq); } catch (e) { return Promise.reject(e); }
     window.ST_cutApi.load(cq.snap, { key: cqKey(j, f) });
     var inf = window.ST_cutApi.info();
     if (!inf.ok) return Promise.reject(new Error(inf.blocked ? 'มาร์คแบบนี้ยังส่งตัดจากแผงไม่ได้ — ใช้ Cutting Master' : 'ไม่มีเส้นให้ตัด'));
@@ -432,7 +519,7 @@
   var DRV_LIM = { kS: [1, 100], kA: [1, 3], kF: [1, 60], dS: [1, 100], dA: [1, 3], dF: [1, 60] };
   var DRV_DEF = { kS: 71, kA: 2, kF: 38, dS: 50, dA: 2, dF: 25 };
   function drvBlock(cq) {
-    var d = window.ST_cutApi.getDrv(), ps = (cq.snap && cq.snap.paths) || [], nk = 0, nd = 0;
+    var d = cq.drv || window.ST_cutApi.getDrv(), ps = (cq.snap && cq.snap.paths) || [], nk = 0, nd = 0;
     ps.forEach(function (x) { if (x.k === 'die') nd++; else nk++; });
     function inp(k) { return '<input type="number" data-dv="' + k + '" min="' + DRV_LIM[k][0] + '" max="' + DRV_LIM[k][1] + '" placeholder="' + DRV_DEF[k] + '" value="' + h(d[k]) + '"' + (d.on ? '' : ' disabled') + '>'; }
     return '<div class="cqdrv"><label class="chk"><input type="checkbox" data-dv="on"' + (d.on ? ' checked' : '') + '> <b>ตั้งแรงกด / ความเร็ว แยก Kiss Cut – Die Cut</b></label>' +
@@ -444,24 +531,38 @@
   function drvNote(d, nd) {
     if (!d.on) return nd ? '⚠ มีเส้น Die Cut ' + nd + ' เส้น แต่ยังไม่ได้ติ๊ก — จะตัดทุกเส้นด้วยแรงกดที่ตั้งไว้ที่ตัวเครื่อง' : 'ไม่ติ๊ก = ใช้แรงกดที่ตั้งไว้ที่ตัวเครื่อง';
     var empty = Object.keys(DRV_DEF).filter(function (k) { return !(parseFloat(d[k]) > 0); });
-    return empty.length ? '⚠ ช่องที่เว้นว่างจะใช้ค่าเริ่มต้นของแผง (ตามตัวเลขจางในช่อง)' : 'ค่าจะถูกจำไว้กับเครื่องตัดที่เลือกในหน้า "ส่งตัด"';
+    return empty.length ? '⚠ กรอกค่าตัดให้ครบก่อนบันทึกใบงาน' : 'จำค่าแยกไว้กับไฟล์ตัดของใบงานนี้ (ไม่ใช้ค่าจากใบงานก่อนหน้า)';
   }
   function onDrv(e) {
     var t = e.target, k = t && t.dataset && t.dataset.dv; if (!k || !window.ST_cutApi) return;
-    var M = $('cqPrev');
-    if (k === 'on') {
-      window.ST_cutApi.setDrv({ on: t.checked });
-      [].forEach.call(M.querySelectorAll('input[data-dv]:not([data-dv="on"])'), function (x) { x.disabled = !t.checked; });
-    } else {
-      var v = parseFloat(t.value), lim = DRV_LIM[k];
-      if (e.type === 'change' && t.value !== '' && !(v >= lim[0] && v <= lim[1])) { v = Math.min(lim[1], Math.max(lim[0], isFinite(v) ? v : DRV_DEF[k])); t.value = v; toast('ปรับเป็น ' + v + ' (ช่วงที่ตั้งได้ ' + lim[0] + '–' + lim[1] + ')'); }
-      if (e.type === 'change') { var o = {}; o[k] = t.value; window.ST_cutApi.setDrv(o); }
+    if (!prevCtx || e.type !== 'change') return;
+    var M = $('cqPrev'), pc = prevCtx, old = pc.cq.drv || window.ST_cutApi.getDrv(), candidate = JSON.parse(JSON.stringify(old));
+    candidate[k] = k === 'on' ? t.checked : t.value;
+    try { candidate = window.STJobMemory.normalizeDrv(candidate); }
+    catch (er) {
+      if (k === 'on') t.checked = !!old.on; else t.value = old[k];
+      return toast('⚠ ไม่บันทึกค่าผิด: ' + er.message);
     }
-    var d = window.ST_cutApi.getDrv(), nd = ((prevCtx && prevCtx.cq.snap.paths) || []).filter(function (x) { return x.k === 'die'; }).length, n = $('cqDrvNote');
-    if (n) n.textContent = drvNote(d, nd);
+    var changed = JSON.parse(JSON.stringify(pc.cq)); changed.drv = candidate;
+    try { changed.settings = window.STJobMemory.normalizeSettings(changed.settings || window.ST_cutApi.getSettings()); }
+    catch (er2) { return toast('⚠ ไม่บันทึกค่าตัด: ' + er2.message); }
+    changed.unsynced = true; pc.cq = changed;
+    var all = cqAll(); all[cqKey(pc.j, pc.f)] = changed;
+    if (!cqSaveAll(all)) return toast('⚠ พื้นที่เครื่องเต็ม — ยังไม่ได้บันทึกค่าใบงาน');
+    window.ST_cutApi.setDrv(candidate);
+    [].forEach.call(M.querySelectorAll('input[data-dv]:not([data-dv="on"])'), function (x) { x.disabled = !candidate.on; });
+    var nd = ((changed.snap && changed.snap.paths) || []).filter(function (x) { return x.k === 'die'; }).length, n = $('cqDrvNote');
+    if (n) n.textContent = 'กำลังบันทึกค่าไว้กับใบงาน…';
+    saveCut(pc.j, pc.f, changed).then(function () { if (n) n.textContent = drvNote(candidate, nd); render(); }, function (er) {
+      if (n) n.textContent = '⚠ ค่าล่าสุดยังอยู่เฉพาะเครื่องนี้ — ปิดพรีวิวแล้วกดบันทึกใบงาน';
+      toast('⚠ บันทึกค่าใบงานไม่ได้: ' + er.message); render();
+    });
   }
   var prevCtx = null;
   function showPrev(j, f, cq) {
+    if (cq.drv && cq.settings) {
+      try { restoreCut(cq); } catch (e) { return toast('⚠ ไม่เปิดข้อมูลตัดที่ผิดปกติ: ' + e.message); }
+    }
     prevCtx = { j: j, f: f, cq: cq };
     var M = $('cqPrev');
     if (!M) {
@@ -472,6 +573,7 @@
         if (sb && prevCtx) {   // จำลองลำดับการตัด (ไม่ส่งเข้าเครื่อง) ใช้ค่าของหน้า "ส่งตัด" เช่น หมุน/กลับซ้ายขวา/ตัด Die ทีหลัง
           var cv = $('cqPrevCv'), pc2 = prevCtx;
           if (sb.dataset.on === '1') { window.ST_cutApi.stopSim(); sb.dataset.on = ''; sb.textContent = '▶ จำลองการตัด'; drawPrev(cv, pc2.cq); return; }
+          try { restoreCut(pc2.cq); } catch (er) { return toast('⚠ ' + er.message); }
           window.ST_cutApi.load(pc2.cq.snap, null);
           if (!window.ST_cutApi.info().ok) return toast('⚠ ไม่มีเส้นให้จำลอง');
           sb.dataset.on = '1'; sb.textContent = '■ หยุด';
@@ -499,7 +601,12 @@
   function hidePrev() { try { window.ST_cutApi.stopSim(); } catch (e) {} prevCtx = null; var M = $('cqPrev'); if (M) M.classList.remove('show'); }
   document.addEventListener('st:cutsent', function (e) {   // ส่งตัดสำเร็จ → จดเวลาไว้ที่รายการรอตัด (ไม่ลบ เผื่อต้องตัดซ้ำ)
     var k = e.detail && e.detail.key; if (!k) return;
-    var all = cqAll(); if (!all[k]) return; all[k].sentAt = Date.now(); cqSaveAll(all); render(); refreshDetail();
+    var job = null, file = null, saved = null;
+    jobs.some(function (j) { return filesOf(j).some(function (f) { if (cqKey(j, f) !== k) return false; job = j; file = f; saved = cqGet(j, f); return true; }); });
+    if (!saved) return;
+    saved.sentAt = Date.now(); saved.unsynced = true;
+    var all = cqAll(); all[k] = saved; cqSaveAll(all); render(); refreshDetail();
+    saveCut(job, file, saved).then(function () { render(); refreshDetail(); }, function (er) { toast('⚠ ส่งเข้าเครื่องแล้ว แต่บันทึกสถานะใบงานไม่ได้: ' + er.message); });
   });
   // ---------- เปิดใช้เมื่อเซิร์ฟเวอร์อนุญาต ----------
   function start(f) {

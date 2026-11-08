@@ -1,0 +1,12 @@
+{
+  "name": "signtools-offline-tests",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "test:memory": "node job-memory-test.cjs",
+    "test:queue": "node queue-memory-test.cjs .."
+  },
+  "devDependencies": {
+    "jsdom": "24.1.3"
+  }
+}
