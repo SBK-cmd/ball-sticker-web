@@ -72,3 +72,10 @@ html body .card{padding:18px}
 html body .btn,html body .jc-b,html body .btab,html body .card,html body .jc{transition:transform .12s ease,background-color .15s ease,box-shadow .15s ease}
 @media (prefers-reduced-motion:reduce){html body *{transition:none!important;animation:none!important}}
 html body header.top{background:#EEF2FB!important;backdrop-filter:none}
+/* ตามเช็กลิสต์ UI/UX Pro Max: คอนทราสต์ ≥4.5:1, ตัวอักษรเล็กสุด 12px, placeholder อ่านออก */
+html body .btab{color:#5A6788!important}
+html body .btab-label{font-size:12px!important;color:#5A6788}
+html body .btab.active .btab-label,html body .btab[aria-selected="true"] .btab-label{color:#1B2F9C!important}
+html body .jc-chip,html body .status-pill,html body .chip{font-size:12px!important}
+html body ::placeholder{color:#6B7794!important;opacity:1}
+html body .muted,html body .sub,html body .jc-sub{color:#5A6788!important}
