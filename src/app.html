@@ -1238,6 +1238,13 @@ table.lines tfoot .r{text-align:right;font-variant-numeric:tabular-nums;white-sp
 .cutq-st.ok{color:#0a7a3d;border-color:#0a7a3d}.cutq-st.bad{color:#c0282d;border-color:#c0282d}.cutq-st.wait{color:#9a6b00;border-color:#d9a400}
 .cutq-go{grid-column:1/-1;min-height:48px;font-size:16px;font-weight:700}
 .cutq-go.arm{background:#d81f66;color:#fff;border-color:#d81f66}
+.cutq-pv{grid-column:1/-1;min-height:40px}
+.cutq-prev{grid-column:1/-1;display:grid;gap:8px}
+.cutq-cv{width:100%;height:auto;border-radius:10px;display:block}
+.cutq-leg{font-size:12.5px;display:flex;gap:12px;flex-wrap:wrap}
+.cutq-vals{display:grid;gap:4px;font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.cutq-vals div{display:flex;justify-content:space-between;gap:10px}.cutq-vals span{color:var(--muted)}
+.cutq-vals small{color:var(--muted);font-size:12px;line-height:1.4}
 .cutq-empty{color:var(--muted);font-size:14px;padding:18px 4px;text-align:center}
 
 .sh-doc h2{font:700 19px/1.25 'Prompt',sans-serif;margin:0 0 4px}
@@ -11943,6 +11950,64 @@ function bahtText(value) {
     return {c: 'bad', t: '⚠ ' + (req.msg || 'ไม่ได้ตัด') + ' (' + cutqClock(req.doneAt || req.at) + ')'};
   }
   function cutqBusy(req) { return !!req && (req.status === 'pending' || req.status === 'claimed') && (Date.now() - (+req.at || 0)) < CUTQ_TTL; }
+  const CUTQ_B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  function cutqDecode(str) {         // เส้นที่ถูกย่อ (pz "v1:…") → ตัวเลขพิกัดเดิม (เหมือนในแผง)
+    if (typeof str !== 'string' || str.indexOf('v1:') !== 0) return null;
+    str = str.slice(3); const vals = []; let i = 0;
+    while (i < str.length) {
+      let z = 0, mul = 1;
+      for (;;) {
+        if (i >= str.length) return null;
+        const idx = CUTQ_B64.indexOf(str.charAt(i++)); if (idx < 0) return null;
+        z += (idx % 32) * mul; if (idx < 32) break; mul *= 32; if (mul > 1e15) return null;
+      }
+      vals.push(z % 2 ? -(z + 1) / 2 : z / 2);
+    }
+    if (!vals.length || vals.length % 6) return null;
+    const out = []; let px = 0, py = 0;
+    for (let k = 0; k < vals.length; k += 6) {
+      const ax = px + vals[k], ay = py + vals[k + 1];
+      out.push(ax / 1000, ay / 1000, (ax + vals[k + 2]) / 1000, (ay + vals[k + 3]) / 1000, (ax + vals[k + 4]) / 1000, (ay + vals[k + 5]) / 1000);
+      px = ax; py = ay;
+    }
+    return out;
+  }
+  function cutqDraw(cv, cut) {
+    const g = cv.getContext('2d'), pad = 14, paths = (cut.snap && cut.snap.paths) || [], v = cut.view;
+    const xs = [], ys = [], list = [];
+    paths.forEach(pt => {
+      const a = Array.isArray(pt.p) ? pt.p : cutqDecode(pt.pz); if (!a || a.length < 12) return;
+      list.push({a, k: pt.k === 'die' ? 'die' : 'kiss', c: !!pt.c});
+      for (let i = 0; i + 1 < a.length; i += 6) { xs.push(a[i]); ys.push(a[i + 1]); }
+    });
+    if (v && v.ab) { xs.push(v.ab[0], v.ab[2]); ys.push(v.ab[1], v.ab[3]); (v.marks || []).forEach(m => { xs.push(m[0]); ys.push(m[1]); }); }
+    g.clearRect(0, 0, cv.width, cv.height); g.fillStyle = '#2b2b31'; g.fillRect(0, 0, cv.width, cv.height);
+    if (!xs.length) return;
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const W = Math.max(x1 - x0, 1), H = Math.max(y1 - y0, 1), sc = Math.min((cv.width - 2 * pad) / W, (cv.height - 2 * pad) / H);
+    const ox = pad + ((cv.width - 2 * pad) - W * sc) / 2, oy = pad + ((cv.height - 2 * pad) - H * sc) / 2;
+    const X = x => ox + (x - x0) * sc, Y = y => cv.height - oy - (y - y0) * sc;
+    if (v && v.ab) { g.strokeStyle = 'rgba(255,255,255,.3)'; g.setLineDash([4, 4]); g.strokeRect(X(Math.min(v.ab[0], v.ab[2])), Y(Math.max(v.ab[1], v.ab[3])), Math.abs(v.ab[2] - v.ab[0]) * sc, Math.abs(v.ab[1] - v.ab[3]) * sc); g.setLineDash([]); }
+    list.forEach(({a, k, c}) => {
+      g.strokeStyle = k === 'die' ? '#2fd27a' : '#ff4fa3'; g.lineWidth = 1.2; g.beginPath();
+      const np = a.length / 6; g.moveTo(X(a[0]), Y(a[1]));
+      for (let j = 0; j < (c ? np : np - 1); j++) { const A = j * 6, B = ((j + 1) % np) * 6; g.bezierCurveTo(X(a[A + 4]), Y(a[A + 5]), X(a[B + 2]), Y(a[B + 3]), X(a[B]), Y(a[B + 1])); }
+      if (c) g.closePath(); g.stroke();
+    });
+    if (v && v.marks) v.marks.forEach(m => { g.fillStyle = m[2] === 1 ? '#4da3ff' : '#ff5d5d'; g.fillRect(X(m[0]) - 4, Y(m[1]) - 4, 8, 8); });
+  }
+  function cutqVals(cut) {
+    const d = cut.drv || {}, t = cut.settings || {}, n = x => (x == null ? '—' : esc(x));
+    const row = (a, b) => '<div><span>' + a + '</span><b>' + b + '</b></div>';
+    return '<div class="cutq-vals">' +
+      row('Kiss Cut', n(d.kS) + ' cm/s · แรง ' + n(d.kF) + ' · เร่ง ' + n(d.kA)) +
+      row('Die Cut', n(d.dS) + ' cm/s · แรง ' + n(d.dF) + ' · เร่ง ' + n(d.dA)) +
+      row('หมุน 90°', t.rotate ? 'ใช่' : 'ไม่') + row('กลับซ้าย-ขวา', t.mirror ? 'ใช่' : 'ไม่') +
+      row('ตัดเกิน', n(t.overcut) + ' มม.') + row('ลำดับตัด', t.first === 'piece' ? 'ตัดทีละชิ้น' : 'Kiss Cut ทั้งแผ่นก่อน แล้ว Die Cut') +
+      row('อ่านมาร์ค', t.useMk ? 'อ่านก่อนตัด' : 'ไม่อ่าน') +
+      '<small>ค่าที่บันทึกไว้กับใบงาน — ปรับค่าที่แผงในร้านแล้วบันทึกใบงานใหม่ ก่อนสั่งตัด</small></div>';
+  }
+  const cutqOpen = {};
   function renderCutq() {
     const box = $('cutqList'); if (!box) return;
     if (!canCutRemote) { box.innerHTML = '<div class="cutq-empty">บัญชีนี้ไม่มีสิทธิ์สั่งตัด</div>'; return; }
@@ -11970,11 +12035,16 @@ function bahtText(value) {
           return '<div class="cutq-file">' + thumb + '<div><div class="cutq-fn">' + esc(f.n || 'ไฟล์') + '</div><div class="cutq-meta">Kiss ' + c.k + ' เส้น · Die ' + c.d + ' เส้น' +
             (f.cut.savedAt ? '<br>สแกน ' + cutqClock(f.cut.savedAt) : '') + (f.cut.sentAt ? ' · ตัดล่าสุด ' + cutqClock(f.cut.sentAt) : '') + '</div></div>' +
             (st ? '<div class="cutq-st ' + st.c + '">' + esc(st.t) + '</div>' : '') +
+            '<button type="button" class="btn cutq-pv" data-key="' + esc(key) + '">' + (cutqOpen[key] ? '▲ ซ่อนพรีวิว' : '👁 พรีวิว / ค่าตัด') + '</button>' +
+            (cutqOpen[key] ? '<div class="cutq-prev"><canvas class="cutq-cv" width="640" height="380" data-key="' + esc(key) + '"></canvas><div class="cutq-leg"><span style="color:#ff4fa3">▬ Kiss</span> <span style="color:#2fd27a">▬ Die</span> <span style="color:#4da3ff">■ มาร์ค</span></div>' + cutqVals(f.cut) + '</div>' : '') +
             '<button type="button" class="btn primary cutq-go' + (arm ? ' arm' : '') + '" data-id="' + esc(j.id) + '" data-fi="' + fi + '"' + (busy ? ' disabled' : '') + '>' +
             (arm ? 'กดอีกครั้งเพื่อสั่งตัดจริง' : '✂ ส่งตัด') + '</button></div>';
         }).join('') + '</div>';
     }).join('');
     box.innerHTML = html;
+    const byKey = {};
+    rows.forEach(({j, rec}) => rec.files.forEach((f, fi) => { if (f && f.cut) byKey[j.id + '|' + fi] = f.cut; }));
+    box.querySelectorAll('canvas.cutq-cv').forEach(cv => { const c = byKey[cv.dataset.key]; if (c) { try { cutqDraw(cv, c); } catch (e) { console.error(e); } } });
   }
   async function cutqSend(j, fi) {
     const rec = cutqParse(j), f = rec && rec.files[fi];
@@ -11991,6 +12061,8 @@ function bahtText(value) {
   }
   if ($('cutqList')) {
     $('cutqList').addEventListener('click', e => {
+      const pv = e.target.closest('.cutq-pv');
+      if (pv) { cutqOpen[pv.dataset.key] = !cutqOpen[pv.dataset.key]; renderCutq(); return; }
       const b = e.target.closest('.cutq-go'); if (!b || b.disabled || !canCutRemote) return;
       const key = b.dataset.id + '|' + b.dataset.fi;
       if (cutqArmed !== key) { cutqArmed = key; clearTimeout(cutqArmT); cutqArmT = setTimeout(() => { cutqArmed = ''; renderCutq(); }, 4000); renderCutq(); return; }
