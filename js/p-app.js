@@ -8383,29 +8383,34 @@ function bahtText(value) {
   function cutqEff(cut, key) {
     const d = Object.assign({}, cut.drv || {}), t = cut.settings || {}, o = cutqOv[key] || {};
     Object.keys(CUTQ_F).forEach(k => { if (o[k] != null) d[k] = o[k]; });
-    return {d, first: o.first || (t.first === 'piece' ? 'piece' : 'kiss')};
+    return {d, first: o.first || (t.first === 'piece' ? 'piece' : 'kiss'), mk: o.useMk != null ? !!o.useMk : !!t.useMk};
   }
   function cutqDiff(cut, key) {      // ค่าที่ต่างจากที่บันทึกไว้ (ผ่านช่วงที่อนุญาตเท่านั้น)
     const o = cutqOv[key] || {}, d = cut.drv || {}, t = cut.settings || {}, out = {};
     Object.keys(CUTQ_F).forEach(k => { const v = o[k]; if (v != null && isFinite(v) && v >= CUTQ_F[k][0] && v <= CUTQ_F[k][1] && v !== +d[k]) out[k] = v; });
     const f0 = t.first === 'piece' ? 'piece' : 'kiss';
     if (o.first && o.first !== f0 && (o.first === 'kiss' || o.first === 'piece')) out.first = o.first;
+    if (o.useMk != null && !!o.useMk !== !!t.useMk && cut.snap && cut.snap.marks) out.useMk = !!o.useMk;
     return out;
   }
   function cutqVals(cut, key) {
-    const e = cutqEff(cut, key), d = cut.drv || {}, t = cut.settings || {}, o = cutqOv[key] || {};
-    const inp = (k) => '<label>' + CUTQ_F[k][2] + '<input type="number" inputmode="decimal" class="cutq-in' + (o[k] != null && o[k] !== +d[k] ? ' chg' : '') + '" data-key="' + esc(key) + '" data-k="' + k + '" min="' + CUTQ_F[k][0] + '" max="' + CUTQ_F[k][1] + '" step="' + (k.slice(1) === 'A' ? 1 : 1) + '" value="' + esc(e.d[k] == null ? '' : e.d[k]) + '"></label>';
+    const e = cutqEff(cut, key), d = cut.drv || {}, t = cut.settings || {}, o = cutqOv[key] || {}, hasMk = !!(cut.snap && cut.snap.marks);
+    const nchg = Object.keys(cutqDiff(cut, key)).length;
+    const inp = k => '<input type="number" inputmode="decimal" class="cutq-in' + (o[k] != null && o[k] !== +d[k] ? ' chg' : '') + '" data-key="' + esc(key) + '" data-k="' + k + '" min="' + CUTQ_F[k][0] + '" max="' + CUTQ_F[k][1] + '" step="1" value="' + esc(e.d[k] == null ? '' : e.d[k]) + '" aria-label="' + CUTQ_F[k][2] + '">';
     const f0 = t.first === 'piece' ? 'piece' : 'kiss';
-    return '<div class="cutq-ed"><h4>ค่าตัด (ปรับเฉพาะครั้งนี้ ไม่บันทึกใบงาน)</h4>' +
-      '<h4 style="color:#e0457f">Kiss Cut</h4><div class="g3">' + inp('kS') + inp('kF') + inp('kA') + '</div>' +
-      '<h4 style="color:#1fa866">Die Cut</h4><div class="g3">' + inp('dS') + inp('dF') + inp('dA') + '</div>' +
-      '<label>ลำดับตัด<select class="cutq-in' + (e.first !== f0 ? ' chg' : '') + '" data-key="' + esc(key) + '" data-k="first"><option value="kiss"' + (e.first === 'kiss' ? ' selected' : '') + '>Kiss Cut ทั้งแผ่นก่อน แล้ว Die Cut</option><option value="piece"' + (e.first === 'piece' ? ' selected' : '') + '>ตัดทีละชิ้น (Kiss แล้ว Die ทีละดวง)</option></select></label>' +
-      '<div class="row2"><button type="button" class="btn cutq-sim" data-key="' + esc(key) + '">▶ จำลองการตัด</button><button type="button" class="btn cutq-rst" data-key="' + esc(key) + '">↺ ใช้ค่าเดิม</button></div>' +
+    const seg = (v, txt) => '<label class="' + (e.first === v ? 'on' : '') + (e.first === v && v !== f0 ? ' chg' : '') + '"><input type="radio" class="cutq-in" name="first-' + esc(key) + '" data-key="' + esc(key) + '" data-k="first" value="' + v + '"' + (e.first === v ? ' checked' : '') + '>' + txt + '</label>';
+    const mkChg = hasMk && e.mk !== !!t.useMk;
+    return '<div class="cutq-ed">' +
+      '<div class="hd"><span>ค่าตัดครั้งนี้</span><span class="badge' + (nchg ? '' : ' off') + '">' + (nchg ? 'แก้ ' + nchg + ' ค่า' : 'ตามค่าใบงาน') + '</span></div>' +
+      '<div class="cutq-tbl"><span></span><span class="h">ความเร็ว cm/s</span><span class="h">แรงกด</span><span class="h">เร่ง</span>' +
+        '<span class="r"><i style="background:#ff4fa3"></i>Kiss</span>' + inp('kS') + inp('kF') + inp('kA') +
+        '<span class="r"><i style="background:#2fd27a"></i>Die</span>' + inp('dS') + inp('dF') + inp('dA') + '</div>' +
+      '<div><div class="cutq-est" style="margin-bottom:6px">ลำดับตัด</div><div class="cutq-seg">' + seg('kiss', 'Kiss ทั้งแผ่นก่อน<br>แล้ว Die') + seg('piece', 'ทีละชิ้น<br>(Kiss→Die ทีละดวง)') + '</div></div>' +
+      '<label class="cutq-sw' + (mkChg ? ' chg' : '') + (hasMk ? '' : ' dis') + '"><span>อ่านมาร์คก่อนตัด<small>' + (hasMk ? 'ให้เครื่องอ่านจุดมาร์คแล้วตัดตามตำแหน่ง' : 'ไฟล์นี้ไม่มีมาร์ค') + '</small></span><input type="checkbox" class="cutq-in" data-key="' + esc(key) + '" data-k="useMk"' + (e.mk && hasMk ? ' checked' : '') + (hasMk ? '' : ' disabled') + '></label>' +
+      '<div class="cutq-acts"><button type="button" class="btn cutq-sim" data-key="' + esc(key) + '">▶ จำลองการตัด</button><button type="button" class="btn cutq-rst" data-key="' + esc(key) + '">↺ ค่าเดิม</button></div>' +
       '<div class="cutq-est" id="est-' + esc(key) + '">' + cutqEst(cut, key) + '</div>' +
-      '<div class="cutq-vals" style="border:0;padding:0">' +
-      '<div><span>หมุน 90°</span><b>' + (t.rotate ? 'ใช่' : 'ไม่') + '</b></div><div><span>กลับซ้าย-ขวา</span><b>' + (t.mirror ? 'ใช่' : 'ไม่') + '</b></div>' +
-      '<div><span>ตัดเกิน</span><b>' + esc(t.overcut == null ? '—' : t.overcut) + ' มม.</b></div><div><span>อ่านมาร์ค</span><b>' + (t.useMk ? 'อ่านก่อนตัด' : 'ไม่อ่าน') + '</b></div></div>' +
-      '<small>ค่าที่แก้มีผลกับการส่งตัดครั้งนี้เท่านั้น (ช่องสีเหลือง) · ค่าถาวรของใบงานแก้ที่แผงในร้าน · เครื่องในร้านต้องใช้ Sign Tools 1.13.75 ขึ้นไปถึงจะรับค่าที่แก้</small></div>';
+      '<div class="cutq-fx"><span>หมุน 90°: <b>' + (t.rotate ? 'ใช่' : 'ไม่') + '</b></span><span>กลับซ้าย-ขวา: <b>' + (t.mirror ? 'ใช่' : 'ไม่') + '</b></span><span>ตัดเกิน: <b>' + esc(t.overcut == null ? '—' : t.overcut) + ' มม.</b></span></div>' +
+      '<small class="n">ปรับเฉพาะการส่งตัดครั้งนี้ ไม่บันทึกใบงาน (ช่องสีเหลือง = ต่างจากใบงาน) · เครื่องในร้านต้องใช้ Sign Tools 1.13.76 ขึ้นไป</small></div>';
   }
   function cutqPaths(cut) {
     const out = [];
@@ -8551,13 +8556,16 @@ function bahtText(value) {
       const t = e.target; if (!t.classList || !t.classList.contains('cutq-in')) return;
       const key = t.dataset.key, k = t.dataset.k, c = cutqCutOf(key); if (!c) return;
       const o = cutqOv[key] || (cutqOv[key] = {});
-      if (k === 'first') o.first = t.value; else { const v = t.value === '' ? null : +t.value; o[k] = v; }
-      const d = c.drv || {}, base = k === 'first' ? (c.settings && c.settings.first === 'piece' ? 'piece' : 'kiss') : +d[k];
-      const cur = k === 'first' ? o.first : o[k];
-      t.classList.toggle('chg', cur != null && cur !== base);
-      const bad = k !== 'first' && cur != null && !(cur >= CUTQ_F[k][0] && cur <= CUTQ_F[k][1]);
+      if (k === 'first') { o.first = t.value; t.blur(); renderCutq(); return; }
+      if (k === 'useMk') { o.useMk = t.checked; t.blur(); renderCutq(); return; }
+      o[k] = t.value === '' ? null : +t.value;
+      const d = c.drv || {}, cur = o[k];
+      t.classList.toggle('chg', cur != null && cur !== +d[k]);
+      const bad = cur != null && !(cur >= CUTQ_F[k][0] && cur <= CUTQ_F[k][1]);
       t.style.borderColor = bad ? '#d33' : '';
       const est = document.getElementById('est-' + key); if (est) est.textContent = cutqEst(c, key);
+      const badge = t.closest('.cutq-ed') && t.closest('.cutq-ed').querySelector('.badge');
+      if (badge) { const n = Object.keys(cutqDiff(c, key)).length; badge.textContent = n ? 'แก้ ' + n + ' ค่า' : 'ตามค่าใบงาน'; badge.classList.toggle('off', !n); }
     });
     $('cutqSearch').addEventListener('input', e => { cutqQ = e.target.value; renderCutq(); });
     setInterval(() => { const p = $('panel-cutq'); if (canCutRemote && p && p.classList.contains('active') && !document.hidden) renderCutq(); }, 15000);   // renderCutq ข้ามเองถ้ากำลังพิมพ์ค่า
