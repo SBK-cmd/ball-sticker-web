@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Claude Office</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: one 3D stage on top, command bar and two live columns (task board + chat log) below. Navy + gold from the shop, agent A blue, agent B amber. */
+:root{
+  --bg:#EEF2FB; --card:#FFFFFF; --line:#D5DDF0; --fg:#0F1B3D; --mut:#566385;
+  --navy:#0E1E5B; --blue:#2447D6; --gold:#F5B301; --goldsoft:#FFF4CC; --ok:#15803D; --bad:#B42318;
+  --scene:#DCE5F8; --floor:#C9D5F0; --wall:#EEF2FB; --wall2:#E2E9F8; --desk:#FFFFFF; --ink:#0F1B3D;
+  --fd:'Plus Jakarta Sans','Noto Sans Thai',sans-serif; --fb:'Noto Sans Thai','Plus Jakarta Sans',sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0B1230; --card:#131C45; --line:#27346B; --fg:#E8ECFA; --mut:#9AA6CC;
+  --navy:#0E1E5B; --blue:#7B93FF; --gold:#F5B301; --goldsoft:#3A2F08; --ok:#4ADE80; --bad:#FF8A80;
+  --scene:#0F1840; --floor:#1A2658; --wall:#16215A; --wall2:#111A47; --desk:#26366F; --ink:#E8ECFA; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1230; --card:#131C45; --line:#27346B; --fg:#E8ECFA; --mut:#9AA6CC;
+  --navy:#0E1E5B; --blue:#7B93FF; --gold:#F5B301; --goldsoft:#3A2F08; --ok:#4ADE80; --bad:#FF8A80;
+  --scene:#0F1840; --floor:#1A2658; --wall:#16215A; --wall2:#111A47; --desk:#26366F; --ink:#E8ECFA; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--fb);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 28px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;gap:14px}
+header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{margin:0;font:800 22px/1.2 var(--fd);letter-spacing:-.2px;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--mut);font-size:13.5px;max-width:60ch}
+.sim{font-size:12px;font-weight:600;padding:5px 11px;border-radius:99px;background:var(--goldsoft);color:var(--fg);border:1px solid var(--gold);white-space:nowrap}
+.stage{position:relative;border-radius:20px;overflow:hidden;border:1px solid var(--line);background:var(--scene);height:min(58vh,520px);min-height:330px;touch-action:none;cursor:grab}
+.stage:active{cursor:grabbing}
+.stage canvas{display:block;width:100%;height:100%}
+.tag{position:absolute;transform:translate(-50%,-100%);pointer-events:none;min-width:120px;max-width:170px;padding:7px 10px;border-radius:12px;background:var(--card);border:1.5px solid var(--line);box-shadow:0 6px 16px rgba(10,20,60,.18);font-size:12px;line-height:1.3;text-align:center;transition:border-color .2s}
+.tag b{display:block;font:700 12.5px var(--fd)}
+.tag span{color:var(--mut)}
+.tag .bar{margin-top:5px;height:5px;border-radius:9px;background:var(--line);overflow:hidden}
+.tag .bar i{display:block;height:100%;width:0;background:var(--c,var(--blue));border-radius:9px}
+.tag.a{--c:#2F5BFF}.tag.b{--c:#F59E0B}.tag.h{--c:var(--gold)}
+.tag.on{border-color:var(--c)}
+.say{position:absolute;transform:translate(-50%,-100%);pointer-events:none;max-width:200px;padding:8px 11px;border-radius:14px 14px 14px 4px;background:var(--fg);color:var(--bg);font-size:12.5px;line-height:1.35;opacity:0;transition:opacity .25s}
+.say.show{opacity:1}
+.hint{position:absolute;left:12px;bottom:10px;font-size:11.5px;color:var(--mut);background:var(--card);border:1px solid var(--line);padding:3px 9px;border-radius:99px;pointer-events:none}
+.cmd{display:grid;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px}
+.cmd label{font-weight:700;font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row input{flex:1 1 240px;min-width:0;min-height:46px;font:500 16px var(--fb);color:var(--fg);background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:0 14px}
+.row input:focus-visible,button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+button{font:700 15px var(--fb);min-height:46px;padding:0 20px;border-radius:12px;border:0;cursor:pointer}
+.go{background:var(--gold);color:#0E1E5B}
+.go:disabled{opacity:.55;cursor:not-allowed}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips button{min-height:36px;padding:0 13px;font-size:13px;font-weight:600;background:var(--bg);color:var(--fg);border:1px solid var(--line)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:760px){.cols{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;min-width:0}
+.panel h2{margin:0 0 10px;font:700 15px var(--fd)}
+.job{display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.job:first-of-type{border-top:0}
+.dot{width:10px;height:10px;border-radius:50%}
+.job small{display:block;color:var(--mut);font-size:12.5px}
+.pill{font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--bg);border:1px solid var(--line);white-space:nowrap}
+.pill.run{background:var(--goldsoft);border-color:var(--gold)}
+.pill.done{background:var(--ok);border-color:var(--ok);color:#fff}
+:root[data-theme="dark"] .pill.done{color:#06210F}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pill.done{color:#06210F}}
+.log{max-height:230px;overflow:auto;display:grid;gap:8px;padding-right:4px}
+.msg{display:grid;grid-template-columns:auto 1fr;gap:8px;font-size:13.5px}
+.msg i{font-style:normal;font-weight:700;font-size:11.5px;padding:2px 8px;border-radius:99px;height:fit-content;white-space:nowrap;color:#fff}
+.msg .A{background:#2F5BFF}.msg .B{background:#B45309}.msg .H{background:var(--navy)}
+.msg span{min-width:0;overflow-wrap:anywhere}
+.empty{color:var(--mut);font-size:13.5px}
+.note{font-size:12.5px;color:var(--mut)}
+@media (max-width:520px){.tag{min-width:96px;max-width:118px;padding:5px 6px;font-size:11px}.tag b{font-size:11px}.say{max-width:140px;font-size:11.5px}}
+@media (prefers-reduced-motion:reduce){.tag,.say{transition:none}}
+.stat{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;padding:5px 11px;border-radius:99px;border:1px solid var(--line);background:var(--card)}
+.stat i{width:9px;height:9px;border-radius:50%;background:#9aa6c8}.stat.ok i{background:#22c55e}.stat.bad i{background:#ef4444}
+.tag.c{--c:#16A34A}.tag.d{--c:#DB2777}.msg .C{background:#15803D}.msg .D{background:#BE185D}
+.tag.idle{opacity:.55}.msg small{color:var(--mut);display:block;font-size:12px}
+.empty b{color:var(--fg)}
+.quota{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.quota{grid-template-columns:1fr}}
+.qg{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;min-width:0}
+.qg .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.qg b{font:700 14px var(--fd)}
+.qg .pc{font:800 20px var(--fd);font-variant-numeric:tabular-nums}
+.qg .trk{height:12px;border-radius:99px;background:var(--line);margin:8px 0 6px;overflow:hidden}
+.qg .trk i{display:block;height:100%;width:0;border-radius:99px;background:#16A34A;transition:width .6s,background .3s}
+.qg.warn .trk i{background:#F59E0B}.qg.hot .trk i{background:#DC2626}
+.qg small{display:block;color:var(--mut);font-size:12.5px}
+.qg .alert{display:none;margin-top:6px;font-size:12.5px;font-weight:700;color:var(--bad)}
+.qg.hot .alert{display:block}
+.qnote{grid-column:1/-1;font-size:12.5px;color:var(--mut);margin:0}
+</style></head><body>
+<div class="wrap">
+  <header>
+    <div><h1>Claude Office</h1><p>ฉากนี้ขยับตามสิ่งที่ Claude Code กำลังทำจริง: ตัวกลางคือเซสชันหลัก เอเจนต์ย่อยแต่ละตัวได้โต๊ะของตัวเอง ลากเพื่อหมุนมุมมอง</p></div>
+    <span class="stat" id="stat"><i></i><span>กำลังเชื่อมต่อ</span></span>
+  </header>
+  <div class="quota" id="quota" aria-live="polite">
+    <div class="qg" id="q5"><div class="top"><b>โควต้า 5 ชั่วโมง</b><span class="pc">—</span></div><div class="trk"><i></i></div><small class="rs">ยังไม่มีข้อมูล</small><div class="alert"></div></div>
+    <div class="qg" id="q7"><div class="top"><b>โควต้ารายสัปดาห์</b><span class="pc">—</span></div><div class="trk"><i></i></div><small class="rs">ยังไม่มีข้อมูล</small><div class="alert"></div></div>
+    <p class="qnote" id="qnote">หลอดนี้อัปเดตเมื่อ Claude Code ทำงานหรือตอบข้อความ ค่าที่เห็นคือค่าล่าสุดที่ได้รับ ได้เฉพาะแผน Pro/Max หลังส่งข้อความแรกของเซสชัน</p>
+  </div>
+  <div class="stage" id="stage" aria-label="ออฟฟิศ 3 มิติ"><div class="hint">ลากเพื่อหมุน</div></div>
+  <div class="cols">
+    <section class="panel"><h2>เอเจนต์ตอนนี้</h2><div id="board"><div class="empty">ยังไม่มีเหตุการณ์ ลองสั่งงานใน Claude Code ที่ติดตั้ง hook ไว้ <b>เอเจนต์ย่อยจะเกิดเมื่อ Claude แตกงานให้ตัวช่วย</b></div></div></section>
+    <section class="panel"><h2>บันทึกเหตุการณ์จริง</h2><div class="log" id="log" aria-live="polite"><div class="empty">รอเหตุการณ์จาก Claude Code</div></div></section>
+  </div>
+  <p class="note">เอเจนต์ย่อยของ Claude Code ไม่ได้คุยกันเอง ทุกตัวรับงานจากตัวกลางและส่งผลกลับตัวกลาง ฉากนี้จึงแสดงการส่งงานและรับผลเท่านั้น ข้อมูลทั้งหมดอยู่ในเครื่องคุณ (127.0.0.1)</p>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+var stage=document.getElementById('stage'),$=function(i){return document.getElementById(i)};
+function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()||'#888'}
+if(!window.THREE){stage.insertAdjacentHTML('beforeend','<div style="padding:24px;color:var(--mut)">โหลด 3D ไม่สำเร็จ (ต้องต่ออินเทอร์เน็ตเพื่อโหลด three.js) ลองรีเฟรช</div>');return}
+var renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));stage.insertBefore(renderer.domElement,stage.firstChild);
+var scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(36,1,.1,100),az=.78,el=.62,dist=23,target=new THREE.Vector3(0,1.1,-.5);
+function placeCam(){camera.position.set(target.x+dist*Math.cos(el)*Math.sin(az),target.y+dist*Math.sin(el),target.z+dist*Math.cos(el)*Math.cos(az));camera.lookAt(target)}
+scene.add(new THREE.HemisphereLight(0xffffff,0x6677aa,.85));var sun=new THREE.DirectionalLight(0xffffff,.8);sun.position.set(6,12,8);scene.add(sun);
+var mats={};function mat(k,c,o){var m=mats[k];if(!m){m=new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.7,metalness:.05},o||{}));mats[k]=m}return m}
+function box(w,h,d,m,x,y,z,p){var o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);(p||scene).add(o);return o}
+box(17,.3,13,mat('floor',0xc9d5f0),0,-.15,-.5);box(17,5.5,.3,mat('wall',0xeef2fb),0,2.6,-7);box(.3,5.5,13,mat('wall2',0xe2e9f8),-8.5,2.6,-.5);
+box(17,.12,.3,mat('trim',0xf5b301),0,.1,-6.85);box(.3,.12,13,mat('trim',0xf5b301),-8.35,.1,-.5);
+box(3.6,2,.1,mat('glass',0x9ec5ff,{emissive:0x3a6fd8,emissiveIntensity:.35}),-3.5,3.2,-6.82);box(3,.9,.12,mat('sign',0x0e1e5b),4,3.4,-6.8);box(2.6,.14,.14,mat('trim',0xf5b301),4,3.4,-6.72);
+function applyTheme(){scene.background=new THREE.Color(css('--scene'));mats.floor.color.set(css('--floor'));mats.wall.color.set(css('--wall'));mats.wall2.color.set(css('--wall2'));mats.deskTop.color.set(css('--desk'))}
+var COLORS=[0x2f5bff,0xf59e0b,0x16a34a,0xdb2777],CLS=['a','b','c','d'],LET=['A','B','C','D'];
+var SEATS=[[-6.1,1.2,Math.PI/2.4],[6.1,1.2,-Math.PI/2.4],[-6.1,-3,Math.PI/2.4],[6.1,-3,-Math.PI/2.4]];
+function makeDesk(x,z,r,col){var g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=r;scene.add(g);box(3,.14,1.3,mat('deskTop',0xffffff),0,1.05,0,g);
+[[-1.35,-.5],[1.35,-.5],[-1.35,.5],[1.35,.5]].forEach(function(p){box(.12,1,.12,mat('leg',0x56627f),p[0],.5,p[1],g)});
+box(1.1,.7,.08,mat('mon',0x111827),0,1.75,-.3,g);var s=box(1,.6,.02,mat('scr'+col,col,{emissive:col,emissiveIntensity:.5}),0,1.75,-.25,g);
+box(.12,.35,.12,mat('leg',0x56627f),0,1.3,-.3,g);box(.8,.04,.28,mat('kb',0x9aa6c8),0,1.14,.2,g);box(.9,.12,.9,mat('chair',0x1f2a52),0,.62,1.2,g);box(.9,.9,.12,mat('chair',0x1f2a52),0,1.1,1.7,g);box(.12,.6,.12,mat('leg',0x56627f),0,.3,1.2,g);return s}
+function makeAgent(x,z,color,rot){var g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rot;scene.add(g);var m=mat('ag'+color,color,{roughness:.45});
+box(.95,1.1,.62,m,0,1.25,0,g);var head=new THREE.Mesh(new THREE.SphereGeometry(.46,24,18),mat('head',0xf4f6fb,{roughness:.35}));head.position.y=2.15;g.add(head);
+box(.62,.26,.1,mat('visor',0x0f1b3d),0,2.18,.42,g);box(.09,.09,.04,mat('eye',0x7bf0c0,{emissive:0x7bf0c0,emissiveIntensity:1}),-.14,2.18,.48,g);box(.09,.09,.04,mat('eye',0x7bf0c0),.14,2.18,.48,g);
+var ant=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.35),mat('antenna',0x56627f));ant.position.y=2.78;g.add(ant);
+var ball=new THREE.Mesh(new THREE.SphereGeometry(.09,12,10),mat('ball'+color,color,{emissive:color,emissiveIntensity:.7}));ball.position.y=3;g.add(ball);
+var aL=box(.22,.8,.22,m,-.62,1.6,.15,g),aR=box(.22,.8,.22,m,.62,1.6,.15,g);aL.geometry.translate(0,-.3,0);aR.geometry.translate(0,-.3,0);
+box(.3,.7,.3,mat('legs',0x1f2a52),-.25,.4,0,g);box(.3,.7,.3,mat('legs',0x1f2a52),.25,.4,0,g);g.visible=false;return {g:g,head:head,aL:aL,aR:aR,ball:ball,work:false}}
+var seats=SEATS.map(function(s,i){var scr=makeDesk(s[0],s[1],s[2],COLORS[i]);var ax=s[0]*.85,az2=s[1]+.3;var a=makeAgent(ax,az2,COLORS[i],s[2]>0?1.15:-1.15);
+ return {i:i,scr:scr,agent:a,id:null,type:'',tools:0,pos:new THREE.Vector3(ax,2.2,az2),tag:null,say:null,free:true}});
+var hub=new THREE.Group();hub.position.set(0,0,-1.2);scene.add(hub);
+var hubTop=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,.18,40),mat('hubTop',0x0e1e5b));hubTop.position.y=1.05;hub.add(hubTop);
+var hubBase=new THREE.Mesh(new THREE.CylinderGeometry(.35,.6,1,24),mat('hubBase',0x1f2a52));hubBase.position.y=.5;hub.add(hubBase);
+var ring=new THREE.Mesh(new THREE.TorusGeometry(1.1,.06,12,60),mat('ring',0xf5b301,{emissive:0xf5b301,emissiveIntensity:.9}));ring.rotation.x=Math.PI/2;ring.position.y=1.5;hub.add(ring);
+var core=new THREE.Mesh(new THREE.OctahedronGeometry(.42),mat('core',0xf5b301,{emissive:0xf5b301,emissiveIntensity:.8,roughness:.2}));core.position.y=1.9;hub.add(core);
+var hubPos=new THREE.Vector3(0,2.1,-1.2);
+function mk(c,h){var d=document.createElement('div');d.className=c;d.innerHTML=h||'';stage.appendChild(d);return d}
+var tagH=mk('tag h idle','<b>ตัวกลาง (เซสชันหลัก)</b><span>รอคำสั่ง</span><div class="bar"><i></i></div>'),sayH=mk('say');
+seats.forEach(function(s){s.tag=mk('tag '+CLS[s.i]+' idle','<b></b><span></span><div class="bar"><i></i></div>');s.tag.style.display='none';s.say=mk('say');s.say.style.display='none'});
+var anchors=[[tagH,hub,2.7],[sayH,hub,5]];seats.forEach(function(s){anchors.push([s.tag,s.agent.g,3.6],[s.say,s.agent.g,5.9])});
+var v=new THREE.Vector3();
+function place(){var w=stage.clientWidth,h=stage.clientHeight;anchors.forEach(function(a){v.setFromMatrixPosition(a[1].matrixWorld);v.y+=a[2];v.project(camera);a[0].style.left=Math.max(70,Math.min(w-70,(v.x*.5+.5)*w))+'px';a[0].style.top=Math.max(40,(-v.y*.5+.5)*h)+'px'})}
+function setTag(t,title,text,pct,on){if(title!=null)t.querySelector('b').textContent=title;t.querySelector('span').textContent=text;t.querySelector('i').style.width=Math.round(pct*100)+'%';t.classList.toggle('idle',!on)}
+var st={};function say(el,text,ms){el.textContent=text;el.classList.add('show');clearTimeout(st[el.dataset.k||(el.dataset.k=Math.random())]);st[el.dataset.k]=setTimeout(function(){el.classList.remove('show')},ms||3000)}
+function tween(d,fn){return new Promise(function(r){var t0=performance.now();(function f(n){var t=Math.min(1,(n-t0)/d);fn(t);if(t<1)requestAnimationFrame(f);else r()})(t0)})}
+function packet(a,b,col){var m=new THREE.Mesh(new THREE.BoxGeometry(.4,.28,.4),mat('pk'+col,col,{emissive:col,emissiveIntensity:.6}));scene.add(m);return tween(1100,function(t){m.position.lerpVectors(a,b,t);m.position.y+=Math.sin(Math.PI*t)*1.6;m.rotation.y=t*6}).then(function(){scene.remove(m)})}
+var boost=0,hubWork=false;
+function loop(ts){var t=ts/1000;seats.forEach(function(s,i){var a=s.agent,w=a.work,sp=w?7:1.6,am=w?.5:.08;a.aL.rotation.x=Math.sin(t*sp*1.7+i)*am;a.aR.rotation.x=Math.sin(t*sp*1.7+i+1.6)*am;a.head.rotation.y=Math.sin(t*.8+i*2)*.25;a.g.position.y=Math.sin(t*1.4+i)*.03;a.ball.material.emissiveIntensity=.5+.4*Math.sin(t*(w?8:2));s.scr.material.emissiveIntensity=w?.9+.2*Math.sin(t*12+i):.45});
+ring.rotation.z=t*(.8+boost+(hubWork?1.5:0));core.rotation.y=t*(1+boost);core.position.y=1.9+Math.sin(t*2)*.1;placeCam();renderer.render(scene,camera);place();requestAnimationFrame(loop)}
+function resize(){var w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;dist=w<520?36:w<800?29:23;camera.updateProjectionMatrix()}
+window.addEventListener('resize',resize);if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);
+var drag=null;stage.addEventListener('pointerdown',function(e){drag={x:e.clientX,y:e.clientY};try{stage.setPointerCapture(e.pointerId)}catch(_){}});
+stage.addEventListener('pointermove',function(e){if(!drag)return;az-=(e.clientX-drag.x)*.006;el=Math.max(.25,Math.min(1.1,el+(e.clientY-drag.y)*.004));drag={x:e.clientX,y:e.clientY}});
+['pointerup','pointercancel'].forEach(function(n){stage.addEventListener(n,function(){drag=null})});
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme)}catch(_){}
+new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+/* ---------- เหตุการณ์จริงจาก Claude Code ---------- */
+var logEl=$('log'),boardEl=$('board');
+function addLog(who,title,detail){var e=logEl.querySelector('.empty');if(e)logEl.innerHTML='';var d=document.createElement('div');d.className='msg';
+ d.innerHTML='<i class="'+who+'"></i><span><b></b><small></small></span>';d.querySelector('i').textContent=who==='H'?'ตัวกลาง':'ตัวช่วย '+who;d.querySelector('b').textContent=title;d.querySelector('small').textContent=detail||'';
+ logEl.appendChild(d);while(logEl.children.length>80)logEl.removeChild(logEl.firstChild);logEl.scrollTop=logEl.scrollHeight}
+function renderBoard(){var act=seats.filter(function(s){return !s.free});if(!act.length){boardEl.innerHTML='<div class="empty">ตอนนี้ไม่มีเอเจนต์ย่อยทำงานอยู่ (ตัวกลางทำเอง หรือกำลังว่าง)</div>';return}
+ boardEl.innerHTML='';act.forEach(function(s){var d=document.createElement('div');d.className='job';d.innerHTML='<span class="dot"></span><div><b></b><small></small></div><span class="pill"></span>';
+  d.querySelector('.dot').style.background='#'+COLORS[s.i].toString(16).padStart(6,'0');d.querySelector('b').textContent='ตัวช่วย '+LET[s.i]+' · '+(s.type||'general');d.querySelector('small').textContent=s.last||'เริ่มงาน';
+  var p=d.querySelector('.pill');p.textContent=s.done?'ส่งงานแล้ว':'กำลังทำ';p.className='pill '+(s.done?'done':'run');boardEl.appendChild(d)})}
+function seatFor(id,create,type){for(var i=0;i<seats.length;i++)if(seats[i].id===id&&!seats[i].free)return seats[i];if(!create)return null;
+ for(var j=0;j<seats.length;j++)if(seats[j].free){var s=seats[j];s.free=false;s.id=id;s.type=type||'';s.tools=0;s.done=false;s.last='';s.agent.g.visible=true;s.tag.style.display='';s.say.style.display='';return s}return null}
+function short(s,n){s=String(s||'').replace(/\s+/g,' ').trim();return s.length>n?s.slice(0,n-1)+'…':s}
+function toolLine(e){return (e.tool_name||'tool')+(e.detail?' · '+short(e.detail,70):'')}
+var hubTools=0,idleT=null;
+function handle(e,replay){var n=e.hook_event_name,aid=e.agent_id,s=aid?seatFor(aid,false):null;
+ if(n==='Quota'){qLast=e;qAt=(e._ts||Date.now()/1000)*1000;repaintQ();return}
+ if(n==='SessionStart'){addLog('H','เริ่มเซสชัน',short(e.cwd,80));return}
+ if(n==='UserPromptSubmit'){hubTools=0;if(!replay){hubWork=true;setTag(tagH,null,'รับคำสั่ง',.1,true);say(sayH,e.prompt?short(e.prompt,60):'รับคำสั่งแล้ว',3500)}addLog('H','รับคำสั่งจากคุณ',e.prompt?short(e.prompt,140):'(ซ่อนข้อความ)');return}
+ if(n==='SubagentStart'){var ns=seatFor(aid||('x'+Math.random()),true,e.agent_type);if(!ns){addLog('H','เอเจนต์ย่อยเกิน 4 ตัว','โต๊ะเต็ม แสดงเฉพาะ 4 ตัวแรก');return}
+  setTag(ns.tag,'ตัวช่วย '+LET[ns.i]+' · '+(ns.type||'general'),'เริ่มงาน',.05,true);if(!replay){ns.agent.work=true;packet(hubPos,ns.pos,COLORS[ns.i])}addLog(LET[ns.i],'เริ่มงาน',ns.type||'general');renderBoard();return}
+ if(n==='SubagentStop'){var ss=aid?seatFor(aid,false):null;if(!ss)return;ss.agent.work=false;ss.done=true;ss.last=e.last_assistant_message?short(e.last_assistant_message,90):'ส่งงานแล้ว';
+  setTag(ss.tag,null,'ส่งงานแล้ว',1,false);if(!replay){packet(ss.pos,hubPos,COLORS[ss.i]);if(e.last_assistant_message)say(ss.say,short(e.last_assistant_message,70),4500)}addLog(LET[ss.i],'ส่งงานแล้ว',ss.last);renderBoard();
+  setTimeout(function(){ss.free=true;ss.id=null;ss.agent.g.visible=false;ss.tag.style.display='none';ss.say.style.display='none';renderBoard()},replay?0:6000);return}
+ if(n==='PreToolUse'||n==='PostToolUse'){
+  if(s){if(n==='PreToolUse'){s.tools++;s.agent.work=true;s.last=toolLine(e);setTag(s.tag,null,short(toolLine(e),34),Math.min(.95,s.tools*.07),true);addLog(LET[s.i],toolLine(e));renderBoard()}else if(!replay)s.agent.work=true;return}
+  if(n==='PreToolUse'){hubTools++;hubWork=true;setTag(tagH,null,short(toolLine(e),34),Math.min(.95,hubTools*.05),true);addLog('H',toolLine(e))}return}
+ if(n==='Stop'){hubWork=false;setTag(tagH,null,'เสร็จรอบนี้',1,false);if(!replay)say(sayH,e.last_assistant_message?short(e.last_assistant_message,70):'เสร็จแล้ว',4500);addLog('H','เสร็จรอบนี้',e.last_assistant_message?short(e.last_assistant_message,140):'');
+  seats.forEach(function(x){x.agent.work=false});clearTimeout(idleT);idleT=setTimeout(function(){setTag(tagH,null,'รอคำสั่ง',0,false)},6000);return}
+}
+var QP=new URLSearchParams(location.search),BASE=(location.hostname==='127.0.0.1'||location.hostname==='localhost')?'':'http://127.0.0.1:'+(QP.get('port')||'7777'),qLast=null,qAt=0;
+function fmtLeft(sec){if(sec<=0)return 'รีเซ็ตแล้ว รอค่าใหม่';var m=Math.round(sec/60),d=Math.floor(m/1440),h=Math.floor((m%1440)/60),n=m%60;return 'รีเซ็ตใน '+(d?d+' วัน ':'')+(h?h+' ชม. ':'')+(!d?n+' นาที':'')}
+function fmtAt(ts){try{return new Date(ts*1000).toLocaleString('th-TH',{weekday:'short',hour:'2-digit',minute:'2-digit'})}catch(_){return ''}}
+function paintQ(id,w,label){var box=$(id);if(!w||w.pct==null){box.className='qg';box.querySelector('.pc').textContent='—';box.querySelector('i').style.width='0';box.querySelector('.rs').textContent='ยังไม่มีข้อมูลโควต้า';return}
+ var p=Math.max(0,Math.min(100,w.pct)),left=w.resets_at?w.resets_at-Date.now()/1000:null;
+ box.className='qg'+(p>=90?' hot':p>=70?' warn':'');box.querySelector('.pc').textContent=Math.round(p)+'%';box.querySelector('i').style.width=p+'%';
+ box.querySelector('.rs').textContent='ใช้ไปแล้ว '+Math.round(p)+'%'+(w.resets_at?' · '+fmtLeft(left)+' ('+fmtAt(w.resets_at)+')':'');
+ var a=box.querySelector('.alert');a.textContent=p>=100?'หมดแล้ว'+(w.resets_at?' รอจนถึง '+fmtAt(w.resets_at):''):p>=90?'ใกล้หมดแล้ว เหลือไม่ถึง 10%':''}
+function repaintQ(){if(!qLast)return;paintQ('q5',qLast.five_hour);paintQ('q7',qLast.seven_day);
+ var n=$('qnote');n.textContent='อัปเดตล่าสุด '+new Date(qAt).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})+(qLast.model?' · '+qLast.model:'')+(qLast.context_pct!=null?' · context ใช้ '+Math.round(qLast.context_pct)+'%':'')+' · หลอดอัปเดตเมื่อ Claude Code ทำงานหรือตอบข้อความ'}
+setInterval(repaintQ,30000);
+function connect(){var stt=$('stat');var es=new EventSource(BASE+'/events');
+ es.onopen=function(){stt.className='stat ok';stt.lastChild.textContent='เชื่อมต่อแล้ว รอเหตุการณ์'};
+ es.onerror=function(){stt.className='stat bad';stt.lastChild.textContent=BASE?'เชื่อมเครื่องคุณไม่ได้ (เปิด start.bat หรือยัง? ถ้าเบราว์เซอร์ถามสิทธิ์เข้าถึงเครือข่ายในเครื่อง ให้กดอนุญาต)':'ขาดการเชื่อมต่อ ลองใหม่อัตโนมัติ'};
+ es.addEventListener('replay',function(m){try{handle(JSON.parse(m.data),true)}catch(_){}});
+ es.onmessage=function(m){try{handle(JSON.parse(m.data),false)}catch(_){}};}
+applyTheme();resize();requestAnimationFrame(loop);connect();
+window.__co={handle:handle};
+})();
+</script></body></html>
