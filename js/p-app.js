@@ -4733,6 +4733,31 @@ function bahtText(value) {
     if ((rank[to] || 0) <= (rank[j.status || 'pending'] || 0)) return false;
     updateJobStatus(id, to, {silent: true}); return true;
   }
+  /* ---------- ความเร่งด่วน (ลูกค้าขอ): 0 ปกติตามคิว · 1 ขอด่วนไม่เกิน 2 วัน · 2 ขอด่วนส่งวันนี้ — รูปพริก ยิ่งแดงยิ่งไฟเยอะ ---------- */
+  const PRIO_LABEL = ['ปกติตามคิว', 'ขอด่วนไม่เกิน 2 วัน', 'ขอด่วนส่งวันนี้'], PRIO_SHORT = ['', 'ด่วน 2 วัน', 'ด่วนวันนี้'];
+  function chiliSvg(n) {
+    n = +n || 0;
+    const col = ['#16A34A', '#F5B301', '#E5231B'][n], dark = ['#0F7A37', '#C98F00', '#A8140E'][n];
+    const fl = (x, y, sc, d) => '<g transform="translate(' + x + ' ' + y + ') scale(' + sc + ')"><path class="chili-fl" style="animation-delay:' + d + 's" d="M0 0C-3.500-3-2.500-6.500 0-10 1-7.500 3.500-5.500 3-2.500 2.500-1 1.200 0 0 0z" fill="' + (n === 2 ? '#FF8A00' : '#FFB300') + '"/></g>';
+    const flames = n === 2 ? fl(11, 8, 1.1, 0) + fl(17, 6, 1.4, .15) + fl(23, 9, 1, .3) : n === 1 ? fl(17, 7, 1, 0) : '';
+    return '<svg class="chili" viewBox="0 0 32 32" aria-hidden="true"><path d="M8.500 12C8 9.800 9.500 8.500 11.500 9 19.500 11.500 25.500 17 27.500 26 21.500 22.500 16 22.800 11.500 20.500 8.800 19 8.800 15 8.500 12z" fill="' + col + '" stroke="' + dark + '" stroke-width="1.200" stroke-linejoin="round"/><path d="M9.500 9.500C9 7 10.500 5.500 13 5.800" fill="none" stroke="#15803D" stroke-width="2" stroke-linecap="round"/>' + flames + '</svg>';
+  }
+  function setJobPrio(id, p) {
+    const list = store.get('bs_jobs', []), idx = list.findIndex(j => j.id === id);
+    if (idx < 0) return;
+    list[idx].prio = p;
+    store.set('bs_jobs', list);
+    cloudSave('jobs', list[idx]);
+    renderJobHistory();
+    toast('ความเร่งด่วน: ' + PRIO_LABEL[p]);
+  }
+  document.addEventListener('click', function (e) {
+    const b = e.target.closest && e.target.closest('.jc-prio'); if (!b) return;
+    e.stopPropagation(); e.preventDefault();
+    const j = (store.get('bs_jobs', []) || []).find(x => x.id === b.dataset.id); if (!j) return;
+    setJobPrio(j.id, ((+j.prio || 0) + 1) % 3);
+  }, true);
+
   function updateJobStatus(id, status, opts) {
     opts = opts || {};
     const list = store.get('bs_jobs', []);
@@ -4896,13 +4921,13 @@ function bahtText(value) {
   }
 
   function collectJob() {
-    return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, account: $('jobAccount').value, page: $('jobPage').value, bankInIds: jobBankInIds.slice(), bankInId: jobBankInIds[0] || '', slipAmount: $('jobSlipAmount').value, slipPending: $('jobSlipPending').checked, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
+    return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, prio: +($('jobPrio') ? $('jobPrio').value : 0) || 0, account: $('jobAccount').value, page: $('jobPage').value, bankInIds: jobBankInIds.slice(), bankInId: jobBankInIds[0] || '', slipAmount: $('jobSlipAmount').value, slipPending: $('jobSlipPending').checked, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
       items: jobItems.map(i => { const o = {name: i.name, qty: i.qty, note: i.note}; if (i.price !== '' && i.price != null) o.price = i.price; return o; }), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus, wholesale: $('jobWholesale').checked,
       recvMore: jobRecvMore.filter(r => String((r.name || '') + (r.phone || '') + (r.addr || '') + (r.code || '')).trim()).map(r => Object.assign({}, r)),
       recv: ($('jRName').value.trim() || $('jRPhone').value.trim() || $('jRAddr').value.trim()) ? {name: $('jRName').value.trim(), phone: $('jRPhone').value.trim(), addr: $('jRAddr').value.trim()} : null};
   }
   function applyJob(j) {
-    $('jobNo').value = j.no || ''; $('jobDate').value = j.date || todayISO(); $('jobDue').value = j.due || '';
+    $('jobNo').value = j.no || ''; $('jobDate').value = j.date || todayISO(); $('jobDue').value = j.due || ''; if ($('jobPrio')) $('jobPrio').value = String(j.prio || 0);
     $('jobAccount').value = j.account || ''; $('jobSlipAmount').value = j.slipAmount || ''; $('jobSlipPending').checked = !!j.slipPending;
     $('jobPage').value = PAGE_LABEL[j.page] ? j.page : 'ball';
     jobBankInIds = jobBankIdsOf(j); if ($('jobBankInList')) { $('jobBankInList').hidden = true; $('jobBankInBtn').setAttribute('aria-expanded', 'false'); }
@@ -5084,7 +5109,7 @@ function bahtText(value) {
         (j.wholesale ? chip('ราคาส่ง', 'tg') : '');
       return '<li class="jc st-' + st + (jobOpenIds[j.id] ? ' open' : '') + '" data-id="' + esc(j.id) + '">' +
       '<div class="jc-top">' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '<span class="jc-ph" aria-hidden="true">' + esc((cn || '?').replace(/^(คุณ|นาย|นาง|นางสาว|พี่|น้อง)\s*/, '').charAt(0).toUpperCase()) + '</span>') +
-      '<div class="jc-main"><div class="jc-no">' + esc(j.no) + dupTag + '</div><div class="jc-cust">' + esc(cn || 'ไม่ระบุชื่อลูกค้า') + '</div></div>' +
+      '<div class="jc-main"><div class="jc-no">' + esc(j.no) + dupTag + (j.prio ? ' <span class="chili-tag p' + j.prio + '" title="' + esc(PRIO_LABEL[j.prio]) + '">' + chiliSvg(j.prio) + '<b>' + esc(PRIO_SHORT[j.prio]) + '</b></span>' : '') + '</div><div class="jc-cust">' + esc(cn || 'ไม่ระบุชื่อลูกค้า') + '</div></div>' +
       '<select class="job-status-select status-pill ' + st + (jobDelivered(j) ? ' rcvd' : '') + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +   // ขนส่งแจ้งถึงลูกค้าแล้ว → ป้าย "รับแล้ว ✓" (ค่าสถานะยังเป็น shipped)
         Object.keys(JOB_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + ((k === 'received' || (k === 'shipped' && st === 'shipped' && jobDelivered(j))) ? 'รับแล้ว ✓' : JOB_STATUS_LABEL[k]) + '</option>').join('') +
       '</select></div>' +
@@ -5095,6 +5120,7 @@ function bahtText(value) {
       jobCardDetail(j) +
       (chips ? '<div class="jc-chips">' + chips + '</div>' : '') +
       (canKey ? '<div class="jc-act">' +
+      '<button class="jc-prio p' + (j.prio || 0) + '" data-act="prio" data-id="' + esc(j.id) + '" type="button" aria-label="ความเร่งด่วน: ' + esc(PRIO_LABEL[j.prio || 0]) + ' (แตะเพื่อเปลี่ยน)">' + chiliSvg(j.prio || 0) + '</button>' +
       '<button class="jc-b" data-act="view" type="button" aria-label="เปิดดู"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span>เปิดดู</span></button>' +
       '<button class="jc-b" data-act="open" type="button" aria-label="แก้ไข"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span>แก้ไข</span></button>' +
       ('<button class="jc-b" data-act="copylink" type="button" aria-label="คัดลอกลิงก์สถานะงานให้ลูกค้า" title="คัดลอกลิงก์สถานะงาน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg><span>ลิงก์</span></button>') +
