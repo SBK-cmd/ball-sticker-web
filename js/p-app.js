@@ -5136,7 +5136,7 @@ function bahtText(value) {
     }).join('') + '</ul><p class="hint" style="margin:10px 2px 0">แตะที่ใบเพื่อดูรายละเอียด ไม่ต้องกดแก้ไข</p>';
   }
   // รายละเอียดบนการ์ดใบงาน: งานอะไร กี่ชิ้น ยอดเงิน ฝากส่งถึงใคร (ตัวเลขคำนวณจากข้อมูลในใบ ไม่เดา)
-  var hubLatest = {}, hubTried = {}, hubBusy = false;
+  var hubLatest = {}, hubNext = {}, hubBusy = false;   // hubNext = เวลาที่เช็กเลขนี้ได้อีกครั้ง
   const HUB_URL = 'https://iship-orders-proxy.organic-parmesan.workers.dev', HUB_KEY = 'trk-59733fb82520077d';
   // ดึงเหตุการณ์ล่าสุดของขนส่งสำหรับเลขพัสดุบนการ์ดงานที่ยังไม่จบ (ไม่เกิน 6 เลขต่อรอบ, เลขเดิมเช็กซ้ำทุก 60 วิ)
   async function hubRefreshJobs() {
@@ -5147,21 +5147,23 @@ function bahtText(value) {
       [j.trackCode].concat(Array.isArray(j.recvMore) ? j.recvMore.map(r => r && r.code) : []).forEach(c => {
         const code = String(c || '').replace(/\s+/g, ''), k = normCode(code);
         if (!/^[A-Za-z0-9-]{6,40}$/.test(code) || codes.some(x => x.k === k) || (hubLatest[k] && hubLatest[k].delivered)) return;
-        if (Date.now() - (hubTried[k] || 0) > 60000) codes.push({code, k});
+        if (Date.now() >= (hubNext[k] || 0)) codes.push({code, k});
       });
     });
     if (!codes.length) return;
     hubBusy = true; let changed = false;
     try {
       await Promise.all(codes.slice(0, 6).map(async x => {
-        hubTried[x.k] = Date.now();
+        hubNext[x.k] = Date.now() + 20 * 60000;   // ถือว่าไม่มีข้อมูล/error ไว้ก่อน เว้น 20 นาที (ถ้าได้เส้นทางจะปรับเป็น 60 วิด้านล่าง)
         try {
           const r = await fetch(HUB_URL + '/?trace=' + encodeURIComponent(x.code) + '&tkey=' + encodeURIComponent(HUB_KEY));
+          if (!r.ok) return;
           const d = await r.json(), rs = ((d && d.data && d.data.trace_routes) || []).filter(y => y && y.status_desc);
           if (!rs.length) return;
           const last = rs[rs.length - 1], txt = String(last.status_desc).slice(0, 80);   // trace_routes เรียงเก่า→ใหม่ (หน้าลูกค้า reverse)
           if (!hubLatest[x.k] || hubLatest[x.k].txt !== txt) changed = true;
           hubLatest[x.k] = {txt, delivered: last.status === 'delivered'};
+          hubNext[x.k] = Date.now() + (last.status === 'delivered' ? 6 * 3600000 : 60000);
         } catch (e) {}
       }));
     } finally { hubBusy = false; }

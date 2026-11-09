@@ -298,7 +298,7 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
     if (wasOpen) { ol.hidden = false; btn.setAttribute('aria-expanded', 'true'); btn.lastChild.textContent = '▴'; }
     el.hidden = false;
   }
-  var HUB_POLL = 60000, hubTimer = null;   // เช็กขนส่งซ้ำทุก 60 วิ ขณะเปิดหน้าอยู่
+  var HUB_POLL = 60000, hubTimer = null, hubSkip = {};   // hubSkip[เลข] = เวลาที่เช็กได้อีกครั้ง (ไม่มีข้อมูล/error เว้น 20 นาที)   // เช็กขนส่งซ้ำทุก 60 วิ ขณะเปิดหน้าอยู่
   function loadHubs() {
     var demo = /[?&]hubdemo=1/.test(location.search);
     if (!demo && !HUB_KEY) return;
@@ -306,8 +306,10 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
     [].forEach.call(document.querySelectorAll('.hub[data-trk]'), function (el) {
       var no = el.getAttribute('data-trk');
       if (demo) { hubDraw(el, HUB_DEMO); return; }
-      fetch(HUB_URL + '/?trace=' + encodeURIComponent(no) + '&tkey=' + encodeURIComponent(HUB_KEY)).then(function (r) { return r.json(); })
-        .then(function (j) { hubDraw(el, j && j.data && j.data.trace_routes); }).catch(function () {});
+      if ((hubSkip[no] || 0) > Date.now()) return;
+      var bad = function () { hubSkip[no] = Date.now() + 20 * 60000; };
+      fetch(HUB_URL + '/?trace=' + encodeURIComponent(no) + '&tkey=' + encodeURIComponent(HUB_KEY)).then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (j) { var rs = j && j.data && j.data.trace_routes; if (rs && rs.length) { hubSkip[no] = 0; hubDraw(el, rs); } else bad(); }).catch(bad);
     });
   }
   function show(j) {
