@@ -8773,7 +8773,7 @@ function bahtText(value) {
     if (cloudDb) {
       const MIGRATE_KEY = 'bs_tracking_cloud_migrated_v1';
       const already = store.get(MIGRATE_KEY, false);
-      const startTrackingSync = () => watchCloud('tracking', 'bs_tracking', renderTrackingHistory);
+      const startTrackingSync = () => watchCloud('tracking', 'bs_tracking', () => { renderTrackingHistory(); try { renderJobHistory(true); } catch (e) {} });
       if (already) {
         startTrackingSync();
       } else {
