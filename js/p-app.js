@@ -118,7 +118,7 @@ function bahtText(value) {
   // สั่งตัดจากมือถือ: เปิดเฉพาะบัญชี ball กับ top (ไม่ขึ้นกับตารางสิทธิ์รายหน้า)
   const CUT_USERS = ['ball', 'top'];
   const canCutRemote = !!currentUser && CUT_USERS.indexOf(String(currentUser.username || '').trim().toLowerCase()) >= 0;
-  const can = k => k === 'cutq' ? canCutRemote : (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'pagechat' && !PAGECHAT_ENABLED) ? false : (k === 'floor' ? (isSuper || !!myPerms.dash) : k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
+  const can = k => k === 'money' ? isSuper : k === 'cutq' ? canCutRemote : (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'pagechat' && !PAGECHAT_ENABLED) ? false : (k === 'floor' ? (isSuper || !!myPerms.dash) : k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
   const canBank = can('bank');
   // พนักงาน (ไม่ใช่เจ้าของ) ดูประวัติใบคอนเฟิร์มงานได้อย่างเดียว คีย์/แก้/ลบไม่ได้
   const canKey = isSuper || isOwnerFixed(meRec) || !!(meRec && meRec.role === 'owner');
@@ -2007,6 +2007,60 @@ function bahtText(value) {
   }
   document.addEventListener('click', e => { const t = e.target.closest && e.target.closest('.tdy-t[data-k]'); if (t) openTodayList(t.dataset.k); });
   document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.tdy-t[data-k]')) { e.preventDefault(); openTodayList(e.target.dataset.k); } });
+  /* ---------- การเงินรายเดือน (เฉพาะเจ้าของ): เงินเข้า-ออกจาก SMS สองบัญชี + ยอดขาย/ต้นทุนตามเอกสาร ---------- */
+  let moneyMonth = '';
+  const MONEY_XFER_MS = 15 * 60000;   // เงินออกบัญชีหนึ่ง = เงินเข้าอีกบัญชี ยอดเท่ากัน ห่างไม่เกิน 15 นาที → ถือว่าโอนระหว่างบัญชีตัวเอง
+  function moneyData() {
+    const ins = (store.get('bs_bank_in', []) || []).filter(x => x && x.createdAt && num(x.amount) > 0);
+    const outs = (store.get('bs_bank_out', []) || []).filter(x => x && x.createdAt && num(x.amount) > 0);
+    const xfer = {}, usedIn = {};
+    outs.slice().sort((a, b) => a.createdAt - b.createdAt).forEach(o => {
+      const m = ins.find(i => !usedIn[i.id] && i.account && o.account && i.account !== o.account && Math.abs(num(i.amount) - num(o.amount)) < 0.005 && Math.abs(i.createdAt - o.createdAt) <= MONEY_XFER_MS);
+      if (m) { usedIn[m.id] = 1; xfer[m.id] = 1; xfer[o.id] = 1; }
+    });
+    const mk = ts => localISO(new Date(ts)).slice(0, 7);
+    const months = {}, blank = () => ({acc: {}, inT: 0, outT: 0, xferT: 0, nIn: 0, nOut: 0, bill: 0, billVat: 0, nBill: 0, wh: 0, nWh: 0, purch: 0, nPurch: 0, nPurchNoAmt: 0});
+    const M = k => months[k] || (months[k] = blank());
+    const A = (m, a) => m.acc[a] || (m.acc[a] = {in: 0, out: 0});
+    ins.forEach(x => { const m = M(mk(x.createdAt)); if (xfer[x.id]) { m.xferT += num(x.amount); return; } A(m, x.account || '-').in += num(x.amount); m.inT += num(x.amount); m.nIn++; });
+    outs.forEach(x => { const m = M(mk(x.createdAt)); if (xfer[x.id]) return; A(m, x.account || '-').out += num(x.amount); m.outT += num(x.amount); m.nOut++; });
+    (store.get('bs_bills', []) || []).forEach(b => { if (!b.date) return; const c = billCalc(b), m = M(monthKey(b.date)); m.bill += c.sub - c.disc; m.billVat += c.vat; m.nBill++; });
+    (store.get('bs_wholesale', []) || []).forEach(w => { if (!w.date) return; const m = M(monthKey(w.date)); m.wh += wholesaleCalc(w).total; m.nWh++; });
+    (store.get('bs_purchases', []) || []).forEach(p => { if (!p.date) return; const m = M(monthKey(p.date)); if (num(p.amount) > 0) m.purch += num(p.amount); else m.nPurchNoAmt++; m.nPurch++; });
+    Object.keys(months).forEach(k => { const m = months[k]; ['inT', 'outT', 'xferT', 'bill', 'billVat', 'wh', 'purch'].forEach(f => { m[f] = round2(m[f]); }); Object.keys(m.acc).forEach(a => { m.acc[a].in = round2(m.acc[a].in); m.acc[a].out = round2(m.acc[a].out); }); });
+    const oldest = ins.concat(outs).reduce((a, x) => Math.min(a, x.createdAt), Infinity);
+    return {months, oldest: isFinite(oldest) ? oldest : 0, capped: ins.length >= 300 || outs.length >= 300};
+  }
+  function renderMoney() {
+    const box = $('moneyBody'); if (!box) return;
+    if (!can('money')) { box.innerHTML = '<p class="empty">หน้านี้เห็นเฉพาะเจ้าของร้าน</p>'; return; }
+    const d = moneyData(), keys = Object.keys(d.months).filter(Boolean).sort().reverse();
+    const cur = localISO(new Date()).slice(0, 7);
+    if (!moneyMonth || keys.indexOf(moneyMonth) < 0) moneyMonth = keys.indexOf(cur) >= 0 ? cur : (keys[0] || cur);
+    const m = d.months[moneyMonth] || {acc: {}, inT: 0, outT: 0, xferT: 0, nIn: 0, nOut: 0, bill: 0, billVat: 0, nBill: 0, wh: 0, nWh: 0, purch: 0, nPurch: 0, nPurchNoAmt: 0};
+    const net = round2(m.inT - m.outT), sales = round2(m.bill + m.wh), gp = round2(sales - m.purch), gpPct = sales > 0 ? Math.round(gp / sales * 1000) / 10 : null;
+    const B = v => money(v) + ' บาท';
+    const tile = (lab, val, cls, sub) => '<div class="mn-tile' + (cls ? ' ' + cls : '') + '"><span>' + lab + '</span><b>' + val + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>';
+    const accRow = a => { const x = m.acc[a] || {in: 0, out: 0}; const n = round2(x.in - x.out); return '<tr><th>' + esc(a) + (NON_TAX_ACCOUNTS.indexOf(a) >= 0 ? ' <small>งานส่ง · ไม่ยื่นภาษี</small>' : ' <small>บัญชียื่นภาษี</small>') + '</th><td class="pos">' + money(x.in) + '</td><td class="neg">' + money(x.out) + '</td><td class="' + (n >= 0 ? 'pos' : 'neg') + '">' + money(n) + '</td></tr>'; };
+    const accs = ACCOUNTS.concat(Object.keys(m.acc).filter(a => ACCOUNTS.indexOf(a) < 0));
+    const last6 = []; { const [y, mo] = moneyMonth.split('-').map(Number); for (let i = 5; i >= 0; i--) { const dt = new Date(y, mo - 1 - i, 1); last6.push(dt.getFullYear() + '-' + pad2(dt.getMonth() + 1)); } }
+    const mx = Math.max(1, ...last6.map(k => Math.max((d.months[k] || {}).inT || 0, (d.months[k] || {}).outT || 0)));
+    const bars = last6.map(k => { const x = d.months[k] || {inT: 0, outT: 0}; const hi = Math.round(x.inT / mx * 100), ho = Math.round(x.outT / mx * 100);
+      return '<div class="mn-bcol' + (k === moneyMonth ? ' on' : '') + '" data-mm="' + k + '"><div class="mn-bars"><i class="bi" style="height:' + hi + '%" title="รับ ' + money(x.inT) + '"></i><i class="bo" style="height:' + ho + '%" title="จ่าย ' + money(x.outT) + '"></i></div><span>' + thMonthShort(k) + '</span></div>'; }).join('');
+    box.innerHTML =
+      '<div class="mn-head"><label class="f"><span>เดือน</span><select class="txt" id="moneyMonthSel">' + (keys.length ? keys : [cur]).map(k => '<option value="' + k + '"' + (k === moneyMonth ? ' selected' : '') + '>' + thMonthShort(k) + '</option>').join('') + '</select></label></div>' +
+      '<h3 class="mn-h">เงินเข้า-ออกจริง (SMS ธนาคาร สองบัญชี)</h3>' +
+      '<div class="mn-grid">' + tile('รายรับรวม', B(m.inT), 'in', m.nIn + ' รายการ') + tile('รายจ่ายรวม', B(m.outT), 'out', m.nOut + ' รายการ') + tile('เหลือสุทธิ (รับ − จ่าย)', B(net), net >= 0 ? 'in' : 'out') + tile('โอนระหว่างบัญชีตัวเอง', B(m.xferT), '', 'ไม่นับในรับ/จ่าย') + '</div>' +
+      '<div class="mn-card"><table class="mn-tbl"><thead><tr><th>บัญชี</th><th>รับ</th><th>จ่าย</th><th>สุทธิ</th></tr></thead><tbody>' + accs.map(accRow).join('') + '</tbody></table></div>' +
+      '<h3 class="mn-h">ยอดขาย / ต้นทุน ตามเอกสาร</h3>' +
+      '<div class="mn-grid">' + tile('ยอดขายรวม', B(sales), 'in', 'บิล ' + m.nBill + ' ใบ · ใบราคาส่ง ' + m.nWh + ' ใบ') + tile('ต้นทุน (ใบซื้อ)', B(m.purch), 'out', m.nPurch + ' ใบ' + (m.nPurchNoAmt ? ' · ' + m.nPurchNoAmt + ' ใบไม่มียอดรวม (ไม่นับ)' : '')) + tile('กำไรขั้นต้น', B(gp), gp >= 0 ? 'in' : 'out', gpPct == null ? '' : 'อัตรากำไร ' + gpPct + '%') + tile('VAT ขาย (บิล)', B(m.billVat), '', 'ไม่รวมในยอดขาย') + '</div>' +
+      '<div class="mn-card"><table class="mn-tbl"><tbody><tr><th>บิลหน้าร้าน / ใบกำกับ <small>ก่อน VAT · บัญชีกิติพงษ์</small></th><td class="pos">' + money(m.bill) + '</td></tr><tr><th>ใบราคาส่ง <small>งานส่ง · วันทิม</small></th><td class="pos">' + money(m.wh) + '</td></tr><tr><th>ต้นทุนตามใบซื้อ <small>ยอดรวมที่กรอกไว้</small></th><td class="neg">' + money(m.purch) + '</td></tr></tbody></table></div>' +
+      '<h3 class="mn-h">6 เดือนล่าสุด <small><i class="lg bi"></i>รับ <i class="lg bo"></i>จ่าย</small></h3>' +
+      '<div class="mn-card mn-chart">' + bars + '</div>' +
+      '<p class="hint mn-note">ตัวเลขทั้งหมดคำนวณจากข้อมูลในระบบเท่านั้น · เงินเข้า-ออกมาจาก SMS ที่โหลดไว้' + (d.oldest ? ' ตั้งแต่ ' + esc(thDate(localISO(new Date(d.oldest)))) : '') + (d.capped ? ' (ระบบโหลดล่าสุด 300 รายการต่อประเภท เดือนเก่ากว่านี้อาจไม่ครบ)' : '') + ' · การจับ "โอนระหว่างบัญชี" ใช้ยอดเท่ากันและเวลาห่างไม่เกิน 15 นาที อาจพลาดได้ · ต้นทุนนับเฉพาะใบซื้อที่บันทึกในเมนูภาษีซื้อ</p>';
+  }
+  document.addEventListener('change', e => { if (e.target && e.target.id === 'moneyMonthSel') { moneyMonth = e.target.value; renderMoney(); } });
+  document.addEventListener('click', e => { const c = e.target.closest && e.target.closest('#moneyBody [data-mm]'); if (c) { moneyMonth = c.dataset.mm; renderMoney(); } });
   function renderDash() {
     try { renderTodayJobs(); } catch (e) { console.error('todayJobs', e); }
     if (!$('dashChart')) return;
@@ -4265,7 +4319,7 @@ function bahtText(value) {
     }
   }
   // งานราคาส่ง: เลือกว่าแบบไหนจะใส่ในใบราคาส่งตอนนี้ + ใส่จำนวนและราคาส่งต่อหน่วยแยกตามแบบ (แบบที่ใส่ไปแล้วจะไม่ติ๊กให้)
-  function jobItemKey(i, idx) { return idx + '|' + String(i.name || '').trim(); }
+  function jobItemKey(i, idx) { return i && i.uid ? 'u:' + i.uid : idx + '|' + String(i.name || '').trim(); }   // มี uid = แก้ชื่อแล้วไม่ถือเป็นรายการใหม่ (กันเข้าบิลซ้ำ)
   // ราคาส่งต่อหน่วยที่เติมให้อัตโนมัติ: ใบงานที่ใส่จำนวนเงินไว้แล้ว + มีรายการเดียว → จำนวนเงิน ÷ จำนวนชิ้น (หลายรายการแยกไม่ได้ ปล่อยว่างให้ใส่เอง)
   function jobUnitPrice(j, i) {
     if (i && i.price !== undefined && i.price !== null && String(i.price).trim() !== '') return i.price;
@@ -4322,7 +4376,7 @@ function bahtText(value) {
       const label = rows.map(r => String(r.i.name).trim() + (num(r.i.qty) > 0 ? ' ×' + r.i.qty : '')).join(', ').slice(0, 140);
       return [{name: label, qty: 1, price: round2(num(j.slipAmount)), job: j.no, jtot: true}];
     }
-    return rows.map(r => ({name: String(r.i.name).trim() + ((r.i.note || '').trim() ? ' (' + String(r.i.note).trim() + ')' : ''), qty: r.i.qty, price: num(jobUnitPrice(j, r.i)), job: j.no, ji: r.idx}));
+    return rows.map(r => ({name: String(r.i.name).trim() + ((r.i.note || '').trim() ? ' (' + String(r.i.note).trim() + ')' : ''), qty: r.i.qty, price: num(jobUnitPrice(j, r.i)), job: j.no, ji: r.idx, juid: r.i.uid || undefined}));
   }
   // แก้ราคาในบิลราคาส่ง → แก้ใบคอนเฟิร์มงาน (ใบงาน) ที่เป็นต้นทางให้ตรงกัน
   function syncPriceToJob(item, newPrice) {
@@ -4331,11 +4385,43 @@ function bahtText(value) {
     if (k < 0) return false;
     const j = Object.assign({}, jl[k]);
     if (item.jtot) j.slipAmount = num(newPrice) > 0 ? String(round2(num(newPrice))) : '';
+    else if (item.juid && j.items && j.items.some(x => x.uid === item.juid)) { j.items = j.items.map(x => x.uid === item.juid ? Object.assign({}, x, {price: num(newPrice) > 0 ? newPrice : ''}) : x); }
     else if (item.ji != null && j.items && j.items[item.ji]) { j.items = j.items.map((x, n) => n === item.ji ? Object.assign({}, x, {price: num(newPrice) > 0 ? newPrice : ''}) : x); }
     else return false;
     j.savedAt = Date.now(); jl[k] = j; store.set('bs_jobs', jl); cloudSave('jobs', j);
     try { renderJobHistory(); } catch (e) {}
     return true;
+  }
+  // ใบเก่าที่ป้าย "เข้าบิลแล้ว" ยังเป็นคีย์ ลำดับ|ชื่อ → ย้ายเป็นคีย์ uid ตอนบันทึก (เทียบตามลำดับกับฉบับก่อนบันทึก)
+  function migrateWhKeys(old, rec) {
+    if (!old || !rec.whAdded) return;
+    const wa = Object.assign({}, rec.whAdded);
+    (rec.items || []).forEach((it, n) => { if (!it.uid || wa['u:' + it.uid]) return; const o = (old.items || [])[n]; if (o && !o.uid) { const kl = n + '|' + String(o.name || '').trim(); if (wa[kl]) wa['u:' + it.uid] = wa[kl]; } });
+    rec.whAdded = wa;
+  }
+  // แก้ใบงานส่ง (JBS) แล้วบันทึก → แก้บรรทัดเดิมในบิลราคาส่งที่ยังไม่จ่าย (ชื่อ/จำนวน/ราคาส่ง) ไม่เพิ่มบรรทัดใหม่ · ลบรายการในใบงาน = ลบบรรทัดนั้นในบิลที่ยังไม่จ่าย
+  function syncJobToBill(rec) {
+    if (!rec || !rec.wholesale || !rec.no) return 0;
+    const wl = store.get('bs_wholesale', []); let changed = 0; const touched = [];
+    const items = rec.items || [];
+    wl.forEach(doc => {
+      if (doc.paid || !Array.isArray(doc.items)) return;
+      let dch = false; const keep = [];
+      doc.items.forEach(line => {
+        if (String(line.job || '') !== String(rec.no) || line.jtot) { keep.push(line); return; }
+        let it = line.juid ? items.find(x => x.uid === line.juid) : null;
+        if (!it && !line.juid && line.ji != null && items[line.ji]) it = items[line.ji];
+        if (!it) { if (line.juid) { dch = true; changed++; return; } keep.push(line); return; }   // รายการถูกลบจากใบงาน
+        const nm = String(it.name || '').trim() + ((it.note || '').trim() ? ' (' + String(it.note).trim() + ')' : '');
+        const pr = num(jobUnitPrice(rec, it));
+        const nl = Object.assign({}, line, {name: nm || line.name, qty: it.qty, price: pr, juid: it.uid || line.juid, ji: items.indexOf(it)});
+        if (nl.name !== line.name || String(nl.qty) !== String(line.qty) || num(nl.price) !== num(line.price) || nl.juid !== line.juid || nl.ji !== line.ji) { dch = true; changed++; }
+        keep.push(nl);
+      });
+      if (dch) { doc.items = keep; doc.savedAt = Date.now(); touched.push(doc); }
+    });
+    if (touched.length) { store.set('bs_wholesale', wl); touched.forEach(d => cloudSave('wholesale', d)); try { renderWholesaleHistory(); } catch (e) {} }
+    return changed;
   }
   function jobPendingWhItems(j) {
     const done = j.whAdded || {};
@@ -4687,6 +4773,8 @@ function bahtText(value) {
 
   /* ---------------- ใบคอนเฟิร์มงาน (ใบสั่งผลิตภายในร้าน ไม่มีราคา) ---------------- */
   let jobItems = [{name: '', qty: 1, note: ''}];
+  let jobMode = 'shop';   // 'shop' = งานหน้าร้าน (JB) · 'deliv' = งานส่ง/ราคาส่ง (JBS) เปิดจากการ์ดร้านในหน้าใบราคาส่ง หรือแก้ใบ JBS เดิม
+  const newItemUid = () => 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   let jobRecvMore = [];   // ผู้รับกล่องที่ 2,3,… (กล่องที่ 1 = ช่อง ชื่อ/เบอร์/ที่อยู่ผู้รับด้านบน)
   let currentJobId = null;
   let jobPhotos = [];
@@ -4913,12 +5001,12 @@ function bahtText(value) {
   // ฟอร์มปกติ = งานหน้าร้าน (JB) · ส่วนลูกค้าราคาส่ง/ฝากส่ง แสดงเฉพาะงานส่ง (JBS) ที่เปิดจากหน้าใบราคาส่ง หรือชื่อร้านราคาส่ง/มีผู้รับ
   function syncDelivMode() {
     const on = isDeliveryJob(), f = $('jobWhRow') && $('jobWhRow').closest('.jf'); if (f) f.classList.toggle('jf-deliv', on);
+    const nm = $('jName'); if (nm) nm.readOnly = on && !!nm.value.trim();   // งานส่ง: ชื่อตามการ์ดร้าน
+    const t = $('jmTitle'); if (t && document.body.classList.contains('jm-open')) t.textContent = (currentJobId ? (on ? 'แก้ไขงานส่ง ' : 'แก้ไขใบ ') : (on ? 'งานส่งใหม่ ' : 'ใบใหม่ ')) + ($('jobNo').value || '');
     const g = $('jobGoWh'); if (g) g.hidden = on || (typeof can === 'function' && !can('wholesale'));
   }
   document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#jobGoWh')) showTab('wholesale'); });
-  function isDeliveryJob() {
-    return !!(($('jobWholesale') && $('jobWholesale').checked) || $('jRName').value.trim() || $('jRAddr').value.trim() || jobRecvMore.some(r => String(r.name || r.addr || '').trim()));
-  }
+  function isDeliveryJob() { return jobMode === 'deliv'; }   // แยกชัด: ฟอร์มปกติเป็น JB เสมอ งานส่งเป็น JBS เสมอ
   // งานส่งที่เลขยังเป็น JB → เปลี่ยนเป็น JBS (กันชนกับงานหน้าร้าน); คืนค่า true ถ้าเปลี่ยน
   function fixDeliveryNo(skipId) {
     const cur = String($('jobNo').value || '').trim();
@@ -4930,17 +5018,18 @@ function bahtText(value) {
 
   function collectJob() {
     return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, prio: +($('jobPrio') ? $('jobPrio').value : 0) || 0, account: $('jobAccount').value, page: $('jobPage').value, bankInIds: jobBankInIds.slice(), bankInId: jobBankInIds[0] || '', slipAmount: $('jobSlipAmount').value, slipPending: $('jobSlipPending').checked, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
-      items: jobItems.map(i => { const o = {name: i.name, qty: i.qty, note: i.note}; if (i.price !== '' && i.price != null) o.price = i.price; if (i.total !== '' && i.total != null) o.total = i.total; return o; }), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus, wholesale: $('jobWholesale').checked,
+      items: jobItems.map(i => { if (!i.uid) i.uid = newItemUid(); const o = {name: i.name, qty: i.qty, note: i.note, uid: i.uid}; if (i.price !== '' && i.price != null) o.price = i.price; if (i.total !== '' && i.total != null) o.total = i.total; return o; }), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus, wholesale: $('jobWholesale').checked,
       recvMore: jobRecvMore.filter(r => String((r.name || '') + (r.phone || '') + (r.addr || '') + (r.code || '')).trim()).map(r => Object.assign({}, r)),
       recv: ($('jRName').value.trim() || $('jRPhone').value.trim() || $('jRAddr').value.trim()) ? {name: $('jRName').value.trim(), phone: $('jRPhone').value.trim(), addr: $('jRAddr').value.trim()} : null};
   }
   function applyJob(j) {
+    jobMode = (j.wholesale || /^JBS/i.test(String(j.no || '').trim())) ? 'deliv' : 'shop';
     $('jobNo').value = j.no || ''; $('jobDate').value = j.date || todayISO(); $('jobDue').value = j.due || ''; if ($('jobPrio')) $('jobPrio').value = String(j.prio || 0);
     $('jobAccount').value = j.account || ''; $('jobSlipAmount').value = j.slipAmount || ''; $('jobSlipPending').checked = !!j.slipPending;
     $('jobPage').value = PAGE_LABEL[j.page] ? j.page : 'ball';
     jobBankInIds = jobBankIdsOf(j); if ($('jobBankInList')) { $('jobBankInList').hidden = true; $('jobBankInBtn').setAttribute('aria-expanded', 'false'); }
     $('jName').value = j.jName || ''; $('jPhone').value = j.jPhone || ''; $('jAddr').value = j.jAddr || '';
-    jobItems = (j.items && j.items.length) ? j.items.map(i => ({name: i.name || '', qty: i.qty, note: i.note || '', price: i.price, total: i.total})) : [{name: '', qty: 1, note: ''}];
+    jobItems = (j.items && j.items.length) ? j.items.map(i => ({name: i.name || '', qty: i.qty, note: i.note || '', price: i.price, total: i.total, uid: i.uid || newItemUid()})) : [{name: '', qty: 1, note: ''}];
     $('jobNote').value = j.note || '';
     jobPhotos = (j.photos && j.photos.length) ? j.photos.slice() : [];
     jobStatus = j.status || 'pending';
@@ -4984,7 +5073,7 @@ function bahtText(value) {
     const t = $('jobFormTop'); if (t) t.scrollIntoView({behavior: 'smooth', block: 'start'});
     const n = $('jName'); if (n) setTimeout(() => n.focus({preventScroll: true}), 350);
   });
-  { const jn = $('jName'); const auto = () => { if (currentJobId) return; const want = whCustState(jn.value); if ($('jobWholesale').checked !== want) { $('jobWholesale').checked = want; $('jobWholesale').dispatchEvent(new Event('change')); } };
+  { const jn = $('jName'); const auto = () => { if (currentJobId || jobMode !== 'deliv') return; const want = whCustState(jn.value); if ($('jobWholesale').checked !== want) { $('jobWholesale').checked = want; $('jobWholesale').dispatchEvent(new Event('change')); } };
     jn.addEventListener('change', auto); jn.addEventListener('blur', auto); jn.addEventListener('input', () => { clearTimeout(jn._wt); jn._wt = setTimeout(auto, 400); }); }
   $('jobWholesale').addEventListener('change', () => {
     syncJobWholesaleBtn(); renderJobItems();
@@ -5135,8 +5224,8 @@ function bahtText(value) {
       // การ์ดโล่ง: ข้อมูลรอง (วันที่ · เพจ · บัญชี · ผู้บันทึก) รวมเป็นบรรทัดเดียวสีจาง · ป้ายเหลือเฉพาะสถานะ/เงื่อนไขที่ต้องเห็น (จำนวนรายการ/รูปดูได้จากในการ์ด)
       const meta = [esc(thDate(j.date)), PAGE_LABEL[j.page] ? esc(PAGE_LABEL[j.page]) : '', (canBank && j.account && !accHidden(j)) ? 'บัญชี ' + esc(j.account) : '', j.createdBy ? 'โดย ' + esc(j.createdBy) : ''].filter(Boolean).join(' · ');
       const chips = (jobDelivered(j) ? chip('ลูกค้ารับแล้ว · เสร็จสิ้น', 'tg') : '') +
-        (j.wholesale ? chip('ราคาส่ง', 'tg') : '');
-      return '<li class="jc st-' + st + (jobOpenIds[j.id] ? ' open' : '') + ((j.prio || 0) > 0 ? ' prio' + j.prio : '') + '" data-id="' + esc(j.id) + '">' + ((j.prio || 0) > 0 ? '<div class="jc-fire" aria-hidden="true"></div>' : '') +
+        (/^JBS/i.test(String(j.no || '').trim()) ? chip('📦 งานส่ง', 'tdel') : '') + (j.wholesale ? chip('ราคาส่ง', 'tg') : '');
+      return '<li class="jc st-' + st + (jobOpenIds[j.id] ? ' open' : '') + ((j.prio || 0) > 0 ? ' prio' + j.prio : '') + (/^JBS/i.test(String(j.no || '').trim()) ? ' deliv' : '') + '" data-id="' + esc(j.id) + '">' + ((j.prio || 0) > 0 ? '<div class="jc-fire" aria-hidden="true"></div>' : '') +
       '<div class="jc-top">' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '<span class="jc-ph" aria-hidden="true">' + esc((cn || '?').replace(/^(คุณ|นาย|นาง|นางสาว|พี่|น้อง)\s*/, '').charAt(0).toUpperCase()) + '</span>') +
       '<div class="jc-main"><div class="jc-no">' + esc(j.no) + dupTag + (j.prio ? ' <span class="chili-tag p' + j.prio + '" title="' + esc(PRIO_LABEL[j.prio]) + '">' + chiliSvg(j.prio) + '<b>' + esc(PRIO_SHORT[j.prio]) + '</b></span>' : '') + '</div><div class="jc-cust">' + esc(cn || 'ไม่ระบุชื่อลูกค้า') + '</div></div>' +
       '<select class="job-status-select status-pill ' + st + (jobDelivered(j) ? ' rcvd' : '') + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +   // ขนส่งแจ้งถึงลูกค้าแล้ว → ป้าย "รับแล้ว ✓" (ค่าสถานะยังเป็น shipped)
@@ -5285,6 +5374,7 @@ function bahtText(value) {
     if (rec.status === 'shipped' && prevJobStatus !== 'shipped') rec.shippedAt = Date.now();
     // ฟิลด์ที่ไม่ได้อยู่ในฟอร์ม (รูปงานเสร็จ เลขพัสดุ ประวัติใส่ใบราคาส่ง) ต้องไม่หายตอนบันทึกทับ
     if (idx >= 0) ['donePhotos', 'trackCode', 'whAdded', 'trackToken', 'shippedAt', 'postOk', 'postedAt'].forEach(k => { if (list[idx][k] != null && rec[k] == null) rec[k] = list[idx][k]; });
+    if (idx >= 0) migrateWhKeys(list[idx], rec);
     if (idx >= 0) list[idx] = rec; else list.push(rec);
     const wasEditing = idx >= 0;
     currentJobId = rec.id;
@@ -5292,12 +5382,14 @@ function bahtText(value) {
     cloudSave('jobs', rec);
     linkBankIn(rec, prevBankInIds);
     upsertCustomer(rec.jName, rec.jPhone, rec.jAddr);
-    setWhCust(rec.jName, !!rec.wholesale);   // จำไว้ว่าลูกค้าคนนี้ราคาส่งหรือไม่
+    if (rec.wholesale) setWhCust(rec.jName, true);   // ร้านราคาส่งจัดการที่การ์ดในหน้าใบราคาส่ง · งานหน้าร้านชื่อซ้ำไม่ไปลบสถานะร้าน
     renderJobHistory(); renderJobEditState(); closeJobModal();
     syncRecordPhotosToCloud('bs_jobs', 'jobs', rec.id, 'photos', renderJobHistory);
     if (idx < 0) setTimeout(() => askSendTrackLink(rec), 400);
     if (idx < 0) pushJobNotif(rec, 'new'); else if (prevJobStatus !== (rec.status || 'pending')) pushJobNotif(rec, rec.status || 'pending');
     let whMsg = '';
+    let whSync = 0; if (rec.wholesale && can('wholesale') && wasEditing) whSync = syncJobToBill(rec);
+    if (whSync) whMsg = ' · อัปเดตบิลราคาส่ง ' + whSync + ' บรรทัด';
     if (rec.wholesale && can('wholesale')) { const m = autoMergeWholesale(rec.id); if (m) { lastWhMerge = m.doc; renderJobHistory(); whMsg = ' · รวมเข้าใบราคาส่งของ ' + String(rec.jName).trim() + (m.isNew ? ' (เปิดใบใหม่)' : '') + ' ' + m.n + ' รายการ'; } }
     toast(whMsg ? 'บันทึกใบ ' + rec.no + ' แล้ว' + whMsg : (persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับใบ ' : 'บันทึกใบ ') + rec.no + ' แล้ว'
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
@@ -6972,7 +7064,7 @@ function bahtText(value) {
   // หน้าต่างแก้ไขใบคอนเฟิร์มงาน (เด้งขึ้นมาเหนือหน้า): เปิดจากปุ่ม "เปิดแก้ไข" · ปิดด้วย ✕ / Esc / แตะพื้นหลัง / บันทึกเสร็จ
   function openJobModal() {
     document.body.classList.add('jm-open');
-    const t = $('jmTitle'); if (t) t.textContent = (currentJobId ? 'แก้ไขใบ ' : 'ใบใหม่ ') + ($('jobNo').value || '');
+    const t = $('jmTitle'); if (t) t.textContent = (currentJobId ? 'แก้ไขใบ ' : 'ใบใหม่ ') + ($('jobNo').value || ''); try { syncDelivMode(); } catch (e) {}
     if (!currentJobId && window.innerWidth < 900) setTimeout(() => { const n = $('jName'); if (n && document.body.classList.contains('jm-open')) n.focus({preventScroll: true}); }, 250);
     const f = $('jobFormTop'); if (f) f.scrollTop = 0;
   }
@@ -6985,7 +7077,7 @@ function bahtText(value) {
   function showTab(name) {
     closeJobModal();
     if (!can(name)) name = firstAllowedTab(); // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้ หรือโค้ดส่วนอื่นที่สั่งเปิดหน้า
-    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost', 'pagechat', 'floor', 'cutq'].forEach(n => {
+    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost', 'pagechat', 'floor', 'cutq', 'money'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
@@ -7011,6 +7103,7 @@ function bahtText(value) {
     if (name === 'autopost') renderAutopost();
     if (name === 'pagechat') renderPageChat(); else pcStop();
     if (name === 'cutq') renderCutq();
+    if (name === 'money') renderMoney();
     const activeTab = isTax ? $('taxTrigger') : $('tab-' + name);
     if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
   }
@@ -7889,7 +7982,8 @@ function bahtText(value) {
       renderWholesaleHistory(); toast(n ? 'เพิ่มงานเข้าบิลแล้ว ' + n + ' รายการ ใส่ราคาได้ที่ช่องราคา (ว่างไว้ = รอราคา)' : 'ไม่มีรายการใหม่ให้เพิ่ม'); return;
     }
     if (act === 'newjobfor') {
-      showTab('confirm'); newJob(); $('jName').value = name; $('jName').dispatchEvent(new Event('change'));
+      showTab('confirm'); newJob(); jobMode = 'deliv'; $('jName').value = name; $('jobWholesale').checked = true;
+      $('jobNo').value = nextJobNo(); syncJbsAccount(); syncJobWholesaleBtn(); renderJobItems(); renderJob(); syncJobFolds();
       if (window.innerWidth < 900) openJobModal(); else { const t = $('jobFormTop'); if (t) t.scrollIntoView({behavior: 'smooth', block: 'start'}); }
       return;
     }
@@ -8215,6 +8309,7 @@ function bahtText(value) {
   const canManageUsers = isSuper || (!!meRec && !isOwnerFixed(meRec) && meRec.role === 'owner' && !(window.BSAuth ? window.BSAuth.getUsers() : []).some(isSuperUser));
 
   function applyRoleUI() {
+    if (can('money')) { ['tab-money', 'sheetMoney'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }
     if (isSuper) return;
     // ซ่อนหน้าที่ไม่ได้รับสิทธิ์ ทั้งแถบเมนูบน เมนูภาษี เมนูล่างบนมือถือ และแผ่น "เพิ่มเติม"
     PAGE_KEYS.concat(['design', 'floor']).forEach(n => {
