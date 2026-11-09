@@ -5107,7 +5107,7 @@ function bahtText(value) {
       const meta = [esc(thDate(j.date)), PAGE_LABEL[j.page] ? esc(PAGE_LABEL[j.page]) : '', (canBank && j.account && !accHidden(j)) ? 'บัญชี ' + esc(j.account) : '', j.createdBy ? 'โดย ' + esc(j.createdBy) : ''].filter(Boolean).join(' · ');
       const chips = (jobDelivered(j) ? chip('ลูกค้ารับแล้ว · เสร็จสิ้น', 'tg') : '') +
         (j.wholesale ? chip('ราคาส่ง', 'tg') : '');
-      return '<li class="jc st-' + st + (jobOpenIds[j.id] ? ' open' : '') + '" data-id="' + esc(j.id) + '">' +
+      return '<li class="jc st-' + st + (jobOpenIds[j.id] ? ' open' : '') + ((j.prio || 0) > 0 ? ' prio' + j.prio : '') + '" data-id="' + esc(j.id) + '">' + ((j.prio || 0) > 0 ? '<div class="jc-fire" aria-hidden="true"></div>' : '') +
       '<div class="jc-top">' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '<span class="jc-ph" aria-hidden="true">' + esc((cn || '?').replace(/^(คุณ|นาย|นาง|นางสาว|พี่|น้อง)\s*/, '').charAt(0).toUpperCase()) + '</span>') +
       '<div class="jc-main"><div class="jc-no">' + esc(j.no) + dupTag + (j.prio ? ' <span class="chili-tag p' + j.prio + '" title="' + esc(PRIO_LABEL[j.prio]) + '">' + chiliSvg(j.prio) + '<b>' + esc(PRIO_SHORT[j.prio]) + '</b></span>' : '') + '</div><div class="jc-cust">' + esc(cn || 'ไม่ระบุชื่อลูกค้า') + '</div></div>' +
       '<select class="job-status-select status-pill ' + st + (jobDelivered(j) ? ' rcvd' : '') + '" data-id="' + esc(j.id) + '" aria-label="สถานะงาน">' +   // ขนส่งแจ้งถึงลูกค้าแล้ว → ป้าย "รับแล้ว ✓" (ค่าสถานะยังเป็น shipped)
@@ -5120,7 +5120,7 @@ function bahtText(value) {
       jobCardDetail(j) +
       (chips ? '<div class="jc-chips">' + chips + '</div>' : '') +
       (canKey ? '<div class="jc-act">' +
-      '<button class="jc-prio p' + (j.prio || 0) + '" data-act="prio" data-id="' + esc(j.id) + '" type="button" aria-label="ความเร่งด่วน: ' + esc(PRIO_LABEL[j.prio || 0]) + ' (แตะเพื่อเปลี่ยน)">' + chiliSvg(j.prio || 0) + '</button>' +
+      '<button class="jc-prio p' + (j.prio || 0) + '" data-act="prio" data-id="' + esc(j.id) + '" type="button" aria-label="ความเร่งด่วน: ' + esc(PRIO_LABEL[j.prio || 0]) + ' (แตะเพื่อเปลี่ยน)">' + chiliSvg(j.prio || 0) + (j.prio ? '<span class="jc-prio-t">' + PRIO_SHORT[j.prio] + '</span>' : '') + '</button>' +
       '<button class="jc-b" data-act="view" type="button" aria-label="เปิดดู"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span>เปิดดู</span></button>' +
       '<button class="jc-b" data-act="open" type="button" aria-label="แก้ไข"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span>แก้ไข</span></button>' +
       ('<button class="jc-b" data-act="copylink" type="button" aria-label="คัดลอกลิงก์สถานะงานให้ลูกค้า" title="คัดลอกลิงก์สถานะงาน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg><span>ลิงก์</span></button>') +
