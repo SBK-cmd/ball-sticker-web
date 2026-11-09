@@ -1784,6 +1784,13 @@ body.chg-open{overflow:hidden}
 .jf .jf-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.jf .jf-grid .btn{width:100%;font-size:14px;padding:11px 8px;white-space:normal;line-height:1.25}
 .jf .jf-actions,.jf .jf-actions *{box-sizing:border-box}.jf .jf-actions{min-width:0;max-width:100%}.jf .fold{overflow:hidden}
 .jf .jf-more>.jf-grid{padding:12px 0}
+/* จัดฟอร์มใบคอนเฟิร์ม: ลำดับ ลูกค้า → งาน → กำหนดส่ง/ด่วน → (การเงิน) แต่ละช่วงเป็นกล่องแยก */
+.jf .jf-sec{background:#f6f8fd;border:1px solid rgba(20,30,60,.08);border-radius:16px;padding:12px 12px 8px;margin:12px 0}
+.jf .jf-sec[hidden]{display:none}
+.jf .jf-sec .jf-h{margin-bottom:10px}
+#jobWhenSec .row2{grid-template-columns:1fr}
+#jobWhenSec select.txt,#jobWhenSec input.txt{min-height:46px;font-size:16px}
+.jf .whc{margin:6px 0 12px}
 body.jm-open #jobFormTop .jf-actions>#save-job{position:sticky;bottom:-80px;z-index:3;box-shadow:0 10px 24px rgba(0,0,0,.25)}
 @media (max-width:899px){#whFormTop{display:none}}
 .jm-x{display:none}
@@ -2953,7 +2960,7 @@ html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:60
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.30</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.30 · พรีวิว</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
@@ -3322,14 +3329,33 @@ html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:60
               <div class="fields">
               <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="jName" type="text" autocomplete="off"></label>
               <div id="jNameChips" class="vchips no-print" aria-label="ชื่อที่เคยคีย์ไว้"></div>
+              <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="jPhone" type="tel" autocomplete="off"></label>
+              <label class="f"><span>ที่อยู่ลูกค้า (ถ้ามี)</span><textarea id="jAddr"></textarea></label>
               <div class="whc no-print" id="jobWhRow">
                 <label class="whc-l"><input type="checkbox" id="jobWholesale"> <span><b>ลูกค้าราคาส่ง</b></span></label>
                 <small id="jobWhHint">ติ๊กแล้ว งานนี้เข้าบิลค้างของลูกค้าคนนี้ให้เอง ระบบจำชื่อไว้ ครั้งหน้าพิมพ์ชื่อก็เข้าเลย</small>
                 <label class="f whc-amt" id="jobWhAmtRow" hidden><span>ยอดงานนี้ (บาท) <small>ใส่ทีหลังได้</small></span><input class="txt" id="jobWhAmt" type="number" inputmode="decimal" step="any" min="0" placeholder="เช่น 450"></label>
                 <button class="btn good" type="button" id="jobToWholesale" hidden>🧾 บันทึก แล้วใส่ในใบราคาส่ง</button>
               </div>
-              <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="jPhone" type="tel" autocomplete="off"></label>
-              <label class="f"><span>ที่อยู่ลูกค้า (ถ้ามี)</span><textarea id="jAddr"></textarea></label>
+              </div>
+            </section>
+            <section class="jf-sec">
+              <div class="jf-h"><i>2</i>งานที่ต้องผลิต</div>
+            <div class="item-head job" aria-hidden="true"><span>ชื่องาน / สเปก</span><span>จำนวน</span><span>หมายเหตุ</span><span></span></div>
+            <div id="jobItems"></div>
+            <button class="btn small" id="add-jobitem" type="button">＋ เพิ่มรายการ</button>
+            <p class="hint">ใส่ชนิดสติ๊กเกอร์ ขนาด และวัสดุในชื่อรายการได้เลย เช่น “สติ๊กเกอร์ PVC ไดคัท 5x5 ซม. เคลือบด้าน”</p>
+              <div class="fields">
+              <label class="f"><span>หมายเหตุถึงฝ่ายผลิต</span><textarea id="jobNote" placeholder="เช่น สีที่ต้องตรงปก ไดคัทตามขอบภาพ ส่งไฟล์งานแนบแล้ว"></textarea></label>
+              </div>
+            </section>
+            <section class="jf-sec" id="jobWhenSec">
+              <div class="jf-h"><i>3</i>กำหนดส่ง / ความเร่งด่วน</div>
+              <div class="fields">
+              <div class="row2">
+                <label class="f"><span>กำหนดส่งงาน (ถ้ามี)</span><input class="txt" id="jobDue" type="date"></label>
+                <label class="f"><span>ความเร่งด่วน (ลูกค้าขอ)</span><select class="txt" id="jobPrio"><option value="0">🌶 ปกติตามคิว</option><option value="1">🌶 ขอด่วนไม่เกิน 2 วัน</option><option value="2">🌶 ขอด่วนส่งวันนี้</option></select></label>
+              </div>
               </div>
             </section>
             <section class="jf-sec" id="jobMoneyFold">
@@ -3357,16 +3383,6 @@ html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:60
               </div>
               </div>
             </section>
-            <section class="jf-sec">
-              <div class="jf-h"><i>2</i>งานที่ต้องผลิต</div>
-            <div class="item-head job" aria-hidden="true"><span>ชื่องาน / สเปก</span><span>จำนวน</span><span>หมายเหตุ</span><span></span></div>
-            <div id="jobItems"></div>
-            <button class="btn small" id="add-jobitem" type="button">＋ เพิ่มรายการ</button>
-            <p class="hint">ใส่ชนิดสติ๊กเกอร์ ขนาด และวัสดุในชื่อรายการได้เลย เช่น “สติ๊กเกอร์ PVC ไดคัท 5x5 ซม. เคลือบด้าน”</p>
-              <div class="fields">
-              <label class="f"><span>หมายเหตุถึงฝ่ายผลิต</span><textarea id="jobNote" placeholder="เช่น สีที่ต้องตรงปก ไดคัทตามขอบภาพ ส่งไฟล์งานแนบแล้ว"></textarea></label>
-              </div>
-            </section>
             <details class="fold" id="jobShipFold"><summary>ส่งพัสดุ / ฝากส่ง <span class="fold-sub">(ถ้าเป็นงานส่ง)</span></summary>
               <div class="fields">
               <div class="recv-box" id="jRecvBox"><b>📦 ลูกค้าฝากส่ง — ผู้รับปลายทาง</b>
@@ -3389,15 +3405,13 @@ html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:60
               </label>
               </div>
             </details>
-            <details class="fold" id="jobMetaFold"><summary>เลขที่ใบ / วันที่ / กำหนดส่ง / เพจ <span class="fold-sub" id="jobMetaSum"></span></summary>
+            <details class="fold" id="jobMetaFold"><summary>เลขที่ใบ / วันที่สั่ง / เพจ <span class="fold-sub" id="jobMetaSum"></span></summary>
               <div class="fields">
               <div class="row2">
                 <label class="f"><span>เลขที่ใบคอนเฟิร์มงาน</span><input class="txt" id="jobNo" type="text" autocomplete="off"></label>
                 <label class="f"><span>วันที่สั่งงาน</span><input class="txt" id="jobDate" type="date"></label>
               </div>
               <div class="row2">
-                <label class="f"><span>กำหนดส่งงาน (ถ้ามี)</span><input class="txt" id="jobDue" type="date"></label>
-                <label class="f"><span>ความเร่งด่วน (ลูกค้าขอ)</span><select class="txt" id="jobPrio"><option value="0">🌶 ปกติตามคิว</option><option value="1">🌶 ขอด่วนไม่เกิน 2 วัน</option><option value="2">🌶 ขอด่วนส่งวันนี้</option></select></label>
                 <label class="f"><span>เพจ</span><select class="txt" id="jobPage"><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop (UV)</option></select></label>
               </div>
               </div>
@@ -4419,7 +4433,7 @@ html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:60
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=3dea6f8396",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=c84a086ae8",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
