@@ -5168,7 +5168,7 @@ function bahtText(value) {
       store.set('bs_jobs', list);
     }
     cloudSave('jobs', list[li]);
-    return {rec: list[li], url: 'https://www.ballsticker.co.th/track.html?t=' + list[li].trackToken};
+    return {rec: list[li], url: 'https://app.ballsticker.co.th/track-preview.html?t=' + list[li].trackToken};
   }
   async function shareTrackMsg(msg) {
     try { if (PHONE_SHARE && navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือกแชตของลูกค้าส่งได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
@@ -5506,7 +5506,7 @@ function bahtText(value) {
       jl[li] = Object.assign({}, j, {trackToken: Array.from(a, b => (b % 36).toString(36)).join('') + Date.now().toString(36).slice(-4)});
       store.set('bs_jobs', jl); cloudSave('jobs', jl[li]); j = jl[li];
     } else { try { publicJobMirror(j); } catch (e) {} }
-    return 'https://www.ballsticker.co.th/track.html?t=' + j.trackToken;
+    return 'https://app.ballsticker.co.th/track-preview.html?t=' + j.trackToken;
   }
   async function chargeCopy(msg, okMsg) {
     try { if (PHONE_SHARE && navigator.share) { await navigator.share({text: msg}); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
@@ -7589,7 +7589,7 @@ function bahtText(value) {
       }
       const jt = list[li];
       cloudSave('jobs', jt);
-      const url = 'https://www.ballsticker.co.th/track.html?t=' + jt.trackToken;
+      const url = 'https://app.ballsticker.co.th/track-preview.html?t=' + jt.trackToken;
       if (btn.dataset.act === 'openlink') {   // เด้งหน้าต่างโชว์หน้าสถานะที่ลูกค้าเห็น (ไม่ต้องไปแท็บอื่น)
         const old = document.getElementById('trkPop'); if (old) old.remove();
         const pop = document.createElement('div'); pop.id = 'trkPop'; pop.className = 'trk-pop';
