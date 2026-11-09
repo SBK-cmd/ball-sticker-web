@@ -2573,7 +2573,7 @@ body.jm-open .fab-newjob{display:none!important}
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้</span>
         </div>
         <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="jobHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
-        <div class="jf-filt" id="jobFilt"><select id="jobFiltSt" aria-label="กรองตามสถานะ"><option value="">ทุกสถานะ</option><option value="pending">รอทำ</option><option value="filed">ทำไฟล์แล้ว</option><option value="printed">ผลิตแล้ว</option><option value="shipped">จัดส่งแล้ว</option><option value="pickup">รับหน้าร้าน</option><option value="delivered">ลูกค้ารับแล้ว</option><option value="notrack">ส่งแล้ว · ยังไม่มีเลขพัสดุ</option></select><select id="jobFiltPg" aria-label="กรองตามเพจ"><option value="">ทุกเพจ</option><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop</option></select></div>
+        <div class="jf-filt" id="jobFilt"><select id="jobFiltSt" aria-label="กรองตามสถานะ"><option value="">ทุกสถานะ</option><option value="pending">รอทำ</option><option value="filed">ทำไฟล์แล้ว</option><option value="printed">ผลิตแล้ว</option><option value="shipped">จัดส่งแล้ว</option><option value="pickup">รับหน้าร้าน</option><option value="delivered">เสร็จสิ้น (ลูกค้ารับแล้ว)</option><option value="notrack">ส่งแล้ว · ยังไม่มีเลขพัสดุ</option></select><select id="jobFiltPg" aria-label="กรองตามเพจ"><option value="">ทุกเพจ</option><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop</option></select></div>
         <div id="jobHistory"></div>
       </section>
 
@@ -8792,8 +8792,8 @@ function bahtText(value) {
     const isRcv = j => (j.status || 'pending') === 'received' || ((j.status || 'pending') === 'shipped' && jobDelivered(j));
     const hideRcv = !String(q || '').trim() && !fSt && !renderJobHistory._showRcv;
     const hiddenN = hideRcv ? list.filter(j => isRcv(j) && (!fPg || (j.page || 'ball') === fPg)).length : 0;
-    const rcvBar = (hiddenN || (renderJobHistory._showRcv && !String(q || '').trim() && !fSt)) ? '<p class="hint rcv-bar">' + (hideRcv ? 'ซ่อนงานที่ลูกค้ารับแล้ว ' + hiddenN + ' ใบ · พิมพ์ชื่อลูกค้าค้นหาได้ ' : 'กำลังแสดงงานที่รับแล้วด้วย ') + '<button type="button" class="rcv-toggle">' + (hideRcv ? 'แสดง' : 'ซ่อน') + '</button></p>' : '';
-    const shown = list.filter(j => !(hideRcv && isRcv(j)) && matchesSearch(j.jName, q) && (!fPg || (j.page || 'ball') === fPg) && (!fSt || (fSt === 'delivered' ? jobDelivered(j) : fSt === 'notrack' ? ((j.status || 'pending') === 'shipped' && !j.trackCode) : (j.status || 'pending') === fSt)));
+    const rcvBar = (hiddenN || (renderJobHistory._showRcv && !String(q || '').trim() && !fSt)) ? '<p class="hint rcv-bar">' + (hideRcv ? 'ซ่อนงานเสร็จสิ้น (ลูกค้ารับแล้ว) ' + hiddenN + ' ใบ · ค้นชื่อลูกค้า หรือเลือกตัวกรอง “เสร็จสิ้น” เพื่อดู ' : 'กำลังแสดงงานเสร็จสิ้นด้วย ') + '<button type="button" class="rcv-toggle">' + (hideRcv ? 'แสดง' : 'ซ่อน') + '</button></p>' : '';
+    const shown = list.filter(j => !(hideRcv && isRcv(j)) && matchesSearch(j.jName, q) && (!fPg || (j.page || 'ball') === fPg) && (!fSt || (fSt === 'delivered' ? isRcv(j) : fSt === 'notrack' ? ((j.status || 'pending') === 'shipped' && !j.trackCode) : ((j.status || 'pending') === fSt && !(fSt === 'shipped' && isRcv(j))))));
     if (!shown.length) { $('jobHistory').innerHTML = notice + rcvBar + '<p class="empty">ไม่พบใบงาน' + (q ? 'ของลูกค้าชื่อ “' + esc(q) + '”' : '') + (fSt || fPg ? ' ตามตัวกรองที่เลือก' : '') + '</p>'; return; }
     const pendWh = can('wholesale') ? list.filter(j => j.wholesale && String(j.jName || '').trim() && jobPendingWhItems(j).length).length : 0;
     const whBanner = '';   // เอาปุ่ม "รวมเข้าใบราคาส่งตามชื่อ" ออกจากหน้านี้ (ระบบรวมให้เองตอนบันทึกใบราคาส่งอยู่แล้ว · ฟังก์ชัน sweepWholesaleJobs ยังอยู่)
