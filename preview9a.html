@@ -1831,6 +1831,16 @@ body.jm-open #jobFormTop .preview-col{display:none!important}
 .jf:not(.jf-deliv) #jobWhRow,.jf:not(.jf-deliv) #jobShipFold{display:none!important}
 .jf .jf-golink{display:block;width:100%;margin:0 0 8px;padding:11px 12px;border:1px dashed #b7c3e0;border-radius:14px;background:#fff;font:inherit;font-size:13.5px;font-weight:600;line-height:1.45;color:#1f2a44;text-align:left;cursor:pointer}
 .jf .jf-golink[hidden]{display:none}
+/* การ์ดใบงาน: รายการงาน + หมายเหตุ */
+#jobHistory .jc-work{margin:8px 0 2px;padding:8px 10px;border-radius:12px;background:rgba(15,27,61,.045);font-size:14.5px;line-height:1.5;color:#0F1B3D}
+#jobHistory li.jc.deliv .jc-work{background:rgba(255,255,255,.65)}
+#jobHistory .jc-work .jw-i{font-weight:700;padding-left:20px;text-indent:-20px}
+#jobHistory .jc-work .jw-i em{display:inline-block;width:20px;text-indent:0;font-style:normal;color:#5a6788}
+#jobHistory .jc-work .jw-i b{font-weight:800;color:#1d4ed8}
+#jobHistory .jc-work .jw-i small{font-weight:500;color:#5a6788}
+#jobHistory .jc-work .jw-more{font-weight:600;color:#5a6788;font-size:13px}
+#jobHistory .jc-note{margin:6px 0 0;font-size:13.5px;color:#334155;white-space:pre-line;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+#jobHistory .jc-note span{display:inline-block;margin-right:6px;padding:0 7px;border-radius:6px;background:#FDE68A;color:#713f12;font-size:12px;font-weight:700}
 /* การเงินรายเดือน */
 #moneyBody{display:grid;gap:12px}
 #moneyBody .mn-head{max-width:260px}
@@ -2772,7 +2782,7 @@ html body .page-head h1{letter-spacing:-.02em}
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.30 · พรีวิว</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.31 · พรีวิว</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
@@ -4266,7 +4276,7 @@ html body .page-head h1{letter-spacing:-.02em}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=5fc23e3f12",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=b27b2fa80c",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

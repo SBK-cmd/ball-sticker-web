@@ -5098,6 +5098,15 @@ function bahtText(value) {
   }
   let jobOpenIds = {};
   let jdEdit = null;   // {id, sect} การ์ดในหน้าดูใบงานที่กำลังแก้ไข (cust | recv | items)
+  // การ์ดรายการงาน: โชว์รายการงาน (สูงสุด 3 บรรทัด) + หมายเหตุถึงฝ่ายผลิต ให้เห็นโดยไม่ต้องกดเปิดดู
+  function jobCardWork(j) {
+    const its = (j.items || []).filter(i => String(i.name || '').trim());
+    const note = String(j.note || '').trim();
+    if (!its.length && !note) return '';
+    const li = its.slice(0, 3).map((i, n) => '<div class="jw-i"><em>' + (n + 1) + '.</em>' + esc(String(i.name).trim()) + (String(i.qty || '').trim() ? ' <b>× ' + esc(String(i.qty).trim()) + '</b>' : '') + (String(i.note || '').trim() ? ' <small>(' + esc(String(i.note).trim()) + ')</small>' : '') + '</div>').join('');
+    return '<div class="jc-work">' + (its.length ? li + (its.length > 3 ? '<div class="jw-more">+ อีก ' + (its.length - 3) + ' รายการ</div>' : '') : '') +
+      (note ? '<p class="jc-note"><span>หมายเหตุ</span>' + esc(note) + '</p>' : '') + '</div>';
+  }
   function jobDetailHTML(j) {
     const its = (j.items || []).filter(i => (i.name || '').trim());
     const ed = sect => '<button class="btn small jd-ed" data-act="jdedit" data-sect="' + sect + '" type="button">✏️ แก้ไข</button>';
@@ -5235,7 +5244,7 @@ function bahtText(value) {
         const n = ({pending: 1, filed: 2, printed: 3, shipped: 4, pickup: 5, received: 5})[st] || 1, k = (n === 4 && jobDelivered(j)) ? 5 : n;
         return '<div class="jc-prog s' + k + (k === 5 ? ' done' : '') + '" role="progressbar" aria-label="ความคืบหน้างาน" aria-valuemin="0" aria-valuemax="5" aria-valuenow="' + k + '">' + [1, 2, 3, 4, 5].map(i => '<i' + (i <= k ? ' class="on"' : '') + '></i>').join('') + '</div>';
       })() +
-      jobCardDetail(j) +
+      jobCardWork(j) + jobCardDetail(j) +
       (chips ? '<div class="jc-chips">' + chips + '</div>' : '') +
       (canKey ? '<div class="jc-act">' +
       '<button class="jc-prio p' + (j.prio || 0) + '" data-act="prio" data-id="' + esc(j.id) + '" type="button" aria-label="ความเร่งด่วน: ' + esc(PRIO_LABEL[j.prio || 0]) + ' (แตะเพื่อเปลี่ยน)">' + chiliSvg(j.prio || 0) + (j.prio ? '<span class="jc-prio-t">' + PRIO_SHORT[j.prio] + '</span>' : '') + '</button>' +

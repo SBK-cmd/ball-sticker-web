@@ -1831,6 +1831,16 @@ body.jm-open #jobFormTop .preview-col{display:none!important}
 .jf:not(.jf-deliv) #jobWhRow,.jf:not(.jf-deliv) #jobShipFold{display:none!important}
 .jf .jf-golink{display:block;width:100%;margin:0 0 8px;padding:11px 12px;border:1px dashed #b7c3e0;border-radius:14px;background:#fff;font:inherit;font-size:13.5px;font-weight:600;line-height:1.45;color:#1f2a44;text-align:left;cursor:pointer}
 .jf .jf-golink[hidden]{display:none}
+/* การ์ดใบงาน: รายการงาน + หมายเหตุ */
+#jobHistory .jc-work{margin:8px 0 2px;padding:8px 10px;border-radius:12px;background:rgba(15,27,61,.045);font-size:14.5px;line-height:1.5;color:#0F1B3D}
+#jobHistory li.jc.deliv .jc-work{background:rgba(255,255,255,.65)}
+#jobHistory .jc-work .jw-i{font-weight:700;padding-left:20px;text-indent:-20px}
+#jobHistory .jc-work .jw-i em{display:inline-block;width:20px;text-indent:0;font-style:normal;color:#5a6788}
+#jobHistory .jc-work .jw-i b{font-weight:800;color:#1d4ed8}
+#jobHistory .jc-work .jw-i small{font-weight:500;color:#5a6788}
+#jobHistory .jc-work .jw-more{font-weight:600;color:#5a6788;font-size:13px}
+#jobHistory .jc-note{margin:6px 0 0;font-size:13.5px;color:#334155;white-space:pre-line;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+#jobHistory .jc-note span{display:inline-block;margin-right:6px;padding:0 7px;border-radius:6px;background:#FDE68A;color:#713f12;font-size:12px;font-weight:700}
 /* การเงินรายเดือน */
 #moneyBody{display:grid;gap:12px}
 #moneyBody .mn-head{max-width:260px}
@@ -8902,6 +8912,15 @@ function bahtText(value) {
   }
   let jobOpenIds = {};
   let jdEdit = null;   // {id, sect} การ์ดในหน้าดูใบงานที่กำลังแก้ไข (cust | recv | items)
+  // การ์ดรายการงาน: โชว์รายการงาน (สูงสุด 3 บรรทัด) + หมายเหตุถึงฝ่ายผลิต ให้เห็นโดยไม่ต้องกดเปิดดู
+  function jobCardWork(j) {
+    const its = (j.items || []).filter(i => String(i.name || '').trim());
+    const note = String(j.note || '').trim();
+    if (!its.length && !note) return '';
+    const li = its.slice(0, 3).map((i, n) => '<div class="jw-i"><em>' + (n + 1) + '.</em>' + esc(String(i.name).trim()) + (String(i.qty || '').trim() ? ' <b>× ' + esc(String(i.qty).trim()) + '</b>' : '') + (String(i.note || '').trim() ? ' <small>(' + esc(String(i.note).trim()) + ')</small>' : '') + '</div>').join('');
+    return '<div class="jc-work">' + (its.length ? li + (its.length > 3 ? '<div class="jw-more">+ อีก ' + (its.length - 3) + ' รายการ</div>' : '') : '') +
+      (note ? '<p class="jc-note"><span>หมายเหตุ</span>' + esc(note) + '</p>' : '') + '</div>';
+  }
   function jobDetailHTML(j) {
     const its = (j.items || []).filter(i => (i.name || '').trim());
     const ed = sect => '<button class="btn small jd-ed" data-act="jdedit" data-sect="' + sect + '" type="button">✏️ แก้ไข</button>';
@@ -9039,7 +9058,7 @@ function bahtText(value) {
         const n = ({pending: 1, filed: 2, printed: 3, shipped: 4, pickup: 5, received: 5})[st] || 1, k = (n === 4 && jobDelivered(j)) ? 5 : n;
         return '<div class="jc-prog s' + k + (k === 5 ? ' done' : '') + '" role="progressbar" aria-label="ความคืบหน้างาน" aria-valuemin="0" aria-valuemax="5" aria-valuenow="' + k + '">' + [1, 2, 3, 4, 5].map(i => '<i' + (i <= k ? ' class="on"' : '') + '></i>').join('') + '</div>';
       })() +
-      jobCardDetail(j) +
+      jobCardWork(j) + jobCardDetail(j) +
       (chips ? '<div class="jc-chips">' + chips + '</div>' : '') +
       (canKey ? '<div class="jc-act">' +
       '<button class="jc-prio p' + (j.prio || 0) + '" data-act="prio" data-id="' + esc(j.id) + '" type="button" aria-label="ความเร่งด่วน: ' + esc(PRIO_LABEL[j.prio || 0]) + ' (แตะเพื่อเปลี่ยน)">' + chiliSvg(j.prio || 0) + (j.prio ? '<span class="jc-prio-t">' + PRIO_SHORT[j.prio] + '</span>' : '') + '</button>' +
