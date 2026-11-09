@@ -8778,6 +8778,7 @@ function bahtText(value) {
     toast('บันทึกแล้ว' + (synced ? ' · อัปเดตรายการพัสดุ ' + synced + ' รายการ' : '') + (/^JBS/i.test(String(j.no || '').trim()) ? ' · หน้าติดตามลูกค้าอัปเดตตามแล้ว' : ''));
   }
   function renderJobHistory() {
+    try { setTimeout(hubRefreshJobs, 300); } catch (e) {}
     try { renderOwedCard(); } catch (e) {}
     try { renderTodayJobs(); } catch (e) {}
     try { const sel = window.getSelection && window.getSelection(); if (sel && !sel.isCollapsed && String(sel).trim() && $('jobHistory').contains(sel.anchorNode)) { clearTimeout(renderJobHistory._t); renderJobHistory._t = setTimeout(renderJobHistory, 1500); return; } } catch (e) {}
@@ -8831,6 +8832,38 @@ function bahtText(value) {
     }).join('') + '</ul><p class="hint" style="margin:10px 2px 0">แตะที่ใบเพื่อดูรายละเอียด ไม่ต้องกดแก้ไข</p>';
   }
   // รายละเอียดบนการ์ดใบงาน: งานอะไร กี่ชิ้น ยอดเงิน ฝากส่งถึงใคร (ตัวเลขคำนวณจากข้อมูลในใบ ไม่เดา)
+  var hubLatest = {}, hubTried = {}, hubBusy = false;
+  const HUB_URL = 'https://iship-orders-proxy.organic-parmesan.workers.dev', HUB_KEY = 'trk-59733fb82520077d';
+  // ดึงเหตุการณ์ล่าสุดของขนส่งสำหรับเลขพัสดุบนการ์ดงานที่ยังไม่จบ (ไม่เกิน 6 เลขต่อรอบ, เลขเดิมเช็กซ้ำทุก 60 วิ)
+  async function hubRefreshJobs() {
+    if (hubBusy || document.hidden) return;
+    const codes = [];
+    store.get('bs_jobs', []).forEach(j => {
+      if ((j.status || '') !== 'shipped') return;
+      [j.trackCode].concat(Array.isArray(j.recvMore) ? j.recvMore.map(r => r && r.code) : []).forEach(c => {
+        const code = String(c || '').replace(/\s+/g, ''), k = normCode(code);
+        if (!/^[A-Za-z0-9-]{6,40}$/.test(code) || codes.some(x => x.k === k) || (hubLatest[k] && hubLatest[k].delivered)) return;
+        if (Date.now() - (hubTried[k] || 0) > 60000) codes.push({code, k});
+      });
+    });
+    if (!codes.length) return;
+    hubBusy = true; let changed = false;
+    try {
+      await Promise.all(codes.slice(0, 6).map(async x => {
+        hubTried[x.k] = Date.now();
+        try {
+          const r = await fetch(HUB_URL + '/?trace=' + encodeURIComponent(x.code) + '&tkey=' + encodeURIComponent(HUB_KEY));
+          const d = await r.json(), rs = ((d && d.data && d.data.trace_routes) || []).filter(y => y && y.status_desc);
+          if (!rs.length) return;
+          const last = rs[rs.length - 1], txt = String(last.status_desc).slice(0, 80);   // trace_routes เรียงเก่า→ใหม่ (หน้าลูกค้า reverse)
+          if (!hubLatest[x.k] || hubLatest[x.k].txt !== txt) changed = true;
+          hubLatest[x.k] = {txt, delivered: last.status === 'delivered'};
+        } catch (e) {}
+      }));
+    } finally { hubBusy = false; }
+    if (changed && typeof renderJobHistory === 'function') renderJobHistory();
+  }
+  setInterval(hubRefreshJobs, 60000);
   function jobCardDetail(j) {
     const its = (j.items || []).filter(i => (i.name || '').trim());
     const pieces = its.reduce((a, i) => a + (num(i.qty) > 0 ? num(i.qty) : 0), 0);
@@ -8846,7 +8879,9 @@ function bahtText(value) {
     const boxCodes = [j.trackCode || ''].concat(Array.isArray(j.recvMore) ? j.recvMore.map(r => String(r.code || '').trim()) : []);
     const shipLine = (code, label) => {
       const t = code ? store.get('bs_tracking', []).find(x => normCode(x.code) === normCode(code)) : null;
-      const st = t ? (t.status || 'transit') : '', txt = !code ? 'ยังไม่มีเลขพัสดุ' : t ? (t.ishipStatusName ? translateIshipStatus(t.ishipStatusName) : (TRACK_STATUS[st] || TRACK_STATUS.transit).label) : 'รอสถานะขนส่ง';
+      const hb = code ? hubLatest[normCode(code)] : null;   // เหตุการณ์ล่าสุดจากขนส่ง (ผ่าน Worker) — ตรงกับที่ลูกค้าเห็น
+      let st = t ? (t.status || 'transit') : '', txt = !code ? 'ยังไม่มีเลขพัสดุ' : t ? (t.ishipStatusName ? translateIshipStatus(t.ishipStatusName) : (TRACK_STATUS[st] || TRACK_STATUS.transit).label) : 'รอสถานะขนส่ง';
+      if (hb && hb.txt && st !== 'delivered') { txt = hb.txt; if (hb.delivered) st = 'delivered'; }
       const c = st === 'delivered' ? 'ok' : st === 'issue' ? 'bad' : code ? 'go' : 'none';
       return '<div class="jc-ship"><span class="jc-k">' + label + '</span><b class="' + c + '">' + (st === 'delivered' ? '✓ ' : '') + esc(txt) + '</b>' + (code ? '<small>' + esc(String(code)) + '</small>' : '') + '</div>';
     };
