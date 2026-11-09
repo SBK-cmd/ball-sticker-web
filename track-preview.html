@@ -98,9 +98,11 @@ details.jc>.jb{padding:4px 14px 14px}
 .bxl{display:flex;align-items:center;gap:8px;font-size:15px}.bxl em{font-style:normal;font-size:12px;font-weight:700;background:#111827;color:#fff;border-radius:99px;padding:2px 9px}
 .lbx{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.97);display:flex;flex-direction:column}
 .lbx .lb-sc{flex:1;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;touch-action:pan-x pinch-zoom;scrollbar-width:none}.lbx .lb-sc::-webkit-scrollbar{display:none}
-.lbx .lb-s{flex:0 0 100%;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;padding:64px 10px 56px}
+.lbx .lb-s{flex:0 0 100%;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;padding:64px 10px 110px}
 .lbx .lb-s img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;background:#fff}
 .lbx .lb-x{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;width:48px;height:48px;border-radius:50%;border:0;background:#fff;color:#111;font-size:22px;font-weight:700;line-height:1;box-shadow:0 2px 10px rgba(0,0,0,.45);z-index:2}
+.lbx .lb-sv{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(46px + env(safe-area-inset-bottom));border:0;border-radius:999px;background:#fff;color:#111;font:inherit;font-size:16px;font-weight:700;padding:12px 22px;box-shadow:0 4px 14px rgba(0,0,0,.35);cursor:pointer;white-space:nowrap}
+.lbx .lb-sv:disabled{opacity:.7}
 .lbx .lb-n{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom));text-align:center;color:#fff;font-size:14px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.6)}
 .zoom{position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:14px;cursor:zoom-out}.zoom img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;background:#fff}.zoom button{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;border:0;background:#fff;font-size:20px;font-weight:700}
 .pk-a{line-height:1.55;font-size:14.5px;margin-bottom:10px}.pk-a b{display:block;font-size:15.5px}.pk-a small{display:block;color:var(--mut);font-size:12.5px;font-weight:600}.pk-r{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.pk-b{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--ink,#111);font-weight:800;font-size:14px;text-decoration:none}.pk-b.ln{grid-column:1/-1;background:#06c755;border-color:#06c755;color:#fff}
@@ -224,8 +226,7 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
   function strip(arr, title, dlName) {
     if (!arr.length) return '';
     return '<div class="ps"><small>' + title + ' (' + arr.length + ')</small><div class="pr">' + arr.map(function (u, k) {
-      var dl = dlName && u.indexOf('/upload/') > -1 ? u.replace('/upload/', '/upload/fl_attachment/') : '';
-      return '<figure><a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="' + esc(title) + ' ' + (k + 1) + '" loading="lazy"></a>' + (dl ? '<a class="sv" href="' + esc(dl) + '" download="' + esc(dlName + '-' + (k + 1) + '.jpg') + '" target="_blank" rel="noopener" aria-label="บันทึกรูป ' + (k + 1) + '">💾</a>' : '') + '</figure>';
+      return '<figure><a href="' + esc(u) + '" target="_blank" rel="noopener" data-nm="' + esc((dlName || 'รูป') + '-' + (k + 1) + '.jpg') + '"><img src="' + esc(u) + '" alt="' + esc(title) + ' ' + (k + 1) + '" loading="lazy"></a></figure>';   // ปุ่มบันทึกอยู่ในหน้าดูรูปใหญ่
     }).join('') + '</div></div>';
   }
   // รับหน้าร้าน: ที่อยู่ร้าน + แผนที่ + เบอร์โทร + LINE (ข้อมูลร้านตามที่ระบุในเว็บ)
@@ -353,13 +354,28 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
     [].forEach.call(document.querySelectorAll('.copy[data-cp]'), function (c) { c.onclick = function () { try { navigator.clipboard.writeText(c.getAttribute('data-cp')); c.textContent = 'คัดลอกแล้ว'; } catch (e) {} }; });
   }
   // ดูรูปขยายในหน้าเดียวกัน: เลื่อนซ้าย-ขวาดูรูปอื่นได้ มีปุ่ม ✕ ปิดเสมอ (ปุ่มย้อนกลับของมือถือ/Esc/แตะพื้นหลังก็ปิดได้) — ไม่เปิดแท็บใหม่ จึงไม่ต้องกดลิงก์ใหม่
-  function openLightbox(urls, idx) {
+  // บันทึกรูป: มือถือที่แชร์ไฟล์ได้ → เปิดแผ่นแชร์ (เลือก "บันทึกรูปภาพ") · ไม่ได้ → ดาวน์โหลด · โหลดไฟล์ไม่ได้ → เปิดลิงก์ดาวน์โหลดของ Cloudinary
+  var lbBlob = {};
+  function lbFetch(u) { if (!lbBlob[u]) lbBlob[u] = fetch(u, {mode: 'cors'}).then(function (r) { if (!r.ok) throw 0; return r.blob(); }).catch(function () { delete lbBlob[u]; return null; }); return lbBlob[u]; }
+  function lbSave(u, nm, btn) {
+    var dl = u.indexOf('/upload/') > -1 ? u.replace('/upload/', '/upload/fl_attachment/') : u;
+    btn.disabled = true; var t0 = btn.textContent; btn.textContent = 'กำลังบันทึก…';
+    lbFetch(u).then(function (b) {
+      if (!b) { window.open(dl, '_blank'); return; }
+      var f = null; try { f = new File([b], nm, {type: b.type || 'image/jpeg'}); } catch (e) {}
+      if (f && navigator.canShare && navigator.canShare({files: [f]})) return navigator.share({files: [f]}).catch(function () {});
+      var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = nm; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    }).then(function () { btn.disabled = false; btn.textContent = t0; });
+  }
+  function openLightbox(urls, idx, names) {
     var old = document.querySelector('.lbx'); if (old) old.remove();
     var z = document.createElement('div'); z.className = 'lbx'; z.setAttribute('role', 'dialog'); z.setAttribute('aria-label', 'รูปขยาย');
-    z.innerHTML = '<button type="button" class="lb-x" aria-label="ปิดรูป">✕</button><div class="lb-sc">' + urls.map(function (u, i) { return '<div class="lb-s" data-i="' + i + '"><img alt="รูป ' + (i + 1) + '" src="' + esc(u) + '"></div>'; }).join('') + '</div>' + (urls.length > 1 ? '<div class="lb-n"></div>' : '');
+    z.innerHTML = '<button type="button" class="lb-x" aria-label="ปิดรูป">✕</button><div class="lb-sc">' + urls.map(function (u, i) { return '<div class="lb-s" data-i="' + i + '"><img alt="รูป ' + (i + 1) + '" src="' + esc(u) + '"></div>'; }).join('') + '</div>' + '<button type="button" class="lb-sv">💾 บันทึกรูปนี้</button>' + (urls.length > 1 ? '<div class="lb-n"></div>' : '');
     document.body.appendChild(z);
     var sc = z.querySelector('.lb-sc'), n = z.querySelector('.lb-n'), pushed = false, closed = false;
-    function mark() { if (n) n.textContent = (Math.round(sc.scrollLeft / Math.max(1, sc.clientWidth)) + 1) + ' / ' + urls.length; }
+    function cur() { return Math.min(urls.length - 1, Math.max(0, Math.round(sc.scrollLeft / Math.max(1, sc.clientWidth)))); }
+    function mark() { if (n) n.textContent = (cur() + 1) + ' / ' + urls.length; lbFetch(urls[cur()]); }   // โหลดรูปที่กำลังดูไว้ก่อน กดบันทึกแล้วแชร์ได้ทันที
+    z.querySelector('.lb-sv').addEventListener('click', function (e) { e.stopPropagation(); var i = cur(); lbSave(urls[i], (names && names[i]) || ('รูป-' + (i + 1) + '.jpg'), e.currentTarget); });
     function close(fromPop) { if (closed) return; closed = true; document.removeEventListener('keydown', onKey); window.removeEventListener('popstate', onPop); z.remove(); if (pushed && !fromPop) { try { history.back(); } catch (e) {} } }
     function onKey(e) { if (e.key === 'Escape') close(); }
     function onPop() { close(true); }
@@ -372,7 +388,7 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
   document.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('.pr figure > a:first-child'); if (!a) return;
     var row = a.closest('.pr'), links = [].slice.call(row.querySelectorAll('figure > a:first-child'));
-    e.preventDefault(); openLightbox(links.map(function (x) { return x.getAttribute('href'); }), Math.max(0, links.indexOf(a)));
+    e.preventDefault(); openLightbox(links.map(function (x) { return x.getAttribute('href'); }), Math.max(0, links.indexOf(a)), links.map(function (x) { return x.getAttribute('data-nm') || ''; }));
   });
   var t = (new URLSearchParams(location.search).get('t') || '').trim();
   if (!/^[a-z0-9]{12,40}$/i.test(t)) { fail('ลิงก์ไม่ถูกต้อง', 'กรุณาเปิดลิงก์ที่ร้านส่งให้ หรือสอบถามร้านทาง LINE'); return; }
