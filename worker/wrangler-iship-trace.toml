@@ -1,0 +1,8 @@
+name = "iship-trace-proxy"
+main = "iship-trace-worker.js"
+compatibility_date = "2024-09-01"
+
+# ค่าลับ ตั้งด้วยคำสั่งนี้ ห้ามใส่ในไฟล์:
+#   npx wrangler secret put ISHIP_TOKEN -c wrangler-iship-trace.toml   (ไม่บังคับ — iShip /api/traces เรียกได้โดยไม่มีโทเคนตามตัวอย่าง curl)
+#   npx wrangler secret put APP_KEY     -c wrangler-iship-trace.toml   (กุญแจสั้นๆ ที่หน้าเว็บใช้เรียก Worker นี้)
+# deploy: npx wrangler deploy -c wrangler-iship-trace.toml
