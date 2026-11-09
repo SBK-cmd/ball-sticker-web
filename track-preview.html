@@ -280,6 +280,7 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
   function hubDraw(el, routes) {
     var r = (routes || []).filter(function (x) { return x && x.status_desc; }).slice().reverse();
     if (!r.length) return;
+    var oldOl = el.querySelector('ol'), wasOpen = !!(oldOl && !oldOl.hidden);
     var last = r[0];
     // อัปเดตป้ายสถานะการจัดส่งด้านบนตามเหตุการณ์ล่าสุดของขนส่ง (ถ้ายังไม่ใช่ "ลูกค้ารับแล้ว")
     var bs = el.parentNode && el.parentNode.querySelector('.bxs');
@@ -294,11 +295,14 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
       r.map(function (x, i) { return '<li' + (i === 0 ? ' class="on"' : '') + '><b>' + esc(x.status_text || '') + '</b>' + esc(x.status_desc) + '<br><small>' + esc(hubTime(x.timestamp)) + (x.current_location ? ' · ' + esc(x.current_location) : '') + '</small></li>'; }).join('') + '</ol>';
     var btn = el.querySelector('button'), ol = el.querySelector('ol');
     btn.onclick = function () { var o = ol.hidden; ol.hidden = !o; btn.setAttribute('aria-expanded', o ? 'true' : 'false'); btn.lastChild.textContent = o ? '▴' : '▾'; };
+    if (wasOpen) { ol.hidden = false; btn.setAttribute('aria-expanded', 'true'); btn.lastChild.textContent = '▴'; }
     el.hidden = false;
   }
+  var HUB_POLL = 60000, hubTimer = null;   // เช็กขนส่งซ้ำทุก 60 วิ ขณะเปิดหน้าอยู่
   function loadHubs() {
     var demo = /[?&]hubdemo=1/.test(location.search);
     if (!demo && !HUB_KEY) return;
+    if (!demo && !hubTimer) hubTimer = setInterval(function () { if (!document.hidden) loadHubs(); }, HUB_POLL);
     [].forEach.call(document.querySelectorAll('.hub[data-trk]'), function (el) {
       var no = el.getAttribute('data-trk');
       if (demo) { hubDraw(el, HUB_DEMO); return; }
