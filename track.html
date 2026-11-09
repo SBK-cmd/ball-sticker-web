@@ -98,9 +98,11 @@ details.jc>.jb{padding:4px 14px 14px}
 .bxl{display:flex;align-items:center;gap:8px;font-size:15px}.bxl em{font-style:normal;font-size:12px;font-weight:700;background:#111827;color:#fff;border-radius:99px;padding:2px 9px}
 .lbx{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.97);display:flex;flex-direction:column}
 .lbx .lb-sc{flex:1;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;touch-action:pan-x pinch-zoom;scrollbar-width:none}.lbx .lb-sc::-webkit-scrollbar{display:none}
-.lbx .lb-s{flex:0 0 100%;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;padding:64px 10px 56px}
+.lbx .lb-s{flex:0 0 100%;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;padding:64px 10px 110px}
 .lbx .lb-s img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;background:#fff}
 .lbx .lb-x{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;width:48px;height:48px;border-radius:50%;border:0;background:#fff;color:#111;font-size:22px;font-weight:700;line-height:1;box-shadow:0 2px 10px rgba(0,0,0,.45);z-index:2}
+.lbx .lb-sv{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(46px + env(safe-area-inset-bottom));border:0;border-radius:999px;background:#fff;color:#111;font:inherit;font-size:16px;font-weight:700;padding:12px 22px;box-shadow:0 4px 14px rgba(0,0,0,.35);cursor:pointer;white-space:nowrap}
+.lbx .lb-sv:disabled{opacity:.7}
 .lbx .lb-n{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom));text-align:center;color:#fff;font-size:14px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.6)}
 .zoom{position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:14px;cursor:zoom-out}.zoom img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;background:#fff}.zoom button{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;border:0;background:#fff;font-size:20px;font-weight:700}
 .pk-a{line-height:1.55;font-size:14.5px;margin-bottom:10px}.pk-a b{display:block;font-size:15.5px}.pk-a small{display:block;color:var(--mut);font-size:12.5px;font-weight:600}.pk-r{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.pk-b{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--ink,#111);font-weight:800;font-size:14px;text-decoration:none}.pk-b.ln{grid-column:1/-1;background:#06c755;border-color:#06c755;color:#fff}
@@ -124,16 +126,14 @@ details.jc>.jb{padding:4px 14px 14px}
 .chili-tag.p2 .chili-fl{animation-duration:.35s}
 @keyframes chiliFlick{0%{opacity:.75;transform:scale(.9,.8)}100%{opacity:1;transform:scale(1.1,1.25)}}
 @media (prefers-reduced-motion:reduce){.chili-fl{animation:none}}
-.jc-fire{position:absolute;inset:0;border-radius:18px;pointer-events:none}
-details.jc.pr1 .jc-fire{box-shadow:0 0 0 2px #F5B301,0 0 8px 1px rgba(245,179,1,.45)}
-details.jc.pr2 .jc-fire{box-shadow:0 0 0 2px #E5231B,0 0 12px 3px rgba(255,90,20,.6);animation:fireGlow .45s ease-in-out infinite alternate}
-details.jc.pr2 .jc-fire::before,details.jc.pr2 .jc-fire::after{content:'';position:absolute;left:14px;right:14px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 18'%3E%3Cpath d='M10 0C11 5 16 7 16 12a6 6 0 0 1-12 0C4 8 8 6 10 0z' fill='%23FF4B1F'/%3E%3Cpath d='M10 7c1 3 3 4 3 7a3 3 0 0 1-6 0c0-2 2-3 3-7z' fill='%23FFC93C'/%3E%3C/svg%3E") repeat-x 0 100%;transform-origin:50% 100%}
-details.jc.pr2 .jc-fire::before{top:-17px;height:19px;background-size:22px 19px;animation:fireTop .42s ease-in-out infinite alternate}
-details.jc.pr2 .jc-fire::after{top:-12px;height:14px;left:25px;background-size:16px 14px;opacity:.9;animation:fireTop .31s ease-in-out infinite alternate-reverse}
-@keyframes fireGlow{0%{box-shadow:0 0 0 2px #E5231B,0 0 8px 2px rgba(255,90,20,.45)}100%{box-shadow:0 0 0 2px #FF3B1F,0 0 16px 5px rgba(255,140,20,.75)}}
-@keyframes fireTop{0%{transform:scale(1,.78) skewX(-3deg);opacity:.85}100%{transform:scale(1,1.12) skewX(3deg);opacity:1}}
-@media (prefers-reduced-motion:reduce){details.jc.pr2 .jc-fire,details.jc.pr2 .jc-fire::before,details.jc.pr2 .jc-fire::after{animation:none}}
-details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;border-left-color:#E5231B}details.jc.pr1{border-left-color:#F5B301}details.jc>summary .chili-tag{display:flex;width:fit-content;margin:3px 0 0}
+.jc-fire{position:absolute;inset:0;border-radius:inherit;pointer-events:none}
+details.jc.pr1 .jc-fire{box-shadow:inset 0 0 0 2px #F5B301}
+details.jc.pr2 .jc-fire{box-shadow:inset 0 0 0 4px #FF1A1A,inset 0 0 26px 4px rgba(255,26,26,.38)}
+details.jc.pr1{filter:drop-shadow(0 0 5px rgba(245,179,1,.55))}
+details.jc.pr2{filter:drop-shadow(0 0 12px rgba(255,20,20,.9));animation:redGlow 1.1s ease-in-out infinite alternate}
+@keyframes redGlow{0%{filter:drop-shadow(0 0 7px rgba(255,20,20,.75)) drop-shadow(0 0 2px rgba(255,20,20,.9))}100%{filter:drop-shadow(0 0 18px rgba(255,20,20,1)) drop-shadow(0 0 6px rgba(255,60,60,1))}}
+@media (prefers-reduced-motion:reduce){details.jc.pr2{animation:none}}
+details.jc.pr2{border-left-color:#E5231B}details.jc.pr1{border-left-color:#F5B301}details.jc>summary .chili-tag{display:flex;width:fit-content;margin:3px 0 0}
 .hub{margin:8px 0 0;border-top:1px dashed var(--line);padding-top:8px}.hub>button{all:unset;cursor:pointer;display:flex;justify-content:space-between;gap:8px;width:100%;font-size:13px;color:#1b5e20;font-weight:600}.hub>button small{font-weight:400;color:#6b7280}.hub ol{list-style:none;margin:8px 0 0;padding:0 0 0 14px;border-left:2px solid #d8e0d8}.hub li{position:relative;padding:0 0 10px 12px;font-size:13px;line-height:1.45}.hub li:before{content:"";position:absolute;left:-20px;top:5px;width:10px;height:10px;border-radius:50%;background:#c4ccc4}.hub li.on:before{background:#2e7d32;box-shadow:0 0 0 3px #d5ecd6}.hub li b{display:block}.hub li small{color:#6b7280}
 </style>
 </head>
@@ -224,8 +224,7 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
   function strip(arr, title, dlName) {
     if (!arr.length) return '';
     return '<div class="ps"><small>' + title + ' (' + arr.length + ')</small><div class="pr">' + arr.map(function (u, k) {
-      var dl = dlName && u.indexOf('/upload/') > -1 ? u.replace('/upload/', '/upload/fl_attachment/') : '';
-      return '<figure><a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="' + esc(title) + ' ' + (k + 1) + '" loading="lazy"></a>' + (dl ? '<a class="sv" href="' + esc(dl) + '" download="' + esc(dlName + '-' + (k + 1) + '.jpg') + '" target="_blank" rel="noopener" aria-label="บันทึกรูป ' + (k + 1) + '">💾</a>' : '') + '</figure>';
+      return '<figure><a href="' + esc(u) + '" target="_blank" rel="noopener" data-nm="' + esc((dlName || 'รูป') + '-' + (k + 1) + '.jpg') + '"><img src="' + esc(u) + '" alt="' + esc(title) + ' ' + (k + 1) + '" loading="lazy"></a></figure>';   // ปุ่มบันทึกอยู่ในหน้าดูรูปใหญ่
     }).join('') + '</div></div>';
   }
   // รับหน้าร้าน: ที่อยู่ร้าน + แผนที่ + เบอร์โทร + LINE (ข้อมูลร้านตามที่ระบุในเว็บ)
@@ -353,13 +352,28 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
     [].forEach.call(document.querySelectorAll('.copy[data-cp]'), function (c) { c.onclick = function () { try { navigator.clipboard.writeText(c.getAttribute('data-cp')); c.textContent = 'คัดลอกแล้ว'; } catch (e) {} }; });
   }
   // ดูรูปขยายในหน้าเดียวกัน: เลื่อนซ้าย-ขวาดูรูปอื่นได้ มีปุ่ม ✕ ปิดเสมอ (ปุ่มย้อนกลับของมือถือ/Esc/แตะพื้นหลังก็ปิดได้) — ไม่เปิดแท็บใหม่ จึงไม่ต้องกดลิงก์ใหม่
-  function openLightbox(urls, idx) {
+  // บันทึกรูป: มือถือที่แชร์ไฟล์ได้ → เปิดแผ่นแชร์ (เลือก "บันทึกรูปภาพ") · ไม่ได้ → ดาวน์โหลด · โหลดไฟล์ไม่ได้ → เปิดลิงก์ดาวน์โหลดของ Cloudinary
+  var lbBlob = {};
+  function lbFetch(u) { if (!lbBlob[u]) lbBlob[u] = fetch(u, {mode: 'cors'}).then(function (r) { if (!r.ok) throw 0; return r.blob(); }).catch(function () { delete lbBlob[u]; return null; }); return lbBlob[u]; }
+  function lbSave(u, nm, btn) {
+    var dl = u.indexOf('/upload/') > -1 ? u.replace('/upload/', '/upload/fl_attachment/') : u;
+    btn.disabled = true; var t0 = btn.textContent; btn.textContent = 'กำลังบันทึก…';
+    lbFetch(u).then(function (b) {
+      if (!b) { window.open(dl, '_blank'); return; }
+      var f = null; try { f = new File([b], nm, {type: b.type || 'image/jpeg'}); } catch (e) {}
+      if (f && navigator.canShare && navigator.canShare({files: [f]})) return navigator.share({files: [f]}).catch(function () {});
+      var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = nm; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    }).then(function () { btn.disabled = false; btn.textContent = t0; });
+  }
+  function openLightbox(urls, idx, names) {
     var old = document.querySelector('.lbx'); if (old) old.remove();
     var z = document.createElement('div'); z.className = 'lbx'; z.setAttribute('role', 'dialog'); z.setAttribute('aria-label', 'รูปขยาย');
-    z.innerHTML = '<button type="button" class="lb-x" aria-label="ปิดรูป">✕</button><div class="lb-sc">' + urls.map(function (u, i) { return '<div class="lb-s" data-i="' + i + '"><img alt="รูป ' + (i + 1) + '" src="' + esc(u) + '"></div>'; }).join('') + '</div>' + (urls.length > 1 ? '<div class="lb-n"></div>' : '');
+    z.innerHTML = '<button type="button" class="lb-x" aria-label="ปิดรูป">✕</button><div class="lb-sc">' + urls.map(function (u, i) { return '<div class="lb-s" data-i="' + i + '"><img alt="รูป ' + (i + 1) + '" src="' + esc(u) + '"></div>'; }).join('') + '</div>' + '<button type="button" class="lb-sv">💾 บันทึกรูปนี้</button>' + (urls.length > 1 ? '<div class="lb-n"></div>' : '');
     document.body.appendChild(z);
     var sc = z.querySelector('.lb-sc'), n = z.querySelector('.lb-n'), pushed = false, closed = false;
-    function mark() { if (n) n.textContent = (Math.round(sc.scrollLeft / Math.max(1, sc.clientWidth)) + 1) + ' / ' + urls.length; }
+    function cur() { return Math.min(urls.length - 1, Math.max(0, Math.round(sc.scrollLeft / Math.max(1, sc.clientWidth)))); }
+    function mark() { if (n) n.textContent = (cur() + 1) + ' / ' + urls.length; lbFetch(urls[cur()]); }   // โหลดรูปที่กำลังดูไว้ก่อน กดบันทึกแล้วแชร์ได้ทันที
+    z.querySelector('.lb-sv').addEventListener('click', function (e) { e.stopPropagation(); var i = cur(); lbSave(urls[i], (names && names[i]) || ('รูป-' + (i + 1) + '.jpg'), e.currentTarget); });
     function close(fromPop) { if (closed) return; closed = true; document.removeEventListener('keydown', onKey); window.removeEventListener('popstate', onPop); z.remove(); if (pushed && !fromPop) { try { history.back(); } catch (e) {} } }
     function onKey(e) { if (e.key === 'Escape') close(); }
     function onPop() { close(true); }
@@ -372,7 +386,7 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
   document.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('.pr figure > a:first-child'); if (!a) return;
     var row = a.closest('.pr'), links = [].slice.call(row.querySelectorAll('figure > a:first-child'));
-    e.preventDefault(); openLightbox(links.map(function (x) { return x.getAttribute('href'); }), Math.max(0, links.indexOf(a)));
+    e.preventDefault(); openLightbox(links.map(function (x) { return x.getAttribute('href'); }), Math.max(0, links.indexOf(a)), links.map(function (x) { return x.getAttribute('data-nm') || ''; }));
   });
   var t = (new URLSearchParams(location.search).get('t') || '').trim();
   if (!/^[a-z0-9]{12,40}$/i.test(t)) { fail('ลิงก์ไม่ถูกต้อง', 'กรุณาเปิดลิงก์ที่ร้านส่งให้ หรือสอบถามร้านทาง LINE'); return; }
