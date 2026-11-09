@@ -8776,16 +8776,16 @@ function bahtText(value) {
     jdEdit = null; renderJobHistory(); try { if (isTrackPanelActive()) renderTrackingHistory(); } catch (e) {}
     toast('บันทึกแล้ว' + (synced ? ' · อัปเดตรายการพัสดุ ' + synced + ' รายการ' : '') + (/^JBS/i.test(String(j.no || '').trim()) ? ' · หน้าติดตามลูกค้าอัปเดตตามแล้ว' : ''));
   }
-  function renderJobHistory() {
+  function renderJobHistory(soft) {   // soft=true: เรียกจากซิงก์คลาวด์ — ถ้าหน้าตาไม่เปลี่ยนจะไม่วาดใหม่ (กันกะพริบ) · เรียกจากการกดของผู้ใช้ = วาดใหม่เสมอ
     try { setTimeout(hubRefreshJobs, 300); } catch (e) {}
     try { renderOwedCard(); } catch (e) {}
     try { renderTodayJobs(); } catch (e) {}
-    try { const sel = window.getSelection && window.getSelection(); if (sel && !sel.isCollapsed && String(sel).trim() && $('jobHistory').contains(sel.anchorNode)) { clearTimeout(renderJobHistory._t); renderJobHistory._t = setTimeout(renderJobHistory, 1500); return; } } catch (e) {}
+    try { const sel = window.getSelection && window.getSelection(); if (sel && !sel.isCollapsed && String(sel).trim() && $('jobHistory').contains(sel.anchorNode)) { clearTimeout(renderJobHistory._t); renderJobHistory._t = setTimeout(() => renderJobHistory(soft), 1500); return; } } catch (e) {}
     try { renderCustomerDatalist(); } catch (e) {}
     const jobMadeAt = j => { const m = /^j(\d{13})/.exec(String(j.id || '')); return m ? +m[1] : (j.savedAt || 0); };   // เวลาสร้างใบ (id = 'j' + เวลา) ไม่ใช่เวลาแก้ล่าสุด
     const list = store.get('bs_jobs', []).slice().sort((a, b) => jobMadeAt(b) - jobMadeAt(a) || (b.savedAt || 0) - (a.savedAt || 0));   // ใหม่สุดบน: ตามเวลาที่สร้างใบ
     const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้ ควรดาวน์โหลด PDF เก็บไว้ทุกครั้ง</p>');
-    if (!list.length) { $('jobHistory').innerHTML = notice + '<p class="empty">ยังไม่มีใบคอนเฟิร์มงานที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; return; }
+    if (!list.length) { $('jobHistory')._jhKey = null; $('jobHistory').innerHTML = notice + '<p class="empty">ยังไม่มีใบคอนเฟิร์มงานที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; return; }
     const q = $('jobHistSearch') ? $('jobHistSearch').value : '';
     const fSt = $('jobFiltSt') ? $('jobFiltSt').value : '', fPg = $('jobFiltPg') ? $('jobFiltPg').value : '';
     // งานที่ลูกค้ารับแล้ว: ซ่อนจากรายการปกติ (ค้นชื่อลูกค้า / เลือกสถานะ / กด "แสดง" ก็ยังเห็น)
@@ -8794,12 +8794,12 @@ function bahtText(value) {
     const hiddenN = hideRcv ? list.filter(j => isRcv(j) && (!fPg || (j.page || 'ball') === fPg)).length : 0;
     const rcvBar = (hiddenN || (renderJobHistory._showRcv && !String(q || '').trim() && !fSt)) ? '<p class="hint rcv-bar">' + (hideRcv ? 'ซ่อนงานเสร็จสิ้น (ลูกค้ารับแล้ว) ' + hiddenN + ' ใบ · ค้นชื่อลูกค้า หรือเลือกตัวกรอง “เสร็จสิ้น” เพื่อดู ' : 'กำลังแสดงงานเสร็จสิ้นด้วย ') + '<button type="button" class="rcv-toggle">' + (hideRcv ? 'แสดง' : 'ซ่อน') + '</button></p>' : '';
     const shown = list.filter(j => !(hideRcv && isRcv(j)) && matchesSearch(j.jName, q) && (!fPg || (j.page || 'ball') === fPg) && (!fSt || (fSt === 'delivered' ? isRcv(j) : fSt === 'notrack' ? ((j.status || 'pending') === 'shipped' && !j.trackCode) : ((j.status || 'pending') === fSt && !(fSt === 'shipped' && isRcv(j))))));
-    if (!shown.length) { $('jobHistory').innerHTML = notice + rcvBar + '<p class="empty">ไม่พบใบงาน' + (q ? 'ของลูกค้าชื่อ “' + esc(q) + '”' : '') + (fSt || fPg ? ' ตามตัวกรองที่เลือก' : '') + '</p>'; return; }
+    if (!shown.length) { $('jobHistory')._jhKey = null; $('jobHistory').innerHTML = notice + rcvBar + '<p class="empty">ไม่พบใบงาน' + (q ? 'ของลูกค้าชื่อ “' + esc(q) + '”' : '') + (fSt || fPg ? ' ตามตัวกรองที่เลือก' : '') + '</p>'; return; }
     const pendWh = can('wholesale') ? list.filter(j => j.wholesale && String(j.jName || '').trim() && jobPendingWhItems(j).length).length : 0;
     const whBanner = '';   // เอาปุ่ม "รวมเข้าใบราคาส่งตามชื่อ" ออกจากหน้านี้ (ระบบรวมให้เองตอนบันทึกใบราคาส่งอยู่แล้ว · ฟังก์ชัน sweepWholesaleJobs ยังอยู่)
     const _whBannerOld = pendWh ? '<div class="wh-sweep"><span>🏷️ มีงานราคาส่ง <b>' + pendWh + '</b> ใบ ที่ยังไม่ได้รวมในใบราคาส่ง</span><button type="button" class="btn small good" id="whSweepBtn">รวมเข้าใบราคาส่งตามชื่อ</button></div>' : '';
     const noCount = {}; list.forEach(j => { const k = String(j.no || '').trim().toUpperCase(); if (k) noCount[k] = (noCount[k] || 0) + 1; });
-    $('jobHistory').innerHTML = notice + whBanner + rcvBar + '<ul>' + shown.map(j => {
+    const jhHtml = notice + whBanner + rcvBar + '<ul>' + shown.map(j => {
       const st = j.status || 'pending';
       const dupTag = noCount[String(j.no || '').trim().toUpperCase()] > 1 ? ' <span style="color:#b91c1c;font-weight:700">⚠ เลขซ้ำ</span>' : '';
       const nItems = (j.items || []).filter(i => (i.name || '').trim()).length, cn = String(j.jName || '').trim();
@@ -8829,6 +8829,14 @@ function bahtText(value) {
       '<button class="jc-b del" data-act="del" type="button" aria-label="ยกเลิก"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg><span>ยกเลิก</span></button></div>' : '') +
       (jobOpenIds[j.id] ? jobDetailHTML(j) : '') + '</li>';
     }).join('') + '</ul><p class="hint" style="margin:10px 2px 0">แตะที่ใบเพื่อดูรายละเอียด ไม่ต้องกดแก้ไข</p>';
+    // วาดใหม่เฉพาะเมื่อหน้าตาเปลี่ยนจริง — กล่อง "ซิงก์แล้ว · อ่านวันนี้" (ตัวเลขเปลี่ยนทุกครั้งที่ข้อมูลเข้า) ไม่นับ แต่อัปเดตกล่องนั้นแทนที่เดิม กันรายการกะพริบ
+    const jh = $('jobHistory'), CM = /<details class="cloud-mini">[\s\S]*?<\/details>/, jhKey = jhHtml.replace(CM, '');
+    if (soft === true && jh._jhKey === jhKey && jh.firstChild) {
+      const old = jh.querySelector('details.cloud-mini'), nw = (CM.exec(jhHtml) || [''])[0];
+      if (old && nw && !old.open) old.outerHTML = nw;
+      return;
+    }
+    jh.innerHTML = jhHtml; jh._jhKey = jhKey;
   }
   // รายละเอียดบนการ์ดใบงาน: งานอะไร กี่ชิ้น ยอดเงิน ฝากส่งถึงใคร (ตัวเลขคำนวณจากข้อมูลในใบ ไม่เดา)
   var hubLatest = {}, hubNext = {}, hubBusy = false;   // hubNext = เวลาที่เช็กเลขนี้ได้อีกครั้ง
@@ -12440,7 +12448,7 @@ function bahtText(value) {
   // กันไม่ให้ยิง request ไปตอนยังไม่ได้ล็อกอิน ซึ่งจะโดนกฎความปลอดภัยของ Firestore ปฏิเสธ
   (window.__bsAuthReady || Promise.resolve()).then(function () {
     watchCloud('bills', 'bs_bills', renderHistory);
-    watchCloud('jobs', 'bs_jobs', () => { renderJobHistory(); if (canCutRemote) { try { renderCutq(); } catch (e) { console.error(e); } } });
+    watchCloud('jobs', 'bs_jobs', () => { renderJobHistory(true); if (canCutRemote) { try { renderCutq(); } catch (e) { console.error(e); } } });
     if (can('design')) watchCloud('designs', 'bs_designs', renderDesign);
     watchCloud('notifs', NOTIF_KEY, onNotifsChanged);
     watchCloud('wholesale', 'bs_wholesale', renderWholesaleHistory);
