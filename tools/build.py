@@ -8,6 +8,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 target = sys.argv[1] if len(sys.argv) > 1 else 'preview'
 pre = 'p-' if target == 'preview' else ''
 s = open(os.path.join(ROOT, 'src/app.html'), encoding='utf-8').read()
+if pre:   # พรีวิว: หน้าสถานะลูกค้าเปิดจาก track-preview.html (เวอร์ชันทดลอง) ไม่ใช่ track.html จริง
+    s = s.replace('https://www.ballsticker.co.th/track.html?t=', 'https://app.ballsticker.co.th/track-preview.html?t=')
 LOCK_MARK = '<script>\n(function () {\n  // ---- คลาวด์ (Firebase)'
 def take(s, start):
     end = s.index('</script>', start) + len('</script>')
@@ -17,8 +19,6 @@ i = s.index(LOCK_MARK); block, lock_js = take(s, i)
 # main app script = largest inline script
 blocks = [(m.start(), m.group(1)) for m in re.finditer(r'<script>(.*?)</script>', s, re.S)]
 ai, app_js = max(blocks, key=lambda b: len(b[1]))
-if pre:   # พรีวิว: หน้าสถานะลูกค้าเปิดจาก track-preview.html (เวอร์ชันทดลอง) ไม่ใช่ track.html จริง
-    app_js = app_js.replace('https://www.ballsticker.co.th/track.html?t=', 'https://app.ballsticker.co.th/track-preview.html?t=')
 app_block = '<script>' + app_js + '</script>'
 def out(name, code):
     h = hashlib.sha1(code.encode()).hexdigest()[:10]
