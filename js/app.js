@@ -5092,13 +5092,18 @@ function bahtText(value) {
     if (!list.length) { $('jobHistory').innerHTML = notice + '<p class="empty">ยังไม่มีใบคอนเฟิร์มงานที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; return; }
     const q = $('jobHistSearch') ? $('jobHistSearch').value : '';
     const fSt = $('jobFiltSt') ? $('jobFiltSt').value : '', fPg = $('jobFiltPg') ? $('jobFiltPg').value : '';
-    const shown = list.filter(j => matchesSearch(j.jName, q) && (!fPg || (j.page || 'ball') === fPg) && (!fSt || (fSt === 'delivered' ? jobDelivered(j) : fSt === 'notrack' ? ((j.status || 'pending') === 'shipped' && !j.trackCode) : (j.status || 'pending') === fSt)));
-    if (!shown.length) { $('jobHistory').innerHTML = notice + '<p class="empty">ไม่พบใบงาน' + (q ? 'ของลูกค้าชื่อ “' + esc(q) + '”' : '') + (fSt || fPg ? ' ตามตัวกรองที่เลือก' : '') + '</p>'; return; }
+    // งานที่ลูกค้ารับแล้ว: ซ่อนจากรายการปกติ (ค้นชื่อลูกค้า / เลือกสถานะ / กด "แสดง" ก็ยังเห็น)
+    const isRcv = j => (j.status || 'pending') === 'received' || ((j.status || 'pending') === 'shipped' && jobDelivered(j));
+    const hideRcv = !String(q || '').trim() && !fSt && !renderJobHistory._showRcv;
+    const hiddenN = hideRcv ? list.filter(j => isRcv(j) && (!fPg || (j.page || 'ball') === fPg)).length : 0;
+    const rcvBar = (hiddenN || (renderJobHistory._showRcv && !String(q || '').trim() && !fSt)) ? '<p class="hint rcv-bar">' + (hideRcv ? 'ซ่อนงานเสร็จสิ้น (ลูกค้ารับแล้ว) ' + hiddenN + ' ใบ · ค้นชื่อลูกค้า หรือเลือกตัวกรอง “เสร็จสิ้น” เพื่อดู ' : 'กำลังแสดงงานเสร็จสิ้นด้วย ') + '<button type="button" class="rcv-toggle">' + (hideRcv ? 'แสดง' : 'ซ่อน') + '</button></p>' : '';
+    const shown = list.filter(j => !(hideRcv && isRcv(j)) && matchesSearch(j.jName, q) && (!fPg || (j.page || 'ball') === fPg) && (!fSt || (fSt === 'delivered' ? isRcv(j) : fSt === 'notrack' ? ((j.status || 'pending') === 'shipped' && !j.trackCode) : ((j.status || 'pending') === fSt && !(fSt === 'shipped' && isRcv(j))))));
+    if (!shown.length) { $('jobHistory').innerHTML = notice + rcvBar + '<p class="empty">ไม่พบใบงาน' + (q ? 'ของลูกค้าชื่อ “' + esc(q) + '”' : '') + (fSt || fPg ? ' ตามตัวกรองที่เลือก' : '') + '</p>'; return; }
     const pendWh = can('wholesale') ? list.filter(j => j.wholesale && String(j.jName || '').trim() && jobPendingWhItems(j).length).length : 0;
     const whBanner = '';   // เอาปุ่ม "รวมเข้าใบราคาส่งตามชื่อ" ออกจากหน้านี้ (ระบบรวมให้เองตอนบันทึกใบราคาส่งอยู่แล้ว · ฟังก์ชัน sweepWholesaleJobs ยังอยู่)
     const _whBannerOld = pendWh ? '<div class="wh-sweep"><span>🏷️ มีงานราคาส่ง <b>' + pendWh + '</b> ใบ ที่ยังไม่ได้รวมในใบราคาส่ง</span><button type="button" class="btn small good" id="whSweepBtn">รวมเข้าใบราคาส่งตามชื่อ</button></div>' : '';
     const noCount = {}; list.forEach(j => { const k = String(j.no || '').trim().toUpperCase(); if (k) noCount[k] = (noCount[k] || 0) + 1; });
-    $('jobHistory').innerHTML = notice + whBanner + '<ul>' + shown.map(j => {
+    $('jobHistory').innerHTML = notice + whBanner + rcvBar + '<ul>' + shown.map(j => {
       const st = j.status || 'pending';
       const dupTag = noCount[String(j.no || '').trim().toUpperCase()] > 1 ? ' <span style="color:#b91c1c;font-weight:700">⚠ เลขซ้ำ</span>' : '';
       const nItems = (j.items || []).filter(i => (i.name || '').trim()).length, cn = String(j.jName || '').trim();
@@ -7966,6 +7971,7 @@ function bahtText(value) {
   $('histSearch').addEventListener('input', renderHistory);
   $('jobHistSearch').addEventListener('input', renderJobHistory);
   ['jobFiltSt', 'jobFiltPg'].forEach(i => $(i).addEventListener('change', renderJobHistory));
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.rcv-toggle'); if (!b) return; renderJobHistory._showRcv = !renderJobHistory._showRcv; renderJobHistory(); });
   $('whHistSearch').addEventListener('input', renderWholesaleHistory);
   function addWholesaleShop() {
     const nm = $('whAddName').value.trim(); if (!nm) { toast('พิมพ์ชื่อร้านก่อน'); $('whAddName').focus(); return; }
