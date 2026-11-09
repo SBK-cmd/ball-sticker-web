@@ -286,12 +286,12 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
     var bs = el.parentNode && el.parentNode.querySelector('.bxs');
     if (bs && last.status_text && !bs.classList.contains('ok')) {
       var bb = bs.querySelector('b'), sm = bs.querySelector('small');
-      if (bb) bb.textContent = last.status_text;
+      if (bb) { bb.textContent = last.status_desc; bb.style.borderRadius = last.status_desc.length > 26 ? '16px' : ''; }
       if (last.status === 'delivered') { bs.classList.remove('go', 'bad'); bs.classList.add('ok'); }
       if (!sm) { sm = document.createElement('small'); bs.appendChild(sm); }
       sm.textContent = 'อัปเดต ' + hubTime(last.timestamp);
     }
-    el.innerHTML = '<button type="button" aria-expanded="false"><span>📍 ' + esc(last.status_desc) + '<br><small>' + esc(hubTime(last.timestamp)) + (last.current_location ? ' · ' + esc(last.current_location) : '') + '</small></span><span aria-hidden="true">▾</span></button><ol hidden>' +
+    el.innerHTML = '<button type="button" aria-expanded="false"><span>📍 ดูเส้นทางพัสดุ (' + r.length + ' เหตุการณ์)<br><small>' + esc(hubTime(last.timestamp)) + (last.current_location ? ' · ' + esc(last.current_location) : '') + '</small></span><span aria-hidden="true">▾</span></button><ol hidden>' +
       r.map(function (x, i) { return '<li' + (i === 0 ? ' class="on"' : '') + '><b>' + esc(x.status_text || '') + '</b>' + esc(x.status_desc) + '<br><small>' + esc(hubTime(x.timestamp)) + (x.current_location ? ' · ' + esc(x.current_location) : '') + '</small></li>'; }).join('') + '</ol>';
     var btn = el.querySelector('button'), ol = el.querySelector('ol');
     btn.onclick = function () { var o = ol.hidden; ol.hidden = !o; btn.setAttribute('aria-expanded', o ? 'true' : 'false'); btn.lastChild.textContent = o ? '▴' : '▾'; };
