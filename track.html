@@ -134,6 +134,7 @@ details.jc.pr2 .jc-fire::after{top:-12px;height:14px;left:25px;background-size:1
 @keyframes fireTop{0%{transform:scale(1,.78) skewX(-3deg);opacity:.85}100%{transform:scale(1,1.12) skewX(3deg);opacity:1}}
 @media (prefers-reduced-motion:reduce){details.jc.pr2 .jc-fire,details.jc.pr2 .jc-fire::before,details.jc.pr2 .jc-fire::after{animation:none}}
 details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;border-left-color:#E5231B}details.jc.pr1{border-left-color:#F5B301}details.jc>summary .chili-tag{display:flex;width:fit-content;margin:3px 0 0}
+.hub{margin:8px 0 0;border-top:1px dashed var(--line);padding-top:8px}.hub>button{all:unset;cursor:pointer;display:flex;justify-content:space-between;gap:8px;width:100%;font-size:13px;color:#1b5e20;font-weight:600}.hub>button small{font-weight:400;color:#6b7280}.hub ol{list-style:none;margin:8px 0 0;padding:0 0 0 14px;border-left:2px solid #d8e0d8}.hub li{position:relative;padding:0 0 10px 12px;font-size:13px;line-height:1.45}.hub li:before{content:"";position:absolute;left:-20px;top:5px;width:10px;height:10px;border-radius:50%;background:#c4ccc4}.hub li.on:before{background:#2e7d32;box-shadow:0 0 0 3px #d5ecd6}.hub li b{display:block}.hub li small{color:#6b7280}
 </style>
 </head>
 <body>
@@ -217,7 +218,7 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
       var ok = b.trackCode && /^https:\/\//.test(b.trackUrl || '');
       return '<div class="bx">' + (b.from ? '<div class="bxf"><em>ผู้ส่ง</em><b>' + esc(b.from) + '</b></div>' : '') + (b.name || n > 1 ? '<div class="bxl">' + (n > 1 ? '<em>กล่อง ' + (i + 1) + '/' + n + '</em>' : '<em>ผู้รับ</em>') + (b.name ? '<b>' + esc(b.name) + '</b>' : '') + '</div>' : '') +
         (b.addr ? '<div class="bxa">' + esc(b.addr) + '</div>' : '') + (b.note ? '<div class="bxa">📝 ' + esc(b.note) + '</div>' : '') +
-        (b.trackCode ? '<div class="bxt"><span>' + esc(b.carrier || 'เลขพัสดุ') + '</span><b>' + esc(b.trackCode) + '</b><button class="copy" type="button" data-cp="' + esc(b.trackCode) + '">คัดลอก</button></div>' + shipSt(b, dn) + (ok ? '<a class="go2" href="' + esc(b.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะพัสดุ' + (n > 1 ? ' กล่อง ' + (i + 1) : '') + '</a>' : '') : '<div class="bxt none">ยังไม่มีเลขพัสดุ</div>') + '</div>';
+        (b.trackCode ? '<div class="bxt"><span>' + esc(b.carrier || 'เลขพัสดุ') + '</span><b>' + esc(b.trackCode) + '</b><button class="copy" type="button" data-cp="' + esc(b.trackCode) + '">คัดลอก</button></div>' + shipSt(b, dn) + (ok ? '<a class="go2" href="' + esc(b.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะพัสดุ' + (n > 1 ? ' กล่อง ' + (i + 1) : '') + '</a>' : '') + '<div class="hub" data-trk="' + esc(b.trackCode) + '" hidden></div>' : '<div class="bxt none">ยังไม่มีเลขพัสดุ</div>') + '</div>';
     }).join('');
   }
   function strip(arr, title, dlName) {
@@ -266,6 +267,49 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
     return {no: j.no, date: j.date || '', status: j.status, delivered: j.delivered, items: j.items || [], amt: isJbs ? (+j.amt || 0) : 0, due: j.due, thumb: j.thumb, boxes: boxes, sender: isJbs ? j.sender : null,
       photos: k >= 2 ? https(j.photos) : [], refs: https(j.refPhotos), prio: +j.prio || 0};
   }
+  /* เส้นทางพัสดุระหว่าง hub (iShip Trace routes ผ่าน Worker iship-orders-proxy เส้น ?trace=) — ถ้าเรียกไม่ได้จะไม่แสดงอะไร ไม่กระทบหน้าเดิม
+     ใส่ HUB_KEY (APP_KEY ของ Worker) หลัง deploy; ทดสอบหน้าตาด้วย ?hubdemo=1 (ข้อมูลตัวอย่าง ไม่ใช่ของจริง) */
+  var HUB_URL = 'https://iship-orders-proxy.organic-parmesan.workers.dev', HUB_KEY = 'trk-59733fb82520077d';   // กุญแจเฉพาะดูเส้นทางพัสดุ (ไม่ใช่กุญแจออเดอร์)
+  var HUB_DEMO = [
+    {status_text: 'พัสดุเข้าระบบ', status_desc: 'เจ้าหน้าที่สาขา【KNY_SP-คันนายาว】รับพัสดุเรียบร้อย', current_location: 'รามอินทรา คันนายาว กรุงเทพ', timestamp: '2026-04-12 12:52:33'},
+    {status_text: 'อยู่ระหว่างขนส่ง', status_desc: 'พัสดุถึงสาขา【16 Central_HUB-วังน้อย】', current_location: 'ลำไทร วังน้อย พระนครศรีอยุธยา', timestamp: '2026-04-12 19:34:42'},
+    {status_text: 'อยู่ระหว่างจัดส่ง', status_desc: 'พัสดุของท่านอยู่ระหว่างการนำส่ง', current_location: 'คลองสามประเวศ ลาดกระบัง กรุงเทพ', timestamp: '2026-04-13 10:24:28'},
+    {status_text: 'จัดส่งแล้ว', status_desc: 'นำส่งสำเร็จ เซ็นรับโดย【ตัวอย่าง ทดสอบ】', current_location: 'คลองสามประเวศ ลาดกระบัง กรุงเทพ', timestamp: '2026-04-13 13:01:32'}];
+  var MON_S = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  function hubTime(t) { var m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2})/.exec(t || ''); return m ? (+m[3]) + ' ' + MON_S[+m[2] - 1] + ' ' + String(+m[1] + 543).slice(-2) + ' ' + m[4] + ' น.' : esc(t || ''); }
+  function hubDraw(el, routes) {
+    var r = (routes || []).filter(function (x) { return x && x.status_desc; }).slice().reverse();
+    if (!r.length) return;
+    var oldOl = el.querySelector('ol'), wasOpen = !!(oldOl && !oldOl.hidden);
+    var last = r[0];
+    // อัปเดตป้ายสถานะการจัดส่งด้านบนตามเหตุการณ์ล่าสุดของขนส่ง (ถ้ายังไม่ใช่ "ลูกค้ารับแล้ว")
+    var bs = el.parentNode && el.parentNode.querySelector('.bxs');
+    if (bs && last.status_text && !bs.classList.contains('ok')) {
+      var bb = bs.querySelector('b'), sm = bs.querySelector('small');
+      if (bb) { bb.textContent = last.status_desc; bb.style.borderRadius = last.status_desc.length > 26 ? '16px' : ''; }
+      if (last.status === 'delivered') { bs.classList.remove('go', 'bad'); bs.classList.add('ok'); }
+      if (!sm) { sm = document.createElement('small'); bs.appendChild(sm); }
+      sm.textContent = 'อัปเดต ' + hubTime(last.timestamp);
+    }
+    el.innerHTML = '<button type="button" aria-expanded="false"><span>📍 ดูเส้นทางพัสดุ (' + r.length + ' เหตุการณ์)<br><small>' + esc(hubTime(last.timestamp)) + (last.current_location ? ' · ' + esc(last.current_location) : '') + '</small></span><span aria-hidden="true">▾</span></button><ol hidden>' +
+      r.map(function (x, i) { return '<li' + (i === 0 ? ' class="on"' : '') + '><b>' + esc(x.status_text || '') + '</b>' + esc(x.status_desc) + '<br><small>' + esc(hubTime(x.timestamp)) + (x.current_location ? ' · ' + esc(x.current_location) : '') + '</small></li>'; }).join('') + '</ol>';
+    var btn = el.querySelector('button'), ol = el.querySelector('ol');
+    btn.onclick = function () { var o = ol.hidden; ol.hidden = !o; btn.setAttribute('aria-expanded', o ? 'true' : 'false'); btn.lastChild.textContent = o ? '▴' : '▾'; };
+    if (wasOpen) { ol.hidden = false; btn.setAttribute('aria-expanded', 'true'); btn.lastChild.textContent = '▴'; }
+    el.hidden = false;
+  }
+  var HUB_POLL = 60000, hubTimer = null;   // เช็กขนส่งซ้ำทุก 60 วิ ขณะเปิดหน้าอยู่
+  function loadHubs() {
+    var demo = /[?&]hubdemo=1/.test(location.search);
+    if (!demo && !HUB_KEY) return;
+    if (!demo && !hubTimer) hubTimer = setInterval(function () { if (!document.hidden) loadHubs(); }, HUB_POLL);
+    [].forEach.call(document.querySelectorAll('.hub[data-trk]'), function (el) {
+      var no = el.getAttribute('data-trk');
+      if (demo) { hubDraw(el, HUB_DEMO); return; }
+      fetch(HUB_URL + '/?trace=' + encodeURIComponent(no) + '&tkey=' + encodeURIComponent(HUB_KEY)).then(function (r) { return r.json(); })
+        .then(function (j) { hubDraw(el, j && j.data && j.data.trace_routes); }).catch(function () {});
+    });
+  }
   function show(j) {
     var isJbs = /^JBS/i.test(String(j.no || ''));
     var payOk = j.pay && +j.pay.total > 0 && typeof j.pay.payload === 'string' && /^000201/.test(j.pay.payload);
@@ -282,6 +326,7 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
     box.className = 'card multi';
     box.innerHTML = hi + payHtml + cards.map(function (c) { return c.h; }).join('') + upd;
     setPayModal(payOk ? j.pay : null);
+    loadHubs();
     var po = document.getElementById('payOpen'); if (po) po.onclick = function () { openPay(true); };
     [].forEach.call(document.querySelectorAll('img.jt'), function (im) {   // รูปเล็กหน้าเลขใบ: แตะเพื่อดูใหญ่ (ไม่พับ/เปิดการ์ด)
       im.style.cursor = 'zoom-in';

@@ -725,6 +725,20 @@ button.status-pill:active{filter:brightness(0.9)}
 .chili-tag.p2 .chili-fl{animation-duration:.35s}
 @keyframes chiliFlick{0%{opacity:.75;transform:scale(.9,.8)}100%{opacity:1;transform:scale(1.1,1.25)}}
 @media (prefers-reduced-motion:reduce){.chili-fl{animation:none}}
+.jc-prio .rcv-bar{margin:0 0 10px!important;padding:8px 12px;border-radius:12px;background:var(--mat,#EEF2FB);font-size:13px}.rcv-toggle{margin-left:6px;min-height:32px;padding:0 14px;border-radius:99px;border:1.5px solid currentColor;background:transparent;color:inherit;font:700 13px inherit;font-family:inherit;cursor:pointer}
+.jc-prio-t{margin:0 6px 0 2px;white-space:nowrap;font-size:12.5px;font-weight:700;line-height:1}
+#jobHistory ul>li.jc.prio1,#jobHistory ul>li.jc.prio2{overflow:visible!important}
+#jobHistory li.jc.prio1::after,#jobHistory li.jc.prio2::after{border-radius:18px 0 0 18px}
+.jc-fire{position:absolute;inset:0;border-radius:18px;pointer-events:none}
+.jc.prio1 .jc-fire{box-shadow:0 0 0 2px #F5B301,0 0 8px 1px rgba(245,179,1,.45)}
+#jobHistory ul>li.jc.prio2{margin-top:18px!important}
+.jc.prio2 .jc-fire{box-shadow:0 0 0 2px #E5231B,0 0 12px 3px rgba(255,90,20,.6);animation:fireGlow .45s ease-in-out infinite alternate}
+.jc.prio2 .jc-fire::before,.jc.prio2 .jc-fire::after{content:'';position:absolute;left:14px;right:14px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 18'%3E%3Cpath d='M10 0C11 5 16 7 16 12a6 6 0 0 1-12 0C4 8 8 6 10 0z' fill='%23FF4B1F'/%3E%3Cpath d='M10 7c1 3 3 4 3 7a3 3 0 0 1-6 0c0-2 2-3 3-7z' fill='%23FFC93C'/%3E%3C/svg%3E") repeat-x 0 100%;transform-origin:50% 100%}
+.jc.prio2 .jc-fire::before{top:-17px;height:19px;background-size:22px 19px;animation:fireTop .42s ease-in-out infinite alternate}
+.jc.prio2 .jc-fire::after{top:-12px;height:14px;left:25px;background-size:16px 14px;opacity:.9;animation:fireTop .31s ease-in-out infinite alternate-reverse}
+@keyframes fireGlow{0%{box-shadow:0 0 0 2px #E5231B,0 0 8px 2px rgba(255,90,20,.45)}100%{box-shadow:0 0 0 2px #FF3B1F,0 0 16px 5px rgba(255,140,20,.75)}}
+@keyframes fireTop{0%{transform:scale(1,.78) skewX(-3deg);opacity:.85}100%{transform:scale(1,1.12) skewX(3deg);opacity:1}}
+@media (prefers-reduced-motion:reduce){.jc.prio2 .jc-fire,.jc.prio2 .jc-fire::before,.jc.prio2 .jc-fire::after{animation:none}}
 .job-status-select{font-size:12.5px;font-weight:700;padding:4px 8px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--field);cursor:pointer}
 .track-status-select{font-size:12.5px;font-weight:700;padding:4px 8px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--field);cursor:pointer}
 .ocr-actions{display:flex;gap:8px;flex-wrap:wrap}
@@ -1910,7 +1924,7 @@ body.jm-open .fab-newjob{display:none!important}
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.23 · พรีวิว</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.26 · พรีวิว</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
@@ -2255,7 +2269,7 @@ body.jm-open .fab-newjob{display:none!important}
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้</span>
         </div>
         <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="jobHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
-        <div class="jf-filt" id="jobFilt"><select id="jobFiltSt" aria-label="กรองตามสถานะ"><option value="">ทุกสถานะ</option><option value="pending">รอทำ</option><option value="filed">ทำไฟล์แล้ว</option><option value="printed">ผลิตแล้ว</option><option value="shipped">จัดส่งแล้ว</option><option value="pickup">รับหน้าร้าน</option><option value="delivered">ลูกค้ารับแล้ว</option><option value="notrack">ส่งแล้ว · ยังไม่มีเลขพัสดุ</option></select><select id="jobFiltPg" aria-label="กรองตามเพจ"><option value="">ทุกเพจ</option><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop</option></select></div>
+        <div class="jf-filt" id="jobFilt"><select id="jobFiltSt" aria-label="กรองตามสถานะ"><option value="">ยังไม่เสร็จสิ้น</option><option value="pending">รอทำ</option><option value="filed">ทำไฟล์แล้ว</option><option value="printed">ผลิตแล้ว</option><option value="shipped">จัดส่งแล้ว</option><option value="pickup">รับหน้าร้าน</option><option value="delivered">เสร็จสิ้น (ลูกค้ารับแล้ว)</option><option value="notrack">ส่งแล้ว · ยังไม่มีเลขพัสดุ</option></select><select id="jobFiltPg" aria-label="กรองตามเพจ"><option value="">ทุกเพจ</option><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop</option></select></div>
         <div id="jobHistory"></div>
       </section>
 
@@ -3376,7 +3390,7 @@ body.jm-open .fab-newjob{display:none!important}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=17972f888c",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=72b2868cf1",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 </body>
