@@ -241,9 +241,9 @@ details.jc>.jb{padding:4px 14px 14px}
       photos: k >= 2 ? https(j.photos) : [], refs: https(j.refPhotos)};
   }
 
-  /* เส้นทางพัสดุระหว่าง hub (iShip Trace routes ผ่าน Worker iship-trace-proxy) — ถ้าเรียกไม่ได้จะไม่แสดงอะไร ไม่กระทบหน้าเดิม
+  /* เส้นทางพัสดุระหว่าง hub (iShip Trace routes ผ่าน Worker iship-orders-proxy เส้น ?trace=) — ถ้าเรียกไม่ได้จะไม่แสดงอะไร ไม่กระทบหน้าเดิม
      ใส่ HUB_KEY (APP_KEY ของ Worker) หลัง deploy; ทดสอบหน้าตาด้วย ?hubdemo=1 (ข้อมูลตัวอย่าง ไม่ใช่ของจริง) */
-  var HUB_URL = 'https://iship-trace-proxy.organic-parmesan.workers.dev', HUB_KEY = '';
+  var HUB_URL = 'https://iship-orders-proxy.organic-parmesan.workers.dev', HUB_KEY = 'trk-59733fb82520077d';   // กุญแจเฉพาะดูเส้นทางพัสดุ (ไม่ใช่กุญแจออเดอร์)
   var HUB_DEMO = [
     {status_text: 'พัสดุเข้าระบบ', status_desc: 'เจ้าหน้าที่สาขา【KNY_SP-คันนายาว】รับพัสดุเรียบร้อย', current_location: 'รามอินทรา คันนายาว กรุงเทพ', timestamp: '2026-04-12 12:52:33'},
     {status_text: 'อยู่ระหว่างขนส่ง', status_desc: 'พัสดุถึงสาขา【16 Central_HUB-วังน้อย】', current_location: 'ลำไทร วังน้อย พระนครศรีอยุธยา', timestamp: '2026-04-12 19:34:42'},
@@ -267,8 +267,8 @@ details.jc>.jb{padding:4px 14px 14px}
     [].forEach.call(document.querySelectorAll('.hub[data-trk]'), function (el) {
       var no = el.getAttribute('data-trk');
       if (demo) { hubDraw(el, HUB_DEMO); return; }
-      fetch(HUB_URL + '/?no=' + encodeURIComponent(no) + '&key=' + encodeURIComponent(HUB_KEY)).then(function (r) { return r.json(); })
-        .then(function (j) { hubDraw(el, j && j.data && j.data.data && j.data.data.trace_routes); }).catch(function () {});
+      fetch(HUB_URL + '/?trace=' + encodeURIComponent(no) + '&tkey=' + encodeURIComponent(HUB_KEY)).then(function (r) { return r.json(); })
+        .then(function (j) { hubDraw(el, j && j.data && j.data.trace_routes); }).catch(function () {});
     });
   }
   function show(j) {
