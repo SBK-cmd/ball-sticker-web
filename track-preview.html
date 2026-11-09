@@ -116,24 +116,7 @@ details.jc>.jb{padding:4px 14px 14px}
 .pr figure{margin:0;flex:none;position:relative;scroll-snap-align:start}.pr img{display:block;width:104px;height:104px;border-radius:12px;object-fit:cover;background:#f3f4f6;border:1px solid var(--line)}
 .pr .sv{position:absolute;right:4px;bottom:4px;width:34px;height:34px;margin:0;padding:0;display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.92);box-shadow:0 1px 4px rgba(0,0,0,.25);font-size:15px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
-/* urgency */
-.chili-tag{display:inline-flex;align-items:center;gap:2px;margin-left:6px;padding:1px 8px 1px 2px;border-radius:99px;font-size:12px;vertical-align:middle}
-.chili-tag .chili{width:22px;height:22px;overflow:visible}.chili-tag b{font-weight:700}
-.chili-tag.p1{background:#FFF4CC;color:#7A5600}.chili-tag.p2{background:#FFE3E0;color:#A8140E;box-shadow:inset 0 0 0 1.5px #E5231B}
-.chili-fl{transform-box:fill-box;transform-origin:50% 100%;animation:chiliFlick .55s ease-in-out infinite alternate}
-.chili-tag.p2 .chili-fl{animation-duration:.35s}
-@keyframes chiliFlick{0%{opacity:.75;transform:scale(.9,.8)}100%{opacity:1;transform:scale(1.1,1.25)}}
-@media (prefers-reduced-motion:reduce){.chili-fl{animation:none}}
-.jc-fire{position:absolute;inset:0;border-radius:18px;pointer-events:none}
-details.jc.pr1 .jc-fire{box-shadow:0 0 0 2px #F5B301,0 0 8px 1px rgba(245,179,1,.45)}
-details.jc.pr2 .jc-fire{box-shadow:0 0 0 2px #E5231B,0 0 12px 3px rgba(255,90,20,.6);animation:fireGlow .45s ease-in-out infinite alternate}
-details.jc.pr2 .jc-fire::before,details.jc.pr2 .jc-fire::after{content:'';position:absolute;left:14px;right:14px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 18'%3E%3Cpath d='M10 0C11 5 16 7 16 12a6 6 0 0 1-12 0C4 8 8 6 10 0z' fill='%23FF4B1F'/%3E%3Cpath d='M10 7c1 3 3 4 3 7a3 3 0 0 1-6 0c0-2 2-3 3-7z' fill='%23FFC93C'/%3E%3C/svg%3E") repeat-x 0 100%;transform-origin:50% 100%}
-details.jc.pr2 .jc-fire::before{top:-17px;height:19px;background-size:22px 19px;animation:fireTop .42s ease-in-out infinite alternate}
-details.jc.pr2 .jc-fire::after{top:-12px;height:14px;left:25px;background-size:16px 14px;opacity:.9;animation:fireTop .31s ease-in-out infinite alternate-reverse}
-@keyframes fireGlow{0%{box-shadow:0 0 0 2px #E5231B,0 0 8px 2px rgba(255,90,20,.45)}100%{box-shadow:0 0 0 2px #FF3B1F,0 0 16px 5px rgba(255,140,20,.75)}}
-@keyframes fireTop{0%{transform:scale(1,.78) skewX(-3deg);opacity:.85}100%{transform:scale(1,1.12) skewX(3deg);opacity:1}}
-@media (prefers-reduced-motion:reduce){details.jc.pr2 .jc-fire,details.jc.pr2 .jc-fire::before,details.jc.pr2 .jc-fire::after{animation:none}}
-details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;border-left-color:#E5231B}details.jc.pr1{border-left-color:#F5B301}details.jc>summary .chili-tag{display:flex;width:fit-content;margin:3px 0 0}
+.hub{margin:8px 0 0;border-top:1px dashed var(--line);padding-top:8px}.hub>button{all:unset;cursor:pointer;display:flex;justify-content:space-between;gap:8px;width:100%;font-size:13px;color:#1b5e20;font-weight:600}.hub>button small{font-weight:400;color:#6b7280}.hub ol{list-style:none;margin:8px 0 0;padding:0 0 0 14px;border-left:2px solid #d8e0d8}.hub li{position:relative;padding:0 0 10px 12px;font-size:13px;line-height:1.45}.hub li:before{content:"";position:absolute;left:-20px;top:5px;width:10px;height:10px;border-radius:50%;background:#c4ccc4}.hub li.on:before{background:#2e7d32;box-shadow:0 0 0 3px #d5ecd6}.hub li b{display:block}.hub li small{color:#6b7280}
 </style>
 </head>
 <body>
@@ -217,7 +200,7 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
       var ok = b.trackCode && /^https:\/\//.test(b.trackUrl || '');
       return '<div class="bx">' + (b.from ? '<div class="bxf"><em>ผู้ส่ง</em><b>' + esc(b.from) + '</b></div>' : '') + (b.name || n > 1 ? '<div class="bxl">' + (n > 1 ? '<em>กล่อง ' + (i + 1) + '/' + n + '</em>' : '<em>ผู้รับ</em>') + (b.name ? '<b>' + esc(b.name) + '</b>' : '') + '</div>' : '') +
         (b.addr ? '<div class="bxa">' + esc(b.addr) + '</div>' : '') + (b.note ? '<div class="bxa">📝 ' + esc(b.note) + '</div>' : '') +
-        (b.trackCode ? '<div class="bxt"><span>' + esc(b.carrier || 'เลขพัสดุ') + '</span><b>' + esc(b.trackCode) + '</b><button class="copy" type="button" data-cp="' + esc(b.trackCode) + '">คัดลอก</button></div>' + shipSt(b, dn) + (ok ? '<a class="go2" href="' + esc(b.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะพัสดุ' + (n > 1 ? ' กล่อง ' + (i + 1) : '') + '</a>' : '') : '<div class="bxt none">ยังไม่มีเลขพัสดุ</div>') + '</div>';
+        (b.trackCode ? '<div class="bxt"><span>' + esc(b.carrier || 'เลขพัสดุ') + '</span><b>' + esc(b.trackCode) + '</b><button class="copy" type="button" data-cp="' + esc(b.trackCode) + '">คัดลอก</button></div>' + shipSt(b, dn) + (ok ? '<a class="go2" href="' + esc(b.trackUrl) + '" target="_blank" rel="noopener">🔎 เช็คสถานะพัสดุ' + (n > 1 ? ' กล่อง ' + (i + 1) : '') + '</a>' : '') + '<div class="hub" data-trk="' + esc(b.trackCode) + '" hidden></div>' : '<div class="bxt none">ยังไม่มีเลขพัสดุ</div>') + '</div>';
     }).join('');
   }
   function strip(arr, title, dlName) {
@@ -234,18 +217,9 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
       '<div class="pk-r"><a class="pk-b" href="tel:0935353555">📞 093-535-3555</a><a class="pk-b" href="tel:0966697495">📞 096-669-7495</a><a class="pk-b ln" href="https://line.me/R/ti/p/@bk25" target="_blank" rel="noopener">💬 LINE @bk25</a></div></div>';
   }
   // การ์ดงาน 1 ใบ (เหมือนกันทุกใบ): หัวการ์ดมีสถานะ+แถบความคืบหน้า กดแล้วค่อยเปิดรายละเอียด
-  const PRIO_LABEL = ['ปกติตามคิว', 'ขอด่วนไม่เกิน 2 วัน', 'ขอด่วนส่งวันนี้'], PRIO_SHORT = ['', 'ด่วน 2 วัน', 'ด่วนวันนี้'];
-  function chiliSvg(n) {
-    n = +n || 0;
-    const col = ['#16A34A', '#F5B301', '#E5231B'][n], dark = ['#0F7A37', '#C98F00', '#A8140E'][n];
-    const fl = (x, y, sc, d) => '<g transform="translate(' + x + ' ' + y + ') scale(' + sc + ')"><path class="chili-fl" style="animation-delay:' + d + 's" d="M0 0C-3.500-3-2.500-6.500 0-10 1-7.500 3.500-5.500 3-2.500 2.500-1 1.200 0 0 0z" fill="' + (n === 2 ? '#FF8A00' : '#FFB300') + '"/></g>';
-    const flames = n === 2 ? fl(11, 8, 1.1, 0) + fl(17, 6, 1.4, .15) + fl(23, 9, 1, .3) : n === 1 ? fl(17, 7, 1, 0) : '';
-    return '<svg class="chili" viewBox="0 0 32 32" aria-hidden="true"><path d="M8.500 12C8 9.800 9.500 8.500 11.500 9 19.500 11.500 25.500 17 27.500 26 21.500 22.500 16 22.800 11.500 20.500 8.800 19 8.800 15 8.500 12z" fill="' + col + '" stroke="' + dark + '" stroke-width="1.200" stroke-linejoin="round"/><path d="M9.500 9.500C9 7 10.500 5.500 13 5.800" fill="none" stroke="#15803D" stroke-width="2" stroke-linecap="round"/>' + flames + '</svg>';
-  }
   function jobCard(o, open) {
     var pk = o.status === 'pickup', k = stIdx(o.status, o.delivered), sub = (o.items && o.items[0]) ? String(o.items[0].n || '') + (o.items[0].q ? ' × ' + o.items[0].q : '') + (o.items.length > 1 ? ' +' + (o.items.length - 1) + ' รายการ' : '') : '';
-    var pr = (+o.prio > 0 && k < 4) ? Math.min(2, +o.prio) : 0;
-    var head = '<summary>' + (pr ? '<span class="jc-fire" aria-hidden="true"></span>' : '') + (o.thumb ? '<img class="jt" src="' + esc(o.thumb) + '" alt="" loading="lazy">' : '') + '<span class="jn"><b>' + esc(o.no) + '</b>' + (pr ? '<span class="chili-tag p' + pr + '">' + chiliSvg(pr) + '<b>' + PRIO_SHORT[pr] + '</b></span>' : '') + ((o.date || sub) ? '<small>' + esc([thDate(o.date), sub].filter(Boolean).join(' · ')) + '</small>' : '') + '</span><span class="js' + (k === 4 ? ' rcv' : k === 3 ? ' done' : '') + '">' + esc(pk ? 'พร้อมรับหน้าร้าน' : STEPS[k][1]) + '</span>' +
+    var head = '<summary>' + (o.thumb ? '<img class="jt" src="' + esc(o.thumb) + '" alt="" loading="lazy">' : '') + '<span class="jn"><b>' + esc(o.no) + '</b>' + ((o.date || sub) ? '<small>' + esc([thDate(o.date), sub].filter(Boolean).join(' · ')) + '</small>' : '') + '</span><span class="js' + (k === 4 ? ' rcv' : k === 3 ? ' done' : '') + '">' + esc(pk ? 'พร้อมรับหน้าร้าน' : STEPS[k][1]) + '</span>' +
       '<span class="pb" aria-hidden="true">' + SHORT.map(function (s, n) { return '<i class="' + (n <= k ? 'on' : '') + '"></i>'; }).join('') + '</span></summary>';
     var b = stepper(k, pk);
     if (o.items && o.items.length) b += '<ul class="it">' + o.items.map(function (i) { return '<li><span>' + esc(i.n) + '</span><b>' + (+i.p > 0 ? fmt(i.p) + ' ฿' : (i.q ? '× ' + esc(i.q) : '')) + '</b></li>'; }).join('') + '</ul>';
@@ -254,7 +228,7 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
     if (pk) b += pickupBlock(); else if (o.boxes && o.boxes.length) b += '<div class="sec"><h2>📦 ' + (o.boxes.length > 1 ? 'พัสดุ ' + o.boxes.length + ' กล่อง' : 'จัดส่งถึง') + '</h2>' + boxRows(o.boxes, k >= 4) + '</div>';
     if (o.sender) b += '<details class="mini"><summary>ที่อยู่ผู้ส่ง</summary><div class="bxa"><b>' + esc(o.sender.name || '') + '</b> ' + esc(o.sender.addr || '') + '</div></details>';
     b += strip(o.photos || [], 'รูปงานของคุณ', o.no) + strip(o.refs || [], 'รูปอ้างอิง', '');
-    return {no: String(o.no || ''), date: o.date || '', h: '<details class="jc' + cls(k) + (pr ? ' pr' + pr : '') + '"' + (open ? ' open' : '') + '>' + head + '<div class="jb">' + b + '</div></details>'};
+    return {no: String(o.no || ''), date: o.date || '', h: '<details class="jc' + cls(k) + '"' + (open ? ' open' : '') + '>' + head + '<div class="jb">' + b + '</div></details>'};
   }
   function recOf(j) {   // ใบหลัก (เอกสารที่ลิงก์ชี้) → โครงเดียวกับใบอื่น
     var isJbs = /^JBS/i.test(String(j.no || '')), k = stIdx(j.status, j.delivered), boxes = [];
@@ -264,7 +238,38 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
       else if (j.receiver || j.trackCode) boxes = [{from: j.shipFrom || '', name: j.receiver ? j.receiver.name : '', addr: j.receiver ? j.receiver.addr : '', trackCode: j.trackCode || '', carrier: j.carrier || '', trackUrl: j.trackUrl || '', st: j.shipSt || null}];
     }
     return {no: j.no, date: j.date || '', status: j.status, delivered: j.delivered, items: j.items || [], amt: isJbs ? (+j.amt || 0) : 0, due: j.due, thumb: j.thumb, boxes: boxes, sender: isJbs ? j.sender : null,
-      photos: k >= 2 ? https(j.photos) : [], refs: https(j.refPhotos), prio: +j.prio || 0};
+      photos: k >= 2 ? https(j.photos) : [], refs: https(j.refPhotos)};
+  }
+
+  /* เส้นทางพัสดุระหว่าง hub (iShip Trace routes ผ่าน Worker iship-orders-proxy เส้น ?trace=) — ถ้าเรียกไม่ได้จะไม่แสดงอะไร ไม่กระทบหน้าเดิม
+     ใส่ HUB_KEY (APP_KEY ของ Worker) หลัง deploy; ทดสอบหน้าตาด้วย ?hubdemo=1 (ข้อมูลตัวอย่าง ไม่ใช่ของจริง) */
+  var HUB_URL = 'https://iship-orders-proxy.organic-parmesan.workers.dev', HUB_KEY = 'trk-59733fb82520077d';   // กุญแจเฉพาะดูเส้นทางพัสดุ (ไม่ใช่กุญแจออเดอร์)
+  var HUB_DEMO = [
+    {status_text: 'พัสดุเข้าระบบ', status_desc: 'เจ้าหน้าที่สาขา【KNY_SP-คันนายาว】รับพัสดุเรียบร้อย', current_location: 'รามอินทรา คันนายาว กรุงเทพ', timestamp: '2026-04-12 12:52:33'},
+    {status_text: 'อยู่ระหว่างขนส่ง', status_desc: 'พัสดุถึงสาขา【16 Central_HUB-วังน้อย】', current_location: 'ลำไทร วังน้อย พระนครศรีอยุธยา', timestamp: '2026-04-12 19:34:42'},
+    {status_text: 'อยู่ระหว่างจัดส่ง', status_desc: 'พัสดุของท่านอยู่ระหว่างการนำส่ง', current_location: 'คลองสามประเวศ ลาดกระบัง กรุงเทพ', timestamp: '2026-04-13 10:24:28'},
+    {status_text: 'จัดส่งแล้ว', status_desc: 'นำส่งสำเร็จ เซ็นรับโดย【ตัวอย่าง ทดสอบ】', current_location: 'คลองสามประเวศ ลาดกระบัง กรุงเทพ', timestamp: '2026-04-13 13:01:32'}];
+  var MON_S = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  function hubTime(t) { var m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2})/.exec(t || ''); return m ? (+m[3]) + ' ' + MON_S[+m[2] - 1] + ' ' + String(+m[1] + 543).slice(-2) + ' ' + m[4] + ' น.' : esc(t || ''); }
+  function hubDraw(el, routes) {
+    var r = (routes || []).filter(function (x) { return x && x.status_desc; }).slice().reverse();
+    if (!r.length) return;
+    var last = r[0];
+    el.innerHTML = '<button type="button" aria-expanded="false"><span>📍 ' + esc(last.status_desc) + '<br><small>' + esc(hubTime(last.timestamp)) + (last.current_location ? ' · ' + esc(last.current_location) : '') + '</small></span><span aria-hidden="true">▾</span></button><ol hidden>' +
+      r.map(function (x, i) { return '<li' + (i === 0 ? ' class="on"' : '') + '><b>' + esc(x.status_text || '') + '</b>' + esc(x.status_desc) + '<br><small>' + esc(hubTime(x.timestamp)) + (x.current_location ? ' · ' + esc(x.current_location) : '') + '</small></li>'; }).join('') + '</ol>';
+    var btn = el.querySelector('button'), ol = el.querySelector('ol');
+    btn.onclick = function () { var o = ol.hidden; ol.hidden = !o; btn.setAttribute('aria-expanded', o ? 'true' : 'false'); btn.lastChild.textContent = o ? '▴' : '▾'; };
+    el.hidden = false;
+  }
+  function loadHubs() {
+    var demo = /[?&]hubdemo=1/.test(location.search);
+    if (!demo && !HUB_KEY) return;
+    [].forEach.call(document.querySelectorAll('.hub[data-trk]'), function (el) {
+      var no = el.getAttribute('data-trk');
+      if (demo) { hubDraw(el, HUB_DEMO); return; }
+      fetch(HUB_URL + '/?trace=' + encodeURIComponent(no) + '&tkey=' + encodeURIComponent(HUB_KEY)).then(function (r) { return r.json(); })
+        .then(function (j) { hubDraw(el, j && j.data && j.data.trace_routes); }).catch(function () {});
+    });
   }
   function show(j) {
     var isJbs = /^JBS/i.test(String(j.no || ''));
@@ -282,6 +287,7 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
     box.className = 'card multi';
     box.innerHTML = hi + payHtml + cards.map(function (c) { return c.h; }).join('') + upd;
     setPayModal(payOk ? j.pay : null);
+    loadHubs();
     var po = document.getElementById('payOpen'); if (po) po.onclick = function () { openPay(true); };
     [].forEach.call(document.querySelectorAll('img.jt'), function (im) {   // รูปเล็กหน้าเลขใบ: แตะเพื่อดูใหญ่ (ไม่พับ/เปิดการ์ด)
       im.style.cursor = 'zoom-in';
