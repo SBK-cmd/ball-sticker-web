@@ -1831,6 +1831,11 @@ body.jm-open #jobFormTop .preview-col{display:none!important}
 .jf:not(.jf-deliv) #jobWhRow,.jf:not(.jf-deliv) #jobShipFold{display:none!important}
 .jf .jf-golink{display:block;width:100%;margin:0 0 8px;padding:11px 12px;border:1px dashed #b7c3e0;border-radius:14px;background:#fff;font:inherit;font-size:13.5px;font-weight:600;line-height:1.45;color:#1f2a44;text-align:left;cursor:pointer}
 .jf .jf-golink[hidden]{display:none}
+/* กันการ์ดล้นจอ: คอลัมน์ grid ไม่ขยายตามข้อความยาวที่ตัดไม่ได้ (การ์ดด่วน overflow:visible เพื่อไฟ เคยดันทุกใบให้กว้างเกินจอ) */
+.history ul,#trackHistory ul{grid-template-columns:minmax(0,1fr)}
+:is(#jobHistory,#trackHistory,#wholesaleHistory) ul>li.jc{min-width:0;max-width:100%}
+:is(#jobHistory,#trackHistory,#wholesaleHistory) li.jc :is(.jc-main,.jc-cust,.jc-no,.jc-ship,.jc-ship b,.jc-ship small,.jc-work,.jw-i,.jc-note,.jc-chips,.jc-meta){min-width:0;overflow-wrap:anywhere;word-break:break-word}
+html{overflow-x:clip}
 /* การ์ดใบงาน: รายการงาน + หมายเหตุ */
 #jobHistory .jc-work{margin:8px 0 2px;padding:8px 10px;border-radius:12px;background:rgba(15,27,61,.045);font-size:14.5px;line-height:1.5;color:#0F1B3D}
 #jobHistory li.jc.deliv .jc-work{background:rgba(255,255,255,.65)}
