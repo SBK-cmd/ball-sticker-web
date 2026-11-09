@@ -1784,14 +1784,36 @@ body.chg-open{overflow:hidden}
 .jf .jf-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.jf .jf-grid .btn{width:100%;font-size:14px;padding:11px 8px;white-space:normal;line-height:1.25}
 .jf .jf-actions,.jf .jf-actions *{box-sizing:border-box}.jf .jf-actions{min-width:0;max-width:100%}.jf .fold{overflow:hidden}
 .jf .jf-more>.jf-grid{padding:12px 0}
-/* จัดฟอร์มใบคอนเฟิร์ม: ลำดับ ลูกค้า → งาน → กำหนดส่ง/ด่วน → (การเงิน) แต่ละช่วงเป็นกล่องแยก */
+/* ฟอร์มใบคอนเฟิร์มแบบมือใหม่: 3 ขั้น (ใครสั่ง → สั่งทำอะไร → ต้องการเมื่อไหร่) + เก็บเงิน · แต่ละขั้นเป็นกล่อง */
 .jf .jf-sec{background:#f6f8fd;border:1px solid rgba(20,30,60,.08);border-radius:16px;padding:12px 12px 8px;margin:12px 0}
 .jf .jf-sec[hidden]{display:none}
-.jf .jf-sec .jf-h{margin-bottom:10px}
-#jobWhenSec .row2{grid-template-columns:1fr}
-#jobWhenSec select.txt,#jobWhenSec input.txt{min-height:46px;font-size:16px}
+.jf .jf-sec .jf-h{margin-bottom:10px;font-size:17px}
+.jf .jf-h .jf-hs{margin-left:auto;font-size:12.5px;font-weight:500;color:var(--muted,#6b7280)}
+.jf .jf-opt{font-weight:500;color:var(--muted,#6b7280);font-size:.85em}
+.jf .jf-intro{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#eef3ff;color:#1f2a44;font-size:14px;line-height:1.55}
+.jf .jf-paste{margin:0 0 4px}
 .jf .whc{margin:6px 0 12px}
-body.jm-open #jobFormTop .jf-actions>#save-job{position:sticky;bottom:-80px;z-index:3;box-shadow:0 10px 24px rgba(0,0,0,.25)}
+.jf .jf-photo{margin:4px 0 6px}
+.jf #jobEditState:not(.editing){display:none}
+.jf:has(#jobEditState:not(.editing)) .job-status-row{display:none}
+body.jm-open .jf>h2{display:none}
+.jf .jf-sr{position:absolute!important;width:1px!important;height:1px!important;opacity:0;pointer-events:none;overflow:hidden}
+.prio-chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:4px}
+.prio-chips button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:60px;padding:8px 4px;border:2px solid #d5dbe8;border-radius:14px;background:#fff;font:inherit;font-weight:800;font-size:15px;line-height:1.2;color:#1f2a44;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.prio-chips button .pc-s{font-weight:500;font-size:12px;color:#6b7280}
+.prio-chips button.on{border-color:#0E1E5B;background:#0E1E5B;color:#fff}
+.prio-chips button.on .pc-s{color:#dbe3ff}
+.prio-chips button[data-p="1"].on{border-color:#d99a00;background:#F5B301;color:#1f2a44}
+.prio-chips button[data-p="1"].on .pc-s{color:#4a3a00}
+.prio-chips button[data-p="2"].on{border-color:#c81d16;background:#E5231B;color:#fff}
+.prio-chips button[data-p="2"].on .pc-s{color:#ffe1df}
+#jobWhenSec input.txt{min-height:46px;font-size:16px}
+.due-quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:-2px 0 6px}
+.due-quick button{border:1px solid #d5dbe8;background:#fff;border-radius:999px;padding:6px 4px;font:inherit;font-size:13.5px;font-weight:600;line-height:1.25;color:#1f2a44;cursor:pointer}
+.due-quick button.on{background:#0E1E5B;border-color:#0E1E5B;color:#fff}
+.jf .jf-more-h{margin:16px 2px 6px;font-size:13px;font-weight:700;color:var(--muted,#6b7280)}
+body.jm-open #jobFormTop .jf-actions>#save-job{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 20px);width:min(720px,calc(100% - 52px));z-index:20;box-shadow:0 10px 24px rgba(0,0,0,.28)}
+body.jm-open #jobFormTop .jf-actions>.jf-more-h:first-of-type{margin-top:0}
 @media (max-width:899px){#whFormTop{display:none}}
 .jm-x{display:none}
 @media (max-width:899px){#jobFormTop{display:none}}
@@ -3058,17 +3080,18 @@ html body .page-head h1{letter-spacing:-.02em}
               <span class="hint" style="margin:0">สถานะงาน:</span>
               <span class="status-pill" id="jobStatusBadge"></span>
             </div>
-            <section class="jf-sec">
-              <div class="jf-h"><i>1</i>ลูกค้า</div>
-              <details class="fold jf-paste"><summary>วางข้อความ ให้ระบบแยกชื่อ / เบอร์ / ที่อยู่ ให้</summary>
-              <label class="f"><span>วางข้อความทั้งก้อน (งาน + ชื่อ เบอร์ ที่อยู่) แล้วกดแยก</span><textarea id="jPaste" placeholder="วางข้อความทั้งก้อน เช่น&#10;7cm 140ชิ้น&#10;แบบละ70ชิ้น&#10;นาย สมชาย ใจดี&#10;081-234-5678&#10;99 หมู่ 1 ต.ในเมือง อ.เมือง จ.พิษณุโลก 65000"></textarea></label>
+            <p class="jf-intro no-print">กรอกแค่ 3 ขั้น <b>ใครสั่ง → สั่งทำอะไร → ต้องการเมื่อไหร่</b> แล้วกด <b>บันทึกใบงาน</b> (ปุ่มเหลืองด้านล่าง) · ช่องที่เขียนว่า “ถ้ามี” ข้ามได้</p>
+            <details class="fold jf-paste"><summary>📋 ทางลัด: มีข้อความจากแชตลูกค้า? วางให้ระบบกรอกให้</summary>
+              <label class="f"><span>วางข้อความทั้งก้อน (งาน + ชื่อ เบอร์ ที่อยู่) แล้วกดปุ่มด้านล่าง</span><textarea id="jPaste" placeholder="วางข้อความทั้งก้อน เช่น&#10;7cm 140ชิ้น&#10;แบบละ70ชิ้น&#10;นาย สมชาย ใจดี&#10;081-234-5678&#10;99 หมู่ 1 ต.ในเมือง อ.เมือง จ.พิษณุโลก 65000"></textarea></label>
               <button class="btn small" id="jSplit" type="button">แยกงาน / ชื่อ / เบอร์ / ที่อยู่ อัตโนมัติ</button>
-              </details>
+            </details>
+            <section class="jf-sec">
+              <div class="jf-h"><i>1</i>ใครสั่ง?<small class="jf-hs">ข้อมูลลูกค้า</small></div>
               <div class="fields">
-              <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="jName" type="text" autocomplete="off"></label>
+              <label class="f"><span>ชื่อลูกค้า / ชื่อร้าน</span><input class="txt" id="jName" type="text" autocomplete="off" placeholder="เช่น คุณสมชาย หรือ ร้านเอบีซี"></label>
               <div id="jNameChips" class="vchips no-print" aria-label="ชื่อที่เคยคีย์ไว้"></div>
-              <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="jPhone" type="tel" autocomplete="off"></label>
-              <label class="f"><span>ที่อยู่ลูกค้า (ถ้ามี)</span><textarea id="jAddr"></textarea></label>
+              <label class="f"><span>เบอร์โทร <small class="jf-opt">(ถ้ามี)</small></span><input class="txt" id="jPhone" type="tel" autocomplete="off" placeholder="เช่น 0812345678"></label>
+              <label class="f"><span>ที่อยู่ <small class="jf-opt">(ถ้ามี · งานส่งพัสดุต้องใส่)</small></span><textarea id="jAddr" placeholder="บ้านเลขที่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์"></textarea></label>
               <div class="whc no-print" id="jobWhRow">
                 <label class="whc-l"><input type="checkbox" id="jobWholesale"> <span><b>ลูกค้าราคาส่ง</b></span></label>
                 <small id="jobWhHint">ติ๊กแล้ว งานนี้เข้าบิลค้างของลูกค้าคนนี้ให้เอง ระบบจำชื่อไว้ ครั้งหน้าพิมพ์ชื่อก็เข้าเลย</small>
@@ -3078,26 +3101,42 @@ html body .page-head h1{letter-spacing:-.02em}
               </div>
             </section>
             <section class="jf-sec">
-              <div class="jf-h"><i>2</i>งานที่ต้องผลิต</div>
+              <div class="jf-h"><i>2</i>สั่งทำอะไร?<small class="jf-hs">1 บรรทัด = 1 แบบ</small></div>
             <div class="item-head job" aria-hidden="true"><span>ชื่องาน / สเปก</span><span>จำนวน</span><span>หมายเหตุ</span><span></span></div>
             <div id="jobItems"></div>
-            <button class="btn small" id="add-jobitem" type="button">＋ เพิ่มรายการ</button>
-            <p class="hint">ใส่ชนิดสติ๊กเกอร์ ขนาด และวัสดุในชื่อรายการได้เลย เช่น “สติ๊กเกอร์ PVC ไดคัท 5x5 ซม. เคลือบด้าน”</p>
+            <button class="btn small" id="add-jobitem" type="button">＋ เพิ่มอีกแบบ</button>
+            <p class="hint">เขียนชนิด ขนาด วัสดุ ในช่องชื่องาน เช่น “ไดคัท PVC 5x5 ซม. เคลือบด้าน” แล้วใส่จำนวนชิ้น</p>
               <div class="fields">
-              <label class="f"><span>หมายเหตุถึงฝ่ายผลิต</span><textarea id="jobNote" placeholder="เช่น สีที่ต้องตรงปก ไดคัทตามขอบภาพ ส่งไฟล์งานแนบแล้ว"></textarea></label>
+              <label class="f"><span>ฝากบอกฝ่ายผลิต <small class="jf-opt">(ถ้ามี)</small></span><textarea id="jobNote" placeholder="เช่น สีที่ต้องตรงปก ไดคัทตามขอบภาพ ส่งไฟล์งานแนบแล้ว"></textarea></label>
+              <details class="fold jf-photo"><summary>📷 แนบรูปงาน / แบบที่ลูกค้าส่งมา <span class="fold-sub">(ถ้ามี)</span></summary>
+              <div class="fields">
+              <label class="f">
+                <span>แนบรูปภาพงาน (ถ้ามี)</span>
+                <input type="file" accept="image/*" multiple id="jobPhotoInput">
+                <p class="hint">แนบได้หลายรูป เช่น ภาพตัวอย่างงาน แบบดีไซน์ หรือรูปอ้างอิงที่ลูกค้าส่งมา</p>
+                <div class="job-photo-grid" id="jobPhotoWrap" hidden></div>
+              </label>
+              </div>
+              </details>
               </div>
             </section>
             <section class="jf-sec" id="jobWhenSec">
-              <div class="jf-h"><i>3</i>กำหนดส่ง / ความเร่งด่วน</div>
+              <div class="jf-h"><i>3</i>ต้องการเมื่อไหร่?</div>
               <div class="fields">
-              <div class="row2">
-                <label class="f"><span>กำหนดส่งงาน (ถ้ามี)</span><input class="txt" id="jobDue" type="date"></label>
-                <label class="f"><span>ความเร่งด่วน (ลูกค้าขอ)</span><select class="txt" id="jobPrio"><option value="0">🌶 ปกติตามคิว</option><option value="1">🌶 ขอด่วนไม่เกิน 2 วัน</option><option value="2">🌶 ขอด่วนส่งวันนี้</option></select></label>
+              <div class="f"><span>ลูกค้าขอด่วนไหม</span>
+                <div class="prio-chips no-print" id="jobPrioChips" role="radiogroup" aria-label="ความเร่งด่วน">
+                  <button type="button" role="radio" data-p="0">ปกติ<span class="pc-s">ตามคิว</span></button>
+                  <button type="button" role="radio" data-p="1">ด่วน<span class="pc-s">ไม่เกิน 2 วัน</span></button>
+                  <button type="button" role="radio" data-p="2">ด่วนวันนี้<span class="pc-s">ภายในวันนี้</span></button>
+                </div>
+                <select class="txt jf-sr" id="jobPrio" aria-hidden="true" tabindex="-1"><option value="0">🌶 ปกติตามคิว</option><option value="1">🌶 ขอด่วนไม่เกิน 2 วัน</option><option value="2">🌶 ขอด่วนส่งวันนี้</option></select>
               </div>
+              <label class="f"><span>วันที่ต้องส่ง <small class="jf-opt">(ถ้ามี)</small></span><input class="txt" id="jobDue" type="date"></label>
+              <div class="due-quick no-print" id="jobDueQuick"><button type="button" data-d="0">วันนี้</button><button type="button" data-d="1">พรุ่งนี้</button><button type="button" data-d="3">อีก 3 วัน</button><button type="button" data-d="">ไม่กำหนด</button></div>
               </div>
             </section>
             <section class="jf-sec" id="jobMoneyFold">
-              <div class="jf-h"><i>฿</i>การเงิน <span class="fold-sub" style="font-weight:400">(เจ้าของเท่านั้น)</span></div>
+              <div class="jf-h"><i>฿</i>เก็บเงิน<small class="jf-hs">เจ้าของเท่านั้น</small></div>
               <div class="fields">
               <div class="row2">
                 <label class="f"><span>เลือกบัญชี</span>
@@ -3111,7 +3150,7 @@ html body .page-head h1{letter-spacing:-.02em}
               </div>
               <button type="button" class="btn small good" id="jobQrBtn" style="margin:0 0 8px">💳 QR เก็บเงินงานนี้</button>
               <label class="chk" style="display:flex;gap:8px;align-items:center;margin:0 0 6px"><input type="checkbox" id="jobSlipPending"> <span>ยังไม่ได้รับเงินจริง (ลูกค้าราคาส่งจ่ายทีหลัง) — ใส่ยอดไว้ก่อน ไม่นับเป็นเงินเข้า</span></label>
-              <p class="hint" style="margin:-8px 0 0">บัญชีและจำนวนเงินในสลิปจะไม่แสดงในใบคอนเฟิร์มงาน (กันพนักงานเห็น) แต่จะโชว์ในลิสต์ประวัติใบงานเท่านั้น</p>
+              <p class="hint" style="margin:-8px 0 0">ยอดเงินนี้ไม่พิมพ์ลงใบคอนเฟิร์ม (กันพนักงานเห็น) ดูได้ในรายการประวัติใบงานเท่านั้น</p>
               <div class="bankin-pick" id="jobBankInPick" hidden>
                 <div class="bankin-pick-row">
                   <button class="btn small" id="jobBankInBtn" type="button" aria-expanded="false">💰 เลือกยอดจากเงินเข้า</button>
@@ -3121,7 +3160,8 @@ html body .page-head h1{letter-spacing:-.02em}
               </div>
               </div>
             </section>
-            <details class="fold" id="jobShipFold"><summary>ส่งพัสดุ / ฝากส่ง <span class="fold-sub">(ถ้าเป็นงานส่ง)</span></summary>
+            <div class="jf-more-h no-print">ตัวเลือกเพิ่มเติม (ไม่ต้องกรอกก็ได้)</div>
+            <details class="fold" id="jobShipFold"><summary>📦 ฝากส่งให้คนอื่น <span class="fold-sub">(ผู้รับไม่ใช่ลูกค้า)</span></summary>
               <div class="fields">
               <div class="recv-box" id="jRecvBox"><b>📦 ลูกค้าฝากส่ง — ผู้รับปลายทาง</b>
                 <div class="hint" style="margin:2px 0 6px">ถ้าลูกค้าฝากส่งให้คนอื่น วางข้อความที่มี “ผู้ส่ง..” และ “ผู้รับ..” แล้วกดแยก ผู้ส่งจะเป็นชื่อลูกค้า (งานราคาส่ง) ผู้รับอยู่ในช่องนี้</div>
@@ -3133,17 +3173,7 @@ html body .page-head h1{letter-spacing:-.02em}
               </div>
               </div>
             </details>
-            <details class="fold"><summary>แนบรูปภาพงาน</summary>
-              <div class="fields">
-              <label class="f">
-                <span>แนบรูปภาพงาน (ถ้ามี)</span>
-                <input type="file" accept="image/*" multiple id="jobPhotoInput">
-                <p class="hint">แนบได้หลายรูป เช่น ภาพตัวอย่างงาน แบบดีไซน์ หรือรูปอ้างอิงที่ลูกค้าส่งมา</p>
-                <div class="job-photo-grid" id="jobPhotoWrap" hidden></div>
-              </label>
-              </div>
-            </details>
-            <details class="fold" id="jobMetaFold"><summary>เลขที่ใบ / วันที่สั่ง / เพจ <span class="fold-sub" id="jobMetaSum"></span></summary>
+            <details class="fold" id="jobMetaFold"><summary>🧾 เลขที่ใบ / วันที่สั่ง / เพจ <span class="fold-sub" id="jobMetaSum"></span></summary>
               <div class="fields">
               <div class="row2">
                 <label class="f"><span>เลขที่ใบคอนเฟิร์มงาน</span><input class="txt" id="jobNo" type="text" autocomplete="off"></label>
@@ -3155,7 +3185,8 @@ html body .page-head h1{letter-spacing:-.02em}
               </div>
             </details>
             <div class="jf-actions">
-              <button class="btn good" id="save-job" type="button">บันทึกลงประวัติ</button>
+              <button class="btn good" id="save-job" type="button">💾 บันทึกใบงาน</button>
+              <div class="jf-more-h no-print">หลังบันทึก</div>
               <details class="fold jf-more"><summary>พิมพ์ / ส่งใบให้ลูกค้า</summary>
               <div class="jf-grid">
               <button class="btn primary" id="print-job" type="button">
@@ -3175,7 +3206,7 @@ html body .page-head h1{letter-spacing:-.02em}
                 </div>
               </details>
             </div>
-            <p class="actions-note">ใบนี้ไม่มีราคา ใช้ยืนยันรายละเอียดงานกับลูกค้าและแจ้งฝ่ายผลิตก่อน เมื่อพร้อมออกบิลจริง กด “ใช้ข้อมูลนี้ออกบิล” เพื่อคัดลอกชื่อลูกค้าและรายการไปที่แท็บบิล หรือกด “ย้ายไปใบราคาส่ง” เพื่อคัดลอกชื่อลูกค้าและรายการไปออกใบราคาส่งแทน</p>
+            <p class="actions-note">ใบนี้ไม่มีราคา ใช้ยืนยันงานกับลูกค้าและแจ้งฝ่ายผลิต · จะออกบิลหรือใบราคาส่ง กดหัวข้อ “ทำต่อ” ด้านบน</p>
           </div>
         </div>
 
@@ -4171,7 +4202,7 @@ html body .page-head h1{letter-spacing:-.02em}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=c84a086ae8",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=e96fecae95",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

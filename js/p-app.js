@@ -486,7 +486,7 @@ function bahtText(value) {
     const dl = $('customerNames');
     if (dl) dl.innerHTML = list.map(c => '<option value="' + esc(c.name) + '">').join('');
     const ch = $('jNameChips');
-    if (ch) { const top = list.slice(0, 8); ch.hidden = !top.length; ch.innerHTML = top.length ? '<span>ชื่อที่เคยคีย์ไว้ (แตะเพื่อเลือก):</span>' + top.map(c => '<button type="button" class="vchip" data-c="' + esc(c.name) + '">' + esc(c.name) + '</button>').join('') : ''; }
+    if (ch) { const top = list.slice(0, 8); ch.hidden = !top.length; ch.innerHTML = top.length ? '<span>ลูกค้าเก่า แตะเพื่อเลือก:</span>' + top.map(c => '<button type="button" class="vchip" data-c="' + esc(c.name) + '">' + esc(c.name) + '</button>').join('') : ''; }
   }
   window.addEventListener('load', () => { try { renderCustomerDatalist(); } catch (e) {} }); // datalist อยู่ท้ายหน้า ต้องวาดซ้ำหลังโหลดเสร็จ
   document.addEventListener('click', e => {
@@ -4824,9 +4824,9 @@ function bahtText(value) {
     const whOn = !!($('jobWholesale') && $('jobWholesale').checked);
     $('jobItems').innerHTML = jobItems.map((it, i) =>
       '<div class="item job' + (whOn ? ' wh' : '') + '" data-i="' + i + '">' +
-      '<input class="txt i-name" type="text" placeholder="ชื่องาน / สเปก" aria-label="ชื่องาน" value="' + esc(it.name) + '">' +
+      '<input class="txt i-name" type="text" placeholder="ชื่องาน เช่น ไดคัท PVC 5x5 ซม." aria-label="ชื่องาน" value="' + esc(it.name) + '">' +
       '<input class="num i-qty" type="number" inputmode="decimal" step="any" min="0" placeholder="จำนวน" aria-label="จำนวน" value="' + esc(it.qty) + '">' +
-      '<input class="txt i-note" type="text" placeholder="หมายเหตุ" aria-label="หมายเหตุ" value="' + esc(it.note || '') + '">' +
+      '<input class="txt i-note" type="text" placeholder="หมายเหตุ (ถ้ามี)" aria-label="หมายเหตุ" value="' + esc(it.note || '') + '">' +
       (whOn ? '<input class="num i-wprice" type="number" inputmode="decimal" step="any" min="0" placeholder="ราคาส่ง/หน่วย" aria-label="ราคาส่งต่อหน่วย" value="' + esc(it.price == null ? '' : it.price) + '">' : '') +
       '<button class="del" type="button" aria-label="ลบรายการ">✕</button></div>').join('');
     const hd = document.querySelector('.item-head.job'); if (hd) { hd.classList.toggle('wh', whOn); hd.innerHTML = '<span>ชื่องาน / สเปก</span><span>จำนวน</span><span>หมายเหตุ</span>' + (whOn ? '<span>ราคาส่ง/หน่วย</span>' : '') + '<span></span>'; }
@@ -4939,7 +4939,7 @@ function bahtText(value) {
     $('jobWholesale').checked = !!j.wholesale; syncJobWholesaleBtn();
     { const rv = j.recv || {}; $('jRName').value = rv.name || ''; $('jRPhone').value = rv.phone || ''; $('jRAddr').value = rv.addr || ''; }
     jobRecvMore = Array.isArray(j.recvMore) ? j.recvMore.map(r => Object.assign({name: '', phone: '', addr: '', note: '', code: '', carrier: ''}, r)) : []; renderRecvMore();
-    renderJobItems(); renderJobPhotos(); renderJobStatusBadge(); renderJob(); syncJobFolds();
+    renderJobItems(); renderJobPhotos(); renderJobStatusBadge(); renderJob(); syncJobFolds(); syncJobQuick();
   }
   function syncJobWholesaleBtn() {
     const on = !!$('jobWholesale').checked;
@@ -4949,9 +4949,24 @@ function bahtText(value) {
     const mv = $('job-to-wholesale'); if (mv) mv.hidden = on;
     const ar = $('jobWhAmtRow'); if (ar) { ar.hidden = !(on && canBank); const ai = $('jobWhAmt'); if (ai && document.activeElement !== ai) ai.value = $('jobSlipAmount').value || ''; }
   }
+  // ปุ่มเลือกความเร่งด่วน / วันส่งแบบแตะ (ค่าเก็บใน select#jobPrio และ input#jobDue เหมือนเดิม)
+  function isoAddDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function syncJobQuick() {
+    const s = $('jobPrio'), w = $('jobPrioChips');
+    if (s && w) w.querySelectorAll('button').forEach(b => { const on = b.dataset.p === String(s.value || '0'); b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); });
+    const due = $('jobDue'), q = $('jobDueQuick');
+    if (due && q) q.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.d === '' ? !due.value : due.value === isoAddDays(+b.dataset.d)));
+  }
+  document.addEventListener('click', e => {
+    const p = e.target.closest && e.target.closest('#jobPrioChips button');
+    if (p) { const s = $('jobPrio'); s.value = p.dataset.p; s.dispatchEvent(new Event('change', {bubbles: true})); syncJobQuick(); return; }
+    const d = e.target.closest && e.target.closest('#jobDueQuick button');
+    if (d) { const due = $('jobDue'); due.value = d.dataset.d === '' ? '' : isoAddDays(+d.dataset.d); due.dispatchEvent(new Event('input', {bubbles: true})); due.dispatchEvent(new Event('change', {bubbles: true})); syncJobQuick(); }
+  });
+  ['input', 'change'].forEach(t => document.addEventListener(t, e => { if (e.target && (e.target.id === 'jobDue' || e.target.id === 'jobPrio')) syncJobQuick(); }));
   function renderJobEditState() {
     const el = $('jobEditState');
-    if (currentJobId) { el.textContent = 'กำลังแก้ไขใบที่บันทึกไว้ กด “บันทึกลงประวัติ” เพื่อบันทึกทับฉบับเดิม'; el.classList.add('editing'); }
+    if (currentJobId) { el.textContent = 'กำลังแก้ไขใบที่บันทึกไว้ กด “บันทึกใบงาน” เพื่อบันทึกทับฉบับเดิม'; el.classList.add('editing'); }
     else { el.textContent = 'ใบใหม่ ยังไม่ได้บันทึกลงประวัติ'; el.classList.remove('editing'); }
   }
   document.addEventListener('click', e => {
