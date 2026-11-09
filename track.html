@@ -298,7 +298,15 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
     if (wasOpen) { ol.hidden = false; btn.setAttribute('aria-expanded', 'true'); btn.lastChild.textContent = '▴'; }
     el.hidden = false;
   }
-  var HUB_POLL = 60000, hubTimer = null;   // เช็กขนส่งซ้ำทุก 60 วิ ขณะเปิดหน้าอยู่
+  // เก็บเส้นทางของพัสดุที่ "ถึงลูกค้าแล้ว" ไว้ในเบราว์เซอร์เครื่องนี้ (ข้อมูลไม่เปลี่ยนแล้ว) — ใช้ try/catch เพราะบางเครื่องปิดที่เก็บข้อมูล
+  function hubCacheGet(no) { try { var v = JSON.parse(localStorage.getItem('bs_hub_' + no) || 'null'); return (v && v.length) ? v : null; } catch (e) { return null; } }
+  function hubCachePut(no, rs) {
+    try {
+      var slim = rs.map(function (x) { return {status: x.status, status_text: x.status_text, status_desc: x.status_desc, current_location: x.current_location, timestamp: x.timestamp}; });
+      localStorage.setItem('bs_hub_' + no, JSON.stringify(slim));
+    } catch (e) {}
+  }
+  var HUB_POLL = 60000, hubTimer = null, hubSkip = {};   // hubSkip[เลข] = เวลาที่เช็กได้อีกครั้ง (ไม่มีข้อมูล/error เว้น 20 นาที)   // เช็กขนส่งซ้ำทุก 60 วิ ขณะเปิดหน้าอยู่
   function loadHubs() {
     var demo = /[?&]hubdemo=1/.test(location.search);
     if (!demo && !HUB_KEY) return;
@@ -306,8 +314,13 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
     [].forEach.call(document.querySelectorAll('.hub[data-trk]'), function (el) {
       var no = el.getAttribute('data-trk');
       if (demo) { hubDraw(el, HUB_DEMO); return; }
-      fetch(HUB_URL + '/?trace=' + encodeURIComponent(no) + '&tkey=' + encodeURIComponent(HUB_KEY)).then(function (r) { return r.json(); })
-        .then(function (j) { hubDraw(el, j && j.data && j.data.trace_routes); }).catch(function () {});
+      var cj = hubCacheGet(no);
+      if (cj) { hubDraw(el, cj); el.setAttribute('data-done', '1'); return; }   // พัสดุที่ถึงแล้วเคยเก็บไว้ในเครื่องนี้ → แสดงจากที่เก็บ ไม่เรียกขนส่งอีก
+      if (el.getAttribute('data-done')) return;   // พัสดุที่ลูกค้ารับแล้ว: ดึงเส้นทางมาแสดงครั้งเดียว ไม่เช็กซ้ำ
+      if ((hubSkip[no] || 0) > Date.now()) return;
+      var bad = function () { hubSkip[no] = Date.now() + 20 * 60000; };
+      fetch(HUB_URL + '/?trace=' + encodeURIComponent(no) + '&tkey=' + encodeURIComponent(HUB_KEY)).then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (j) { var rs = j && j.data && j.data.trace_routes; if (rs && rs.length) { hubSkip[no] = 0; hubDraw(el, rs); if (rs[rs.length - 1].status === 'delivered') { hubCachePut(no, rs); el.setAttribute('data-done', '1'); } var bs0 = el.parentNode && el.parentNode.querySelector('.bxs'); if (bs0 && bs0.classList.contains('ok')) el.setAttribute('data-done', '1'); } else bad(); }).catch(bad);
     });
   }
   function show(j) {
