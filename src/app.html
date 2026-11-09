@@ -11177,6 +11177,7 @@ function bahtText(value) {
       $('jobSlipAmount').value = total; $('jobSlipPending').checked = false;   // ผูกกับเงินเข้าจริงแล้ว = รับแล้ว
       if (ACCOUNTS.indexOf(sel[0].account) >= 0) $('jobAccount').value = sel[0].account;
       renderJob(); renderJobBankInPick();
+      if (k < 0) { $('jobBankInList').hidden = true; $('jobBankInBtn').setAttribute('aria-expanded', 'false'); }   // เลือกยอดแล้วพับรายการ (จะเพิ่มอีกยอด กดปุ่มเปิดใหม่)
       toast((k >= 0 ? 'เอาออกแล้ว · ' : '') + 'รวม ' + sel.length + ' ยอด ' + money(total) + ' บาท — กดบันทึกเพื่อผูกกับใบงานนี้');
     } else {
       $('jobSlipAmount').value = '';
