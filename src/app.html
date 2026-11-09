@@ -1814,6 +1814,23 @@ body.jm-open .jf>h2{display:none}
 .jf .jf-more-h{margin:16px 2px 6px;font-size:13px;font-weight:700;color:var(--muted,#6b7280)}
 body.jm-open #jobFormTop .jf-actions>#save-job{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 20px);width:min(720px,calc(100% - 52px));z-index:20;box-shadow:0 10px 24px rgba(0,0,0,.28)}
 body.jm-open #jobFormTop .jf-actions>.jf-more-h:first-of-type{margin-top:0}
+/* รอบ 2: ตัดตัวอย่าง A4 ในหน้าต่างฟอร์ม · ซ่อนชิปชื่อเก่า · แถวงาน 3 ช่องมีป้าย · แยกโหมดงานส่ง */
+body.jm-open #jobFormTop .preview-col{display:none!important}
+.jf #jNameChips{display:none!important}
+.jf .item-head.job{display:none!important}
+#jobItems .item.job.jt{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px;gap:8px 10px;align-items:end;padding:10px 12px!important}
+#jobItems .item.job.jt .it-f{display:flex;flex-direction:column;gap:3px;min-width:0;margin:0}
+#jobItems .item.job.jt .it-f>span{font-size:13px;font-weight:700;color:#1f2a44;line-height:1.3}
+#jobItems .item.job.jt .it-f>span em{font-style:normal;font-weight:500;color:#6b7280}
+#jobItems .item.job.jt .it-f input{width:100%;min-width:0;text-align:left}
+#jobItems .item.job.jt .it-name{grid-column:1/3;grid-row:1}
+#jobItems .item.job.jt .del{grid-column:3;grid-row:1;align-self:end}
+#jobItems .item.job.jt .it-qty{grid-column:1;grid-row:2}
+#jobItems .item.job.jt .it-total{grid-column:2/4;grid-row:2}
+#jobItems .item.job.jt .it-note{grid-column:1/-1;grid-row:3}
+.jf:not(.jf-deliv) #jobWhRow,.jf:not(.jf-deliv) #jobShipFold{display:none!important}
+.jf .jf-golink{display:block;width:100%;margin:0 0 8px;padding:11px 12px;border:1px dashed #b7c3e0;border-radius:14px;background:#fff;font:inherit;font-size:13.5px;font-weight:600;line-height:1.45;color:#1f2a44;text-align:left;cursor:pointer}
+.jf .jf-golink[hidden]{display:none}
 @media (max-width:899px){#whFormTop{display:none}}
 .jm-x{display:none}
 @media (max-width:899px){#jobFormTop{display:none}}
@@ -2641,7 +2658,7 @@ body.jm-open .fab-newjob{display:none!important}
             <div class="item-head job" aria-hidden="true"><span>ชื่องาน / สเปก</span><span>จำนวน</span><span>หมายเหตุ</span><span></span></div>
             <div id="jobItems"></div>
             <button class="btn small" id="add-jobitem" type="button">＋ เพิ่มอีกแบบ</button>
-            <p class="hint">เขียนชนิด ขนาด วัสดุ ในช่องชื่องาน เช่น “ไดคัท PVC 5x5 ซม. เคลือบด้าน” แล้วใส่จำนวนชิ้น</p>
+            <p class="hint">งานหลายแบบ กด “เพิ่มอีกแบบ” ทีละบรรทัด</p>
               <div class="fields">
               <label class="f"><span>ฝากบอกฝ่ายผลิต <small class="jf-opt">(ถ้ามี)</small></span><textarea id="jobNote" placeholder="เช่น สีที่ต้องตรงปก ไดคัทตามขอบภาพ ส่งไฟล์งานแนบแล้ว"></textarea></label>
               <details class="fold jf-photo"><summary>📷 แนบรูปงาน / แบบที่ลูกค้าส่งมา <span class="fold-sub">(ถ้ามี)</span></summary>
@@ -2697,6 +2714,7 @@ body.jm-open .fab-newjob{display:none!important}
               </div>
             </section>
             <div class="jf-more-h no-print">ตัวเลือกเพิ่มเติม (ไม่ต้องกรอกก็ได้)</div>
+            <button type="button" class="jf-golink no-print" id="jobGoWh" hidden>📦 ลูกค้าราคาส่ง / งานส่ง (JBS)? ไปคีย์ที่หน้า “ใบราคาส่ง” → กด “คีย์งานให้ร้านนี้”</button>
             <details class="fold" id="jobShipFold"><summary>📦 ฝากส่งให้คนอื่น <span class="fold-sub">(ผู้รับไม่ใช่ลูกค้า)</span></summary>
               <div class="fields">
               <div class="recv-box" id="jRecvBox"><b>📦 ลูกค้าฝากส่ง — ผู้รับปลายทาง</b>
@@ -4242,6 +4260,7 @@ function bahtText(value) {
     const hide = () => { box.hidden = true; cur = null; };
     function show(el) {
       cur = el; const q = el.value.trim().toLowerCase(), all = allCustomers();
+      if (!q && el.id === 'jName') { hide(); return; }   // ใบคอนเฟิร์ม: ยังไม่เด้งรายชื่อจนกว่าจะเริ่มพิมพ์
       const hit = (q ? all.filter(c => c.name.toLowerCase().includes(q) && c.name.toLowerCase() !== q).sort((a, b) => (a.name.toLowerCase().startsWith(q) ? 0 : 1) - (b.name.toLowerCase().startsWith(q) ? 0 : 1)) : all).slice(0, q ? 6 : 5);
       if (!hit.length) { hide(); return; }
       box.innerHTML = hit.map(c => '<button type="button" data-n="' + esc(c.name) + '">' + esc(c.name) + '</button>').join('');
@@ -8445,7 +8464,7 @@ function bahtText(value) {
   function syncJobFolds() {
     try {
       const ship = $('jobShipFold'), money = $('jobMoneyFold');
-      const hasRecv = !!(($('jRName').value || '').trim() || ($('jRAddr').value || '').trim() || jobRecvMore.length);
+      const hasRecv = !!(($('jRName').value || '').trim() || ($('jRAddr').value || '').trim() || jobRecvMore.length); syncDelivMode();
       if (ship) ship.open = !!($('jobWholesale').checked || hasRecv);
       if (money) money.open = !!(num($('jobSlipAmount').value) > 0 || $('jobAccount').value);
       const d = $('jobDate').value, due = $('jobDue').value, pg = $('jobPage');
@@ -8563,11 +8582,12 @@ function bahtText(value) {
   function renderJobItems() {
     const whOn = !!($('jobWholesale') && $('jobWholesale').checked);
     $('jobItems').innerHTML = jobItems.map((it, i) =>
-      '<div class="item job' + (whOn ? ' wh' : '') + '" data-i="' + i + '">' +
-      '<input class="txt i-name" type="text" placeholder="ชื่องาน เช่น ไดคัท PVC 5x5 ซม." aria-label="ชื่องาน" value="' + esc(it.name) + '">' +
-      '<input class="num i-qty" type="number" inputmode="decimal" step="any" min="0" placeholder="จำนวน" aria-label="จำนวน" value="' + esc(it.qty) + '">' +
-      '<input class="txt i-note" type="text" placeholder="หมายเหตุ (ถ้ามี)" aria-label="หมายเหตุ" value="' + esc(it.note || '') + '">' +
-      (whOn ? '<input class="num i-wprice" type="number" inputmode="decimal" step="any" min="0" placeholder="ราคาส่ง/หน่วย" aria-label="ราคาส่งต่อหน่วย" value="' + esc(it.price == null ? '' : it.price) + '">' : '') +
+      '<div class="item job jt' + (whOn ? ' wh' : '') + '" data-i="' + i + '">' +
+      '<label class="it-f it-name"><span>รายละเอียดงาน</span><input class="txt i-name" type="text" placeholder="เช่น สติ๊กเกอร์ 9 เซน" aria-label="รายละเอียดงาน" value="' + esc(it.name) + '"></label>' +
+      '<label class="it-f it-qty"><span>จำนวน</span><input class="num i-qty" type="number" inputmode="decimal" step="any" min="0" placeholder="เช่น 100" aria-label="จำนวน" value="' + esc(it.qty) + '"></label>' +
+      (whOn ? '<label class="it-f it-total"><span>ราคาส่ง/ชิ้น</span><input class="num i-wprice" type="number" inputmode="decimal" step="any" min="0" placeholder="บาท" aria-label="ราคาส่งต่อหน่วย" value="' + esc(it.price == null ? '' : it.price) + '"></label>'
+            : '<label class="it-f it-total"><span>ราคารวม <em>(ไม่ต้องใส่ก็ได้)</em></span><input class="num i-total" type="number" inputmode="decimal" step="any" min="0" placeholder="บาท" aria-label="ราคารวม" value="' + esc(it.total == null ? '' : it.total) + '"></label>') +
+      (String(it.note || '').trim() ? '<label class="it-f it-note"><span>หมายเหตุ</span><input class="txt i-note" type="text" aria-label="หมายเหตุ" value="' + esc(it.note || '') + '"></label>' : '') +
       '<button class="del" type="button" aria-label="ลบรายการ">✕</button></div>').join('');
     const hd = document.querySelector('.item-head.job'); if (hd) { hd.classList.toggle('wh', whOn); hd.innerHTML = '<span>ชื่องาน / สเปก</span><span>จำนวน</span><span>หมายเหตุ</span>' + (whOn ? '<span>ราคาส่ง/หน่วย</span>' : '') + '<span></span>'; }
   }
@@ -8648,6 +8668,12 @@ function bahtText(value) {
       '<div class="row2"><label class="f"><span>ขนส่ง</span><select class="txt" data-k="carrier"><option value="">— เลือก —</option>' + cars.map(c => '<option' + (c === r.carrier ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select></label>' +
       '<label class="f"><span>เลขพัสดุกล่องนี้</span><input class="txt" data-k="code" type="text" autocomplete="off" value="' + esc(r.code || '') + '"></label></div></div>').join('');
   }
+  // ฟอร์มปกติ = งานหน้าร้าน (JB) · ส่วนลูกค้าราคาส่ง/ฝากส่ง แสดงเฉพาะงานส่ง (JBS) ที่เปิดจากหน้าใบราคาส่ง หรือชื่อร้านราคาส่ง/มีผู้รับ
+  function syncDelivMode() {
+    const on = isDeliveryJob(), f = $('jobWhRow') && $('jobWhRow').closest('.jf'); if (f) f.classList.toggle('jf-deliv', on);
+    const g = $('jobGoWh'); if (g) g.hidden = on || (typeof can === 'function' && !can('wholesale'));
+  }
+  document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#jobGoWh')) showTab('wholesale'); });
   function isDeliveryJob() {
     return !!(($('jobWholesale') && $('jobWholesale').checked) || $('jRName').value.trim() || $('jRAddr').value.trim() || jobRecvMore.some(r => String(r.name || r.addr || '').trim()));
   }
@@ -8662,7 +8688,7 @@ function bahtText(value) {
 
   function collectJob() {
     return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, prio: +($('jobPrio') ? $('jobPrio').value : 0) || 0, account: $('jobAccount').value, page: $('jobPage').value, bankInIds: jobBankInIds.slice(), bankInId: jobBankInIds[0] || '', slipAmount: $('jobSlipAmount').value, slipPending: $('jobSlipPending').checked, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
-      items: jobItems.map(i => { const o = {name: i.name, qty: i.qty, note: i.note}; if (i.price !== '' && i.price != null) o.price = i.price; return o; }), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus, wholesale: $('jobWholesale').checked,
+      items: jobItems.map(i => { const o = {name: i.name, qty: i.qty, note: i.note}; if (i.price !== '' && i.price != null) o.price = i.price; if (i.total !== '' && i.total != null) o.total = i.total; return o; }), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus, wholesale: $('jobWholesale').checked,
       recvMore: jobRecvMore.filter(r => String((r.name || '') + (r.phone || '') + (r.addr || '') + (r.code || '')).trim()).map(r => Object.assign({}, r)),
       recv: ($('jRName').value.trim() || $('jRPhone').value.trim() || $('jRAddr').value.trim()) ? {name: $('jRName').value.trim(), phone: $('jRPhone').value.trim(), addr: $('jRAddr').value.trim()} : null};
   }
@@ -8672,7 +8698,7 @@ function bahtText(value) {
     $('jobPage').value = PAGE_LABEL[j.page] ? j.page : 'ball';
     jobBankInIds = jobBankIdsOf(j); if ($('jobBankInList')) { $('jobBankInList').hidden = true; $('jobBankInBtn').setAttribute('aria-expanded', 'false'); }
     $('jName').value = j.jName || ''; $('jPhone').value = j.jPhone || ''; $('jAddr').value = j.jAddr || '';
-    jobItems = (j.items && j.items.length) ? j.items.map(i => ({name: i.name || '', qty: i.qty, note: i.note || '', price: i.price})) : [{name: '', qty: 1, note: ''}];
+    jobItems = (j.items && j.items.length) ? j.items.map(i => ({name: i.name || '', qty: i.qty, note: i.note || '', price: i.price, total: i.total})) : [{name: '', qty: 1, note: ''}];
     $('jobNote').value = j.note || '';
     jobPhotos = (j.photos && j.photos.length) ? j.photos.slice() : [];
     jobStatus = j.status || 'pending';
@@ -8682,7 +8708,7 @@ function bahtText(value) {
     renderJobItems(); renderJobPhotos(); renderJobStatusBadge(); renderJob(); syncJobFolds(); syncJobQuick();
   }
   function syncJobWholesaleBtn() {
-    const on = !!$('jobWholesale').checked;
+    const on = !!$('jobWholesale').checked; syncDelivMode();
     const b = $('jobToWholesale'); if (b) b.hidden = true;   // บันทึกใบงานก็เข้าบิลให้เองอยู่แล้ว
     const row = $('jobWhRow'); if (row) row.classList.toggle('on', on);
     const h = $('jobWhHint'); if (h) h.textContent = on ? 'งานนี้เข้าบิลค้างของลูกค้าคนนี้ให้เอง ใส่ยอดงานนี้ด้านล่าง (หรือใส่ราคาต่อชิ้นในรายการก็ได้) จ่ายครบแล้วบิลปิดเข้าประวัติ งานใหม่เริ่มบิลใหม่' : 'ติ๊กแล้ว งานนี้เข้าบิลค้างของลูกค้าคนนี้ให้เอง ระบบจำชื่อไว้ ครั้งหน้าพิมพ์ชื่อก็เข้าเลย';
@@ -10829,6 +10855,7 @@ function bahtText(value) {
     if (e.target.classList.contains('i-qty')) it.qty = e.target.value;
     if (e.target.classList.contains('i-note')) it.note = e.target.value;
     if (e.target.classList.contains('i-wprice')) it.price = e.target.value;
+    if (e.target.classList.contains('i-total')) it.total = e.target.value;
     renderJob();
   });
   $('jRecvAdd').addEventListener('click', () => {

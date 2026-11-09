@@ -1814,6 +1814,23 @@ body.jm-open .jf>h2{display:none}
 .jf .jf-more-h{margin:16px 2px 6px;font-size:13px;font-weight:700;color:var(--muted,#6b7280)}
 body.jm-open #jobFormTop .jf-actions>#save-job{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 20px);width:min(720px,calc(100% - 52px));z-index:20;box-shadow:0 10px 24px rgba(0,0,0,.28)}
 body.jm-open #jobFormTop .jf-actions>.jf-more-h:first-of-type{margin-top:0}
+/* รอบ 2: ตัดตัวอย่าง A4 ในหน้าต่างฟอร์ม · ซ่อนชิปชื่อเก่า · แถวงาน 3 ช่องมีป้าย · แยกโหมดงานส่ง */
+body.jm-open #jobFormTop .preview-col{display:none!important}
+.jf #jNameChips{display:none!important}
+.jf .item-head.job{display:none!important}
+#jobItems .item.job.jt{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px;gap:8px 10px;align-items:end;padding:10px 12px!important}
+#jobItems .item.job.jt .it-f{display:flex;flex-direction:column;gap:3px;min-width:0;margin:0}
+#jobItems .item.job.jt .it-f>span{font-size:13px;font-weight:700;color:#1f2a44;line-height:1.3}
+#jobItems .item.job.jt .it-f>span em{font-style:normal;font-weight:500;color:#6b7280}
+#jobItems .item.job.jt .it-f input{width:100%;min-width:0;text-align:left}
+#jobItems .item.job.jt .it-name{grid-column:1/3;grid-row:1}
+#jobItems .item.job.jt .del{grid-column:3;grid-row:1;align-self:end}
+#jobItems .item.job.jt .it-qty{grid-column:1;grid-row:2}
+#jobItems .item.job.jt .it-total{grid-column:2/4;grid-row:2}
+#jobItems .item.job.jt .it-note{grid-column:1/-1;grid-row:3}
+.jf:not(.jf-deliv) #jobWhRow,.jf:not(.jf-deliv) #jobShipFold{display:none!important}
+.jf .jf-golink{display:block;width:100%;margin:0 0 8px;padding:11px 12px;border:1px dashed #b7c3e0;border-radius:14px;background:#fff;font:inherit;font-size:13.5px;font-weight:600;line-height:1.45;color:#1f2a44;text-align:left;cursor:pointer}
+.jf .jf-golink[hidden]{display:none}
 @media (max-width:899px){#whFormTop{display:none}}
 .jm-x{display:none}
 @media (max-width:899px){#jobFormTop{display:none}}
@@ -3053,7 +3070,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
             <div class="item-head job" aria-hidden="true"><span>ชื่องาน / สเปก</span><span>จำนวน</span><span>หมายเหตุ</span><span></span></div>
             <div id="jobItems"></div>
             <button class="btn small" id="add-jobitem" type="button">＋ เพิ่มอีกแบบ</button>
-            <p class="hint">เขียนชนิด ขนาด วัสดุ ในช่องชื่องาน เช่น “ไดคัท PVC 5x5 ซม. เคลือบด้าน” แล้วใส่จำนวนชิ้น</p>
+            <p class="hint">งานหลายแบบ กด “เพิ่มอีกแบบ” ทีละบรรทัด</p>
               <div class="fields">
               <label class="f"><span>ฝากบอกฝ่ายผลิต <small class="jf-opt">(ถ้ามี)</small></span><textarea id="jobNote" placeholder="เช่น สีที่ต้องตรงปก ไดคัทตามขอบภาพ ส่งไฟล์งานแนบแล้ว"></textarea></label>
               <details class="fold jf-photo"><summary>📷 แนบรูปงาน / แบบที่ลูกค้าส่งมา <span class="fold-sub">(ถ้ามี)</span></summary>
@@ -3109,6 +3126,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
               </div>
             </section>
             <div class="jf-more-h no-print">ตัวเลือกเพิ่มเติม (ไม่ต้องกรอกก็ได้)</div>
+            <button type="button" class="jf-golink no-print" id="jobGoWh" hidden>📦 ลูกค้าราคาส่ง / งานส่ง (JBS)? ไปคีย์ที่หน้า “ใบราคาส่ง” → กด “คีย์งานให้ร้านนี้”</button>
             <details class="fold" id="jobShipFold"><summary>📦 ฝากส่งให้คนอื่น <span class="fold-sub">(ผู้รับไม่ใช่ลูกค้า)</span></summary>
               <div class="fields">
               <div class="recv-box" id="jRecvBox"><b>📦 ลูกค้าฝากส่ง — ผู้รับปลายทาง</b>
@@ -4150,7 +4168,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=e96fecae95",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=6fc5c59fa9",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
