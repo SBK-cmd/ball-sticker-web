@@ -715,6 +715,16 @@ button.status-pill:active{filter:brightness(0.9)}
 .history li .live-status .live-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
 .history li .live-status .live-dot-on{background:#1a6b3a;animation:liveDotPulse 1.6s ease-in-out infinite}
 @keyframes liveDotPulse{0%,100%{box-shadow:0 0 0 0 rgba(26,107,58,.45)}50%{box-shadow:0 0 0 5px rgba(26,107,58,0)}}
+.jc-prio{display:inline-flex;align-items:center;justify-content:center;margin-right:auto;min-height:44px;min-width:48px;padding:0 6px;border:0;border-radius:999px;background:#F3F6FD;color:#3B4A73;font:600 13px/1 inherit;font-family:inherit;cursor:pointer}
+.jc-prio .chili{width:32px;height:32px;flex:none;overflow:visible}
+.jc-prio.p1{background:#FFF4CC;color:#7A5600}.jc-prio.p2{background:#FFE3E0;color:#A8140E;font-weight:700}
+.chili-tag{display:inline-flex;align-items:center;gap:2px;margin-left:6px;padding:1px 8px 1px 2px;border-radius:99px;font-size:12px;vertical-align:middle}
+.chili-tag .chili{width:22px;height:22px;overflow:visible}.chili-tag b{font-weight:700}
+.chili-tag.p1{background:#FFF4CC;color:#7A5600}.chili-tag.p2{background:#FFE3E0;color:#A8140E;box-shadow:inset 0 0 0 1.5px #E5231B}
+.chili-fl{transform-box:fill-box;transform-origin:50% 100%;animation:chiliFlick .55s ease-in-out infinite alternate}
+.chili-tag.p2 .chili-fl{animation-duration:.35s}
+@keyframes chiliFlick{0%{opacity:.75;transform:scale(.9,.8)}100%{opacity:1;transform:scale(1.1,1.25)}}
+@media (prefers-reduced-motion:reduce){.chili-fl{animation:none}}
 .job-status-select{font-size:12.5px;font-weight:700;padding:4px 8px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--field);cursor:pointer}
 .track-status-select{font-size:12.5px;font-weight:700;padding:4px 8px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--field);cursor:pointer}
 .ocr-actions{display:flex;gap:8px;flex-wrap:wrap}
@@ -3565,6 +3575,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
               </div>
               <div class="row2">
                 <label class="f"><span>กำหนดส่งงาน (ถ้ามี)</span><input class="txt" id="jobDue" type="date"></label>
+                <label class="f"><span>ความเร่งด่วน (ลูกค้าขอ)</span><select class="txt" id="jobPrio"><option value="0">🌶 ปกติตามคิว</option><option value="1">🌶 ขอด่วนไม่เกิน 2 วัน</option><option value="2">🌶 ขอด่วนส่งวันนี้</option></select></label>
                 <label class="f"><span>เพจ</span><select class="txt" id="jobPage"><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop (UV)</option></select></label>
               </div>
               </div>
@@ -4586,7 +4597,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=5793dcdfad",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=17972f888c",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
