@@ -8843,6 +8843,7 @@ function bahtText(value) {
       [j.trackCode].concat(Array.isArray(j.recvMore) ? j.recvMore.map(r => r && r.code) : []).forEach(c => {
         const code = String(c || '').replace(/\s+/g, ''), k = normCode(code);
         if (!/^[A-Za-z0-9-]{6,40}$/.test(code) || codes.some(x => x.k === k) || (hubLatest[k] && hubLatest[k].delivered)) return;
+        const tr = store.get('bs_tracking', []).find(t => normCode(t.code) === k); if (tr && (tr.status || '') === 'delivered') return;   // ถึงลูกค้าแล้ว ไม่ต้องเช็กอีก
         if (Date.now() >= (hubNext[k] || 0)) codes.push({code, k});
       });
     });

@@ -306,10 +306,11 @@ details.jc.pr1,details.jc.pr2{overflow:visible}details.jc.pr2{margin-top:20px;bo
     [].forEach.call(document.querySelectorAll('.hub[data-trk]'), function (el) {
       var no = el.getAttribute('data-trk');
       if (demo) { hubDraw(el, HUB_DEMO); return; }
+      if (el.getAttribute('data-done')) return;   // พัสดุที่ลูกค้ารับแล้ว: ดึงเส้นทางมาแสดงครั้งเดียว ไม่เช็กซ้ำ
       if ((hubSkip[no] || 0) > Date.now()) return;
       var bad = function () { hubSkip[no] = Date.now() + 20 * 60000; };
       fetch(HUB_URL + '/?trace=' + encodeURIComponent(no) + '&tkey=' + encodeURIComponent(HUB_KEY)).then(function (r) { if (!r.ok) throw 0; return r.json(); })
-        .then(function (j) { var rs = j && j.data && j.data.trace_routes; if (rs && rs.length) { hubSkip[no] = 0; hubDraw(el, rs); } else bad(); }).catch(bad);
+        .then(function (j) { var rs = j && j.data && j.data.trace_routes; if (rs && rs.length) { hubSkip[no] = 0; hubDraw(el, rs); var bs0 = el.parentNode && el.parentNode.querySelector('.bxs'); if (bs0 && bs0.classList.contains('ok')) el.setAttribute('data-done', '1'); } else bad(); }).catch(bad);
     });
   }
   function show(j) {
