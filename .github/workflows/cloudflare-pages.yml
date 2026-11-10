@@ -1,0 +1,37 @@
+# อัปโหลดหน้าเว็บไป Cloudflare Pages ทุกครั้งที่ push เข้า main (แบบอัปโหลดตรง ไม่ใช้ระบบ build ของ Cloudflare)
+# ต้องมี Secrets: CLOUDFLARE_API_TOKEN (สิทธิ์ Cloudflare Pages: Edit), CLOUDFLARE_ACCOUNT_ID · ยังไม่มี = ข้ามขั้นอัปโหลด (ไม่ล้ม)
+name: cloudflare-pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: cloudflare-pages
+  cancel-in-progress: true   # รอบใหม่มีทุกอย่างของรอบเก่าแล้ว
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 100
+      - name: Build site folder + office.json
+        run: |
+          python3 tools/mk_site.py dist
+          python3 tools/mk_office_json.py dist/office.json
+      - name: Deploy to Cloudflare Pages
+        if: ${{ env.CF_TOKEN != '' && env.CF_ACCOUNT != '' }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=ball-sticker-app --branch=main --commit-dirty=true
+      - name: Secrets not set yet
+        if: ${{ env.CF_TOKEN == '' || env.CF_ACCOUNT == '' }}
+        run: echo "ยังไม่ได้ตั้ง CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID — ข้ามการอัปโหลด"
