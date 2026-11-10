@@ -8514,7 +8514,7 @@ function bahtText(value) {
      มือถือไม่ได้ส่งเข้าเครื่องตัดเอง: เขียน "คำสั่ง" cutReq ลงใบงานใน Firestore (jobs/<id>.cutReq)
      แผง Sign Tools ในร้านที่เปิดโหมดรับคำสั่งจะรับไปส่งเข้า Graphtec แล้วเขียนผลกลับมา
      cutReq = {rid, status: pending|claimed|done|error|expired|rejected, file, fileName, jobNo, by, at(ms), msg, lines, ip, doneAt} */
-  let cutqFocus = '', cutqArmed = '', cutqArmT = 0, cutqQ = '', cutqPendingOpen = '';   // cutqPendingOpen = เลขใบงานที่สแกน/เปิดจากลิงก์ → เปิดหน้าต่างพรีวิวให้ทันทีที่ข้อมูลพร้อม (ถ้ามีไฟล์ตัดไฟล์เดียว)
+  let cutqFocus = '', cutqArmed = '', cutqArmT = 0, cutqQ = '', cutqPendingOpen = '', cutqView = 'todo';   // cutqPendingOpen = เลขใบงานที่สแกน/เปิดจากลิงก์ → เปิดหน้าต่างพรีวิวให้ทันทีที่ข้อมูลพร้อม (ถ้ามีไฟล์ตัดไฟล์เดียว)
   const CUTQ_TTL = 5 * 60000;
   function cutqParse(j) {
     try {
@@ -8690,8 +8690,12 @@ function bahtText(value) {
   }
   let cutqModalKey = '';
   // ค้นหาในหน้าสั่งตัด: เลขใบงานไม่สนขีด/ช่องว่าง/ตัวพิมพ์ (JB, JBS, เลขท้าย) + ชื่อลูกค้า
+  function cutqBase(n) { n = String(n || '').split(/[\\/]/).pop(); return n || 'ไฟล์'; }   // โชว์แค่ชื่อไฟล์ ไม่ต้องโชว์ที่เก็บ
   function cutqNorm(v) { return String(v || '').toLowerCase().replace(/[^0-9a-z\u0e00-\u0e7f]/g, ''); }
   function cutqHit(j, q, qn) { return !!(qn && cutqNorm(j.no).indexOf(qn) >= 0) || String(j.jName || '').toLowerCase().indexOf(q) >= 0; }
+  // ไฟล์ที่ตัดแล้ว = เคยส่งตัดสำเร็จ (f.cut.sentAt) หรือคำสั่งล่าสุดของไฟล์นี้เสร็จ · เพิ่งตัดไม่ถึง 3 นาทียังโชว์ในแท็บ "ยังไม่ตัด" ให้เห็นผล
+  function cutqDoneAt(j, f) { const r = j.cutReq; return Math.max(+(f.cut && f.cut.sentAt) || 0, (r && r.status === 'done' && r.file === f.p) ? (+(r.doneAt || r.at) || 0) : 0); }
+  function cutqInView(j, f, view) { if (view === 'all') return true; const t = cutqDoneAt(j, f); if (view === 'done') return t > 0; return !t || (Date.now() - t) < 180000 || cutqBusy(j.cutReq); }
   function renderCutq() {
     const box = $('cutqList'); if (!box) return;
     { const ae = document.activeElement; if (ae && ae.classList && ae.classList.contains('cutq-in') && ae.closest('#cutqList,#cutqModal')) return; }   // กำลังพิมพ์ค่า → ไม่วาดใหม่ทับ
@@ -8705,7 +8709,8 @@ function bahtText(value) {
       cutqPendingOpen = '';
     }
     const q = cutqQ.trim().toLowerCase(), qn = cutqNorm(q);
-    let rows = all.map(j => ({j, rec: cutqParse(j)})).filter(x => x.rec && x.rec.files.some(f => f && f.cut && f.cut.snap));
+    const view = (q || cutqFocus) ? 'all' : cutqView;   // ค้นหา/สแกน = ค้นทุกงาน ไม่สนตัวกรอง
+    let rows = all.map(j => ({j, rec: cutqParse(j)})).filter(x => x.rec && x.rec.files.some(f => f && f.cut && f.cut.snap && cutqInView(x.j, f, view)));
     const miss = cutqFocus && !rows.some(x => String(x.j.no) === cutqFocus);
     if (q) {
       rows = rows.filter(x => cutqHit(x.j, q, qn));
@@ -8721,15 +8726,15 @@ function bahtText(value) {
       const exists = all.some(j => String(j.no) === cutqFocus);
       html += '<div class="cutq-st bad">' + (exists ? '⚠ ใบงาน ' + esc(cutqFocus) + ' ยังไม่มีไฟล์ตัดที่สแกนไว้ — สแกนจากแผง Sign Tools แล้วกด “บันทึกใบงาน” ก่อน' : '⚠ ไม่พบใบงาน ' + esc(cutqFocus) + ' (ยังไม่ได้บันทึกใบงาน หรือซิงก์ยังไม่ครบ)') + '</div>';
     }
-    if (!rows.length) { box.innerHTML = html + '<div class="cutq-empty">ยังไม่มีงานที่พร้อมสั่งตัด</div>'; return; }
+    if (!rows.length) { box.innerHTML = html + '<div class="cutq-empty">' + (view === 'todo' ? 'ไม่มีงานที่รอตัด — ดูงานที่ตัดแล้วได้ที่ “ตัดแล้ว”' : view === 'done' ? 'ยังไม่มีงานที่ตัดแล้ว' : 'ยังไม่มีงานที่พร้อมสั่งตัด') + '</div>'; return; }
     html += rows.map(({j, rec}) => {
       const busy = cutqBusy(j.cutReq);
-      const files = rec.files.map((f, fi) => ({f, fi})).filter(x => x.f && x.f.cut && x.f.cut.snap);
+      const files = rec.files.map((f, fi) => ({f, fi})).filter(x => x.f && x.f.cut && x.f.cut.snap && cutqInView(j, x.f, view));
       return '<div class="cutq-job' + (String(j.no) === cutqFocus ? ' focus' : '') + '"><div class="cutq-top"><b>' + esc(j.no || '—') + '</b><span>' + esc(j.jName || '') + '</span></div>' +
         files.map(({f, fi}) => {
           const c = cutqCount(f.cut), st = cutqStatus(j.cutReq, f), key = j.id + '|' + fi, arm = cutqArmed === key;
           const thumb = f.cut.thumb && /^data:image\//.test(f.cut.thumb) ? '<img src="' + esc(f.cut.thumb) + '" alt="">' : '<span class="ph">✂</span>';
-          return '<div class="cutq-file">' + thumb + '<div><div class="cutq-fn">' + esc(f.n || 'ไฟล์') + '</div><div class="cutq-meta">Kiss ' + c.k + ' เส้น · Die ' + c.d + ' เส้น' +
+          return '<div class="cutq-file">' + thumb + '<div><div class="cutq-fn" title="' + esc(f.n || '') + '">' + esc(cutqBase(f.n)) + '</div><div class="cutq-meta">Kiss ' + c.k + ' เส้น · Die ' + c.d + ' เส้น' +
             (f.cut.savedAt ? '<br>สแกน ' + cutqClock(f.cut.savedAt) : '') + (f.cut.sentAt ? ' · ตัดล่าสุด ' + cutqClock(f.cut.sentAt) : '') + '</div></div>' +
             (st ? '<div class="cutq-st ' + st.c + '">' + esc(st.t) + '</div>' : '') +
             '<button type="button" class="btn cutq-pv" data-key="' + esc(key) + '">👁 พรีวิว / ค่าตัด / ส่งตัด</button></div>';
@@ -8748,7 +8753,7 @@ function bahtText(value) {
     const key = cutqModalKey, st = cutqStatus(j.cutReq, f), busy = cutqBusy(j.cutReq), arm = cutqArmed === key, c = cutqCount(f.cut);
     const nchg = Object.keys(cutqDiff(f.cut, key)).length;
     m.innerHTML = '<div class="cutq-sheet" role="dialog" aria-modal="true"><div class="cutq-mh"><div><b>' + esc(j.no || '—') + '</b><span>' + esc(j.jName || '') + '</span></div><button type="button" class="cutq-x" aria-label="ปิด">✕</button></div>' +
-      '<div class="cutq-mfn">' + esc(f.n || 'ไฟล์') + ' · Kiss ' + c.k + ' · Die ' + c.d + '</div>' +
+      '<div class="cutq-mfn" title="' + esc(f.n || '') + '">' + esc(cutqBase(f.n)) + ' · Kiss ' + c.k + ' · Die ' + c.d + '</div>' +
       '<canvas class="cutq-cv" width="640" height="380" data-key="' + esc(key) + '"></canvas>' +
       '<div class="cutq-leg"><span style="color:#ff4fa3">▬ Kiss</span> <span style="color:#2fd27a">▬ Die</span> <span style="color:#4da3ff">■ มาร์ค</span></div>' +
       cutqVals(f.cut, key) +
@@ -8810,6 +8815,8 @@ function bahtText(value) {
       if (badge) { const n = Object.keys(cutqDiff(c, key)).length; badge.textContent = n ? 'แก้ ' + n + ' ค่า' : 'ตามค่าใบงาน'; badge.classList.toggle('off', !n); }
     });
     $('cutqSearch').addEventListener('input', e => { cutqQ = e.target.value; renderCutq(); });
+    $('cutqView').addEventListener('click', e => { const b = e.target.closest('button[data-v]'); if (!b) return; cutqView = b.dataset.v; cutqFocus = '';
+      $('cutqView').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderCutq(); });
     $('cutqSearch').addEventListener('keydown', e => {
       if (e.key !== 'Enter') return; e.preventDefault();
       const raw = e.target.value.trim(); if (!raw) return;
