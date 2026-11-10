@@ -8429,7 +8429,7 @@ function bahtText(value) {
 
   function applyRoleUI() {
     if (can('money')) { ['tab-money', 'sheetMoney'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }
-    if (isSuper || isOwnerFixed(meRec)) { const e = $('sheetOffice'); if (e) e.hidden = false; }   // ออฟฟิศ AI: เปิดแชต Claude ได้ เฉพาะเจ้าของ
+    if (isSuper || isOwnerFixed(meRec)) { ['sheetOffice', 'tab-office'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }   // ออฟฟิศ AI: เปิดแชต Claude ได้ เฉพาะเจ้าของ
     if (isSuper) return;
     // ซ่อนหน้าที่ไม่ได้รับสิทธิ์ ทั้งแถบเมนูบน เมนูภาษี เมนูล่างบนมือถือ และแผ่น "เพิ่มเติม"
     PAGE_KEYS.concat(['design', 'floor']).forEach(n => {
