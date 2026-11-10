@@ -7034,7 +7034,7 @@ function bahtText(value) {
   if (!PAGECHAT_ENABLED) document.querySelectorAll('[data-tab="pagechat"]').forEach(el => { el.hidden = true; });   // ซ่อนปุ่มเมนูแชตเพจทุกที่ (รวมผู้ดูแลสูงสุด)
 
   /* ---------------- events ---------------- */
-  const TAX_TABS = ['bill', 'purchase', 'dash', 'report', 'autopost', 'pagechat'];
+  const TAX_TABS = ['dash', 'money', 'bill', 'purchase', 'vat', 'report'];   // กลุ่ม "เงิน & ภาษี" ในเมนู
 
   /* ---------------- งานออกแบบ: โน้ต + รูป (แปะรูปแชท/แบบ) → ส่งไปใบคอนเฟิร์มงาน ----------------
      เก็บที่ bs_designs ซิงก์คลาวด์คอลเลกชัน 'designs' · โน้ต = {text, photos[], approved[] (รูปที่ติ๊กใช้), sentAt}
@@ -8427,7 +8427,15 @@ function bahtText(value) {
   // (กันล็อกตัวเอง: ถ้าในระบบไม่มีบัญชี @ball เลย ให้บัญชีเจ้าของร้านเดิมจัดการแทนได้)
   const canManageUsers = isSuper || (!!meRec && !isOwnerFixed(meRec) && meRec.role === 'owner' && !(window.BSAuth ? window.BSAuth.getUsers() : []).some(isSuperUser));
 
+  // ซ่อนหัวข้อกลุ่มเมนูที่ไม่มีปุ่มให้เห็น (เช่น พนักงานไม่มีสิทธิ์ทั้งกลุ่ม)
+  function syncNavSections() {
+    document.querySelectorAll('.nav-sec, .tax-sheet-sec').forEach(g => {
+      const any = [...g.querySelectorAll('button, a')].some(b => { for (let el = b; el && el !== g; el = el.parentElement) if (el.hidden || getComputedStyle(el).display === 'none') return false; return true; });
+      g.hidden = !any;
+    });
+  }
   function applyRoleUI() {
+    setTimeout(syncNavSections, 0);
     if (can('money')) { ['tab-money', 'sheetMoney'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }
     if (isSuper || isOwnerFixed(meRec)) { ['sheetOffice', 'tab-office'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }   // ออฟฟิศ AI: เปิดแชต Claude ได้ เฉพาะเจ้าของ
     if (isSuper) return;
