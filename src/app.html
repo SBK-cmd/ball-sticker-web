@@ -12508,6 +12508,7 @@ function bahtText(value) {
   }
   let cutqModalKey = '';
   // ค้นหาในหน้าสั่งตัด: เลขใบงานไม่สนขีด/ช่องว่าง/ตัวพิมพ์ (JB, JBS, เลขท้าย) + ชื่อลูกค้า
+  function cutqBase(n) { n = String(n || '').split(/[\\/]/).pop(); return n || 'ไฟล์'; }   // โชว์แค่ชื่อไฟล์ ไม่ต้องโชว์ที่เก็บ
   function cutqNorm(v) { return String(v || '').toLowerCase().replace(/[^0-9a-z\u0e00-\u0e7f]/g, ''); }
   function cutqHit(j, q, qn) { return !!(qn && cutqNorm(j.no).indexOf(qn) >= 0) || String(j.jName || '').toLowerCase().indexOf(q) >= 0; }
   // ไฟล์ที่ตัดแล้ว = เคยส่งตัดสำเร็จ (f.cut.sentAt) หรือคำสั่งล่าสุดของไฟล์นี้เสร็จ · เพิ่งตัดไม่ถึง 3 นาทียังโชว์ในแท็บ "ยังไม่ตัด" ให้เห็นผล
@@ -12551,7 +12552,7 @@ function bahtText(value) {
         files.map(({f, fi}) => {
           const c = cutqCount(f.cut), st = cutqStatus(j.cutReq, f), key = j.id + '|' + fi, arm = cutqArmed === key;
           const thumb = f.cut.thumb && /^data:image\//.test(f.cut.thumb) ? '<img src="' + esc(f.cut.thumb) + '" alt="">' : '<span class="ph">✂</span>';
-          return '<div class="cutq-file">' + thumb + '<div><div class="cutq-fn">' + esc(f.n || 'ไฟล์') + '</div><div class="cutq-meta">Kiss ' + c.k + ' เส้น · Die ' + c.d + ' เส้น' +
+          return '<div class="cutq-file">' + thumb + '<div><div class="cutq-fn" title="' + esc(f.n || '') + '">' + esc(cutqBase(f.n)) + '</div><div class="cutq-meta">Kiss ' + c.k + ' เส้น · Die ' + c.d + ' เส้น' +
             (f.cut.savedAt ? '<br>สแกน ' + cutqClock(f.cut.savedAt) : '') + (f.cut.sentAt ? ' · ตัดล่าสุด ' + cutqClock(f.cut.sentAt) : '') + '</div></div>' +
             (st ? '<div class="cutq-st ' + st.c + '">' + esc(st.t) + '</div>' : '') +
             '<button type="button" class="btn cutq-pv" data-key="' + esc(key) + '">👁 พรีวิว / ค่าตัด / ส่งตัด</button></div>';
@@ -12570,7 +12571,7 @@ function bahtText(value) {
     const key = cutqModalKey, st = cutqStatus(j.cutReq, f), busy = cutqBusy(j.cutReq), arm = cutqArmed === key, c = cutqCount(f.cut);
     const nchg = Object.keys(cutqDiff(f.cut, key)).length;
     m.innerHTML = '<div class="cutq-sheet" role="dialog" aria-modal="true"><div class="cutq-mh"><div><b>' + esc(j.no || '—') + '</b><span>' + esc(j.jName || '') + '</span></div><button type="button" class="cutq-x" aria-label="ปิด">✕</button></div>' +
-      '<div class="cutq-mfn">' + esc(f.n || 'ไฟล์') + ' · Kiss ' + c.k + ' · Die ' + c.d + '</div>' +
+      '<div class="cutq-mfn" title="' + esc(f.n || '') + '">' + esc(cutqBase(f.n)) + ' · Kiss ' + c.k + ' · Die ' + c.d + '</div>' +
       '<canvas class="cutq-cv" width="640" height="380" data-key="' + esc(key) + '"></canvas>' +
       '<div class="cutq-leg"><span style="color:#ff4fa3">▬ Kiss</span> <span style="color:#2fd27a">▬ Die</span> <span style="color:#4da3ff">■ มาร์ค</span></div>' +
       cutqVals(f.cut, key) +
