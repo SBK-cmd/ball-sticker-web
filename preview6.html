@@ -452,6 +452,23 @@ a{color:inherit}
 .panel{display:none;padding-bottom:36px}
 .panel.active{display:block}
 .page-head{padding:26px 0 22px}
+.lk-warn{background:#fff7e0;border:1px solid #f1d58a;color:#6b5000;border-radius:10px;padding:8px 12px;font-size:13px;margin:0 0 12px}
+.lk-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.lk-row .sp{flex:1}.lk-row .txt{flex:1;min-width:160px}
+.lk-err{color:#c0392b;font-size:13px;margin:6px 0 0}
+.lk-h{margin:18px 0 8px}
+.lk-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.lk-list button{width:100%;text-align:left;display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface,#fff);font:inherit;cursor:pointer;min-height:44px}
+.lk-list button:hover{border-color:#c9b56b}
+.lk-list .t{font-weight:700}.lk-list .r{grid-column:1/-1;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.lk-list .w{grid-column:1/-1;font-size:12px;color:var(--muted)}
+.lk-st{font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;white-space:nowrap;background:#eef0f4;color:#4a5675}
+.lk-st.queued{background:#eef0f4;color:#4a5675}.lk-st.working{background:#e6f0ff;color:#1f5fbf}.lk-st.done{background:#e3f6ea;color:#1c7a43}.lk-st.fail{background:#fde8e6;color:#b03a2e}.lk-st.closed{background:#f1f1f1;color:#888}
+.lk-title{margin:10px 0}
+.lk-thread{display:grid;gap:10px;max-height:60vh;overflow:auto;padding:4px 2px}
+.lk-msg{border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.55;max-width:92%;overflow-wrap:anywhere}
+.lk-msg.owner{background:#fff4cc;justify-self:end}.lk-msg.lekha{background:var(--surface-2,#f4f6fa);border:1px solid var(--line)}
+.lk-msg small{display:block;color:var(--muted);font-size:11.5px;margin-top:4px}
+.lk-msg code{background:#0000000d;border-radius:4px;padding:0 4px}.lk-msg a{color:#1f5fbf;text-decoration:underline}
 .page-head h1{font-size:clamp(28px,4.6vw,40px);line-height:1.2;font-weight:700}
 .page-head p{margin:8px 0 0;color:var(--muted);max-width:60ch;font-size:15.5px}
 
@@ -2560,6 +2577,7 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
       <div class="nav-sec" role="presentation" data-sec="shop">
         <div class="nav-sec-h" aria-hidden="true">ร้าน</div>
         <button role="tab" id="tab-floor" data-tab="floor" aria-selected="false" aria-controls="panel-floor"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l2-6h14l2 6"></path><path d="M4 10v10h16V10"></path><path d="M9 20v-6h6v6"></path></svg><span>ผังร้าน</span></button>
+        <button role="tab" id="tab-lekha" data-tab="lekha" aria-selected="false" aria-controls="panel-lekha" hidden><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"></path></svg><span>เลขา</span></button>
         <a id="tab-office" href="pixel-office.html" target="_blank" rel="noopener" hidden><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="12" rx="1"></rect><path d="M8 20h8M12 16v4M9 9h.01M15 9h.01M9 12h6"></path></svg><span>ออฟฟิศ AI</span></a>
       </div>
     </nav>
@@ -2677,6 +2695,7 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
     </div>
     <div class="tax-sheet-sec" role="group" aria-label="ร้าน"><div class="tax-sheet-h" aria-hidden="true">ร้าน</div>
       <button type="button" class="tax-sheet-item" data-tab="floor">ผังร้าน 3 มิติ</button>
+      <button type="button" class="tax-sheet-item" data-tab="lekha" id="sheetLekha" hidden>💬 เลขา (เจ้าของ)</button>
       <button type="button" class="tax-sheet-item" id="sheetOffice" hidden>👾 ออฟฟิศ AI (เจ้าของ)</button>
     </div>
   </div>
@@ -3342,6 +3361,38 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
     </section>
     <!-- ================= แชตเพจ (Messenger) ================= -->
     <!-- ================= ผังร้าน 3 มิติ ================= -->
+    <section id="panel-lekha" class="panel" role="tabpanel" aria-labelledby="tab-lekha">
+      <div class="page-head">
+        <h1>เลขา.</h1>
+        <p>พิมพ์สั่งงานให้ Claude ทำแทน (แก้แอป/เว็บ ทำพรีวิว) งานใช้เวลา 3–15 นาที ตอบกลับมาที่นี่ · ขึ้นของจริงเมื่อคุณกด “อัพ”</p>
+      </div>
+      <p class="lk-warn">⚠️ ห้ามพิมพ์ข้อมูลลูกค้า เบอร์โทร ยอดเงินลูกค้า หรือรหัสผ่าน — งานจะถูกบันทึกเป็น issue ในรีโปที่ยังเป็นสาธารณะ</p>
+      <div class="card lk-pin" id="lkPinBox" hidden>
+        <h2>ใส่รหัสเลขา</h2>
+        <p class="hint">รหัสที่ตั้งไว้ตอนติดตั้งเลขา (ใส่ครั้งเดียว เครื่องนี้จะจำไว้)</p>
+        <div class="lk-row"><input class="txt" id="lkPin" type="password" autocomplete="off" inputmode="text" aria-label="รหัสเลขา"><button class="btn primary" id="lkPinSave" type="button">เข้าใช้</button></div>
+        <p class="lk-err" id="lkPinErr" role="alert" hidden></p>
+      </div>
+      <div id="lkMain" hidden>
+        <div class="card" id="lkListView">
+          <label class="f"><span>งานใหม่</span><textarea id="lkNew" rows="3" placeholder="เช่น หน้าใบเสนอราคา ให้โลโก้ใหญ่ขึ้นตอนพิมพ์"></textarea></label>
+          <div class="lk-row" style="margin-top:8px"><button class="btn primary" id="lkSend" type="button">ส่งงานให้เลขา</button><span class="sp"></span><button class="btn small" id="lkRefresh" type="button">รีเฟรช</button></div>
+          <p class="lk-err" id="lkErr" role="alert" hidden></p>
+          <h2 class="lk-h">งานทั้งหมด</h2>
+          <ul class="lk-list" id="lkList"><li class="hint">กำลังโหลด…</li></ul>
+        </div>
+        <div class="card" id="lkDetail" hidden>
+          <div class="lk-row"><button class="btn small" id="lkBack" type="button">← กลับ</button><span class="sp"></span><span class="lk-st" id="lkDetSt"></span></div>
+          <h2 class="lk-title" id="lkDetTitle"></h2>
+          <div class="lk-thread" id="lkThread" aria-live="polite"></div>
+          <div class="lk-row" id="lkQuick" hidden><button class="btn primary" id="lkUp" type="button">อัพ (ขึ้นของจริง)</button></div>
+          <label class="f" style="margin-top:10px"><span>ตอบกลับ / สั่งแก้เพิ่ม</span><textarea id="lkReply" rows="2" placeholder="เช่น ปุ่มเล็กไป ขอใหญ่ขึ้นอีกนิด"></textarea></label>
+          <div class="lk-row" style="margin-top:8px"><button class="btn" id="lkReplySend" type="button">ส่งข้อความ</button><span class="sp"></span><button class="btn small del" id="lkClose" type="button">ปิดงาน</button></div>
+          <p class="lk-err" id="lkDetErr" role="alert" hidden></p>
+        </div>
+      </div>
+    </section>
+
     <section id="panel-floor" class="panel" role="tabpanel" aria-labelledby="tab-floor">
       <div class="page-head">
         <h1>ผังร้าน.</h1>
@@ -4028,7 +4079,7 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=5ed71ed4bd",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=5d69a8a680",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
