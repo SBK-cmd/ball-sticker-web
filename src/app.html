@@ -1258,6 +1258,7 @@ table.lines tfoot .r{text-align:right;font-variant-numeric:tabular-nums;white-sp
 .cutq-st{grid-column:1/-1;font-size:13px;font-weight:600;border-radius:8px;padding:6px 10px;background:var(--surface);border:1px solid var(--line)}
 .cutq-st.ok{color:#0a7a3d;border-color:#0a7a3d}.cutq-st.bad{color:#c0282d;border-color:#c0282d}.cutq-st.wait{color:#9a6b00;border-color:#d9a400}
 .cutq-go{grid-column:1/-1;min-height:48px;font-size:16px;font-weight:700}
+.cutq-cancel{width:100%;margin-top:8px;min-height:42px}
 .cutq-go.arm{background:#d81f66;color:#fff;border-color:#d81f66}
 .cutq-pv{grid-column:1/-1;min-height:40px}
 .cutq-prev{grid-column:1/-1;display:grid;gap:8px}
@@ -12333,7 +12334,8 @@ function bahtText(value) {
      แผง Sign Tools ในร้านที่เปิดโหมดรับคำสั่งจะรับไปส่งเข้า Graphtec แล้วเขียนผลกลับมา
      cutReq = {rid, status: pending|claimed|done|error|expired|rejected, file, fileName, jobNo, by, at(ms), msg, lines, ip, doneAt} */
   let cutqFocus = '', cutqArmed = '', cutqArmT = 0, cutqQ = '', cutqPendingOpen = '', cutqView = 'todo';   // cutqPendingOpen = เลขใบงานที่สแกน/เปิดจากลิงก์ → เปิดหน้าต่างพรีวิวให้ทันทีที่ข้อมูลพร้อม (ถ้ามีไฟล์ตัดไฟล์เดียว)
-  const CUTQ_TTL = 5 * 60000;
+  // คำสั่งรอได้ 24 ชม. · แผงตัดเองเฉพาะคำสั่งใหม่ (≤5 นาที) ตอนเครื่องว่าง ที่เหลือเข้าคิวที่เครื่อง ให้คนหน้าเครื่องใส่วัสดุแล้วกดตัดทีละแผ่น
+  const CUTQ_TTL = 24 * 3600000, CUTQ_CLAIM_MS = 10 * 60000;
   function cutqParse(j) {
     try {
       const r = typeof j.stProduction === 'string' ? JSON.parse(j.stProduction) : j.stProduction;
@@ -12346,18 +12348,42 @@ function bahtText(value) {
     return {k, d};
   }
   const cutqClock = ms => { try { return new Date(ms).toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit'}); } catch (e) { return ''; } };
+  const cutqWhen = ms => { try { const d = new Date(ms), t = cutqClock(ms); return new Date().toDateString() === d.toDateString() ? t : d.toLocaleDateString('th-TH', {day: 'numeric', month: 'short'}) + ' ' + t; } catch (e) { return ''; } };
   function cutqStatus(req, f) {
     if (!req || !req.status || req.file !== f.p) return null;
-    const age = Date.now() - (+req.at || 0);
-    const live = age < CUTQ_TTL;
-    if (req.status === 'pending') return live
-      ? (age < 45000 ? {c: 'wait', t: '⏳ ส่งคำสั่งแล้ว รอเครื่องในร้านรับ…'} : {c: 'bad', t: '⚠ เครื่องในร้านยังไม่ตอบ — เปิด Illustrator + แผง และเปิด “รับคำสั่งตัดจากมือถือ” หรือยัง? (คำสั่งหมดอายุใน ' + Math.max(1, Math.ceil((CUTQ_TTL - age) / 60000)) + ' นาที)'})
-      : {c: 'bad', t: '⚠ คำสั่งหมดอายุ ไม่ได้ตัด (' + cutqClock(req.at) + ')'};
-    if (req.status === 'claimed') return live ? {c: 'wait', t: '⚙ เครื่องรับแล้ว กำลังส่งเข้า Graphtec…'} : {c: 'bad', t: '⚠ เครื่องรับคำสั่งแล้วแต่ไม่รายงานผล — ไปดูที่เครื่องตัดก่อนสั่งซ้ำ'};
-    if (req.status === 'done') return {c: 'ok', t: '✓ ส่งตัดแล้ว ' + cutqClock(req.doneAt || req.at) + (req.lines ? ' · ' + req.lines + ' เส้น' : '') + (req.ip ? ' → ' + req.ip : '')};
-    return {c: 'bad', t: '⚠ ' + (req.msg || 'ไม่ได้ตัด') + ' (' + cutqClock(req.doneAt || req.at) + ')'};
+    const age = Date.now() - (+req.at || 0), live = age < CUTQ_TTL;
+    if (req.status === 'pending') {
+      if (!live) return {c: 'bad', t: '⚠ คำสั่งหมดอายุ (เกิน 24 ชม.) ไม่ได้ตัด · ส่งเมื่อ ' + cutqWhen(req.at)};
+      if (age < 45000 && !req.queuedAt) return {c: 'wait', t: '⏳ ส่งคำสั่งแล้ว รอเครื่องในร้านรับ…'};
+      if (req.queuedAt) return {c: 'wait', t: '📋 เข้าคิวที่เครื่องในร้านแล้ว — รอคนหน้าเครื่องใส่วัสดุแล้วกดตัด · ส่งเมื่อ ' + cutqWhen(req.at) + ' · รอได้ถึง ' + cutqWhen(+req.at + CUTQ_TTL)};
+      return {c: 'bad', t: '⚠ เครื่องในร้านยังไม่เห็นคำสั่ง — เปิด Illustrator + แผง และเปิด “รับคำสั่งตัดจากมือถือ” · คำสั่งรอได้ถึง ' + cutqWhen(+req.at + CUTQ_TTL)};
+    }
+    if (req.status === 'claimed') return (Date.now() - (+req.claimedAt || +req.at || 0)) < CUTQ_CLAIM_MS ? {c: 'wait', t: '⚙ เครื่องรับแล้ว กำลังส่งเข้า Graphtec…'} : {c: 'bad', t: '⚠ เครื่องรับคำสั่งแล้วแต่ไม่แจ้งผล — ดูที่เครื่องในร้าน'};
+    if (req.status === 'done') return {c: 'ok', t: '✓ ส่งตัดแล้ว ' + cutqWhen(req.doneAt || req.at) + (req.lines ? ' · ' + req.lines + ' เส้น' : '') + (req.ip ? ' → ' + req.ip : '')};
+    if (req.status === 'cancelled') return {c: 'wait', t: '✕ ยกเลิกคำสั่งแล้ว (' + cutqWhen(req.doneAt || req.at) + ')'};
+    return {c: 'bad', t: '⚠ ' + (req.msg || 'ไม่ได้ตัด') + ' (' + cutqWhen(req.doneAt || req.at) + ')'};
   }
-  function cutqBusy(req) { return !!req && (req.status === 'pending' || req.status === 'claimed') && (Date.now() - (+req.at || 0)) < CUTQ_TTL; }
+  function cutqBusy(req) {
+    if (!req) return false;
+    if (req.status === 'pending') return (Date.now() - (+req.at || 0)) < CUTQ_TTL;
+    if (req.status === 'claimed') return (Date.now() - (+req.claimedAt || +req.at || 0)) < CUTQ_CLAIM_MS;
+    return false;
+  }
+  // ยกเลิกคำสั่งที่ยังรออยู่ (เฉพาะยังไม่มีเครื่องรับ — ทำใน transaction กันชนกับเครื่องที่กำลังจอง)
+  async function cutqCancel(j) {
+    if (!cloudDb || !j || !j.cutReq) return;
+    const rid = j.cutReq.rid, ref = cloudDb.collection('jobs').doc(String(j.id));
+    try {
+      await (window.__bsAuthReady || Promise.resolve());
+      const ok = await cloudDb.runTransaction(async tx => {
+        const d = await tx.get(ref), r = d.exists && d.data().cutReq;
+        if (!r || r.rid !== rid || r.status !== 'pending') return false;
+        tx.update(ref, {'cutReq.status': 'cancelled', 'cutReq.msg': 'ยกเลิกจากมือถือ', 'cutReq.doneAt': Date.now()});
+        return true;
+      });
+      toast(ok ? 'ยกเลิกคำสั่งตัดแล้ว' : 'ยกเลิกไม่ได้ — เครื่องในร้านรับคำสั่งไปแล้ว');
+    } catch (e) { toast('ยกเลิกไม่สำเร็จ: ' + (e && e.message || e)); }
+  }
   const CUTQ_B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
   function cutqDecode(str) {         // เส้นที่ถูกย่อ (pz "v1:…") → ตัวเลขพิกัดเดิม (เหมือนในแผง)
     if (typeof str !== 'string' || str.indexOf('v1:') !== 0) return null;
@@ -12576,6 +12602,7 @@ function bahtText(value) {
       '<div class="cutq-leg"><span style="color:#ff4fa3">▬ Kiss</span> <span style="color:#2fd27a">▬ Die</span> <span style="color:#4da3ff">■ มาร์ค</span></div>' +
       cutqVals(f.cut, key) +
       (st ? '<div class="cutq-st ' + st.c + '">' + esc(st.t) + '</div>' : '') +
+      (j.cutReq && j.cutReq.status === 'pending' && j.cutReq.file === f.p && busy ? '<button type="button" class="btn ghost cutq-cancel" data-id="' + esc(j.id) + '">✕ ยกเลิกคำสั่งนี้</button>' : '') +
       '<button type="button" class="btn primary cutq-go' + (arm ? ' arm' : '') + '" data-id="' + esc(j.id) + '" data-fi="' + parts[1] + '"' + (busy ? ' disabled' : '') + '>' +
       (arm ? 'กดอีกครั้งเพื่อสั่งตัดจริง' : '✂ ส่งตัด' + (nchg ? ' (ใช้ค่าที่ปรับ)' : '')) + '</button></div>';
     m.classList.add('show'); document.body.classList.add('cutq-lock');
@@ -12596,7 +12623,7 @@ function bahtText(value) {
     try {
       await (window.__bsAuthReady || Promise.resolve());
       await cloudDb.collection('jobs').doc(String(j.id)).update({cutReq: req});
-      toast('ส่งคำสั่งตัดแล้ว รอเครื่องในร้านรับ');
+      toast('ส่งคำสั่งตัดแล้ว — เครื่องว่างจะตัดทันที ถ้ามีงานอื่นรอ จะเข้าคิวให้กดตัดที่เครื่อง (รอได้ 24 ชม.)');
     } catch (e) { toast('ส่งคำสั่งไม่สำเร็จ: ' + (e && e.message || e)); }
   }
   if ($('cutqList')) {
@@ -12609,6 +12636,8 @@ function bahtText(value) {
       if (sm) { const c = cutqCutOf(sm.dataset.key); if (c) cutqSim(sm.dataset.key, c); return; }
       const rs = e.target.closest('.cutq-rst');
       if (rs) { delete cutqOv[rs.dataset.key]; renderCutq(); return; }
+      const cc = e.target.closest('.cutq-cancel');
+      if (cc && canCutRemote) { const jc = (store.get('bs_jobs', []) || []).find(x => String(x.id) === cc.dataset.id); if (jc) cutqCancel(jc); return; }
       const b = e.target.closest('.cutq-go'); if (!b || b.disabled || !canCutRemote) return;
       const key = b.dataset.id + '|' + b.dataset.fi;
       if (cutqArmed !== key) { cutqArmed = key; clearTimeout(cutqArmT); cutqArmT = setTimeout(() => { cutqArmed = ''; renderCutq(); }, 4000); renderCutq(); return; }
