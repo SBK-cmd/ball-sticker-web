@@ -1,13 +1,17 @@
 // Service Worker สำหรับ Ball Sticker — ทำให้ "เพิ่มลงหน้าจอโฮม" แล้วเปิดได้เหมือนแอป
 // และเปิดได้แม้เน็ตหลุดชั่วคราว (ใช้เวอร์ชันที่เคยโหลดไว้ค้างไว้ในเครื่อง)
-const CACHE_NAME = 'ball-sticker-v142';
-const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './logo.jpg', './logo-160.webp'];
+const CACHE_NAME = 'ball-sticker-v143';
+const APP_SHELL = ['./', './manifest.json', './icon-192.png', './icon-512.png', './logo.jpg', './logo-160.webp'];
 // หน้าแอปเปิดจากแคชทันที (เร็ว) แล้วค่อยเช็กเวอร์ชันใหม่เบื้องหลัง ถ้ามีของใหม่จะขึ้นปุ่มให้แตะโหลด
 const FAST_PAGES = /(^\/$|\/index\.html$|\/ball-sticker\.html$|\/preview\.html$)/;
+// Cloudflare Pages เปลี่ยนทาง /index.html → / และ /x.html → /x (308) · Safari ไม่ยอมให้ service worker ส่งคำตอบที่ผ่านการเปลี่ยนทาง
+// ("Response served by service worker has redirections") → ตัดสถานะ redirected ออกก่อนเก็บ/ส่งทุกครั้ง
+const clean = r => (r && r.redirected) ? r.blob().then(b => new Response(b, {status: r.status, statusText: r.statusText, headers: r.headers})) : Promise.resolve(r);
+const shell = () => caches.match('./').then(clean);
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).catch(() => {})
+    caches.open(CACHE_NAME).then(cache => Promise.all(APP_SHELL.map(u => fetch(u, {cache: 'no-cache'}).then(clean).then(r => r.ok && cache.put(u, r)).catch(() => {}))))
   );
   self.skipWaiting();
 });
@@ -26,12 +30,12 @@ self.addEventListener('fetch', event => {
   const isHTML = event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html');
   if (isHTML) {
     const url = new URL(event.request.url);
-    const key = url.origin + url.pathname; // เก็บ/อ่านหน้าแอปด้วย URL ไม่มี ?query กันแคชซ้ำหลายชุด
+    const key = url.origin + (url.pathname === '/index.html' ? '/' : url.pathname); // เก็บ/อ่านหน้าแอปด้วย URL ไม่มี ?query · index.html = / (หน้าเดียวกัน)
     if (FAST_PAGES.test(url.pathname)) {
       // เปิดจากแคชทันที + โหลดเวอร์ชันล่าสุดเบื้องหลัง ถ้าเปลี่ยนจะบอกหน้าเว็บให้ขึ้นปุ่ม "โหลดเวอร์ชันใหม่"
       event.respondWith(caches.open(CACHE_NAME).then(async cache => {
-        const cached = await cache.match(key);
-        const net = fetch(event.request, {cache: 'no-cache'}).then(async res => {
+        const cached = await clean(await cache.match(key));
+        const net = fetch(key, {cache: 'no-cache'}).then(clean).then(async res => {
           if (res && res.ok) {
             const tag = r => r && (r.headers.get('etag') || r.headers.get('last-modified') || '');
             const changed = cached && tag(cached) && tag(res) && tag(cached) !== tag(res);
@@ -41,19 +45,19 @@ self.addEventListener('fetch', event => {
           return res;
         });
         if (cached) { event.waitUntil(net.catch(() => {})); return cached; }
-        return net.catch(() => caches.match('./index.html'));
+        return net.catch(() => shell());
       }));
       return;
     }
     event.respondWith(
       fetch(event.request)
-        .then(res => { caches.open(CACHE_NAME).then(c => c.put(event.request, res.clone())); return res; })
-        .catch(() => caches.match(event.request).then(r => r || caches.match('./index.html')))
+        .then(res => { if (res.ok && !res.redirected) caches.open(CACHE_NAME).then(c => c.put(event.request, res.clone())); return res; })
+        .catch(() => caches.match(event.request).then(clean).then(r => r || shell()))
     );
   } else {
     if (event.request.cache === 'reload' || event.request.cache === 'no-cache' || event.request.cache === 'no-store') return; // ขอของใหม่จากเซิร์ฟเวอร์ตรงๆ
     event.respondWith(
-      caches.match(event.request).then(cached => cached || fetch(event.request))
+      caches.match(event.request).then(clean).then(cached => cached || fetch(event.request))
     );
   }
 });
