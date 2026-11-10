@@ -25,6 +25,14 @@ jobs:
         run: |
           python3 tools/mk_site.py dist
           python3 tools/mk_office_json.py dist/office.json
+      - name: Create Pages project (first run only)
+        if: ${{ env.CF_TOKEN != '' && env.CF_ACCOUNT != '' }}
+        continue-on-error: true   # มีโปรเจกต์อยู่แล้ว = ข้าม
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create ball-sticker-app --production-branch=main
       - name: Deploy to Cloudflare Pages
         if: ${{ env.CF_TOKEN != '' && env.CF_ACCOUNT != '' }}
         uses: cloudflare/wrangler-action@v3
