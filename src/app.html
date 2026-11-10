@@ -1245,6 +1245,7 @@ table.lines tfoot .r{text-align:right;font-variant-numeric:tabular-nums;white-sp
 .cutq-h{margin:0 0 6px;font:700 18px/1.3 'Prompt','Sarabun',sans-serif}
 .cutq-note{margin:0 0 12px;font-size:13px;color:var(--muted)}
 .cutq-list{display:grid;gap:12px;margin-top:12px}
+.cutq-view{display:flex;gap:6px;margin-top:10px}.cutq-view button{flex:1;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font:inherit;font-weight:600;cursor:pointer}.cutq-view button.on{background:#1f2a5c;color:#fff;border-color:#1f2a5c}
 .cutq-job{border:1.5px solid var(--line);border-radius:14px;background:var(--surface);padding:12px 14px;display:grid;gap:10px}
 .cutq-job.focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,210,63,.35)}
 .cutq-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
@@ -3154,6 +3155,7 @@ body.jm-open .fab-newjob{display:none!important}
         <p class="hint cutq-note">สแกน QR บนใบงานหรือเลือกงานด้านล่าง → กด “ส่งตัด” (ยืนยัน 2 ครั้ง) · เครื่องในร้านต้องเปิด Illustrator + แผง Sign Tools และเปิด “รับคำสั่งตัดจากมือถือ” ไว้ · ใส่วัสดุก่อนสั่งเสมอ</p>
         <button type="button" class="btn primary cutq-scan" id="cutqScan">📷 สแกน QR / บาร์โค้ดใบงาน</button>
         <input class="txt" id="cutqSearch" type="search" enterkeyhint="search" placeholder="ค้นเลขใบงาน เช่น JB261104-003, JBS… หรือเลขท้าย 003 / ชื่อลูกค้า" autocomplete="off" aria-label="ค้นหาเลขใบงานหรือชื่อลูกค้า">
+        <div class="cutq-view" id="cutqView" role="group" aria-label="กรองงานสั่งตัด"><button type="button" data-v="todo" class="on">ยังไม่ตัด</button><button type="button" data-v="done">ตัดแล้ว</button><button type="button" data-v="all">ทั้งหมด</button></div>
         <div id="cutqList" class="cutq-list"></div>
       </div>
     </section>
@@ -12330,7 +12332,7 @@ function bahtText(value) {
      มือถือไม่ได้ส่งเข้าเครื่องตัดเอง: เขียน "คำสั่ง" cutReq ลงใบงานใน Firestore (jobs/<id>.cutReq)
      แผง Sign Tools ในร้านที่เปิดโหมดรับคำสั่งจะรับไปส่งเข้า Graphtec แล้วเขียนผลกลับมา
      cutReq = {rid, status: pending|claimed|done|error|expired|rejected, file, fileName, jobNo, by, at(ms), msg, lines, ip, doneAt} */
-  let cutqFocus = '', cutqArmed = '', cutqArmT = 0, cutqQ = '', cutqPendingOpen = '';   // cutqPendingOpen = เลขใบงานที่สแกน/เปิดจากลิงก์ → เปิดหน้าต่างพรีวิวให้ทันทีที่ข้อมูลพร้อม (ถ้ามีไฟล์ตัดไฟล์เดียว)
+  let cutqFocus = '', cutqArmed = '', cutqArmT = 0, cutqQ = '', cutqPendingOpen = '', cutqView = 'todo';   // cutqPendingOpen = เลขใบงานที่สแกน/เปิดจากลิงก์ → เปิดหน้าต่างพรีวิวให้ทันทีที่ข้อมูลพร้อม (ถ้ามีไฟล์ตัดไฟล์เดียว)
   const CUTQ_TTL = 5 * 60000;
   function cutqParse(j) {
     try {
@@ -12508,6 +12510,9 @@ function bahtText(value) {
   // ค้นหาในหน้าสั่งตัด: เลขใบงานไม่สนขีด/ช่องว่าง/ตัวพิมพ์ (JB, JBS, เลขท้าย) + ชื่อลูกค้า
   function cutqNorm(v) { return String(v || '').toLowerCase().replace(/[^0-9a-z\u0e00-\u0e7f]/g, ''); }
   function cutqHit(j, q, qn) { return !!(qn && cutqNorm(j.no).indexOf(qn) >= 0) || String(j.jName || '').toLowerCase().indexOf(q) >= 0; }
+  // ไฟล์ที่ตัดแล้ว = เคยส่งตัดสำเร็จ (f.cut.sentAt) หรือคำสั่งล่าสุดของไฟล์นี้เสร็จ · เพิ่งตัดไม่ถึง 3 นาทียังโชว์ในแท็บ "ยังไม่ตัด" ให้เห็นผล
+  function cutqDoneAt(j, f) { const r = j.cutReq; return Math.max(+(f.cut && f.cut.sentAt) || 0, (r && r.status === 'done' && r.file === f.p) ? (+(r.doneAt || r.at) || 0) : 0); }
+  function cutqInView(j, f, view) { if (view === 'all') return true; const t = cutqDoneAt(j, f); if (view === 'done') return t > 0; return !t || (Date.now() - t) < 180000 || cutqBusy(j.cutReq); }
   function renderCutq() {
     const box = $('cutqList'); if (!box) return;
     { const ae = document.activeElement; if (ae && ae.classList && ae.classList.contains('cutq-in') && ae.closest('#cutqList,#cutqModal')) return; }   // กำลังพิมพ์ค่า → ไม่วาดใหม่ทับ
@@ -12521,7 +12526,8 @@ function bahtText(value) {
       cutqPendingOpen = '';
     }
     const q = cutqQ.trim().toLowerCase(), qn = cutqNorm(q);
-    let rows = all.map(j => ({j, rec: cutqParse(j)})).filter(x => x.rec && x.rec.files.some(f => f && f.cut && f.cut.snap));
+    const view = (q || cutqFocus) ? 'all' : cutqView;   // ค้นหา/สแกน = ค้นทุกงาน ไม่สนตัวกรอง
+    let rows = all.map(j => ({j, rec: cutqParse(j)})).filter(x => x.rec && x.rec.files.some(f => f && f.cut && f.cut.snap && cutqInView(x.j, f, view)));
     const miss = cutqFocus && !rows.some(x => String(x.j.no) === cutqFocus);
     if (q) {
       rows = rows.filter(x => cutqHit(x.j, q, qn));
@@ -12537,10 +12543,10 @@ function bahtText(value) {
       const exists = all.some(j => String(j.no) === cutqFocus);
       html += '<div class="cutq-st bad">' + (exists ? '⚠ ใบงาน ' + esc(cutqFocus) + ' ยังไม่มีไฟล์ตัดที่สแกนไว้ — สแกนจากแผง Sign Tools แล้วกด “บันทึกใบงาน” ก่อน' : '⚠ ไม่พบใบงาน ' + esc(cutqFocus) + ' (ยังไม่ได้บันทึกใบงาน หรือซิงก์ยังไม่ครบ)') + '</div>';
     }
-    if (!rows.length) { box.innerHTML = html + '<div class="cutq-empty">ยังไม่มีงานที่พร้อมสั่งตัด</div>'; return; }
+    if (!rows.length) { box.innerHTML = html + '<div class="cutq-empty">' + (view === 'todo' ? 'ไม่มีงานที่รอตัด — ดูงานที่ตัดแล้วได้ที่ “ตัดแล้ว”' : view === 'done' ? 'ยังไม่มีงานที่ตัดแล้ว' : 'ยังไม่มีงานที่พร้อมสั่งตัด') + '</div>'; return; }
     html += rows.map(({j, rec}) => {
       const busy = cutqBusy(j.cutReq);
-      const files = rec.files.map((f, fi) => ({f, fi})).filter(x => x.f && x.f.cut && x.f.cut.snap);
+      const files = rec.files.map((f, fi) => ({f, fi})).filter(x => x.f && x.f.cut && x.f.cut.snap && cutqInView(j, x.f, view));
       return '<div class="cutq-job' + (String(j.no) === cutqFocus ? ' focus' : '') + '"><div class="cutq-top"><b>' + esc(j.no || '—') + '</b><span>' + esc(j.jName || '') + '</span></div>' +
         files.map(({f, fi}) => {
           const c = cutqCount(f.cut), st = cutqStatus(j.cutReq, f), key = j.id + '|' + fi, arm = cutqArmed === key;
@@ -12626,6 +12632,8 @@ function bahtText(value) {
       if (badge) { const n = Object.keys(cutqDiff(c, key)).length; badge.textContent = n ? 'แก้ ' + n + ' ค่า' : 'ตามค่าใบงาน'; badge.classList.toggle('off', !n); }
     });
     $('cutqSearch').addEventListener('input', e => { cutqQ = e.target.value; renderCutq(); });
+    $('cutqView').addEventListener('click', e => { const b = e.target.closest('button[data-v]'); if (!b) return; cutqView = b.dataset.v; cutqFocus = '';
+      $('cutqView').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderCutq(); });
     $('cutqSearch').addEventListener('keydown', e => {
       if (e.key !== 'Enter') return; e.preventDefault();
       const raw = e.target.value.trim(); if (!raw) return;
