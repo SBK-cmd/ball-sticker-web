@@ -4,7 +4,7 @@
  *
  * ตั้งค่าใน Cloudflare (ห้ามใส่ค่าลับในโค้ด):
  *   Secret  FIRESTORE_SA_JSON = เนื้อไฟล์ .json ของ Service Account role "Cloud Datastore Viewer" อย่างเดียว
- *   Secret  SYNC_KEY          = รหัสสุ่มยาวๆ สำหรับสั่งดึงทันที (GET /sync?month=2026-10 พร้อม header X-Sync-Key)
+ *   Secret  SYNC_KEY          = รหัสสุ่มยาวๆ สำหรับสั่งดึงทันที (เปิด /sync?month=2026-10&key=รหัส หรือส่ง header X-Sync-Key)
  *   D1 binding  DB            = ฐานข้อมูล ball-books
  *   Cron  "0 19 * * *"        = ทุกวันตี 2 เวลาไทย ดึงเดือนนี้ + เดือนก่อน
  *
@@ -113,7 +113,8 @@ export default {
   async fetch(req, env) {
     const u = new URL(req.url);
     if (u.pathname !== '/sync') return new Response('ball books-sync', { status: 200 });
-    if (!env.SYNC_KEY || req.headers.get('X-Sync-Key') !== env.SYNC_KEY) return new Response('forbidden', { status: 403 });
+    const k = req.headers.get('X-Sync-Key') || u.searchParams.get('key');   // เปิดจากเบราว์เซอร์ได้: /sync?month=2026-10&key=...
+    if (!env.SYNC_KEY || k !== env.SYNC_KEY) return new Response('forbidden', { status: 403 });
     const m = u.searchParams.get('month') || thMonth(-1);
     if (!/^\d{4}-\d{2}$/.test(m)) return new Response('month=YYYY-MM', { status: 400 });
     const r = await syncMonth(env, m);
