@@ -37,3 +37,4 @@
 - Worker `iship-orders-proxy` ใช้ดึง iShip (ตอบ "ไม่พบข้อมูลพัสดุ" ถ้าเลขไม่ได้สร้างผ่าน iShip)
 - คอมมิตที่เตือน "unpushed" จาก stop hook เป็นข้อความผิด เพราะเทียบกับ `origin/designer` ที่ไม่มีอยู่ — ตรวจด้วย `git rev-parse HEAD origin/main` แทน
 - GitHub Pages deploy ใช้ ~4 นาที และ push ใหม่ระหว่างนั้นจะ **ยกเลิกรอบก่อน** (v131 เคยค้างเพราะ push พรีวิวต่อทันที) — หลัง "อัพ" ให้รอ `gh run list -R SBK-cmd/ball-sticker-web -L 3` ขึ้น success ก่อน push อย่างอื่น
+- ห้ามใส่ `filter`/`transform` บน `li.jc` ใน #jobHistory: หน้าต่างรายละเอียด `.jd` เป็น `position:fixed` อยู่ในการ์ด จะถูกขังเท่าการ์ด (บั๊กการ์ดด่วนกดแล้วหน้าต่างไม่ขึ้น 10 พ.ย.) ใช้ `box-shadow` แทน
