@@ -140,7 +140,23 @@ function parsePend(md,head){
   for(var k=0;k<rest.length;k++){if(/^##\s/.test(rest[k]))break;var m=rest[k].match(/^\s*[-*]\s+(.*)/);if(m)out.push(m[1].replace(/\*\*/g,'').replace(/`/g,''))}
   return out.slice(0,8);
 }
+function clean(t){return String(t||'').replace(/\*\*/g,'').replace(/`/g,'')}
 function load(){
+  state.err='';
+  // หลังย้าย Cloudflare: อ่าน office.json บนโดเมนเดียวกัน (ไม่ต้องพึ่ง GitHub ที่จะเป็น private) · ไม่มีไฟล์ → ใช้ GitHub แบบเดิม
+  return fetch('office.json',{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){
+    if(!d||d.v!==1||!d.commits)throw 0;
+    var slim=d.commits.map(function(c){return{sha:c.sha,commit:{message:c.subject+(c.session?'\n\nClaude-Session: https://claude.ai/code/'+c.session:''),committer:{date:c.at}}}});
+    applyCommits(slim);
+    state.pend=(d.handoffPending||[]).slice(0,8).map(clean);
+    AGENTS.forEach(function(a){a.mail=((d.inbox||{})[a.box]||[]).map(clean)});
+    return fetch('sw.js',{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).catch(function(){return''}).then(function(t){
+      var m=t.match(/ball-sticker-v(\d+)/);state.live=m?'v'+m[1]:'?';state.at=Date.now();
+      lsSet('po_cache',JSON.stringify({c:slim,live:state.live,pend:state.pend,at:state.at,mail:AGENTS.map(function(a){return a.mail})}));
+    });
+  }).then(render,loadGitHub);
+}
+function loadGitHub(){
   state.err='';
   var raw='https://raw.githubusercontent.com/'+REPO+'/main/';
   var pC=fetch('https://api.github.com/repos/'+REPO+'/commits?sha=main&per_page=100',{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('GitHub '+r.status);return r.json()});

@@ -43,6 +43,9 @@ ul.log time{color:var(--mute);font-variant-numeric:tabular-nums;white-space:nowr
 .pend li{font-size:13px;margin:4px 0;color:#d6d9ea}
 .pend{margin:0;padding-left:18px}
 .err{color:var(--red);font-size:13px}
+.h3{font-size:14px;margin:12px 0 4px}
+.mail{background:var(--yel);color:#1a1a1a;border-radius:4px;padding:0 5px;font-size:12px}
+a.btn{display:inline-flex;align-items:center;text-decoration:none}.btn.sm{min-height:40px;font-size:13px;padding:0 12px}
 /* แผ่นสั่งงาน */
 .sheet{position:fixed;inset:0;display:none;align-items:flex-end;justify-content:center;background:#0008;z-index:10}
 .sheet.open{display:flex}
@@ -106,14 +109,14 @@ textarea{width:100%;min-height:120px;resize:vertical;border-radius:10px;border:1
 'use strict';
 var REPO='SBK-cmd/ball-sticker-web';
 var AGENTS=[
-  {id:'a',name:'ตัวที่ 1',session:'https://claude.ai/code/session_01W8Yef9wcHLrQ5tHZoLcEiF',shirt:'#f5b301',shirtD:'#c48f00',hair:'#3b2a1e',x:58},
-  {id:'b',name:'ตัวที่ 2',session:'https://claude.ai/code/session_01Tj4ruZT5PfVNjef2XFaTVb',shirt:'#5aa9ff',shirtD:'#2f7ad6',hair:'#1c1c24',x:138}
+  {id:'a',box:1,name:'ตัวที่ 1',session:'https://claude.ai/code/session_01W8Yef9wcHLrQ5tHZoLcEiF',shirt:'#f5b301',shirtD:'#c48f00',hair:'#3b2a1e',x:58},
+  {id:'b',box:2,name:'ตัวที่ 2',session:'https://claude.ai/code/session_01Tj4ruZT5PfVNjef2XFaTVb',shirt:'#5aa9ff',shirtD:'#2f7ad6',hair:'#1c1c24',x:138}
 ];
 var $=function(id){return document.getElementById(id)};
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-AGENTS.forEach(function(a){var n=lsGet('po_name_'+a.id);if(n)a.name=n;a.log=[];a.last=0;});
+AGENTS.forEach(function(a){var n=lsGet('po_name_'+a.id);if(n)a.name=n;a.log=[];a.last=0;a.mail=[];});
 
 /* ---------- ข้อมูลจาก GitHub ---------- */
 var state={live:'',pend:[],err:'',at:0};
@@ -131,27 +134,45 @@ function applyCommits(list){
     if(t>a.last)a.last=t;
   });
 }
-function parsePend(md){
-  var i=md.search(/^##\s*ค้างอยู่/m);if(i<0)return[];
+function parsePend(md,head){
+  var i=md.search(head||/^##\s*ค้างอยู่/m);if(i<0)return[];
   var rest=md.slice(i).split('\n').slice(1),out=[];
   for(var k=0;k<rest.length;k++){if(/^##\s/.test(rest[k]))break;var m=rest[k].match(/^\s*[-*]\s+(.*)/);if(m)out.push(m[1].replace(/\*\*/g,'').replace(/`/g,''))}
   return out.slice(0,8);
 }
+function clean(t){return String(t||'').replace(/\*\*/g,'').replace(/`/g,'')}
 function load(){
+  state.err='';
+  // หลังย้าย Cloudflare: อ่าน office.json บนโดเมนเดียวกัน (ไม่ต้องพึ่ง GitHub ที่จะเป็น private) · ไม่มีไฟล์ → ใช้ GitHub แบบเดิม
+  return fetch('office.json',{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){
+    if(!d||d.v!==1||!d.commits)throw 0;
+    var slim=d.commits.map(function(c){return{sha:c.sha,commit:{message:c.subject+(c.session?'\n\nClaude-Session: https://claude.ai/code/'+c.session:''),committer:{date:c.at}}}});
+    applyCommits(slim);
+    state.pend=(d.handoffPending||[]).slice(0,8).map(clean);
+    AGENTS.forEach(function(a){a.mail=((d.inbox||{})[a.box]||[]).map(clean)});
+    return fetch('sw.js',{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).catch(function(){return''}).then(function(t){
+      var m=t.match(/ball-sticker-v(\d+)/);state.live=m?'v'+m[1]:'?';state.at=Date.now();
+      lsSet('po_cache',JSON.stringify({c:slim,live:state.live,pend:state.pend,at:state.at,mail:AGENTS.map(function(a){return a.mail})}));
+    });
+  }).then(render,loadGitHub);
+}
+function loadGitHub(){
   state.err='';
   var raw='https://raw.githubusercontent.com/'+REPO+'/main/';
   var pC=fetch('https://api.github.com/repos/'+REPO+'/commits?sha=main&per_page=100',{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('GitHub '+r.status);return r.json()});
   var pS=fetch(raw+'sw.js',{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).catch(function(){return''});
   var pH=fetch(raw+'HANDOFF.md',{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).catch(function(){return''});
-  return Promise.all([pC,pS,pH]).then(function(v){
+  var pM=Promise.all(AGENTS.map(function(a){return fetch(raw+'team/inbox-'+a.box+'.md',{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).catch(function(){return''})}));
+  return Promise.all([pC,pS,pH,pM]).then(function(v){
     var slim=v[0].map(function(c){return{sha:c.sha,commit:{message:c.commit.message,committer:{date:c.commit.committer.date}}}});
     applyCommits(slim);
     var m=v[1].match(/ball-sticker-v(\d+)/);state.live=m?'v'+m[1]:'?';
     state.pend=parsePend(v[2]);state.at=Date.now();
-    lsSet('po_cache',JSON.stringify({c:slim,live:state.live,pend:state.pend,at:state.at}));
+    AGENTS.forEach(function(a,i){a.mail=parsePend(v[3][i]||'',/^##\s*ค้าง\s*$/m)});
+    lsSet('po_cache',JSON.stringify({c:slim,live:state.live,pend:state.pend,at:state.at,mail:AGENTS.map(function(a){return a.mail})}));
   }).catch(function(e){state.err=e.message==='GitHub 403'?'GitHub ให้ดึงได้ชั่วโมงละ 60 ครั้ง รอสักพักแล้วกดรีเฟรช':'ดึงข้อมูลไม่ได้ ('+e.message+')'}).then(render);
 }
-try{var c0=JSON.parse(lsGet('po_cache')||'null');if(c0){applyCommits(c0.c||[]);state.live=c0.live;state.pend=c0.pend||[];state.at=c0.at}}catch(e){}
+try{var c0=JSON.parse(lsGet('po_cache')||'null');if(c0){applyCommits(c0.c||[]);state.live=c0.live;state.pend=c0.pend||[];state.at=c0.at;(c0.mail||[]).forEach(function(m,i){if(AGENTS[i])AGENTS[i].mail=m||[]})}}catch(e){}
 
 /* ---------- วาดห้องพิกเซล ---------- */
 var cv=$('cv'),g=cv.getContext('2d'),W=200,H=120,frame=0;
@@ -216,11 +237,14 @@ function render(){
     if(!b){b=document.createElement('button');b.type='button';b.className='who';b.id='who_'+a.id;b.addEventListener('click',function(){openSheet(a)});stage.appendChild(b)}
     var st=statusOf(a),last=a.log[0];
     b.setAttribute('aria-label','สั่งงาน '+a.name+' · '+statusText(a));
-    b.innerHTML=(last&&st!=='off'?'<span class="bub">'+esc(last.s)+'</span>':'')+'<span class="tag"><span class="dot '+(st==='on'?'on':st==='mid'?'mid':'')+'"></span>'+esc(a.name)+'</span>';
+    b.innerHTML=(last&&st!=='off'?'<span class="bub">'+esc(last.s)+'</span>':'')+'<span class="tag"><span class="dot '+(st==='on'?'on':st==='mid'?'mid':'')+'"></span>'+esc(a.name)+(a.mail.length?' <span class="mail" title="จดหมายค้าง">✉'+a.mail.length+'</span>':'')+'</span>';
   });
   $('cards').innerHTML=AGENTS.map(function(a){
     return '<div class="card"><h2>'+esc(a.name)+' <span class="mini">· '+statusText(a)+' · '+ago(a.last)+'</span></h2><ul class="log">'+
-      (a.log.slice(0,5).map(function(l){return'<li><time>'+hhmm(l.t)+'</time><span>'+esc(l.s)+'</span></li>'}).join('')||'<li class="mini">ยังไม่มีคอมมิตจากแชตนี้</li>')+'</ul></div>';
+      (a.log.slice(0,5).map(function(l){return'<li><time>'+hhmm(l.t)+'</time><span>'+esc(l.s)+'</span></li>'}).join('')||'<li class="mini">ยังไม่มีคอมมิตจากแชตนี้</li>')+'</ul>'+
+      '<h3 class="h3">✉ จดหมายถึงตัวนี้ ('+a.mail.length+')</h3>'+(a.mail.length?'<ul class="pend">'+a.mail.map(function(m){return'<li>'+esc(m)+'</li>'}).join('')+'</ul>':'<p class="mini">ไม่มีงานฝากค้าง</p>')+
+      '<div class="row" style="margin-top:10px"><a class="btn sm" href="https://claude.ai/settings/usage" target="_blank" rel="noopener">ดูโควตา (5 ชม. / สัปดาห์)</a></div>'+
+      '<p class="mini" style="margin:6px 0 0">ต้องล็อกอินบัญชีของตัวนี้ในเบราว์เซอร์ก่อน · หน้านี้อ่านโควตาเองไม่ได้</p></div>';
   }).join('')+(state.err?'<p class="err">'+esc(state.err)+'</p>':'');
   $('pend').innerHTML=state.pend.length?state.pend.map(function(p){return'<li>'+esc(p)+'</li>'}).join(''):'<li class="mini">ไม่มีรายการ หรือยังโหลดไม่ได้</li>';
   place();draw();
