@@ -2092,6 +2092,37 @@ function bahtText(value) {
     ['quotes', 'bs_quotes', 'ใบเสนอราคา'], ['purchases', 'bs_purchases', 'ใบซื้อ'], ['designs', 'bs_designs', 'งานออกแบบ'], ['customers', 'bs_customers', 'ลูกค้า'],
     ['notifs', 'bs_notifs', 'แจ้งเตือน'], ['bankIn', 'bs_bank_in', 'เงินเข้า (SMS)'], ['bankOut', 'bs_bank_out', 'เงินออก (SMS)']];
   let usageReads = null, usageLoading = false;
+  // ยอดจริงทั้งโปรเจกต์จาก Google Cloud Monitoring ผ่าน Worker (worker/fb-usage-worker.js) — ไม่อ่าน Firestore · ดึงใหม่ทุก 10 นาทีตอนเปิดหน้าเงิน
+  const FB_USAGE_URL = 'https://fb-usage.organic-parmesan.workers.dev/usage?days=14';
+  let usageReal = null, usageRealAt = 0, usageRealBusy = false;
+  async function usageLoadReal(force) {
+    if (usageRealBusy || (!force && Date.now() - usageRealAt < 10 * 60000)) return;
+    usageRealBusy = true; usageRealAt = Date.now();
+    try {
+      const r = await fetch(FB_USAGE_URL + (force ? '&fresh=1' : ''), {cache: 'no-store'});
+      const j = await r.json().catch(() => ({}));
+      usageReal = r.ok && Array.isArray(j.days) ? {days: j.days, at: j.updatedAt || Date.now()} : {err: (j && j.error) || ('HTTP ' + r.status)};
+    } catch (e) { usageReal = {err: 'ยังเชื่อมตัวดึงยอดจริงไม่ได้ (ยังไม่ได้ติดตั้ง Worker หรือเน็ตมีปัญหา)'}; }
+    usageRealBusy = false;
+    try { if (document.getElementById('moneyBody')) renderMoney(); } catch (e) {}
+  }
+  const USD_THB = 35;   // ประมาณ · ราคา Firestore (โดยประมาณ): อ่าน $0.06 / เขียน $0.18 / ลบ $0.02 ต่อ 100,000 หลังโควตาฟรีรายวัน 50K / 20K / 20K
+  const usageCostTHB = d => ((Math.max(0, d.reads - 50000) * 0.06 + Math.max(0, d.writes - 20000) * 0.18 + Math.max(0, d.deletes - 20000) * 0.02) / 100000) * USD_THB;
+  function usageRealHTML() {
+    if (!usageReal) return '<p class="hint mn-note">กำลังดึงยอดจริงจาก Google…</p>';
+    if (usageReal.err) return '<p class="hint mn-note">ยอดจริงจาก Google: ' + esc(usageReal.err) + '</p>';
+    const days = usageReal.days, t = days[days.length - 1] || {reads: 0, writes: 0, deletes: 0}, y = days[days.length - 2] || null;
+    const mon = localISO(new Date()).slice(0, 7), mDays = days.filter(d => d.d.slice(0, 7) === mon), cost = mDays.reduce((a, d) => a + usageCostTHB(d), 0);
+    const mx = Math.max(50000, ...days.map(d => d.reads));
+    const bars = days.map(d => '<div class="mn-bcol' + (d === t ? ' on' : '') + '" title="' + esc(d.d) + ' อ่าน ' + d.reads.toLocaleString() + ' · เขียน ' + d.writes.toLocaleString() + '"><div class="mn-bars"><i class="bi' + (d.reads > 50000 ? ' over' : '') + '" style="height:' + Math.round(d.reads / mx * 100) + '%"></i></div><small>' + (+d.d.slice(8)) + '</small></div>').join('');
+    return '<div class="mn-grid">' +
+      tile2('อ่านวันนี้ (จริง ทั้งร้าน)', t.reads.toLocaleString() + ' ครั้ง', t.reads > 50000 ? 'out' : 'in', (t.reads > 50000 ? 'เกินฟรี ' + (t.reads - 50000).toLocaleString() : 'ฟรีเหลือ ' + (50000 - t.reads).toLocaleString()) + (y ? ' · เมื่อวาน ' + y.reads.toLocaleString() : '')) +
+      tile2('เขียนวันนี้', t.writes.toLocaleString() + ' ครั้ง', t.writes > 20000 ? 'out' : 'in', 'ฟรีวันละ 20,000 · ลบ ' + t.deletes.toLocaleString()) +
+      tile2('ค่าใช้จ่ายเดือนนี้ (ประมาณ)', (cost < 1 ? 'ไม่ถึง 1' : Math.ceil(cost).toLocaleString()) + ' บาท', cost > 300 ? 'out' : 'in', 'ส่วนที่เกินโควตาฟรี · ' + mDays.length + ' วัน') +
+      '</div>' +
+      '<h3 class="mn-h">อ่านรายวัน 14 วัน <small>แดง = เกินโควตาฟรี 50,000</small></h3><div class="mn-card mn-chart mn-uchart">' + bars + '</div>' +
+      '<p class="hint mn-note">ยอดจริงจาก Google Cloud Monitoring รวมแอปทุกเครื่อง แผง Sign Tools และหน้าลูกค้า · อัปเดต ' + new Date(usageReal.at).toTimeString().slice(0, 5) + ' (Google ช้า ~5 นาที)</p>';
+  }
   function usageBytes(v) { try { const t = JSON.stringify(v || []); return window.TextEncoder ? new TextEncoder().encode(t).length : t.length * 2; } catch (e) { return 0; } }
   const usageMB = b => (b / 1048576).toFixed(b < 10485760 ? 2 : 1) + ' MB';
   function usageSectionHTML() {
@@ -2111,7 +2142,9 @@ function bahtText(value) {
         '</tbody></table></div>' : '<p class="hint mn-note">ยังไม่มีเครื่องไหนส่งยอดของวันนี้ (แต่ละเครื่องส่งทุก 10 นาทีตอนเปิดแอป)</p>';
       if (usageReads.err) devRows = '<p class="hint mn-note">⚠ ดึงยอดรวมไม่ได้: ' + esc(usageReads.err) + '</p>';
     }
-    return '<h3 class="mn-h">การใช้ Firebase <small>ประมาณการ</small></h3>' +
+    usageLoadReal(false);
+    return '<h3 class="mn-h">การใช้ Firebase</h3>' + usageRealHTML() +
+      '<h3 class="mn-h">ขนาดข้อมูล + แยกรายเครื่อง <small>ประมาณการ</small></h3>' +
       '<div class="mn-grid">' + tile2('ข้อมูลที่เก็บ', usageMB(total), pct > 80 ? 'out' : 'in', pct.toFixed(pct < 1 ? 2 : 1) + '% ของที่เก็บฟรี 1 GB' + (total > 1073741824 ? ' · เกิน ~' + Math.ceil((total / 1073741824 - 1) * 6) + ' บาท/เดือน' : '')) + readsTile + '</div>' +
       '<div class="mn-card"><table class="mn-tbl"><thead><tr><th>ส่วนที่ใหญ่สุด</th><th>ขนาด</th></tr></thead><tbody>' + big + '</tbody></table></div>' +
       devRows +
@@ -2123,6 +2156,7 @@ function bahtText(value) {
   async function usageLoadReads() {
     if (!cloudDb || usageLoading) return;
     usageLoading = true; renderMoney();
+    usageLoadReal(true);
     try {
       readsReportTick();
       await (window.__bsAuthReady || Promise.resolve());

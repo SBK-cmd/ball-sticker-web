@@ -38,3 +38,20 @@ Worker รับข้อความลูกค้าผ่าน webhook เ�
 - แอปในโหมดพัฒนาอาจรับ-ส่งแชตได้เฉพาะบัญชีที่มี role ในแอป (แอดมิน/นักพัฒนา/ผู้ทดสอบ) ถ้าแชตลูกค้าจริงไม่เข้า อาจต้องขอสิทธิ์ `pages_messaging` แบบ Advanced Access ผ่าน App Review (อาจต้องยืนยันธุรกิจด้วย)
 - ตอบได้ภายใน 24 ชม. หลังลูกค้าส่งข้อความล่าสุด (Worker ตรวจให้ ถ้าเกินจะตอบ 409)
 - KV อ่านค่าล่าสุดอาจช้าได้ถึงประมาณ 1 นาทีเมื่ออ่านจากคนละพื้นที่ แอปดึงใหม่ทุก 30 วินาที ไม่ใช่แจ้งเตือนทันที
+
+## ตัวดึงการใช้ Firebase จริง (`fb-usage-worker.js`) — หน้าเงิน → การใช้ Firebase
+ดึงยอดอ่าน/เขียน/ลบ Firestore รายวัน (เวลาไทย) จาก Google Cloud Monitoring รวมทั้งโปรเจกต์ (แอป + แผง + หน้าลูกค้า) · ไม่มีข้อมูลลูกค้า · จำผล 10 นาที
+แอปเรียก `https://fb-usage.organic-parmesan.workers.dev/usage?days=14` (รับเฉพาะ Origin ของร้าน)
+
+### Google Cloud (เจ้าของทำ)
+1. console.cloud.google.com → เลือกโปรเจกต์ `ball-sticker-d95c2`
+2. IAM & Admin → Service Accounts → Create service account ชื่อ `fb-usage-reader` → Role **Monitoring Viewer** อย่างเดียว → Done
+3. คลิกบัญชีนั้น → Keys → Add key → Create new key → JSON (ได้ไฟล์ .json — ห้ามส่งในแชต/ห้ามใส่ในรีโป)
+4. ถ้า Monitoring API ยังไม่เปิด: APIs & Services → Library → Cloud Monitoring API → Enable
+
+### Cloudflare (เจ้าของทำ)
+1. Workers & Pages → Create → Worker ชื่อ **fb-usage** → Deploy → Edit code → วางโค้ดจาก `fb-usage-worker.js` → Deploy
+2. Settings → Variables and Secrets → Add → Type **Secret** ชื่อ `GCP_SA_KEY` → วางเนื้อไฟล์ .json ทั้งไฟล์ → Save
+3. ทดสอบ: เปิด https://fb-usage.organic-parmesan.workers.dev/usage?days=3 ต้องได้ JSON มี `days`
+
+ทดสอบแล้วแค่แบบจำลอง (คีย์ RSA จริง + จำลอง API ของ Google) ยังไม่ได้ทดสอบกับ Google จริง
