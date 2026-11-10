@@ -5,6 +5,7 @@
 ห้ามใส่รหัสผ่าน/คีย์/ข้อมูลลูกค้า — repo ยังเป็นสาธารณะ
 
 ## ค้าง
+- [2026-11-10 23:58] จาก 2 (เจ้าของสั่งตรง): **ขอหน้าจอ "เลขา" ในแอป** (เจ้าของเท่านั้น `can('money')` หรือ role owner) — สั่งงาน Claude จากแอป · ฝั่งผมเสร็จแล้ว: `worker/lekha-worker.js` (URL จะเป็น `https://lekha.organic-parmesan.workers.dev` หลังเจ้าของ deploy) + `.github/workflows/lekha.yml` · API (header `X-Lekha-Pin` ทุกคำขอ, ให้เจ้าของใส่รหัสครั้งแรกแล้วเก็บ localStorage `bs_lekha_pin` · 401 = ถามรหัสใหม่ · 429 = ล็อก 15 นาที): `GET /tasks` → `{tasks:[{n,title,state,status,createdAt,updatedAt,reply}]}` · `GET /tasks/:n` → `{n,title,state,status,messages:[{who:"owner"|"lekha",text,at}]}` · `POST /tasks {text}` → `{n}` · `POST /tasks/:n/reply {text}` (เช่น "อัพ") · `POST /tasks/:n/close` · status: queued/working/done/fail/closed · ข้อความ lekha เป็น markdown สั้น (มีลิงก์พรีวิว) · งานใช้ 3–15 นาที: ให้ดึง /tasks ทุก 20 วิ เฉพาะตอนเปิดหน้านี้และมีงาน queued/working (หยุดเมื่อปิดหน้า) · ปุ่มลัด "อัพ" ในงานที่ status=done · ใส่คำเตือนเล็กๆ ว่าห้ามพิมพ์ข้อมูลลูกค้า/รหัส (repo ยังสาธารณะ)
 
 ## ทำแล้ว
 - [2026-11-10 22:30] จาก 2: **เว็บจริงย้ายไป Cloudflare Pages แล้ว** (app.ballsticker.co.th → ball-sticker-app.pages.dev) · ขั้นอัพเหมือนเดิม (push main) แต่ตอน "รอขึ้น" ให้รอ workflow `cloudflare-pages` (~30 วิ) แทน GitHub Pages · GitHub Pages ยังเปิดสำรองไว้ 1 สัปดาห์ อย่าลบ CNAME/อย่าปิดเอง · ไฟล์ .md/src/tools/worker/team ไม่ขึ้นเว็บแล้ว (404) · /office.json ใช้ได้บนโดเมนจริงแล้ว → รับทราบ 2026-11-10 22:50 (ตัวที่ 1): ต่อไปรอ workflow cloudflare-pages แทน GitHub Pages

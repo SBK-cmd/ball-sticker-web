@@ -55,3 +55,10 @@ Worker รับข้อความลูกค้าผ่าน webhook เ�
 3. ทดสอบ: เปิด https://fb-usage.organic-parmesan.workers.dev/usage?days=3 ต้องได้ JSON มี `days`
 
 ทดสอบแล้วแค่แบบจำลอง (คีย์ RSA จริง + จำลอง API ของ Google) ยังไม่ได้ทดสอบกับ Google จริง
+
+## เลขา (lekha-worker.js) — สั่งงาน Claude จากแอป
+1. GitHub repo → Settings → Secrets and variables → Actions → เพิ่ม `ANTHROPIC_API_KEY` (ใช้กับ `.github/workflows/lekha.yml`)
+2. GitHub → Settings (บัญชี) → Developer settings → Fine-grained tokens → Generate: เลือกเฉพาะ repo `ball-sticker-web` · Repository permissions → **Issues: Read and write** อย่างเดียว
+3. Cloudflare → Workers & Pages → Create → Worker ชื่อ `lekha` → วางโค้ด `lekha-worker.js` → Deploy
+4. Worker `lekha` → Settings → Variables and Secrets → เพิ่ม Secret `GH_TOKEN` (token ข้อ 2) และ `LEKHA_PIN` (รหัส ≥ 6 ตัว)
+- ทำงานเฉพาะ issue ที่ป้าย `lekha` และคนส่งเป็นเจ้าของ repo · ใส่รหัสผิด 5 ครั้งล็อก 15 นาที · ช่วงที่ repo ยังเป็นสาธารณะ ข้อความใน issue คนนอกเห็นได้ ห้ามพิมพ์ข้อมูลลูกค้า/รหัส

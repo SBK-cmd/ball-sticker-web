@@ -1,0 +1,93 @@
+# เลขา — เจ้าของร้านสั่งงานจากแอป → Worker lekha สร้าง issue ป้าย "lekha" → Claude ทำงานใน repo นี้ แล้วตอบกลับใน issue
+# ความปลอดภัย: ทำงานเฉพาะ issue/คอมเมนต์ที่ "เจ้าของ repo" เป็นคนส่ง (Worker ใช้ token ของเจ้าของ) · คนนอกเปิด issue เองไม่มีผล
+# ค่าลับ: ANTHROPIC_API_KEY (GitHub → Settings → Secrets and variables → Actions)
+name: lekha
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+concurrency:
+  group: lekha            # ทีละงาน ไม่แย่งกัน push
+  cancel-in-progress: false
+permissions:
+  contents: write
+  issues: write
+  actions: write          # สั่ง workflow cloudflare-pages หลัง push (push ด้วย GITHUB_TOKEN ไม่ปลุก workflow อื่นเอง)
+  id-token: write
+jobs:
+  work:
+    if: >-
+      github.event.sender.login == github.repository_owner &&
+      contains(github.event.issue.labels.*.name, 'lekha') &&
+      github.event.issue.pull_request == null &&
+      github.event.issue.state == 'open'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      N: ${{ github.event.issue.number }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 50 }
+
+      - name: เตรียมงาน (อ่านทั้งเธรด)
+        run: |
+          git config user.name "เลขา (Claude)"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p /tmp/lekha
+          git rev-parse HEAD > /tmp/lekha/start_sha
+          gh issue view "$N" --json title,body,comments,author > /tmp/lekha/issue.json
+          python3 - <<'PY'
+          import json
+          d = json.load(open('/tmp/lekha/issue.json', encoding='utf-8'))
+          owner = d['author']['login']
+          out = ['# งาน #%s: %s' % (__import__('os').environ['N'], d['title']), '', '## เจ้าของร้าน (คำสั่งแรก)', d.get('body') or '']
+          for c in d.get('comments', []):
+              who = 'เจ้าของร้าน' if c['author']['login'] == owner else 'เลขา'
+              body = c.get('body') or ''
+              if '<!-- lekha:working -->' in body: continue
+              out += ['', '## ' + who + ' · ' + c.get('createdAt', ''), body]
+          open('/tmp/lekha/thread.md', 'w', encoding='utf-8').write('\n'.join(out))
+          PY
+          gh issue comment "$N" --body "<!-- lekha:working -->
+          ⏳ เลขารับงานแล้ว กำลังทำ… (ดูความคืบหน้า: $RUN_URL)"
+
+      - name: Claude ทำงาน
+        id: claude
+        continue-on-error: true
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          claude_args: --max-turns 80 --allowedTools "Bash,Read,Write,Edit,MultiEdit,Glob,Grep"
+          prompt: |
+            คุณคือ "เลขา" ผู้ช่วยของร้านบอลสติ๊กเกอร์ เจ้าของร้านสั่งงานผ่านแอปของร้าน
+            อ่านไฟล์ /tmp/lekha/thread.md (คำสั่งและการคุยทั้งหมดของงานนี้) แล้วทำตามข้อความล่าสุดของเจ้าของร้าน
+            อ่าน CLAUDE.md และ HANDOFF.md ใน repo ก่อนเริ่ม และทำตามกติกาในนั้นทุกข้อ โดยเฉพาะ:
+            - แก้งานใน preview ก่อนเสมอ (แอป: แก้ src/app.html แล้ว `python3 tools/build.py preview && python3 tools/mk_p11.py`)
+            - ขึ้นของจริงเฉพาะเมื่อข้อความล่าสุดของเจ้าของร้านคือ "อัพ" เท่านั้น (ทำตามข้อ 7 ใน CLAUDE.md)
+            - ห้ามแตะข้อมูลลับ ห้ามใส่รหัสผ่าน/คีย์/ข้อมูลลูกค้าในโค้ดหรือคอมมิต (repo นี้เป็นสาธารณะ)
+            - ห้ามลบไฟล์หรือข้อมูลจำนวนมาก ห้ามแก้ .github/workflows และ worker/ ถ้าคำสั่งต้องทำแบบนั้น ให้ตอบว่าต้องสั่งผ่านแชต Claude หลักแทน
+            - งานที่ต้องใช้คอมของร้าน (แผง SignTools, Illustrator, เครื่องตัด) ทำไม่ได้ที่นี่ ให้บอกตรงๆ
+            การส่งงาน: ถ้ามีการแก้ไฟล์ ให้ commit ที่ main (ท้ายข้อความ commit ใส่ "Lekha-Issue: #${{ github.event.issue.number }}")
+            แล้ว `git pull --rebase origin main && git push origin HEAD:main` (มี AI ตัวอื่น push ด้วย ถ้าชนให้ rebase แล้วลองใหม่ ห้าม force push)
+            อัปเดต HANDOFF.md สั้นๆ ว่าทำอะไรไป (ถือเป็นส่วนหนึ่งของ commit)
+            สุดท้าย เขียนคำตอบถึงเจ้าของร้านลงไฟล์ /tmp/lekha/reply.md เป็นภาษาไทย สั้น อ่านบนมือถือง่าย:
+            ทำอะไรไป · ลิงก์ให้ลองดู (พรีวิวแอป https://app.ballsticker.co.th/preview11.html ขึ้นภายใน ~1 นาทีหลัง push) ·
+            สิ่งที่ยังไม่ได้ทดสอบ · ถ้าพอใจให้ตอบ "อัพ" · ถ้าคำสั่งไม่ชัด ให้ถามกลับข้อเดียวแทนการเดา
+
+      - name: ส่งคำตอบกลับ + อัปโหลดเว็บ
+        if: always()
+        run: |
+          if [ -s /tmp/lekha/reply.md ]; then
+            { echo "<!-- lekha:done -->"; cat /tmp/lekha/reply.md; } > /tmp/lekha/post.md
+          else
+            printf '%s\n' "<!-- lekha:fail -->" "❌ เลขาทำงานนี้ไม่สำเร็จ ลองสั่งใหม่ หรือแจ้งในแชต Claude หลัก" "" "บันทึกการทำงาน: $RUN_URL" > /tmp/lekha/post.md
+          fi
+          gh issue comment "$N" --body-file /tmp/lekha/post.md
+          git fetch -q origin main
+          if [ "$(git rev-parse origin/main)" != "$(cat /tmp/lekha/start_sha)" ]; then
+            gh workflow run cloudflare-pages.yml --ref main || echo "สั่งอัปโหลดเว็บไม่ได้"
+          fi
