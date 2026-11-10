@@ -118,7 +118,7 @@ function bahtText(value) {
   // สั่งตัดจากมือถือ: เปิดเฉพาะบัญชี ball กับ top (ไม่ขึ้นกับตารางสิทธิ์รายหน้า)
   const CUT_USERS = ['ball', 'top'];
   const canCutRemote = !!currentUser && CUT_USERS.indexOf(String(currentUser.username || '').trim().toLowerCase()) >= 0;
-  const can = k => k === 'money' ? isSuper : k === 'cutq' ? canCutRemote : (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'pagechat' && !PAGECHAT_ENABLED) ? false : (k === 'floor' ? (isSuper || !!myPerms.dash) : k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
+  const can = k => k === 'lekha' ? (isSuper || isOwnerFixed(meRec)) : k === 'money' ? isSuper : k === 'cutq' ? canCutRemote : (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'pagechat' && !PAGECHAT_ENABLED) ? false : (k === 'floor' ? (isSuper || !!myPerms.dash) : k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
   const canBank = can('bank');
   // พนักงาน (ไม่ใช่เจ้าของ) ดูประวัติใบคอนเฟิร์มงานได้อย่างเดียว คีย์/แก้/ลบไม่ได้
   const canKey = isSuper || isOwnerFixed(meRec) || !!(meRec && meRec.role === 'owner');
@@ -2439,7 +2439,8 @@ function bahtText(value) {
   }
   function reportPurchRows(sel) {
     // รายงานภาษีซื้อ (ยื่นสรรพากร) นับเฉพาะรายการที่มีใบกำกับภาษีซื้อ/มี VAT จริง
-    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel).filter(p => num(p.vat) > 0)
+    // นับเฉพาะบัญชีที่ยื่นภาษี (กิติพงษ์ / รายการเก่าที่ไม่ระบุ) — จ่ายจากบัญชีวันทิมไม่เข้ารายงาน
+    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel).filter(p => num(p.vat) > 0).filter(p => NON_TAX_ACCOUNTS.indexOf(p.account) < 0)
       .slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
     return list.map(p => {
       const vat = num(p.vat), amt = num(p.amount);
@@ -2450,7 +2451,7 @@ function bahtText(value) {
   }
   function reportPurchNonVatRows(sel) {
     // ค่าใช้จ่าย/รายการซื้อที่ไม่มี VAT (ไม่มีใบกำกับภาษีซื้อ) แยกไว้เพื่อดูต้นทุนเท่านั้น ไม่ใช้ยื่นภาษี
-    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel).filter(p => !(num(p.vat) > 0))
+    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel).filter(p => !(num(p.vat) > 0)).filter(p => NON_TAX_ACCOUNTS.indexOf(p.account) < 0)
       .slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
     return list.map(p => ({date: p.date, no: p.invoiceNo, name: p.vendor, amount: num(p.amount), note: p.note}));
   }
@@ -3024,13 +3025,14 @@ function bahtText(value) {
   function collectPurchase() {
     return {date: $('purchDate').value, vendor: $('purchVendor').value, invoiceNo: $('purchInvoiceNo').value,
       vendorTax: $('purchVendorTax').value, amount: $('purchAmount').value,
-      vat: $('purchVat').value, note: $('purchNote').value, photo: purchasePhoto};
+      vat: $('purchVat').value, note: $('purchNote').value, photo: purchasePhoto, account: $('purchAccount').value || 'กิติพงษ์'};
   }
   function applyPurchase(p) {
     $('purchDate').value = p.date || todayISO(); $('purchVendor').value = p.vendor || '';
     $('purchInvoiceNo').value = p.invoiceNo || ''; $('purchVendorTax').value = p.vendorTax || '';
     $('purchAmount').value = p.amount || ''; $('purchVat').value = p.vat || '';
     $('purchNote').value = p.note || ''; purchasePhoto = p.photo || null;
+    $('purchAccount').value = ACCOUNTS.indexOf(p.account) >= 0 ? p.account : 'กิติพงษ์';   // รายการเก่าไม่มีช่องนี้ = กิติพงษ์
     purchaseOcrSource = null;
     renderPurchasePhoto();
   }
@@ -3053,7 +3055,7 @@ function bahtText(value) {
     if (!shown.length) { $('purchHistory').innerHTML = notice + '<p class="empty">ไม่พบรายการของร้านค้าชื่อ “' + esc(q) + '”</p>'; renderDash(); renderReport(); return; }
     $('purchHistory').innerHTML = notice + '<ul>' + shown.map(p =>
       '<li data-id="' + esc(p.id) + '">' + (p.photo ? '<img class="thumb" src="' + p.photo + '" alt="">' : '') +
-      '<div class="meta"><b>' + esc(p.vendor || 'ไม่ระบุร้านค้า') + '</b><small>' + esc(thDate(p.date)) + (p.createdBy ? ' · โดย ' + esc(p.createdBy) : '') + '</small></div>' +
+      '<div class="meta"><b>' + esc(p.vendor || 'ไม่ระบุร้านค้า') + '</b><small>' + esc(thDate(p.date)) + (p.createdBy ? ' · โดย ' + esc(p.createdBy) : '') + (NON_TAX_ACCOUNTS.indexOf(p.account) >= 0 ? ' · <span class="status-pill taxoff">' + esc(p.account) + ' · ไม่ยื่นภาษี</span>' : '') + '</small></div>' +
       (num(p.vat) > 0 ? '<span class="amt">VAT ' + money(num(p.vat)) + ' บาท</span>' : '<span class="amt" style="color:#4a5a72">ไม่มี VAT · ' + money(num(p.amount)) + ' บาท</span>') +
       '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
       '<button class="btn small del" data-act="del" type="button">ลบ</button></li>').join('') + '</ul>';
@@ -7192,10 +7194,113 @@ function bahtText(value) {
     if (!document.body.classList.contains('jm-open')) return;
     if (e.target === document.body || e.target.closest('#jmClose') || e.target.closest('#jmClose2')) closeJobModal();
   });
+  // ================= เลขา (สั่งงาน Claude จากแอป · เฉพาะเจ้าของ) =================
+  // Worker ของตัวที่ 2: worker/lekha-worker.js · ทุกคำขอส่ง header X-Lekha-Pin · ดึงซ้ำทุก 20 วิ เฉพาะตอนเปิดหน้านี้และมีงานค้าง
+  const LEKHA_URL = 'https://lekha.organic-parmesan.workers.dev';
+  const LK_ST = {queued: 'รอเริ่ม', working: 'กำลังทำ', done: 'ตอบแล้ว รอคุณ', fail: 'ไม่สำเร็จ', closed: 'ปิดแล้ว'};
+  let lkTasks = [], lkCur = null, lkTimer = null, lkOpen = false;
+  const lkPin = () => { try { return localStorage.getItem('bs_lekha_pin') || ''; } catch (e) { return ''; } };
+  const lkSetPin = v => { try { if (v) localStorage.setItem('bs_lekha_pin', v); else localStorage.removeItem('bs_lekha_pin'); } catch (e) {} };
+  function lkErr(id, msg) { const el = $(id); if (!el) return; el.textContent = msg || ''; el.hidden = !msg; }
+  async function lkApi(path, opt) {
+    const r = await fetch(LEKHA_URL + path, Object.assign({cache: 'no-store'}, opt || {}, {headers: Object.assign({'X-Lekha-Pin': lkPin()}, (opt && opt.body) ? {'Content-Type': 'application/json'} : {})}));
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 401) { lkSetPin(''); lkShowPin('รหัสเลขาไม่ถูกต้อง ใส่ใหม่'); throw new Error('pin'); }
+    if (r.status === 429) { lkShowPin(j.error || 'ใส่รหัสผิดหลายครั้ง รอ 15 นาที'); throw new Error('locked'); }
+    if (!r.ok) throw new Error(j.error || ('เลขาตอบผิดพลาด (' + r.status + ')'));
+    return j;
+  }
+  function lkShowPin(msg) { $('lkPinBox').hidden = false; $('lkMain').hidden = true; lkErr('lkPinErr', msg || ''); lkStopPoll(); setTimeout(() => $('lkPin').focus(), 30); }
+  function lkShowMain() { $('lkPinBox').hidden = true; $('lkMain').hidden = false; }
+  function lkAgo(t) { const m = Math.round((Date.now() - Date.parse(t)) / 60000); if (!(m >= 0)) return ''; if (m < 1) return 'เมื่อกี้'; if (m < 60) return m + ' นาทีที่แล้ว'; const h = Math.round(m / 60); return h < 48 ? h + ' ชม.ที่แล้ว' : thDate(String(t).slice(0, 10)); }
+  // markdown แบบปลอดภัย: escape ก่อน แล้วค่อยแปลง ลิงก์ / ตัวหนา / โค้ด / ขึ้นบรรทัด
+  function lkMd(t) {
+    let h = esc(String(t || ''));
+    h = h.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+    h = h.replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>');
+    h = h.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    h = h.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+    return h.replace(/\n/g, '<br>');
+  }
+  const lkStChip = st => '<span class="lk-st ' + esc(st) + '">' + esc(LK_ST[st] || st || '') + '</span>';
+  const lkBusy = () => lkTasks.some(t => t.status === 'queued' || t.status === 'working') || (lkCur && (lkCur.status === 'queued' || lkCur.status === 'working'));
+  function lkStopPoll() { clearTimeout(lkTimer); lkTimer = null; }
+  function lkSchedule() { lkStopPoll(); if (lkOpen && lkBusy()) lkTimer = setTimeout(() => { if (document.hidden) return lkSchedule(); lkLoad(true); }, 20000); }
+  function lkRenderList() {
+    const open = lkTasks.filter(t => t.status !== 'closed'), closed = lkTasks.filter(t => t.status === 'closed').slice(0, 5);
+    const row = t => '<li><button type="button" data-n="' + t.n + '"><span class="t">#' + t.n + ' ' + esc(t.title || '') + '</span>' + lkStChip(t.status) +
+      (t.reply ? '<span class="r">' + esc(String(t.reply).replace(/[*`#\[\]]/g, '')) + '</span>' : '') + '<span class="w">อัปเดต ' + esc(lkAgo(t.updatedAt)) + '</span></button></li>';
+    $('lkList').innerHTML = (open.map(row).join('') || '<li class="hint">ยังไม่มีงานค้าง พิมพ์งานด้านบนแล้วกดส่ง</li>') +
+      (closed.length ? '<li class="hint" style="margin-top:6px">ปิดแล้วล่าสุด</li>' + closed.map(row).join('') : '');
+  }
+  function lkRenderDetail() {
+    const t = lkCur; if (!t) return;
+    $('lkDetTitle').textContent = '#' + t.n + ' ' + (t.title || '');
+    $('lkDetSt').outerHTML = '<span class="lk-st ' + esc(t.status) + '" id="lkDetSt">' + esc(LK_ST[t.status] || t.status || '') + '</span>';
+    $('lkThread').innerHTML = (t.messages || []).map(m => '<div class="lk-msg ' + (m.who === 'owner' ? 'owner' : 'lekha') + '">' + lkMd(m.text) +
+      '<small>' + (m.who === 'owner' ? 'คุณ' : 'เลขา') + ' · ' + esc(lkAgo(m.at)) + '</small></div>').join('') || '<p class="hint">ยังไม่มีข้อความ</p>';
+    $('lkQuick').hidden = t.status !== 'done';
+    const closed = t.status === 'closed';
+    ['lkReply', 'lkReplySend', 'lkClose', 'lkUp'].forEach(id => { $(id).disabled = closed; });
+    const th = $('lkThread'); th.scrollTop = th.scrollHeight;
+  }
+  async function lkLoad(quiet) {
+    if (!lkPin()) return lkShowPin('');
+    try {
+      const j = await lkApi('/tasks'); lkTasks = (j.tasks || []).sort((a, b) => b.n - a.n);
+      lkShowMain(); lkErr('lkErr', ''); lkRenderList();
+      if (lkCur) { const d = await lkApi('/tasks/' + lkCur.n); lkCur = d; lkRenderDetail(); }
+    } catch (e) { if (e.message !== 'pin' && e.message !== 'locked') lkErr(lkCur ? 'lkDetErr' : 'lkErr', quiet ? '' : e.message); }
+    lkSchedule();
+  }
+  async function lkOpenTask(n) {
+    lkErr('lkDetErr', ''); $('lkListView').hidden = true; $('lkDetail').hidden = false;
+    lkCur = lkTasks.find(t => t.n === n) || {n, title: '', status: '', messages: []}; lkRenderDetail();
+    try { lkCur = await lkApi('/tasks/' + n); lkRenderDetail(); } catch (e) { if (e.message !== 'pin' && e.message !== 'locked') lkErr('lkDetErr', e.message); }
+    lkSchedule();
+  }
+  function lkBackToList() { lkCur = null; $('lkDetail').hidden = true; $('lkListView').hidden = false; lkRenderList(); lkSchedule(); }
+  async function lkPost(path, body, btn, errId) {
+    if (btn) btn.disabled = true;
+    try { return await lkApi(path, {method: 'POST', body: JSON.stringify(body || {})}); }
+    catch (e) { if (e.message !== 'pin' && e.message !== 'locked') lkErr(errId, e.message); return null; }
+    finally { if (btn) btn.disabled = false; }
+  }
+  function lekhaOpen() { lkOpen = true; if (!lkPin()) lkShowPin(''); else { lkShowMain(); lkLoad(); } }
+  function lekhaStop() { lkOpen = false; lkStopPoll(); }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && lkOpen) lkLoad(true); });
+  if ($('panel-lekha')) {
+    $('lkPinSave').addEventListener('click', () => { const v = $('lkPin').value.trim(); if (!v) return lkErr('lkPinErr', 'ใส่รหัสก่อน'); lkSetPin(v); $('lkPin').value = ''; lkShowMain(); lkLoad(); });
+    $('lkPin').addEventListener('keydown', e => { if (e.key === 'Enter') $('lkPinSave').click(); });
+    $('lkRefresh').addEventListener('click', () => lkLoad());
+    $('lkList').addEventListener('click', e => { const b = e.target.closest('button[data-n]'); if (b) lkOpenTask(+b.dataset.n); });
+    $('lkBack').addEventListener('click', lkBackToList);
+    $('lkSend').addEventListener('click', async () => {
+      const text = $('lkNew').value.trim(); if (!text) { lkErr('lkErr', 'พิมพ์งานก่อน'); $('lkNew').focus(); return; }
+      const j = await lkPost('/tasks', {text}, $('lkSend'), 'lkErr');
+      if (j && j.n) { $('lkNew').value = ''; toast('ส่งงาน #' + j.n + ' ให้เลขาแล้ว ใช้เวลาประมาณ 3–15 นาที'); await lkLoad(); lkOpenTask(j.n); }
+    });
+    $('lkReplySend').addEventListener('click', async () => {
+      const text = $('lkReply').value.trim(); if (!text || !lkCur) return;
+      const j = await lkPost('/tasks/' + lkCur.n + '/reply', {text}, $('lkReplySend'), 'lkDetErr');
+      if (j) { $('lkReply').value = ''; toast('ส่งข้อความแล้ว'); lkLoad(); }
+    });
+    $('lkUp').addEventListener('click', async () => {
+      if (!lkCur) return;
+      const j = await lkPost('/tasks/' + lkCur.n + '/reply', {text: 'อัพ'}, $('lkUp'), 'lkDetErr');
+      if (j) { toast('สั่ง “อัพ” แล้ว เลขากำลังขึ้นของจริง'); lkLoad(); }
+    });
+    $('lkClose').addEventListener('click', async () => {
+      if (!lkCur) return;
+      const j = await lkPost('/tasks/' + lkCur.n + '/close', {}, $('lkClose'), 'lkDetErr');
+      if (j) { toast('ปิดงาน #' + lkCur.n + ' แล้ว'); lkBackToList(); lkLoad(); }
+    });
+  }
+
   function showTab(name) {
     closeJobModal();
     if (!can(name)) name = firstAllowedTab(); // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้ หรือโค้ดส่วนอื่นที่สั่งเปิดหน้า
-    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost', 'pagechat', 'floor', 'cutq', 'money'].forEach(n => {
+    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost', 'pagechat', 'floor', 'cutq', 'money', 'lekha'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
@@ -7222,6 +7327,7 @@ function bahtText(value) {
     if (name === 'pagechat') renderPageChat(); else pcStop();
     if (name === 'cutq') renderCutq();
     if (name === 'money') renderMoney();
+    if (name === 'lekha') lekhaOpen(); else lekhaStop();
     const activeTab = isTax ? $('taxTrigger') : $('tab-' + name);
     if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
   }
@@ -8437,7 +8543,7 @@ function bahtText(value) {
   function applyRoleUI() {
     setTimeout(syncNavSections, 0);
     if (can('money')) { ['tab-money', 'sheetMoney'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }
-    if (isSuper || isOwnerFixed(meRec)) { ['sheetOffice', 'tab-office'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }   // ออฟฟิศ AI: เปิดแชต Claude ได้ เฉพาะเจ้าของ
+    if (isSuper || isOwnerFixed(meRec)) { ['sheetOffice', 'tab-office', 'tab-lekha', 'sheetLekha'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }   // ออฟฟิศ AI: เปิดแชต Claude ได้ เฉพาะเจ้าของ
     if (isSuper) return;
     // ซ่อนหน้าที่ไม่ได้รับสิทธิ์ ทั้งแถบเมนูบน เมนูภาษี เมนูล่างบนมือถือ และแผ่น "เพิ่มเติม"
     PAGE_KEYS.concat(['design', 'floor']).forEach(n => {
