@@ -2439,7 +2439,8 @@ function bahtText(value) {
   }
   function reportPurchRows(sel) {
     // รายงานภาษีซื้อ (ยื่นสรรพากร) นับเฉพาะรายการที่มีใบกำกับภาษีซื้อ/มี VAT จริง
-    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel).filter(p => num(p.vat) > 0)
+    // นับเฉพาะบัญชีที่ยื่นภาษี (กิติพงษ์ / รายการเก่าที่ไม่ระบุ) — จ่ายจากบัญชีวันทิมไม่เข้ารายงาน
+    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel).filter(p => num(p.vat) > 0).filter(p => NON_TAX_ACCOUNTS.indexOf(p.account) < 0)
       .slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
     return list.map(p => {
       const vat = num(p.vat), amt = num(p.amount);
@@ -2450,7 +2451,7 @@ function bahtText(value) {
   }
   function reportPurchNonVatRows(sel) {
     // ค่าใช้จ่าย/รายการซื้อที่ไม่มี VAT (ไม่มีใบกำกับภาษีซื้อ) แยกไว้เพื่อดูต้นทุนเท่านั้น ไม่ใช้ยื่นภาษี
-    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel).filter(p => !(num(p.vat) > 0))
+    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel).filter(p => !(num(p.vat) > 0)).filter(p => NON_TAX_ACCOUNTS.indexOf(p.account) < 0)
       .slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
     return list.map(p => ({date: p.date, no: p.invoiceNo, name: p.vendor, amount: num(p.amount), note: p.note}));
   }
@@ -3024,13 +3025,14 @@ function bahtText(value) {
   function collectPurchase() {
     return {date: $('purchDate').value, vendor: $('purchVendor').value, invoiceNo: $('purchInvoiceNo').value,
       vendorTax: $('purchVendorTax').value, amount: $('purchAmount').value,
-      vat: $('purchVat').value, note: $('purchNote').value, photo: purchasePhoto};
+      vat: $('purchVat').value, note: $('purchNote').value, photo: purchasePhoto, account: $('purchAccount').value || 'กิติพงษ์'};
   }
   function applyPurchase(p) {
     $('purchDate').value = p.date || todayISO(); $('purchVendor').value = p.vendor || '';
     $('purchInvoiceNo').value = p.invoiceNo || ''; $('purchVendorTax').value = p.vendorTax || '';
     $('purchAmount').value = p.amount || ''; $('purchVat').value = p.vat || '';
     $('purchNote').value = p.note || ''; purchasePhoto = p.photo || null;
+    $('purchAccount').value = ACCOUNTS.indexOf(p.account) >= 0 ? p.account : 'กิติพงษ์';   // รายการเก่าไม่มีช่องนี้ = กิติพงษ์
     purchaseOcrSource = null;
     renderPurchasePhoto();
   }
@@ -3053,7 +3055,7 @@ function bahtText(value) {
     if (!shown.length) { $('purchHistory').innerHTML = notice + '<p class="empty">ไม่พบรายการของร้านค้าชื่อ “' + esc(q) + '”</p>'; renderDash(); renderReport(); return; }
     $('purchHistory').innerHTML = notice + '<ul>' + shown.map(p =>
       '<li data-id="' + esc(p.id) + '">' + (p.photo ? '<img class="thumb" src="' + p.photo + '" alt="">' : '') +
-      '<div class="meta"><b>' + esc(p.vendor || 'ไม่ระบุร้านค้า') + '</b><small>' + esc(thDate(p.date)) + (p.createdBy ? ' · โดย ' + esc(p.createdBy) : '') + '</small></div>' +
+      '<div class="meta"><b>' + esc(p.vendor || 'ไม่ระบุร้านค้า') + '</b><small>' + esc(thDate(p.date)) + (p.createdBy ? ' · โดย ' + esc(p.createdBy) : '') + (NON_TAX_ACCOUNTS.indexOf(p.account) >= 0 ? ' · <span class="status-pill taxoff">' + esc(p.account) + ' · ไม่ยื่นภาษี</span>' : '') + '</small></div>' +
       (num(p.vat) > 0 ? '<span class="amt">VAT ' + money(num(p.vat)) + ' บาท</span>' : '<span class="amt" style="color:#4a5a72">ไม่มี VAT · ' + money(num(p.amount)) + ' บาท</span>') +
       '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
       '<button class="btn small del" data-act="del" type="button">ลบ</button></li>').join('') + '</ul>';
