@@ -731,9 +731,9 @@ button.status-pill:active{filter:brightness(0.9)}
 .jc-fire{position:absolute;inset:0;border-radius:18px;pointer-events:none;z-index:2}
 .jc.prio1 .jc-fire{box-shadow:inset 0 0 0 2px #F5B301}
 .jc.prio2 .jc-fire{box-shadow:inset 0 0 0 4px #FF1A1A,inset 0 0 26px 4px rgba(255,26,26,.38)}
-#jobHistory ul>li.jc.prio1{filter:drop-shadow(0 0 5px rgba(245,179,1,.55))}
-#jobHistory ul>li.jc.prio2{filter:drop-shadow(0 0 12px rgba(255,20,20,.9));animation:redGlow 1.1s ease-in-out infinite alternate}
-@keyframes redGlow{0%{filter:drop-shadow(0 0 7px rgba(255,20,20,.75)) drop-shadow(0 0 2px rgba(255,20,20,.9))}100%{filter:drop-shadow(0 0 18px rgba(255,20,20,1)) drop-shadow(0 0 6px rgba(255,60,60,1))}}
+#jobHistory ul>li.jc.prio1{box-shadow:0 0 7px 1px rgba(245,179,1,.6)}
+#jobHistory ul>li.jc.prio2{box-shadow:0 0 14px 3px rgba(255,20,20,.85);animation:redGlow 1.1s ease-in-out infinite alternate}
+@keyframes redGlow{0%{box-shadow:0 0 8px 1px rgba(255,20,20,.7)}100%{box-shadow:0 0 22px 5px rgba(255,20,20,1)}}
 @media (prefers-reduced-motion:reduce){#jobHistory ul>li.jc.prio2{animation:none}}
 .job-status-select{font-size:12.5px;font-weight:700;padding:4px 8px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--field);cursor:pointer}
 .track-status-select{font-size:12.5px;font-weight:700;padding:4px 8px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--field);cursor:pointer}
@@ -3237,7 +3237,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.33</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.34</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
