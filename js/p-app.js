@@ -7297,6 +7297,7 @@ function bahtText(value) {
     document.body.appendChild(ov);
   });
   $('wkBtn').addEventListener('click', openWalkInPay);
+  $('sheetOffice').addEventListener('click', () => { const sh = $('taxSheet'), bd = $('taxSheetBackdrop'); if (sh) sh.hidden = true; if (bd) bd.hidden = true; window.open('pixel-office.html', '_blank'); });
   $('wkBtn2').addEventListener('click', () => { const sh = $('taxSheet'), bd = $('taxSheetBackdrop'); if (sh) sh.hidden = true; if (bd) bd.hidden = true; openWalkInPay(); });
   $('jobSlipPending').addEventListener('change', () => { try { renderJob(); } catch (e) {} });
   ['jobNo', 'jobDate', 'jobDue', 'jobAccount', 'jobPage', 'jobSlipAmount', 'jName', 'jPhone', 'jAddr', 'jobNote'].forEach(id => $(id).addEventListener((id === 'jobAccount' || id === 'jobPage') ? 'change' : 'input', renderJob));
@@ -8428,6 +8429,7 @@ function bahtText(value) {
 
   function applyRoleUI() {
     if (can('money')) { ['tab-money', 'sheetMoney'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }
+    if (isSuper || isOwnerFixed(meRec)) { const e = $('sheetOffice'); if (e) e.hidden = false; }   // ออฟฟิศ AI: เปิดแชต Claude ได้ เฉพาะเจ้าของ
     if (isSuper) return;
     // ซ่อนหน้าที่ไม่ได้รับสิทธิ์ ทั้งแถบเมนูบน เมนูภาษี เมนูล่างบนมือถือ และแผ่น "เพิ่มเติม"
     PAGE_KEYS.concat(['design', 'floor']).forEach(n => {
