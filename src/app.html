@@ -1874,6 +1874,7 @@ html{overflow-x:clip}
 #moneyBody .mn-bcol span{font-size:12px;color:#5a6788;font-weight:600}
 #moneyBody i.lg{display:inline-block;width:10px;height:10px;border-radius:3px;margin:0 3px 0 8px;vertical-align:-1px}
 #moneyBody .mn-note{margin:0;font-size:12.5px;line-height:1.55}
+#moneyBody .mn-usage-act{display:flex;flex-wrap:wrap;gap:8px}#moneyBody .mn-usage-act .btn{flex:1 1 160px;min-height:42px;text-align:center;justify-content:center}
 /* งานส่ง (JBS): ฟอร์ม = ซ่อนติ๊กราคาส่ง (เปิดอยู่เสมอ) · การ์ดในรายการ = ม่วงอ่อนทั้งใบ ตัวอักษรเข้ม อ่านชัด */
 .jf.jf-deliv #jobWhRow .whc-l{display:none}
 .jf.jf-deliv #jName[readonly]{background:#F1EBFF!important;border-color:#B9A0F2!important;color:#1E1442!important;font-weight:700}
@@ -5735,6 +5736,31 @@ function bahtText(value) {
     } catch (e) { console.error('screenStats', e); }
   }
   setTimeout(screenStatsTick, 15000);
+  // ---------- ยอดอ่าน Firestore ของทุกเครื่อง: แต่ละเครื่องส่งยอดของตัวเองไปรวมที่ screenStats/reads_YYYYMMDD ทุก 10 นาที (เขียนเฉพาะตอนยอดเปลี่ยน)
+  // หน้า "การเงิน" ของเจ้าของอ่านเอกสารนี้ 1 ครั้งตอนกดดู · ไม่รวมแผง Sign Tools และหน้าติดตามของลูกค้า
+  const usageDay = (d) => { d = d || new Date(); return d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()); };
+  let readsRepFailAt = 0;
+  function usageDevKey() {
+    let id = ''; try { id = localStorage.getItem('bs_dev_id') || ''; if (!id) { id = Math.random().toString(36).slice(2, 8); localStorage.setItem('bs_dev_id', id); } } catch (e) { id = 'x'; }
+    const u = String(currentUser ? (currentUser.username || currentUser.name || 'user') : 'guest').replace(/[^0-9A-Za-z_฀-๿]/g, '').slice(0, 20) || 'user';
+    return u + '_' + id;
+  }
+  function readsReportTick() {
+    try {
+      if (!cloudDb || !currentUser) return;
+      if (readsRepFailAt && Date.now() - readsRepFailAt < 30 * 60000) return;
+      const n = readsToday(), day = usageDay(), sig = day + ':' + n;
+      if (!n || localStorage.getItem('bs_reads_rep') === sig) return;
+      const dev = (isIOS ? 'iPhone' : /Android/.test(navigator.userAgent) ? 'Android' : 'คอม') + (isStandalone() ? ' (แอป)' : '');
+      (window.__bsAuthReady || Promise.resolve()).then(() => {
+        cloudDb.collection('screenStats').doc('reads_' + day).set({[usageDevKey()]: {n, dev, user: currentUser.username || currentUser.name || '', at: Date.now()}}, {merge: true})
+          .then(() => { try { localStorage.setItem('bs_reads_rep', sig); } catch (e) {} })
+          .catch(e => { readsRepFailAt = Date.now(); console.warn('reads report', e && e.message); });
+      });
+    } catch (e) {}
+  }
+  setTimeout(readsReportTick, 45000);
+  setInterval(readsReportTick, 10 * 60000);
   setInterval(screenStatsTick, 60000);
 
   // กล่องที่ส่งวันนี้ = พัสดุที่บันทึกวันนี้ + พัสดุของใบงานที่ตั้ง "จัดส่งแล้ว" วันนี้ (นับเลขพัสดุไม่ซ้ำ ไม่ต้องรอให้มีรายการในหน้าพัสดุ)
@@ -5876,8 +5902,58 @@ function bahtText(value) {
       '<div class="mn-card"><table class="mn-tbl"><tbody><tr><th>บิลหน้าร้าน / ใบกำกับ <small>ก่อน VAT · บัญชีกิติพงษ์</small></th><td class="pos">' + money(m.bill) + '</td></tr><tr><th>ใบราคาส่ง <small>งานส่ง · วันทิม</small></th><td class="pos">' + money(m.wh) + '</td></tr><tr><th>ต้นทุนตามใบซื้อ <small>ยอดรวมที่กรอกไว้</small></th><td class="neg">' + money(m.purch) + '</td></tr></tbody></table></div>' +
       '<h3 class="mn-h">6 เดือนล่าสุด <small><i class="lg bi"></i>รับ <i class="lg bo"></i>จ่าย</small></h3>' +
       '<div class="mn-card mn-chart">' + bars + '</div>' +
+      usageSectionHTML() +
       '<p class="hint mn-note">ตัวเลขทั้งหมดคำนวณจากข้อมูลในระบบเท่านั้น · เงินเข้า-ออกมาจาก SMS ที่โหลดไว้' + (d.oldest ? ' ตั้งแต่ ' + esc(thDate(localISO(new Date(d.oldest)))) : '') + (d.capped ? ' (ระบบโหลดล่าสุด 300 รายการต่อประเภท เดือนเก่ากว่านี้อาจไม่ครบ)' : '') + ' · การจับ "โอนระหว่างบัญชี" ใช้ยอดเท่ากันและเวลาห่างไม่เกิน 15 นาที อาจพลาดได้ · ต้นทุนนับเฉพาะใบซื้อที่บันทึกในเมนูภาษีซื้อ</p>';
   }
+  // ---------- การใช้ Firebase (ประมาณการ) ----------
+  // ขนาดข้อมูล = คำนวณจากสำเนาในเครื่อง (JSON) ของแต่ละคอลเลกชัน — Firestore จริงใหญ่กว่านี้เล็กน้อย (ดัชนี/ชื่อฟิลด์)
+  // ราคาโดยประมาณ: เก็บฟรี 1 GB แล้ว ~6 บาท/GB/เดือน · อ่านฟรี 50,000/วัน แล้ว ~1–2 บาท/100,000 ครั้ง · รูปงานอยู่ Cloudinary ไม่นับที่นี่
+  const USAGE_COLS = [['jobs', 'bs_jobs', 'ใบงาน'], ['bills', 'bs_bills', 'บิล/ใบกำกับ'], ['wholesale', 'bs_wholesale', 'ใบราคาส่ง'], ['tracking', 'bs_tracking', 'พัสดุ'],
+    ['quotes', 'bs_quotes', 'ใบเสนอราคา'], ['purchases', 'bs_purchases', 'ใบซื้อ'], ['designs', 'bs_designs', 'งานออกแบบ'], ['customers', 'bs_customers', 'ลูกค้า'],
+    ['notifs', 'bs_notifs', 'แจ้งเตือน'], ['bankIn', 'bs_bank_in', 'เงินเข้า (SMS)'], ['bankOut', 'bs_bank_out', 'เงินออก (SMS)']];
+  let usageReads = null, usageLoading = false;
+  function usageBytes(v) { try { const t = JSON.stringify(v || []); return window.TextEncoder ? new TextEncoder().encode(t).length : t.length * 2; } catch (e) { return 0; } }
+  const usageMB = b => (b / 1048576).toFixed(b < 10485760 ? 2 : 1) + ' MB';
+  function usageSectionHTML() {
+    const rows = USAGE_COLS.map(([c, k, th]) => { let v = []; try { v = store.get(k, []) || []; } catch (e) {} return {th, n: Array.isArray(v) ? v.length : Object.keys(v || {}).length, b: usageBytes(v)}; }).filter(r => r.n);
+    const total = rows.reduce((a, r) => a + r.b, 0), pct = Math.min(100, total / 1073741824 * 100);
+    rows.sort((a, b) => b.b - a.b);
+    const big = rows.slice(0, 6).map(r => '<tr><th>' + esc(r.th) + ' <small>' + r.n.toLocaleString() + ' รายการ</small></th><td>' + usageMB(r.b) + '</td></tr>').join('');
+    const mine = readsToday();
+    let readsTile = tile2('อ่านวันนี้ (เครื่องนี้)', mine.toLocaleString() + ' ครั้ง', '', 'กดปุ่มด้านล่างเพื่อรวมทุกเครื่อง');
+    let devRows = '';
+    if (usageReads) {
+      const tot = usageReads.total, over = Math.max(0, tot - 50000);
+      readsTile = tile2('อ่านวันนี้ (แอปทุกเครื่อง)', tot.toLocaleString() + ' ครั้ง', tot > 50000 ? 'out' : 'in',
+        tot > 50000 ? 'เกินโควตาฟรี ' + over.toLocaleString() + ' ครั้ง · ประมาณ ' + Math.max(1, Math.ceil(over / 100000 * 2)) + ' บาท' : 'ยังอยู่ในโควตาฟรี 50,000 ครั้ง/วัน');
+      devRows = usageReads.devs.length ? '<div class="mn-card"><table class="mn-tbl"><thead><tr><th>เครื่อง</th><th>อ่านวันนี้</th></tr></thead><tbody>' +
+        usageReads.devs.map(d => '<tr><th>' + esc(d.user || '-') + ' <small>' + esc(d.dev || '') + ' · ' + esc(d.at ? new Date(d.at).toTimeString().slice(0, 5) : '') + '</small></th><td>' + (+d.n || 0).toLocaleString() + '</td></tr>').join('') +
+        '</tbody></table></div>' : '<p class="hint mn-note">ยังไม่มีเครื่องไหนส่งยอดของวันนี้ (แต่ละเครื่องส่งทุก 10 นาทีตอนเปิดแอป)</p>';
+      if (usageReads.err) devRows = '<p class="hint mn-note">⚠ ดึงยอดรวมไม่ได้: ' + esc(usageReads.err) + '</p>';
+    }
+    return '<h3 class="mn-h">การใช้ Firebase <small>ประมาณการ</small></h3>' +
+      '<div class="mn-grid">' + tile2('ข้อมูลที่เก็บ', usageMB(total), pct > 80 ? 'out' : 'in', pct.toFixed(pct < 1 ? 2 : 1) + '% ของที่เก็บฟรี 1 GB' + (total > 1073741824 ? ' · เกิน ~' + Math.ceil((total / 1073741824 - 1) * 6) + ' บาท/เดือน' : '')) + readsTile + '</div>' +
+      '<div class="mn-card"><table class="mn-tbl"><thead><tr><th>ส่วนที่ใหญ่สุด</th><th>ขนาด</th></tr></thead><tbody>' + big + '</tbody></table></div>' +
+      devRows +
+      '<div class="mn-usage-act"><button type="button" class="btn ghost" id="usageLoad"' + (usageLoading ? ' disabled' : '') + '>' + (usageLoading ? 'กำลังดึง…' : '↻ รวมยอดอ่านทุกเครื่อง') + '</button>' +
+      '<a class="btn ghost" href="https://console.firebase.google.com/project/ball-sticker-d95c2/firestore/usage" target="_blank" rel="noopener">เปิดตัวเลขจริงใน Firebase ↗</a></div>' +
+      '<p class="hint mn-note">ขนาดข้อมูลคำนวณจากสำเนาในเครื่องนี้ (ของจริงใหญ่กว่าเล็กน้อย) · รูปงานเก็บที่ Cloudinary ไม่นับ · ยอดอ่านรวมเฉพาะแอปร้าน ไม่รวมแผง Sign Tools และหน้าติดตามของลูกค้า → ยอดจริงใน Firebase จะสูงกว่านี้ · ราคาเป็นค่าประมาณ</p>';
+  }
+  function tile2(lab, val, cls, sub) { return '<div class="mn-tile' + (cls ? ' ' + cls : '') + '"><span>' + lab + '</span><b>' + val + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>'; }
+  async function usageLoadReads() {
+    if (!cloudDb || usageLoading) return;
+    usageLoading = true; renderMoney();
+    try {
+      readsReportTick();
+      await (window.__bsAuthReady || Promise.resolve());
+      const snap = await cloudDb.collection('screenStats').doc('reads_' + usageDay()).get();
+      countReads('screenStats', snap);
+      const d = snap.exists ? snap.data() : {}, devs = Object.keys(d).map(k => d[k]).filter(x => x && typeof x === 'object').sort((a, b) => (+b.n || 0) - (+a.n || 0));
+      usageReads = {total: devs.reduce((a, x) => a + (+x.n || 0), 0), devs};
+    } catch (e) { usageReads = {total: readsToday(), devs: [], err: (e && e.message) || String(e)}; }
+    usageLoading = false; renderMoney();
+  }
+  document.addEventListener('click', e => { if (e.target && e.target.id === 'usageLoad') usageLoadReads(); });
   document.addEventListener('change', e => { if (e.target && e.target.id === 'moneyMonthSel') { moneyMonth = e.target.value; renderMoney(); } });
   document.addEventListener('click', e => { const c = e.target.closest && e.target.closest('#moneyBody [data-mm]'); if (c) { moneyMonth = c.dataset.mm; renderMoney(); } });
   function renderDash() {
