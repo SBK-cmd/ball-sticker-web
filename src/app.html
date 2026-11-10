@@ -3153,7 +3153,7 @@ body.jm-open .fab-newjob{display:none!important}
         <h2 class="cutq-h">✂ สั่งตัดจากมือถือ</h2>
         <p class="hint cutq-note">สแกน QR บนใบงานหรือเลือกงานด้านล่าง → กด “ส่งตัด” (ยืนยัน 2 ครั้ง) · เครื่องในร้านต้องเปิด Illustrator + แผง Sign Tools และเปิด “รับคำสั่งตัดจากมือถือ” ไว้ · ใส่วัสดุก่อนสั่งเสมอ</p>
         <button type="button" class="btn primary cutq-scan" id="cutqScan">📷 สแกน QR / บาร์โค้ดใบงาน</button>
-        <input class="txt" id="cutqSearch" type="search" placeholder="ค้นหาเลขใบงาน / ชื่อลูกค้า" autocomplete="off" aria-label="ค้นหาเลขใบงานหรือชื่อลูกค้า">
+        <input class="txt" id="cutqSearch" type="search" enterkeyhint="search" placeholder="ค้นเลขใบงาน เช่น JB261104-003, JBS… หรือเลขท้าย 003 / ชื่อลูกค้า" autocomplete="off" aria-label="ค้นหาเลขใบงานหรือชื่อลูกค้า">
         <div id="cutqList" class="cutq-list"></div>
       </div>
     </section>
@@ -12505,6 +12505,9 @@ function bahtText(value) {
     requestAnimationFrame(frame);
   }
   let cutqModalKey = '';
+  // ค้นหาในหน้าสั่งตัด: เลขใบงานไม่สนขีด/ช่องว่าง/ตัวพิมพ์ (JB, JBS, เลขท้าย) + ชื่อลูกค้า
+  function cutqNorm(v) { return String(v || '').toLowerCase().replace(/[^0-9a-z\u0e00-\u0e7f]/g, ''); }
+  function cutqHit(j, q, qn) { return !!(qn && cutqNorm(j.no).indexOf(qn) >= 0) || String(j.jName || '').toLowerCase().indexOf(q) >= 0; }
   function renderCutq() {
     const box = $('cutqList'); if (!box) return;
     { const ae = document.activeElement; if (ae && ae.classList && ae.classList.contains('cutq-in') && ae.closest('#cutqList,#cutqModal')) return; }   // กำลังพิมพ์ค่า → ไม่วาดใหม่ทับ
@@ -12517,10 +12520,16 @@ function bahtText(value) {
       if (hit.length === 1) cutqModalKey = hit[0];
       cutqPendingOpen = '';
     }
-    const q = cutqQ.trim().toLowerCase();
+    const q = cutqQ.trim().toLowerCase(), qn = cutqNorm(q);
     let rows = all.map(j => ({j, rec: cutqParse(j)})).filter(x => x.rec && x.rec.files.some(f => f && f.cut && f.cut.snap));
     const miss = cutqFocus && !rows.some(x => String(x.j.no) === cutqFocus);
-    if (q) rows = rows.filter(x => (String(x.j.no) + ' ' + String(x.j.jName || '')).toLowerCase().indexOf(q) >= 0);
+    if (q) {
+      rows = rows.filter(x => cutqHit(x.j, q, qn));
+      // พบใบงานตามเลข แต่ยังไม่มีไฟล์ตัด → บอกให้รู้ (ไม่ใช่ "ไม่พบ")
+      const noCut = all.filter(j => cutqHit(j, q, qn) && !rows.some(x => x.j === j)).slice(0, 3);
+      if (noCut.length && !rows.length) { box.innerHTML = '<div class="cutq-st bad">พบ ' + noCut.map(j => esc(j.no || '—')).join(', ') + ' แต่ยังไม่มีไฟล์ตัดที่สแกนไว้ — สแกนจากแผง Sign Tools แล้วกด “บันทึกใบงาน” ก่อน</div>'; return; }
+      if (!rows.length) { box.innerHTML = '<div class="cutq-empty">ไม่พบเลข/ชื่อ “' + esc(cutqQ.trim()) + '”</div>'; return; }
+    }
     rows.sort((a, b) => (String(b.j.no) === cutqFocus) - (String(a.j.no) === cutqFocus) || (b.j.savedAt || 0) - (a.j.savedAt || 0));
     rows = rows.slice(0, 30);
     let html = '';
@@ -12617,6 +12626,14 @@ function bahtText(value) {
       if (badge) { const n = Object.keys(cutqDiff(c, key)).length; badge.textContent = n ? 'แก้ ' + n + ' ค่า' : 'ตามค่าใบงาน'; badge.classList.toggle('off', !n); }
     });
     $('cutqSearch').addEventListener('input', e => { cutqQ = e.target.value; renderCutq(); });
+    $('cutqSearch').addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return; e.preventDefault();
+      const raw = e.target.value.trim(); if (!raw) return;
+      const code = cutqParseCode(raw) || raw, q = code.toLowerCase(), qn = cutqNorm(q), all = store.get('bs_jobs', []) || [];
+      const exact = all.filter(j => cutqNorm(j.no) === qn), hits = exact.length ? exact : all.filter(j => cutqHit(j, q, qn));
+      if (hits.length !== 1) { toast(hits.length ? 'เจอ ' + hits.length + ' ใบ — พิมพ์เลขให้ครบขึ้น' : 'ไม่พบเลขนี้'); return; }
+      e.target.blur(); cutqApplyCode(String(hits[0].no));
+    });
     setInterval(() => { const p = $('panel-cutq'); if (canCutRemote && p && p.classList.contains('active') && !document.hidden) renderCutq(); }, 15000);   // renderCutq ข้ามเองถ้ากำลังพิมพ์ค่า
   }
   function applyCutUI() {
