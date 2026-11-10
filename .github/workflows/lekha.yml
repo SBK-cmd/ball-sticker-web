@@ -1,6 +1,6 @@
 # เลขา — เจ้าของร้านสั่งงานจากแอป → Worker lekha สร้าง issue ป้าย "lekha" → Claude ทำงานใน repo นี้ แล้วตอบกลับใน issue
 # ความปลอดภัย: ทำงานเฉพาะ issue/คอมเมนต์ที่ "เจ้าของ repo" เป็นคนส่ง (Worker ใช้ token ของเจ้าของ) · คนนอกเปิด issue เองไม่มีผล
-# ค่าลับ: ANTHROPIC_API_KEY (GitHub → Settings → Secrets and variables → Actions)
+# ค่าลับ: ANTHROPIC_API_KEY หรือ CLAUDE_CODE_OAUTH_TOKEN อย่างใดอย่างหนึ่ง (GitHub → Settings → Secrets and variables → Actions)
 name: lekha
 on:
   issues:
@@ -60,6 +60,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}   # ใส่ตัวใดตัวหนึ่ง: คีย์ API (จ่ายตามใช้) หรือ token แพ็กเกจ Claude
           github_token: ${{ github.token }}
           claude_args: --max-turns 80 --allowedTools "Bash,Read,Write,Edit,MultiEdit,Glob,Grep"
           prompt: |
