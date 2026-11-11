@@ -5452,6 +5452,8 @@ function bahtText(value) {
     if (!list.length) { $('jobHistory')._jhKey = null; $('jobHistory').innerHTML = notice + '<p class="empty">ยังไม่มีใบคอนเฟิร์มงานที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; return; }
     const q = $('jobHistSearch') ? $('jobHistSearch').value : '';
     const fSt = $('jobFiltSt') ? $('jobFiltSt').value : '', fPg = $('jobFiltPg') ? $('jobFiltPg').value : '';
+    const fAc = (canBank && $('jobFiltAcc')) ? $('jobFiltAcc').value : '';
+    const accOk = j => !fAc || (fAc === '-' ? !String(j.account || '').trim() : j.account === fAc);
     // งานที่ลูกค้ารับแล้ว: ซ่อนจากรายการปกติ (ค้นชื่อลูกค้า / เลือกสถานะ / กด "แสดง" ก็ยังเห็น)
     const isRcv = j => (j.status || 'pending') === 'received' || ((j.status || 'pending') === 'shipped' && jobDelivered(j));
     const hideRcv = !String(q || '').trim() && !fSt && !renderJobHistory._showRcv;
@@ -5460,8 +5462,8 @@ function bahtText(value) {
     // ค้นหาได้ทั้งชื่อลูกค้า เลขที่ใบงาน เบอร์โทร เลขพัสดุ · ตอนพิมพ์ค้นหา ค้นทุกใบ ไม่สนตัวกรองสถานะ/เพจ/ซ่อนงานที่รับแล้ว
     const qq = String(q || '').trim();
     const hitJ = j => [j.jName, j.no, j.jPhone, j.trackCode].some(t => String(t || '').trim() && matchesSearch(t, qq));
-    const shown = qq ? list.filter(hitJ) : list.filter(j => !(hideRcv && isRcv(j)) && matchesSearch(j.jName, q) && (!fPg || (j.page || 'ball') === fPg) && (!fSt || (fSt === 'delivered' ? isRcv(j) : fSt === 'notrack' ? ((j.status || 'pending') === 'shipped' && !j.trackCode) : ((j.status || 'pending') === fSt && !(fSt === 'shipped' && isRcv(j))))));
-    if (!shown.length) { $('jobHistory')._jhKey = null; $('jobHistory').innerHTML = notice + rcvBar + '<p class="empty">ไม่พบใบงาน' + (q ? ' ที่ตรงกับ “' + esc(q) + '” (ค้นชื่อลูกค้า เลขที่ใบงาน เบอร์โทร เลขพัสดุ)' : '') + (fSt || fPg ? ' ตามตัวกรองที่เลือก' : '') + '</p>'; return; }
+    const shown = qq ? list.filter(hitJ) : list.filter(j => accOk(j) && !(hideRcv && isRcv(j)) && matchesSearch(j.jName, q) && (!fPg || (j.page || 'ball') === fPg) && (!fSt || (fSt === 'delivered' ? isRcv(j) : fSt === 'notrack' ? ((j.status || 'pending') === 'shipped' && !j.trackCode) : ((j.status || 'pending') === fSt && !(fSt === 'shipped' && isRcv(j))))));
+    if (!shown.length) { $('jobHistory')._jhKey = null; $('jobHistory').innerHTML = notice + rcvBar + '<p class="empty">ไม่พบใบงาน' + (q ? ' ที่ตรงกับ “' + esc(q) + '” (ค้นชื่อลูกค้า เลขที่ใบงาน เบอร์โทร เลขพัสดุ)' : '') + (fSt || fPg || fAc ? ' ตามตัวกรองที่เลือก' : '') + '</p>'; return; }
     const pendWh = can('wholesale') ? list.filter(j => j.wholesale && String(j.jName || '').trim() && jobPendingWhItems(j).length).length : 0;
     const whBanner = '';   // เอาปุ่ม "รวมเข้าใบราคาส่งตามชื่อ" ออกจากหน้านี้ (ระบบรวมให้เองตอนบันทึกใบราคาส่งอยู่แล้ว · ฟังก์ชัน sweepWholesaleJobs ยังอยู่)
     const _whBannerOld = pendWh ? '<div class="wh-sweep"><span>🏷️ มีงานราคาส่ง <b>' + pendWh + '</b> ใบ ที่ยังไม่ได้รวมในใบราคาส่ง</span><button type="button" class="btn small good" id="whSweepBtn">รวมเข้าใบราคาส่งตามชื่อ</button></div>' : '';
@@ -8493,7 +8495,11 @@ function bahtText(value) {
   });
   $('histSearch').addEventListener('input', renderHistory);
   $('jobHistSearch').addEventListener('input', renderJobHistory);
-  ['jobFiltSt', 'jobFiltPg'].forEach(i => $(i).addEventListener('change', renderJobHistory));
+  ['jobFiltSt', 'jobFiltPg', 'jobFiltAcc'].forEach(i => $(i).addEventListener('change', renderJobHistory));
+  if (canBank && $('jobFiltAcc')) {   // เห็นเฉพาะคนที่ดูเรื่องเงินได้ · บัญชีที่ซ่อน (วันทิม) ไม่ขึ้นให้คนที่ไม่ใช่ผู้ดูแล
+    $('jobFiltAcc').hidden = false;
+    Array.from($('jobFiltAcc').options).forEach(o => { if (HIDDEN_ACCOUNTS.indexOf(o.value) >= 0) o.remove(); });
+  }
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.rcv-toggle'); if (!b) return; renderJobHistory._showRcv = !renderJobHistory._showRcv; renderJobHistory(); });
   $('whHistSearch').addEventListener('input', renderWholesaleHistory);
   function addWholesaleShop() {
