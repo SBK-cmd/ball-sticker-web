@@ -2918,15 +2918,25 @@ function bahtText(value) {
     const previewCounters = {};
     $('stmtTable').innerHTML = !inRows.length ? '' :
       '<thead><tr><th><input type="checkbox" class="stmt-chk" id="stmtChkAll" checked aria-label="เลือกทั้งหมด"></th>' +
-      '<th>วันที่</th><th>เลขที่ใบกำกับ (แก้ไขได้)</th><th>ชื่อลูกค้า (แก้ไขได้)</th><th class="r">จำนวนเงิน</th></tr></thead><tbody>' +
-      inRows.map(r => {
+      '<th class="stmt-n">#</th><th>วันที่</th><th>เลขที่ใบกำกับ (แก้ไขได้)</th><th>ชื่อลูกค้า (แก้ไขได้)</th><th class="r">จำนวนเงิน</th></tr></thead><tbody>' +
+      inRows.map((r, k) => {
         const suggestedNo = billNoForDateBatch(r.date, previewCounters);
-        return '<tr><td><input type="checkbox" class="stmt-chk" data-idx="' + r.idx + '" checked aria-label="เลือกรายการนี้"></td>' +
-        '<td>' + esc(thDate(r.date)) + '</td>' +
+        // ลำดับ 1..n ตรงกับใบสรุปที่พิมพ์ · ใต้วันที่โชว์ "จากใคร" ย่อๆ จะได้รู้ว่าเป็นเงินโอนจากบัญชีตัวเองหรือไม่
+        const who = String(r.desc || '').replace(/[\d,]+\.\d{2}/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
+        return '<tr><td><input type="checkbox" class="stmt-chk" data-idx="' + r.idx + '" data-amt="' + r.amount + '" checked aria-label="เลือกรายการลำดับ ' + (k + 1) + '"></td>' +
+        '<td class="stmt-n">' + (k + 1) + '</td>' +
+        '<td>' + esc(thDate(r.date)) + (who ? '<small class="stmt-who">' + esc(who) + '</small>' : '') + '</td>' +
         '<td class="stmt-no-cell"><input class="stmt-no" type="text" data-idx="' + r.idx + '" value="' + esc(suggestedNo) + '" placeholder="เลขที่ใบกำกับ"></td>' +
         '<td class="stmt-name-cell"><input class="stmt-name" type="text" data-idx="' + r.idx + '" value="' + esc(STMT_DEFAULT_NAME) + '" placeholder="ชื่อลูกค้า"></td>' +
         '<td class="r">' + money(r.amount) + '</td></tr>';
       }).join('') + '</tbody>';
+    stmtSyncCount();
+  }
+  // ปุ่มบอกจำนวนที่เลือก + ยอดรวม ให้เทียบกับใบสรุปก่อนกด
+  function stmtSyncCount() {
+    const on = Array.from(document.querySelectorAll('#stmtTable .stmt-chk[data-idx]:checked'));
+    const sum = on.reduce((a, cb) => a + Math.round((+cb.getAttribute('data-amt') || 0) * 100), 0) / 100;
+    $('stmtCreateBtn').textContent = 'เปิดบิลที่เลือก ' + on.length + ' รายการ · ' + money(sum) + ' บาท';
   }
 
   async function parseStatement() {
@@ -8411,6 +8421,7 @@ function bahtText(value) {
       const on = e.target.checked;
       document.querySelectorAll('#stmtTable .stmt-chk[data-idx]').forEach(cb => { cb.checked = on; });
     }
+    stmtSyncCount();
   });
 
   $('history').addEventListener('click', e => {
