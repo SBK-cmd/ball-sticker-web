@@ -5,6 +5,13 @@
 ห้ามใส่รหัสผ่าน/คีย์/ข้อมูลลูกค้า — repo ยังเป็นสาธารณะ
 
 ## ค้าง
+- [2026-11-11 22:40] จาก 1 (เจ้าของสั่งตรง · ไม่ใช้ Firebase เพื่อไม่ให้ยอดอ่านเพิ่ม): **ขอ Worker `social-stats` สำหรับหน้า "สถิติโซเชียล" ในแอป** · เก็บใน D1 (ใช้ `ball-books` เพิ่มตาราง หรือสร้าง `ball-social` ก็ได้) · cron วันละครั้ง (ตี 3 ไทย) เก็บ snapshot รายวัน:
+  1) เพจ FB บอล สติ๊กเกอร์ (Graph API): followers_count, page_impressions_unique/วัน, page_post_engagements/วัน, จำนวนบทสนทนาใหม่/วัน (/conversations ตาม updated_time หรือ page_messages_new_conversations_unique), โพสต์ 60 วันล่าสุด (id, created_time, message 80 ตัว, permalink, รูป thumbnail, reach, reactions, comments, shares)
+  2) ค่าโฆษณา FB (act_xxx/insights รายวัน): spend, impressions, clicks, messaging_conversation_started_7d (ถ้าโทเคนมี ads_read)
+  3) เว็บร้าน www.ballsticker.co.th: Cloudflare Web Analytics (GraphQL rumPageloadEventsAdaptiveGroups) visits/pageviews ต่อวัน + 10 หน้ายอดนิยม + ที่มา (referer host)
+  · endpoint `GET /stats?days=30` ส่ง JSON (ไม่มีข้อมูลลูกค้า) — เสนอรูปแบบ `{v:1,updatedAt,fb:{followers:[{d,n}],reach:[{d,n}],engaged:[{d,n}],chats:[{d,n}],posts:[{id,at,text,url,img,reach,react,comment,share}]},ads:{fb:[{d,spend,impr,click,chats}]},web:{visits:[{d,n}],views:[{d,n}],top:[{path,n}],ref:[{host,n}]}}` · ป้องกันด้วย header `X-Lekha-Pin` แบบเดียวกับเลขา (เจ้าของเท่านั้น)
+  · โทเคน FB: เจ้าของต้องสร้าง Page token อายุยาว (สิทธิ์ read_insights, pages_read_engagement, pages_messaging, ads_read) แล้วใส่เป็น secret เอง ห้ามส่งในแชต · TikTok ยังไม่ต้อง (API ต้องขออนุมัติแอป) ไว้เฟสหลัง
+  · ตัวที่ 1 จะทำหน้าจอในแอป (preview) โดยใช้ข้อมูลตัวอย่างตามรูปแบบนี้ไปก่อน — ถ้าจะเปลี่ยนรูปแบบ/URL ตอบใน team/inbox-1.md
 - [2026-11-10 23:20] จาก 1: แจ้งให้ทราบ (เจ้าของสั่งตรง · เปลี่ยนจากแผน repo ส่วนตัว) — Worker ใหม่ `books-sync` (โค้ด worker/books-sync/worker.js) คัดลอก bills/purchases/jobs/bankIn/bankOut ตามเดือน (query ช่วงวันที่ ไม่อ่านทั้งคอลเลกชัน) → D1 `ball-books` (uuid 70249ef9-…, สร้างแล้ว ตาราง docs+sync_log) ให้ตัวที่ 1 อ่านผ่าน Cloudflare MCP · secret FIRESTORE_SA_JSON (service account Cloud Datastore Viewer อ่านอย่างเดียว) + SYNC_KEY · cron ตี 2 ไทย · ถ้าจะ deploy ด้วย wrangler/ปรับความปลอดภัย ตอบใน team/inbox-1.md
 
 ## ทำแล้ว
