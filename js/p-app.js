@@ -1597,9 +1597,15 @@ function bahtText(value) {
   function closeBillEdit() {
     const ov = $('billEditOv'), form = $('billFormTop'); if (!ov || ov.hidden) return;
     if (billEditHome && form) billEditHome.parentNode.insertBefore(form, billEditHome.nextSibling);
-    ov.hidden = true; document.body.style.overflow = '';
+    ov.hidden = true; document.body.style.overflow = ''; setBillZoom(false);
     if (currentId) newBill();   // แก้ใบที่บันทึกแล้ว → ล้างฟอร์ม; ใบใหม่ที่ยังไม่บันทึกเก็บร่างไว้ กด "เปิดบิลใหม่" จะกลับมาที่ร่างนี้
     updateBillDraftHint();
+  }
+  function setBillZoom(on) {
+    const ov = $('billEditOv'); if (!ov) return;
+    ov.classList.toggle('bill-zoom', !!on);
+    if ($('billZoomBtn')) $('billZoomBtn').textContent = on ? 'กลับไปแก้ไข' : 'ขยายดูเต็ม';
+    requestAnimationFrame(fitBill);
   }
   function hasBillDraft() {
     return !currentId && !!(items.some(i => (i.name || '').trim() || num(i.qty) * num(i.price) > 0) || $('cName').value.trim());
@@ -8441,6 +8447,8 @@ function bahtText(value) {
   });
   $('stmt-import-btn').addEventListener('click', () => { closeBillEdit(); openStmtOverlay(); });
   $('billNewBtn').addEventListener('click', openNewBill);
+  $('billZoomBtn').addEventListener('click', () => setBillZoom(!$('billEditOv').classList.contains('bill-zoom')));
+  $('a4frame').addEventListener('click', () => { if (billEditOpen()) setBillZoom(!$('billEditOv').classList.contains('bill-zoom')); });
   $('billStmtBtn').addEventListener('click', openStmtOverlay);
   $('billEditClose').addEventListener('click', closeBillEdit);
   $('billEditOv').addEventListener('click', e => { if (e.target === $('billEditOv')) closeBillEdit(); });

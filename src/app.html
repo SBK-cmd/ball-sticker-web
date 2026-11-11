@@ -1206,13 +1206,20 @@ table.lines tfoot .r{text-align:right;font-variant-numeric:tabular-nums;white-sp
 .btn.light:hover{background:rgba(255,255,255,.16)}
 .btn[disabled]{opacity:.65;cursor:progress}
 .overlay{position:fixed;inset:0;z-index:1000;background:rgba(8,16,30,.62);overflow:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 14px calc(16px + env(safe-area-inset-bottom,0px))}
-.ov-card.wide{max-width:1280px}
+.ov-card.wide{max-width:1560px}
 #pdfOverlay{z-index:1010}
 #panel-bill > #billFormTop{display:none}
 .bill-launch{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 16px}
 #billEditOv .ov-card{padding:16px 20px 20px}
 #billEditOv .ov-head{margin-bottom:12px}
-#billEditSlot .bill-grid{grid-template-columns:minmax(0,1fr) minmax(300px,420px)!important;gap:16px!important}
+#billEditSlot .bill-grid{grid-template-columns:minmax(0,1fr) minmax(300px,1fr)!important;gap:16px!important}
+#billEditSlot .a4-frame{cursor:zoom-in}
+#billEditOv.bill-zoom #billEditSlot .bill-grid{grid-template-columns:minmax(0,1fr)!important}
+#billEditOv.bill-zoom #billEditSlot .stack{display:none!important}
+#billEditOv.bill-zoom #billEditSlot .preview-col{position:static;max-width:900px;width:100%;margin:0 auto}
+#billEditOv.bill-zoom #billEditSlot .a4-frame{cursor:zoom-out}
+.bill-zoom-btn{display:none}
+#billEditSlot .bill-zoom-btn{display:inline-flex;margin-left:8px;vertical-align:middle}
 #billEditSlot .bill-grid .stack{display:flex!important;flex-direction:column;align-items:stretch!important;gap:12px}
 #billEditSlot .bill-grid .stack>.card{grid-column:auto!important;grid-row:auto!important;margin:0!important;padding:16px}
 #billEditSlot .bill-grid .stack>.card h2{margin-bottom:10px}
@@ -2982,7 +2989,7 @@ body.jm-open .fab-newjob{display:none!important}
         </div>
 
         <div class="preview-col">
-          <h2 class="no-print">ตัวอย่างก่อนพิมพ์ (A4)</h2>
+          <h2 class="no-print">ตัวอย่างก่อนพิมพ์ (A4)<button class="btn small bill-zoom-btn" id="billZoomBtn" type="button">ขยายดูเต็ม</button></h2>
           <div class="a4-frame" id="a4frame"><article class="sheet bill" id="bill"></article></div>
         </div>
       </div>
@@ -5532,9 +5539,15 @@ function bahtText(value) {
   function closeBillEdit() {
     const ov = $('billEditOv'), form = $('billFormTop'); if (!ov || ov.hidden) return;
     if (billEditHome && form) billEditHome.parentNode.insertBefore(form, billEditHome.nextSibling);
-    ov.hidden = true; document.body.style.overflow = '';
+    ov.hidden = true; document.body.style.overflow = ''; setBillZoom(false);
     if (currentId) newBill();   // แก้ใบที่บันทึกแล้ว → ล้างฟอร์ม; ใบใหม่ที่ยังไม่บันทึกเก็บร่างไว้ กด "เปิดบิลใหม่" จะกลับมาที่ร่างนี้
     updateBillDraftHint();
+  }
+  function setBillZoom(on) {
+    const ov = $('billEditOv'); if (!ov) return;
+    ov.classList.toggle('bill-zoom', !!on);
+    if ($('billZoomBtn')) $('billZoomBtn').textContent = on ? 'กลับไปแก้ไข' : 'ขยายดูเต็ม';
+    requestAnimationFrame(fitBill);
   }
   function hasBillDraft() {
     return !currentId && !!(items.some(i => (i.name || '').trim() || num(i.qty) * num(i.price) > 0) || $('cName').value.trim());
@@ -12376,6 +12389,8 @@ function bahtText(value) {
   });
   $('stmt-import-btn').addEventListener('click', () => { closeBillEdit(); openStmtOverlay(); });
   $('billNewBtn').addEventListener('click', openNewBill);
+  $('billZoomBtn').addEventListener('click', () => setBillZoom(!$('billEditOv').classList.contains('bill-zoom')));
+  $('a4frame').addEventListener('click', () => { if (billEditOpen()) setBillZoom(!$('billEditOv').classList.contains('bill-zoom')); });
   $('billStmtBtn').addEventListener('click', openStmtOverlay);
   $('billEditClose').addEventListener('click', closeBillEdit);
   $('billEditOv').addEventListener('click', e => { if (e.target === $('billEditOv')) closeBillEdit(); });
