@@ -1440,7 +1440,7 @@ function bahtText(value) {
   function vatCalcValues() {
     const amt = Math.max(0, num($('vatAmount').value));
     const rate = Math.max(0, num($('vatRateCalc').value));
-    const mode = $('vatMode').value;
+    const mode = $('vatCalcMode').value;
     let base, vat, total;
     if (mode === 'extract') {
       total = amt;
@@ -1473,16 +1473,20 @@ function bahtText(value) {
   let delArmed = null, delTimer = null;
   let histSelected = new Set(); // ไอดีเอกสารที่ติ๊กเลือกไว้สำหรับพิมพ์/ดาวน์โหลดรวมหลายใบ
 
+  const priceShow = v => (typeof v === 'number' && Math.abs(v * 1e4 - Math.round(v * 1e4)) > 1e-6) ? String(Math.round(v * 1e4) / 1e4) : v;   // ราคาที่หารจากยอดรวม เก็บค่าละเอียดไว้ แต่โชว์ 4 ตำแหน่ง
+  const sumShow = it => { const v = num(it.qty) * num(it.price); return v ? String(round2(v)) : ''; };
   function renderItems() {
     $('items').innerHTML = items.map((it, i) =>
       '<div class="item" data-i="' + i + '">' +
       '<input class="txt i-name" type="text" placeholder="ชื่อรายการ" aria-label="ชื่อรายการ" value="' + esc(it.name) + '">' +
       '<input class="num i-qty" type="number" inputmode="decimal" step="any" min="0" placeholder="จำนวน" aria-label="จำนวน" value="' + esc(it.qty) + '">' +
-      '<input class="num i-price" type="number" inputmode="decimal" step="any" min="0" placeholder="ราคา/ชิ้น" aria-label="ราคาต่อชิ้น" value="' + esc(it.price) + '">' +
-      '<output class="i-total" aria-label="รวม">' + money(num(it.qty) * num(it.price)) + '</output>' +
+      '<input class="num i-price" type="number" inputmode="decimal" step="any" min="0" placeholder="ราคา/ชิ้น" aria-label="ราคาต่อชิ้น" value="' + esc(priceShow(it.price)) + '">' +
+      '<input class="num i-sum" type="number" inputmode="decimal" step="any" min="0" placeholder="รวม" aria-label="ยอดรวมรายการ (พิมพ์แล้วหารเป็นราคาต่อชิ้น)" value="' + esc(sumShow(it)) + '">' +
       '<button class="del" type="button" aria-label="ลบรายการ">✕</button></div>').join('');
   }
 
+  // ราคาต่อชิ้นที่หารไม่ลงตัว (เช่น หารจากยอดรวม) โชว์ 4 ตำแหน่ง เพื่อให้ จำนวน × ราคา ใกล้ยอดรวมจริง
+  function unitMoney(v, q) { q = num(q); return (q && round2(round2(v) * q) !== round2(v * q)) ? v.toLocaleString('th-TH', {minimumFractionDigits: 4, maximumFractionDigits: 4}) : money(v); }
   function totals() {
     const sub = round2(items.reduce((a, i) => a + num(i.qty) * num(i.price), 0));
     const disc = Math.min(Math.max(0, num($('discount').value)), sub);
@@ -1508,7 +1512,7 @@ function bahtText(value) {
     const shown = items.filter(i => i.name.trim() || num(i.qty) * num(i.price) > 0);
     const rows = shown.length ? shown.map((i, n) =>
       '<tr><td class="n">' + (n + 1) + '</td><td>' + esc(i.name) + '</td><td class="r">' + esc(fmt(num(i.qty))) +
-      '</td><td class="r">' + money(num(i.price) / t.vd) + '</td><td class="r">' + money(num(i.qty) * num(i.price) / t.vd) + '</td></tr>').join('')
+      '</td><td class="r">' + unitMoney(num(i.price) / t.vd, i.qty) + '</td><td class="r">' + money(num(i.qty) * num(i.price) / t.vd) + '</td></tr>').join('')
       : '<tr><td class="n">—</td><td colspan="4" style="color:#4a5a72">ยังไม่มีรายการ</td></tr>';
     let vatRows = '';
     if (t.mode !== 'none')
@@ -1578,6 +1582,7 @@ function bahtText(value) {
     syncVat(); renderItems(); renderBill();
   }
   function syncVat() {
+    if ($('itemsVatMode')) $('itemsVatMode').value = $('vatMode').value;
     const on = $('vatMode').value !== 'none';
     $('vatRateWrap').hidden = !on;
     $('vatHint').textContent = on ? 'คำนวณ VAT หลังหักส่วนลด' : 'ใบกำกับภาษีต้องแสดงภาษีมูลค่าเพิ่มแยกบรรทัด เลือกวิธีคิด VAT ด้านบน';
@@ -1728,7 +1733,7 @@ function bahtText(value) {
     const shown = quoteItems.filter(i => i.name.trim() || num(i.qty) * num(i.price) > 0);
     const rows = shown.length ? shown.map((i, n) =>
       '<tr><td class="n">' + (n + 1) + '</td><td>' + esc(i.name) + '</td><td class="r">' + esc(fmt(num(i.qty))) +
-      '</td><td class="r">' + money(num(i.price) / t.vd) + '</td><td class="r">' + money(num(i.qty) * num(i.price) / t.vd) + '</td></tr>').join('')
+      '</td><td class="r">' + unitMoney(num(i.price) / t.vd, i.qty) + '</td><td class="r">' + money(num(i.qty) * num(i.price) / t.vd) + '</td></tr>').join('')
       : '<tr><td class="n">—</td><td colspan="4" style="color:#4a5a72">ยังไม่มีรายการ</td></tr>';
     let vatRows = '';
     if (t.mode !== 'none')
@@ -6178,7 +6183,7 @@ function bahtText(value) {
       lines.forEach((l, k) => T(x, l, c1 + 3, b + k * 4.8, {s: 3.7, c: it.empty ? MUTED : INK}));
       if (!it.empty) {
         T(x, fmt(num(it.qty)), c3 - 3, b, {s: 3.7, a: 'right'});
-        T(x, money(num(it.price) / t.vd), c4 - 3, b, {s: 3.7, a: 'right'});
+        T(x, unitMoney(num(it.price) / t.vd, it.qty), c4 - 3, b, {s: 3.7, a: 'right'});
         T(x, money(num(it.qty) * num(it.price) / t.vd), cR - 3, b, {s: 3.7, a: 'right'});
       }
       y += rh; HL(x, M, cR, y, LIGHT, 0.2);
@@ -6470,7 +6475,7 @@ function bahtText(value) {
       lines.forEach((l, k) => T(x, l, c1 + 3, b + k * 4.8, {s: 3.7, c: it.empty ? MUTED : INK}));
       if (!it.empty) {
         T(x, fmt(num(it.qty)), c3 - 3, b, {s: 3.7, a: 'right'});
-        T(x, money(num(it.price) / t.vd), c4 - 3, b, {s: 3.7, a: 'right'});
+        T(x, unitMoney(num(it.price) / t.vd, it.qty), c4 - 3, b, {s: 3.7, a: 'right'});
         T(x, money(num(it.qty) * num(it.price) / t.vd), cR - 3, b, {s: 3.7, a: 'right'});
       }
       y += rh; HL(x, M, cR, y, LIGHT, 0.2);
@@ -7405,7 +7410,7 @@ function bahtText(value) {
   ['sw', 'sh', 'gap', 'margin', 'pw', 'ph', 'fw', 'fh'].forEach(id => $(id).addEventListener('input', renderCalc));
   $('fillOn').addEventListener('change', renderCalc);
   ['vatAmount', 'vatRateCalc'].forEach(id => $(id).addEventListener('input', renderVatCalc));
-  $('vatMode').addEventListener('change', renderVatCalc);
+  $('vatCalcMode').addEventListener('change', renderVatCalc);
   $('vat-copy').addEventListener('click', copyVatResult);
   $('paper').addEventListener('change', onPaperChange);
   try { const pg = localStorage.getItem('bs_price_page'); if (pg && PRICE_PAGES[pg]) $('pricePage').value = pg; } catch (e) {}
@@ -8354,7 +8359,12 @@ function bahtText(value) {
     if (e.target.classList.contains('i-name')) it.name = e.target.value;
     if (e.target.classList.contains('i-qty')) it.qty = e.target.value;
     if (e.target.classList.contains('i-price')) it.price = e.target.value;
-    row.querySelector('.i-total').textContent = money(num(it.qty) * num(it.price));
+    if (e.target.classList.contains('i-sum')) {
+      const q = num(it.qty);
+      if (q > 0) { it.price = num(e.target.value) / q; row.querySelector('.i-price').value = priceShow(it.price); }
+    } else {
+      row.querySelector('.i-sum').value = sumShow(it);
+    }
     renderBill();
   });
   $('items').addEventListener('click', e => {
@@ -8447,6 +8457,7 @@ function bahtText(value) {
   });
   $('stmt-import-btn').addEventListener('click', () => { closeBillEdit(); openStmtOverlay(); });
   $('billNewBtn').addEventListener('click', openNewBill);
+  $('itemsVatMode').addEventListener('change', () => { $('vatMode').value = $('itemsVatMode').value; $('vatMode').dispatchEvent(new Event('change', {bubbles: true})); });
   $('billZoomBtn').addEventListener('click', () => setBillZoom(!$('billEditOv').classList.contains('bill-zoom')));
   $('a4frame').addEventListener('click', () => { if (billEditOpen()) setBillZoom(!$('billEditOv').classList.contains('bill-zoom')); });
   $('billStmtBtn').addEventListener('click', openStmtOverlay);

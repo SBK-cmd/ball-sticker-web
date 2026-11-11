@@ -1226,6 +1226,8 @@ table.lines tfoot .r{text-align:right;font-variant-numeric:tabular-nums;white-sp
 #billEditSlot .preview-col{position:sticky;top:0}
 #billEditSlot .preview-col h2{font-size:15px;margin-bottom:8px}
 #billEditSlot .actions-note{display:none}
+.items-vat{max-width:300px;margin:0 0 10px}
+@media (min-width:981px){#billEditSlot .item,#billEditSlot .item-head{grid-template-columns:minmax(0,1fr) 88px 104px 120px 36px}}
 @media (min-width:981px){#billEditSlot .stack>.card:first-child .fields{display:grid;grid-template-columns:1fr 1fr;column-gap:12px}
 #billEditSlot .stack>.card:first-child .fields>*{grid-column:1/-1}
 #billEditSlot .stack>.card:first-child .fields>label:has(#cPhone),#billEditSlot .stack>.card:first-child .fields>label:has(#cTax){grid-column:auto}}
@@ -2875,7 +2877,7 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
           <fieldset>
             <legend>รูปแบบ</legend>
             <label class="f"><span>ยอดเงินที่กรอกคือ</span>
-              <select id="vatMode">
+              <select id="vatCalcMode">
                 <option value="add">ราคายังไม่รวม VAT (ต้องการบวก VAT เพิ่ม)</option>
                 <option value="extract">ราคารวม VAT แล้ว (ต้องการถอด VAT ออกมาดู)</option>
               </select>
@@ -3126,10 +3128,17 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
 
           <div class="card">
             <h2>รายการงาน</h2>
+            <label class="f items-vat"><span>ราคาที่กรอก</span>
+              <select id="itemsVatMode">
+                <option value="add">ยังไม่รวม VAT (บวก VAT เพิ่ม)</option>
+                <option value="incl">รวม VAT แล้ว</option>
+                <option value="none">ไม่คิด VAT</option>
+              </select>
+            </label>
             <div class="item-head" aria-hidden="true"><span>รายการ</span><span>จำนวน</span><span>ราคา/ชิ้น</span><span>รวม</span><span></span></div>
             <div id="items"></div>
             <button class="btn small" id="add-item" type="button">＋ เพิ่มรายการ</button>
-            <p class="hint">ใส่ชนิดสติ๊กเกอร์และขนาดในชื่อรายการได้เลย</p>
+            <p class="hint">ใส่ชนิดสติ๊กเกอร์และขนาดในชื่อรายการได้เลย · รู้แค่ยอดรวม ให้พิมพ์ในช่อง “รวม” ระบบหารเป็นราคาต่อชิ้นให้ (ยอดรวม VAT แล้ว เลือก “รวม VAT แล้ว” ด้านบนก่อน)</p>
           </div>
 
           <div class="card">
@@ -4120,7 +4129,7 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=0b2a5a53f1",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=2e9db724dd",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
