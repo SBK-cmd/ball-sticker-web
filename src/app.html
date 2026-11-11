@@ -1206,7 +1206,20 @@ table.lines tfoot .r{text-align:right;font-variant-numeric:tabular-nums;white-sp
 .btn.light:hover{background:rgba(255,255,255,.16)}
 .btn[disabled]{opacity:.65;cursor:progress}
 .overlay{position:fixed;inset:0;z-index:1000;background:rgba(8,16,30,.62);overflow:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 14px calc(16px + env(safe-area-inset-bottom,0px))}
-.ov-card.wide{max-width:1180px}
+.ov-card.wide{max-width:1280px}
+#pdfOverlay{z-index:1010}
+#panel-bill > #billFormTop{display:none}
+.bill-launch{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 16px}
+#billEditOv .ov-card{padding:16px 20px 20px}
+#billEditOv .ov-head{margin-bottom:12px}
+#billEditSlot .bill-grid{grid-template-columns:minmax(0,1fr) minmax(300px,420px)!important;gap:16px!important}
+#billEditSlot .bill-grid .stack{display:flex!important;flex-direction:column;gap:12px}
+#billEditSlot .bill-grid .stack>.card{grid-column:auto!important;grid-row:auto!important;margin:0!important;padding:16px}
+#billEditSlot .bill-grid .stack>.card h2{margin-bottom:10px}
+#billEditSlot .preview-col{position:sticky;top:0}
+#billEditSlot .preview-col h2{font-size:15px;margin-bottom:8px}
+#billEditSlot .actions-note{display:none}
+@media (max-width:980px){#billEditSlot .bill-grid{grid-template-columns:minmax(0,1fr)!important}#billEditSlot .preview-col{position:static}}
 .ov-card{max-width:720px;margin:0 auto;background:var(--surface);border-radius:16px;padding:20px;box-shadow:var(--shadow-2)}
 .ov-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .ov-head h2{font-size:20px}
@@ -2880,6 +2893,12 @@ body.jm-open .fab-newjob{display:none!important}
         <p>เพิ่มรายการงาน คำนวณยอดและ VAT แล้วพิมพ์หรือบันทึกเป็น PDF</p>
       </div>
 
+      <div class="bill-launch no-print">
+        <button class="btn primary" id="billNewBtn" type="button">+ เปิดบิลใหม่</button>
+        <button class="btn" id="billStmtBtn" type="button">เปิดบิลจากสเตทเม้นธนาคาร</button>
+        <span class="hint" id="billDraftHint" style="margin:0"></span>
+      </div>
+
       <div class="bill-grid" id="billFormTop">
         <div class="stack no-print">
           <div class="card">
@@ -2965,7 +2984,7 @@ body.jm-open .fab-newjob{display:none!important}
         </div>
       </div>
 
-      <section class="card history no-print" style="margin-top:20px" aria-labelledby="hist-h">
+      <section class="card history no-print" aria-labelledby="hist-h">
         <div class="viz-head">
           <h2 id="hist-h">ประวัติเอกสาร</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้</span>
@@ -2973,8 +2992,8 @@ body.jm-open .fab-newjob{display:none!important}
         <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="histSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
         <div class="dash-filter" style="margin-bottom:10px">
           <label class="f" style="max-width:240px">
-            <span>ติ๊กเลือกทั้งเดือน</span>
-            <select class="txt" id="histPrintMonth"><option value="">— เลือกเดือน —</option></select>
+            <span>เดือน</span>
+            <select class="txt" id="histPrintMonth"><option value="">ทุกเดือน</option></select>
           </label>
           <label class="f" style="max-width:190px">
             <span>พิมพ์เป็นชุด</span>
@@ -5498,19 +5517,34 @@ function bahtText(value) {
   // ---- หน้าต่างแก้ไขบิลจากประวัติ: ย้ายฟอร์มเดิม (#billFormTop) เข้าไปในหน้าต่าง แล้วย้ายกลับตอนปิด ----
   let billEditHome = null;
   const billEditOpen = () => $('billEditOv') && !$('billEditOv').hidden;
-  function openBillEdit(b) {
+  function openBillEdit(b, title) {
     const form = $('billFormTop'), ov = $('billEditOv'); if (!form || !ov) return;
     if (!billEditHome) { billEditHome = document.createComment('billFormTop'); form.parentNode.insertBefore(billEditHome, form); }
     $('billEditSlot').appendChild(form);
-    $('billEditTitle').textContent = 'แก้ไขเอกสาร ' + (b.no || '');
+    $('billEditTitle').textContent = title || ('แก้ไขเอกสาร ' + ((b && b.no) || ''));
     ov.hidden = false; document.body.style.overflow = 'hidden'; ov.scrollTop = 0;
+    renderBill();
     setTimeout(() => { const f = $('billNo'); if (f) f.focus({preventScroll: true}); }, 30);
   }
   function closeBillEdit() {
     const ov = $('billEditOv'), form = $('billFormTop'); if (!ov || ov.hidden) return;
     if (billEditHome && form) billEditHome.parentNode.insertBefore(form, billEditHome.nextSibling);
     ov.hidden = true; document.body.style.overflow = '';
-    newBill();   // ฟอร์มด้านบนกลับเป็นเอกสารใหม่ ไม่ค้างใบที่เพิ่งแก้
+    if (currentId) newBill();   // แก้ใบที่บันทึกแล้ว → ล้างฟอร์ม; ใบใหม่ที่ยังไม่บันทึกเก็บร่างไว้ กด "เปิดบิลใหม่" จะกลับมาที่ร่างนี้
+    updateBillDraftHint();
+  }
+  function hasBillDraft() {
+    return !currentId && !!(items.some(i => (i.name || '').trim() || num(i.qty) * num(i.price) > 0) || $('cName').value.trim());
+  }
+  function updateBillDraftHint() {
+    const h = $('billDraftHint'), b = $('billNewBtn'); if (!h || !b) return;
+    const d = hasBillDraft();
+    b.textContent = d ? 'เปิดบิลที่ยังไม่บันทึกต่อ' : '+ เปิดบิลใหม่';
+    h.textContent = d ? 'มีบิลร่างค้างอยู่' + ($('cName').value.trim() ? ' (' + $('cName').value.trim() + ')' : '') + ' ยังไม่ได้บันทึกลงประวัติ' : '';
+  }
+  function openNewBill() {
+    if (!hasBillDraft()) newBill();
+    openBillEdit(null, hasBillDraft() ? 'บิลที่ยังไม่บันทึก' : 'เปิดบิลใหม่');
   }
   function renderEditState() {
     const el = $('editState');
@@ -5529,7 +5563,7 @@ function bahtText(value) {
     const sel = $('histPrintMonth'); if (!sel) return;
     const prev = sel.value;
     const months = Array.from(new Set(list.map(b => monthKey(b.date)).filter(Boolean))).sort().reverse();
-    sel.innerHTML = '<option value="">— เลือกเดือน —</option>' +
+    sel.innerHTML = '<option value="">ทุกเดือน</option>' +
       months.map(m => '<option value="' + esc(m) + '">' + esc(thMonthFull(m)) + ' (' + list.filter(b => monthKey(b.date) === m).length + ' ใบ)</option>').join('');
     if (months.indexOf(prev) >= 0) sel.value = prev;
   }
@@ -5541,18 +5575,20 @@ function bahtText(value) {
     all.checked = boxes.length > 0 && Array.from(boxes).every(b => b.checked);
   }
   function renderHistory() {
-    const list = store.get('bs_bills', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+    const list = store.get('bs_bills', []).slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.no || '').localeCompare(String(a.no || '')) || (b.savedAt || 0) - (a.savedAt || 0));
     histSelected = new Set(Array.from(histSelected).filter(id => list.some(b => b.id === id)));
     populateHistMonthOptions(list);
+    updateBillDraftHint();
     const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้ ควรดาวน์โหลด PDF เก็บไว้ทุกครั้ง</p>');
     if (!list.length) {
       $('history').innerHTML = notice + '<p class="empty">ยังไม่มีเอกสารที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>';
       updateHistSelCount(); renderDash(); renderReport(); return;
     }
     const q = $('histSearch') ? $('histSearch').value : '';
-    const shown = list.filter(b => matchesSearch(b.cName, q));
+    const mSel = $('histPrintMonth') ? $('histPrintMonth').value : '';
+    const shown = list.filter(b => matchesSearch(b.cName, q) && (!mSel || monthKey(b.date) === mSel));
     if (!shown.length) {
-      $('history').innerHTML = notice + '<p class="empty">ไม่พบเอกสารของลูกค้าชื่อ “' + esc(q) + '”</p>';
+      $('history').innerHTML = notice + '<p class="empty">' + (q ? 'ไม่พบเอกสารของลูกค้าชื่อ “' + esc(q) + '”' : 'ไม่มีเอกสาร') + (mSel ? ' ในเดือน ' + esc(thMonthFull(mSel)) : '') + '</p>';
       updateHistSelCount(); renderDash(); renderReport(); return;
     }
     $('history').innerHTML = notice + '<ul>' + shown.map(b =>
@@ -6951,15 +6987,13 @@ function bahtText(value) {
     created.forEach(rec => cloudSave('bills', rec));
     closeStmtOverlay();
     showTab('bill');
-    if (created.length) {
-      // เปิดใบล่าสุด (วันที่ล่าสุด) ขึ้นมาในฟอร์มแก้ไขทันที เพื่อให้วันที่ที่เห็นบนหน้าจอตรงกับวันที่ในสเตทเม้นจริง
-      // (ก่อนหน้านี้ฟอร์มจะยังค้างวันที่เดิม/วันนี้ไว้ ทั้งที่บิลถูกสร้างด้วยวันที่จากสเตทเม้นแล้ว)
-      const last = created[created.length - 1];
-      currentId = last.id;
-      apply(last);
-      renderEditState();
-    }
     renderHistory();
+    if (created.length) {
+      // ฟอร์มบิลอยู่ในหน้าต่างแล้ว — แสดงบิลที่เพิ่งสร้างในประวัติ (กรองเดือนของบิลล่าสุด) ให้ตรวจ/กดเปิดแก้ไขทีละใบ
+      const m = monthKey(created[created.length - 1].date), sel = $('histPrintMonth');
+      if (sel && m && Array.from(sel.options).some(o => o.value === m)) { sel.value = m; renderHistory(); }
+      const hs = document.querySelector('#panel-bill .history'); if (hs) hs.scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
     toast('เปิดบิลจากสเตทเม้นแล้ว ' + created.length + ' ใบ เรียงตามวันที่ — ตรวจสอบและแก้ไขรายละเอียดแต่ละใบได้ที่ “ประวัติเอกสาร” ด้านล่าง');
   }
 
@@ -8512,7 +8546,7 @@ function bahtText(value) {
     const have = items.filter(i => (i.name || '').trim());
     const fresh = add.filter(a => !have.some(h => h.name === a.name && String(h.qty) === String(a.qty)));
     items = have.concat(fresh); if (!items.length) items = [{name: '', qty: 1, price: 0}];
-    renderItems(); renderBill(); showTab('bill'); window.scrollTo({top: 0, behavior: 'smooth'});
+    renderItems(); renderBill(); showTab('bill'); openBillEdit(bill, bill ? null : 'เปิดบิลจากใบสั่งงาน');
     toast(bill ? 'เปิดบิล ' + (bill.no || '') + ' (รอชำระ) เพิ่มงาน ' + fresh.length + ' รายการ ใส่ราคาแล้วกด “บันทึกลงประวัติ”' : 'ไม่มีบิลค้างของ ' + String(j.jName || '').trim() + ' เปิดบิลใหม่ให้ ใส่ราคาแล้วกด “บันทึกลงประวัติ”');
   }
   function applyJobScan(id, code, small) {
@@ -11814,8 +11848,7 @@ function bahtText(value) {
     const shown = jobItems.filter(i => i.name.trim());
     items = shown.length ? shown.map(i => ({name: i.name, qty: i.qty, price: 0})) : [{name: '', qty: 1, price: 0}];
     if ($('jobNote').value.trim() && !$('note').value.trim()) $('note').value = $('jobNote').value;
-    renderItems(); renderBill(); showTab('bill');
-    window.scrollTo({top: 0, behavior: 'smooth'});
+    renderItems(); renderBill(); showTab('bill'); openBillEdit(null, 'เปิดบิลจากใบคอนเฟิร์มงาน');
     toast('คัดลอกข้อมูลจากใบคอนเฟิร์มงานมาที่บิลแล้ว ใส่ราคาต่อชิ้นให้ครบก่อนพิมพ์');
   });
 
@@ -11826,7 +11859,7 @@ function bahtText(value) {
     wholesaleItems = shown.length ? shown.map(i => ({name: i.name, qty: i.qty, price: i.price})) : [{name: '', qty: 1, price: 0}];
     $('whDiscount').value = num($('discount').value) || 0;
     if ($('note').value.trim() && !$('whNote').value.trim()) $('whNote').value = $('note').value;
-    renderWholesaleItems(); renderWholesale(); showTab('wholesale'); openWhModal();
+    closeBillEdit(); renderWholesaleItems(); renderWholesale(); showTab('wholesale'); openWhModal();
     window.scrollTo({top: 0, behavior: 'smooth'});
     toast('คัดลอกข้อมูลจากเอกสารนี้มาที่ใบราคาส่งแล้ว');
   });
@@ -11839,8 +11872,7 @@ function bahtText(value) {
     $('discount').value = num($('quoteDiscount').value) || 0;
     $('vatMode').value = $('quoteVatMode').value || 'add'; $('vatRate').value = $('quoteVatRate').value || 7;
     if ($('quoteNote').value.trim() && !$('note').value.trim()) $('note').value = $('quoteNote').value;
-    syncVat(); renderItems(); renderBill(); showTab('bill');
-    window.scrollTo({top: 0, behavior: 'smooth'});
+    syncVat(); renderItems(); renderBill(); showTab('bill'); openBillEdit(null, 'เปิดบิลจากใบเสนอราคา');
     toast('คัดลอกข้อมูลจากใบเสนอราคามาที่ใบเสร็จ/ใบกำกับภาษีแล้ว');
   });
 
@@ -12315,11 +12347,10 @@ function bahtText(value) {
   $('purchHistSearch').addEventListener('input', renderPurchHistory);
   $('histPrintMonth').addEventListener('change', () => {
     const sel = $('histPrintMonth').value;
-    if (!sel) return;
     const list = store.get('bs_bills', []);
-    histSelected = new Set(list.filter(b => monthKey(b.date) === sel).map(b => b.id));
+    histSelected = sel ? new Set(list.filter(b => monthKey(b.date) === sel).map(b => b.id)) : new Set();
     renderHistory();
-    toast('ติ๊กเลือกเอกสารเดือน ' + thMonthFull(sel) + ' ให้แล้ว ' + histSelected.size + ' ใบ');
+    if (sel) toast('แสดงเฉพาะเดือน ' + thMonthFull(sel) + ' · ติ๊กเลือกไว้ ' + histSelected.size + ' ใบ');
   });
   $('pdf-calc').addEventListener('click', () => exportDoc('calc', $('pdf-calc')));
   $('ovClose').addEventListener('click', closeOverlay);
@@ -12340,7 +12371,9 @@ function bahtText(value) {
     $('excludeTax').checked = off;
     toast(off ? 'บัญชี' + acc + ': ไม่นับบิลนี้ในรายงานภาษีขาย' : 'บัญชี' + acc + ': นับบิลนี้ในรายงานภาษีขาย');
   });
-  $('stmt-import-btn').addEventListener('click', openStmtOverlay);
+  $('stmt-import-btn').addEventListener('click', () => { closeBillEdit(); openStmtOverlay(); });
+  $('billNewBtn').addEventListener('click', openNewBill);
+  $('billStmtBtn').addEventListener('click', openStmtOverlay);
   $('billEditClose').addEventListener('click', closeBillEdit);
   $('billEditOv').addEventListener('click', e => { if (e.target === $('billEditOv')) closeBillEdit(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && billEditOpen()) closeBillEdit(); });

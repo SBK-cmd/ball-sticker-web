@@ -1206,7 +1206,20 @@ table.lines tfoot .r{text-align:right;font-variant-numeric:tabular-nums;white-sp
 .btn.light:hover{background:rgba(255,255,255,.16)}
 .btn[disabled]{opacity:.65;cursor:progress}
 .overlay{position:fixed;inset:0;z-index:1000;background:rgba(8,16,30,.62);overflow:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 14px calc(16px + env(safe-area-inset-bottom,0px))}
-.ov-card.wide{max-width:1180px}
+.ov-card.wide{max-width:1280px}
+#pdfOverlay{z-index:1010}
+#panel-bill > #billFormTop{display:none}
+.bill-launch{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 16px}
+#billEditOv .ov-card{padding:16px 20px 20px}
+#billEditOv .ov-head{margin-bottom:12px}
+#billEditSlot .bill-grid{grid-template-columns:minmax(0,1fr) minmax(300px,420px)!important;gap:16px!important}
+#billEditSlot .bill-grid .stack{display:flex!important;flex-direction:column;gap:12px}
+#billEditSlot .bill-grid .stack>.card{grid-column:auto!important;grid-row:auto!important;margin:0!important;padding:16px}
+#billEditSlot .bill-grid .stack>.card h2{margin-bottom:10px}
+#billEditSlot .preview-col{position:sticky;top:0}
+#billEditSlot .preview-col h2{font-size:15px;margin-bottom:8px}
+#billEditSlot .actions-note{display:none}
+@media (max-width:980px){#billEditSlot .bill-grid{grid-template-columns:minmax(0,1fr)!important}#billEditSlot .preview-col{position:static}}
 .ov-card{max-width:720px;margin:0 auto;background:var(--surface);border-radius:16px;padding:20px;box-shadow:var(--shadow-2)}
 .ov-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .ov-head h2{font-size:20px}
@@ -3344,6 +3357,12 @@ html body .page-head h1{letter-spacing:-.02em}
         <p>เพิ่มรายการงาน คำนวณยอดและ VAT แล้วพิมพ์หรือบันทึกเป็น PDF</p>
       </div>
 
+      <div class="bill-launch no-print">
+        <button class="btn primary" id="billNewBtn" type="button">+ เปิดบิลใหม่</button>
+        <button class="btn" id="billStmtBtn" type="button">เปิดบิลจากสเตทเม้นธนาคาร</button>
+        <span class="hint" id="billDraftHint" style="margin:0"></span>
+      </div>
+
       <div class="bill-grid" id="billFormTop">
         <div class="stack no-print">
           <div class="card">
@@ -3429,7 +3448,7 @@ html body .page-head h1{letter-spacing:-.02em}
         </div>
       </div>
 
-      <section class="card history no-print" style="margin-top:20px" aria-labelledby="hist-h">
+      <section class="card history no-print" aria-labelledby="hist-h">
         <div class="viz-head">
           <h2 id="hist-h">ประวัติเอกสาร</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้</span>
@@ -3437,8 +3456,8 @@ html body .page-head h1{letter-spacing:-.02em}
         <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="histSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
         <div class="dash-filter" style="margin-bottom:10px">
           <label class="f" style="max-width:240px">
-            <span>ติ๊กเลือกทั้งเดือน</span>
-            <select class="txt" id="histPrintMonth"><option value="">— เลือกเดือน —</option></select>
+            <span>เดือน</span>
+            <select class="txt" id="histPrintMonth"><option value="">ทุกเดือน</option></select>
           </label>
           <label class="f" style="max-width:190px">
             <span>พิมพ์เป็นชุด</span>
@@ -4375,7 +4394,7 @@ html body .page-head h1{letter-spacing:-.02em}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=6a40cbf129",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=e6909a75c1",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
