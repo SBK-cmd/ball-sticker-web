@@ -8825,7 +8825,7 @@ function bahtText(value) {
   if (window.ResizeObserver) { new ResizeObserver(fitReports).observe($('reportSalesFrame')); new ResizeObserver(fitReports).observe($('reportPurchFrame')); }
   window.addEventListener('afterprint', fitReports);
 
-  $('purchPhotoInput').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) readPurchasePhoto(f); });
+  ['purchPhotoInput', 'purchCamInput'].forEach(id => $(id).addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) readPurchasePhoto(f); e.target.value = ''; }));
   $('purchPhotoRemove').addEventListener('click', () => { purchasePhoto = null; purchaseOcrSource = null; purchasePdfText = null; updateOcrButtonLabel(); $('purchPhotoInput').value = ''; renderPurchasePhoto(); });
   $('ocrScanBtn').addEventListener('click', scanPurchasePhoto);
   ['purchVendorTax', 'purchVat', 'purchAmount', 'purchDate'].forEach(id => { const el = $(id); if (el) { el.addEventListener('input', checkPurchaseFields); el.addEventListener('change', checkPurchaseFields); } });
