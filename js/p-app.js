@@ -1561,8 +1561,15 @@ function bahtText(value) {
     const beYY = String((+parts[0] + 543) % 100).padStart(2, '0');
     const mm = parts[1] || '01';
     const prefix = 'BS' + beYY + mm;
-    const n = store.get('bs_bills', []).filter(b => String(b.no).indexOf(prefix) === 0).length + 1;
-    return prefix + String(n).padStart(4, '0');
+    return prefix + String(maxBillSeq(prefix) + 1).padStart(4, '0');
+  }
+  // เลขรันสูงสุดที่ใช้ไปแล้วในเดือนนั้น (ดู 4 หลักหลัง prefix) — ใช้ค่าสูงสุด+1 ไม่ใช่นับจำนวนใบ
+  // (นับจำนวนใบจะได้เลขซ้ำเมื่อลบบิลกลางเดือน และจะข้ามเลขเมื่อมีบิลเลขพิเศษเช่น -1)
+  function maxBillSeq(prefix) {
+    return store.get('bs_bills', []).reduce((m, b) => {
+      const no = String(b.no || ''); if (no.indexOf(prefix) !== 0) return m;
+      const d = /^(\d{4})/.exec(no.slice(prefix.length)); return d ? Math.max(m, +d[1]) : m;
+    }, 0);
   }
 
   function collect() {
@@ -3028,7 +3035,7 @@ function bahtText(value) {
     const beYY = String((+parts[0] + 543) % 100).padStart(2, '0');
     const mm = parts[1] || '01';
     const prefix = 'BS' + beYY + mm;
-    if (!(prefix in counters)) counters[prefix] = store.get('bs_bills', []).filter(b => String(b.no).indexOf(prefix) === 0).length;
+    if (!(prefix in counters)) counters[prefix] = maxBillSeq(prefix);
     counters[prefix]++;
     return prefix + String(counters[prefix]).padStart(4, '0');
   }
