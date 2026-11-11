@@ -643,9 +643,10 @@ function bahtText(value) {
   // บัญชีรับเงินผ่าน QR พร้อมเพย์: คีย์ตรงกับช่อง "บัญชีรับเงิน" (วันทิม = e-wallet ID 15 หลักจาก K PLUS)
   const payAcct = k => k === 'วันทิม' ? {id: '004999240369651', name: 'นาย วันทิม สีทอง'} : {id: shop.promptpay, name: shop.promptpayName};
 
-  function shopLines() {
+  const isCashBill = () => !!(document.getElementById('billDocType') && document.getElementById('billDocType').value === 'cash');
+  function shopLines(noTax) {
     return '<div>' + esc(shop.address) + '</div>' +
-      '<div>เลขประจำตัวผู้เสียภาษี ' + esc(shop.taxId) + (String(shop.branch).trim() ? ' (' + esc(shop.branch) + ')' : '') + '</div>' +
+      (noTax ? '' : '<div>เลขประจำตัวผู้เสียภาษี ' + esc(shop.taxId) + (String(shop.branch).trim() ? ' (' + esc(shop.branch) + ')' : '') + '</div>') +
       '<div>โทร. ' + esc(shop.phone) + '</div>';
   }
   function renderFooter() {
@@ -1531,8 +1532,8 @@ function bahtText(value) {
     if ($('cTax').value.trim()) custParts.push('<div>เลขประจำตัวผู้เสียภาษี ' + esc($('cTax').value.trim()) + '</div>');
     $('bill').innerHTML =
       '<img class="bill-watermark" src="' + WATERMARK + '" alt="">' +
-      '<header class="sh-head"><div class="sh-brand">' + logoImg() + '<div><div class="sh-name">' + esc(shop.name) + '</div><div class="sh-lines">' + shopLines() + '</div></div></div>' +
-      '<div class="sh-doc"><h2>ใบเสร็จรับเงิน / ใบกำกับภาษี</h2><div class="sh-copy">' + esc($('docCopy').value) + '</div><div class="sh-lines">เลขที่ <b>' + esc($('billNo').value) + '</b><br>วันที่ ' + esc(thDate($('billDate').value)) + '</div></div></header>' +
+      '<header class="sh-head"><div class="sh-brand">' + logoImg() + '<div><div class="sh-name">' + esc(shop.name) + '</div><div class="sh-lines">' + shopLines(isCashBill()) + '</div></div></div>' +
+      '<div class="sh-doc"><h2>' + (isCashBill() ? 'บิลเงินสด' : 'ใบเสร็จรับเงิน / ใบกำกับภาษี') + '</h2><div class="sh-copy">' + esc($('docCopy').value) + '</div><div class="sh-lines">เลขที่ <b>' + esc($('billNo').value) + '</b><br>วันที่ ' + esc(thDate($('billDate').value)) + '</div></div></header>' +
       '<section class="cust"><h3>ลูกค้า</h3>' + custParts.join('') + '</section>' +
       '<div class="tbl-wrap"><table class="lines"><thead><tr><th class="n">ลำดับ</th><th>รายการ</th><th class="r">จำนวน</th><th class="r">ราคา/ชิ้น</th><th class="r">รวม</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '<div class="totals-row">' +
@@ -1566,7 +1567,7 @@ function bahtText(value) {
     const parts = dateVal.split('-'); // [ค.ศ., เดือน, วัน]
     const beYY = String((+parts[0] + 543) % 100).padStart(2, '0');
     const mm = parts[1] || '01';
-    const prefix = 'BS' + beYY + mm;
+    const prefix = (isCashBill() ? 'CS' : 'BS') + beYY + mm;   // บิลเงินสดใช้เลขชุดของตัวเอง (CS) ไม่ปนกับใบกำกับภาษี (BS)
     return prefix + String(maxBillSeq(prefix) + 1).padStart(4, '0');
   }
   // เลขรันสูงสุดที่ใช้ไปแล้วในเดือนนั้น (ดู 4 หลักหลัง prefix) — ใช้ค่าสูงสุด+1 ไม่ใช่นับจำนวนใบ
@@ -1582,7 +1583,7 @@ function bahtText(value) {
     return {no: $('billNo').value, date: $('billDate').value, cName: $('cName').value, cPhone: $('cPhone').value,
       cAddr: $('cAddr').value, cTax: $('cTax').value, docCopy: $('docCopy').value, items: items.map(i => ({name: i.name, qty: i.qty, price: i.price})),
       discount: $('discount').value, deposit: $('deposit').value, vatMode: $('vatMode').value, vatRate: $('vatRate').value, note: $('note').value,
-      page: $('billPage').value, account: $('billAccount').value, excludeTax: $('excludeTax').checked};
+      page: $('billPage').value, account: $('billAccount').value, excludeTax: $('excludeTax').checked, docType: $('billDocType').value || 'tax'};
   }
   function apply(b) {
     $('billNo').value = b.no || ''; $('billDate').value = b.date || todayISO();
@@ -1592,6 +1593,7 @@ function bahtText(value) {
     $('vatMode').value = b.vatMode || 'add'; $('vatRate').value = b.vatRate || 7; $('note').value = b.note || '';
     $('billPage').value = PAGE_LABEL[b.page] ? b.page : 'ball'; $('billAccount').value = b.account || '';
     $('excludeTax').checked = !!b.excludeTax;
+    $('billDocType').value = b.docType === 'cash' ? 'cash' : 'tax';
     syncVat(); renderItems(); renderBill();
   }
   function syncVat() {
@@ -6239,7 +6241,7 @@ function bahtText(value) {
     T(x, shop.name, tx, y, {s: 5, w: 700, h: 1}); y += 5.4;
     const info = [shop.address,
       'เลขประจำตัวผู้เสียภาษี ' + shop.taxId + (String(shop.branch).trim() ? ' (' + shop.branch + ')' : ''),
-      'โทร. ' + shop.phone];
+      'โทร. ' + shop.phone].filter((t, i) => !(i === 1 && /^บิลเงินสด/.test(title)));   // บิลเงินสดไม่พิมพ์เลขผู้เสียภาษีร้าน
     info.forEach(t => wrapText(x, t, 80, {s: 3.3}).forEach(l => { T(x, l, tx, y, {s: 3.3, c: MUTED}); y += 4.3; }));
     let ry = M + 4.6;
     T(x, title, PW - M, ry, {s: 4.9, w: 700, h: 1, a: 'right'}); ry += 3.4;
@@ -6265,7 +6267,7 @@ function bahtText(value) {
     await prepAssets();
     const t = totals(), pages = [];
     let pg = mkPage(), x = pg.x; pages.push(pg.c); drawWatermark(x);
-    let y = drawHeader(x, 'ใบเสร็จรับเงิน / ใบกำกับภาษี',
+    let y = drawHeader(x, isCashBill() ? 'บิลเงินสด' : 'ใบเสร็จรับเงิน / ใบกำกับภาษี',
       ['เลขที่ ' + $('billNo').value, 'วันที่ ' + thDate($('billDate').value)], $('docCopy').value);
     // กล่องข้อมูลลูกค้า (กรอบพร้อมพื้นหลังอ่อนๆ และระยะขอบภายในให้ดูเป็นทางการมากขึ้น)
     const cPad = 5.5;
@@ -6823,7 +6825,7 @@ function bahtText(value) {
     const blob = buildPdf(imgs);
     let name;
     const sel = $('reportMonth') ? $('reportMonth').value : '';
-    if (kind === 'bill') name = 'ใบกำกับภาษี-' + ($('billNo').value || 'เอกสาร') + '.pdf';
+    if (kind === 'bill') name = (isCashBill() ? 'บิลเงินสด-' : 'ใบกำกับภาษี-') + ($('billNo').value || 'เอกสาร') + '.pdf';
     else if (kind === 'confirm') name = 'ใบคอนเฟิร์มงาน-' + ($('jobNo').value || 'เอกสาร') + '.pdf';
     else if (kind === 'wholesale') name = 'ใบราคาส่ง-' + ($('whName').value || 'เอกสาร') + '.pdf';
     else if (kind === 'quote') name = 'ใบเสนอราคา-' + ($('quoteNo').value || 'เอกสาร') + '.pdf';
@@ -8590,9 +8592,18 @@ function bahtText(value) {
   });
   $('save-bill').addEventListener('click', saveBill);
   $('new-bill').addEventListener('click', () => { newBill(); toast('เปิดเอกสารใหม่แล้ว'); });
+  function applyBillDocType(announce) {
+    const cash = isCashBill();
+    if (cash) { $('vatMode').value = 'none'; $('excludeTax').checked = true; syncVat(); }
+    if (!currentId) $('billNo').value = nextNo();   // เอกสารใหม่: เปลี่ยนเลขชุดตามประเภท (BS/CS)
+    renderBill();
+    if (announce) toast(cash ? 'บิลเงินสด: ไม่มี VAT ไม่พิมพ์เลขผู้เสียภาษีร้าน ไม่นับในรายงานภาษีขาย · เลขชุด CS' : 'ใบเสร็จรับเงิน / ใบกำกับภาษี · เลขชุด BS');
+  }
+  $('billDocType').addEventListener('change', () => applyBillDocType(true));
   $('billAccount').addEventListener('change', () => {
     const acc = $('billAccount').value; if (!acc) return;
     const off = NON_TAX_ACCOUNTS.indexOf(acc) >= 0;
+    if (off !== isCashBill()) { $('billDocType').value = off ? 'cash' : 'tax'; applyBillDocType(false); if (!off && $('vatMode').value === 'none') { $('vatMode').value = 'add'; syncVat(); renderBill(); } }
     $('excludeTax').checked = off;
     toast(off ? 'บัญชี' + acc + ': ไม่นับบิลนี้ในรายงานภาษีขาย' : 'บัญชี' + acc + ': นับบิลนี้ในรายงานภาษีขาย');
   });
