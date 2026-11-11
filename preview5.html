@@ -1213,12 +1213,15 @@ table.lines tfoot .r{text-align:right;font-variant-numeric:tabular-nums;white-sp
 #billEditOv .ov-card{padding:16px 20px 20px}
 #billEditOv .ov-head{margin-bottom:12px}
 #billEditSlot .bill-grid{grid-template-columns:minmax(0,1fr) minmax(300px,420px)!important;gap:16px!important}
-#billEditSlot .bill-grid .stack{display:flex!important;flex-direction:column;gap:12px}
+#billEditSlot .bill-grid .stack{display:flex!important;flex-direction:column;align-items:stretch!important;gap:12px}
 #billEditSlot .bill-grid .stack>.card{grid-column:auto!important;grid-row:auto!important;margin:0!important;padding:16px}
 #billEditSlot .bill-grid .stack>.card h2{margin-bottom:10px}
 #billEditSlot .preview-col{position:sticky;top:0}
 #billEditSlot .preview-col h2{font-size:15px;margin-bottom:8px}
 #billEditSlot .actions-note{display:none}
+@media (min-width:981px){#billEditSlot .stack>.card:first-child .fields{display:grid;grid-template-columns:1fr 1fr;column-gap:12px}
+#billEditSlot .stack>.card:first-child .fields>*{grid-column:1/-1}
+#billEditSlot .stack>.card:first-child .fields>label:has(#cPhone),#billEditSlot .stack>.card:first-child .fields>label:has(#cTax){grid-column:auto}}
 @media (max-width:980px){#billEditSlot .bill-grid{grid-template-columns:minmax(0,1fr)!important}#billEditSlot .preview-col{position:static}}
 .ov-card{max-width:720px;margin:0 auto;background:var(--surface);border-radius:16px;padding:20px;box-shadow:var(--shadow-2)}
 .ov-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
