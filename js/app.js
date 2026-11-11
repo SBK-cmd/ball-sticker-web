@@ -1582,6 +1582,23 @@ function bahtText(value) {
     $('vatRateWrap').hidden = !on;
     $('vatHint').textContent = on ? 'คำนวณ VAT หลังหักส่วนลด' : 'ใบกำกับภาษีต้องแสดงภาษีมูลค่าเพิ่มแยกบรรทัด เลือกวิธีคิด VAT ด้านบน';
   }
+  // ---- หน้าต่างแก้ไขบิลจากประวัติ: ย้ายฟอร์มเดิม (#billFormTop) เข้าไปในหน้าต่าง แล้วย้ายกลับตอนปิด ----
+  let billEditHome = null;
+  const billEditOpen = () => $('billEditOv') && !$('billEditOv').hidden;
+  function openBillEdit(b) {
+    const form = $('billFormTop'), ov = $('billEditOv'); if (!form || !ov) return;
+    if (!billEditHome) { billEditHome = document.createComment('billFormTop'); form.parentNode.insertBefore(billEditHome, form); }
+    $('billEditSlot').appendChild(form);
+    $('billEditTitle').textContent = 'แก้ไขเอกสาร ' + (b.no || '');
+    ov.hidden = false; document.body.style.overflow = 'hidden'; ov.scrollTop = 0;
+    setTimeout(() => { const f = $('billNo'); if (f) f.focus({preventScroll: true}); }, 30);
+  }
+  function closeBillEdit() {
+    const ov = $('billEditOv'), form = $('billFormTop'); if (!ov || ov.hidden) return;
+    if (billEditHome && form) billEditHome.parentNode.insertBefore(form, billEditHome.nextSibling);
+    ov.hidden = true; document.body.style.overflow = '';
+    newBill();   // ฟอร์มด้านบนกลับเป็นเอกสารใหม่ ไม่ค้างใบที่เพิ่งแก้
+  }
   function renderEditState() {
     const el = $('editState');
     if (currentId) { el.textContent = 'กำลังแก้ไขเอกสารที่บันทึกไว้ กด “บันทึกลงประวัติ” เพื่อบันทึกทับฉบับเดิม'; el.classList.add('editing'); }
@@ -2596,6 +2613,7 @@ function bahtText(value) {
     cloudSave('bills', rec);
     upsertCustomer(rec.cName, rec.cPhone, rec.cAddr, rec.cTax);
     renderHistory(); renderEditState();
+    if (billEditOpen()) setTimeout(closeBillEdit, 0);   // บันทึกจากหน้าต่างแก้ไขแล้วปิดให้เลย
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับเอกสาร ' : 'บันทึกเอกสาร ') + rec.no + ' แล้ว'
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
   }
@@ -8410,6 +8428,9 @@ function bahtText(value) {
     toast(off ? 'บัญชี' + acc + ': ไม่นับบิลนี้ในรายงานภาษีขาย' : 'บัญชี' + acc + ': นับบิลนี้ในรายงานภาษีขาย');
   });
   $('stmt-import-btn').addEventListener('click', openStmtOverlay);
+  $('billEditClose').addEventListener('click', closeBillEdit);
+  $('billEditOv').addEventListener('click', e => { if (e.target === $('billEditOv')) closeBillEdit(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && billEditOpen()) closeBillEdit(); });
   $('stmtClose').addEventListener('click', closeStmtOverlay);
   $('stmtOverlay').addEventListener('click', e => { if (e.target === $('stmtOverlay')) closeStmtOverlay(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('stmtOverlay').hidden) closeStmtOverlay(); });
@@ -8446,8 +8467,7 @@ function bahtText(value) {
       toast(list[idx2].excludeTax ? 'ตัดบิลนี้ออกจากรายงานภาษีขายแล้ว (ยังเก็บไว้ในประวัติตามปกติ)' : 'นำบิลนี้กลับเข้ารายงานภาษีขายแล้ว');
     } else if (btn.dataset.act === 'open') {
       const b = list.find(x => x.id === id); if (!b) return;
-      currentId = id; apply(b); renderEditState(); showTab('bill');
-      window.scrollTo({top: 0, behavior: 'smooth'}); toast('เปิดเอกสาร ' + b.no + ' แล้ว แก้ไขได้เลย');
+      currentId = id; apply(b); renderEditState(); openBillEdit(b);   // แก้ในหน้าต่างลอยตรงนั้นเลย ไม่ต้องเลื่อนขึ้นไปฟอร์มด้านบน
     } else if (btn.dataset.act === 'del') {
       if (delArmed !== id) {            // กดครั้งแรก: ขอให้ยืนยัน (ไม่ใช้ confirm() เพราะบางหน้าต่างบล็อก)
         delArmed = id; btn.textContent = 'กดอีกครั้งเพื่อลบ'; btn.classList.add('confirm');
