@@ -1211,7 +1211,17 @@ table.lines tfoot .r{text-align:right;font-variant-numeric:tabular-nums;white-sp
 .overlay{position:fixed;inset:0;z-index:1000;background:rgba(8,16,30,.62);overflow:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 14px calc(16px + env(safe-area-inset-bottom,0px))}
 .ov-card.wide{max-width:1560px}
 #pdfOverlay{z-index:1010}
-#panel-bill > #billFormTop{display:none}
+#panel-bill > #billFormTop,#panel-quote > #quoteFormTop,#panel-purchase > #purchFormTop{display:none}
+#docEditOv .ov-card{padding:16px 20px 20px}
+#docEditOv .ov-head{margin-bottom:12px}
+#docEditOv.narrow .ov-card{max-width:900px}
+#docEditSlot .bill-grid{grid-template-columns:minmax(0,1fr) minmax(300px,1fr)!important;gap:16px!important}
+#docEditSlot #purchFormTop{grid-template-columns:minmax(0,1fr)!important}
+#docEditSlot .bill-grid .stack{display:flex!important;flex-direction:column;align-items:stretch!important;gap:12px}
+#docEditSlot .bill-grid .stack>.card{grid-column:auto!important;grid-row:auto!important;margin:0!important;padding:16px}
+#docEditSlot .preview-col{position:sticky;top:0}
+#docEditSlot .preview-col h2{font-size:15px;margin-bottom:8px}
+@media (max-width:980px){#docEditSlot .bill-grid{grid-template-columns:minmax(0,1fr)!important}#docEditSlot .preview-col{position:static}}
 .bill-launch{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 16px}
 #billEditOv .ov-card{padding:16px 20px 20px}
 #billEditOv .ov-head{margin-bottom:12px}
@@ -1939,7 +1949,9 @@ html{overflow-x:clip}
 #jobHistory .jc-chip.tdel{background:#6D3FD1!important;color:#fff!important;border-color:#6D3FD1!important;font-weight:700}
 @media (max-width:899px){#whFormTop{display:none}}
 .jm-x{display:none}
-@media (max-width:899px){#jobFormTop{display:none}}
+body:not(.jm-open) #jobFormTop{display:none}
+.job-launch{display:none}
+@media (min-width:900px){.job-launch{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 14px}}
 body.jm-open{overflow:hidden}
 @media print{body.jm-open #whFormTop{position:static!important;box-shadow:none!important;overflow:visible!important;padding:0!important}body.jm-open::before{display:none}}
 body.jm-open::before{content:'';position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1100}
@@ -3297,7 +3309,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.52</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.53</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
@@ -3315,7 +3327,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
       <div class="nav-sec" role="presentation" data-sec="work">
         <div class="nav-sec-h" aria-hidden="true">งานประจำวัน</div>
         <button role="tab" id="tab-confirm" data-tab="confirm" aria-selected="false" aria-controls="panel-confirm"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"></rect><path d="M9 3h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V3z" fill="currentColor" stroke="none"></path><path d="m9 13 2 2 4-4"></path></svg><span>ใบคอนเฟิร์มงาน</span></button>
-        <button role="tab" id="tab-design" data-tab="design" aria-selected="false" aria-controls="panel-design"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg><span>งานออกแบบ</span></button>
+        <button role="tab" id="tab-design" data-tab="design" aria-selected="false" aria-controls="panel-design"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg><span>งานออกแบบ</span><span class="tab-badge" id="dsTabBadge" hidden></span></button>
         <button role="tab" id="tab-cutq" data-tab="cutq" aria-selected="false" aria-controls="panel-cutq" hidden><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.1" y2="15.9"></line><line x1="14.5" y1="14.5" x2="20" y2="20"></line><line x1="8.1" y1="8.1" x2="12" y2="12"></line></svg><span>สั่งตัด</span></button>
         <button role="tab" id="tab-track" data-tab="track" aria-selected="false" aria-controls="panel-track"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg><span>ติดตามพัสดุ</span></button>
       </div>
@@ -3432,7 +3444,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
       <span class="btab-label">สั่งงาน</span>
     </button>
     <button type="button" class="btab" data-tab="design" aria-controls="panel-design">
-      <span class="btab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></span>
+      <span class="btab-ico"><span class="tab-badge btab-badge" id="dsBnavBadge" hidden></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></span>
       <span class="btab-label">งานออกแบบ</span>
     </button>
     <button type="button" class="btab" id="bnavTaxTrigger" aria-haspopup="true" aria-expanded="false">
@@ -3659,6 +3671,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
         <div class="tdy-grid"></div>
       </section>
 
+      <div class="job-launch no-print" id="jobLaunch"><button class="btn primary" id="jobNewBtn" type="button">+ คอนเฟิร์มใหม่</button></div>
       <section class="card history no-print" style="margin:0 0 20px" aria-labelledby="jobhist-h">
         <div class="viz-head">
           <h2 id="jobhist-h">ประวัติใบคอนเฟิร์มงาน</h2>
@@ -4059,7 +4072,11 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
         <p>เอกสารเสนอราคาให้ลูกค้าก่อนตกลงซื้อ แยกเอกสารจากใบเสร็จ/ใบกำกับภาษีโดยสิ้นเชิง มีเลขที่เอกสารและ VAT เหมือนบิล แต่ไม่รวมกับยอดขายในแดชบอร์ดหรือรายงานภาษี</p>
       </div>
 
-      <div class="bill-grid">
+      <div class="bill-launch no-print">
+        <button class="btn primary" id="quoteNewBtn" type="button">+ เปิดใบเสนอราคาใหม่</button>
+        <span class="hint" id="quoteDraftHint" style="margin:0"></span>
+      </div>
+      <div class="bill-grid" id="quoteFormTop">
         <div class="stack no-print">
           <div class="card">
             <h2>ข้อมูลเอกสาร</h2>
@@ -4124,7 +4141,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
         </div>
       </div>
 
-      <section class="card history no-print" style="margin-top:20px" aria-labelledby="quotehist-h">
+      <section class="card history no-print" aria-labelledby="quotehist-h">
         <div class="viz-head">
           <h2 id="quotehist-h">ประวัติใบเสนอราคา</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้ (แยกจากประวัติเอกสาร/ใบเสร็จ)</span>
@@ -4287,7 +4304,11 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
         <p>ถ่ายภาพหรือแนบใบกำกับภาษีซื้อ (ค่าวัสดุ/ค่าใช้จ่ายที่ซื้อเข้าร้าน) พร้อมกรอกยอด VAT เพื่อใช้สรุปในแดชบอร์ด — ถ้าเป็นรายการซื้อที่ไม่มีใบกำกับภาษี/ไม่มี VAT ให้เว้นช่องยอดภาษีซื้อไว้ ระบบจะแยกไปเก็บเป็น “ค่าใช้จ่ายที่ไม่มี VAT” แทน</p>
       </div>
 
-      <div class="bill-grid">
+      <div class="bill-launch no-print">
+        <button class="btn primary" id="purchNewBtn" type="button">+ บันทึกภาษีซื้อใหม่</button>
+        <span class="hint" id="purchDraftHint" style="margin:0"></span>
+      </div>
+      <div class="bill-grid" id="purchFormTop">
         <div class="stack">
           <div class="card">
             <h2>ข้อมูลใบกำกับภาษีซื้อ</h2>
@@ -4351,7 +4372,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
         </div>
       </div>
 
-      <section class="card history no-print" style="margin-top:20px" aria-labelledby="purchhist-h">
+      <section class="card history no-print" aria-labelledby="purchhist-h">
         <div class="viz-head">
           <h2 id="purchhist-h">ประวัติภาษีซื้อ</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข และลบได้</span>
@@ -4833,6 +4854,15 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
   </div>
 </div>
 
+<div class="overlay no-print" id="docEditOv" hidden role="dialog" aria-modal="true" aria-labelledby="docEditTitle">
+  <div class="ov-card wide">
+    <div class="ov-head">
+      <div><h2 id="docEditTitle">แก้ไข</h2><p class="ov-file">แก้แล้วกด “บันทึกลงประวัติ” · ปิดหน้าต่างโดยไม่บันทึก = ไม่เปลี่ยนอะไร</p></div>
+      <button class="btn small" id="docEditClose" type="button">ปิด</button>
+    </div>
+    <div id="docEditSlot"></div>
+  </div>
+</div>
 <div class="overlay no-print" id="billEditOv" hidden role="dialog" aria-modal="true" aria-labelledby="billEditTitle">
   <div class="ov-card wide">
     <div class="ov-head">
@@ -4874,7 +4904,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=61074f34b7",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=7c2c562dca",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
