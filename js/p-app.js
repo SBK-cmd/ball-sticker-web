@@ -4742,7 +4742,11 @@ function bahtText(value) {
   function addJobToBill(j, bill) {
     const add = (j.items || []).filter(i => (i.name || '').trim()).map(i => ({name: String(i.name).trim() + ((i.note || '').trim() ? ' (' + String(i.note).trim() + ')' : ''), qty: i.qty, price: 0}));
     if (bill) { currentId = bill.id; apply(bill); renderEditState(); }
-    else { newBill(); $('cName').value = j.jName || ''; $('cPhone').value = j.jPhone || ''; $('cAddr').value = j.jAddr || ''; items = [{name: '', qty: 1, price: 0}]; }
+    else {
+      newBill(); $('cName').value = j.jName || ''; $('cPhone').value = j.jPhone || ''; $('cAddr').value = j.jAddr || ''; items = [{name: '', qty: 1, price: 0}];
+      if (PAGE_LABEL[j.page]) $('billPage').value = j.page;
+      if (j.account && !accHidden(j)) { $('billAccount').value = j.account; $('excludeTax').checked = NON_TAX_ACCOUNTS.indexOf(j.account) >= 0; syncBillDocFromAccount(); }
+    }
     const have = items.filter(i => (i.name || '').trim());
     const fresh = add.filter(a => !have.some(h => h.name === a.name && String(h.qty) === String(a.qty)));
     items = have.concat(fresh); if (!items.length) items = [{name: '', qty: 1, price: 0}];
@@ -8062,7 +8066,7 @@ function bahtText(value) {
   $('job-to-bill').addEventListener('click', () => {
     $('cName').value = $('jName').value; $('cPhone').value = $('jPhone').value; $('cAddr').value = $('jAddr').value;
     $('billPage').value = $('jobPage').value;
-    if ($('jobAccount').value) { $('billAccount').value = $('jobAccount').value; $('excludeTax').checked = NON_TAX_ACCOUNTS.indexOf($('jobAccount').value) >= 0; }
+    if ($('jobAccount').value) { $('billAccount').value = $('jobAccount').value; $('excludeTax').checked = NON_TAX_ACCOUNTS.indexOf($('jobAccount').value) >= 0; syncBillDocFromAccount(); }
     const shown = jobItems.filter(i => i.name.trim());
     items = shown.length ? shown.map(i => ({name: i.name, qty: i.qty, price: 0})) : [{name: '', qty: 1, price: 0}];
     if ($('jobNote').value.trim() && !$('note').value.trim()) $('note').value = $('jobNote').value;
@@ -8600,6 +8604,12 @@ function bahtText(value) {
     if (announce) toast(cash ? 'บิลเงินสด: ไม่มี VAT ไม่พิมพ์เลขผู้เสียภาษีร้าน ไม่นับในรายงานภาษีขาย · เลขชุด CS' : 'ใบเสร็จรับเงิน / ใบกำกับภาษี · เลขชุด BS');
   }
   $('billDocType').addEventListener('change', () => applyBillDocType(true));
+  // บัญชีรับเงินที่ไม่ยื่นภาษี (วันทิม) → บิลเงินสด · บัญชียื่นภาษี → ใบกำกับภาษี (ใช้ตอนดึงข้อมูลจากใบงานมาเปิดบิล)
+  function syncBillDocFromAccount() {
+    const acc = $('billAccount').value; if (!acc) return;
+    const off = NON_TAX_ACCOUNTS.indexOf(acc) >= 0;
+    if (off !== isCashBill()) { $('billDocType').value = off ? 'cash' : 'tax'; applyBillDocType(false); if (!off && $('vatMode').value === 'none') { $('vatMode').value = 'add'; syncVat(); renderBill(); } }
+  }
   $('billAccount').addEventListener('change', () => {
     const acc = $('billAccount').value; if (!acc) return;
     const off = NON_TAX_ACCOUNTS.indexOf(acc) >= 0;
