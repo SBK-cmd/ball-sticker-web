@@ -3009,9 +3009,10 @@ function bahtText(value) {
     btn.textContent = (provider !== 'none' && apiKey) ? 'สแกนด้วย AI และกรอกข้อมูลอัตโนมัติ' : 'สแกนและกรอกข้อมูลอัตโนมัติ';
   }
 
-  async function scanPurchasePhoto() {
+  async function scanPurchasePhoto(pasted) {
+    pasted = typeof pasted === 'string' ? pasted.trim() : '';
     const source = purchaseOcrSource || purchasePhoto;
-    if (!source) return;
+    if (!source && !pasted) return;
     if (ocrBusy) return;
     ocrBusy = true;
     const btn = $('ocrScanBtn'), html = btn.textContent;
@@ -3019,8 +3020,9 @@ function bahtText(value) {
     const provider = localStorage.getItem('bs_ai_provider') || 'none';
     const apiKey = (localStorage.getItem('bs_ai_key') || '').trim();
     try {
-      let fields = null, usedAi = false, usedPdf = false;
-      if (provider !== 'none' && apiKey && !purchasePdfText) {
+      let fields = null, usedAi = false, usedPdf = false, usedPaste = false;
+      if (pasted) { fields = parseReceiptText(pasted); usedPaste = true; }
+      if (!fields && provider !== 'none' && apiKey && !purchasePdfText) {
         btn.textContent = 'กำลังสแกนด้วย AI…';
         try {
           fields = await aiScanReceipt(source, provider, apiKey, (localStorage.getItem('bs_ai_model') || '').trim());
@@ -3043,7 +3045,7 @@ function bahtText(value) {
       let known = null;
       if (fields.vendorTax) known = allVendors().find(v => String(v.tax || '').replace(/\D/g, '') === fields.vendorTax) || null;
       if (known) { fields.vendor = known.name; if (known.addr && $('purchVendorAddr') && !$('purchVendorAddr').value.trim()) $('purchVendorAddr').value = known.addr; }
-      purchCheckSrc = (usedPdf ? 'อ่านจากตัวหนังสือในไฟล์ PDF' : usedAi ? 'อ่านด้วย AI' : 'อ่านจากรูปด้วย OCR (ควรตรวจทุกช่อง)') + (known ? ' · ชื่อร้าน/ที่อยู่จากประวัติร้าน "' + known.name + '"' : '') + (fields._matched ? ' · ยอดก่อน VAT + VAT = ยอดรวม ตรงกันในเอกสาร' : '');
+      purchCheckSrc = (usedPaste ? 'แยกจากข้อความที่วาง' : usedPdf ? 'อ่านจากตัวหนังสือในไฟล์ PDF' : usedAi ? 'อ่านด้วย AI' : 'อ่านจากรูปด้วย OCR (ควรตรวจทุกช่อง)') + (known ? ' · ชื่อร้าน/ที่อยู่จากประวัติร้าน "' + known.name + '"' : '') + (fields._matched ? ' · ยอดก่อน VAT + VAT = ยอดรวม ตรงกันในเอกสาร' : '');
       const map = {date: 'purchDate', vendor: 'purchVendor', invoiceNo: 'purchInvoiceNo', vendorTax: 'purchVendorTax', amount: 'purchAmount', vat: 'purchVat'};
       let filled = 0;
       Object.keys(map).forEach(k => {
@@ -3053,7 +3055,7 @@ function bahtText(value) {
         if (fields[k] && overwrite) { el.value = fields[k]; filled++; }
       });
       checkPurchaseFields();
-      toast(filled > 0 ? (usedPdf ? 'อ่าน PDF เสร็จแล้ว' : usedAi ? 'สแกนด้วย AI เสร็จแล้ว' : 'สแกนเสร็จแล้ว') + ' กรอกให้ ' + filled + ' ช่อง — กรุณาตรวจสอบความถูกต้องก่อนบันทึก'
+      toast(filled > 0 ? (usedPaste ? 'แยกข้อความเสร็จแล้ว' : usedPdf ? 'อ่าน PDF เสร็จแล้ว' : usedAi ? 'สแกนด้วย AI เสร็จแล้ว' : 'สแกนเสร็จแล้ว') + ' กรอกให้ ' + filled + ' ช่อง — กรุณาตรวจสอบความถูกต้องก่อนบันทึก'
                         : 'สแกนไม่พบข้อมูลที่มั่นใจพอ กรุณากรอกข้อมูลด้วยตนเอง');
     } catch (e) {
       console.error(e);
@@ -3293,7 +3295,7 @@ function bahtText(value) {
     $('purchAmount').value = p.amount || ''; $('purchVat').value = p.vat || '';
     $('purchNote').value = p.note || ''; purchasePhoto = p.photo || null;
     $('purchAccount').value = ACCOUNTS.indexOf(p.account) >= 0 ? p.account : 'กิติพงษ์';   // รายการเก่าไม่มีช่องนี้ = กิติพงษ์
-    purchaseOcrSource = null; purchasePdfText = null; purchCheckSrc = '';
+    purchaseOcrSource = null; purchasePdfText = null; purchCheckSrc = ''; if ($('purchPasteText')) $('purchPasteText').value = '';
     renderPurchasePhoto(); try { updateOcrButtonLabel(); checkPurchaseFields(); } catch (e) {}
   }
   function renderPurchEditState() {
@@ -8827,7 +8829,8 @@ function bahtText(value) {
 
   ['purchPhotoInput', 'purchCamInput'].forEach(id => $(id).addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) readPurchasePhoto(f); e.target.value = ''; }));
   $('purchPhotoRemove').addEventListener('click', () => { purchasePhoto = null; purchaseOcrSource = null; purchasePdfText = null; updateOcrButtonLabel(); $('purchPhotoInput').value = ''; renderPurchasePhoto(); });
-  $('ocrScanBtn').addEventListener('click', scanPurchasePhoto);
+  $('ocrScanBtn').addEventListener('click', () => scanPurchasePhoto());
+  $('purchPasteBtn').addEventListener('click', () => { const t = $('purchPasteText').value; if (!t.trim()) { toast('วางข้อความจากบิลก่อน'); $('purchPasteText').focus(); return; } scanPurchasePhoto(t); });
   ['purchVendorTax', 'purchVat', 'purchAmount', 'purchDate'].forEach(id => { const el = $(id); if (el) { el.addEventListener('input', checkPurchaseFields); el.addEventListener('change', checkPurchaseFields); } });
 
   /* ---------------- ตั้งค่า AI ช่วยสแกนใบกำกับภาษี (เก็บใน localStorage ของเบราว์เซอร์นี้เท่านั้น ไม่ซิงก์ขึ้นคลาวด์) ---------------- */

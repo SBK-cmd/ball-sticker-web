@@ -768,7 +768,8 @@ button.status-pill:active{filter:brightness(0.9)}
 .job-status-select{font-size:12.5px;font-weight:700;padding:4px 8px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--field);cursor:pointer}
 .track-status-select{font-size:12.5px;font-weight:700;padding:4px 8px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--field);cursor:pointer}
 .ocr-actions{display:flex;gap:8px;flex-wrap:wrap}
-.purch-pick{display:flex;gap:8px;flex-wrap:wrap}.purch-pick .btn{min-height:44px;cursor:pointer;position:relative}
+.purch-pick{display:flex;gap:8px;flex-wrap:wrap}
+.purch-paste{margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.purch-paste summary{cursor:pointer;font-weight:600;min-height:32px;display:flex;align-items:center}.purch-paste textarea{width:100%;margin:8px 0}.purch-paste .btn{min-height:44px}.purch-pick .btn{min-height:44px;cursor:pointer;position:relative}
 .purch-pick .vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
 .purch-pick label:focus-within{outline:3px solid var(--magenta);outline-offset:2px}
 .pchk{border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.5;border:1px solid var(--line);background:var(--field)}
@@ -3431,6 +3432,7 @@ body.jm-open .fab-newjob{display:none!important}
               <label class="f">
                 <span>ถ่ายภาพ / แนบไฟล์ใบกำกับภาษีซื้อ</span>
                 <div class="purch-pick"><label class="btn small purch-cam"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>ถ่ายรูปบิล<input type="file" accept="image/*" capture="environment" id="purchCamInput" class="vh"></label><label class="btn small purch-file"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/></svg>แนบรูป / PDF<input type="file" accept="image/*,application/pdf,.pdf" id="purchPhotoInput" class="vh"></label></div>
+                <details class="purch-paste" id="purchPasteBox"><summary>วางข้อความจากบิล (คัดลอกจากรูปในมือถือ)</summary><p class="hint">บนมือถือ: เปิดรูปบิล → กดค้างที่ตัวหนังสือ → เลือกทั้งหมด → คัดลอก แล้ววางในช่องนี้ ระบบแยกช่องและตรวจตัวเลขให้ ไม่ใช้อินเทอร์เน็ต</p><textarea class="txt" id="purchPasteText" rows="5" placeholder="วางข้อความจากบิลที่นี่"></textarea><button class="btn small" id="purchPasteBtn" type="button">แยกข้อมูลและกรอกให้</button></details>
                 <p class="hint">แนบภาพ หรือไฟล์ PDF ใบกำกับภาษี (e-Tax) ได้ ระบบไม่สแกนเอง กด “สแกนและกรอกข้อมูล” ใต้ภาพเมื่อต้องการ · ไฟล์ PDF อ่านจากตัวหนังสือในไฟล์ แม่นกว่ารูปถ่าย</p>
                 <div class="purch-photo-wrap" id="purchPhotoWrap" hidden>
                   <img id="purchPhotoPreview" alt="ภาพใบกำกับภาษีซื้อ">
@@ -7013,9 +7015,10 @@ function bahtText(value) {
     btn.textContent = (provider !== 'none' && apiKey) ? 'สแกนด้วย AI และกรอกข้อมูลอัตโนมัติ' : 'สแกนและกรอกข้อมูลอัตโนมัติ';
   }
 
-  async function scanPurchasePhoto() {
+  async function scanPurchasePhoto(pasted) {
+    pasted = typeof pasted === 'string' ? pasted.trim() : '';
     const source = purchaseOcrSource || purchasePhoto;
-    if (!source) return;
+    if (!source && !pasted) return;
     if (ocrBusy) return;
     ocrBusy = true;
     const btn = $('ocrScanBtn'), html = btn.textContent;
@@ -7023,8 +7026,9 @@ function bahtText(value) {
     const provider = localStorage.getItem('bs_ai_provider') || 'none';
     const apiKey = (localStorage.getItem('bs_ai_key') || '').trim();
     try {
-      let fields = null, usedAi = false, usedPdf = false;
-      if (provider !== 'none' && apiKey && !purchasePdfText) {
+      let fields = null, usedAi = false, usedPdf = false, usedPaste = false;
+      if (pasted) { fields = parseReceiptText(pasted); usedPaste = true; }
+      if (!fields && provider !== 'none' && apiKey && !purchasePdfText) {
         btn.textContent = 'กำลังสแกนด้วย AI…';
         try {
           fields = await aiScanReceipt(source, provider, apiKey, (localStorage.getItem('bs_ai_model') || '').trim());
@@ -7047,7 +7051,7 @@ function bahtText(value) {
       let known = null;
       if (fields.vendorTax) known = allVendors().find(v => String(v.tax || '').replace(/\D/g, '') === fields.vendorTax) || null;
       if (known) { fields.vendor = known.name; if (known.addr && $('purchVendorAddr') && !$('purchVendorAddr').value.trim()) $('purchVendorAddr').value = known.addr; }
-      purchCheckSrc = (usedPdf ? 'อ่านจากตัวหนังสือในไฟล์ PDF' : usedAi ? 'อ่านด้วย AI' : 'อ่านจากรูปด้วย OCR (ควรตรวจทุกช่อง)') + (known ? ' · ชื่อร้าน/ที่อยู่จากประวัติร้าน "' + known.name + '"' : '') + (fields._matched ? ' · ยอดก่อน VAT + VAT = ยอดรวม ตรงกันในเอกสาร' : '');
+      purchCheckSrc = (usedPaste ? 'แยกจากข้อความที่วาง' : usedPdf ? 'อ่านจากตัวหนังสือในไฟล์ PDF' : usedAi ? 'อ่านด้วย AI' : 'อ่านจากรูปด้วย OCR (ควรตรวจทุกช่อง)') + (known ? ' · ชื่อร้าน/ที่อยู่จากประวัติร้าน "' + known.name + '"' : '') + (fields._matched ? ' · ยอดก่อน VAT + VAT = ยอดรวม ตรงกันในเอกสาร' : '');
       const map = {date: 'purchDate', vendor: 'purchVendor', invoiceNo: 'purchInvoiceNo', vendorTax: 'purchVendorTax', amount: 'purchAmount', vat: 'purchVat'};
       let filled = 0;
       Object.keys(map).forEach(k => {
@@ -7057,7 +7061,7 @@ function bahtText(value) {
         if (fields[k] && overwrite) { el.value = fields[k]; filled++; }
       });
       checkPurchaseFields();
-      toast(filled > 0 ? (usedPdf ? 'อ่าน PDF เสร็จแล้ว' : usedAi ? 'สแกนด้วย AI เสร็จแล้ว' : 'สแกนเสร็จแล้ว') + ' กรอกให้ ' + filled + ' ช่อง — กรุณาตรวจสอบความถูกต้องก่อนบันทึก'
+      toast(filled > 0 ? (usedPaste ? 'แยกข้อความเสร็จแล้ว' : usedPdf ? 'อ่าน PDF เสร็จแล้ว' : usedAi ? 'สแกนด้วย AI เสร็จแล้ว' : 'สแกนเสร็จแล้ว') + ' กรอกให้ ' + filled + ' ช่อง — กรุณาตรวจสอบความถูกต้องก่อนบันทึก'
                         : 'สแกนไม่พบข้อมูลที่มั่นใจพอ กรุณากรอกข้อมูลด้วยตนเอง');
     } catch (e) {
       console.error(e);
@@ -7297,7 +7301,7 @@ function bahtText(value) {
     $('purchAmount').value = p.amount || ''; $('purchVat').value = p.vat || '';
     $('purchNote').value = p.note || ''; purchasePhoto = p.photo || null;
     $('purchAccount').value = ACCOUNTS.indexOf(p.account) >= 0 ? p.account : 'กิติพงษ์';   // รายการเก่าไม่มีช่องนี้ = กิติพงษ์
-    purchaseOcrSource = null; purchasePdfText = null; purchCheckSrc = '';
+    purchaseOcrSource = null; purchasePdfText = null; purchCheckSrc = ''; if ($('purchPasteText')) $('purchPasteText').value = '';
     renderPurchasePhoto(); try { updateOcrButtonLabel(); checkPurchaseFields(); } catch (e) {}
   }
   function renderPurchEditState() {
@@ -12831,7 +12835,8 @@ function bahtText(value) {
 
   ['purchPhotoInput', 'purchCamInput'].forEach(id => $(id).addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) readPurchasePhoto(f); e.target.value = ''; }));
   $('purchPhotoRemove').addEventListener('click', () => { purchasePhoto = null; purchaseOcrSource = null; purchasePdfText = null; updateOcrButtonLabel(); $('purchPhotoInput').value = ''; renderPurchasePhoto(); });
-  $('ocrScanBtn').addEventListener('click', scanPurchasePhoto);
+  $('ocrScanBtn').addEventListener('click', () => scanPurchasePhoto());
+  $('purchPasteBtn').addEventListener('click', () => { const t = $('purchPasteText').value; if (!t.trim()) { toast('วางข้อความจากบิลก่อน'); $('purchPasteText').focus(); return; } scanPurchasePhoto(t); });
   ['purchVendorTax', 'purchVat', 'purchAmount', 'purchDate'].forEach(id => { const el = $(id); if (el) { el.addEventListener('input', checkPurchaseFields); el.addEventListener('change', checkPurchaseFields); } });
 
   /* ---------------- ตั้งค่า AI ช่วยสแกนใบกำกับภาษี (เก็บใน localStorage ของเบราว์เซอร์นี้เท่านั้น ไม่ซิงก์ขึ้นคลาวด์) ---------------- */
