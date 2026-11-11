@@ -39,7 +39,8 @@ html body .acd-card svg{background:none!important}
 
 /* ---- ไม่มีไล่สีข้ามเฉด: การ์ดผลคำนวณ/ยอดธนาคาร/ปุ่มหลัก ใช้กรมเรียบ ---- */
 html body .result,html body .hero:not(.acd-card .hero),html body .bkc,html body .wk-bal,html body .bell-bal,html body .bkc-hero{background:var(--u-navy)!important;box-shadow:0 1px 2px rgba(0,0,0,.08)!important}
-html body .btn.primary,html body .btn.good,html body .jc-b.main{background:var(--u-navy)!important;box-shadow:none!important}
+/* ปุ่มหลักคงสีเหลืองแบรนด์ (accent) ตาม p11 — เอาแค่เงาสีออก */
+html body .btn.primary,html body .btn.good,html body .jc-b.main{box-shadow:none!important}
 
 /* ---- ปุ่มลอย/ปุ่มกลางแถบล่าง: ไม่เรือง ---- */
 html body .btab-fab .btab-fab-circle,html body .fab-newjob{box-shadow:0 2px 6px rgba(0,0,0,.16)!important}
@@ -70,3 +71,6 @@ html body .acd-mb .lbl{font-weight:600!important}
   html body .sidebar-cta{box-shadow:0 1px 2px rgba(0,0,0,.12)!important}
 }
 @media (max-width:560px){ html body header.top{background:var(--u-bg)!important;box-shadow:none!important} }
+
+/* ---- เลขา: คำอธิบายใต้หัวข้อรหัสไม่ให้ทับช่องกรอก ---- */
+html body #lkPinBox .hint{display:block;margin:4px 0 12px!important;position:static!important}
