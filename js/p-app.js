@@ -1619,6 +1619,47 @@ function bahtText(value) {
     if (currentId) newBill();   // แก้ใบที่บันทึกแล้ว → ล้างฟอร์ม; ใบใหม่ที่ยังไม่บันทึกเก็บร่างไว้ กด "เปิดบิลใหม่" จะกลับมาที่ร่างนี้
     updateBillDraftHint();
   }
+  // ---- หน้าต่างแก้ไขแบบเดียวกับบิล ใช้กับ ใบเสนอราคา / ภาษีซื้อ: ย้ายฟอร์มเดิมเข้าหน้าต่าง แล้วย้ายกลับตอนปิด
+  const docEdit = {homes: {}, cur: null};
+  const DOC_FORMS = {
+    quote: {form: 'quoteFormTop', fit: () => fitQuote(), isSaved: () => !!currentQuoteId, reset: () => newQuote(),
+      draft: () => !currentQuoteId && (quoteItems.some(i => (i.name || '').trim() || num(i.qty) * num(i.price) > 0) || $('qName').value.trim()),
+      hint: 'quoteDraftHint', btn: 'quoteNewBtn', newLabel: '+ เปิดใบเสนอราคาใหม่', who: () => $('qName').value.trim()},
+    purchase: {form: 'purchFormTop', fit: () => {}, isSaved: () => !!currentPurchaseId, reset: () => { $('purchPhotoInput').value = ''; newPurchase(); }, narrow: true,
+      draft: () => !currentPurchaseId && !!($('purchVendor').value.trim() || num($('purchVat').value) > 0 || num($('purchAmount').value) > 0 || purchasePhoto),
+      hint: 'purchDraftHint', btn: 'purchNewBtn', newLabel: '+ บันทึกภาษีซื้อใหม่', who: () => $('purchVendor').value.trim()}
+  };
+  const docEditOpen = () => $('docEditOv') && !$('docEditOv').hidden;
+  function openDocEdit(kind, title) {
+    const cfg = DOC_FORMS[kind], form = $(cfg.form), ov = $('docEditOv'); if (!form || !ov) return;
+    if (docEdit.cur && docEdit.cur !== kind) closeDocEdit();
+    if (!docEdit.homes[kind]) { docEdit.homes[kind] = document.createComment(cfg.form); form.parentNode.insertBefore(docEdit.homes[kind], form); }
+    $('docEditSlot').appendChild(form); docEdit.cur = kind;
+    $('docEditTitle').textContent = title; ov.classList.toggle('narrow', !!cfg.narrow);
+    ov.hidden = false; document.body.style.overflow = 'hidden'; ov.scrollTop = 0;
+    requestAnimationFrame(cfg.fit);
+  }
+  function closeDocEdit() {
+    const ov = $('docEditOv'), kind = docEdit.cur; if (!ov || ov.hidden || !kind) return;
+    const cfg = DOC_FORMS[kind], form = $(cfg.form), home = docEdit.homes[kind];
+    if (home && form) home.parentNode.insertBefore(form, home.nextSibling);
+    ov.hidden = true; document.body.style.overflow = ''; docEdit.cur = null;
+    if (cfg.isSaved()) cfg.reset();   // แก้ใบที่บันทึกแล้ว → ล้างฟอร์ม; ใบใหม่ที่ยังไม่บันทึกเก็บเป็นร่างไว้
+    updateDocDraftHints();
+  }
+  function updateDocDraftHints() {
+    Object.keys(DOC_FORMS).forEach(k => {
+      const c = DOC_FORMS[k], h = $(c.hint), b = $(c.btn); if (!h || !b) return;
+      let d = false; try { d = c.draft(); } catch (e) {}
+      b.textContent = d ? 'เปิดรายการที่ยังไม่บันทึกต่อ' : c.newLabel;
+      h.textContent = d ? 'มีร่างค้างอยู่' + (c.who() ? ' (' + c.who() + ')' : '') + ' ยังไม่ได้บันทึกลงประวัติ' : '';
+    });
+  }
+  function openDocNew(kind, title) {
+    const c = DOC_FORMS[kind]; let d = false; try { d = c.draft(); } catch (e) {}
+    if (!d) c.reset();
+    openDocEdit(kind, d ? 'รายการที่ยังไม่บันทึก' : title);
+  }
   function setBillZoom(on) {
     const ov = $('billEditOv'); if (!ov) return;
     ov.classList.toggle('bill-zoom', !!on);
@@ -1858,6 +1899,7 @@ function bahtText(value) {
     renderQuoteEditState();
   }
   function renderQuoteHistory() {
+    try { updateDocDraftHints(); } catch (e) {}
     const list = store.get('bs_quotes', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
     const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้ ควรดาวน์โหลด PDF เก็บไว้ทุกครั้ง</p>');
     if (!list.length) { $('quoteHistory').innerHTML = notice + '<p class="empty">ยังไม่มีใบเสนอราคาที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; return; }
@@ -1887,6 +1929,7 @@ function bahtText(value) {
     cloudSave('quotes', rec);
     upsertCustomer(rec.cName, rec.cPhone, rec.cAddr, rec.cTax);
     renderQuoteHistory(); renderQuoteEditState();
+    if (docEdit.cur === 'quote') setTimeout(closeDocEdit, 0);
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับเอกสาร ' : 'บันทึกเอกสาร ') + rec.no + ' แล้ว'
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
   }
@@ -3163,6 +3206,7 @@ function bahtText(value) {
     renderPurchEditState();
   }
   function renderPurchHistory() {
+    try { updateDocDraftHints(); } catch (e) {}
     const list = store.get('bs_purchases', []).slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || (b.savedAt || 0) - (a.savedAt || 0));
     const msel = $('purchHistMonth');
     if (msel) {
@@ -3206,6 +3250,7 @@ function bahtText(value) {
     upsertVendor(rec.vendor, rec.vendorTax, rec.vendorAddr);
     renderPurchHistory(); renderPurchEditState();
     syncRecordPhotosToCloud('bs_purchases', 'purchases', rec.id, 'photo', renderPurchHistory);
+    if (docEdit.cur === 'purchase') setTimeout(closeDocEdit, 0);
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับรายการแล้ว' : 'บันทึกรายการภาษีซื้อแล้ว')
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
   }
@@ -8029,7 +8074,7 @@ function bahtText(value) {
     $('discount').value = num($('quoteDiscount').value) || 0;
     $('vatMode').value = $('quoteVatMode').value || 'add'; $('vatRate').value = $('quoteVatRate').value || 7;
     if ($('quoteNote').value.trim() && !$('note').value.trim()) $('note').value = $('quoteNote').value;
-    syncVat(); renderItems(); renderBill(); showTab('bill'); openBillEdit(null, 'เปิดบิลจากใบเสนอราคา');
+    syncVat(); renderItems(); renderBill(); closeDocEdit(); showTab('bill'); openBillEdit(null, 'เปิดบิลจากใบเสนอราคา');
     toast('คัดลอกข้อมูลจากใบเสนอราคามาที่ใบเสร็จ/ใบกำกับภาษีแล้ว');
   });
 
@@ -8414,8 +8459,7 @@ function bahtText(value) {
     const list = store.get('bs_quotes', []);
     if (btn.dataset.act === 'open') {
       const qrec = list.find(x => x.id === id); if (!qrec) return;
-      currentQuoteId = id; applyQuote(qrec); renderQuoteEditState(); showTab('quote');
-      window.scrollTo({top: 0, behavior: 'smooth'}); toast('เปิดเอกสาร ' + qrec.no + ' แล้ว แก้ไขได้เลย');
+      currentQuoteId = id; applyQuote(qrec); renderQuote(); renderQuoteEditState(); openDocEdit('quote', 'แก้ไขใบเสนอราคา ' + (qrec.no || ''));
     } else if (btn.dataset.act === 'del') {
       if (quoteDelArmed !== id) {
         quoteDelArmed = id; btn.textContent = 'กดอีกครั้งเพื่อลบ'; btn.classList.add('confirm');
@@ -8540,6 +8584,11 @@ function bahtText(value) {
   });
   $('stmt-import-btn').addEventListener('click', () => { closeBillEdit(); openStmtOverlay(); });
   $('billNewBtn').addEventListener('click', openNewBill);
+  $('quoteNewBtn').addEventListener('click', () => openDocNew('quote', 'เปิดใบเสนอราคาใหม่'));
+  $('purchNewBtn').addEventListener('click', () => openDocNew('purchase', 'บันทึกภาษีซื้อใหม่'));
+  $('docEditClose').addEventListener('click', closeDocEdit);
+  $('docEditOv').addEventListener('click', e => { if (e.target === $('docEditOv')) closeDocEdit(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && docEditOpen()) closeDocEdit(); });
   $('histDupBtn').addEventListener('click', () => {
     const dups = stmtDupBills(), btn = $('histDupBtn'); if (!dups.length) return;
     if (!dupArmed) {
@@ -8685,8 +8734,7 @@ function bahtText(value) {
     const list = store.get('bs_purchases', []);
     if (btn.dataset.act === 'open') {
       const p = list.find(x => x.id === id); if (!p) return;
-      currentPurchaseId = id; applyPurchase(p); renderPurchEditState(); showTab('purchase');
-      window.scrollTo({top: 0, behavior: 'smooth'}); toast('เปิดรายการแล้ว แก้ไขได้เลย');
+      currentPurchaseId = id; applyPurchase(p); renderPurchEditState(); openDocEdit('purchase', 'แก้ไขภาษีซื้อ · ' + (p.vendor || 'ไม่ระบุร้านค้า'));
     } else if (btn.dataset.act === 'del') {
       if (purchDelArmed !== id) {
         purchDelArmed = id; btn.textContent = 'กดอีกครั้งเพื่อลบ'; btn.classList.add('confirm');

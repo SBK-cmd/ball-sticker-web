@@ -1211,7 +1211,17 @@ table.lines tfoot .r{text-align:right;font-variant-numeric:tabular-nums;white-sp
 .overlay{position:fixed;inset:0;z-index:1000;background:rgba(8,16,30,.62);overflow:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 14px calc(16px + env(safe-area-inset-bottom,0px))}
 .ov-card.wide{max-width:1560px}
 #pdfOverlay{z-index:1010}
-#panel-bill > #billFormTop{display:none}
+#panel-bill > #billFormTop,#panel-quote > #quoteFormTop,#panel-purchase > #purchFormTop{display:none}
+#docEditOv .ov-card{padding:16px 20px 20px}
+#docEditOv .ov-head{margin-bottom:12px}
+#docEditOv.narrow .ov-card{max-width:900px}
+#docEditSlot .bill-grid{grid-template-columns:minmax(0,1fr) minmax(300px,1fr)!important;gap:16px!important}
+#docEditSlot #purchFormTop{grid-template-columns:minmax(0,1fr)!important}
+#docEditSlot .bill-grid .stack{display:flex!important;flex-direction:column;align-items:stretch!important;gap:12px}
+#docEditSlot .bill-grid .stack>.card{grid-column:auto!important;grid-row:auto!important;margin:0!important;padding:16px}
+#docEditSlot .preview-col{position:sticky;top:0}
+#docEditSlot .preview-col h2{font-size:15px;margin-bottom:8px}
+@media (max-width:980px){#docEditSlot .bill-grid{grid-template-columns:minmax(0,1fr)!important}#docEditSlot .preview-col{position:static}}
 .bill-launch{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 16px}
 #billEditOv .ov-card{padding:16px 20px 20px}
 #billEditOv .ov-head{margin-bottom:12px}
@@ -2837,7 +2847,11 @@ body.jm-open .fab-newjob{display:none!important}
         <p>เอกสารเสนอราคาให้ลูกค้าก่อนตกลงซื้อ แยกเอกสารจากใบเสร็จ/ใบกำกับภาษีโดยสิ้นเชิง มีเลขที่เอกสารและ VAT เหมือนบิล แต่ไม่รวมกับยอดขายในแดชบอร์ดหรือรายงานภาษี</p>
       </div>
 
-      <div class="bill-grid">
+      <div class="bill-launch no-print">
+        <button class="btn primary" id="quoteNewBtn" type="button">+ เปิดใบเสนอราคาใหม่</button>
+        <span class="hint" id="quoteDraftHint" style="margin:0"></span>
+      </div>
+      <div class="bill-grid" id="quoteFormTop">
         <div class="stack no-print">
           <div class="card">
             <h2>ข้อมูลเอกสาร</h2>
@@ -2902,7 +2916,7 @@ body.jm-open .fab-newjob{display:none!important}
         </div>
       </div>
 
-      <section class="card history no-print" style="margin-top:20px" aria-labelledby="quotehist-h">
+      <section class="card history no-print" aria-labelledby="quotehist-h">
         <div class="viz-head">
           <h2 id="quotehist-h">ประวัติใบเสนอราคา</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้ (แยกจากประวัติเอกสาร/ใบเสร็จ)</span>
@@ -3065,7 +3079,11 @@ body.jm-open .fab-newjob{display:none!important}
         <p>ถ่ายภาพหรือแนบใบกำกับภาษีซื้อ (ค่าวัสดุ/ค่าใช้จ่ายที่ซื้อเข้าร้าน) พร้อมกรอกยอด VAT เพื่อใช้สรุปในแดชบอร์ด — ถ้าเป็นรายการซื้อที่ไม่มีใบกำกับภาษี/ไม่มี VAT ให้เว้นช่องยอดภาษีซื้อไว้ ระบบจะแยกไปเก็บเป็น “ค่าใช้จ่ายที่ไม่มี VAT” แทน</p>
       </div>
 
-      <div class="bill-grid">
+      <div class="bill-launch no-print">
+        <button class="btn primary" id="purchNewBtn" type="button">+ บันทึกภาษีซื้อใหม่</button>
+        <span class="hint" id="purchDraftHint" style="margin:0"></span>
+      </div>
+      <div class="bill-grid" id="purchFormTop">
         <div class="stack">
           <div class="card">
             <h2>ข้อมูลใบกำกับภาษีซื้อ</h2>
@@ -3129,7 +3147,7 @@ body.jm-open .fab-newjob{display:none!important}
         </div>
       </div>
 
-      <section class="card history no-print" style="margin-top:20px" aria-labelledby="purchhist-h">
+      <section class="card history no-print" aria-labelledby="purchhist-h">
         <div class="viz-head">
           <h2 id="purchhist-h">ประวัติภาษีซื้อ</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข และลบได้</span>
@@ -3611,6 +3629,15 @@ body.jm-open .fab-newjob{display:none!important}
   </div>
 </div>
 
+<div class="overlay no-print" id="docEditOv" hidden role="dialog" aria-modal="true" aria-labelledby="docEditTitle">
+  <div class="ov-card wide">
+    <div class="ov-head">
+      <div><h2 id="docEditTitle">แก้ไข</h2><p class="ov-file">แก้แล้วกด “บันทึกลงประวัติ” · ปิดหน้าต่างโดยไม่บันทึก = ไม่เปลี่ยนอะไร</p></div>
+      <button class="btn small" id="docEditClose" type="button">ปิด</button>
+    </div>
+    <div id="docEditSlot"></div>
+  </div>
+</div>
 <div class="overlay no-print" id="billEditOv" hidden role="dialog" aria-modal="true" aria-labelledby="billEditTitle">
   <div class="ov-card wide">
     <div class="ov-head">
@@ -3652,7 +3679,7 @@ body.jm-open .fab-newjob{display:none!important}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=bc6fee26fb",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=ccac02dae9",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 </body>
