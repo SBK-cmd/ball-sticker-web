@@ -2725,7 +2725,7 @@ function bahtText(value) {
         ocrCanvas.width = ow; ocrCanvas.height = oh;
         ocrCanvas.getContext('2d').drawImage(img, 0, 0, ow, oh);
         purchaseOcrSource = ocrCanvas.toDataURL('image/jpeg', 0.85);
-        scanPurchasePhoto();
+        // แนบภาพอย่างเดียว ไม่สแกนอัตโนมัติ — กด "สแกนและกรอกข้อมูล" เองเมื่อต้องการ
       };
       img.src = reader.result;
     };

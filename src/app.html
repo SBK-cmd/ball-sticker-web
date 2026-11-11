@@ -3394,7 +3394,7 @@ body.jm-open .fab-newjob{display:none!important}
               <label class="f">
                 <span>ถ่ายภาพ / แนบไฟล์ใบกำกับภาษีซื้อ</span>
                 <input type="file" accept="image/*" multiple id="purchPhotoInput">
-                <p class="hint">อัปโหลดแล้วระบบจะลองสแกนอ่านและกรอกข้อมูลให้อัตโนมัติ (ต้องใช้อินเทอร์เน็ต และควรตรวจสอบความถูกต้องก่อนบันทึกทุกครั้ง)</p>
+                <p class="hint">แนบภาพเก็บไว้กับรายการได้เลย ระบบไม่สแกนเอง ถ้าต้องการให้อ่านข้อมูลจากภาพ กดปุ่ม “สแกนและกรอกข้อมูล” ใต้ภาพ (ต้องใช้อินเทอร์เน็ต และควรตรวจความถูกต้องก่อนบันทึก)</p>
                 <div class="purch-photo-wrap" id="purchPhotoWrap" hidden>
                   <img id="purchPhotoPreview" alt="ภาพใบกำกับภาษีซื้อ">
                   <div class="ocr-actions">
@@ -6682,7 +6682,7 @@ function bahtText(value) {
         ocrCanvas.width = ow; ocrCanvas.height = oh;
         ocrCanvas.getContext('2d').drawImage(img, 0, 0, ow, oh);
         purchaseOcrSource = ocrCanvas.toDataURL('image/jpeg', 0.85);
-        scanPurchasePhoto();
+        // แนบภาพอย่างเดียว ไม่สแกนอัตโนมัติ — กด "สแกนและกรอกข้อมูล" เองเมื่อต้องการ
       };
       img.src = reader.result;
     };
