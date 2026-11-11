@@ -1561,8 +1561,15 @@ function bahtText(value) {
     const beYY = String((+parts[0] + 543) % 100).padStart(2, '0');
     const mm = parts[1] || '01';
     const prefix = 'BS' + beYY + mm;
-    const n = store.get('bs_bills', []).filter(b => String(b.no).indexOf(prefix) === 0).length + 1;
-    return prefix + String(n).padStart(4, '0');
+    return prefix + String(maxBillSeq(prefix) + 1).padStart(4, '0');
+  }
+  // เลขรันสูงสุดที่ใช้ไปแล้วในเดือนนั้น (ดู 4 หลักหลัง prefix) — ใช้ค่าสูงสุด+1 ไม่ใช่นับจำนวนใบ
+  // (นับจำนวนใบจะได้เลขซ้ำเมื่อลบบิลกลางเดือน และจะข้ามเลขเมื่อมีบิลเลขพิเศษเช่น -1)
+  function maxBillSeq(prefix) {
+    return store.get('bs_bills', []).reduce((m, b) => {
+      const no = String(b.no || ''); if (no.indexOf(prefix) !== 0) return m;
+      const d = /^(\d{4})/.exec(no.slice(prefix.length)); return d ? Math.max(m, +d[1]) : m;
+    }, 0);
   }
 
   function collect() {
@@ -1653,6 +1660,28 @@ function bahtText(value) {
     const boxes = document.querySelectorAll('#history .hist-chk');
     all.checked = boxes.length > 0 && Array.from(boxes).every(b => b.checked);
   }
+  // รันเลขที่ใหม่เฉพาะบิลที่สร้างจากสเตทเม้น (ลูกค้าเงินสด ยังไม่ได้ส่งให้ใคร) ของเดือนที่เลือก เรียงตามวันที่
+  // บิลอื่น (ออกเอง/ส่งลูกค้าแล้ว) คงเลขเดิม และเลขรันของใบเหล่านั้นจะถูกข้าม ไม่ให้ชนกัน
+  let renumArmed = null, renumTimer = null;
+  function renumPlan(month) {
+    const [y, m] = month.split('-'); const prefix = 'BS' + String((+y + 543) % 100).padStart(2, '0') + m;
+    const inMonth = store.get('bs_bills', []).filter(b => monthKey(b.date) === month);
+    const isStmt = b => !String(b.cTax || '').trim() && (b.items || []).length === 1 && (b.items[0].name || '') === STMT_ITEM_NAME;
+    const used = new Set();
+    inMonth.filter(b => !isStmt(b)).forEach(b => { const no = String(b.no || ''); if (no.indexOf(prefix) === 0) { const d = /^(\d{4})/.exec(no.slice(prefix.length)); if (d) used.add(+d[1]); } });
+    const targets = inMonth.filter(isStmt).sort((a, b) => String(a.date).localeCompare(String(b.date)) || (a.savedAt || 0) - (b.savedAt || 0) || String(a.no).localeCompare(String(b.no)));
+    let n = 0; const changes = [];
+    targets.forEach(b => { do { n++; } while (used.has(n)); const no = prefix + String(n).padStart(4, '0'); if (no !== b.no) changes.push({id: b.id, from: b.no, to: no}); });
+    return {targets: targets.length, kept: inMonth.length - targets.length, changes};
+  }
+  function doRenumber(month) {
+    const plan = renumPlan(month); if (!plan.changes.length) { toast('เลขบิลเรียงถูกอยู่แล้ว'); return; }
+    const map = {}; plan.changes.forEach(c => { map[c.id] = c.to; });
+    const list = store.get('bs_bills', []); const changed = [];
+    list.forEach(b => { if (map[b.id]) { b.no = map[b.id]; b.savedAt = b.savedAt || Date.now(); changed.push(b); } });
+    store.set('bs_bills', list); changed.forEach(b => cloudSave('bills', b));
+    renderHistory(); toast('รันเลขใหม่แล้ว ' + changed.length + ' ใบ (บิลที่ออกเองคงเลขเดิม)');
+  }
   function renderHistory() {
     const list = store.get('bs_bills', []).slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.no || '').localeCompare(String(a.no || '')) || (b.savedAt || 0) - (a.savedAt || 0));
     histSelected = new Set(Array.from(histSelected).filter(id => list.some(b => b.id === id)));
@@ -1665,6 +1694,7 @@ function bahtText(value) {
     }
     const q = $('histSearch') ? $('histSearch').value : '';
     const mSel = $('histPrintMonth') ? $('histPrintMonth').value : '';
+    if ($('histRenumBtn')) { $('histRenumBtn').hidden = !mSel || !renumPlan(mSel).targets; if (renumArmed !== mSel) $('histRenumBtn').textContent = 'รันเลขบิลสเตทเม้นใหม่'; }
     const shown = list.filter(b => matchesSearch(b.cName, q) && (!mSel || monthKey(b.date) === mSel));
     if (!shown.length) {
       $('history').innerHTML = notice + '<p class="empty">' + (q ? 'ไม่พบเอกสารของลูกค้าชื่อ “' + esc(q) + '”' : 'ไม่มีเอกสาร') + (mSel ? ' ในเดือน ' + esc(thMonthFull(mSel)) : '') + '</p>';
@@ -3028,7 +3058,7 @@ function bahtText(value) {
     const beYY = String((+parts[0] + 543) % 100).padStart(2, '0');
     const mm = parts[1] || '01';
     const prefix = 'BS' + beYY + mm;
-    if (!(prefix in counters)) counters[prefix] = store.get('bs_bills', []).filter(b => String(b.no).indexOf(prefix) === 0).length;
+    if (!(prefix in counters)) counters[prefix] = maxBillSeq(prefix);
     counters[prefix]++;
     return prefix + String(counters[prefix]).padStart(4, '0');
   }
@@ -8457,6 +8487,19 @@ function bahtText(value) {
   });
   $('stmt-import-btn').addEventListener('click', () => { closeBillEdit(); openStmtOverlay(); });
   $('billNewBtn').addEventListener('click', openNewBill);
+  $('histRenumBtn').addEventListener('click', () => {
+    const m = $('histPrintMonth').value; if (!m) return;
+    const plan = renumPlan(m), btn = $('histRenumBtn');
+    if (!plan.changes.length) { toast('เลขบิลสเตทเม้นเดือนนี้เรียงตามวันที่อยู่แล้ว'); return; }
+    if (renumArmed !== m) {
+      renumArmed = m; clearTimeout(renumTimer);
+      btn.textContent = 'กดอีกครั้งเพื่อยืนยัน · เปลี่ยน ' + plan.changes.length + ' ใบ';
+      toast('จะเปลี่ยนเลขบิลจากสเตทเม้น ' + plan.changes.length + ' ใบ เช่น ' + plan.changes.slice(0, 3).map(c => c.from + ' → ' + c.to).join(', ') + ' · บิลที่ออกเอง ' + plan.kept + ' ใบคงเลขเดิม');
+      renumTimer = setTimeout(() => { renumArmed = null; btn.textContent = 'รันเลขบิลสเตทเม้นใหม่'; }, 8000);
+      return;
+    }
+    renumArmed = null; clearTimeout(renumTimer); doRenumber(m);
+  });
   $('itemsVatMode').addEventListener('change', () => { $('vatMode').value = $('itemsVatMode').value; $('vatMode').dispatchEvent(new Event('change', {bubbles: true})); });
   $('billZoomBtn').addEventListener('click', () => setBillZoom(!$('billEditOv').classList.contains('bill-zoom')));
   $('a4frame').addEventListener('click', () => { if (billEditOpen()) setBillZoom(!$('billEditOv').classList.contains('bill-zoom')); });
