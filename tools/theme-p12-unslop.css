@@ -1,0 +1,72 @@
+/* ===== p12 unslop polish (ซ้อนบน p11) =====
+   ทิศทาง: แอปหลังร้านโรงพิมพ์สติ๊กเกอร์ · ใช้งานจริง แข็งแรง ร่าเริงนิดๆ · โลก = แผ่นสติ๊กเกอร์ แผ่นรองตัด หมึก กล่องพัสดุ
+   จุดเด่นเดียว = แถบ "สรุปงานวันนี้" (กรม + ตัวเลขเหลือง) · ที่เหลือพื้นขาว/เทาเป็นกลาง · ไม่มีแสงเรือง ไม่มีไล่สีข้ามเฉด
+   ลายเซ็น = เส้นประแบบเส้นไดคัท บนเมนูที่เลือกเท่านั้น
+   อ้างอิงหลักการจาก unslop by Damir Sokolovsky (@heydamir), CC BY 4.0 */
+:root{--u-bg:#f6f6f7;--u-card:#fff;--u-raised:#f1f1f3;--u-line:rgba(23,23,23,.08);--u-ink:#171717;--u-ink2:#4b5060;--u-mute:#6e7280;--u-navy:#0E1E5B;--u-yel:#f5b301;--u-ease:cubic-bezier(.22,1,.36,1)}
+html,html body{background:var(--u-bg)!important}
+
+/* ---- พื้นผิวการ์ด: เส้นบาง เงาเล็กเป็นกลาง ---- */
+html body .card,html body .dash-stat-card,html body .lock-card,html body .owed-row,html body .dash-cat-item,html body .acd-card,html body .fold,html body .dash-tile,html body .dash-cat-card{box-shadow:0 1px 2px rgba(0,0,0,.05)!important}
+html body .card,html body .acd-card,html body .fold{border:1px solid var(--u-line)!important}
+html body .jc,html body li.jc{box-shadow:0 1px 2px rgba(0,0,0,.05)!important}
+
+/* ---- จุดเด่นเดียว: สรุปงานวันนี้ ---- */
+html body .tdy{background:var(--u-navy)!important;box-shadow:0 1px 2px rgba(0,0,0,.08)!important;border-radius:16px!important}
+html body .tdy::after{display:none!important}
+html body .tdy-t .ic,html body .tdy-t.c1 .ic,html body .tdy-t.c2 .ic,html body .tdy-t.c3 .ic,html body .tdy-t.c4 .ic{background:rgba(255,255,255,.1)!important;color:rgba(255,255,255,.75)!important}
+html body .tdy .tdy-t b{color:var(--u-yel)!important;font-weight:600!important;font-variant-numeric:tabular-nums}
+html body .tdy .tdy-t b em{color:rgba(255,255,255,.65)!important}
+html body .tdy-t.c4.hot .ic{background:rgba(255,176,138,.18)!important;color:#ffb08a!important}
+
+/* ---- ยอดคงเหลือ: พื้นเรียบ ตัวเลขใหญ่ (ไม่ใช่การ์ดกรมซ้อน) ---- */
+html body .acd-card .hero{background:var(--u-raised)!important;color:var(--u-ink)!important;box-shadow:none!important;border:0!important;border-radius:12px!important}
+html body .acd-card .hero small{color:var(--u-mute)!important;opacity:1!important}
+html body .acd-card .hero b{color:var(--u-ink)!important;font-weight:600!important;letter-spacing:-.02em!important;font-variant-numeric:tabular-nums}
+html body .acd-card .hero b em{color:var(--u-ink2)!important;opacity:1!important}
+html body .acd-card .nm{font-weight:600!important}
+
+/* ---- กล่องเข้า/ออก/สุทธิ: พื้นเป็นกลาง ให้ตัวเลขสีบอกความหมาย ---- */
+html body .kp>div,html body .kp>.ci,html body .kp>.co,html body .kp>div.ci,html body .kp>div.co{background:var(--u-raised)!important;border:0!important;box-shadow:none!important;border-radius:10px!important}
+html body .acd-card .kp b,html body .acd-card .net b{font-variant-numeric:tabular-nums}
+html body .acd-card .net.pos,html body .acd-card .net.neg{background:var(--u-raised)!important;border:0!important;box-shadow:none!important;border-radius:10px!important}
+html body .acd-extra>div{border:1px solid var(--u-line)!important;background:transparent!important;box-shadow:none!important}
+
+/* ---- บั๊กจุดสัญลักษณ์กราฟ (เข้า/ออก) ใหญ่เกิน ---- */
+html body .acd-card .lg i{width:8px!important;height:8px!important;min-width:0!important;min-height:0!important;padding:0!important;border:0!important;border-radius:2px!important;box-shadow:none!important;vertical-align:middle}
+html body .acd-card .lg i.ci{background:#22a55b!important}html body .acd-card .lg i.co{background:#ef6a3a!important}
+html body .acd-card svg{background:none!important}
+
+/* ---- ไม่มีไล่สีข้ามเฉด: การ์ดผลคำนวณ/ยอดธนาคาร/ปุ่มหลัก ใช้กรมเรียบ ---- */
+html body .result,html body .hero:not(.acd-card .hero),html body .bkc,html body .wk-bal,html body .bell-bal,html body .bkc-hero{background:var(--u-navy)!important;box-shadow:0 1px 2px rgba(0,0,0,.08)!important}
+html body .btn.primary,html body .btn.good,html body .jc-b.main{background:var(--u-navy)!important;box-shadow:none!important}
+
+/* ---- ปุ่มลอย/ปุ่มกลางแถบล่าง: ไม่เรือง ---- */
+html body .btab-fab .btab-fab-circle,html body .fab-newjob{box-shadow:0 2px 6px rgba(0,0,0,.16)!important}
+html body .btab-fab.active .btab-fab-circle{box-shadow:0 0 0 4px #fff,0 2px 6px rgba(0,0,0,.16)!important}
+html body .bnav{box-shadow:0 -1px 0 var(--u-line)!important}
+
+/* ---- ตัวหนังสือ: ลำดับชั้นจากขนาด ไม่ใช่ความหนา ---- */
+html body h1,html body .page-head h1{font-weight:600!important;letter-spacing:0}
+html body h2{font-weight:600!important}
+html body .acd-mb .lbl{font-weight:600!important}
+
+/* ---- แถบเมนูซ้าย (จอ ≥561px): แน่น เงียบ เลือกแล้ว = เส้นประไดคัท ---- */
+@media (min-width:561px){
+  html body header.top .tabs button[role=tab],html body header.top .tabs > .nav-sec > a{min-height:36px!important;height:36px;padding:0 12px!important;border-radius:8px!important;background:transparent!important;color:var(--u-ink2)!important;font-weight:500!important;box-shadow:none!important;border:0!important;transition:background-color .15s var(--u-ease),color .15s var(--u-ease)}
+  html body header.top .tabs button[role=tab]:hover,html body header.top .tabs > .nav-sec > a:hover{background:rgba(23,23,23,.05)!important;color:var(--u-ink)!important}
+  html body header.top .tabs button[role=tab][aria-selected="true"]{background:var(--u-card)!important;color:var(--u-navy)!important;font-weight:600!important;outline:1.5px dashed var(--u-navy)!important;outline-offset:-3px}
+  html body header.top .tabs button[role=tab][aria-selected="true"] .tab-ic{color:var(--u-navy)!important}
+  html body header.top .tabs .tab-ic{color:var(--u-mute)}
+  html body header.top .nav-sec,html body header.top .tab-dropdown{gap:2px!important}
+  html body header.top .nav-sec + .nav-sec,html body header.top .nav-sec + .tab-group,html body header.top .tab-group + .nav-sec{margin-top:16px!important}
+  html body header.top .nav-sec-h,html body header.top .nav-sec-money .tab-trigger{padding:0 12px 4px!important;font-size:12px!important;color:var(--u-mute)!important;font-weight:600!important;letter-spacing:0!important}
+  html body header.top .tabs button[role=tab]:focus-visible{outline:2px solid var(--u-navy)!important;outline-offset:1px}
+}
+
+/* ---- พื้นแถบซ้าย/หัวมือถือ: ขาวบนพื้นเทา เส้นบางคั่น ---- */
+@media (min-width:561px){
+  html body header.top{background:#fff!important;border-right:1px solid var(--u-line)!important;box-shadow:none!important}
+  html body .sidebar-cta{box-shadow:0 1px 2px rgba(0,0,0,.12)!important}
+}
+@media (max-width:560px){ html body header.top{background:var(--u-bg)!important;box-shadow:none!important} }

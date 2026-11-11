@@ -3195,6 +3195,79 @@ html body .bk-seg{background:#E3E9F6!important}
 html body .acd-seg{border:1px solid #D5DDF0!important}
 html body :is(i,span,em).ci{background:#2F9E5F!important;border:0!important;box-shadow:none!important}
 html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-shadow:none!important}
+
+/* ===== p12 unslop polish (ซ้อนบน p11) =====
+   ทิศทาง: แอปหลังร้านโรงพิมพ์สติ๊กเกอร์ · ใช้งานจริง แข็งแรง ร่าเริงนิดๆ · โลก = แผ่นสติ๊กเกอร์ แผ่นรองตัด หมึก กล่องพัสดุ
+   จุดเด่นเดียว = แถบ "สรุปงานวันนี้" (กรม + ตัวเลขเหลือง) · ที่เหลือพื้นขาว/เทาเป็นกลาง · ไม่มีแสงเรือง ไม่มีไล่สีข้ามเฉด
+   ลายเซ็น = เส้นประแบบเส้นไดคัท บนเมนูที่เลือกเท่านั้น
+   อ้างอิงหลักการจาก unslop by Damir Sokolovsky (@heydamir), CC BY 4.0 */
+:root{--u-bg:#f6f6f7;--u-card:#fff;--u-raised:#f1f1f3;--u-line:rgba(23,23,23,.08);--u-ink:#171717;--u-ink2:#4b5060;--u-mute:#6e7280;--u-navy:#0E1E5B;--u-yel:#f5b301;--u-ease:cubic-bezier(.22,1,.36,1)}
+html,html body{background:var(--u-bg)!important}
+
+/* ---- พื้นผิวการ์ด: เส้นบาง เงาเล็กเป็นกลาง ---- */
+html body .card,html body .dash-stat-card,html body .lock-card,html body .owed-row,html body .dash-cat-item,html body .acd-card,html body .fold,html body .dash-tile,html body .dash-cat-card{box-shadow:0 1px 2px rgba(0,0,0,.05)!important}
+html body .card,html body .acd-card,html body .fold{border:1px solid var(--u-line)!important}
+html body .jc,html body li.jc{box-shadow:0 1px 2px rgba(0,0,0,.05)!important}
+
+/* ---- จุดเด่นเดียว: สรุปงานวันนี้ ---- */
+html body .tdy{background:var(--u-navy)!important;box-shadow:0 1px 2px rgba(0,0,0,.08)!important;border-radius:16px!important}
+html body .tdy::after{display:none!important}
+html body .tdy-t .ic,html body .tdy-t.c1 .ic,html body .tdy-t.c2 .ic,html body .tdy-t.c3 .ic,html body .tdy-t.c4 .ic{background:rgba(255,255,255,.1)!important;color:rgba(255,255,255,.75)!important}
+html body .tdy .tdy-t b{color:var(--u-yel)!important;font-weight:600!important;font-variant-numeric:tabular-nums}
+html body .tdy .tdy-t b em{color:rgba(255,255,255,.65)!important}
+html body .tdy-t.c4.hot .ic{background:rgba(255,176,138,.18)!important;color:#ffb08a!important}
+
+/* ---- ยอดคงเหลือ: พื้นเรียบ ตัวเลขใหญ่ (ไม่ใช่การ์ดกรมซ้อน) ---- */
+html body .acd-card .hero{background:var(--u-raised)!important;color:var(--u-ink)!important;box-shadow:none!important;border:0!important;border-radius:12px!important}
+html body .acd-card .hero small{color:var(--u-mute)!important;opacity:1!important}
+html body .acd-card .hero b{color:var(--u-ink)!important;font-weight:600!important;letter-spacing:-.02em!important;font-variant-numeric:tabular-nums}
+html body .acd-card .hero b em{color:var(--u-ink2)!important;opacity:1!important}
+html body .acd-card .nm{font-weight:600!important}
+
+/* ---- กล่องเข้า/ออก/สุทธิ: พื้นเป็นกลาง ให้ตัวเลขสีบอกความหมาย ---- */
+html body .kp>div,html body .kp>.ci,html body .kp>.co,html body .kp>div.ci,html body .kp>div.co{background:var(--u-raised)!important;border:0!important;box-shadow:none!important;border-radius:10px!important}
+html body .acd-card .kp b,html body .acd-card .net b{font-variant-numeric:tabular-nums}
+html body .acd-card .net.pos,html body .acd-card .net.neg{background:var(--u-raised)!important;border:0!important;box-shadow:none!important;border-radius:10px!important}
+html body .acd-extra>div{border:1px solid var(--u-line)!important;background:transparent!important;box-shadow:none!important}
+
+/* ---- บั๊กจุดสัญลักษณ์กราฟ (เข้า/ออก) ใหญ่เกิน ---- */
+html body .acd-card .lg i{width:8px!important;height:8px!important;min-width:0!important;min-height:0!important;padding:0!important;border:0!important;border-radius:2px!important;box-shadow:none!important;vertical-align:middle}
+html body .acd-card .lg i.ci{background:#22a55b!important}html body .acd-card .lg i.co{background:#ef6a3a!important}
+html body .acd-card svg{background:none!important}
+
+/* ---- ไม่มีไล่สีข้ามเฉด: การ์ดผลคำนวณ/ยอดธนาคาร/ปุ่มหลัก ใช้กรมเรียบ ---- */
+html body .result,html body .hero:not(.acd-card .hero),html body .bkc,html body .wk-bal,html body .bell-bal,html body .bkc-hero{background:var(--u-navy)!important;box-shadow:0 1px 2px rgba(0,0,0,.08)!important}
+html body .btn.primary,html body .btn.good,html body .jc-b.main{background:var(--u-navy)!important;box-shadow:none!important}
+
+/* ---- ปุ่มลอย/ปุ่มกลางแถบล่าง: ไม่เรือง ---- */
+html body .btab-fab .btab-fab-circle,html body .fab-newjob{box-shadow:0 2px 6px rgba(0,0,0,.16)!important}
+html body .btab-fab.active .btab-fab-circle{box-shadow:0 0 0 4px #fff,0 2px 6px rgba(0,0,0,.16)!important}
+html body .bnav{box-shadow:0 -1px 0 var(--u-line)!important}
+
+/* ---- ตัวหนังสือ: ลำดับชั้นจากขนาด ไม่ใช่ความหนา ---- */
+html body h1,html body .page-head h1{font-weight:600!important;letter-spacing:0}
+html body h2{font-weight:600!important}
+html body .acd-mb .lbl{font-weight:600!important}
+
+/* ---- แถบเมนูซ้าย (จอ ≥561px): แน่น เงียบ เลือกแล้ว = เส้นประไดคัท ---- */
+@media (min-width:561px){
+  html body header.top .tabs button[role=tab],html body header.top .tabs > .nav-sec > a{min-height:36px!important;height:36px;padding:0 12px!important;border-radius:8px!important;background:transparent!important;color:var(--u-ink2)!important;font-weight:500!important;box-shadow:none!important;border:0!important;transition:background-color .15s var(--u-ease),color .15s var(--u-ease)}
+  html body header.top .tabs button[role=tab]:hover,html body header.top .tabs > .nav-sec > a:hover{background:rgba(23,23,23,.05)!important;color:var(--u-ink)!important}
+  html body header.top .tabs button[role=tab][aria-selected="true"]{background:var(--u-card)!important;color:var(--u-navy)!important;font-weight:600!important;outline:1.5px dashed var(--u-navy)!important;outline-offset:-3px}
+  html body header.top .tabs button[role=tab][aria-selected="true"] .tab-ic{color:var(--u-navy)!important}
+  html body header.top .tabs .tab-ic{color:var(--u-mute)}
+  html body header.top .nav-sec,html body header.top .tab-dropdown{gap:2px!important}
+  html body header.top .nav-sec + .nav-sec,html body header.top .nav-sec + .tab-group,html body header.top .tab-group + .nav-sec{margin-top:16px!important}
+  html body header.top .nav-sec-h,html body header.top .nav-sec-money .tab-trigger{padding:0 12px 4px!important;font-size:12px!important;color:var(--u-mute)!important;font-weight:600!important;letter-spacing:0!important}
+  html body header.top .tabs button[role=tab]:focus-visible{outline:2px solid var(--u-navy)!important;outline-offset:1px}
+}
+
+/* ---- พื้นแถบซ้าย/หัวมือถือ: ขาวบนพื้นเทา เส้นบางคั่น ---- */
+@media (min-width:561px){
+  html body header.top{background:#fff!important;border-right:1px solid var(--u-line)!important;box-shadow:none!important}
+  html body .sidebar-cta{box-shadow:0 1px 2px rgba(0,0,0,.12)!important}
+}
+@media (max-width:560px){ html body header.top{background:var(--u-bg)!important;box-shadow:none!important} }
 </style>
 </head>
 <body>
@@ -3265,7 +3338,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.42</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.43 · พรีวิว</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
@@ -3442,7 +3515,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
     <section id="panel-calc" class="panel active" role="tabpanel" aria-labelledby="tab-calc">
       <div class="no-print">
         <div class="page-head">
-          <h1>จัดให้พอดี ทุกชิ้น.</h1>
+          <h1>จัดให้พอดี ทุกชิ้น</h1>
           <p>ใส่ขนาด ดูจำนวนและการเรียงได้ทันที เลือกหน่วยขนาดสติ๊กเกอร์ได้ ส่วนกระดาษและช่องไฟเป็นเซนติเมตร</p>
         </div>
 
@@ -3574,7 +3647,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
     <!-- ================= คำนวณ VAT ================= -->
     <section id="panel-vat" class="panel" role="tabpanel" aria-labelledby="tab-vat">
       <div class="page-head">
-        <h1>คำนวณภาษีมูลค่าเพิ่ม.</h1>
+        <h1>คำนวณภาษีมูลค่าเพิ่ม</h1>
         <p>ใส่ยอดเงิน เลือกว่าจะ “บวก VAT” หรือ “ถอด VAT” ระบบคำนวณให้ทันที อัตราเริ่มต้น 7% แก้ไขได้</p>
       </div>
       <div class="calc-grid">
@@ -3632,7 +3705,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
           <h2 id="jobhist-h">ประวัติใบคอนเฟิร์มงาน</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้</span>
         </div>
-        <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="jobHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
+        <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="jobHistSearch" type="search" autocomplete="off" placeholder="ค้นหาชื่อลูกค้า"></label>
         <div class="jf-filt" id="jobFilt"><select id="jobFiltSt" aria-label="กรองตามสถานะ"><option value="">ยังไม่เสร็จสิ้น</option><option value="pending">รอทำ</option><option value="filed">ทำไฟล์แล้ว</option><option value="printed">ผลิตแล้ว</option><option value="shipped">จัดส่งแล้ว</option><option value="pickup">รับหน้าร้าน</option><option value="delivered">เสร็จสิ้น (ลูกค้ารับแล้ว)</option><option value="notrack">ส่งแล้ว · ยังไม่มีเลขพัสดุ</option></select><select id="jobFiltPg" aria-label="กรองตามเพจ"><option value="">ทุกเพจ</option><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop</option></select></div>
         <div id="jobHistory"></div>
       </section>
@@ -3790,7 +3863,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
     <!-- ================= เปิดบิล ================= -->
     <section id="panel-bill" class="panel" role="tabpanel" aria-labelledby="tab-bill">
       <div class="page-head no-print">
-        <h1>ออกเอกสาร พร้อมส่งลูกค้า.</h1>
+        <h1>ออกเอกสาร พร้อมส่งลูกค้า</h1>
         <p>เพิ่มรายการงาน คำนวณยอดและ VAT แล้วพิมพ์หรือบันทึกเป็น PDF</p>
       </div>
 
@@ -3884,7 +3957,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
           <h2 id="hist-h">ประวัติเอกสาร</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้</span>
         </div>
-        <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="histSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
+        <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="histSearch" type="search" autocomplete="off" placeholder="ค้นหาชื่อลูกค้า"></label>
         <div class="dash-filter" style="margin-bottom:10px">
           <label class="f" style="max-width:240px">
             <span>ติ๊กเลือกทั้งเดือน</span>
@@ -3910,7 +3983,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
     <!-- ================= ใบราคาส่ง ================= -->
     <section id="panel-wholesale" class="panel" role="tabpanel" aria-labelledby="tab-wholesale">
       <div class="page-head no-print">
-        <h1>ใบราคาส่ง.</h1>
+        <h1>ใบราคาส่ง</h1>
         <p>เอกสารราคาขายส่งแยกต่างหาก ไม่ใช่ใบเสร็จ/ใบกำกับภาษี ไม่มี VAT และไม่รันเลขที่เอกสาร ใช้ส่งราคาให้ลูกค้าขายส่งดูก่อนตกลงกัน</p>
       </div>
 
@@ -4000,7 +4073,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
         </div>
         <div class="whadd no-print"><input class="txt" id="whAddName" type="text" autocomplete="off" placeholder="พิมพ์ชื่อร้านราคาส่ง เพื่อเพิ่มการ์ด" aria-label="ชื่อร้านราคาส่ง"><button class="btn good" id="whAddBtn" type="button">＋ เพิ่มร้าน</button></div>
         <p class="hint no-print" style="margin:-4px 0 12px">เพิ่มชื่อร้านไว้ก่อน แล้วเวลาลูกค้าสั่ง คีย์งานที่หน้า “สั่งงาน” ตามปกติ งานจะเข้าการ์ดของร้านนั้นเอง</p>
-        <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="whHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
+        <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="whHistSearch" type="search" autocomplete="off" placeholder="ค้นหาชื่อลูกค้า"></label>
         <div id="wholesaleHistory"></div>
       </section>
     </section>
@@ -4008,7 +4081,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
     <!-- ================= ใบเสนอราคา ================= -->
     <section id="panel-quote" class="panel" role="tabpanel" aria-labelledby="tab-quote">
       <div class="page-head no-print">
-        <h1>ใบเสนอราคา.</h1>
+        <h1>ใบเสนอราคา</h1>
         <p>เอกสารเสนอราคาให้ลูกค้าก่อนตกลงซื้อ แยกเอกสารจากใบเสร็จ/ใบกำกับภาษีโดยสิ้นเชิง มีเลขที่เอกสารและ VAT เหมือนบิล แต่ไม่รวมกับยอดขายในแดชบอร์ดหรือรายงานภาษี</p>
       </div>
 
@@ -4082,7 +4155,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
           <h2 id="quotehist-h">ประวัติใบเสนอราคา</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้ (แยกจากประวัติเอกสาร/ใบเสร็จ)</span>
         </div>
-        <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="quoteHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อลูกค้าเพื่อค้นหา..."></label>
+        <label class="f hist-search"><span>ค้นหาชื่อลูกค้า</span><input class="txt" id="quoteHistSearch" type="search" autocomplete="off" placeholder="ค้นหาชื่อลูกค้า"></label>
         <div id="quoteHistory"></div>
       </section>
     </section>
@@ -4091,7 +4164,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
     <!-- ================= โพสต์ออโต้ (Facebook) ================= -->
     <section id="panel-autopost" class="panel" role="tabpanel" aria-labelledby="tab-autopost">
       <div class="page-head">
-        <h1>โพสต์ออโต้.</h1>
+        <h1>โพสต์ออโต้</h1>
         <p>เลือกงานที่ส่งแล้วและอนุญาตให้โพสต์ ระบบรวมรูปงานเสร็จกับแคปชันที่แต่งจากข้อมูลในใบงาน (ไม่ใส่ชื่อลูกค้า) คัดลอกไปโพสต์เพจได้เลย</p>
       </div>
       <div id="apBody"></div>
@@ -4100,7 +4173,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
     <!-- ================= ผังร้าน 3 มิติ ================= -->
     <section id="panel-lekha" class="panel" role="tabpanel" aria-labelledby="tab-lekha">
       <div class="page-head">
-        <h1>เลขา.</h1>
+        <h1>เลขา</h1>
         <p>พิมพ์สั่งงานให้ Claude ทำแทน (แก้แอป/เว็บ ทำพรีวิว) งานใช้เวลา 3–15 นาที ตอบกลับมาที่นี่ · ขึ้นของจริงเมื่อคุณกด “อัพ”</p>
       </div>
       <p class="lk-warn">⚠️ ห้ามพิมพ์ข้อมูลลูกค้า เบอร์โทร ยอดเงินลูกค้า หรือรหัสผ่าน — งานจะถูกบันทึกเป็น issue ในรีโปที่ยังเป็นสาธารณะ</p>
@@ -4132,7 +4205,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
 
     <section id="panel-floor" class="panel" role="tabpanel" aria-labelledby="tab-floor">
       <div class="page-head">
-        <h1>ผังร้าน.</h1>
+        <h1>ผังร้าน</h1>
         <p>มองร้านจากด้านบน: ใบงานวางตามสถานะจริงในแอป (รอทำ · ทำไฟล์แล้ว · ผลิตแล้ว · ส่งแล้ว) พนักงานเดินเป็นภาพจำลอง ยังไม่ได้ติดตามตัวจริง</p>
       </div>
       <iframe id="floorFrame" data-src="floor.html" title="ผังร้าน 3 มิติ" style="width:100%;height:calc(100vh - 200px);min-height:520px;border:1px solid var(--line,#e3ded2);border-radius:14px;background:#eef1f5" loading="lazy"></iframe>
@@ -4140,7 +4213,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
 
     <section id="panel-pagechat" class="panel" role="tabpanel" aria-labelledby="tab-pagechat">
       <div class="page-head">
-        <h1>แชตเพจ.</h1>
+        <h1>แชตเพจ</h1>
         <p>อ่านและตอบแชต Messenger ของเพจในแอป ตอบได้ภายใน 24 ชั่วโมงหลังลูกค้าส่งข้อความล่าสุด (กติกาของ Meta) ใช้ Worker ตัวเดียวกับโพสต์ออโต้</p>
       </div>
       <div id="pcBody"></div>
@@ -4159,7 +4232,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
 
     <section id="panel-track" class="panel" role="tabpanel" aria-labelledby="tab-track">
       <div class="page-head">
-        <h1>สร้างข้อความแจ้งลูกค้า.</h1>
+        <h1>สร้างข้อความแจ้งลูกค้า</h1>
         <p>วางเลขพัสดุ เลือกขนส่ง แล้วกดสร้างข้อความพร้อมลิงก์ติดตามให้ลูกค้า คัดลอกไปส่งทาง LINE/SMS ได้ทันที</p>
       </div>
       <section class="card scan-card no-print" style="margin-bottom:20px" aria-labelledby="scan-h">
@@ -4220,7 +4293,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
           <button class="btn small" id="track-refresh-live" type="button">🔄 เช็กสถานะล่าสุดจาก iship</button>
         </div>
         <div class="dash-filter" style="margin-bottom:10px">
-          <label class="f hist-search"><span>ค้นหา</span><input class="txt" id="trackHistSearch" type="search" autocomplete="off" placeholder="ค้นหาเลขพัสดุ, ขนส่ง, ลูกค้า, ผู้ส่ง..."></label>
+          <label class="f hist-search"><span>ค้นหา</span><input class="txt" id="trackHistSearch" type="search" autocomplete="off" placeholder="ค้นหาเลขพัสดุ ขนส่ง ลูกค้า ผู้ส่ง"></label>
           <label class="f"><span>ผู้ส่ง/เพจ</span><select class="txt" id="trackSenderFilter"><option value="">ทั้งหมด</option></select></label>
         </div>
         <div class="dash-filter" style="margin-bottom:10px">
@@ -4236,7 +4309,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
     <!-- ================= ภาษีซื้อ ================= -->
     <section id="panel-purchase" class="panel" role="tabpanel" aria-labelledby="tab-purchase">
       <div class="page-head">
-        <h1>บันทึกภาษีซื้อ.</h1>
+        <h1>บันทึกภาษีซื้อ</h1>
         <p>ถ่ายภาพหรือแนบใบกำกับภาษีซื้อ (ค่าวัสดุ/ค่าใช้จ่ายที่ซื้อเข้าร้าน) พร้อมกรอกยอด VAT เพื่อใช้สรุปในแดชบอร์ด — ถ้าเป็นรายการซื้อที่ไม่มีใบกำกับภาษี/ไม่มี VAT ให้เว้นช่องยอดภาษีซื้อไว้ ระบบจะแยกไปเก็บเป็น “ค่าใช้จ่ายที่ไม่มี VAT” แทน</p>
       </div>
 
@@ -4308,7 +4381,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
           <h2 id="purchhist-h">ประวัติภาษีซื้อ</h2>
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข และลบได้</span>
         </div>
-        <label class="f hist-search"><span>ค้นหาร้านค้า / ผู้ขาย</span><input class="txt" id="purchHistSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อร้านค้าเพื่อค้นหา..."></label>
+        <label class="f hist-search"><span>ค้นหาร้านค้า / ผู้ขาย</span><input class="txt" id="purchHistSearch" type="search" autocomplete="off" placeholder="ค้นหาชื่อร้านค้า"></label>
         <div id="purchHistory"></div>
       </section>
     </section>
@@ -4316,7 +4389,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
     <!-- ================= แดชบอร์ด ================= -->
     <section id="panel-dash" class="panel" role="tabpanel" aria-labelledby="tab-dash">
       <div class="page-head">
-        <h1>สรุปยอดขาย.</h1>
+        <h1>สรุปยอดขาย</h1>
         <p>รวมยอดขายและภาษีขายจากบิล/ใบกำกับภาษีที่บันทึกไว้ในเครื่องนี้ (และในคลาวด์ ถ้าเชื่อมต่อไว้)</p>
       </div>
 
@@ -4592,7 +4665,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
     <!-- ================= การเงินรายเดือน (เฉพาะเจ้าของ ball) ================= -->
     <section id="panel-money" class="panel" role="tabpanel" aria-labelledby="tab-money">
       <div class="page-head no-print">
-        <h1>การเงินรายเดือน.</h1>
+        <h1>การเงินรายเดือน</h1>
         <p>รายรับ-รายจ่ายรวมสองบัญชี (กิติพงษ์ = บัญชียื่นภาษี · วันทิม = งานส่ง) + ยอดขาย/ต้นทุนตามเอกสาร · เห็นเฉพาะเจ้าของร้าน</p>
       </div>
       <div id="moneyBody"></div>
@@ -4600,7 +4673,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
 
     <section id="panel-design" class="panel" role="tabpanel" aria-labelledby="tab-design">
       <div class="page-head no-print">
-        <h1>งานออกแบบ.</h1>
+        <h1>งานออกแบบ</h1>
         <p>จดโน้ตงานออกแบบ แปะรูปแชท/แบบที่ลูกค้าส่งมา เก็บไว้ดูได้ทุกเครื่อง</p>
       </div>
       <div class="ds-wrap no-print">
@@ -4628,7 +4701,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
 
     <section id="panel-chat" class="panel" role="tabpanel" aria-labelledby="tab-chat">
       <div class="page-head no-print">
-        <h1>แชทลูกค้า.</h1>
+        <h1>แชทลูกค้า</h1>
         <p>ข้อความจาก LINE OA และแชทเพจ Facebook ของร้าน ตอบกลับได้จากที่นี่ (LINE: นับโควตาของ LINE OA · เพจ: ตอบได้ภายใน 24 ชม. หลังลูกค้าทักล่าสุด)</p>
       </div>
       <div class="card chat-card no-print">
@@ -4666,7 +4739,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
 
     <section id="panel-report" class="panel" role="tabpanel" aria-labelledby="tab-report">
       <div class="page-head">
-        <h1>รายงานภาษีซื้อ-ขาย.</h1>
+        <h1>รายงานภาษีซื้อ-ขาย</h1>
         <p>สรุปรายการตามรูปแบบรายงานภาษีขาย/ภาษีซื้อของกรมสรรพากร พร้อมพิมพ์หรือส่งออกไฟล์เพื่อยื่นภาษี</p>
       </div>
 
@@ -4816,7 +4889,7 @@ html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=fe738896b6",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?r=2&v=5d69a8a680",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
