@@ -3163,11 +3163,22 @@ function bahtText(value) {
     renderPurchEditState();
   }
   function renderPurchHistory() {
-    const list = store.get('bs_purchases', []).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+    const list = store.get('bs_purchases', []).slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || (b.savedAt || 0) - (a.savedAt || 0));
+    const msel = $('purchHistMonth');
+    if (msel) {
+      const prev = msel.value, months = Array.from(new Set(list.map(p => monthKey(p.date)).filter(Boolean))).sort().reverse();
+      msel.innerHTML = '<option value="">ทุกเดือน</option>' + months.map(m => '<option value="' + esc(m) + '">' + esc(thMonthFull(m)) + ' (' + list.filter(p => monthKey(p.date) === m).length + ' ใบ)</option>').join('');
+      if (months.indexOf(prev) >= 0) msel.value = prev;
+    }
+    const pm = msel ? msel.value : '';
     const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้</p>');
     if (!list.length) { $('purchHistory').innerHTML = notice + '<p class="empty">ยังไม่มีรายการภาษีซื้อที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; renderDash(); renderReport(); return; }
     const q = $('purchHistSearch') ? $('purchHistSearch').value : '';
-    const shown = list.filter(p => matchesSearch(p.vendor, q));
+    const shown = list.filter(p => matchesSearch(p.vendor, q) && (!pm || monthKey(p.date) === pm));
+    if ($('purchMonthSum')) {
+      const tv = shown.filter(p => NON_TAX_ACCOUNTS.indexOf(p.account) < 0).reduce((a, p) => a + num(p.vat), 0);
+      $('purchMonthSum').textContent = pm ? shown.length + ' ใบ · ภาษีซื้อ (บัญชียื่นภาษี) ' + money(round2(tv)) + ' บาท' : '';
+    }
     if (!shown.length) { $('purchHistory').innerHTML = notice + '<p class="empty">ไม่พบรายการของร้านค้าชื่อ “' + esc(q) + '”</p>'; renderDash(); renderReport(); return; }
     $('purchHistory').innerHTML = notice + '<ul>' + shown.map(p =>
       '<li data-id="' + esc(p.id) + '">' + (p.photo ? '<img class="thumb" src="' + p.photo + '" alt="">' : '') +
@@ -8491,6 +8502,7 @@ function bahtText(value) {
   $('whAddBtn').addEventListener('click', addWholesaleShop);
   $('whAddName').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addWholesaleShop(); } });
   $('purchHistSearch').addEventListener('input', renderPurchHistory);
+  $('purchHistMonth').addEventListener('change', renderPurchHistory);
   $('histPrintMonth').addEventListener('change', () => {
     const sel = $('histPrintMonth').value;
     const list = store.get('bs_bills', []);
