@@ -1664,17 +1664,19 @@ function bahtText(value) {
   // บิลอื่น (ออกเอง/ส่งลูกค้าแล้ว) คงเลขเดิม และเลขรันของใบเหล่านั้นจะถูกข้าม ไม่ให้ชนกัน
   let renumArmed = null, renumTimer = null, dupArmed = false, dupTimer = null;
   function isStmtBill(b) { return !String(b.cTax || '').trim() && (b.items || []).length === 1 && (b.items[0].name || '') === STMT_ITEM_NAME; }
-  // บิลสเตทเม้นที่นำเข้าซ้ำ: แบ่งรอบนำเข้าตามเวลาใน id (ห่างกันเกิน 1 นาที = คนละรอบ) รอบหลังที่ วันที่+ยอด ตรงกับรอบก่อน (จับคู่ทีละใบ) = ซ้ำ
+  // บิลสเตทเม้นที่นำเข้าซ้ำ: id = b<เวลา>_<ลำดับในรอบ>_xxx — เรียงตามเวลาแล้วลำดับ เมื่อ "ลำดับ" วนกลับไปเริ่มใหม่ = รอบนำเข้าใหม่
+  // (ไม่ใช้ระยะเวลาห่าง เพราะนำเข้าสองรอบติดกันภายในนาทีเดียวได้) รอบหลังที่ วันที่+ยอด ตรงกับรอบก่อน (จับคู่ทีละใบ) = ซ้ำ
   function stmtDupBills() {
-    const ts = b => { const m = /^b(\d{12,})_/.exec(String(b.id || '')); return m ? +m[1] : (b.savedAt || 0); };
-    const st = store.get('bs_bills', []).filter(isStmtBill).sort((a, b) => ts(a) - ts(b));
-    const pool = {}, dups = []; let batch = [], last = -1e15;
+    const key = b => { const m = /^b(\d{12,})_(\d+)_/.exec(String(b.id || '')); return m ? [+m[1], +m[2]] : null; };
+    const st = store.get('bs_bills', []).filter(isStmtBill).map(b => ({b, k: key(b)})).filter(x => x.k)
+      .sort((x, y) => x.k[0] - y.k[0] || x.k[1] - y.k[1]);
+    const pool = {}, dups = []; let batch = [], prevI = -1, prevT = 0;
     const flush = () => { batch.forEach(b => { const k = b.date + '|' + round2(num(b.total)); pool[k] = (pool[k] || 0) + 1; }); batch = []; };
-    st.forEach(b => {
-      if (ts(b) - last > 60000) flush();
-      last = ts(b);
-      const k = b.date + '|' + round2(num(b.total));
-      if (pool[k] > 0) { pool[k]--; dups.push(b); } else batch.push(b);
+    st.forEach(({b, k}) => {
+      if (k[1] <= prevI || k[0] - prevT > 600000) flush();   // ลำดับวนกลับ หรือห่างเกิน 10 นาที = รอบใหม่
+      prevI = k[1]; prevT = k[0];
+      const kk = b.date + '|' + round2(num(b.total));
+      if (pool[kk] > 0) { pool[kk]--; dups.push(b); } else batch.push(b);
     });
     return dups;
   }
@@ -2981,7 +2983,7 @@ function bahtText(value) {
       if (!amtStrs.length) return;
       const amts = amtStrs.map(s => num(s.replace(/,/g, '')));
       const rest = line.replace(dateRe, ' ').replace(amtRe, ' ').replace(/\s+/g, ' ').trim();
-      let type = 'unk', amount = amts[0];
+      let type = 'unk', amount = amts[0], balOut = null;
       if (amts.length >= 2) {
         const bal = amts[amts.length - 1];
         amount = amts[amts.length - 2];
@@ -2990,10 +2992,10 @@ function bahtText(value) {
           if (Math.abs(diff) >= 0.01) { type = diff > 0 ? 'in' : 'out'; amount = Math.abs(diff); }
         } else if (inWord.test(rest)) type = 'in';
         else if (outWord.test(rest)) type = 'out';
-        prevBal = bal;
+        prevBal = bal; balOut = bal;
       } else if (inWord.test(rest)) type = 'in';
       else if (outWord.test(rest)) type = 'out';
-      out.push({date: iso, amount: round2(amount), desc: rest.slice(0, 80), type});
+      out.push({date: iso, amount: round2(amount), desc: rest.slice(0, 240), type, bal: balOut});
     });
     return out;
   }
@@ -3014,7 +3016,7 @@ function bahtText(value) {
     inRows.forEach(r => { const k = r.date + '|' + round2(num(r.amount)); if (have[k] > 0) { have[k]--; dupIdx.add(r.idx); } });
     $('stmtTable').innerHTML = !inRows.length ? '' :
       '<thead><tr><th><input type="checkbox" class="stmt-chk" id="stmtChkAll" checked aria-label="เลือกทั้งหมด"></th>' +
-      '<th class="stmt-n">#</th><th>วันที่</th><th>เลขที่ใบกำกับ (แก้ไขได้)</th><th>ชื่อลูกค้า (แก้ไขได้)</th><th class="r">จำนวนเงิน</th></tr></thead><tbody>' +
+      '<th class="stmt-n">#</th><th>วันที่</th><th class="r">จำนวนเงิน</th><th>รายละเอียดจากสเตทเม้น</th><th class="r">คงเหลือ</th><th>เลขที่ใบกำกับ (แก้ไขได้)</th><th>ชื่อลูกค้า (แก้ไขได้)</th></tr></thead><tbody>' +
       inRows.map((r, k) => {
         const suggestedNo = billNoForDateBatch(r.date, previewCounters);
         // ลำดับ 1..n ตรงกับใบสรุปที่พิมพ์ · ใต้วันที่โชว์ "จากใคร" ย่อๆ จะได้รู้ว่าเป็นเงินโอนจากบัญชีตัวเองหรือไม่
@@ -3022,10 +3024,12 @@ function bahtText(value) {
         const dup = dupIdx.has(r.idx);
         return '<tr' + (dup ? ' class="stmt-dup"' : '') + '><td><input type="checkbox" class="stmt-chk" data-idx="' + r.idx + '" data-amt="' + r.amount + '"' + (dup ? '' : ' checked') + ' aria-label="เลือกรายการลำดับ ' + (k + 1) + '"></td>' +
         '<td class="stmt-n">' + (k + 1) + '</td>' +
-        '<td>' + esc(thDate(r.date)) + (dup ? '<small class="stmt-who" style="color:var(--magenta)">มีบิลจากสเตทเม้นแล้ว (วันที่+ยอดตรงกัน)</small>' : '') + (who ? '<small class="stmt-who">' + esc(who) + '</small>' : '') + '</td>' +
+        '<td>' + esc(thDate(r.date)) + (dup ? '<small class="stmt-who" style="color:var(--magenta)">มีบิลจากสเตทเม้นแล้ว (วันที่+ยอดตรงกัน)</small>' : '') + '</td>' +
+        '<td class="r"><b>' + money(r.amount) + '</b></td>' +
+        '<td class="stmt-desc">' + esc(String(r.desc || '').replace(/\s+/g, ' ').trim() || '—') + '</td>' +
+        '<td class="r">' + (r.bal != null ? money(r.bal) : '—') + '</td>' +
         '<td class="stmt-no-cell"><input class="stmt-no" type="text" data-idx="' + r.idx + '" value="' + esc(suggestedNo) + '" placeholder="เลขที่ใบกำกับ"></td>' +
-        '<td class="stmt-name-cell"><input class="stmt-name" type="text" data-idx="' + r.idx + '" value="' + esc(STMT_DEFAULT_NAME) + '" placeholder="ชื่อลูกค้า"></td>' +
-        '<td class="r">' + money(r.amount) + '</td></tr>';
+        '<td class="stmt-name-cell"><input class="stmt-name" type="text" data-idx="' + r.idx + '" value="' + esc(STMT_DEFAULT_NAME) + '" placeholder="ชื่อลูกค้า"></td></tr>';
       }).join('') + '</tbody>';
     stmtSyncCount();
     if (dupIdx.size) { const all = $('stmtChkAll'); if (all) all.checked = false; toast('ไม่ติ๊ก ' + dupIdx.size + ' รายการที่เคยเปิดบิลจากสเตทเม้นไปแล้ว (วันที่และยอดตรงกัน)'); }
