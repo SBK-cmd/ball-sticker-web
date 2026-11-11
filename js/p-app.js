@@ -1719,7 +1719,7 @@ function bahtText(value) {
     const mSel = $('histPrintMonth') ? $('histPrintMonth').value : '';
     if ($('histDupBtn')) { const n = stmtDupBills().length; $('histDupBtn').hidden = !n; if (!dupArmed) $('histDupBtn').textContent = 'ลบบิลสเตทเม้นที่นำเข้าซ้ำ (' + n + ' ใบ)'; }
     if ($('histRenumBtn')) { $('histRenumBtn').hidden = !mSel || !renumPlan(mSel).targets; if (renumArmed !== mSel) $('histRenumBtn').textContent = 'รันเลขบิลสเตทเม้นใหม่'; }
-    const shown = list.filter(b => matchesSearch(b.cName, q) && (!mSel || monthKey(b.date) === mSel));
+    const shown = list.filter(b => (matchesSearch(b.cName, q) || matchesSearch(b.no, q)) && (!mSel || monthKey(b.date) === mSel));
     if (!shown.length) {
       $('history').innerHTML = notice + '<p class="empty">' + (q ? 'ไม่พบเอกสารของลูกค้าชื่อ “' + esc(q) + '”' : 'ไม่มีเอกสาร') + (mSel ? ' ในเดือน ' + esc(thMonthFull(mSel)) : '') + '</p>';
       updateHistSelCount(); renderDash(); renderReport(); return;
@@ -3174,7 +3174,7 @@ function bahtText(value) {
     const notice = cloudNotice() || (storageOK ? '' : '<p class="notice">เบราว์เซอร์นี้ไม่อนุญาตให้เก็บข้อมูลถาวร ประวัติจะอยู่จนกว่าจะปิดหน้านี้</p>');
     if (!list.length) { $('purchHistory').innerHTML = notice + '<p class="empty">ยังไม่มีรายการภาษีซื้อที่บันทึก กด “บันทึกลงประวัติ” เพื่อเก็บไว้เปิดแก้ไขภายหลัง</p>'; renderDash(); renderReport(); return; }
     const q = $('purchHistSearch') ? $('purchHistSearch').value : '';
-    const shown = list.filter(p => matchesSearch(p.vendor, q) && (!pm || monthKey(p.date) === pm));
+    const shown = list.filter(p => (matchesSearch(p.vendor, q) || matchesSearch(p.invoiceNo, q)) && (!pm || monthKey(p.date) === pm));
     if ($('purchMonthSum')) {
       const tv = shown.filter(p => NON_TAX_ACCOUNTS.indexOf(p.account) < 0).reduce((a, p) => a + num(p.vat), 0);
       $('purchMonthSum').textContent = pm ? shown.length + ' ใบ · ภาษีซื้อ (บัญชียื่นภาษี) ' + money(round2(tv)) + ' บาท' : '';
@@ -5457,8 +5457,11 @@ function bahtText(value) {
     const hideRcv = !String(q || '').trim() && !fSt && !renderJobHistory._showRcv;
     const hiddenN = hideRcv ? list.filter(j => isRcv(j) && (!fPg || (j.page || 'ball') === fPg)).length : 0;
     const rcvBar = (hiddenN || (renderJobHistory._showRcv && !String(q || '').trim() && !fSt)) ? '<p class="hint rcv-bar">' + (hideRcv ? 'ซ่อนงานเสร็จสิ้น (ลูกค้ารับแล้ว) ' + hiddenN + ' ใบ · ค้นชื่อลูกค้า หรือเลือกตัวกรอง “เสร็จสิ้น” เพื่อดู ' : 'กำลังแสดงงานเสร็จสิ้นด้วย ') + '<button type="button" class="rcv-toggle">' + (hideRcv ? 'แสดง' : 'ซ่อน') + '</button></p>' : '';
-    const shown = list.filter(j => !(hideRcv && isRcv(j)) && matchesSearch(j.jName, q) && (!fPg || (j.page || 'ball') === fPg) && (!fSt || (fSt === 'delivered' ? isRcv(j) : fSt === 'notrack' ? ((j.status || 'pending') === 'shipped' && !j.trackCode) : ((j.status || 'pending') === fSt && !(fSt === 'shipped' && isRcv(j))))));
-    if (!shown.length) { $('jobHistory')._jhKey = null; $('jobHistory').innerHTML = notice + rcvBar + '<p class="empty">ไม่พบใบงาน' + (q ? 'ของลูกค้าชื่อ “' + esc(q) + '”' : '') + (fSt || fPg ? ' ตามตัวกรองที่เลือก' : '') + '</p>'; return; }
+    // ค้นหาได้ทั้งชื่อลูกค้า เลขที่ใบงาน เบอร์โทร เลขพัสดุ · ตอนพิมพ์ค้นหา ค้นทุกใบ ไม่สนตัวกรองสถานะ/เพจ/ซ่อนงานที่รับแล้ว
+    const qq = String(q || '').trim();
+    const hitJ = j => [j.jName, j.no, j.jPhone, j.trackCode].some(t => String(t || '').trim() && matchesSearch(t, qq));
+    const shown = qq ? list.filter(hitJ) : list.filter(j => !(hideRcv && isRcv(j)) && matchesSearch(j.jName, q) && (!fPg || (j.page || 'ball') === fPg) && (!fSt || (fSt === 'delivered' ? isRcv(j) : fSt === 'notrack' ? ((j.status || 'pending') === 'shipped' && !j.trackCode) : ((j.status || 'pending') === fSt && !(fSt === 'shipped' && isRcv(j))))));
+    if (!shown.length) { $('jobHistory')._jhKey = null; $('jobHistory').innerHTML = notice + rcvBar + '<p class="empty">ไม่พบใบงาน' + (q ? ' ที่ตรงกับ “' + esc(q) + '” (ค้นชื่อลูกค้า เลขที่ใบงาน เบอร์โทร เลขพัสดุ)' : '') + (fSt || fPg ? ' ตามตัวกรองที่เลือก' : '') + '</p>'; return; }
     const pendWh = can('wholesale') ? list.filter(j => j.wholesale && String(j.jName || '').trim() && jobPendingWhItems(j).length).length : 0;
     const whBanner = '';   // เอาปุ่ม "รวมเข้าใบราคาส่งตามชื่อ" ออกจากหน้านี้ (ระบบรวมให้เองตอนบันทึกใบราคาส่งอยู่แล้ว · ฟังก์ชัน sweepWholesaleJobs ยังอยู่)
     const _whBannerOld = pendWh ? '<div class="wh-sweep"><span>🏷️ มีงานราคาส่ง <b>' + pendWh + '</b> ใบ ที่ยังไม่ได้รวมในใบราคาส่ง</span><button type="button" class="btn small good" id="whSweepBtn">รวมเข้าใบราคาส่งตามชื่อ</button></div>' : '';
