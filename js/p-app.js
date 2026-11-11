@@ -1605,6 +1605,7 @@ function bahtText(value) {
   const billEditOpen = () => $('billEditOv') && !$('billEditOv').hidden;
   function openBillEdit(b, title) {
     const form = $('billFormTop'), ov = $('billEditOv'); if (!form || !ov) return;
+    if (document.body.classList.contains('jm-open')) document.body.classList.remove('jm-open');   // มาจากหน้าต่างใบงาน/ใบราคาส่ง → ปิดอันนั้นก่อน
     if (!billEditHome) { billEditHome = document.createComment('billFormTop'); form.parentNode.insertBefore(billEditHome, form); }
     $('billEditSlot').appendChild(form);
     $('billEditTitle').textContent = title || ('แก้ไขเอกสาร ' + ((b && b.no) || ''));
@@ -4226,7 +4227,7 @@ function bahtText(value) {
   $('chatToJob').addEventListener('click', () => {
     const c = chatList.find(x => x.userId === chatSel); if (!c) return;
     if (!can('confirm') || !canKey) { toast('ไม่มีสิทธิ์เปิดใบคอนเฟิร์มงาน'); return; }
-    newJob(); $('jName').value = c.name || ''; renderJob(); showTab('confirm'); if (window.innerWidth < 900) openJobModal();
+    newJob(); $('jName').value = c.name || ''; renderJob(); showTab('confirm'); openJobModal();
     toast('เปิดใบงานใหม่ให้ ' + (c.name || 'ลูกค้า') + ' แล้ว');
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && chatSel && isChatActive()) { const c = chatList.find(x => x.userId === chatSel); if (c) { markChatSeen(c.userId, c.lastInAt || 0); paintChatBadge(); renderChatList(); } } });
@@ -5065,8 +5066,8 @@ function bahtText(value) {
   const JOB_STATUS_LABEL = {pending: 'รอทำ', filed: 'ทำไฟล์แล้ว', printed: 'ผลิตแล้ว', shipped: 'จัดส่งแล้ว', pickup: 'รับหน้าร้าน', received: 'ลูกค้ารับแล้ว'};
   // ไม่มีสิทธิ์เห็นเงิน (เช่น พนักงาน): ซ่อนช่องบัญชี/ยอดสลิป/คำอธิบายในใบคอนเฟิร์มงาน (ค่าที่บันทึกไว้เดิมยังอยู่ ไม่ถูกลบ)
   if (!canKey) {
-    ['fabNewJob', 'jobFormTop'].forEach(id => { const e = $(id); if (e) e.hidden = true; });
-    const st = document.createElement('style'); st.textContent = '#fabNewJob,#jobFormTop{display:none!important}'; document.head.appendChild(st);
+    ['fabNewJob', 'jobFormTop', 'jobLaunch'].forEach(id => { const e = $(id); if (e) e.hidden = true; });
+    const st = document.createElement('style'); st.textContent = '#fabNewJob,#jobFormTop,#jobLaunch{display:none!important}'; document.head.appendChild(st);
   }
   if (!canBank) {
     const acc = $('jobAccount'), row = acc && acc.closest('.row2');
@@ -5350,9 +5351,9 @@ function bahtText(value) {
     else { el.textContent = 'ใบใหม่ ยังไม่ได้บันทึกลงประวัติ'; el.classList.remove('editing'); }
   }
   document.addEventListener('click', e => {
-    if (!e.target.closest || !e.target.closest('#fabNewJob')) return;
+    if (!e.target.closest || !e.target.closest('#fabNewJob, #jobNewBtn')) return;
     newJob();
-    if (window.innerWidth < 900) { openJobModal(); return; }   // มือถือ: เด้งเป็นหน้าต่าง · จอใหญ่: ฟอร์มอยู่ข้างๆ เลื่อนไปที่ฟอร์ม
+    { openJobModal(); return; }   // ทุกจอ: เด้งเป็นหน้าต่างคีย์งาน (เดิมจอใหญ่ฟอร์มอยู่ใต้ประวัติ)   // มือถือ: เด้งเป็นหน้าต่าง · จอใหญ่: ฟอร์มอยู่ข้างๆ เลื่อนไปที่ฟอร์ม
     const t = $('jobFormTop'); if (t) t.scrollIntoView({behavior: 'smooth', block: 'start'});
     const n = $('jName'); if (n) setTimeout(() => n.focus({preventScroll: true}), 350);
   });
@@ -7509,7 +7510,7 @@ function bahtText(value) {
     if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
   }
   document.querySelectorAll('.tabs button[data-tab], .btab[data-tab], .tax-sheet-item[data-tab], .top-track[data-tab]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
-  if ($('sidebarCta')) $('sidebarCta').addEventListener('click', e => { e.preventDefault(); showTab('confirm'); window.scrollTo({top: 0, behavior: 'smooth'}); });
+  if ($('sidebarCta')) $('sidebarCta').addEventListener('click', e => { e.preventDefault(); showTab('confirm'); window.scrollTo({top: 0, behavior: 'smooth'}); if (canKey) { newJob(); openJobModal(); } });
 
   $('taxTrigger').addEventListener('click', e => {
     e.stopPropagation();
@@ -7633,7 +7634,7 @@ function bahtText(value) {
 
   $('print-job').addEventListener('click', () => {
     markJobPrinted();
-    if (inFrame() || isMobile()) exportDoc('confirm', $('print-job'), {forPrint: true});
+    if (inFrame() || isMobile() || document.body.classList.contains('jm-open')) exportDoc('confirm', $('print-job'), {forPrint: true});
     else doPrint('ใบคอนเฟิร์มงาน ' + ($('jobNo').value || ''));
   });
   $('pdf-job').addEventListener('click', () => { markJobPrinted(); exportDoc('confirm', $('pdf-job')); });
@@ -8384,7 +8385,7 @@ function bahtText(value) {
     if (act === 'newjobfor') {
       showTab('confirm'); newJob(); jobMode = 'deliv'; $('jName').value = name; $('jobWholesale').checked = true;
       $('jobNo').value = nextJobNo(); syncJbsAccount(); syncJobWholesaleBtn(); renderJobItems(); renderJob(); syncJobFolds();
-      if (window.innerWidth < 900) openJobModal(); else { const t = $('jobFormTop'); if (t) t.scrollIntoView({behavior: 'smooth', block: 'start'}); }
+      openJobModal();
       return;
     }
     if (act === 'charge') {
@@ -8446,7 +8447,7 @@ function bahtText(value) {
   });
 
   $('print-quote').addEventListener('click', () => {
-    if (inFrame() || isMobile()) exportDoc('quote', $('print-quote'), {forPrint: true});
+    if (inFrame() || isMobile() || docEditOpen()) exportDoc('quote', $('print-quote'), {forPrint: true});
     else doPrint('ใบเสนอราคา ' + ($('quoteNo').value || ''));
   });
   $('pdf-quote').addEventListener('click', () => exportDoc('quote', $('pdf-quote')));
@@ -8503,7 +8504,7 @@ function bahtText(value) {
 
   $('print-bill').addEventListener('click', () => {
     // ในกรอบของ Claude หรือบนมือถือ window.print() ถูกบล็อกหรือใช้ไม่ได้จริง จึงสร้าง PDF แล้วเปิด/บันทึกแทน
-    if (inFrame() || isMobile()) exportDoc('bill', $('print-bill'), {forPrint: true});
+    if (inFrame() || isMobile() || billEditOpen()) exportDoc('bill', $('print-bill'), {forPrint: true});
     else doPrint('ใบกำกับภาษี ' + ($('billNo').value || ''));
   });
   $('pdf-bill').addEventListener('click', () => exportDoc('bill', $('pdf-bill')));
@@ -9417,7 +9418,7 @@ function bahtText(value) {
   $('dash-all').addEventListener('click', () => { $('dashMonth').value = ''; renderDash(); });
   $('dash-go-report').addEventListener('click', () => { $('reportMonth').value = $('dashMonth').value; showTab('report'); });
   if ($('dashCatBillBtn')) $('dashCatBillBtn').addEventListener('click', () => showTab('bill'));
-  if ($('dashCatJobBtn')) $('dashCatJobBtn').addEventListener('click', () => { showTab('confirm'); if (window.innerWidth < 900) { newJob(); openJobModal(); } });
+  if ($('dashCatJobBtn')) $('dashCatJobBtn').addEventListener('click', () => { showTab('confirm'); newJob(); openJobModal(); });
   if ($('dashCatWholesaleBtn')) $('dashCatWholesaleBtn').addEventListener('click', () => showTab('wholesale'));
   if ($('dashCatPurchBtn')) $('dashCatPurchBtn').addEventListener('click', () => showTab('purchase'));
   if ($('dashCatReportBtn')) $('dashCatReportBtn').addEventListener('click', () => { $('reportMonth').value = $('dashMonth').value; showTab('report'); });
