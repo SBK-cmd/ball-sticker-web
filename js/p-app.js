@@ -1662,11 +1662,26 @@ function bahtText(value) {
   }
   // รันเลขที่ใหม่เฉพาะบิลที่สร้างจากสเตทเม้น (ลูกค้าเงินสด ยังไม่ได้ส่งให้ใคร) ของเดือนที่เลือก เรียงตามวันที่
   // บิลอื่น (ออกเอง/ส่งลูกค้าแล้ว) คงเลขเดิม และเลขรันของใบเหล่านั้นจะถูกข้าม ไม่ให้ชนกัน
-  let renumArmed = null, renumTimer = null;
+  let renumArmed = null, renumTimer = null, dupArmed = false, dupTimer = null;
+  function isStmtBill(b) { return !String(b.cTax || '').trim() && (b.items || []).length === 1 && (b.items[0].name || '') === STMT_ITEM_NAME; }
+  // บิลสเตทเม้นที่นำเข้าซ้ำ: แบ่งรอบนำเข้าตามเวลาใน id (ห่างกันเกิน 1 นาที = คนละรอบ) รอบหลังที่ วันที่+ยอด ตรงกับรอบก่อน (จับคู่ทีละใบ) = ซ้ำ
+  function stmtDupBills() {
+    const ts = b => { const m = /^b(\d{12,})_/.exec(String(b.id || '')); return m ? +m[1] : (b.savedAt || 0); };
+    const st = store.get('bs_bills', []).filter(isStmtBill).sort((a, b) => ts(a) - ts(b));
+    const pool = {}, dups = []; let batch = [], last = -1e15;
+    const flush = () => { batch.forEach(b => { const k = b.date + '|' + round2(num(b.total)); pool[k] = (pool[k] || 0) + 1; }); batch = []; };
+    st.forEach(b => {
+      if (ts(b) - last > 60000) flush();
+      last = ts(b);
+      const k = b.date + '|' + round2(num(b.total));
+      if (pool[k] > 0) { pool[k]--; dups.push(b); } else batch.push(b);
+    });
+    return dups;
+  }
   function renumPlan(month) {
     const [y, m] = month.split('-'); const prefix = 'BS' + String((+y + 543) % 100).padStart(2, '0') + m;
     const inMonth = store.get('bs_bills', []).filter(b => monthKey(b.date) === month);
-    const isStmt = b => !String(b.cTax || '').trim() && (b.items || []).length === 1 && (b.items[0].name || '') === STMT_ITEM_NAME;
+    const isStmt = isStmtBill;
     const used = new Set();
     inMonth.filter(b => !isStmt(b)).forEach(b => { const no = String(b.no || ''); if (no.indexOf(prefix) === 0) { const d = /^(\d{4})/.exec(no.slice(prefix.length)); if (d) used.add(+d[1]); } });
     const targets = inMonth.filter(isStmt).sort((a, b) => String(a.date).localeCompare(String(b.date)) || (a.savedAt || 0) - (b.savedAt || 0) || String(a.no).localeCompare(String(b.no)));
@@ -1694,6 +1709,7 @@ function bahtText(value) {
     }
     const q = $('histSearch') ? $('histSearch').value : '';
     const mSel = $('histPrintMonth') ? $('histPrintMonth').value : '';
+    if ($('histDupBtn')) { const n = stmtDupBills().length; $('histDupBtn').hidden = !n; if (!dupArmed) $('histDupBtn').textContent = 'ลบบิลสเตทเม้นที่นำเข้าซ้ำ (' + n + ' ใบ)'; }
     if ($('histRenumBtn')) { $('histRenumBtn').hidden = !mSel || !renumPlan(mSel).targets; if (renumArmed !== mSel) $('histRenumBtn').textContent = 'รันเลขบิลสเตทเม้นใหม่'; }
     const shown = list.filter(b => matchesSearch(b.cName, q) && (!mSel || monthKey(b.date) === mSel));
     if (!shown.length) {
@@ -2992,6 +3008,10 @@ function bahtText(value) {
       : 'ไม่พบรายการเงินเข้าที่มั่นใจพอในสเตทเม้นนี้ (อ่านข้อความได้ ' + stmtRows.length + ' รายการ) กรุณาตรวจสอบไฟล์หรือกรอกบิลด้วยตนเอง';
     // เลขที่บิลที่เสนอให้ล่วงหน้า (ไล่ตามลำดับที่แสดงในตาราง) — ผู้ใช้แก้ไขเองทีละรายการได้ก่อนกดเปิดบิลจริง
     const previewCounters = {};
+    const have = {};   // บิลจากสเตทเม้นที่มีอยู่แล้ว นับตาม วันที่|ยอด — รายการที่ตรงจะไม่ถูกติ๊กไว้ กันนำเข้าซ้ำ
+    store.get('bs_bills', []).filter(isStmtBill).forEach(b => { const k = b.date + '|' + round2(num(b.total)); have[k] = (have[k] || 0) + 1; });
+    const dupIdx = new Set();
+    inRows.forEach(r => { const k = r.date + '|' + round2(num(r.amount)); if (have[k] > 0) { have[k]--; dupIdx.add(r.idx); } });
     $('stmtTable').innerHTML = !inRows.length ? '' :
       '<thead><tr><th><input type="checkbox" class="stmt-chk" id="stmtChkAll" checked aria-label="เลือกทั้งหมด"></th>' +
       '<th class="stmt-n">#</th><th>วันที่</th><th>เลขที่ใบกำกับ (แก้ไขได้)</th><th>ชื่อลูกค้า (แก้ไขได้)</th><th class="r">จำนวนเงิน</th></tr></thead><tbody>' +
@@ -2999,14 +3019,16 @@ function bahtText(value) {
         const suggestedNo = billNoForDateBatch(r.date, previewCounters);
         // ลำดับ 1..n ตรงกับใบสรุปที่พิมพ์ · ใต้วันที่โชว์ "จากใคร" ย่อๆ จะได้รู้ว่าเป็นเงินโอนจากบัญชีตัวเองหรือไม่
         const who = String(r.desc || '').replace(/[\d,]+\.\d{2}/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
-        return '<tr><td><input type="checkbox" class="stmt-chk" data-idx="' + r.idx + '" data-amt="' + r.amount + '" checked aria-label="เลือกรายการลำดับ ' + (k + 1) + '"></td>' +
+        const dup = dupIdx.has(r.idx);
+        return '<tr' + (dup ? ' class="stmt-dup"' : '') + '><td><input type="checkbox" class="stmt-chk" data-idx="' + r.idx + '" data-amt="' + r.amount + '"' + (dup ? '' : ' checked') + ' aria-label="เลือกรายการลำดับ ' + (k + 1) + '"></td>' +
         '<td class="stmt-n">' + (k + 1) + '</td>' +
-        '<td>' + esc(thDate(r.date)) + (who ? '<small class="stmt-who">' + esc(who) + '</small>' : '') + '</td>' +
+        '<td>' + esc(thDate(r.date)) + (dup ? '<small class="stmt-who" style="color:var(--magenta)">มีบิลจากสเตทเม้นแล้ว (วันที่+ยอดตรงกัน)</small>' : '') + (who ? '<small class="stmt-who">' + esc(who) + '</small>' : '') + '</td>' +
         '<td class="stmt-no-cell"><input class="stmt-no" type="text" data-idx="' + r.idx + '" value="' + esc(suggestedNo) + '" placeholder="เลขที่ใบกำกับ"></td>' +
         '<td class="stmt-name-cell"><input class="stmt-name" type="text" data-idx="' + r.idx + '" value="' + esc(STMT_DEFAULT_NAME) + '" placeholder="ชื่อลูกค้า"></td>' +
         '<td class="r">' + money(r.amount) + '</td></tr>';
       }).join('') + '</tbody>';
     stmtSyncCount();
+    if (dupIdx.size) { const all = $('stmtChkAll'); if (all) all.checked = false; toast('ไม่ติ๊ก ' + dupIdx.size + ' รายการที่เคยเปิดบิลจากสเตทเม้นไปแล้ว (วันที่และยอดตรงกัน)'); }
   }
   // ปุ่มบอกจำนวนที่เลือก + ยอดรวม ให้เทียบกับใบสรุปก่อนกด
   function stmtSyncCount() {
@@ -8487,6 +8509,21 @@ function bahtText(value) {
   });
   $('stmt-import-btn').addEventListener('click', () => { closeBillEdit(); openStmtOverlay(); });
   $('billNewBtn').addEventListener('click', openNewBill);
+  $('histDupBtn').addEventListener('click', () => {
+    const dups = stmtDupBills(), btn = $('histDupBtn'); if (!dups.length) return;
+    if (!dupArmed) {
+      dupArmed = true; clearTimeout(dupTimer);
+      btn.textContent = 'กดอีกครั้งเพื่อลบ ' + dups.length + ' ใบ';
+      toast('จะลบบิลที่นำเข้าซ้ำ ' + dups.length + ' ใบ (รวม ' + money(dups.reduce((a, b) => a + num(b.total), 0)) + ' บาท) เช่น ' + dups.slice(0, 3).map(b => b.no).join(', ') + ' · ใบที่นำเข้ารอบแรกยังอยู่');
+      dupTimer = setTimeout(() => { dupArmed = false; renderHistory(); }, 8000);
+      return;
+    }
+    dupArmed = false; clearTimeout(dupTimer);
+    const ids = new Set(dups.map(b => b.id));
+    store.set('bs_bills', store.get('bs_bills', []).filter(b => !ids.has(b.id)));
+    ids.forEach(id => { histSelected.delete(id); cloudDelete('bills', id); });
+    renderHistory(); toast('ลบบิลที่นำเข้าซ้ำแล้ว ' + ids.size + ' ใบ · กด “รันเลขบิลสเตทเม้นใหม่” เพื่อเรียงเลขให้ต่อกัน');
+  });
   $('histRenumBtn').addEventListener('click', () => {
     const m = $('histPrintMonth').value; if (!m) return;
     const plan = renumPlan(m), btn = $('histRenumBtn');
