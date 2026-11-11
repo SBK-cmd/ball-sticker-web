@@ -2409,7 +2409,7 @@ body.jm-open .fab-newjob{display:none!important}
       <div class="nav-sec" role="presentation" data-sec="work">
         <div class="nav-sec-h" aria-hidden="true">งานประจำวัน</div>
         <button role="tab" id="tab-confirm" data-tab="confirm" aria-selected="false" aria-controls="panel-confirm"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"></rect><path d="M9 3h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V3z" fill="currentColor" stroke="none"></path><path d="m9 13 2 2 4-4"></path></svg><span>ใบคอนเฟิร์มงาน</span></button>
-        <button role="tab" id="tab-design" data-tab="design" aria-selected="false" aria-controls="panel-design"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg><span>งานออกแบบ</span></button>
+        <button role="tab" id="tab-design" data-tab="design" aria-selected="false" aria-controls="panel-design"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg><span>งานออกแบบ</span><span class="tab-badge" id="dsTabBadge" hidden></span></button>
         <button role="tab" id="tab-cutq" data-tab="cutq" aria-selected="false" aria-controls="panel-cutq" hidden><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.1" y2="15.9"></line><line x1="14.5" y1="14.5" x2="20" y2="20"></line><line x1="8.1" y1="8.1" x2="12" y2="12"></line></svg><span>สั่งตัด</span></button>
         <button role="tab" id="tab-track" data-tab="track" aria-selected="false" aria-controls="panel-track"><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg><span>ติดตามพัสดุ</span></button>
       </div>
@@ -2526,7 +2526,7 @@ body.jm-open .fab-newjob{display:none!important}
       <span class="btab-label">สั่งงาน</span>
     </button>
     <button type="button" class="btab" data-tab="design" aria-controls="panel-design">
-      <span class="btab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></span>
+      <span class="btab-ico"><span class="tab-badge btab-badge" id="dsBnavBadge" hidden></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></span>
       <span class="btab-label">งานออกแบบ</span>
     </button>
     <button type="button" class="btab" id="bnavTaxTrigger" aria-haspopup="true" aria-expanded="false">
@@ -11296,6 +11296,19 @@ function bahtText(value) {
       }).join('') + '</div>' : '') +
       '<div class="ds-cbar"><label class="ds-btn">📷 เพิ่มรูป<input type="file" accept="image/*" multiple hidden data-dsadd></label></div></div>';
   }
+  // ตัวเลขบนเมนู "งานออกแบบ" = โน้ตใหม่/มีอัปเดตจากคนอื่น ตั้งแต่เราเปิดหน้านี้ครั้งล่าสุด (จำต่อเครื่อง)
+  const dsSeenKey = () => 'bs_ds_seen_' + (dsMe() || 'me');
+  const dsSeen = () => { try { return +localStorage.getItem(dsSeenKey()) || 0; } catch (e) { return 0; } };
+  function dsMarkSeen() { try { localStorage.setItem(dsSeenKey(), String(Date.now())); } catch (e) {} updateDsBadge(); }
+  function updateDsBadge() {
+    let n = 0;
+    try {
+      const seen = dsSeen(), me = dsMe(), onPage = $('panel-design') && $('panel-design').classList.contains('active');
+      if (!onPage) n = dsAll().filter(d => (d.updatedAt || d.createdAt || 0) > seen && (d.by || '') !== me).length;
+      if (!seen && !onPage) n = Math.min(n, dsAll().filter(d => !d.sentAt).length);   // เครื่องที่ยังไม่เคยเปิด: นับเฉพาะโน้ตที่ยังไม่ส่งเข้าใบงาน
+    } catch (e) {}
+    ['dsTabBadge', 'dsBnavBadge'].forEach(id => { const b = $(id); if (b) { b.hidden = !n; b.textContent = n > 99 ? '99+' : String(n); } });
+  }
   function renderDesign() {
     if (!$('dsFeed')) return;
     if (dsSel && !dsById(dsSel)) dsSel = null;
@@ -11488,7 +11501,7 @@ function bahtText(value) {
     if (name === 'floor') renderFloor();
     if (name === 'report') renderReport();
     if (name === 'chat') renderChat();
-    if (name === 'design') renderDesign();
+    if (name === 'design') { renderDesign(); dsMarkSeen(); } else updateDsBadge();
     if (name === 'autopost') renderAutopost();
     if (name === 'pagechat') renderPageChat(); else pcStop();
     if (name === 'cutq') renderCutq();
@@ -13372,7 +13385,7 @@ function bahtText(value) {
   (window.__bsAuthReady || Promise.resolve()).then(function () {
     watchCloud('bills', 'bs_bills', renderHistory);
     watchCloud('jobs', 'bs_jobs', () => { renderJobHistory(true); if (canCutRemote) { try { renderCutq(); } catch (e) { console.error(e); } } });
-    if (can('design')) watchCloud('designs', 'bs_designs', renderDesign);
+    if (can('design')) watchCloud('designs', 'bs_designs', () => { renderDesign(); if ($('panel-design') && $('panel-design').classList.contains('active')) dsMarkSeen(); else updateDsBadge(); });
     watchCloud('notifs', NOTIF_KEY, onNotifsChanged);
     watchCloud('wholesale', 'bs_wholesale', renderWholesaleHistory);
     watchCloud('quotes', 'bs_quotes', renderQuoteHistory);

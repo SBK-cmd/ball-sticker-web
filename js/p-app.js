@@ -7308,6 +7308,19 @@ function bahtText(value) {
       }).join('') + '</div>' : '') +
       '<div class="ds-cbar"><label class="ds-btn">📷 เพิ่มรูป<input type="file" accept="image/*" multiple hidden data-dsadd></label></div></div>';
   }
+  // ตัวเลขบนเมนู "งานออกแบบ" = โน้ตใหม่/มีอัปเดตจากคนอื่น ตั้งแต่เราเปิดหน้านี้ครั้งล่าสุด (จำต่อเครื่อง)
+  const dsSeenKey = () => 'bs_ds_seen_' + (dsMe() || 'me');
+  const dsSeen = () => { try { return +localStorage.getItem(dsSeenKey()) || 0; } catch (e) { return 0; } };
+  function dsMarkSeen() { try { localStorage.setItem(dsSeenKey(), String(Date.now())); } catch (e) {} updateDsBadge(); }
+  function updateDsBadge() {
+    let n = 0;
+    try {
+      const seen = dsSeen(), me = dsMe(), onPage = $('panel-design') && $('panel-design').classList.contains('active');
+      if (!onPage) n = dsAll().filter(d => (d.updatedAt || d.createdAt || 0) > seen && (d.by || '') !== me).length;
+      if (!seen && !onPage) n = Math.min(n, dsAll().filter(d => !d.sentAt).length);   // เครื่องที่ยังไม่เคยเปิด: นับเฉพาะโน้ตที่ยังไม่ส่งเข้าใบงาน
+    } catch (e) {}
+    ['dsTabBadge', 'dsBnavBadge'].forEach(id => { const b = $(id); if (b) { b.hidden = !n; b.textContent = n > 99 ? '99+' : String(n); } });
+  }
   function renderDesign() {
     if (!$('dsFeed')) return;
     if (dsSel && !dsById(dsSel)) dsSel = null;
@@ -7500,7 +7513,7 @@ function bahtText(value) {
     if (name === 'floor') renderFloor();
     if (name === 'report') renderReport();
     if (name === 'chat') renderChat();
-    if (name === 'design') renderDesign();
+    if (name === 'design') { renderDesign(); dsMarkSeen(); } else updateDsBadge();
     if (name === 'autopost') renderAutopost();
     if (name === 'pagechat') renderPageChat(); else pcStop();
     if (name === 'cutq') renderCutq();
@@ -9384,7 +9397,7 @@ function bahtText(value) {
   (window.__bsAuthReady || Promise.resolve()).then(function () {
     watchCloud('bills', 'bs_bills', renderHistory);
     watchCloud('jobs', 'bs_jobs', () => { renderJobHistory(true); if (canCutRemote) { try { renderCutq(); } catch (e) { console.error(e); } } });
-    if (can('design')) watchCloud('designs', 'bs_designs', renderDesign);
+    if (can('design')) watchCloud('designs', 'bs_designs', () => { renderDesign(); if ($('panel-design') && $('panel-design').classList.contains('active')) dsMarkSeen(); else updateDsBadge(); });
     watchCloud('notifs', NOTIF_KEY, onNotifsChanged);
     watchCloud('wholesale', 'bs_wholesale', renderWholesaleHistory);
     watchCloud('quotes', 'bs_quotes', renderQuoteHistory);
