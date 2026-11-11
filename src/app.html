@@ -5005,7 +5005,8 @@ function bahtText(value) {
     });
     const tagOf = x => '<span class="tax-tag ' + (NON_TAX_ACCOUNTS.indexOf(x.account) >= 0 ? 'off' : 'on') + '">' + esc(x.account || '-') + '</span>';
     const manTag = x => x.source === 'manual' ? '<span class="bk-manual">เพิ่มเอง</span>' : '';
-    const noteLine = (d, x) => (x.note ? '<small class="bk-note">📝 ' + esc(x.note) + '</small>' : '') + (canBank ? '<button type="button" class="bk-nbtn" data-bknote="1" data-d="' + d + '" data-id="' + esc(x.id) + '">' + (x.note ? '✎ แก้โน้ต' : '＋ โน้ต') + '</button>' : '');
+    const IC_NOTE = '<svg class="ic-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/></svg>';
+    const noteLine = (d, x) => (x.note ? '<small class="bk-note">' + IC_NOTE + esc(x.note) + '</small>' : '') + (canBank ? '<button type="button" class="bk-nbtn" data-bknote="1" data-d="' + d + '" data-id="' + esc(x.id) + '">' + (x.note ? 'แก้โน้ต' : 'เพิ่มโน้ต') + '</button>' : '');
     const noteEdit = (d, x) => bankNoteEdit === x.id ? '<li class="bk-ne"><input type="text" id="bkNoteInput" maxlength="120" value="' + esc(x.note || '') + '" placeholder="โน้ตยอดนี้ เช่น ค่าหมึก / มัดจำ / ลูกค้าโอนเกิน"><button type="button" class="btn small good" data-bknsave="1" data-d="' + d + '" data-id="' + esc(x.id) + '">บันทึก</button><button type="button" class="btn small" data-bkncancel="1">ยกเลิก</button></li>' : '';
     const delBtn = (d, x) => '<button type="button" class="bil-del' + (bankDelArmed === x.id ? ' armed' : '') + '" data-bkdel="' + d + '" data-id="' + esc(x.id) + '">' + (bankDelArmed === x.id ? 'กดอีกครั้งเพื่อลบ' : 'ลบ') + '</button>';
     const rowIn = x =>

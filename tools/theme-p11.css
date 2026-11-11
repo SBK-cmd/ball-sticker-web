@@ -186,3 +186,7 @@ html body .bk-seg{background:#E3E9F6!important}
 html body .acd-seg{border:1px solid #D5DDF0!important}
 html body :is(i,span,em).ci{background:#2F9E5F!important;border:0!important;box-shadow:none!important}
 html body :is(i,span,em).co{background:#E8703A!important;border:0!important;box-shadow:none!important}
+/* แก้: การ์ด "ยอดรวมทั้งสิ้น" (.dash-tile.accent) ถูกทำพื้นขาวแต่ตัวหนังสือยังขาว → มองไม่เห็น */
+html body .dash-tile.accent{color:var(--ink)!important}
+html body .dash-tile.accent .dash-tile-label{color:var(--muted)!important}
+html body .dash-tile.accent .dash-tile-val{color:var(--ink)!important}

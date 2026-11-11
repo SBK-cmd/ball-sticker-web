@@ -74,3 +74,35 @@ html body .acd-mb .lbl{font-weight:600!important}
 
 /* ---- เลขา: คำอธิบายใต้หัวข้อรหัสไม่ให้ทับช่องกรอก ---- */
 html body #lkPinBox .hint{display:block;margin:4px 0 12px!important;position:static!important}
+
+/* ===== p12b: เกณฑ์อ่านง่าย/แตะง่าย (ui-ux-pro-max) — ตรวจด้วยสคริปต์ 16 แท็บ ===== */
+/* สีตัวหนังสือรอง: เดิม #6B7794 บนพื้นเทา/ฟ้าอ่อนได้ 3.7–4.1 → ใหม่ ≥ 5.1 ทุกพื้น */
+html:root,html:root[data-theme]{--muted:#556080}
+html body .bil-del,html body .bk-nbtn,html body .su,html body .unit-seg button{color:var(--muted)}
+/* ตัวหนังสือไม่เล็กกว่า 12px */
+html body .tdy-t .lb,html body .tdy .tdy-t b em,html body .tdyDate{font-size:12px!important}
+html body .hint,html body .actions-note,html body .mn-note,html body #moneyBody small{font-size:12.5px!important}
+/* ห้ามตัวอักษรชิดแน่นในข้อความเล็ก (หัวข้อ/ป้าย/หน่วย) */
+html body h1,html body h2,html body h3,html body .mn-h,html body small,html body em,html body .no-print{letter-spacing:0!important}
+html body .acd-card .hero b em,html body .tdy-t b em{letter-spacing:0!important}
+/* ไม่ใช้ตัวพิมพ์ใหญ่บังคับ */
+html body th,html body h3,html body span{text-transform:none!important}
+/* พื้นที่แตะ: ปุ่มเล็กขยายพื้นที่กดไม่เปลี่ยนหน้าตา */
+html body .tip-q{position:relative}
+html body .tip-q::before{content:"";position:absolute;inset:-12px}
+html body .bil-del,html body .bk-nbtn{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+html body .history li .hist-chk,html body .report-pick-chk.hist-chk{width:24px;height:24px}
+@media (max-width:560px){
+  html body #bankAccSeg button,html body .acd-seg button,html body .acd-mb button{min-height:44px;min-width:44px}
+  html body .txt,html body select.txt,html body .job-status-select.status-pill{min-height:44px}
+}
+html body .bk-note svg,html body .ic-note{width:14px;height:14px;vertical-align:-2px;margin-right:4px}
+/* p12b รอบ 2 */
+html body .acd-mb em,html body .tax-tag,html body .jc-k,html body .jc-chip,html body .acd-card small,html body .dash-tile small{font-size:12px!important}
+html body .acd-card .hero small{color:var(--muted)!important}
+html body .tip-q{color:var(--muted)!important;border-color:var(--muted)!important}
+html body .dash-tile-val{letter-spacing:0!important}
+@media (max-width:560px){
+  html body .bk-seg button,html body #bankListSeg button{min-height:44px!important}
+  html body input.txt,html body select.txt,html body select{min-height:44px!important}
+}
