@@ -5617,17 +5617,19 @@ function bahtText(value) {
   // บิลอื่น (ออกเอง/ส่งลูกค้าแล้ว) คงเลขเดิม และเลขรันของใบเหล่านั้นจะถูกข้าม ไม่ให้ชนกัน
   let renumArmed = null, renumTimer = null, dupArmed = false, dupTimer = null;
   function isStmtBill(b) { return !String(b.cTax || '').trim() && (b.items || []).length === 1 && (b.items[0].name || '') === STMT_ITEM_NAME; }
-  // บิลสเตทเม้นที่นำเข้าซ้ำ: แบ่งรอบนำเข้าตามเวลาใน id (ห่างกันเกิน 1 นาที = คนละรอบ) รอบหลังที่ วันที่+ยอด ตรงกับรอบก่อน (จับคู่ทีละใบ) = ซ้ำ
+  // บิลสเตทเม้นที่นำเข้าซ้ำ: id = b<เวลา>_<ลำดับในรอบ>_xxx — เรียงตามเวลาแล้วลำดับ เมื่อ "ลำดับ" วนกลับไปเริ่มใหม่ = รอบนำเข้าใหม่
+  // (ไม่ใช้ระยะเวลาห่าง เพราะนำเข้าสองรอบติดกันภายในนาทีเดียวได้) รอบหลังที่ วันที่+ยอด ตรงกับรอบก่อน (จับคู่ทีละใบ) = ซ้ำ
   function stmtDupBills() {
-    const ts = b => { const m = /^b(\d{12,})_/.exec(String(b.id || '')); return m ? +m[1] : (b.savedAt || 0); };
-    const st = store.get('bs_bills', []).filter(isStmtBill).sort((a, b) => ts(a) - ts(b));
-    const pool = {}, dups = []; let batch = [], last = -1e15;
+    const key = b => { const m = /^b(\d{12,})_(\d+)_/.exec(String(b.id || '')); return m ? [+m[1], +m[2]] : null; };
+    const st = store.get('bs_bills', []).filter(isStmtBill).map(b => ({b, k: key(b)})).filter(x => x.k)
+      .sort((x, y) => x.k[0] - y.k[0] || x.k[1] - y.k[1]);
+    const pool = {}, dups = []; let batch = [], prevI = -1, prevT = 0;
     const flush = () => { batch.forEach(b => { const k = b.date + '|' + round2(num(b.total)); pool[k] = (pool[k] || 0) + 1; }); batch = []; };
-    st.forEach(b => {
-      if (ts(b) - last > 60000) flush();
-      last = ts(b);
-      const k = b.date + '|' + round2(num(b.total));
-      if (pool[k] > 0) { pool[k]--; dups.push(b); } else batch.push(b);
+    st.forEach(({b, k}) => {
+      if (k[1] <= prevI || k[0] - prevT > 600000) flush();   // ลำดับวนกลับ หรือห่างเกิน 10 นาที = รอบใหม่
+      prevI = k[1]; prevT = k[0];
+      const kk = b.date + '|' + round2(num(b.total));
+      if (pool[kk] > 0) { pool[kk]--; dups.push(b); } else batch.push(b);
     });
     return dups;
   }
