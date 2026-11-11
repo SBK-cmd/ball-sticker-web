@@ -550,7 +550,7 @@ function bahtText(value) {
     for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
     return 'v' + Math.abs(h).toString(36) + '_' + s.length;
   }
-  function upsertVendor(name, tax) {
+  function upsertVendor(name, tax, addr) {
     const n = String(name || '').trim();
     if (!n) return;
     const list = store.get('bs_vendors', []);
@@ -560,9 +560,10 @@ function bahtText(value) {
     if (idx >= 0) {
       rec = Object.assign({}, list[idx], {name: n, lastUsed: Date.now()});
       if (tx) rec.tax = tx;
+      if (String(addr || '').trim()) rec.addr = String(addr).trim();
       list[idx] = rec;
     } else {
-      rec = {name: n, tax: tx, lastUsed: Date.now()};
+      rec = {name: n, tax: tx, addr: String(addr || '').trim(), lastUsed: Date.now()};
       list.push(rec);
     }
     store.set('bs_vendors', list);
@@ -572,14 +573,15 @@ function bahtText(value) {
   // รายชื่อร้านค้า = ที่บันทึกไว้ใน bs_vendors + ร้านที่เคยคีย์ไว้ในประวัติภาษีซื้อเดิมทั้งหมด (ไม่ต้องคีย์ซ้ำ) เรียงใช้ล่าสุดก่อน
   function allVendors() {
     const map = {};
-    const put = (name, tax, t) => {
+    const put = (name, tax, t, addr) => {
       const n = String(name || '').trim(); if (!n) return;
-      const cur = map[n] || (map[n] = {name: n, tax: '', lastUsed: 0});
-      if (t >= cur.lastUsed) { cur.lastUsed = t; if (String(tax || '').trim()) cur.tax = String(tax).trim(); }
-      else if (!cur.tax && String(tax || '').trim()) cur.tax = String(tax).trim();
+      const cur = map[n] || (map[n] = {name: n, tax: '', addr: '', lastUsed: 0});
+      const tx = String(tax || '').trim(), ad = String(addr || '').trim();
+      if (t >= cur.lastUsed) { cur.lastUsed = t; if (tx) cur.tax = tx; if (ad) cur.addr = ad; }
+      else { if (!cur.tax && tx) cur.tax = tx; if (!cur.addr && ad) cur.addr = ad; }
     };
-    store.get('bs_purchases', []).forEach(r => put(r.vendor, r.vendorTax, r.savedAt || Date.parse(r.date) || 0));
-    store.get('bs_vendors', []).forEach(v => put(v.name, v.tax, v.lastUsed || 0));
+    store.get('bs_purchases', []).forEach(r => put(r.vendor, r.vendorTax, r.savedAt || Date.parse(r.date) || 0, r.vendorAddr));
+    store.get('bs_vendors', []).forEach(v => put(v.name, v.tax, v.lastUsed || 0, v.addr));
     return Object.keys(map).map(k => map[k]).sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0));
   }
   function renderVendorDatalist() {
@@ -598,14 +600,18 @@ function bahtText(value) {
     const el = $('purchVendor'); el.value = b.dataset.v;
     el.dispatchEvent(new Event('input', {bubbles: true})); el.dispatchEvent(new Event('change', {bubbles: true}));
   });
-  function wireVendorAutofill(nameId, taxId, renderFn) {
+  function wireVendorAutofill(nameId, taxId, renderFn, addrId) {
     const nameEl = $(nameId); if (!nameEl) return;
     const fill = () => {
       const v = findVendor(nameEl.value);
       if (!v) return;
       let changed = false;
-      const taxEl = taxId ? $(taxId) : null;
-      if (taxEl && !taxEl.value.trim() && v.tax) { taxEl.value = v.tax; changed = true; }
+      // เติมเมื่อช่องว่าง หรือช่องยังเป็นค่าที่จำไว้ของร้านอื่น (เลือกร้านใหม่แล้วไม่ค้างเลขภาษี/ที่อยู่ร้านเก่า)
+      [[taxId, 'tax'], [addrId, 'addr']].forEach(([id, k]) => {
+        const el = id ? $(id) : null; if (!el || !v[k]) return;
+        const cur = el.value.trim();
+        if (!cur || (cur !== v[k] && allVendors().some(x => x.name !== v.name && x[k] === cur))) { el.value = v[k]; changed = true; }
+      });
       if (changed && renderFn) renderFn();
     };
     nameEl.addEventListener('input', fill);
@@ -3134,12 +3140,12 @@ function bahtText(value) {
 
   function collectPurchase() {
     return {date: $('purchDate').value, vendor: $('purchVendor').value, invoiceNo: $('purchInvoiceNo').value,
-      vendorTax: $('purchVendorTax').value, amount: $('purchAmount').value,
+      vendorTax: $('purchVendorTax').value, vendorAddr: $('purchVendorAddr') ? $('purchVendorAddr').value : '', amount: $('purchAmount').value,
       vat: $('purchVat').value, note: $('purchNote').value, photo: purchasePhoto, account: $('purchAccount').value || 'กิติพงษ์'};
   }
   function applyPurchase(p) {
     $('purchDate').value = p.date || todayISO(); $('purchVendor').value = p.vendor || '';
-    $('purchInvoiceNo').value = p.invoiceNo || ''; $('purchVendorTax').value = p.vendorTax || '';
+    $('purchInvoiceNo').value = p.invoiceNo || ''; $('purchVendorTax').value = p.vendorTax || ''; if ($('purchVendorAddr')) $('purchVendorAddr').value = p.vendorAddr || '';
     $('purchAmount').value = p.amount || ''; $('purchVat').value = p.vat || '';
     $('purchNote').value = p.note || ''; purchasePhoto = p.photo || null;
     $('purchAccount').value = ACCOUNTS.indexOf(p.account) >= 0 ? p.account : 'กิติพงษ์';   // รายการเก่าไม่มีช่องนี้ = กิติพงษ์
@@ -3186,7 +3192,7 @@ function bahtText(value) {
     currentPurchaseId = rec.id;
     const persisted = store.set('bs_purchases', list);
     cloudSave('purchases', rec);
-    upsertVendor(rec.vendor, rec.vendorTax);
+    upsertVendor(rec.vendor, rec.vendorTax, rec.vendorAddr);
     renderPurchHistory(); renderPurchEditState();
     syncRecordPhotosToCloud('bs_purchases', 'purchases', rec.id, 'photo', renderPurchHistory);
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับรายการแล้ว' : 'บันทึกรายการภาษีซื้อแล้ว')
@@ -9302,7 +9308,7 @@ function bahtText(value) {
   wireCustomerAutofill('cName', 'cPhone', 'cAddr', 'cTax', renderBill);
   wireCustomerAutofill('jName', 'jPhone', 'jAddr', null, renderJob);
   wireCustomerAutofill('qName', 'qPhone', 'qAddr', 'qTax', renderQuote);
-  wireVendorAutofill('purchVendor', 'purchVendorTax', null);
+  wireVendorAutofill('purchVendor', 'purchVendorTax', null, 'purchVendorAddr');
   // รอให้เข้าสู่ระบบ Firebase แบบไม่ระบุตัวตนเสร็จก่อน (ตั้งไว้ตอนโหลดหน้า) ค่อยเริ่มฟังข้อมูลคลาวด์แบบเรียลไทม์
   // กันไม่ให้ยิง request ไปตอนยังไม่ได้ล็อกอิน ซึ่งจะโดนกฎความปลอดภัยของ Firestore ปฏิเสธ
   (window.__bsAuthReady || Promise.resolve()).then(function () {
