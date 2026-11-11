@@ -2748,10 +2748,13 @@ function bahtText(value) {
   }
 
   /* ---------------- ภาษีซื้อ ---------------- */
-  let currentPurchaseId = null, purchasePhoto = null, purchaseOcrSource = null;
+  let currentPurchaseId = null, purchasePhoto = null, purchaseOcrSource = null, purchasePdfText = null;
 
   function readPurchasePhoto(file) {
     if (!file) return;
+    purchasePdfText = null;
+    if (/pdf$/i.test(file.type) || /\.pdf$/i.test(file.name || '')) { readPurchasePdf(file); updateOcrButtonLabel(); return; }
+    updateOcrButtonLabel();
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
@@ -2778,6 +2781,28 @@ function bahtText(value) {
     };
     reader.readAsDataURL(file);
   }
+  // ใบกำกับภาษีแบบ PDF (e-Tax): ดึงตัวหนังสือจากไฟล์ตรงๆ (ไม่ต้อง OCR) + วาดหน้าแรกเป็นภาพแนบไว้กับรายการ
+  async function readPurchasePdf(file) {
+    try {
+      await bsLoadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    } catch (e) {}
+    if (typeof pdfjsLib === 'undefined') { toast('โหลดระบบอ่าน PDF ไม่สำเร็จ (ต้องใช้อินเทอร์เน็ต)'); return; }
+    try {
+      const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
+      const lines = await extractPdfLines(pdf, true);
+      purchasePdfText = lines.join('\n');
+      const page = await pdf.getPage(1), v1 = page.getViewport({scale: 1});
+      const draw = async (maxDim, q) => { const sc = maxDim / Math.max(v1.width, v1.height), vp = page.getViewport({scale: sc}), c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height); const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); await page.render({canvasContext: g, viewport: vp}).promise; return c.toDataURL('image/jpeg', q); };
+      purchasePhoto = await draw(1000, 0.7); purchaseOcrSource = await draw(1600, 0.85);
+      renderPurchasePhoto(); updateOcrButtonLabel();
+      if (purchasePdfText.replace(/\s/g, '').length < 20) { purchasePdfText = null; updateOcrButtonLabel(); toast('PDF นี้เป็นภาพสแกน ไม่มีตัวหนังสือในไฟล์ จะอ่านแบบรูปภาพแทน'); }
+      else toast('แนบ PDF แล้ว กด “อ่านข้อมูลจาก PDF” เพื่อกรอกให้');
+    } catch (e) {
+      console.error(e); purchasePdfText = null;
+      toast(e && e.name === 'PasswordException' ? 'PDF นี้ติดรหัส เปิดไม่ได้' : 'อ่านไฟล์ PDF ไม่สำเร็จ');
+    }
+  }
   function renderPurchasePhoto() {
     const wrap = $('purchPhotoWrap');
     if (purchasePhoto) { $('purchPhotoPreview').src = purchasePhoto; wrap.hidden = false; }
@@ -2790,43 +2815,104 @@ function bahtText(value) {
     if (!ocrWorker) ocrWorker = await Tesseract.createWorker('eng+tha');
     return ocrWorker;
   }
+  // ---------- ตรวจเลขประจำตัวผู้เสียภาษี 13 หลัก (สูตรหลักตรวจของกรมสรรพากร) ----------
+  function thaiTaxIdValid(t) {
+    const d = String(t || '').replace(/\D/g, ''); if (d.length !== 13) return false;
+    let sum = 0; for (let i = 0; i < 12; i++) sum += (+d[i]) * (13 - i);
+    return (11 - sum % 11) % 10 === +d[12];
+  }
+  const ownTaxId = () => String(($('sTax') && $('sTax').value) || (shop && shop.taxId) || '').replace(/\D/g, '');
+  const moneyNum = s => { const v = parseFloat(String(s).replace(/,/g, '')); return isFinite(v) ? v : NaN; };
   function parseReceiptText(text) {
-    const clean = String(text || '').replace(/\r/g, '');
+    const clean = String(text || '').replace(/\r/g, '').replace(/[๐-๙]/g, c => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(c)));
     const lines = clean.split('\n').map(l => l.trim()).filter(Boolean);
     const out = {};
+    const own = ownTaxId();
 
-    // เลขประจำตัวผู้เสียภาษี (13 หลักติดกัน อาจมีช่องว่าง/ขีดคั่น)
-    const taxMatch = clean.match(/(?:\d[\s-]?){13}/);
-    if (taxMatch) { const digits = taxMatch[0].replace(/[^0-9]/g, ''); if (digits.length === 13) out.vendorTax = digits; }
+    // เลขผู้เสียภาษี: หาทุกชุด 13 หลัก เลือกชุดแรกที่ผ่านสูตรตรวจและไม่ใช่เลขของร้านเราเอง (ฝั่งผู้ซื้อ)
+    const taxes = (clean.match(/(?:\d[\s-]?){12}\d/g) || []).map(x => x.replace(/\D/g, '')).filter(d => d.length === 13);
+    const goodTax = taxes.find(d => d !== own && thaiTaxIdValid(d));
+    const anyTax = taxes.find(d => d !== own);
+    if (goodTax || anyTax) out.vendorTax = goodTax || anyTax;
 
-    // วันที่ dd/mm/yyyy หรือ dd-mm-yyyy (รองรับปี พ.ศ.)
-    const dateMatch = clean.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
-    if (dateMatch) {
-      let dd = +dateMatch[1], mm = +dateMatch[2], yy = +dateMatch[3];
-      if (yy < 100) yy += 2500;
+    // วันที่: เลือกวันแรกที่สมเหตุสมผลและไม่อยู่ในอนาคต (บรรทัดที่มีคำว่า "วันที่"/Date มาก่อน)
+    const today = todayISO();
+    const dateCands = [];
+    lines.forEach((l, li) => { const re = /(\d{1,2})\s*[\/\-.]\s*(\d{1,2})\s*[\/\-.]\s*(\d{2,4})/g; let m; while ((m = re.exec(l))) dateCands.push({m, pri: /วันที่|date/i.test(l) ? 0 : 1, li}); });
+    dateCands.sort((a, b) => a.pri - b.pri || a.li - b.li);
+    for (const c of dateCands) {
+      let dd = +c.m[1], mm = +c.m[2], yy = +c.m[3];
+      if (yy < 100) yy += yy >= 50 ? 2500 : 2000;   // 69 → 2569 (พ.ศ.), 26 → 2026
       if (yy > 2400) yy -= 543;
-      if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31 && yy > 1900 && yy < 2100) {
-        out.date = yy + '-' + String(mm).padStart(2, '0') + '-' + String(dd).padStart(2, '0');
+      if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31 && yy > 2000 && yy < 2100) {
+        const iso = yy + '-' + pad2(mm) + '-' + pad2(dd);
+        if (iso <= today) { out.date = iso; break; }
       }
     }
 
-    // เลขที่ใบกำกับภาษี / เลขที่บิล
-    const invMatch = clean.match(/(?:เลขที่ใบกำกับภาษี|เลขที่เอกสาร|เลขที่บิล|เลขที่|Invoice\s*No\.?|No\.?)[:\s]*([A-Za-zก-๙0-9\-\/]{3,20})/i);
+    // เลขที่ใบกำกับ
+    const invMatch = clean.match(/(?:เลขที่ใบกำกับภาษี|เลขที่ใบเสร็จ|เลขที่เอกสาร|เลขที่บิล|เลขที่|Invoice\s*No\.?|Tax\s*Invoice\s*No\.?|Doc(?:ument)?\s*No\.?)[\s:#.]*([A-Za-z0-9][A-Za-z0-9\-\/]{2,24})/i);
     if (invMatch) out.invoiceNo = invMatch[1];
 
-    // จำนวนภาษีมูลค่าเพิ่ม (VAT)
-    const vatMatch = clean.match(/(?:ภาษีมูลค่าเพิ่ม|VAT)[^\d\n]{0,15}([\d,]+\.\d{1,2}|[\d,]+)/i);
-    if (vatMatch) out.vat = vatMatch[1].replace(/,/g, '');
+    // ตัวเลขเงินทุกตัวในเอกสาร (ต้องมีทศนิยม 2 ตำแหน่ง เพื่อไม่ปนกับเลขที่/เบอร์โทร)
+    const moneyRe = /(\d{1,3}(?:,\d{3})+|\d+)\.(\d{2})(?!\d)/g;
+    const nums = [];
+    lines.forEach(l => { let m; moneyRe.lastIndex = 0; while ((m = moneyRe.exec(l))) nums.push({v: moneyNum(m[0]), l}); });
+    const onLine = re => nums.filter(n => re.test(n.l)).map(n => n.v);
+    const vatKw = /ภาษีมูลค่าเพิ่ม|vat/i, totKw = /ยอดรวมทั้งสิ้น|รวมทั้งสิ้น|จำนวนเงินรวม|ยอดสุทธิ|รวมเงินทั้งสิ้น|grand\s*total|net\s*total|total/i;
+    const vals = Array.from(new Set(nums.map(n => n.v))).filter(v => v > 0);
+    // 1) หา 3 ตัวที่ลงกันพอดี: ก่อน VAT + VAT(7%) = รวม (คลาดได้ไม่เกิน 0.05) — แม่นที่สุด
+    let best = null;
+    vals.forEach(tot => vals.forEach(vat => {
+      if (vat >= tot) return; const base = round2(tot - vat);
+      if (Math.abs(base * 0.07 - vat) <= 0.05 && vals.some(x => Math.abs(x - base) <= 0.01)) { if (!best || tot > best.tot) best = {tot, vat}; }
+    }));
+    if (best) { out.amount = best.tot.toFixed(2); out.vat = best.vat.toFixed(2); out._matched = true; }
+    else {
+      const v = onLine(vatKw).filter(x => !/7\s*%?$/.test(String(x))); if (v.length) out.vat = Math.max(...v.filter(x => x !== 7)).toFixed(2);
+      const t = onLine(totKw); if (t.length) out.amount = Math.max(...t).toFixed(2);
+      if (out.vat === 'NaN' || out.vat === '-Infinity') delete out.vat;
+    }
 
-    // ยอดเงินรวม
-    const totalMatch = clean.match(/(?:ยอดรวมทั้งสิ้น|จำนวนเงินรวม|รวมทั้งสิ้น|ยอดสุทธิ|Grand\s*Total|Total)[^\d\n]{0,15}([\d,]+\.\d{1,2}|[\d,]+)/i);
-    if (totalMatch) out.amount = totalMatch[1].replace(/,/g, '');
-
-    // ชื่อร้าน/ผู้ขาย — เดาจากบรรทัดแรกที่มีตัวอักษรมากพอ
-    const nameLine = lines.find(l => l.replace(/[^ก-๙a-zA-Z]/g, '').length >= 4);
-    if (nameLine) out.vendor = nameLine.slice(0, 60);
-
+    // ชื่อร้าน: บรรทัดที่มี บริษัท/หจก./ร้าน ก่อน ไม่เจอค่อยใช้บรรทัดแรกที่มีตัวอักษรพอ (ข้ามบรรทัดที่เป็นชื่อร้านเราเอง)
+    const ownName = (($('sName') && $('sName').value) || '').trim();
+    const notOwn = l => !(ownName && l.indexOf(ownName) >= 0) && !/บอล\s*สติ/.test(l);
+    const nameLine = lines.find(l => /บริษัท|ห้างหุ้นส่วน|หจก|ร้าน|co\.,?\s*ltd|limited/i.test(l) && notOwn(l) && !/ผู้ซื้อ|ลูกค้า|customer|buyer/i.test(l))
+      || lines.find(l => l.replace(/[^ก-๙a-zA-Z]/g, '').length >= 4 && notOwn(l));
+    if (nameLine) out.vendor = nameLine.replace(/^(ผู้ขาย|ชื่อ)\s*[:：]?\s*/, '').slice(0, 60);
     return out;
+  }
+
+  // ---------- ตรวจข้อมูลในฟอร์มภาษีซื้อ (ใช้ทั้งหลังสแกนและตอนพิมพ์แก้) ----------
+  let purchCheckSrc = '';
+  function checkPurchaseFields() {
+    const box = $('purchCheck'); if (!box) return;
+    const issues = [], bad = new Set();
+    const taxEl = $('purchVendorTax'), tax = taxEl.value.replace(/\D/g, '');
+    if (taxEl.value.trim()) {
+      if (tax.length !== 13) { issues.push('เลขผู้เสียภาษีผู้ขายต้องมี 13 หลัก (ตอนนี้ ' + tax.length + ' หลัก)'); bad.add('purchVendorTax'); }
+      else if (tax === ownTaxId()) { issues.push('เลขผู้เสียภาษีนี้เป็นของร้านเราเอง (ฝั่งผู้ซื้อ) ไม่ใช่ของผู้ขาย'); bad.add('purchVendorTax'); }
+      else if (!thaiTaxIdValid(tax)) { issues.push('เลขผู้เสียภาษีผู้ขายไม่ผ่านสูตรตรวจหลักสุดท้าย น่าจะอ่านหรือพิมพ์ผิดสักหลัก'); bad.add('purchVendorTax'); }
+    }
+    const vat = moneyNum($('purchVat').value), amt = moneyNum($('purchAmount').value);
+    if (vat > 0 && amt > 0) {
+      const expect = round2(amt * 7 / 107);
+      if (vat >= amt) { issues.push('ยอด VAT มากกว่าหรือเท่ายอดเงินรวม'); bad.add('purchVat'); bad.add('purchAmount'); }
+      else if (Math.abs(expect - vat) > 1) { issues.push('VAT ไม่ตรงกับ 7% ของยอดรวม: ยอดรวม ' + money(amt) + ' ควรมี VAT ' + money(expect) + ' บาท แต่กรอก ' + money(vat) + ' บาท (ถ้าบิลมีสินค้ายกเว้น VAT ปนอยู่ ข้ามได้)'); bad.add('purchVat'); bad.add('purchAmount'); }
+    }
+    const d = $('purchDate').value;
+    if (d) {
+      if (d > todayISO()) { issues.push('วันที่อยู่ในอนาคต (' + thDate(d) + ') ตรวจปี พ.ศ./ค.ศ. อีกครั้ง'); bad.add('purchDate'); }
+      else { const ago = (Date.parse(todayISO()) - Date.parse(d)) / 864e5; if (ago > 183) { issues.push('บิลเก่ากว่า 6 เดือน (' + thDate(d) + ') ตรวจวันที่ หรือสอบถามผู้ทำบัญชีว่ายังใช้เป็นภาษีซื้อได้ไหม'); bad.add('purchDate'); } }
+    }
+    ['purchVendorTax', 'purchVat', 'purchAmount', 'purchDate'].forEach(id => { const el = $(id); if (!el) return; el.classList.toggle('pbad', bad.has(id)); const w = el.closest('.in'); if (w) w.classList.toggle('pbad', bad.has(id)); });
+    const hasAny = vat > 0 || amt > 0 || tax;
+    if (!issues.length && !purchCheckSrc) { box.hidden = true; return; }
+    box.hidden = !hasAny && !purchCheckSrc;
+    box.className = 'pchk ' + (issues.length ? 'bad' : 'ok');
+    box.innerHTML = (issues.length ? '<b>ตรวจแล้วพบ ' + issues.length + ' จุด</b><ul>' + issues.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>'
+      : '<b>ตรวจแล้ว ตัวเลขลงกัน</b>' + (vat > 0 && amt > 0 ? ' · ก่อน VAT ' + money(round2(amt - vat)) + ' + VAT ' + money(vat) + ' = ' + money(amt) + ' บาท' : ''))
+      + (purchCheckSrc ? '<span class="src">' + esc(purchCheckSrc) + '</span>' : '');
   }
   /* ---------------- สแกนบิลด้วย AI (ChatGPT/Gemini) — ใช้ API Key ส่วนตัวของผู้ใช้ ---------------- */
   function buildAiReceiptPrompt() {
@@ -2917,6 +3003,7 @@ function bahtText(value) {
   function updateOcrButtonLabel() {
     const btn = $('ocrScanBtn');
     if (!btn) return;
+    if (purchasePdfText) { btn.textContent = 'อ่านข้อมูลจาก PDF และกรอกให้'; return; }
     const provider = localStorage.getItem('bs_ai_provider') || 'none';
     const apiKey = (localStorage.getItem('bs_ai_key') || '').trim();
     btn.textContent = (provider !== 'none' && apiKey) ? 'สแกนด้วย AI และกรอกข้อมูลอัตโนมัติ' : 'สแกนและกรอกข้อมูลอัตโนมัติ';
@@ -2932,8 +3019,8 @@ function bahtText(value) {
     const provider = localStorage.getItem('bs_ai_provider') || 'none';
     const apiKey = (localStorage.getItem('bs_ai_key') || '').trim();
     try {
-      let fields = null, usedAi = false;
-      if (provider !== 'none' && apiKey) {
+      let fields = null, usedAi = false, usedPdf = false;
+      if (provider !== 'none' && apiKey && !purchasePdfText) {
         btn.textContent = 'กำลังสแกนด้วย AI…';
         try {
           fields = await aiScanReceipt(source, provider, apiKey, (localStorage.getItem('bs_ai_model') || '').trim());
@@ -2943,6 +3030,7 @@ function bahtText(value) {
           toast('สแกนด้วย AI ไม่สำเร็จ (' + (aiErr && aiErr.message ? aiErr.message : 'เชื่อมต่อไม่ได้') + ') กำลังลองสแกนด้วยระบบ OCR ธรรมดาแทน');
         }
       }
+      if (!fields && purchasePdfText) { fields = parseReceiptText(purchasePdfText); usedPdf = true; }
       if (!fields) {
         btn.textContent = 'กำลังสแกนบิล…';
         try { await bsLoadScript('https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js'); } catch (e) {}
@@ -2951,15 +3039,21 @@ function bahtText(value) {
         const {data: {text}} = await worker.recognize(source);
         fields = parseReceiptText(text);
       }
+      // จำร้าน: เลขผู้เสียภาษีตรงกับร้านที่เคยบันทึก → ใช้ชื่อ/ที่อยู่จากประวัติแทนค่าที่สแกน (แม่นกว่า)
+      let known = null;
+      if (fields.vendorTax) known = allVendors().find(v => String(v.tax || '').replace(/\D/g, '') === fields.vendorTax) || null;
+      if (known) { fields.vendor = known.name; if (known.addr && $('purchVendorAddr') && !$('purchVendorAddr').value.trim()) $('purchVendorAddr').value = known.addr; }
+      purchCheckSrc = (usedPdf ? 'อ่านจากตัวหนังสือในไฟล์ PDF' : usedAi ? 'อ่านด้วย AI' : 'อ่านจากรูปด้วย OCR (ควรตรวจทุกช่อง)') + (known ? ' · ชื่อร้าน/ที่อยู่จากประวัติร้าน "' + known.name + '"' : '') + (fields._matched ? ' · ยอดก่อน VAT + VAT = ยอดรวม ตรงกันในเอกสาร' : '');
       const map = {date: 'purchDate', vendor: 'purchVendor', invoiceNo: 'purchInvoiceNo', vendorTax: 'purchVendorTax', amount: 'purchAmount', vat: 'purchVat'};
       let filled = 0;
       Object.keys(map).forEach(k => {
         const el = $(map[k]);
         // วันที่ ช่องนี้เริ่มต้นเป็นวันนี้อยู่แล้ว จึงเขียนทับได้เสมอถ้าสแกนเจอวันที่จากบิล ส่วนช่องอื่นเขียนเฉพาะตอนยังว่าง
-        const overwrite = k === 'date' ? true : !el.value.trim();
+        const overwrite = k === 'date' ? true : (k === 'vendor' && known) ? true : !el.value.trim();
         if (fields[k] && overwrite) { el.value = fields[k]; filled++; }
       });
-      toast(filled > 0 ? (usedAi ? 'สแกนด้วย AI เสร็จแล้ว' : 'สแกนเสร็จแล้ว') + ' กรอกให้ ' + filled + ' ช่อง — กรุณาตรวจสอบความถูกต้องก่อนบันทึก'
+      checkPurchaseFields();
+      toast(filled > 0 ? (usedPdf ? 'อ่าน PDF เสร็จแล้ว' : usedAi ? 'สแกนด้วย AI เสร็จแล้ว' : 'สแกนเสร็จแล้ว') + ' กรอกให้ ' + filled + ' ช่อง — กรุณาตรวจสอบความถูกต้องก่อนบันทึก'
                         : 'สแกนไม่พบข้อมูลที่มั่นใจพอ กรุณากรอกข้อมูลด้วยตนเอง');
     } catch (e) {
       console.error(e);
@@ -2987,7 +3081,7 @@ function bahtText(value) {
   function closeStmtOverlay() { $('stmtOverlay').hidden = true; document.body.style.overflow = ''; }
 
   // จัดกลุ่มข้อความในหน้า PDF ตามตำแหน่งบรรทัด (แกน y) แล้วเรียงตามแกน x เพื่อคืนค่าเป็นบรรทัดข้อความที่อ่านลำดับถูกต้อง
-  async function extractPdfLines(pdf) {
+  async function extractPdfLines(pdf, tight) {   // tight: ต่อชิ้นตัวหนังสือที่อยู่ชิดกันโดยไม่ใส่ช่องว่าง (PDF ภาษาไทยมักแยกเป็นตัวๆ)
     const lines = [];
     for (let p = 1; p <= pdf.numPages; p++) {
       const page = await pdf.getPage(p);
@@ -2997,10 +3091,13 @@ function bahtText(value) {
         const y = Math.round(it.transform[5] / 2) * 2;
         const x = it.transform[4];
         if (!byY.has(y)) byY.set(y, []);
-        byY.get(y).push({x, str: it.str});
+        byY.get(y).push({x, str: it.str, w: it.width || 0, fs: Math.abs(it.transform[3]) || 10});
       });
       Array.from(byY.keys()).sort((a, b) => b - a).forEach(y => {
-        const line = byY.get(y).sort((a, b) => a.x - b.x).map(o => o.str).join(' ').replace(/\s+/g, ' ').trim();
+        const items = byY.get(y).sort((a, b) => a.x - b.x);
+        let line = (tight ? items.reduce((acc, o, i) => { if (!i) return o.str; const pv = items[i - 1]; return acc + ((o.x - (pv.x + pv.w)) > pv.fs * 0.25 ? ' ' : '') + o.str; }, '')
+          : items.map(o => o.str).join(' ')).replace(/\s+/g, ' ').trim()
+        if (tight) line = line.replace(/\s+([\u0E31\u0E34-\u0E3A\u0E47-\u0E4E])/g, '$1');   // สระบน/ล่าง วรรณยุกต์ ไม่ควรมีช่องว่างนำหน้า
         if (line) lines.push(line);
       });
     }
@@ -3196,8 +3293,8 @@ function bahtText(value) {
     $('purchAmount').value = p.amount || ''; $('purchVat').value = p.vat || '';
     $('purchNote').value = p.note || ''; purchasePhoto = p.photo || null;
     $('purchAccount').value = ACCOUNTS.indexOf(p.account) >= 0 ? p.account : 'กิติพงษ์';   // รายการเก่าไม่มีช่องนี้ = กิติพงษ์
-    purchaseOcrSource = null;
-    renderPurchasePhoto();
+    purchaseOcrSource = null; purchasePdfText = null; purchCheckSrc = '';
+    renderPurchasePhoto(); try { updateOcrButtonLabel(); checkPurchaseFields(); } catch (e) {}
   }
   function renderPurchEditState() {
     const el = $('purchEditState');
@@ -8729,8 +8826,9 @@ function bahtText(value) {
   window.addEventListener('afterprint', fitReports);
 
   $('purchPhotoInput').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) readPurchasePhoto(f); });
-  $('purchPhotoRemove').addEventListener('click', () => { purchasePhoto = null; purchaseOcrSource = null; $('purchPhotoInput').value = ''; renderPurchasePhoto(); });
+  $('purchPhotoRemove').addEventListener('click', () => { purchasePhoto = null; purchaseOcrSource = null; purchasePdfText = null; updateOcrButtonLabel(); $('purchPhotoInput').value = ''; renderPurchasePhoto(); });
   $('ocrScanBtn').addEventListener('click', scanPurchasePhoto);
+  ['purchVendorTax', 'purchVat', 'purchAmount', 'purchDate'].forEach(id => { const el = $(id); if (el) { el.addEventListener('input', checkPurchaseFields); el.addEventListener('change', checkPurchaseFields); } });
 
   /* ---------------- ตั้งค่า AI ช่วยสแกนใบกำกับภาษี (เก็บใน localStorage ของเบราว์เซอร์นี้เท่านั้น ไม่ซิงก์ขึ้นคลาวด์) ---------------- */
   (function initAiSettings() {

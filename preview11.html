@@ -768,6 +768,13 @@ button.status-pill:active{filter:brightness(0.9)}
 .job-status-select{font-size:12.5px;font-weight:700;padding:4px 8px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--field);cursor:pointer}
 .track-status-select{font-size:12.5px;font-weight:700;padding:4px 8px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--field);cursor:pointer}
 .ocr-actions{display:flex;gap:8px;flex-wrap:wrap}
+.pchk{border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.5;border:1px solid var(--line);background:var(--field)}
+.pchk ul{margin:0;padding-left:18px}.pchk li{margin:2px 0}
+.pchk.bad{background:var(--warn-bg);border-color:#e7a3b9;color:var(--warn-ink)}
+.pchk.ok{background:#e9f7ee;border-color:#a9dcbc;color:#14532d}
+.pchk .src{display:block;margin-top:4px;font-size:12.5px;opacity:.85}
+input.pbad,.in.pbad{border-color:#d0466f!important;box-shadow:0 0 0 2px rgba(208,70,111,.22)!important}
+.in.pbad input.pbad{box-shadow:none!important}
 .ocr-actions .btn[disabled]{opacity:.65;cursor:default}
 .history li .thumb{width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid var(--line);flex:none}
 .history li .hist-chk{flex:none;width:18px;height:18px;accent-color:var(--sticker-line);cursor:pointer}
@@ -4446,11 +4453,12 @@ html body .dash-tile-val{letter-spacing:0!important}
                 <label class="f"><span>ยอดเงินรวม (ถ้ามี)</span><div class="in"><input type="number" inputmode="decimal" step="any" min="0" id="purchAmount" placeholder="0.00"></div></label>
                 <label class="f"><span>จ่ายจากบัญชี</span><select id="purchAccount"><option value="กิติพงษ์">กิติพงษ์ (ยื่นภาษี)</option><option value="วันทิม">วันทิม (ไม่ยื่นภาษี)</option></select></label>
               </div>
+              <div class="pchk" id="purchCheck" role="status" aria-live="polite" hidden></div>
               <label class="f"><span>รายละเอียด / หมายเหตุ</span><textarea id="purchNote" placeholder="เช่น ซื้อกระดาษสติ๊กเกอร์ 10 ม้วน"></textarea></label>
               <label class="f">
                 <span>ถ่ายภาพ / แนบไฟล์ใบกำกับภาษีซื้อ</span>
-                <input type="file" accept="image/*" multiple id="purchPhotoInput">
-                <p class="hint">แนบภาพเก็บไว้กับรายการได้เลย ระบบไม่สแกนเอง ถ้าต้องการให้อ่านข้อมูลจากภาพ กดปุ่ม “สแกนและกรอกข้อมูล” ใต้ภาพ (ต้องใช้อินเทอร์เน็ต และควรตรวจความถูกต้องก่อนบันทึก)</p>
+                <input type="file" accept="image/*,application/pdf,.pdf" multiple id="purchPhotoInput">
+                <p class="hint">แนบภาพ หรือไฟล์ PDF ใบกำกับภาษี (e-Tax) ได้ ระบบไม่สแกนเอง กด “สแกนและกรอกข้อมูล” ใต้ภาพเมื่อต้องการ · ไฟล์ PDF อ่านจากตัวหนังสือในไฟล์ แม่นกว่ารูปถ่าย</p>
                 <div class="purch-photo-wrap" id="purchPhotoWrap" hidden>
                   <img id="purchPhotoPreview" alt="ภาพใบกำกับภาษีซื้อ">
                   <div class="ocr-actions">
@@ -5021,7 +5029,7 @@ html body .dash-tile-val{letter-spacing:0!important}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?r=2&v=036b909d76",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?r=2&v=552c2a6dcd",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
