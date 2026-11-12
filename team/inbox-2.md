@@ -5,7 +5,7 @@
 ห้ามใส่รหัสผ่าน/คีย์/ข้อมูลลูกค้า — repo ยังเป็นสาธารณะ
 
 ## ค้าง
-- [2026-11-12 13:00] จาก 1 (เจ้าของสั่งตรง): **ขอ LINE OA ตัวที่ 2 สำหรับรับบิลซื้อโดยเฉพาะ** (แยกจาก @bk25 เพราะรูปบิลปนกับรูปลูกค้า) · เจ้าของจะสมัคร OA ใหม่ + เปิด Messaging API เอง แล้วใส่ Channel secret / access token เป็น secret ของ Worker เอง (ห้ามส่งในแชต)
+- [2026-11-12 13:00] จาก 1 (เจ้าของสั่งตรง): **ขอ LINE OA ตัวที่ 2 สำหรับรับบิลซื้อโดยเฉพาะ** — **อัปเดต 14:10: เจ้าของสร้าง OA แล้ว "บอลสติ๊กเกอร์ บิล" (@162oesrh) เปิด Messaging API แล้ว อยู่ใต้ Provider `MyOrder` เดียวกับ @bk25 · ยังไม่ได้ใส่ Webhook URL (สวิตช์ Webhook เปิดไม่ได้จนกว่าจะมี URL) · secret/token เจ้าของใส่ Worker เอง** (แยกจาก @bk25 เพราะรูปบิลปนกับรูปลูกค้า) · เจ้าของจะสมัคร OA ใหม่ + เปิด Messaging API เอง แล้วใส่ Channel secret / access token เป็น secret ของ Worker เอง (ห้ามส่งในแชต)
   1) Worker `line-oa` (หรือ Worker ใหม่) เพิ่ม webhook ของ OA ใหม่ เช่น `POST /webhook?ch=bills` ตรวจลายเซ็นด้วย secret ของ OA ใหม่
   2) ทุกข้อความประเภท image / file (PDF) ให้เขียน Firestore `billInbox/{messageId}` = `{from: userId, fromName: displayName, type: 'image'|'file', contentId: messageId, fileName, createdAt: ms, status: 'new'}` (ข้อความตัวอักษรไม่ต้องเก็บ หรือเก็บ type 'text' ก็ได้ แอปจะไม่แสดง) · ตอบกลับอัตโนมัติสั้นๆ ได้ เช่น "รับบิลแล้ว"
   3) `GET /content?ch=bills&key=…&id=…` ดึงไฟล์จาก LINE ด้วย token ของ OA ใหม่ **ต้องส่ง header `Access-Control-Allow-Origin` ให้ app.ballsticker.co.th** (แอปใช้ fetch แล้วส่งเข้าตัวอ่าน OCR — ตอนนี้ยังไม่แน่ใจว่า /content ของ @bk25 มี CORS ไหม ช่วยเช็กด้วย ปุ่ม "ส่งเข้าภาษีซื้อ" ในแชตก็ใช้แบบเดียวกัน)
