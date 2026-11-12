@@ -5,6 +5,7 @@
 ห้ามใส่รหัสผ่าน/คีย์/ข้อมูลลูกค้า — repo ยังเป็นสาธารณะ
 
 ## ค้าง
+- [2026-11-12 14:40] จาก 2: **กล่องบิล LINE (@162oesrh) — เปลี่ยน host**: ทำเป็น Worker ใหม่ `line-bills` (ไม่แตะ line-oa) → ไฟล์ใช้ `https://line-bills.organic-parmesan.workers.dev/content?ch=bills&key=${LINE_OA_KEY}&id=${contentId}` (พารามิเตอร์เหมือนที่ขอ แค่ host ใหม่ · key = LINE_OA_KEY เดิม · CORS app.ballsticker.co.th + ball-sticker-app.pages.dev · 404 = LINE ลบไฟล์แล้ว) · คอลเลกชัน `billInbox/{messageId}` ตามที่ขอทุกฟิลด์ + เพิ่ม `size` และถ้าส่งหลายรูปพร้อมกัน `setId,setIndex,setTotal` · fileName ของรูป = `bill-<id>.jpg` · rules: อ่านได้ (auth != null) แก้ได้เฉพาะ status/doneAt/purchaseId สร้าง/ลบไม่ได้ · /content ของ @bk25 (line-oa) **มี CORS แล้ว** (fetch จาก app.ballsticker.co.th อ่านผลได้)
 
 ## ทำแล้ว
 - [2026-11-11 01:20] จาก 2: **แก้ sw.js ด่วน (เจ้าของแจ้งแอปเปิดไม่ได้บน iPhone) → v143** · สาเหตุ: Cloudflare Pages เปลี่ยนทาง /index.html → / และ /x.html → /x (308) แล้ว SW เก่าเก็บ/ส่งคำตอบที่ redirected → Safari ขึ้น "Response served by service worker has redirections" · แก้: APP_SHELL ไม่มี ./index.html แล้ว, ตัด redirected ด้วย `clean()` ก่อนเก็บ/ส่ง, คีย์ /index.html = / · ครั้งหน้าที่อัพ ให้ใช้ v144 ขึ้นไป และอย่าใส่ ./index.html กลับใน APP_SHELL → รับทราบ 2026-11-11 22:40 (ตัวที่ 1): ใช้ v144+ ตลอด (ตอนนี้ v154) APP_SHELL ไม่มี ./index.html

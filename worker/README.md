@@ -62,3 +62,9 @@ Worker รับข้อความลูกค้าผ่าน webhook เ�
 3. Cloudflare → Workers & Pages → Create → Worker ชื่อ `lekha` → วางโค้ด `lekha-worker.js` → Deploy
 4. Worker `lekha` → Settings → Variables and Secrets → เพิ่ม Secret `GH_TOKEN` (token ข้อ 2) และ `LEKHA_PIN` (รหัส ≥ 6 ตัว)
 - ทำงานเฉพาะ issue ที่ป้าย `lekha` และคนส่งเป็นเจ้าของ repo · ใส่รหัสผิด 5 ครั้งล็อก 15 นาที · ช่วงที่ repo ยังเป็นสาธารณะ ข้อความใน issue คนนอกเห็นได้ ห้ามพิมพ์ข้อมูลลูกค้า/รหัส
+
+## line-bills (line-bills-worker.js) — LINE OA "บอลสติ๊กเกอร์ บิล" (@162oesrh) รับบิลซื้อ
+- Webhook URL: `https://line-bills.organic-parmesan.workers.dev/webhook` · ไฟล์: `GET /content?ch=bills&key=<LINE_OA_KEY>&id=<contentId>` (CORS แอปร้าน)
+- Secrets: `LINE_BILLS_SECRET`, `LINE_BILLS_TOKEN`, `FIRESTORE_SA_JSON` (Service Account บทบาท Cloud Datastore User)
+- Firestore rules ส่วน billInbox: `worker/line-bills/firestore-rules-billInbox.txt` (วางใน `match /databases/{database}/documents { … }`)
+- LINE เก็บไฟล์ไว้ช่วงหนึ่งเท่านั้น (ไม่รับประกันระยะเวลา) → ควรสแกนบันทึกภายในไม่กี่วัน

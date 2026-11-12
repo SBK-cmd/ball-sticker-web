@@ -1,0 +1,9 @@
+    // กล่องบิลจาก LINE (@162oesrh) — Worker line-bills เขียนด้วย Service Account (ไม่ผ่าน rules)
+    // แอป: อ่านได้ · แก้ได้เฉพาะ status / doneAt / purchaseId · สร้าง/ลบจากแอปไม่ได้
+    match /billInbox/{id} {
+      allow read: if request.auth != null;
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'doneAt', 'purchaseId'])
+        && request.resource.data.status is string;
+      allow create, delete: if false;
+    }
