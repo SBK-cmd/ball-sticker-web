@@ -2729,8 +2729,83 @@ function bahtText(value) {
     fitFrame('reportPurchFrame', 'reportPurchDoc');
 
     renderReportNonVat();
+    try { renderYearSummary(); } catch (e) { console.error('yearSummary', e); }
   }
 
+  // ---------- สรุปค่าใช้จ่ายทั้งปีตามหมวด (หักค่าใช้จ่ายตามจริง) ----------
+  function yearExpenseRows(year) {   // คืนรายการพร้อมยอดที่นับเป็นค่าใช้จ่าย
+    const out = [], skipped = {personal: 0, other: 0, noAmt: 0};
+    store.get('bs_purchases', []).forEach(p => {
+      if (String(p.date || '').slice(0, 4) !== String(year)) return;
+      const claim = purchClaimOf(p);
+      if (claim === 'personal') { skipped.personal++; return; }
+      if (NON_TAX_ACCOUNTS.indexOf(p.account) >= 0) { skipped.other++; return; }
+      const amt = num(p.amount), vat = num(p.vat), isV = claim === 'vat' && vat > 0;
+      let base, total, est = false;
+      if (isV) { base = amt > 0 ? round2(amt - vat) : round2(vat / 0.07); total = amt > 0 ? amt : round2(base + vat); est = !(amt > 0); }
+      else { base = amt > 0 ? amt : round2(vat / 0.07 * 1.07); total = base; est = !(amt > 0); }
+      if (est) skipped.noAmt++;
+      out.push({p, cat: p.cat || guessPurchCat(p.vendor, p.note, '') || 'อื่นๆ (ยังไม่เลือกหมวด)', claim, base, vat: isV ? vat : 0, total, est,
+        evid: isV ? 'ใบกำกับภาษี' : ({sub: 'ใบรับรองแทนใบเสร็จ', voucher: 'ใบสำคัญจ่าย'}[p.evid] || 'ใบเสร็จ/บิลเงินสด')});
+    });
+    return {rows: out, skipped};
+  }
+  function renderYearSummary() {
+    const sel = $('yrSel'); if (!sel) return;
+    const years = Array.from(new Set(store.get('bs_purchases', []).map(p => String(p.date || '').slice(0, 4)).filter(y => /^\d{4}$/.test(y)))).sort().reverse();
+    const cur = sel.value || String(new Date().getFullYear());
+    if (years.indexOf(cur) < 0) years.unshift(cur);
+    sel.innerHTML = years.map(y => '<option value="' + y + '">ปีภาษี ' + (+y + 543) + '</option>').join(''); sel.value = cur;
+    const {rows, skipped} = yearExpenseRows(cur), g = {};
+    rows.forEach(r => { const k = r.cat; (g[k] = g[k] || {n: 0, base: 0, vat: 0, total: 0}); g[k].n++; g[k].base += r.base; g[k].vat += r.vat; g[k].total += r.total; });
+    const cats = Object.keys(g).sort((a, b) => g[b].base - g[a].base);
+    const T = rows.reduce((a, r) => ({base: a.base + r.base, vat: a.vat + r.vat, total: a.total + r.total}), {base: 0, vat: 0, total: 0});
+    $('yrSum').innerHTML = rows.length ? '<div style="overflow-x:auto"><table class="yr-t"><thead><tr><th>หมวด</th><th>ใบ</th><th>ค่าใช้จ่าย (นับได้)</th><th>VAT ที่ใช้เป็นภาษีซื้อ</th><th>จ่ายจริง</th></tr></thead><tbody>' +
+      cats.map(k => '<tr><td>' + esc(k) + '</td><td>' + g[k].n + '</td><td>' + money(round2(g[k].base)) + '</td><td>' + money(round2(g[k].vat)) + '</td><td>' + money(round2(g[k].total)) + '</td></tr>').join('') +
+      '</tbody><tfoot><tr><td>รวมทั้งปี</td><td>' + rows.length + '</td><td>' + money(round2(T.base)) + '</td><td>' + money(round2(T.vat)) + '</td><td>' + money(round2(T.total)) + '</td></tr></tfoot></table></div>' +
+      '<p class="yr-note">ค่าใช้จ่ายที่นับได้ = ยอดก่อน VAT สำหรับใบกำกับที่ใช้เป็นภาษีซื้อ + ยอดเต็มของใบเสร็จอื่น' +
+      (skipped.noAmt ? '<br><b>' + skipped.noAmt + ' ใบไม่มียอดเงินรวม</b> ระบบประมาณจาก VAT 7% — เปิดแก้ใส่ยอดจริงจะแม่นกว่า' : '') +
+      (skipped.personal ? '<br>ไม่นับรายการส่วนตัว ' + skipped.personal + ' ใบ' : '') + (skipped.other ? '<br>ไม่นับบัญชีที่ไม่ยื่นภาษี ' + skipped.other + ' ใบ' : '') + '</p>'
+      : '<p class="empty">ยังไม่มีค่าใช้จ่ายในปีนี้</p>';
+  }
+  function quickExpense() {
+    const t = $('yrQuick').value.trim(), m = t.match(/(\d[\d,]*(?:\.\d{1,2})?)\s*(?:บาท|฿)?\s*$/);
+    if (!m) { toast('พิมพ์รายการตามด้วยจำนวนเงิน เช่น ค่าเทปกาว 85'); $('yrQuick').focus(); return; }
+    const amount = round2(num(m[1].replace(/,/g, ''))), desc = t.slice(0, m.index).trim() || 'ค่าใช้จ่าย';
+    if (!(amount > 0)) { toast('จำนวนเงินไม่ถูกต้อง'); return; }
+    const rec = {id: 'p' + Date.now(), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', date: todayISO(), vendor: '', invoiceNo: '', vendorTax: '', vendorAddr: '',
+      amount: amount.toFixed(2), vat: '', note: desc, photo: null, account: 'กิติพงษ์', claim: 'expense', cat: guessPurchCat('', desc, '') || 'อื่นๆ', evid: 'sub', evNo: '', vendorBranch: '', claimMonth: '', chk: {}, quick: true};
+    const list = store.get('bs_purchases', []); list.push(rec); store.set('bs_purchases', list); cloudSave('purchases', rec);
+    $('yrQuick').value = ''; renderPurchHistory(); renderYearSummary();
+    toast('จดแล้ว ' + desc + ' ' + money(amount) + ' บาท · ไม่มีบิล ทำใบรับรองแทนใบเสร็จได้ที่หน้าภาษีซื้อ');
+  }
+  async function exportYearXlsx(btn) {
+    const y = $('yrSel').value, {rows} = yearExpenseRows(y);
+    if (!rows.length) { toast('ยังไม่มีค่าใช้จ่ายในปีนี้'); return; }
+    const html = btn.textContent; btn.disabled = true; btn.textContent = 'กำลังสร้างไฟล์…';
+    try {
+      try { await bsLoadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); } catch (e) {}
+      const detail = [['วันที่', 'ผู้ขาย/ผู้รับเงิน', 'เลขผู้เสียภาษีผู้ขาย', 'เลขที่เอกสาร', 'หมวด', 'ประเภท', 'หลักฐาน', 'ค่าใช้จ่าย (นับได้)', 'VAT ใช้เป็นภาษีซื้อ', 'จ่ายจริง', 'รอบภาษีซื้อ', 'ประมาณยอด', 'รายละเอียด']]
+        .concat(rows.slice().sort((a, b) => String(a.p.date).localeCompare(String(b.p.date))).map(r => [r.p.date, r.p.vendor || '', r.p.vendorTax || '', r.p.invoiceNo || r.p.evNo || '', r.cat, r.claim === 'vat' ? 'ภาษีซื้อ' : 'ค่าใช้จ่าย', r.evid, r.base, r.vat, r.total, r.claim === 'vat' ? purchVatMonth(r.p) : '', r.est ? 'ใช่' : '', r.p.note || '']));
+      const g = {}; rows.forEach(r => { (g[r.cat] = g[r.cat] || [0, 0, 0, 0]); g[r.cat][0]++; g[r.cat][1] += r.base; g[r.cat][2] += r.vat; g[r.cat][3] += r.total; });
+      const sum = [['หมวด', 'จำนวนใบ', 'ค่าใช้จ่าย (นับได้)', 'VAT ใช้เป็นภาษีซื้อ', 'จ่ายจริง']].concat(Object.keys(g).sort().map(k => [k, g[k][0], round2(g[k][1]), round2(g[k][2]), round2(g[k][3])]));
+      sum.push(['รวมทั้งปี', rows.length, round2(rows.reduce((a, r) => a + r.base, 0)), round2(rows.reduce((a, r) => a + r.vat, 0)), round2(rows.reduce((a, r) => a + r.total, 0))]);
+      const name = 'ค่าใช้จ่าย-ปีภาษี-' + (+y + 543) + '.' + (window.XLSX ? 'xlsx' : 'csv');
+      let blob;
+      if (window.XLSX) {
+        const wb = XLSX.utils.book_new(), ws1 = XLSX.utils.aoa_to_sheet(sum), ws2 = XLSX.utils.aoa_to_sheet(detail);
+        ws1['!cols'] = [{wch: 34}, {wch: 10}, {wch: 18}, {wch: 18}, {wch: 14}]; ws2['!cols'] = [{wch: 11}, {wch: 30}, {wch: 15}, {wch: 16}, {wch: 26}, {wch: 10}, {wch: 20}, {wch: 14}, {wch: 12}, {wch: 12}, {wch: 10}, {wch: 8}, {wch: 40}];
+        [ws1, ws2].forEach(ws => { Object.keys(ws).forEach(k => { const c = ws[k]; if (c && c.t === 'n') c.z = '#,##0.00'; }); });
+        XLSX.utils.book_append_sheet(wb, ws1, 'สรุปตามหมวด'); XLSX.utils.book_append_sheet(wb, ws2, 'รายการทั้งหมด');
+        blob = new Blob([XLSX.write(wb, {bookType: 'xlsx', type: 'array'})], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      } else {   // โหลดไลบรารีไม่ได้ → CSV ที่ Excel เปิดได้
+        blob = new Blob(['﻿' + sum.concat([[]], detail).map(r => r.map(csvEsc).join(',')).join('\n')], {type: 'text/csv;charset=utf-8'});
+      }
+      const st = await saveBlob(blob, name);
+      toast(st === 'failed' ? 'บันทึกไฟล์ไม่สำเร็จ' : 'ส่งออก ' + name + ' แล้ว');
+    } catch (e) { console.error(e); toast('สร้างไฟล์ไม่สำเร็จ'); }
+    finally { btn.disabled = false; btn.textContent = html; }
+  }
   function csvEsc(v) {
     const s = String(v == null ? '' : v);
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -9984,6 +10059,10 @@ function bahtText(value) {
   $('report-all').addEventListener('click', () => { $('reportMonth').value = ''; renderReport(); });
   $('report-csv-sales').addEventListener('click', () => exportReportCsv('sales'));
   $('report-csv-purch').addEventListener('click', () => exportReportCsv('purchase'));
+  $('yrSel').addEventListener('change', renderYearSummary);
+  $('yrQuickBtn').addEventListener('click', quickExpense);
+  $('yrQuick').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); quickExpense(); } });
+  $('yr-xlsx').addEventListener('click', e => exportYearXlsx(e.currentTarget));
   $('report-csv-nonvat').addEventListener('click', () => exportReportCsv('purchaseNonVat'));
   $('report-pdf-sales').addEventListener('click', () => exportDoc('reportSales', $('report-pdf-sales'), {forPrint: true}));
   $('report-pdf-purch').addEventListener('click', () => exportDoc('reportPurch', $('report-pdf-purch'), {forPrint: true}));

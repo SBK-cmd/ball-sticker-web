@@ -772,6 +772,10 @@ button.status-pill:active{filter:brightness(0.9)}
 .purch-paste{margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.purch-paste summary{cursor:pointer;font-weight:600;min-height:32px;display:flex;align-items:center}.purch-paste textarea{width:100%;margin:8px 0}.purch-paste .btn{min-height:44px}.purch-pick .btn{min-height:44px;cursor:pointer;position:relative}
 .purch-pick .vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
 .purch-pick label:focus-within{outline:3px solid var(--magenta);outline-offset:2px}
+.yr-quick{display:flex;gap:8px;margin:0 0 12px}.yr-quick .txt{flex:1;min-width:0;min-height:44px}.yr-quick .btn{min-height:44px}
+.yr-t{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}.yr-t th,.yr-t td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right}.yr-t th:first-child,.yr-t td:first-child{text-align:left}
+.yr-t thead th{font-size:12.5px;color:#556080;font-weight:600}.yr-t tfoot td{font-weight:700;border-top:2px solid #14234b;border-bottom:0}.yr-t td small{display:block;font-size:12px;color:#556080;font-weight:400}
+.yr-note{font-size:13px;color:#556080;margin:8px 0 0;line-height:1.6}.yr-note b{color:#9b1c43}
 .pt-box{border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:10px;background:var(--surface,#fff)}
 .pt-vat,.pt-ev{display:grid;gap:10px}.pt-vat[hidden],.pt-ev[hidden],.pt-evr[hidden]{display:none}
 .pt-evr{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13.5px;color:#33405c}.pt-evr .btn{min-height:44px}
@@ -4417,6 +4421,19 @@ html body .page-head h1{letter-spacing:-.02em}
           <button class="btn" id="report-csv-nonvat" type="button">ส่งออก Excel (CSV)</button>
         </div>
       </section>
+
+      <section class="card" aria-labelledby="report-year-h" style="margin-top:20px">
+        <div class="viz-head">
+          <h2 id="report-year-h">สรุปค่าใช้จ่ายทั้งปี (ภาษีเงินได้)</h2>
+          <select class="txt" id="yrSel" aria-label="ปีภาษี" style="max-width:160px"></select>
+        </div>
+        <p class="hint" style="margin:0 0 10px">สำหรับหักค่าใช้จ่ายตามจริงตอนยื่นภาษีเงินได้ปลายปี · ใบที่ใช้ VAT เป็นภาษีซื้อแล้วนับเฉพาะยอดก่อน VAT · ไม่นับรายการ “ส่วนตัว” และบัญชีที่ไม่ยื่นภาษี · ให้ผู้ทำบัญชียืนยันอีกครั้ง</p>
+        <div class="yr-quick no-print"><input type="text" class="txt" id="yrQuick" placeholder="จดด่วน เช่น ค่าเทปกาว 85" aria-label="จดค่าใช้จ่ายด่วน"><button class="btn small" type="button" id="yrQuickBtn">เพิ่ม</button></div>
+        <div id="yrSum"></div>
+        <div class="actions" style="margin-top:14px">
+          <button class="btn primary" id="yr-xlsx" type="button">ส่งออก Excel ให้ผู้ทำบัญชี</button>
+        </div>
+      </section>
     </section>
   </main>
 
@@ -4532,7 +4549,7 @@ html body .page-head h1{letter-spacing:-.02em}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=3915badd30",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=f9fb9ab503",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
