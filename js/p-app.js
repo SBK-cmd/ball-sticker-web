@@ -2824,62 +2824,83 @@ function bahtText(value) {
   const ownTaxId = () => String(($('sTax') && $('sTax').value) || (shop && shop.taxId) || '').replace(/\D/g, '');
   const moneyNum = s => { const v = parseFloat(String(s).replace(/,/g, '')); return isFinite(v) ? v : NaN; };
   function parseReceiptText(text) {
-    const clean = String(text || '').replace(/\r/g, '').replace(/[๐-๙]/g, c => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(c)));
+    let clean = String(text || '').replace(/\r/g, '').replace(/[๐-๙]/g, c => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(c)));
+    // OCR มักอ่านจุดทศนิยมเป็นจุลภาค/มีช่องว่างแทรก: "3,302 ,00" "3,085,98" → "3,302.00" "3,085.98"
+    clean = clean.replace(/(\d)\s+([,.]\d{2})(?!\d)/g, '$1$2').replace(/(\d{1,3}(?:,\d{3})*),(\d{2})(?![\d,])/g, '$1.$2');
     const lines = clean.split('\n').map(l => l.trim()).filter(Boolean);
     const out = {};
     const own = ownTaxId();
 
-    // เลขผู้เสียภาษี: หาทุกชุด 13 หลัก เลือกชุดแรกที่ผ่านสูตรตรวจและไม่ใช่เลขของร้านเราเอง (ฝั่งผู้ซื้อ)
-    const taxes = (clean.match(/(?:\d[\s-]?){12}\d/g) || []).map(x => x.replace(/\D/g, '')).filter(d => d.length === 13);
-    const goodTax = taxes.find(d => d !== own && thaiTaxIdValid(d));
-    const anyTax = taxes.find(d => d !== own);
-    if (goodTax || anyTax) out.vendorTax = goodTax || anyTax;
+    // เลขผู้เสียภาษี: ทุกชุด 13 หลักที่ไม่ใช่ของร้านเรา · ถ้ามีหลายชุด (เช่นมีกระดาษใบอื่นติดมาในรูป)
+    // เลือกชุดที่อยู่ใกล้กล่องชื่อลูกค้ามากที่สุด และต้องผ่านสูตรตรวจก่อน
+    const custLine = lines.findIndex(l => /ชื่อลูกค้า|นามลูกค้า|messrs|customer'?s?\s*name/i.test(l));
+    const taxCands = [];
+    lines.forEach((l, li) => { const re = /(?<!\d)(?:\d[\s-]?){12}\d(?!\d)/g; let m; while ((m = re.exec(l))) { const d = m[0].replace(/\D/g, ''); if (d.length === 13 && d !== own) taxCands.push({d, li, ok: thaiTaxIdValid(d)}); } });
+    taxCands.sort((a, b) => (b.ok - a.ok) || (custLine >= 0 ? Math.abs(a.li - custLine) - Math.abs(b.li - custLine) : a.li - b.li));
+    if (taxCands.length) out.vendorTax = taxCands[0].d;
 
-    // วันที่: เลือกวันแรกที่สมเหตุสมผลและไม่อยู่ในอนาคต (บรรทัดที่มีคำว่า "วันที่"/Date มาก่อน)
+    // วันที่: รองรับ 2026-10-28 (ค.ศ./พ.ศ.) และ 28/10/69 · ข้ามวันในอนาคต · บรรทัดที่มี วันที่/DATE มาก่อน
     const today = todayISO();
     const dateCands = [];
-    lines.forEach((l, li) => { const re = /(\d{1,2})\s*[\/\-.]\s*(\d{1,2})\s*[\/\-.]\s*(\d{2,4})/g; let m; while ((m = re.exec(l))) dateCands.push({m, pri: /วันที่|date/i.test(l) ? 0 : 1, li}); });
+    lines.forEach((l, li) => {
+      const pri = /วันที่|date/i.test(l) ? 0 : 1; let m;
+      const iso = /(?<!\d)((?:20|25)\d{2})-(\d{1,2})-(\d{1,2})(?!\d)/g;
+      while ((m = iso.exec(l))) dateCands.push({y: +m[1], mo: +m[2], d: +m[3], pri: pri - 0.5, li});
+      const dmy = /(?<![\d-])(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{2}|\d{4})(?![\d-])/g;
+      while ((m = dmy.exec(l))) dateCands.push({y: +m[3], mo: +m[2], d: +m[1], pri, li});
+    });
     dateCands.sort((a, b) => a.pri - b.pri || a.li - b.li);
     for (const c of dateCands) {
-      let dd = +c.m[1], mm = +c.m[2], yy = +c.m[3];
-      if (yy < 100) yy += yy >= 50 ? 2500 : 2000;   // 69 → 2569 (พ.ศ.), 26 → 2026
-      if (yy > 2400) yy -= 543;
-      if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31 && yy > 2000 && yy < 2100) {
-        const iso = yy + '-' + pad2(mm) + '-' + pad2(dd);
+      let {y, mo, d} = c;
+      if (y < 100) y += y >= 50 ? 2500 : 2000;   // 69 → 2569 (พ.ศ.), 26 → 2026
+      if (y > 2400) y -= 543;
+      if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31 && y > 2015 && y < 2100) {
+        const iso = y + '-' + pad2(mo) + '-' + pad2(d);
         if (iso <= today) { out.date = iso; break; }
       }
     }
 
-    // เลขที่ใบกำกับ
-    const invMatch = clean.match(/(?:เลขที่ใบกำกับภาษี|เลขที่ใบเสร็จ|เลขที่เอกสาร|เลขที่บิล|เลขที่|Invoice\s*No\.?|Tax\s*Invoice\s*No\.?|Doc(?:ument)?\s*No\.?)[\s:#.]*([A-Za-z0-9][A-Za-z0-9\-\/]{2,24})/i);
-    if (invMatch) out.invoiceNo = invMatch[1];
+    // เลขที่ใบกำกับ: หารหัสรูปแบบเลขเอกสาร (IV202610327, PL-2610/0257) ทั้งที่อยู่ติดป้ายและคนละบรรทัด
+    // ข้ามบรรทัดเลข SO / ใบสั่งขาย และรหัสสินค้า
+    const invRe = /(?<![A-Za-z0-9])([A-Z]{2,4}-?\d{4,}(?:\/\d{2,6})?)(?![A-Za-z0-9])/g;
+    const invCands = [];
+    lines.forEach((l, li) => { if (/\bSO\b|S0-|ใบสั่ง/i.test(l) && !/invoice|ใบกำกับ|เลขที่/i.test(l)) return; let m; invRe.lastIndex = 0; while ((m = invRe.exec(l))) { if (/^S[O0]-/.test(m[1])) continue; invCands.push({v: m[1], pri: /invoice\s*no|เลขที่|no\./i.test(l) ? 0 : 1, li}); } });
+    invCands.sort((a, b) => a.pri - b.pri || a.li - b.li);
+    if (invCands.length) out.invoiceNo = invCands[0].v;
+    else { const im = clean.match(/(?:เลขที่ใบกำกับภาษี|เลขที่ใบเสร็จ|เลขที่เอกสาร|เลขที่บิล|Invoice\s*No\.?|Doc(?:ument)?\s*No\.?)[\s:#.]*([A-Za-z0-9][A-Za-z0-9\-\/]{2,24})/i); if (im && /\d/.test(im[1])) out.invoiceNo = im[1]; }
 
-    // ตัวเลขเงินทุกตัวในเอกสาร (ต้องมีทศนิยม 2 ตำแหน่ง เพื่อไม่ปนกับเลขที่/เบอร์โทร)
+    // ตัวเลขเงิน (ต้องมีทศนิยม 2 ตำแหน่ง)
     const moneyRe = /(\d{1,3}(?:,\d{3})+|\d+)\.(\d{2})(?!\d)/g;
     const nums = [];
     lines.forEach(l => { let m; moneyRe.lastIndex = 0; while ((m = moneyRe.exec(l))) nums.push({v: moneyNum(m[0]), l}); });
-    const onLine = re => nums.filter(n => re.test(n.l)).map(n => n.v);
-    const vatKw = /ภาษีมูลค่าเพิ่ม|vat/i, totKw = /ยอดรวมทั้งสิ้น|รวมทั้งสิ้น|จำนวนเงินรวม|ยอดสุทธิ|รวมเงินทั้งสิ้น|grand\s*total|net\s*total|total/i;
     const vals = Array.from(new Set(nums.map(n => n.v))).filter(v => v > 0);
-    // 1) หา 3 ตัวที่ลงกันพอดี: ก่อน VAT + VAT(7%) = รวม (คลาดได้ไม่เกิน 0.05) — แม่นที่สุด
+    // หาคู่ ยอดรวม กับ ยอดก่อน VAT ที่ (รวม − ก่อน VAT) = 7% ของก่อน VAT (คลาดไม่เกิน 0.05) — ใช้ได้แม้ OCR อ่านตัวเลข VAT ไม่ออก
     let best = null;
-    vals.forEach(tot => vals.forEach(vat => {
-      if (vat >= tot) return; const base = round2(tot - vat);
-      if (Math.abs(base * 0.07 - vat) <= 0.05 && vals.some(x => Math.abs(x - base) <= 0.01)) { if (!best || tot > best.tot) best = {tot, vat}; }
+    vals.forEach(tot => vals.forEach(base => {
+      if (base >= tot) return; const vat = round2(tot - base);
+      if (Math.abs(base * 0.07 - vat) <= 0.05) { const seen = vals.some(x => Math.abs(x - vat) <= 0.01); if (!best || tot > best.tot || (tot === best.tot && seen && !best.seen)) best = {tot, vat, seen}; }
     }));
     if (best) { out.amount = best.tot.toFixed(2); out.vat = best.vat.toFixed(2); out._matched = true; }
     else {
-      const v = onLine(vatKw).filter(x => !/7\s*%?$/.test(String(x))); if (v.length) out.vat = Math.max(...v.filter(x => x !== 7)).toFixed(2);
-      const t = onLine(totKw); if (t.length) out.amount = Math.max(...t).toFixed(2);
-      if (out.vat === 'NaN' || out.vat === '-Infinity') delete out.vat;
+      const onLine = re => nums.filter(n => re.test(n.l)).map(n => n.v);
+      const v = onLine(/ภาษีมูลค่าเพิ่ม|vat/i).filter(x => x !== 7); if (v.length) out.vat = Math.max(...v).toFixed(2);
+      const t = onLine(/ยอดรวมทั้งสิ้น|รวมทั้งสิ้น|จำนวนเงินรวม|จำนวนเงินทั้งสิ้น|ยอดสุทธิ|grand\s*total|net\s*total|total/i); if (t.length) out.amount = Math.max(...t).toFixed(2);
     }
 
-    // ชื่อร้าน: บรรทัดที่มี บริษัท/หจก./ร้าน ก่อน ไม่เจอค่อยใช้บรรทัดแรกที่มีตัวอักษรพอ (ข้ามบรรทัดที่เป็นชื่อร้านเราเอง)
+    // ชื่อร้าน: บรรทัดแรกที่มี บริษัท/หจก./ร้าน (ข้ามชื่อร้านเราและฝั่งลูกค้า) — ถ้าเลขภาษีตรงกับประวัติร้าน ระบบจะใช้ชื่อจากประวัติแทน
     const ownName = (($('sName') && $('sName').value) || '').trim();
-    const notOwn = l => !(ownName && l.indexOf(ownName) >= 0) && !/บอล\s*สติ/.test(l);
-    const nameLine = lines.find(l => /บริษัท|ห้างหุ้นส่วน|หจก|ร้าน|co\.,?\s*ltd|limited/i.test(l) && notOwn(l) && !/ผู้ซื้อ|ลูกค้า|customer|buyer/i.test(l))
-      || lines.find(l => l.replace(/[^ก-๙a-zA-Z]/g, '').length >= 4 && notOwn(l));
-    if (nameLine) out.vendor = nameLine.replace(/^(ผู้ขาย|ชื่อ)\s*[:：]?\s*/, '').slice(0, 60);
+    const notOwn = l => !(ownName && l.indexOf(ownName) >= 0) && !/บอล\s*สติ|กิติพงษ์|กิดิพงษ์/.test(l);
+    // เลือกบรรทัดชื่อบริษัทที่อยู่ใกล้บรรทัดเลขผู้เสียภาษีผู้ขายที่สุด (มักอยู่เหนือขึ้นไปไม่กี่บรรทัด) · ข้าม "บริษัทฯ" ในหมายเหตุ
+    const taxLi = taxCands.length ? taxCands[0].li : 0;
+    // ตัดเฉพาะท่อน "บริษัท ... จำกัด" ออกจากบรรทัด (บรรทัดเดียวอาจมีชื่อลูกค้าปนอยู่) แล้วเลือกท่อนที่อยู่ใกล้เลขภาษีผู้ขาย
+    const coRe = /((?:บริษัท(?!ฯ)|ห้างหุ้นส่วน(?:จำกัด)?|หจก\.?)\s*[^/()]*?(?:จำกัด(?:\s*\(มหาชน\))?|$))/;
+    const coLines = [];
+    lines.forEach((l, li) => { const m = l.match(coRe); if (!m) return; const name = m[1].trim(); if (!notOwn(name) || /ทราบ|ภายใน|ชำรุด|ตรวจสอบ|แก้ไข|ในนาม|เช็ค/.test(name) || /^(for|ในนาม)\s/i.test(l)) return; coLines.push({name, li}); });
+    const ltd = o => /จำกัด/.test(o.name) ? 0 : 1000;   // ท่อนที่ลงท้ายด้วย จำกัด มาก่อน
+    coLines.sort((x, y) => ltd(x) - ltd(y) + (Math.abs(x.li - taxLi) + (x.li > taxLi ? 0.5 : 0)) - (Math.abs(y.li - taxLi) + (y.li > taxLi ? 0.5 : 0)));
+    const fallback = lines.find(l => l.replace(/[^ก-๙]/g, '').length >= 4 && notOwn(l) && !/ใบกำกับ|ใบส่งของ|ใบเสร็จ/.test(l));
+    const vname = coLines[0] ? coLines[0].name : fallback;
+    if (vname) out.vendor = vname.replace(/^(ผู้ขาย|ชื่อ)\s*[:：]?\s*/, '').replace(/\s+สาขา.*$/, '').trim().slice(0, 60);
     return out;
   }
 
