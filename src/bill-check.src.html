@@ -194,10 +194,10 @@
     try { info = await api('/bill?id=' + encodeURIComponent(ID) + '&t=' + encodeURIComponent(TK)); }
     catch (e) { setState(e.status === 403 ? 'ลิงก์นี้ใช้ไม่ได้ ลองกดปุ่ม “ตรวจบิล” ใน LINE อีกครั้ง' : e.status === 404 ? 'ไม่พบบิลนี้แล้ว' : 'โหลดบิลไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่', true); return; }
     $('hdSub').textContent = 'ส่งโดย ' + (info.fromName || 'LINE') + (info.createdAt ? ' · ' + new Date(info.createdAt).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'}) : '');
-    if (info.status === 'done') { showDone(info.purchaseId ? 'saved' : 'skip', info.purchaseId ? 'บิลนี้บันทึกไปแล้ว' : ''); return; }
+    if (info.status === 'done') { showDone(info.purchaseId && !info.skipped ? 'saved' : 'skip', info.purchaseId && !info.skipped ? 'บิลนี้บันทึกไปแล้ว' : 'บิลนี้กด “ไม่ใช่บิล” ไปแล้ว'); return; }
     setState('กำลังดึงรูปบิล…', false, true);
-    try { const r = await fetch(contentUrl()); if (!r.ok) throw new Error('HTTP ' + r.status); fileBlob = await r.blob(); }
-    catch (e) { setState('ดึงรูปบิลไม่ได้ (LINE อาจลบไฟล์แล้ว) ส่งรูปใหม่อีกครั้ง', true); return; }
+    try { const r = await fetch(contentUrl()); if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; } fileBlob = await r.blob(); }
+    catch (e) { setState(e.status === 404 ? 'ไฟล์บิลนี้หมดอายุแล้ว (LINE เก็บไว้ราว 7 วัน) ส่งรูปบิลใหม่อีกครั้ง' : 'ดึงรูปบิลไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่', true); return; }
     const isPdf = /pdf/i.test(fileBlob.type) || /\.pdf$/i.test(info.fileName || '');
     $('photoCard').hidden = false;
     const url = URL.createObjectURL(fileBlob);
