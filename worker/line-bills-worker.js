@@ -4,7 +4,8 @@
  *  POST /webhook              ← LINE (ตรวจลายเซ็น LINE_BILLS_SECRET) · รูป/ไฟล์ → billInbox/{messageId} (status 'new')
  *                               → Google Vision อ่านข้อความ (≤ 8 วิ) → analyzeBill → ตอบการ์ดผลอ่าน billFlex (หลายรูป = carousel)
  *                               Vision ล้ม/ช้า → การ์ด "รับบิลแล้ว ✅" + ปุ่ม "ตรวจบิล" แบบเดิม
- *                               ปุ่มในการ์ด (postback act=save|hq|skip) ทำได้เฉพาะคนที่ส่งบิล
+ *                               ปุ่มในการ์ด (postback act=save|hq|skip|edit) ทำได้เฉพาะคนที่ส่งบิล
+ *                               แก้ในแชต: แตะแถว (act=edit → billEditing/{userId}) แล้วพิมพ์ "สาขา: 00001" → parseEditText → edits → การ์ดใหม่
  *  GET  /bill?id&t            → ข้อมูลบิล + ocrText + edits + รายชื่อร้าน (vendors) ให้หน้า bill-check.html
  *  GET  /content?ch=bills&id&(t|key) → ไฟล์จาก LINE (LINE เก็บไฟล์ ~7 วัน)
  *  POST /bill/save {id,t,rec} → purchases/{rec.id} + billInbox done
@@ -19,7 +20,7 @@
  * โค้ดชุดนี้ import ตัวอ่านบิลจาก ./line-bills/bill-core.mjs (สร้างด้วย tools/mk_billcheck.py ห้ามแก้ตรง)
  * วางใน Cloudflare: ใช้ไฟล์รวม worker/line-bills/dist/line-bills.js (สร้างด้วย python3 tools/mk_line_bills.py)
  */
-import { analyzeBill, billFlex, savedFlex } from './line-bills/bill-core.mjs';
+import { analyzeBill, billFlex, savedFlex, parseEditText, EDIT_FIELDS } from './line-bills/bill-core.mjs';
 const ALLOW = ['https://app.ballsticker.co.th', 'https://ball-sticker-app.pages.dev'];
 const DEFAULT_APP_KEY = 'loa5408501ccebb8cc0e6155';
 const DEFAULT_PAGE = 'https://app.ballsticker.co.th/bill-check';
@@ -110,7 +111,7 @@ async function fsGet(env, col, id) {
 // เขียน: mode 'create' = ต้องยังไม่มี · 'update' = ต้องมีแล้ว (แก้เฉพาะช่องที่ส่ง)
 async function fsWrite(env, col, id, data, mode, updateTime) {
   const fields = {}; Object.keys(data).forEach((k) => { fields[k] = toFs(data[k]); });
-  let q = mode === 'create' ? '?currentDocument.exists=false' : updateTime ? '?currentDocument.updateTime=' + encodeURIComponent(updateTime) : '?currentDocument.exists=true';
+  let q = mode === 'create' ? '?currentDocument.exists=false' : mode === 'set' ? '' : updateTime ? '?currentDocument.updateTime=' + encodeURIComponent(updateTime) : '?currentDocument.exists=true';
   if (mode === 'update') q += Object.keys(data).map((k) => '&updateMask.fieldPaths=' + encodeURIComponent(k)).join('');
   const r = await fsFetch(env, '/' + col + '/' + encodeURIComponent(id) + q, { method: 'PATCH', body: JSON.stringify({ fields }) });
   if (r.ok) return 'ok';
@@ -306,11 +307,18 @@ function recFrom(r, b, photo) {
 // ปุ่มในการ์ด: act=save|hq|skip&id= · ทำได้เฉพาะคนที่ส่งบิล (คนอื่นกด = เงียบ)
 async function onPostback(env, ctx, ev) {
   const q = new URLSearchParams((ev.postback || {}).data || ''), act = q.get('act'), id = q.get('id') || '', uid = (ev.source || {}).userId || '';
-  if (['save', 'hq', 'skip'].indexOf(act) < 0 || !validId(id)) return;
+  if (['save', 'hq', 'skip', 'edit'].indexOf(act) < 0 || !validId(id)) return;
   const b = await fsGet(env, COL, id);
   if (!b || !uid || b.from !== uid) return;
   const say = (t) => reply(env, ev.replyToken, [textMsg(t)]);
   if (b.status !== 'new') return say(b.skipped ? 'บิลนี้ทำเครื่องหมายว่าไม่ใช่บิลไปแล้ว' : 'บิลนี้บันทึกไปแล้ว');
+
+  if (act === 'edit') {                                           // แตะแถวในการ์ด → จำว่ากำลังแก้บิลไหน ช่องไหน (LINE เปิดคีย์บอร์ดเอง ไม่ต้องตอบ)
+    const f = q.get('f') || '';
+    if (!Object.prototype.hasOwnProperty.call(EDIT_FIELDS, f)) return;
+    await fsWrite(env, 'billEditing', uid, { id, f, at: Date.now() }, 'set');
+    return;
+  }
 
   if (act === 'skip') {
     await fsWrite(env, COL, id, { status: 'done', doneAt: Date.now(), skipped: true }, 'update', b._ut);
@@ -339,6 +347,36 @@ async function onPostback(env, ctx, ev) {
   return reply(env, ev.replyToken, [{ type: 'flex', altText: 'บันทึกแล้ว ' + fmtBaht(Number(rec.amount) || 0) + ' บาท', contents: savedFlex(rec) }]);
 }
 
+// ข้อความตัวอักษร: "สาขา: 00001" "วันที่ 2/11/69" "ยอด 3,302" → แก้บิลที่กำลังแก้ (แตะแถวไว้ ≤ 15 นาที) หรือบิลล่าสุดที่ยังไม่บันทึก
+const EDIT_POINTER_MS = 15 * 60000;
+async function onText(env, ctx, ev) {
+  const uid = (ev.source || {}).userId || '', text = String((ev.message || {}).text || '').slice(0, 500);
+  const p = parseEditText(text);
+  if (!p || !uid) return;                                         // ไม่ใช่ข้อความแก้ → เงียบ
+  const say = (t) => reply(env, ev.replyToken, [textMsg(t)]);
+  if (p.error) return say((p.label ? p.label + ': ' : '') + p.error);
+
+  let b = null, id = '';
+  const ptr = await fsGet(env, 'billEditing', uid).catch(() => null);
+  if (ptr && ptr.id && Date.now() - (ptr.at || 0) <= EDIT_POINTER_MS) {
+    const x = await fsGet(env, COL, ptr.id);
+    if (x && x.from === uid && x.status === 'new') { b = x; id = ptr.id; }
+  }
+  if (!b) {                                                       // ไม่มีตัวชี้ → บิลล่าสุดของคนนี้ที่ยังไม่บันทึก
+    const mine = (await fsQueryEq(env, COL, 'from', uid).catch(() => [])).filter((d) => d.status === 'new').sort((a, c) => (c.createdAt || 0) - (a.createdAt || 0));
+    if (mine.length) { b = mine[0]; id = mine[0]._id; }
+  }
+  if (!b) return say('ไม่มีบิลที่รอบันทึก ส่งรูปบิลก่อน แล้วค่อยแก้นะครับ');
+
+  const edits = Object.assign({}, b.edits || {}, { [p.field]: p.value });
+  await fsWrite(env, COL, id, { edits }, 'update');
+  const vend = await vendors(env, ctx).catch(() => []);
+  const r = analyzeBill(b.ocrText || '', vend, edits), url = await billUrl(env, id);
+  const msgs = [{ type: 'flex', altText: 'แก้' + p.label + 'แล้ว' + (Number(r.fields.amount) ? ' · ' + fmtBaht(Number(r.fields.amount)) + ' บาท' : ''), contents: billFlex(r, id, { edit: url }) }];
+  if (p.warn) msgs.push(textMsg('⚠ ' + p.label + ': ' + p.warn));
+  return reply(env, ev.replyToken, msgs);
+}
+
 async function handleEvents(env, ctx, events) {
   const names = {};
   for (const ev of events) {
@@ -347,7 +385,7 @@ async function handleEvents(env, ctx, events) {
       if (ev.type !== 'message' || !ev.message) continue;
       const m = ev.message;
       if (m.type === 'image' || m.type === 'file') await onFile(env, ctx, ev, names);
-      else if (m.type === 'text') await reply(env, ev.replyToken, [textMsg('ช่องนี้รับเฉพาะรูปหรือไฟล์ PDF ของบิลซื้อ ส่งเข้ามาได้เลย 🙏')]);
+      else if (m.type === 'text') await onText(env, ctx, ev);
     } catch (e) { console.log('event error', ev.type, e.message); }
   }
 }
@@ -416,9 +454,18 @@ export default {
         if (!validId(id)) return json({ error: 'id ไม่ถูกต้อง' }, 400, origin);
         const ok = t ? await tokOk(env, id, t) : url.searchParams.get('key') === (env.APP_KEY || DEFAULT_APP_KEY);
         if (!ok) return json({ error: t ? 'ลิงก์ไม่ถูกต้อง' : 'key ไม่ถูกต้อง' }, t ? 403 : 401, origin);
-        const r = await lineGet(env, 'https://api-data.line.me/v2/bot/message/' + id + '/content');
-        if (!r.ok) return json({ error: r.status === 404 ? 'ไม่พบไฟล์ (LINE เก็บไฟล์ไว้ประมาณ 7 วัน)' : 'ดึงไฟล์จาก LINE ไม่ได้ (' + r.status + ')' }, r.status === 404 ? 404 : 502, origin);
-        return new Response(r.body, { headers: Object.assign({ 'Content-Type': r.headers.get('Content-Type') || 'application/octet-stream', 'Cache-Control': 'private, max-age=3600' }, cors(origin)) });
+        // โหลดเต็มไฟล์ก่อนส่ง (มี Content-Length) + จำไว้ 1 วัน · เดิมส่งต่อแบบสตรีม iPhone ใน LINE เคยค้าง/ตัดกลางทาง (log 17:05 outcome canceled)
+        const ck = new Request('https://line-bills.cache/content/' + id), cache = caches.default;
+        let hit = await cache.match(ck);
+        if (!hit) {
+          const r = await lineGet(env, 'https://api-data.line.me/v2/bot/message/' + id + '/content');
+          if (!r.ok) return json({ error: r.status === 404 ? 'ไม่พบไฟล์ (LINE เก็บไฟล์ไว้ประมาณ 7 วัน)' : 'ดึงไฟล์จาก LINE ไม่ได้ (' + r.status + ')' }, r.status === 404 ? 404 : 502, origin);
+          const buf = await r.arrayBuffer(), type = r.headers.get('Content-Type') || 'application/octet-stream';
+          hit = new Response(buf, { headers: { 'Content-Type': type, 'Content-Length': String(buf.byteLength), 'Cache-Control': 'max-age=86400' } });
+          ctx.waitUntil(cache.put(ck, hit.clone()));
+        }
+        const buf = await hit.arrayBuffer();
+        return new Response(buf, { headers: Object.assign({ 'Content-Type': hit.headers.get('Content-Type') || 'application/octet-stream', 'Content-Length': String(buf.byteLength), 'Cache-Control': 'private, max-age=3600' }, cors(origin)) });
       }
 
       if (p === '/bill' && req.method === 'GET') {
