@@ -5,6 +5,15 @@
 ห้ามใส่รหัสผ่าน/คีย์/ข้อมูลลูกค้า — repo ยังเป็นสาธารณะ
 
 ## ค้าง
+- [2026-11-12 16:00] จาก 1 (เจ้าของสั่งตรง): **ปุ่ม "ตรวจบิล" ใน LINE บิล (@162oesrh)** — ฝั่งแอปทำแล้ว: หน้า `bill-check.html` (ต้นฉบับ src/bill-check.src.html + tools/mk_billcheck.py ใช้ตัวอ่านบิลชุดเดียวกับแอป) เปิดใน LINE แล้วอ่านบิลด้วย OpenThai บนมือถือ โชว์ช่องที่ผ่าน/ไม่ผ่าน แก้ได้ แล้วบันทึก · ขอ Worker `line-bills` เพิ่ม:
+  1) **ลิงก์**: token = 32 ตัวแรกของ hex HMAC-SHA256(secret ใหม่ `LINE_BILLS_LINK_KEY`, messageId) · ปุ่มเปิด `https://app.ballsticker.co.th/bill-check?id=<messageId>&t=<token>`
+  2) **ตอบกลับ webhook** เป็น Flex: "รับบิลแล้ว ✅" + ปุ่ม "ตรวจบิล" (uri ข้อ 1) · ส่งหลายรูปพร้อมกัน = carousel 1 การ์ดต่อรูป (reply สูงสุด 5 ข้อความ) · PDF ก็ใช้ปุ่มเดียวกัน
+  3) `GET /bill?id&t` → `{ok, id, status, fromName, type, fileName, createdAt, purchaseId?, vendors:[{name,tax,branch,cat,addr}]}` (vendors = จาก Firestore `vendors` ทั้งคอลเลกชัน ฟิลด์ name/tax/branch/cat/addr — ใช้แก้ชื่อร้าน/ที่อยู่ที่ OCR อ่านเพี้ยน) · token ผิด 403 · ไม่มี 404
+  4) `GET /content?ch=bills&id&t` — ยอมรับ `t` แทน `key` ได้ (หน้านี้เป็นสาธารณะ ห้ามฝัง LINE_OA_KEY)
+  5) `POST /bill/save` JSON `{id,t,rec}` → ตรวจ token + billInbox.status ต้องเป็น 'new' (ไม่ใช่ → 409 `{purchaseId}`) · ตรวจ rec: id ตรง /^p\d{10,16}$/, date YYYY-MM-DD, claim ∈ vat|expense|personal, claimMonth '' หรือ YYYY-MM, amount/vat เป็นตัวเลขทศนิยม ≥0, vendorTax ''|13 หลัก, photo '' หรือ https://res.cloudinary.com/m4n2ttwh/…, ข้อความยาวไม่เกิน 200, chk = object ค่า boolean, ตัดฟิลด์อื่นทิ้ง · เขียน `purchases/{rec.id}` = rec + `savedAt: Date.now(), createdBy: 'LINE · '+fromName, src: 'line', billId: id` · แล้ว billInbox `{status:'done', doneAt, purchaseId}` · ตอบ `{ok, purchaseId}`
+  6) `POST /bill/skip` `{id,t}` → billInbox `{status:'done', doneAt, skipped:true}` (ถ้า done แล้วตอบ ok เฉยๆ)
+  7) CORS (GET/POST/OPTIONS, Content-Type) ให้ app.ballsticker.co.th + ball-sticker-app.pages.dev
+  · ทดสอบฝั่งหน้าเว็บแล้วกับ API จำลองตามสเปกนี้ (บิลจริงอ่านครบ บันทึกส่ง rec ถูก) · แอปจะเห็นบิลที่บันทึกผ่าน watchCloud('purchases') เอง · เปลี่ยนสเปกตอบใน team/inbox-1.md
 - [2026-11-11 22:40] จาก 1 (เจ้าของสั่งตรง · ไม่ใช้ Firebase เพื่อไม่ให้ยอดอ่านเพิ่ม): **ขอ Worker `social-stats` สำหรับหน้า "สถิติโซเชียล" ในแอป** · เก็บใน D1 (ใช้ `ball-books` เพิ่มตาราง หรือสร้าง `ball-social` ก็ได้) · cron วันละครั้ง (ตี 3 ไทย) เก็บ snapshot รายวัน:
   1) เพจ FB บอล สติ๊กเกอร์ (Graph API): followers_count, page_impressions_unique/วัน, page_post_engagements/วัน, จำนวนบทสนทนาใหม่/วัน (/conversations ตาม updated_time หรือ page_messages_new_conversations_unique), โพสต์ 60 วันล่าสุด (id, created_time, message 80 ตัว, permalink, รูป thumbnail, reach, reactions, comments, shares)
   2) ค่าโฆษณา FB (act_xxx/insights รายวัน): spend, impressions, clicks, messaging_conversation_started_7d (ถ้าโทเคนมี ads_read)

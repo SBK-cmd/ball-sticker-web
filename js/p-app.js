@@ -2927,6 +2927,7 @@ function bahtText(value) {
     return ocrWorker;
   }
   // ---------- ตรวจเลขประจำตัวผู้เสียภาษี 13 หลัก (สูตรหลักตรวจของกรมสรรพากร) ----------
+  /*@@BILLPARSE-START@@ ใช้ร่วมกับ bill-check.html (tools/mk_billcheck.py) */
   function thaiTaxIdValid(t) {
     const d = String(t || '').replace(/\D/g, ''); if (d.length !== 13) return false;
     let sum = 0; for (let i = 0; i < 12; i++) sum += (+d[i]) * (13 - i);
@@ -3049,6 +3050,7 @@ function bahtText(value) {
     if (vname) out.vendor = vname.replace(/^(ผู้ขาย|ชื่อ)\s*[:：]?\s*/, '').replace(/\s+สาขา.*$/, '').trim().slice(0, 60);
     return out;
   }
+  /*@@BILLPARSE-END@@*/
 
   // ---------- ประเภทบิล / หมวด / เช็กลิสต์ใบกำกับเต็มรูป (มาตรา 86/4 + ประกาศอธิบดีฯ ฉบับ 196) ----------
   const purchClaimOf = p => p.claim || (num(p.vat) > 0 ? 'vat' : 'expense');   // รายการเก่าไม่มีช่องนี้: มี VAT = ภาษีซื้อ

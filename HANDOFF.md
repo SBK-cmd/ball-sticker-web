@@ -14,6 +14,7 @@
 - บอกเจ้าของร้านว่าอัปเดตสมุดแล้ว
 
 ## สถานะล่าสุด (อัปเดต 2026-11-09)
+- **พรีวิว (12 พ.ย.) หน้า "ตรวจบิล" จาก LINE บิล**: `bill-check.html` สร้างจาก `src/bill-check.src.html` ด้วย `python3 tools/mk_billcheck.py` (คัดตัวอ่านบิลจาก src/app.html ช่วง `@@BILLPARSE-START/END` — แก้ parser ในแอปแล้วต้องรันซ้ำ) · OCR OpenThai บนมือถือ, ช่อง ✓/!, เช็กลิสต์ 8 ข้อ, VAT 7%, รอบใช้สิทธิ์, บันทึกผ่าน Worker `POST /bill/save` · **รอตัวที่ 2** ทำ token/Flex/`/bill`/`/bill/save`/`/bill/skip` (สเปกใน team/inbox-2.md)
 - **พรีวิว (12 พ.ย.) กล่องบิลจาก LINE** commit 23e15a9: การ์ด `#billBoxCard` ในหน้าภาษีซื้อ อ่าน Firestore `billInbox` (onSnapshot 60 รายการ) แท็บ ใหม่/ทำแล้ว · "สแกนบันทึก" → `scanFromUrl` ดึงรูปจาก `LINE_OA_URL/content?ch=bills` → OCR → บันทึกแล้วตั้ง status done + purchaseId · "ไม่ใช่บิล" ตั้ง done · การ์ดซ่อนจนกว่าจะมีข้อมูล · **รอ**: เจ้าของสมัคร LINE OA ใหม่สำหรับบิล + ตัวที่ 2 ทำ webhook/content/CORS/rules (ฝากใน team/inbox-2.md แล้ว)
 - **พรีวิว (12 พ.ย.) ภาษีซื้อตามเกณฑ์สรรพากร 6 ข้อ (อ้างอิง paypers.ai + parnuan.com)**:
   1) `#purchClaim` vat/expense/personal + `purchClaimOf/isInputVat/purchVatMonth` ใช้ทุกที่ที่รวม VAT (แดชบอร์ด รายงาน ประวัติ) — แดชบอร์ดไม่นับ VAT บัญชีวันทิมแล้ว (เดิมนับ) · รอบใช้สิทธิ์ `claimMonth` เดือนที่ออก..+6 (มาตรา 82/3 วรรคสี่) · เช็กลิสต์ 8 ข้อ `TAX_CHK` + `autoTaxChecklist` จากข้อความ OCR (ทนสะกดเพี้ยน เช่น สานักงานใหญี) เก็บใน `chk` · ดึงที่อยู่/สาขาผู้ขายจากบิล
