@@ -8,6 +8,7 @@
  *                               แก้ในแชต: แตะแถว (act=edit → billEditing/{userId}) แล้วพิมพ์ "สาขา: 00001" → parseEditText → edits → การ์ดใหม่
  *  GET  /bill?id&t            → ข้อมูลบิล + ocrText + edits + รายชื่อร้าน (vendors) ให้หน้า bill-check.html
  *  GET  /content?ch=bills&id&(t|key) → ไฟล์จาก LINE (LINE เก็บไฟล์ ~7 วัน)
+ *  GET  /quota?key=…          → หลอดโควตาบริการฟรี {items:[{id,used,limit?,sub?}]} (แคช 10 นาที · ตัวไหนดึงไม่ได้ข้าม)
  *  POST /bill/save {id,t,rec} → purchases/{rec.id} + billInbox done
  *  POST /bill/skip {id,t}     → billInbox done (skipped)
  *  ลิงก์ปุ่ม: https://app.ballsticker.co.th/bill-check?id=<messageId>&t=<32 ตัวแรกของ hex HMAC-SHA256(LINE_BILLS_LINK_KEY, messageId)>
@@ -15,6 +16,8 @@
  * ค่าลับ (เจ้าของใส่เองใน Cloudflare · ห้ามส่งในแชต/ห้ามใส่ในโค้ด):
  *   LINE_BILLS_SECRET, LINE_BILLS_TOKEN, FIRESTORE_SA_JSON (Cloud Datastore User), LINE_BILLS_LINK_KEY (สุ่มเอง ≥ 32 ตัว)
  * ไม่บังคับ: APP_KEY (ค่าเริ่มต้น = LINE_OA_KEY ในแอป) · BILL_PAGE (ค่าเริ่มต้น https://app.ballsticker.co.th/bill-check)
+ * /quota (ไม่บังคับ แต่ละตัวมีแล้วถึงแสดง): SA ต้องมีบทบาท Monitoring Viewer (Firestore/Vision) · CF_API_TOKEN (Account Analytics: Read + Cloudflare Pages: Read)
+ *   CLOUDINARY_API_KEY + CLOUDINARY_API_SECRET (usage + อัปโหลดแบบเซ็นชื่อ) · LINE_BK25_TOKEN (Channel access token ของ @bk25 ตัวเดิม ห้ามกด Reissue)
  * Google Vision: เปิด Cloud Vision API ในโปรเจกต์เดียวกับ Service Account (ใช้ SA เดิม scope cloud-vision)
  *
  * โค้ดชุดนี้ import ตัวอ่านบิลจาก ./line-bills/bill-core.mjs (สร้างด้วย tools/mk_billcheck.py ห้ามแก้ตรง)
@@ -58,7 +61,7 @@ async function gToken(sa) {
   if (tok.t && Date.now() < tok.exp - 60000) return tok.t;
   const now = Math.floor(Date.now() / 1000);
   const head = b64urlStr(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
-  const claim = b64urlStr(JSON.stringify({ iss: sa.client_email, scope: 'https://www.googleapis.com/auth/datastore https://www.googleapis.com/auth/cloud-vision', aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600 }));
+  const claim = b64urlStr(JSON.stringify({ iss: sa.client_email, scope: 'https://www.googleapis.com/auth/datastore https://www.googleapis.com/auth/cloud-vision https://www.googleapis.com/auth/monitoring.read', aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600 }));
   const der = Uint8Array.from(atob(String(sa.private_key || '').replace(/-----[^-]+-----/g, '').replace(/\s+/g, '')), (c) => c.charCodeAt(0));
   const key = await crypto.subtle.importKey('pkcs8', der.buffer, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
   const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, enc(head + '.' + claim));
@@ -193,17 +196,116 @@ async function lineContent(env, id) {
   if (!r.ok) return null;
   return { buf: await r.arrayBuffer(), mime: r.headers.get('Content-Type') || '' };
 }
-async function cloudinaryUpload(buf, mime, name) {
+async function cloudinaryUpload(buf, mime, name, env) {
   try {
     return await withTimeout(async (signal) => {
       const fd = new FormData();
       fd.append('file', new Blob([buf], { type: mime || 'image/jpeg' }), name);
-      fd.append('upload_preset', CLOUDINARY.preset);
+      if (env && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET) {   // มีคีย์ → อัปแบบเซ็นชื่อ (ไม่พึ่ง unsigned preset)
+        const ts = String(Math.floor(Date.now() / 1000)), folder = 'line-bills';
+        const sig = hex(new Uint8Array(await crypto.subtle.digest('SHA-1', enc('folder=' + folder + '&timestamp=' + ts + env.CLOUDINARY_API_SECRET))));
+        fd.append('api_key', env.CLOUDINARY_API_KEY); fd.append('timestamp', ts); fd.append('folder', folder); fd.append('signature', sig);
+      } else fd.append('upload_preset', CLOUDINARY.preset);
       const r = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY.cloud + '/image/upload', { method: 'POST', body: fd, signal });
       const j = await r.json().catch(() => ({}));
       return typeof j.secure_url === 'string' && j.secure_url.indexOf('https://res.cloudinary.com/' + CLOUDINARY.cloud + '/') === 0 ? j.secure_url : '';
     }, 8000);
   } catch (e) { return ''; }
+}
+
+// ---------- หลอดโควตาบริการฟรี (/quota) ----------
+const CF_ACCOUNT = 'd3631ce60d69d12653e2d078981d5452';
+function pacificStart(now, unit) {   // เที่ยงคืนเวลาแปซิฟิก (รอบรีเซ็ต Firestore/Google) ของวันนี้ หรือวันที่ 1 ของเดือน
+  const parts = {}; new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' })
+    .formatToParts(new Date(now)).forEach((x) => { parts[x.type] = +x.value || 0; });
+  const wall = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second), off = wall - Math.floor(now / 1000) * 1000;
+  return Date.UTC(parts.year, parts.month - 1, unit === 'month' ? 1 : parts.day) - off;
+}
+async function monQuery(env, filter, startMs, endMs, aligner, period) {
+  const sa = saOf(env), token = await gToken(sa);
+  const q = new URLSearchParams({ filter, 'interval.startTime': new Date(startMs).toISOString(), 'interval.endTime': new Date(endMs).toISOString(),
+    'aggregation.alignmentPeriod': Math.max(60, period || Math.ceil((endMs - startMs) / 1000)) + 's', 'aggregation.perSeriesAligner': aligner || 'ALIGN_SUM', 'aggregation.crossSeriesReducer': 'REDUCE_SUM' });
+  const r = await withTimeout((signal) => fetch('https://monitoring.googleapis.com/v3/projects/' + sa.project_id + '/timeSeries?' + q, { headers: { Authorization: 'Bearer ' + token }, signal }), 8000);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error('monitoring ' + r.status + ' ' + ((j.error || {}).status || ''));
+  const pts = [];
+  (j.timeSeries || []).forEach((ts) => (ts.points || []).forEach((p) => pts.push({ t: Date.parse(p.interval.endTime), v: +(p.value.int64Value || p.value.doubleValue || 0) })));
+  return pts;
+}
+const monSum = async (env, filter, a, b) => (await monQuery(env, filter, a, b)).reduce((s, p) => s + p.v, 0);
+async function cfGraphQL(env, query, variables) {
+  const r = await withTimeout((signal) => fetch('https://api.cloudflare.com/client/v4/graphql', { method: 'POST', signal, headers: { Authorization: 'Bearer ' + env.CF_API_TOKEN, 'Content-Type': 'application/json' }, body: JSON.stringify({ query, variables }) }), 8000);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || (j.errors && j.errors.length)) throw new Error('cf graphql ' + r.status + ' ' + JSON.stringify(j.errors || '').slice(0, 120));
+  return j.data;
+}
+async function cfRest(env, path) {
+  const r = await withTimeout((signal) => fetch('https://api.cloudflare.com/client/v4' + path, { signal, headers: { Authorization: 'Bearer ' + env.CF_API_TOKEN } }), 8000);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.success) throw new Error('cf rest ' + r.status);
+  return j;
+}
+async function lineQuota(token) {
+  const h = { headers: { Authorization: 'Bearer ' + token } };
+  const [q, c] = await Promise.all([fetch('https://api.line.me/v2/bot/message/quota', h), fetch('https://api.line.me/v2/bot/message/quota/consumption', h)]);
+  if (!q.ok || !c.ok) throw new Error('line quota ' + q.status + '/' + c.status);
+  const qj = await q.json(), cj = await c.json(), it = { used: cj.totalUsage || 0 };
+  if (qj.type === 'limited' && qj.value) it.limit = qj.value;
+  return it;
+}
+const gb = (b) => (b / 1073741824).toFixed(b >= 10 * 1073741824 ? 0 : 1) + ' GB', mb = (b) => Math.round(b / 1048576) + ' MB';
+async function quotaItems(env) {
+  const now = Date.now(), dayPT = pacificStart(now, 'day'), monPT = pacificStart(now, 'month');
+  const utcDay = new Date(new Date(now).toISOString().slice(0, 10) + 'T00:00:00Z').getTime();
+  const utcMon = Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), 1);
+  const jobs = {
+    fs_reads: async () => ({ used: Math.round(await monSum(env, 'metric.type="firestore.googleapis.com/document/read_count"', dayPT, now)) }),
+    fs_writes: async () => ({ used: Math.round(await monSum(env, 'metric.type="firestore.googleapis.com/document/write_count"', dayPT, now)) }),
+    fs_storage: async () => {
+      const pts = await monQuery(env, 'metric.type="firestore.googleapis.com/storage/data_and_index_storage_bytes"', now - 2 * 86400000, now, 'ALIGN_MEAN', 3600);
+      if (!pts.length) throw new Error('no storage points');
+      pts.sort((a, b) => b.t - a.t);
+      return { used: Math.round(pts[0].v / 1048576 * 10) / 10 };
+    },
+    vision: async () => ({ used: Math.round(await monSum(env, 'metric.type="serviceruntime.googleapis.com/api/request_count" AND resource.type="consumed_api" AND resource.labels.service="vision.googleapis.com"', monPT, now)) }),
+    cf_workers: env.CF_API_TOKEN && (async () => {
+      const d = await cfGraphQL(env, 'query($a:String!,$f:Time!,$t:Time!){viewer{accounts(filter:{accountTag:$a}){workersInvocationsAdaptive(limit:10000,filter:{datetime_geq:$f,datetime_leq:$t}){sum{requests}}}}}',
+        { a: env.CF_ACCOUNT_ID || CF_ACCOUNT, f: new Date(utcDay).toISOString(), t: new Date(now).toISOString() });
+      const rows = ((d.viewer.accounts[0] || {}).workersInvocationsAdaptive) || [];
+      return { used: rows.reduce((s, r) => s + ((r.sum || {}).requests || 0), 0), sub: 'รีเซ็ต 07:00 น.' };
+    }),
+    cf_builds: env.CF_API_TOKEN && (async () => {   // นับเฉพาะ build จาก Git (อัปโหลดตรงจาก GitHub Actions ไม่นับโควตา build)
+      const acct = env.CF_ACCOUNT_ID || CF_ACCOUNT, projects = (await cfRest(env, '/accounts/' + acct + '/pages/projects')).result || [];
+      let builds = 0, uploads = 0;
+      for (const pr of projects.slice(0, 10)) {
+        for (let page = 1; page <= 5; page++) {
+          const res = (await cfRest(env, '/accounts/' + acct + '/pages/projects/' + encodeURIComponent(pr.name) + '/deployments?per_page=25&page=' + page)).result || [];
+          let older = false;
+          for (const d of res) {
+            if (Date.parse(d.created_on) < utcMon) { older = true; break; }
+            if (((d.deployment_trigger || {}).type || '') === 'ad_hoc') uploads++; else builds++;
+          }
+          if (older || res.length < 25) break;
+        }
+      }
+      return { used: builds, sub: 'อัปโหลดตรง ' + uploads + ' ครั้ง (ไม่นับ)' };
+    }),
+    cld_credits: env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET && (async () => {
+      const r = await withTimeout((signal) => fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY.cloud + '/usage', { signal, headers: { Authorization: 'Basic ' + btoa(env.CLOUDINARY_API_KEY + ':' + env.CLOUDINARY_API_SECRET) } }), 8000);
+      if (!r.ok) throw new Error('cloudinary ' + r.status);
+      const j = await r.json(), cr = j.credits || {}, it = { used: Math.round((cr.usage || 0) * 100) / 100 };
+      if (cr.limit) it.limit = cr.limit;
+      it.sub = 'ส่งรูป ' + gb((j.bandwidth || {}).usage || 0) + ' · เก็บ ' + mb((j.storage || {}).usage || 0);
+      return it;
+    }),
+    line_bk25: env.LINE_BK25_TOKEN && (() => lineQuota(env.LINE_BK25_TOKEN)),
+    line_bills: env.LINE_BILLS_TOKEN && (() => lineQuota(env.LINE_BILLS_TOKEN)),
+  };
+  const ids = Object.keys(jobs).filter((k) => jobs[k]);
+  const res = await Promise.allSettled(ids.map((k) => jobs[k]()));
+  const items = [], skipped = [];
+  res.forEach((r, i) => { if (r.status === 'fulfilled' && r.value && isFinite(r.value.used)) items.push(Object.assign({ id: ids[i] }, r.value)); else { skipped.push(ids[i]); console.log('quota skip', ids[i], r.reason && r.reason.message); } });
+  return { items, skipped, at: now };
 }
 
 // ---------- LINE ----------
@@ -339,7 +441,7 @@ async function onPostback(env, ctx, ev) {
   if (!r.readable || !(Number(String(r.fields.amount || '').replace(/,/g, '')) > 0)) return say('ยังไม่พบยอดเงินในบิล กด "✏️ แก้ไข" เพื่อใส่เอง');
   if (!(await lockBill(env, id, b))) return say('บิลนี้บันทึกไปแล้ว');
   let photo = '';
-  if (b.type === 'image') { const c = await lineContent(env, id); if (c) photo = await cloudinaryUpload(c.buf, c.mime, 'bill-' + id + '.jpg'); }
+  if (b.type === 'image') { const c = await lineContent(env, id); if (c) photo = await cloudinaryUpload(c.buf, c.mime, 'bill-' + id + '.jpg', env); }
   const [rec, err] = cleanRec(recFrom(r, b, photo));
   if (!rec) { await fsWrite(env, COL, id, { status: 'new' }, 'update').catch(() => {}); return say('บันทึกไม่ได้: ' + err + ' · กด "✏️ แก้ไข" เพื่อแก้'); }
   const w = await saveRec(env, id, b, rec);
@@ -443,6 +545,15 @@ export default {
       let j = {}; try { j = JSON.parse(body); } catch (e) {}
       ctx.waitUntil(handleEvents(env, ctx, j.events || []));
       return new Response('ok');
+    }
+    if (p === '/quota' && req.method === 'GET') {
+      if (origin && ALLOW.indexOf(origin) < 0) return json({ error: 'origin not allowed' }, 403, origin);
+      if (url.searchParams.get('key') !== (env.APP_KEY || DEFAULT_APP_KEY)) return json({ error: 'key ไม่ถูกต้อง' }, 401, origin);
+      const ck = new Request('https://line-bills.cache/quota'), cache = caches.default;
+      if (!url.searchParams.has('fresh')) { const hit = await cache.match(ck); if (hit) return json(await hit.json(), 200, origin); }
+      const out = await quotaItems(env);
+      ctx.waitUntil(cache.put(ck, new Response(JSON.stringify(out), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=600' } })));
+      return json(out, 200, origin);
     }
     if (p === '/') return json({ ok: true, service: 'ball line-bills', ready: !!(env.LINE_BILLS_SECRET && env.LINE_BILLS_TOKEN && env.FIRESTORE_SA_JSON), link: !!env.LINE_BILLS_LINK_KEY }, 200, origin);
     if (origin && ALLOW.indexOf(origin) < 0) return json({ error: 'origin not allowed' }, 403, origin);
