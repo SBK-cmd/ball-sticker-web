@@ -3019,13 +3019,14 @@ function bahtText(value) {
   const purchClaimOf = p => p.claim || (num(p.vat) > 0 ? 'vat' : 'expense');   // รายการเก่าไม่มีช่องนี้: มี VAT = ภาษีซื้อ
   const isInputVat = p => purchClaimOf(p) === 'vat' && num(p.vat) > 0 && NON_TAX_ACCOUNTS.indexOf(p.account) < 0;
   const purchVatMonth = p => p.claimMonth || monthKey(p.date);
-  const PURCH_CATS = ['วัสดุ สติ๊กเกอร์ กระดาษ ฟิล์ม', 'หมึกพิมพ์', 'อุปกรณ์ / เครื่องมือ', 'ค่าขนส่ง / ไปรษณีย์', 'ค่าไฟ น้ำ อินเทอร์เน็ต โทรศัพท์', 'ค่าเช่า', 'ค่าโฆษณา / การตลาด', 'ซ่อมบำรุง', 'ค่าเดินทาง / น้ำมัน', 'อื่นๆ'];
+  const PURCH_CATS = ['วัสดุ สติ๊กเกอร์ กระดาษ ฟิล์ม', 'หมึกพิมพ์', 'บรรจุภัณฑ์ / วัสดุสิ้นเปลือง', 'อุปกรณ์ / เครื่องมือ', 'ค่าขนส่ง / ไปรษณีย์', 'ค่าไฟ น้ำ อินเทอร์เน็ต โทรศัพท์', 'ค่าเช่า', 'ค่าโฆษณา / การตลาด', 'ซ่อมบำรุง', 'ค่าเดินทาง / น้ำมัน', 'อื่นๆ'];
   function guessPurchCat(vendor, note, text) {
     const remembered = (store.get('bs_vendors', []).find(v => String(v.name || '').trim() === String(vendor || '').trim()) || {}).cat;
     if (remembered && PURCH_CATS.indexOf(remembered) >= 0) return remembered;
     const t = [vendor, note, text].join(' ').toLowerCase();
     if (/หมึก|ink|toner|โทนเนอร์/.test(t)) return 'หมึกพิมพ์';
     if (/สติ๊กเกอร์|สติกเกอร์|sticker|กระดาษ|ฟิล์ม|film|pvc|ไวนิล|vinyl|โฮโลแกรม|สะท้อนแสง|ลามิเนต|laminat/.test(t)) return 'วัสดุ สติ๊กเกอร์ กระดาษ ฟิล์ม';
+    if (/เทป|กาว|เชือก|กล่อง|ซอง|ถุง|บับเบิ้ล|bubble|แพ็ค|packing/.test(t)) return 'บรรจุภัณฑ์ / วัสดุสิ้นเปลือง';
     if (/ขนส่ง|ไปรษณีย์|kerry|flash|j&t|jt express|best express|ems|ค่าส่ง|lalamove|ไลน์แมน/.test(t)) return 'ค่าขนส่ง / ไปรษณีย์';
     if (/การไฟฟ้า|ไฟฟ้า|ประปา|ทรู|true|ais|dtac|3bb|อินเทอร์เน็ต|internet|โทรศัพท์/.test(t)) return 'ค่าไฟ น้ำ อินเทอร์เน็ต โทรศัพท์';
     if (/ค่าเช่า|rent/.test(t)) return 'ค่าเช่า';
@@ -3870,9 +3871,10 @@ function bahtText(value) {
     if (m.type === 'flex') return '<span class="chat-flex">🃏 ' + esc(m.text || 'การ์ด') + '</span>';
     if (m.type === 'video' && m.url) return m.preview ? '<a class="chat-vid" href="' + esc(m.url) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(m.preview) + '" alt="วิดีโอ" loading="lazy"><i>▶</i></a>' : '<a class="chat-file" href="' + esc(m.url) + '" target="_blank" rel="noopener">▶ เปิดวิดีโอ</a>';
     if (m.type === 'file' && m.url) return '<a class="chat-file" href="' + esc(m.url) + '" target="_blank" rel="noopener">' + esc(m.text || 'เปิดไฟล์') + '</a>';
-    if (m.type === 'image' && m.url) return '<a href="' + esc(m.url) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(m.preview || m.url) + '" alt="รูปที่ส่ง" loading="lazy"></a>';
+    const toP = u => can('purchase') ? '<button type="button" class="chat-topurch" data-topurch="' + esc(u) + '">ส่งเข้าภาษีซื้อ</button>' : '';   // รูปบิลในแชต → บันทึกภาษีซื้อ + สแกนให้
+    if (m.type === 'image' && m.url) return '<a href="' + esc(m.url) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(m.preview || m.url) + '" alt="รูปที่ส่ง" loading="lazy"></a>' + toP(m.url);
     if (m.type === 'image' && m.localUrl) return '<img class="chat-img sending" src="' + esc(m.localUrl) + '" alt="กำลังส่งรูป">';
-    if (m.type === 'image' && m.contentId) return '<a href="' + esc(src(m.contentId)) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(src(m.contentId)) + '" alt="รูปจากลูกค้า" loading="lazy"></a>';
+    if (m.type === 'image' && m.contentId) return '<a href="' + esc(src(m.contentId)) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(src(m.contentId)) + '" alt="รูปจากลูกค้า" loading="lazy"></a>' + toP(src(m.contentId));
     if (m.type === 'sticker' && m.stickerId) return '<img class="chat-sticker" src="https://stickershop.line-scdn.net/stickershop/v1/sticker/' + esc(m.stickerId) + '/android/sticker.png" alt="สติกเกอร์" loading="lazy">';
     if ((m.type === 'video' || m.type === 'audio' || m.type === 'file') && m.contentId) return '<a class="chat-file" href="' + esc(src(m.contentId)) + '" target="_blank" rel="noopener">' + esc(m.text || 'เปิดไฟล์') + '</a>';
     return esc(m.text || '').replace(/\n/g, '<br>');
@@ -3881,7 +3883,25 @@ function bahtText(value) {
   let voiceAudio = null, voiceBtn = null;
   const fmtSec = t => isFinite(t) && t > 0 ? Math.floor(t / 60) + ':' + pad2(Math.floor(t % 60)) : '';
   function voiceUi(btn, playing) { if (!btn) return; btn.querySelector('.cv-ico').textContent = playing ? '❚❚' : '▶'; btn.classList.toggle('on', playing); }
-  $('chatMsgs').addEventListener('click', e => {
+  $('chatMsgs').addEventListener('click', async e => {
+    const tp = e.target.closest('[data-topurch]');
+    if (tp) {
+      e.preventDefault(); tp.disabled = true; const lbl = tp.textContent; tp.textContent = 'กำลังดึงรูป…';
+      try {
+        const res = await fetch(tp.dataset.topurch); if (!res.ok) throw new Error('HTTP ' + res.status);
+        const blob = await res.blob(); if (!/^image\//.test(blob.type || 'image/jpeg')) throw new Error('not image');
+        const file = new File([blob], 'line-bill.jpg', {type: blob.type || 'image/jpeg'});
+        showTab('purchase'); DOC_FORMS.purchase.reset(); openDocEdit('purchase', 'บันทึกภาษีซื้อจากแชต');
+        readPurchasePhoto(file);
+        // รอให้แนบรูปเสร็จ แล้วสแกนให้เลย (ผู้ใช้กดสั่งเองจากปุ่มนี้)
+        for (let i = 0; i < 40 && !purchaseOcrSource; i++) await new Promise(r => setTimeout(r, 100));
+        const c = chatList.find(x => x.userId === chatSel) || {};
+        if (c.name && !$('purchNote').value.trim()) $('purchNote').value = 'บิลจากแชต ' + c.name;
+        if (purchaseOcrSource) scanPurchasePhoto(); else toast('แนบรูปแล้ว กด “สแกนและกรอกข้อมูล” ได้เลย');
+      } catch (er) { console.error(er); toast('ดึงรูปจากแชตไม่ได้ ลองบันทึกรูปแล้วแนบเองในหน้าภาษีซื้อ'); }
+      finally { tp.disabled = false; tp.textContent = lbl; }
+      return;
+    }
     const btn = e.target.closest('[data-voice]'); if (!btn) return;
     e.preventDefault();
     if (voiceAudio && voiceBtn === btn) { if (voiceAudio.paused) voiceAudio.play().catch(() => {}); else voiceAudio.pause(); return; }
