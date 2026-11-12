@@ -60,6 +60,8 @@
   .done.skip .big { background:#eef1f6; color:var(--sub); }
   .err { background:var(--badbg); color:var(--bad); border-color:#f2c4c0; }
   .note { font-size:13px; color:var(--mute); margin-top:8px; }
+  .chips { display:flex; gap:8px; margin-top:8px; }
+  .chip { min-height:36px; font-size:14px; padding:0 12px; border-radius:999px; background:#eef1f6; border-color:#dbe1ec; }
   [hidden] { display:none !important; }
 </style>
 </head>
@@ -78,7 +80,7 @@
     <div class="card">
       <div class="f" data-k="vendor"><label for="vendor"><span class="mark"></span>ร้านค้า / ผู้ขาย</label><input id="vendor" maxlength="80"></div>
       <div class="f" data-k="vendorTax"><label for="vendorTax"><span class="mark"></span>เลขผู้เสียภาษีผู้ขาย</label><input id="vendorTax" inputmode="numeric" maxlength="17"><div class="hint" hidden></div></div>
-      <div class="f" data-k="vendorBranch"><label for="vendorBranch"><span class="mark"></span>สาขาผู้ขาย</label><input id="vendorBranch" maxlength="40" placeholder="สำนักงานใหญ่ หรือ สาขาที่ 00001"><div class="hint" hidden></div></div>
+      <div class="f" data-k="vendorBranch"><label for="vendorBranch"><span class="mark"></span>สาขาผู้ขาย</label><input id="vendorBranch" maxlength="40" placeholder="สำนักงานใหญ่ หรือ สาขาที่ 00001"><div class="chips"><button type="button" class="chip" data-br="สำนักงานใหญ่">สำนักงานใหญ่</button><button type="button" class="chip" data-br="สาขาที่ ">สาขาที่ …</button></div><div class="hint" hidden></div></div>
       <div class="f" data-k="vendorAddr"><label for="vendorAddr"><span class="mark"></span>ที่อยู่ผู้ขาย</label><input id="vendorAddr" maxlength="200"></div>
       <div class="two">
         <div class="f" data-k="invoiceNo"><label for="invoiceNo"><span class="mark"></span>เลขที่ใบกำกับ</label><input id="invoiceNo" maxlength="40"></div>
@@ -359,6 +361,7 @@
   ['vendor', 'vendorTax', 'vendorBranch', 'vendorAddr', 'invoiceNo', 'amount', 'vat'].forEach(id => $(id).addEventListener('input', check));
   $('date').addEventListener('change', () => { renderMonths(false); check(); });
   $('claim').addEventListener('change', check);
+  document.querySelectorAll('[data-br]').forEach(c => c.addEventListener('click', () => { const el = $('vendorBranch'); el.value = c.dataset.br; check(); if (/สาขา/.test(c.dataset.br)) el.focus(); }));
   $('saveBtn').addEventListener('click', save);
   $('skipBtn').addEventListener('click', skip);
   window.__billCheck = {fillWithText: t => { ocrText = t; fillForm(); }};
