@@ -65,6 +65,7 @@ Worker รับข้อความลูกค้าผ่าน webhook เ�
 
 ## line-bills (line-bills-worker.js) — LINE OA "บอลสติ๊กเกอร์ บิล" (@162oesrh) รับบิลซื้อ
 - Webhook URL: `https://line-bills.organic-parmesan.workers.dev/webhook` · ไฟล์: `GET /content?ch=bills&key=<LINE_OA_KEY>&id=<contentId>` (CORS แอปร้าน)
-- Secrets: `LINE_BILLS_SECRET`, `LINE_BILLS_TOKEN`, `FIRESTORE_SA_JSON` (Service Account บทบาท Cloud Datastore User)
+- Secrets: `LINE_BILLS_SECRET`, `LINE_BILLS_TOKEN`, `FIRESTORE_SA_JSON` (Service Account บทบาท Cloud Datastore User), `LINE_BILLS_LINK_KEY` (สุ่มเอง ≥ 32 ตัว ใช้เซ็นลิงก์ปุ่ม "ตรวจบิล")
+- ปุ่ม "ตรวจบิล": `GET /bill?id&t` · `POST /bill/save {id,t,rec}` · `POST /bill/skip {id,t}` · หน้า bill-check.html (ตัวที่ 1)
 - Firestore rules ส่วน billInbox: `worker/line-bills/firestore-rules-billInbox.txt` (วางใน `match /databases/{database}/documents { … }`)
-- LINE เก็บไฟล์ไว้ช่วงหนึ่งเท่านั้น (ไม่รับประกันระยะเวลา) → ควรสแกนบันทึกภายในไม่กี่วัน
+- LINE เก็บไฟล์ไว้ ~7 วัน → ต้องตรวจ/บันทึกภายใน 7 วัน (รูปที่บันทึกแล้วไปอยู่ Cloudinary)
