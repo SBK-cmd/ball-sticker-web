@@ -6774,13 +6774,13 @@ function bahtText(value) {
         purchasePhoto = canvas.toDataURL('image/jpeg', 0.7);
         renderPurchasePhoto();
         // ภาพความละเอียดสูงกว่า (ใช้เฉพาะตอนสแกนอ่านตัวหนังสือ ไม่ได้บันทึกลงประวัติ)
-        const ocrMax = 1600;
+        const ocrMax = 2800;   // ตัวอ่าน OpenThai อ่านตัวเล็กในบิลได้ดีขึ้นเมื่อภาพละเอียดพอ
         let ow = img.width, oh = img.height;
         if (ow > ocrMax || oh > ocrMax) { const k2 = ocrMax / Math.max(ow, oh); ow = Math.round(ow * k2); oh = Math.round(oh * k2); }
         const ocrCanvas = document.createElement('canvas');
         ocrCanvas.width = ow; ocrCanvas.height = oh;
         ocrCanvas.getContext('2d').drawImage(img, 0, 0, ow, oh);
-        purchaseOcrSource = ocrCanvas.toDataURL('image/jpeg', 0.85);
+        purchaseOcrSource = ocrCanvas.toDataURL('image/jpeg', 0.92);
         // แนบภาพอย่างเดียว ไม่สแกนอัตโนมัติ — กด "สแกนและกรอกข้อมูล" เองเมื่อต้องการ
       };
       img.src = reader.result;
@@ -6899,7 +6899,7 @@ function bahtText(value) {
     // เลือกบรรทัดชื่อบริษัทที่อยู่ใกล้บรรทัดเลขผู้เสียภาษีผู้ขายที่สุด (มักอยู่เหนือขึ้นไปไม่กี่บรรทัด) · ข้าม "บริษัทฯ" ในหมายเหตุ
     const taxLi = taxCands.length ? taxCands[0].li : 0;
     // ตัดเฉพาะท่อน "บริษัท ... จำกัด" ออกจากบรรทัด (บรรทัดเดียวอาจมีชื่อลูกค้าปนอยู่) แล้วเลือกท่อนที่อยู่ใกล้เลขภาษีผู้ขาย
-    const coRe = /((?:บริษัท(?!ฯ)|ห้างหุ้นส่วน(?:จำกัด)?|หจก\.?)\s*[^/()]*?(?:จำกัด(?:\s*\(มหาชน\))?|$))/;
+    const coRe = /((?:บริษ[ัิ]?[ทหพ](?!ฯ)|ห้างหุ้นส่วน(?:จำกัด)?|หจก\.?)\s*[^/()]*?(?:จำกัด(?:\s*\(มหาชน\))?|$))/;
     const coLines = [];
     lines.forEach((l, li) => { const m = l.match(coRe); if (!m) return; const name = m[1].trim(); if (!notOwn(name) || /ทราบ|ภายใน|ชำรุด|ตรวจสอบ|แก้ไข|ในนาม|เช็ค/.test(name) || /^(for|ในนาม)\s/i.test(l)) return; coLines.push({name, li}); });
     const ltd = o => /จำกัด/.test(o.name) ? 0 : 1000;   // ท่อนที่ลงท้ายด้วย จำกัด มาก่อน
@@ -7047,7 +7047,7 @@ function bahtText(value) {
     const provider = localStorage.getItem('bs_ai_provider') || 'none';
     const apiKey = (localStorage.getItem('bs_ai_key') || '').trim();
     try {
-      let fields = null, usedAi = false, usedPdf = false, usedPaste = false;
+      let fields = null, usedAi = false, usedPdf = false, usedPaste = false, usedOpenThai = false;
       if (pasted) { fields = parseReceiptText(pasted); usedPaste = true; }
       if (!fields && provider !== 'none' && apiKey && !purchasePdfText) {
         btn.textContent = 'กำลังสแกนด้วย AI…';
@@ -7062,6 +7062,15 @@ function bahtText(value) {
       if (!fields && purchasePdfText) { fields = parseReceiptText(purchasePdfText); usedPdf = true; }
       if (!fields) {
         btn.textContent = 'กำลังสแกนบิล…';
+        // ตัวอ่านหลัก: OpenThai 2.0 OCR (รันในเครื่อง ไม่ส่งรูปออกไปไหน ไม่มีค่าใช้จ่าย) · โหลดไม่ได้ค่อยใช้ Tesseract
+        try {
+          await bsLoadScript('ocr/openthai-ocr.js');
+          const r = await OpenThaiOCR.read(source, {onProgress: m => { btn.textContent = m; }});
+          fields = parseReceiptText(r.text); usedOpenThai = true;
+        } catch (e) { console.warn('OpenThai OCR', e); }
+      }
+      if (!fields) {
+        btn.textContent = 'กำลังสแกนบิล…';
         try { await bsLoadScript('https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js'); } catch (e) {}
         if (typeof Tesseract === 'undefined') { toast('โหลดระบบสแกนบิลไม่สำเร็จ (ต้องใช้อินเทอร์เน็ต) กรอกข้อมูลด้วยตนเองได้เลย'); return; }
         const worker = await getOcrWorker();
@@ -7072,7 +7081,7 @@ function bahtText(value) {
       let known = null;
       if (fields.vendorTax) known = allVendors().find(v => String(v.tax || '').replace(/\D/g, '') === fields.vendorTax) || null;
       if (known) { fields.vendor = known.name; if (known.addr && $('purchVendorAddr') && !$('purchVendorAddr').value.trim()) $('purchVendorAddr').value = known.addr; }
-      purchCheckSrc = (usedPaste ? 'แยกจากข้อความที่วาง' : usedPdf ? 'อ่านจากตัวหนังสือในไฟล์ PDF' : usedAi ? 'อ่านด้วย AI' : 'อ่านจากรูปด้วย OCR (ควรตรวจทุกช่อง)') + (known ? ' · ชื่อร้าน/ที่อยู่จากประวัติร้าน "' + known.name + '"' : '') + (fields._matched ? ' · ยอดก่อน VAT + VAT = ยอดรวม ตรงกันในเอกสาร' : '');
+      purchCheckSrc = (usedPaste ? 'แยกจากข้อความที่วาง' : usedPdf ? 'อ่านจากตัวหนังสือในไฟล์ PDF' : usedAi ? 'อ่านด้วย AI' : usedOpenThai ? 'อ่านจากรูปด้วย OpenThai OCR (ควรตรวจทุกช่อง)' : 'อ่านจากรูปด้วย OCR สำรอง (แม่นน้อย ควรตรวจทุกช่อง)') + (known ? ' · ชื่อร้าน/ที่อยู่จากประวัติร้าน "' + known.name + '"' : '') + (fields._matched ? ' · ยอดก่อน VAT + VAT = ยอดรวม ตรงกันในเอกสาร' : '');
       const map = {date: 'purchDate', vendor: 'purchVendor', invoiceNo: 'purchInvoiceNo', vendorTax: 'purchVendorTax', amount: 'purchAmount', vat: 'purchVat'};
       let filled = 0;
       Object.keys(map).forEach(k => {
