@@ -2402,7 +2402,7 @@ function bahtText(value) {
     if (quotaBusy) return; quotaBusy = true; const btn = $('quotaRefresh'); if (btn) btn.disabled = true;
     try {
       if (!force) { const c = store.get('bs_quota_cache', null); if (c && c.at && Date.now() - c.at < 30 * 60e3) { quotaLive = c; return; } }
-      const r = await fetch('https://line-bills.organic-parmesan.workers.dev/quota?key=loa5408501ccebb8cc0e6155', {cache: 'no-store'});
+      const r = await fetch('https://line-bills.organic-parmesan.workers.dev/quota?key=loa5408501ccebb8cc0e6155' + (force ? '&fresh=1' : ''), {cache: 'no-store'});
       if (r.ok) { const j = await r.json(); if (j && Array.isArray(j.items)) { quotaLive = Object.assign({at: Date.now()}, j); store.set('bs_quota_cache', quotaLive); } }
     } catch (e) { /* Worker ยังไม่มี /quota → แสดงเพดานอย่างเดียว */ }
     finally { quotaBusy = false; if (btn) btn.disabled = false; renderQuota(); }
