@@ -777,6 +777,13 @@ button.status-pill:active{filter:brightness(0.9)}
 .yr-t thead th{font-size:12.5px;color:#556080;font-weight:600}.yr-t tfoot td{font-weight:700;border-top:2px solid #14234b;border-bottom:0}.yr-t td small{display:block;font-size:12px;color:#556080;font-weight:400}
 .yr-note{font-size:13px;color:#556080;margin:8px 0 0;line-height:1.6}.yr-note b{color:#9b1c43}
 .pt-bm{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13.5px;color:#33405c;border:1px dashed #c9d2de;border-radius:12px;padding:10px 12px}.pt-bm.ok{border-style:solid;border-color:#a9dcbc;background:#eaf7ef;color:#14532d}.pt-bm[hidden]{display:none}.pt-bm .btn{min-height:40px;text-align:left}
+.bb-tabs{display:flex;gap:6px;margin:0 0 10px}.bb-tabs button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #d8dde8;background:#fff;font:inherit;font-size:14px;cursor:pointer}.bb-tabs button.on{background:#14234b;color:#fff;border-color:#14234b}
+.bb-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.bb-it{border:1px solid var(--line);border-radius:14px;overflow:hidden;display:grid;background:#fff}
+.bb-it img{width:100%;aspect-ratio:3/4;object-fit:cover;background:#f2f4f8;display:block}
+.bb-it .bb-pdf{aspect-ratio:3/4;display:grid;place-items:center;background:#f2f4f8;font-weight:700;color:#556080}
+.bb-meta{padding:8px 10px;font-size:12.5px;color:#556080;display:grid;gap:6px}.bb-meta b{color:#1b2333;font-size:13px;overflow-wrap:anywhere}
+.bb-meta .btn{min-height:40px;width:100%}.bb-empty{grid-column:1/-1;color:#556080;text-align:center;padding:18px 0}
 .pt-box{border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:10px;background:var(--surface,#fff)}
 .pt-vat,.pt-ev{display:grid;gap:10px}.pt-vat[hidden],.pt-ev[hidden],.pt-evr[hidden]{display:none}
 .pt-evr{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13.5px;color:#33405c}.pt-evr .btn{min-height:44px}
@@ -3955,6 +3962,15 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
         </div>
       </div>
 
+      <section class="card no-print" id="billBoxCard" aria-labelledby="billbox-h" hidden>
+        <div class="viz-head">
+          <h2 id="billbox-h">กล่องบิลจาก LINE <small id="billBoxN"></small></h2>
+          <span>รูป/ไฟล์ที่ส่งเข้า LINE รับบิลของร้าน</span>
+        </div>
+        <div class="bb-tabs" role="tablist"><button type="button" class="on" data-bb="new">รอบันทึก</button><button type="button" data-bb="done">บันทึกแล้ว</button></div>
+        <div id="billBox" class="bb-list"></div>
+      </section>
+
       <section class="card history no-print" aria-labelledby="purchhist-h">
         <div class="viz-head">
           <h2 id="purchhist-h">ประวัติภาษีซื้อ</h2>
@@ -4500,7 +4516,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=142fe1129e",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=f1938e3456",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

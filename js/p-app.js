@@ -3182,6 +3182,48 @@ function bahtText(value) {
     box.hidden = false; box.className = 'pt-bm';
     box.innerHTML = '<span>พบเงินออกยอดตรง ' + c.length + ' รายการ — กดเพื่อผูกเป็นหลักฐานการจ่าย</span>' + c.slice(0, 4).map(x => '<button type="button" class="btn small" data-bm="' + esc(x.id) + '">' + fmt(x) + '</button>').join('');
   }
+  // ---------- กล่องบิลจาก LINE รับบิล (แยกจาก LINE ลูกค้า @bk25) ----------
+  // Worker ของตัวที่ 2 เก็บแต่ละรูป/ไฟล์ที่ส่งเข้า OA รับบิล ไว้ใน Firestore 'billInbox' {from, fromName, type:'image'|'file', contentId, fileName, createdAt, status:'new'|'done', purchaseId}
+  const BILL_OA_CH = 'bills';
+  let billBox = [], billBoxTab = 'new', billBoxUnsub = null;
+  const billSrc = x => x.url || (LINE_OA_URL + '/content?ch=' + BILL_OA_CH + '&key=' + encodeURIComponent(LINE_OA_KEY) + '&id=' + encodeURIComponent(x.contentId || ''));
+  function watchBillBox() {
+    if (!cloudDb || billBoxUnsub || !can('purchase')) return;
+    try {
+      billBoxUnsub = cloudDb.collection('billInbox').orderBy('createdAt', 'desc').limit(60).onSnapshot(snap => { countReads('billInbox', snap);
+        const l = []; snap.forEach(d => l.push(Object.assign({id: d.id}, d.data()))); billBox = l; renderBillBox();
+      }, e => { console.warn('billInbox', e); });
+    } catch (e) { console.warn(e); }
+  }
+  function renderBillBox() {
+    const card = $('billBoxCard'), box = $('billBox'); if (!card || !box) return;
+    if (!can('purchase')) { card.hidden = true; return; }
+    const nNew = billBox.filter(x => x.status !== 'done').length;
+    card.hidden = !billBox.length;
+    $('billBoxN').textContent = nNew ? '(' + nNew + ' ใบรอบันทึก)' : '';
+    const list = billBox.filter(x => billBoxTab === 'done' ? x.status === 'done' : x.status !== 'done');
+    box.innerHTML = list.length ? list.map(x => {
+      const isPdf = x.type === 'file' && /\.pdf$/i.test(x.fileName || '');
+      return '<div class="bb-it">' + (x.type === 'image' ? '<a href="' + esc(billSrc(x)) + '" target="_blank" rel="noopener"><img src="' + esc(billSrc(x)) + '" alt="บิลจาก ' + esc(x.fromName || 'LINE') + '" loading="lazy"></a>' : '<div class="bb-pdf">' + (isPdf ? 'PDF' : 'ไฟล์') + '</div>') +
+        '<div class="bb-meta"><b>' + esc(x.fromName || 'ไม่ทราบชื่อ') + '</b><span>' + esc(new Date(x.createdAt || 0).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + (x.fileName ? ' · ' + esc(x.fileName) : '') + '</span>' +
+        (x.status === 'done' ? '<span>✓ บันทึกแล้ว</span>' : (x.type === 'image' || isPdf ? '<button type="button" class="btn small good" data-bbscan="' + esc(x.id) + '">สแกนบันทึก</button>' : '') + '<button type="button" class="btn small" data-bbdone="' + esc(x.id) + '">ไม่ใช่บิล</button>') + '</div></div>';
+    }).join('') : '<div class="bb-empty">' + (billBoxTab === 'done' ? 'ยังไม่มีบิลที่บันทึก' : 'ไม่มีบิลรอบันทึก') + '</div>';
+  }
+  function markBillBox(id, patch) {
+    const x = billBox.find(b => b.id === id); if (!x) return;
+    Object.assign(x, patch); renderBillBox();
+    try { if (cloudDb) cloudDb.collection('billInbox').doc(id).set(patch, {merge: true}); } catch (e) { console.warn(e); }
+  }
+  let billBoxPending = null;   // บิลที่กำลังสแกน → บันทึกภาษีซื้อแล้วตีว่าเสร็จ
+  async function scanFromUrl(url, label, name) {
+    const res = await fetch(url); if (!res.ok) throw new Error('HTTP ' + res.status);
+    const blob = await res.blob(), isPdf = /pdf/i.test(blob.type) || /\.pdf$/i.test(name || '');
+    const file = new File([blob], name || (isPdf ? 'bill.pdf' : 'line-bill.jpg'), {type: blob.type || (isPdf ? 'application/pdf' : 'image/jpeg')});
+    showTab('purchase'); DOC_FORMS.purchase.reset(); openDocEdit('purchase', label);
+    readPurchasePhoto(file);
+    for (let i = 0; i < 60 && !purchaseOcrSource && !purchasePdfText; i++) await new Promise(r => setTimeout(r, 100));
+    if (purchaseOcrSource || purchasePdfText) scanPurchasePhoto(); else toast('แนบไฟล์แล้ว กด “สแกนและกรอกข้อมูล” ได้เลย');
+  }
   function renderPurchTaxBox() {
     const cs = $('purchCat'); if (cs && !cs.options.length) cs.innerHTML = '<option value="">— เลือกหมวด —</option>' + PURCH_CATS.map(c => '<option>' + esc(c) + '</option>').join('');
     const isVat = $('purchClaim').value === 'vat';
@@ -3703,6 +3745,7 @@ function bahtText(value) {
     try { const vl = store.get('bs_vendors', []), vi = vl.findIndex(v => String(v.name || '').trim() === String(rec.vendor || '').trim()); if (vi >= 0 && (rec.cat || rec.vendorBranch)) { vl[vi] = Object.assign({}, vl[vi], rec.cat ? {cat: rec.cat} : {}, rec.vendorBranch ? {branch: rec.vendorBranch} : {}); store.set('bs_vendors', vl); cloudSave('vendors', Object.assign({id: vendorCloudId(vl[vi].name)}, vl[vi])); } } catch (e) {}
     renderPurchHistory(); renderPurchEditState();
     syncRecordPhotosToCloud('bs_purchases', 'purchases', rec.id, 'photo', renderPurchHistory);
+    if (billBoxPending) { markBillBox(billBoxPending, {status: 'done', doneAt: Date.now(), purchaseId: rec.id}); billBoxPending = null; }
     if (docEdit.cur === 'purchase') setTimeout(closeDocEdit, 0);
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับรายการแล้ว' : 'บันทึกรายการภาษีซื้อแล้ว')
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
@@ -9404,6 +9447,17 @@ function bahtText(value) {
   ['purchVendorTax', 'purchVat', 'purchAmount', 'purchDate', 'purchVendor', 'purchVendorAddr', 'purchInvoiceNo', 'purchVendorBranch'].forEach(id => { const el = $(id); if (el) { const fn = () => { if (id === 'purchDate') { $('purchClaimMonth').dataset.v = ''; } try { renderPurchTaxBox(); } catch (e) {} checkPurchaseFields(); }; el.addEventListener('input', fn); el.addEventListener('change', fn); } });
   $('purchClaim').addEventListener('change', () => { renderPurchTaxBox(); checkPurchaseFields(); });
   $('purchEvid').addEventListener('change', () => { renderPurchTaxBox(); checkPurchaseFields(); });
+  $('billBox').addEventListener('click', async e => {
+    const sb = e.target.closest('[data-bbscan]'), db = e.target.closest('[data-bbdone]');
+    if (db) { markBillBox(db.dataset.bbdone, {status: 'done', doneAt: Date.now()}); toast('ย้ายไป “บันทึกแล้ว”'); return; }
+    if (!sb) return;
+    const x = billBox.find(b => b.id === sb.dataset.bbscan); if (!x) return;
+    sb.disabled = true; const t = sb.textContent; sb.textContent = 'กำลังดึงไฟล์…';
+    try { billBoxPending = x.id; await scanFromUrl(billSrc(x), 'บิลจาก LINE · ' + (x.fromName || ''), x.fileName); if (!$('purchNote').value.trim() && x.fromName) $('purchNote').value = 'บิลจาก LINE ' + x.fromName; }
+    catch (er) { billBoxPending = null; console.error(er); toast('ดึงไฟล์จาก LINE ไม่ได้ ลองใหม่ หรือบันทึกรูปแล้วแนบเอง'); }
+    finally { sb.disabled = false; sb.textContent = t; }
+  });
+  document.querySelector('.bb-tabs').addEventListener('click', e => { const b = e.target.closest('[data-bb]'); if (!b) return; billBoxTab = b.dataset.bb; document.querySelectorAll('.bb-tabs button').forEach(x => x.classList.toggle('on', x === b)); renderBillBox(); });
   $('purchBankMatch').addEventListener('click', e => { const b = e.target.closest('[data-bm]'); if (!b) return; purchBankOutId = b.dataset.bm; renderBankMatch(); checkPurchaseFields(); toast(purchBankOutId ? 'ผูกกับเงินออกแล้ว (บันทึกเพื่อเก็บ)' : 'เลิกผูกแล้ว'); });
   $('purchEvidPdf').addEventListener('click', e => { const ev = $('purchEvid').value; exportDoc(ev === 'voucher' ? 'voucher' : 'subReceipt', e.currentTarget); });
   $('purchClaimMonth').addEventListener('change', e => { e.target.dataset.v = e.target.value; renderClaimMonths(); checkPurchaseFields(); });
@@ -9440,7 +9494,7 @@ function bahtText(value) {
   })();
   updateOcrButtonLabel();
   $('save-purchase').addEventListener('click', savePurchase);
-  $('new-purchase').addEventListener('click', () => { $('purchPhotoInput').value = ''; newPurchase(); toast('เปิดรายการใหม่แล้ว'); });
+  $('new-purchase').addEventListener('click', () => { billBoxPending = null; $('purchPhotoInput').value = ''; newPurchase(); toast('เปิดรายการใหม่แล้ว'); });
   let purchDelArmed = null, purchDelTimer = null;
   $('purchHistory').addEventListener('click', e => {
     const btn = e.target.closest('button[data-act]'); if (!btn) return;
@@ -10102,6 +10156,7 @@ function bahtText(value) {
     watchCloud('wholesale', 'bs_wholesale', renderWholesaleHistory);
     watchCloud('quotes', 'bs_quotes', renderQuoteHistory);
     watchCloud('purchases', 'bs_purchases', () => { renderPurchHistory(); renderVendorDatalist(); });
+    try { watchBillBox(); } catch (e) {}
     watchCloud('customers', 'bs_customers', () => { renderCustomerDatalist(); try { renderWholesaleHistory(); } catch (e) {} });
     watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
     watchBankIn();

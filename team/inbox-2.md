@@ -5,6 +5,12 @@
 ห้ามใส่รหัสผ่าน/คีย์/ข้อมูลลูกค้า — repo ยังเป็นสาธารณะ
 
 ## ค้าง
+- [2026-11-12 13:00] จาก 1 (เจ้าของสั่งตรง): **ขอ LINE OA ตัวที่ 2 สำหรับรับบิลซื้อโดยเฉพาะ** (แยกจาก @bk25 เพราะรูปบิลปนกับรูปลูกค้า) · เจ้าของจะสมัคร OA ใหม่ + เปิด Messaging API เอง แล้วใส่ Channel secret / access token เป็น secret ของ Worker เอง (ห้ามส่งในแชต)
+  1) Worker `line-oa` (หรือ Worker ใหม่) เพิ่ม webhook ของ OA ใหม่ เช่น `POST /webhook?ch=bills` ตรวจลายเซ็นด้วย secret ของ OA ใหม่
+  2) ทุกข้อความประเภท image / file (PDF) ให้เขียน Firestore `billInbox/{messageId}` = `{from: userId, fromName: displayName, type: 'image'|'file', contentId: messageId, fileName, createdAt: ms, status: 'new'}` (ข้อความตัวอักษรไม่ต้องเก็บ หรือเก็บ type 'text' ก็ได้ แอปจะไม่แสดง) · ตอบกลับอัตโนมัติสั้นๆ ได้ เช่น "รับบิลแล้ว"
+  3) `GET /content?ch=bills&key=…&id=…` ดึงไฟล์จาก LINE ด้วย token ของ OA ใหม่ **ต้องส่ง header `Access-Control-Allow-Origin` ให้ app.ballsticker.co.th** (แอปใช้ fetch แล้วส่งเข้าตัวอ่าน OCR — ตอนนี้ยังไม่แน่ใจว่า /content ของ @bk25 มี CORS ไหม ช่วยเช็กด้วย ปุ่ม "ส่งเข้าภาษีซื้อ" ในแชตก็ใช้แบบเดียวกัน)
+  4) Firestore rules: ผู้ใช้ที่ล็อกอินแอปอ่าน `billInbox` ได้ และ update ได้เฉพาะ `status, doneAt, purchaseId`
+  · ฝั่งแอป (ตัวที่ 1) ทำแล้วในพรีวิว: การ์ด "กล่องบิลจาก LINE" ในหน้าภาษีซื้อ อ่าน `billInbox` เรียงตาม createdAt · กด "สแกนบันทึก" → ดึงรูปจาก /content?ch=bills → OCR → บันทึกแล้วตั้ง status 'done' + purchaseId · ถ้าเปลี่ยนชื่อคอลเลกชัน/พารามิเตอร์ ตอบใน team/inbox-1.md
 - [2026-11-11 22:40] จาก 1 (เจ้าของสั่งตรง · ไม่ใช้ Firebase เพื่อไม่ให้ยอดอ่านเพิ่ม): **ขอ Worker `social-stats` สำหรับหน้า "สถิติโซเชียล" ในแอป** · เก็บใน D1 (ใช้ `ball-books` เพิ่มตาราง หรือสร้าง `ball-social` ก็ได้) · cron วันละครั้ง (ตี 3 ไทย) เก็บ snapshot รายวัน:
   1) เพจ FB บอล สติ๊กเกอร์ (Graph API): followers_count, page_impressions_unique/วัน, page_post_engagements/วัน, จำนวนบทสนทนาใหม่/วัน (/conversations ตาม updated_time หรือ page_messages_new_conversations_unique), โพสต์ 60 วันล่าสุด (id, created_time, message 80 ตัว, permalink, รูป thumbnail, reach, reactions, comments, shares)
   2) ค่าโฆษณา FB (act_xxx/insights รายวัน): spend, impressions, clicks, messaging_conversation_started_7d (ถ้าโทเคนมี ads_read)
