@@ -118,7 +118,7 @@ function bahtText(value) {
   // สั่งตัดจากมือถือ: เปิดเฉพาะบัญชี ball กับ top (ไม่ขึ้นกับตารางสิทธิ์รายหน้า)
   const CUT_USERS = ['ball', 'top'];
   const canCutRemote = !!currentUser && CUT_USERS.indexOf(String(currentUser.username || '').trim().toLowerCase()) >= 0;
-  const can = k => k === 'lekha' ? (isSuper || isOwnerFixed(meRec)) : k === 'money' ? isSuper : k === 'cutq' ? canCutRemote : (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'pagechat' && !PAGECHAT_ENABLED) ? false : (k === 'floor' ? (isSuper || !!myPerms.dash) : k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
+  const can = k => k === 'lekha' ? (isSuper || isOwnerFixed(meRec)) : (k === 'money' || k === 'cost') ? isSuper : k === 'cutq' ? canCutRemote : (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'pagechat' && !PAGECHAT_ENABLED) ? false : (k === 'floor' ? (isSuper || !!myPerms.dash) : k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
   const canBank = can('bank');
   // พนักงาน (ไม่ใช่เจ้าของ) ดูประวัติใบคอนเฟิร์มงานได้อย่างเดียว คีย์/แก้/ลบไม่ได้
   const canKey = isSuper || isOwnerFixed(meRec) || !!(meRec && meRec.role === 'owner');
@@ -1313,7 +1313,7 @@ function bahtText(value) {
     if (can('money') && pageKey === 'ball' && $('paper').value === 'hp') try {
       const cr = costCalc(); if (!(cr.mat > 0)) throw 0;   // ยังไม่กรอกต้นทุน → ไม่โชว์
       const jobCost = sheets * cr.perSheet, profit = total - jobCost;
-      $('priceSub').innerHTML += '<div class="price-cost">ต้นทุน ≈ ' + money(jobCost) + ' · กำไร ≈ <b class="' + (profit >= 0 ? 'pos' : 'neg') + '">' + money(profit) + '</b> (' + Math.round(profit / Math.max(1, total) * 100) + '%) <small>ก่อน VAT · ไม่รวมเงินเดือนเจ้าของ</small></div>';
+      $('priceSub').innerHTML += '<div class="price-cost">ต้นทุน ≈ ' + money(jobCost) + ' · กำไร ≈ <b class="' + (profit >= 0 ? 'pos' : 'neg') + '">' + money(profit) + '</b> (' + Math.round(profit / Math.max(1, total) * 100) + '%) <small>ก่อน VAT · ' + (cr.ownerPaid ? 'หลังหักเงินเดือนเจ้าของ' : 'ยังไม่หักเงินเดือนเจ้าของ') + '</small></div>';
     } catch (e) { /* ตอนเปิดแอปครั้งแรก ข้อมูลต้นทุนยังไม่พร้อม */ }
     const lines = [];
     if (full > 0) lines.push('<li><span>แผ่นเต็ม ' + full.toLocaleString('en-US') + ' แผ่น × ' + money(fullSheetPrice) + '</span><b>' + money(fullCost) + '</b></li>');
@@ -2247,7 +2247,6 @@ function bahtText(value) {
   function renderMoney() {
     const box = $('moneyBody'); if (!box) return;
     if (!can('money')) { box.innerHTML = '<p class="empty">หน้านี้เห็นเฉพาะเจ้าของร้าน</p>'; return; }
-    try { renderCost(); } catch (e) { console.error(e); }
     const d = moneyData(), keys = Object.keys(d.months).filter(Boolean).sort().reverse();
     const cur = localISO(new Date()).slice(0, 7);
     if (!moneyMonth || keys.indexOf(moneyMonth) < 0) moneyMonth = keys.indexOf(cur) >= 0 ? cur : (keys[0] || cur);
@@ -2417,7 +2416,7 @@ function bahtText(value) {
 
   // ---------- ต้นทุนจริง (เฉพาะเจ้าของ) ----------
   // ค่าเริ่มต้นเป็นศูนย์ทั้งหมด — repo/โค้ดแอปเป็นสาธารณะ ห้ามใส่ตัวเลขการเงินจริงในโค้ด เจ้าของกรอกเองในการ์ด (เก็บใน Firestore costCfg/main เท่านั้น)
-  const COST_DEFAULT = {id: 'main', vinylRoll: 0, vinylW: 127, vinylL: 50, lamRoll: 0, lamW: 127, lamL: 50, inkCart: 0, inkMl: 700, inkPerSqm: 0, sheetsPerMonth: 0, withLam: true,
+  const COST_DEFAULT = {id: 'main', vinylRoll: 0, vinylW: 127, vinylL: 50, lamRoll: 0, lamW: 127, lamL: 50, inkCart: 0, inkMl: 700, inkPerSqm: 0, sheetsPerMonth: 0, wastePct: 0, withLam: true,
     fixed: [{name: 'ค่าแรงลูกน้อง', amount: 0}, {name: 'ค่าโฆษณา', amount: 0}, {name: 'ค่าไฟ', amount: 0}, {name: 'ค่าเช่าที่', amount: 0}]};
   const SHEET_H = 81, SHEET_SELL_SQM = 0.96;   // แผ่นเรียงจริง 121×81 · คิดเงินลูกค้า 120×80
   function costCfg() { const l = store.get('bs_cost_cfg', []) || []; const r = Array.isArray(l) ? l.find(x => x && x.id === 'main') : null; return Object.assign({}, COST_DEFAULT, r || {}); }
@@ -2432,10 +2431,12 @@ function bahtText(value) {
     const fixedRows = (c.fixed || []).map(f => Object.assign({}, f, {active: !f.until || f.until >= ym}));
     const fixed = fixedRows.filter(f => f.active).reduce((a, f) => a + N(f.amount), 0);
     const sheets = Math.max(1, N(c.sheetsPerMonth));
-    const mat = vinyl + lam + ink, perSheet = mat + fixed / sheets;
+    const waste = (vinyl + lam + ink) * Math.min(50, N(c.wastePct)) / 100;
+    const mat = vinyl + lam + ink + waste, perSheet = mat + fixed / sheets;
+    const ownerPaid = fixedRows.some(f => f.active && N(f.amount) > 0 && /เงินเดือน/.test(f.name || '') && /เจ้าของ|ผม|ตัวเอง|ฉัน/.test(f.name || ''));
     const rate = PRICE_PAGES.ball.rates.hp.full, price = rate * SHEET_SELL_SQM;   // ราคาก่อน VAT ต่อแผ่นเต็ม
     const margin = price - mat;
-    return {vinyl, lam, ink, mat, fixed, fixedRows, sheets, perSheet, price, left: price - perSheet, leftMonth: (price - perSheet) * sheets, breakeven: margin > 0 ? Math.ceil(fixed / margin) : Infinity};
+    return {vinyl, lam, ink, waste, ownerPaid, mat, fixed, fixedRows, sheets, perSheet, price, left: price - perSheet, leftMonth: (price - perSheet) * sheets, breakeven: margin > 0 ? Math.ceil(fixed / margin) : Infinity};
   }
   let costSaveT = null;
   function costSave(c) {
@@ -2447,13 +2448,13 @@ function bahtText(value) {
     const M = n => money(n), tile = (lbl, val, cls, sub) => '<div class="cs-tile ' + (cls || '') + '"><small>' + esc(lbl) + '</small><b>' + val + '</b>' + (sub ? '<em>' + esc(sub) + '</em>' : '') + '</div>';
     box.innerHTML = tile('ต้นทุนต่อแผ่นเต็ม', M(r.perSheet), '', 'วัตถุดิบ ' + M(r.mat) + ' + ค่าใช้จ่าย ' + M(r.fixed / r.sheets)) +
       tile('ราคาขายแผ่นเต็ม (ก่อน VAT)', M(r.price), '', 'เหลือ ' + M(r.left) + ' ต่อแผ่น') +
-      tile('เหลือเป็นเงินเดือนเจ้าของ', M(r.leftMonth), r.leftMonth >= 0 ? 'pos' : 'neg', 'ถ้าขาย ' + Math.round(r.sheets) + ' แผ่น/เดือน ราคาเต็มทุกแผ่น') +
+      tile(r.ownerPaid ? 'กำไรร้านต่อเดือน (หลังจ่ายเงินเดือนเจ้าของ)' : 'เหลือเป็นเงินเดือนเจ้าของ', M(r.leftMonth), r.leftMonth >= 0 ? 'pos' : 'neg', 'ถ้าขาย ' + Math.round(r.sheets) + ' แผ่น/เดือน ราคาเต็มทุกแผ่น') +
       tile('ต้องขายอย่างน้อย', isFinite(r.breakeven) ? r.breakeven.toLocaleString('th-TH') + ' แผ่น/เดือน' : '—', '', 'ค่าใช้จ่าย ' + M(r.fixed) + ' / เดือน') +
-      tile('วัตถุดิบต่อแผ่น', M(r.mat), '', 'สติ๊กเกอร์ ' + M(r.vinyl) + ' · เคลือบ ' + M(r.lam) + ' · หมึก ' + M(r.ink));
+      tile('วัตถุดิบต่อแผ่น', M(r.mat), '', 'สติ๊กเกอร์ ' + M(r.vinyl) + ' · เคลือบ ' + M(r.lam) + ' · หมึก ' + M(r.ink) + (r.waste ? ' · ของเสีย ' + M(r.waste) : ''));
   }
   function renderCost() {
     const card = $('costCard'); if (!card) return;
-    card.hidden = !can('money'); if (card.hidden) return;
+    if (!can('money')) return;
     const c = costCfg();
     card.querySelectorAll('[data-cs]').forEach(el => { const k = el.dataset.cs; if (document.activeElement === el) return; if (el.type === 'checkbox') el.checked = !!c[k]; else el.value = c[k] != null ? c[k] : ''; });
     const ym = localISO(new Date()).slice(0, 7);
@@ -8035,7 +8036,7 @@ function bahtText(value) {
   if (!PAGECHAT_ENABLED) document.querySelectorAll('[data-tab="pagechat"]').forEach(el => { el.hidden = true; });   // ซ่อนปุ่มเมนูแชตเพจทุกที่ (รวมผู้ดูแลสูงสุด)
 
   /* ---------------- events ---------------- */
-  const TAX_TABS = ['dash', 'money', 'bill', 'purchase', 'vat', 'report'];   // กลุ่ม "เงิน & ภาษี" ในเมนู
+  const TAX_TABS = ['dash', 'money', 'cost', 'bill', 'purchase', 'vat', 'report'];   // กลุ่ม "เงิน & ภาษี" ในเมนู
 
   /* ---------------- งานออกแบบ: โน้ต + รูป (แปะรูปแชท/แบบ) → ส่งไปใบคอนเฟิร์มงาน ----------------
      เก็บที่ bs_designs ซิงก์คลาวด์คอลเลกชัน 'designs' · โน้ต = {text, photos[], approved[] (รูปที่ติ๊กใช้), sentAt}
@@ -8312,7 +8313,7 @@ function bahtText(value) {
   function showTab(name) {
     closeJobModal();
     if (!can(name)) name = firstAllowedTab(); // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้ หรือโค้ดส่วนอื่นที่สั่งเปิดหน้า
-    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost', 'pagechat', 'floor', 'cutq', 'money', 'lekha'].forEach(n => {
+    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost', 'pagechat', 'floor', 'cutq', 'money', 'cost', 'lekha'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
@@ -8339,6 +8340,7 @@ function bahtText(value) {
     if (name === 'pagechat') renderPageChat(); else pcStop();
     if (name === 'cutq') renderCutq();
     if (name === 'money') renderMoney();
+    if (name === 'cost') renderCost();
     if (name === 'lekha') lekhaOpen(); else lekhaStop();
     const activeTab = isTax ? $('taxTrigger') : $('tab-' + name);
     if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
@@ -9664,7 +9666,7 @@ function bahtText(value) {
   }
   function applyRoleUI() {
     setTimeout(syncNavSections, 0);
-    if (can('money')) { ['tab-money', 'sheetMoney'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }
+    if (can('money')) { ['tab-money', 'sheetMoney', 'tab-cost', 'sheetCost'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }
     if (isSuper || isOwnerFixed(meRec)) { ['sheetOffice', 'tab-office', 'tab-lekha', 'sheetLekha'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }   // ออฟฟิศ AI: เปิดแชต Claude ได้ เฉพาะเจ้าของ
     if (isSuper) return;
     // ซ่อนหน้าที่ไม่ได้รับสิทธิ์ ทั้งแถบเมนูบน เมนูภาษี เมนูล่างบนมือถือ และแผ่น "เพิ่มเติม"

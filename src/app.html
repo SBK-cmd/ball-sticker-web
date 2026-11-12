@@ -2521,6 +2521,7 @@ body.jm-open .fab-newjob{display:none!important}
         <div class="tab-dropdown" id="taxDropdown" role="menu" hidden>
           <button role="tab" id="tab-dash" data-tab="dash" aria-selected="false" aria-controls="panel-dash"><svg class="tab-ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="20" x2="5" y2="12"></line><line x1="12" y1="20" x2="12" y2="6"></line><line x1="19" y1="20" x2="19" y2="15"></line></svg><span>แดชบอร์ด</span></button>
           <button role="tab" id="tab-money" data-tab="money" aria-selected="false" aria-controls="panel-money" hidden><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>การเงินรายเดือน</span></button>
+          <button role="tab" id="tab-cost" data-tab="cost" aria-selected="false" aria-controls="panel-cost" hidden><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 0 0-2.5-1.5c-1.4 0-2.5.8-2.5 2s1.1 1.7 2.5 2 2.5.9 2.5 2-1.1 2-2.5 2A2.5 2.5 0 0 1 9.5 15"/><path d="M12 6v1.5M12 16.5V18"/></svg><span>ต้นทุนจริง</span></button>
           <button role="tab" id="tab-bill" data-tab="bill" aria-selected="false" aria-controls="panel-bill"><svg class="tab-ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"></path><line x1="9" y1="8" x2="15" y2="8"></line><line x1="9" y1="12" x2="15" y2="12"></line></svg><span>ใบเสร็จ / ใบกำกับภาษี</span></button>
           <button role="tab" id="tab-purchase" data-tab="purchase" aria-selected="false" aria-controls="panel-purchase"><svg class="tab-ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7L6 7z"></path><path d="M9 7a3 3 0 0 1 6 0"></path></svg><span>ภาษีซื้อ</span></button>
           <button role="tab" id="tab-vat" data-tab="vat" aria-selected="false" aria-controls="panel-vat"><svg class="tab-ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="8" y1="16" x2="16" y2="8"></line><circle cx="8.5" cy="8.5" r="1"></circle><circle cx="15.5" cy="15.5" r="1"></circle></svg><span>คำนวณ VAT</span></button>
@@ -2643,6 +2644,7 @@ body.jm-open .fab-newjob{display:none!important}
     <div class="tax-sheet-sec" role="group" aria-label="เงิน &amp; ภาษี"><div class="tax-sheet-h" aria-hidden="true">เงิน &amp; ภาษี</div>
       <button type="button" class="tax-sheet-item" data-tab="dash">แดชบอร์ด</button>
       <button type="button" class="tax-sheet-item" data-tab="money" id="sheetMoney" hidden>📊 การเงินรายเดือน (เจ้าของ)</button>
+      <button type="button" class="tax-sheet-item" data-tab="cost" id="sheetCost" hidden>🧮 ต้นทุนจริง (เจ้าของ)</button>
       <button type="button" class="tax-sheet-item" data-tab="bill">ใบเสร็จ / ใบกำกับภาษี</button>
       <button type="button" class="tax-sheet-item" data-tab="purchase">ภาษีซื้อ</button>
       <button type="button" class="tax-sheet-item" data-tab="vat">คำนวณ VAT</button>
@@ -3893,7 +3895,15 @@ body.jm-open .fab-newjob{display:none!important}
         <p>รายรับ-รายจ่ายรวมสองบัญชี (กิติพงษ์ = บัญชียื่นภาษี · วันทิม = งานส่ง) + ยอดขาย/ต้นทุนตามเอกสาร · เห็นเฉพาะเจ้าของร้าน</p>
       </div>
       <div id="moneyBody"></div>
-      <section class="card no-print" id="costCard" aria-labelledby="cost-h" hidden>
+    </section>
+
+    <!-- ================= ต้นทุนจริง (เฉพาะเจ้าของ) ================= -->
+    <section id="panel-cost" class="panel" role="tabpanel" aria-labelledby="tab-cost">
+      <div class="page-head no-print">
+        <h1>ต้นทุนจริง.</h1>
+        <p>ต้นทุนต่อแผ่น จุดคุ้มทุน และกำไรร้านต่อเดือน · ตัวเลขเก็บในระบบหลังร้าน เห็นเฉพาะเจ้าของร้าน</p>
+      </div>
+      <section class="card no-print" id="costCard" aria-labelledby="cost-h">
         <div class="viz-head"><h2 id="cost-h">ต้นทุนจริง · บอล สติ๊กเกอร์ (HP PVC)</h2><span class="qt-cap" id="costSaved"></span></div>
         <div class="cs-res" id="costRes"></div>
         <details class="cs-det" open><summary>วัตถุดิบ</summary>
@@ -3905,10 +3915,11 @@ body.jm-open .fab-newjob{display:none!important}
             <label class="f"><span>หมึก ราคาตลับ (บาท) / ml ต่อตลับ</span><div class="cs-2"><input data-cs="inkCart" inputmode="decimal"><input data-cs="inkMl" inputmode="decimal"></div></label>
             <label class="f"><span>หมึกที่ใช้ ml ต่อ ตร.ม. (จาก Epson PORT)</span><input data-cs="inkPerSqm" inputmode="decimal"></label>
             <label class="f"><span>แผ่นที่ขายได้ต่อเดือน (≈ ตร.ม. ใน PORT ÷ 0.96)</span><input data-cs="sheetsPerMonth" inputmode="decimal"></label>
+            <label class="f"><span>ของเสีย % (พิมพ์เสีย ตัดผิด หัวท้ายม้วน)</span><input data-cs="wastePct" inputmode="decimal" placeholder="เช่น 5"></label>
             <label class="f cs-chk"><input type="checkbox" data-cs="withLam"> <span>คิดฟิล์มเคลือบในต้นทุนทุกแผ่น</span></label>
           </div>
         </details>
-        <details class="cs-det" open><summary>ค่าใช้จ่ายต่อเดือน (ไม่รวมเงินเดือนเจ้าของ)</summary>
+        <details class="cs-det" open><summary>ค่าใช้จ่ายร้านต่อเดือน (ใส่เงินเดือนเจ้าของได้ ไม่ใส่หนี้ส่วนตัว)</summary>
           <div id="costFixed" class="cs-fixed"></div>
           <button type="button" class="qt-btn" id="costAddRow">+ เพิ่มรายการ</button>
           <p class="qt-note">ใส่ “ถึงเดือน” สำหรับรายการที่ผ่อนหมดแล้วจะหยุดนับเอง (เช่น รายการผ่อนที่มีกำหนดจบ) · ตัวเลขเก็บในระบบหลังร้าน เห็นเฉพาะเจ้าของร้าน</p>
@@ -4285,7 +4296,7 @@ function bahtText(value) {
   // สั่งตัดจากมือถือ: เปิดเฉพาะบัญชี ball กับ top (ไม่ขึ้นกับตารางสิทธิ์รายหน้า)
   const CUT_USERS = ['ball', 'top'];
   const canCutRemote = !!currentUser && CUT_USERS.indexOf(String(currentUser.username || '').trim().toLowerCase()) >= 0;
-  const can = k => k === 'lekha' ? (isSuper || isOwnerFixed(meRec)) : k === 'money' ? isSuper : k === 'cutq' ? canCutRemote : (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'pagechat' && !PAGECHAT_ENABLED) ? false : (k === 'floor' ? (isSuper || !!myPerms.dash) : k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
+  const can = k => k === 'lekha' ? (isSuper || isOwnerFixed(meRec)) : (k === 'money' || k === 'cost') ? isSuper : k === 'cutq' ? canCutRemote : (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'pagechat' && !PAGECHAT_ENABLED) ? false : (k === 'floor' ? (isSuper || !!myPerms.dash) : k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
   const canBank = can('bank');
   // พนักงาน (ไม่ใช่เจ้าของ) ดูประวัติใบคอนเฟิร์มงานได้อย่างเดียว คีย์/แก้/ลบไม่ได้
   const canKey = isSuper || isOwnerFixed(meRec) || !!(meRec && meRec.role === 'owner');
@@ -5480,7 +5491,7 @@ function bahtText(value) {
     if (can('money') && pageKey === 'ball' && $('paper').value === 'hp') try {
       const cr = costCalc(); if (!(cr.mat > 0)) throw 0;   // ยังไม่กรอกต้นทุน → ไม่โชว์
       const jobCost = sheets * cr.perSheet, profit = total - jobCost;
-      $('priceSub').innerHTML += '<div class="price-cost">ต้นทุน ≈ ' + money(jobCost) + ' · กำไร ≈ <b class="' + (profit >= 0 ? 'pos' : 'neg') + '">' + money(profit) + '</b> (' + Math.round(profit / Math.max(1, total) * 100) + '%) <small>ก่อน VAT · ไม่รวมเงินเดือนเจ้าของ</small></div>';
+      $('priceSub').innerHTML += '<div class="price-cost">ต้นทุน ≈ ' + money(jobCost) + ' · กำไร ≈ <b class="' + (profit >= 0 ? 'pos' : 'neg') + '">' + money(profit) + '</b> (' + Math.round(profit / Math.max(1, total) * 100) + '%) <small>ก่อน VAT · ' + (cr.ownerPaid ? 'หลังหักเงินเดือนเจ้าของ' : 'ยังไม่หักเงินเดือนเจ้าของ') + '</small></div>';
     } catch (e) { /* ตอนเปิดแอปครั้งแรก ข้อมูลต้นทุนยังไม่พร้อม */ }
     const lines = [];
     if (full > 0) lines.push('<li><span>แผ่นเต็ม ' + full.toLocaleString('en-US') + ' แผ่น × ' + money(fullSheetPrice) + '</span><b>' + money(fullCost) + '</b></li>');
@@ -6414,7 +6425,6 @@ function bahtText(value) {
   function renderMoney() {
     const box = $('moneyBody'); if (!box) return;
     if (!can('money')) { box.innerHTML = '<p class="empty">หน้านี้เห็นเฉพาะเจ้าของร้าน</p>'; return; }
-    try { renderCost(); } catch (e) { console.error(e); }
     const d = moneyData(), keys = Object.keys(d.months).filter(Boolean).sort().reverse();
     const cur = localISO(new Date()).slice(0, 7);
     if (!moneyMonth || keys.indexOf(moneyMonth) < 0) moneyMonth = keys.indexOf(cur) >= 0 ? cur : (keys[0] || cur);
@@ -6584,7 +6594,7 @@ function bahtText(value) {
 
   // ---------- ต้นทุนจริง (เฉพาะเจ้าของ) ----------
   // ค่าเริ่มต้นเป็นศูนย์ทั้งหมด — repo/โค้ดแอปเป็นสาธารณะ ห้ามใส่ตัวเลขการเงินจริงในโค้ด เจ้าของกรอกเองในการ์ด (เก็บใน Firestore costCfg/main เท่านั้น)
-  const COST_DEFAULT = {id: 'main', vinylRoll: 0, vinylW: 127, vinylL: 50, lamRoll: 0, lamW: 127, lamL: 50, inkCart: 0, inkMl: 700, inkPerSqm: 0, sheetsPerMonth: 0, withLam: true,
+  const COST_DEFAULT = {id: 'main', vinylRoll: 0, vinylW: 127, vinylL: 50, lamRoll: 0, lamW: 127, lamL: 50, inkCart: 0, inkMl: 700, inkPerSqm: 0, sheetsPerMonth: 0, wastePct: 0, withLam: true,
     fixed: [{name: 'ค่าแรงลูกน้อง', amount: 0}, {name: 'ค่าโฆษณา', amount: 0}, {name: 'ค่าไฟ', amount: 0}, {name: 'ค่าเช่าที่', amount: 0}]};
   const SHEET_H = 81, SHEET_SELL_SQM = 0.96;   // แผ่นเรียงจริง 121×81 · คิดเงินลูกค้า 120×80
   function costCfg() { const l = store.get('bs_cost_cfg', []) || []; const r = Array.isArray(l) ? l.find(x => x && x.id === 'main') : null; return Object.assign({}, COST_DEFAULT, r || {}); }
@@ -6599,10 +6609,12 @@ function bahtText(value) {
     const fixedRows = (c.fixed || []).map(f => Object.assign({}, f, {active: !f.until || f.until >= ym}));
     const fixed = fixedRows.filter(f => f.active).reduce((a, f) => a + N(f.amount), 0);
     const sheets = Math.max(1, N(c.sheetsPerMonth));
-    const mat = vinyl + lam + ink, perSheet = mat + fixed / sheets;
+    const waste = (vinyl + lam + ink) * Math.min(50, N(c.wastePct)) / 100;
+    const mat = vinyl + lam + ink + waste, perSheet = mat + fixed / sheets;
+    const ownerPaid = fixedRows.some(f => f.active && N(f.amount) > 0 && /เงินเดือน/.test(f.name || '') && /เจ้าของ|ผม|ตัวเอง|ฉัน/.test(f.name || ''));
     const rate = PRICE_PAGES.ball.rates.hp.full, price = rate * SHEET_SELL_SQM;   // ราคาก่อน VAT ต่อแผ่นเต็ม
     const margin = price - mat;
-    return {vinyl, lam, ink, mat, fixed, fixedRows, sheets, perSheet, price, left: price - perSheet, leftMonth: (price - perSheet) * sheets, breakeven: margin > 0 ? Math.ceil(fixed / margin) : Infinity};
+    return {vinyl, lam, ink, waste, ownerPaid, mat, fixed, fixedRows, sheets, perSheet, price, left: price - perSheet, leftMonth: (price - perSheet) * sheets, breakeven: margin > 0 ? Math.ceil(fixed / margin) : Infinity};
   }
   let costSaveT = null;
   function costSave(c) {
@@ -6614,13 +6626,13 @@ function bahtText(value) {
     const M = n => money(n), tile = (lbl, val, cls, sub) => '<div class="cs-tile ' + (cls || '') + '"><small>' + esc(lbl) + '</small><b>' + val + '</b>' + (sub ? '<em>' + esc(sub) + '</em>' : '') + '</div>';
     box.innerHTML = tile('ต้นทุนต่อแผ่นเต็ม', M(r.perSheet), '', 'วัตถุดิบ ' + M(r.mat) + ' + ค่าใช้จ่าย ' + M(r.fixed / r.sheets)) +
       tile('ราคาขายแผ่นเต็ม (ก่อน VAT)', M(r.price), '', 'เหลือ ' + M(r.left) + ' ต่อแผ่น') +
-      tile('เหลือเป็นเงินเดือนเจ้าของ', M(r.leftMonth), r.leftMonth >= 0 ? 'pos' : 'neg', 'ถ้าขาย ' + Math.round(r.sheets) + ' แผ่น/เดือน ราคาเต็มทุกแผ่น') +
+      tile(r.ownerPaid ? 'กำไรร้านต่อเดือน (หลังจ่ายเงินเดือนเจ้าของ)' : 'เหลือเป็นเงินเดือนเจ้าของ', M(r.leftMonth), r.leftMonth >= 0 ? 'pos' : 'neg', 'ถ้าขาย ' + Math.round(r.sheets) + ' แผ่น/เดือน ราคาเต็มทุกแผ่น') +
       tile('ต้องขายอย่างน้อย', isFinite(r.breakeven) ? r.breakeven.toLocaleString('th-TH') + ' แผ่น/เดือน' : '—', '', 'ค่าใช้จ่าย ' + M(r.fixed) + ' / เดือน') +
-      tile('วัตถุดิบต่อแผ่น', M(r.mat), '', 'สติ๊กเกอร์ ' + M(r.vinyl) + ' · เคลือบ ' + M(r.lam) + ' · หมึก ' + M(r.ink));
+      tile('วัตถุดิบต่อแผ่น', M(r.mat), '', 'สติ๊กเกอร์ ' + M(r.vinyl) + ' · เคลือบ ' + M(r.lam) + ' · หมึก ' + M(r.ink) + (r.waste ? ' · ของเสีย ' + M(r.waste) : ''));
   }
   function renderCost() {
     const card = $('costCard'); if (!card) return;
-    card.hidden = !can('money'); if (card.hidden) return;
+    if (!can('money')) return;
     const c = costCfg();
     card.querySelectorAll('[data-cs]').forEach(el => { const k = el.dataset.cs; if (document.activeElement === el) return; if (el.type === 'checkbox') el.checked = !!c[k]; else el.value = c[k] != null ? c[k] : ''; });
     const ym = localISO(new Date()).slice(0, 7);
@@ -12202,7 +12214,7 @@ function bahtText(value) {
   if (!PAGECHAT_ENABLED) document.querySelectorAll('[data-tab="pagechat"]').forEach(el => { el.hidden = true; });   // ซ่อนปุ่มเมนูแชตเพจทุกที่ (รวมผู้ดูแลสูงสุด)
 
   /* ---------------- events ---------------- */
-  const TAX_TABS = ['dash', 'money', 'bill', 'purchase', 'vat', 'report'];   // กลุ่ม "เงิน & ภาษี" ในเมนู
+  const TAX_TABS = ['dash', 'money', 'cost', 'bill', 'purchase', 'vat', 'report'];   // กลุ่ม "เงิน & ภาษี" ในเมนู
 
   /* ---------------- งานออกแบบ: โน้ต + รูป (แปะรูปแชท/แบบ) → ส่งไปใบคอนเฟิร์มงาน ----------------
      เก็บที่ bs_designs ซิงก์คลาวด์คอลเลกชัน 'designs' · โน้ต = {text, photos[], approved[] (รูปที่ติ๊กใช้), sentAt}
@@ -12479,7 +12491,7 @@ function bahtText(value) {
   function showTab(name) {
     closeJobModal();
     if (!can(name)) name = firstAllowedTab(); // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้ หรือโค้ดส่วนอื่นที่สั่งเปิดหน้า
-    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost', 'pagechat', 'floor', 'cutq', 'money', 'lekha'].forEach(n => {
+    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost', 'pagechat', 'floor', 'cutq', 'money', 'cost', 'lekha'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
@@ -12506,6 +12518,7 @@ function bahtText(value) {
     if (name === 'pagechat') renderPageChat(); else pcStop();
     if (name === 'cutq') renderCutq();
     if (name === 'money') renderMoney();
+    if (name === 'cost') renderCost();
     if (name === 'lekha') lekhaOpen(); else lekhaStop();
     const activeTab = isTax ? $('taxTrigger') : $('tab-' + name);
     if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
@@ -13831,7 +13844,7 @@ function bahtText(value) {
   }
   function applyRoleUI() {
     setTimeout(syncNavSections, 0);
-    if (can('money')) { ['tab-money', 'sheetMoney'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }
+    if (can('money')) { ['tab-money', 'sheetMoney', 'tab-cost', 'sheetCost'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }
     if (isSuper || isOwnerFixed(meRec)) { ['sheetOffice', 'tab-office', 'tab-lekha', 'sheetLekha'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }   // ออฟฟิศ AI: เปิดแชต Claude ได้ เฉพาะเจ้าของ
     if (isSuper) return;
     // ซ่อนหน้าที่ไม่ได้รับสิทธิ์ ทั้งแถบเมนูบน เมนูภาษี เมนูล่างบนมือถือ และแผ่น "เพิ่มเติม"
