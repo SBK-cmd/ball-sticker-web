@@ -4076,7 +4076,7 @@ function bahtText(value) {
     });
     if (!done.length) return;
     const all = payCharges().map(x => done.find(d => d.id === x.id) || x);
-    store.set('bs_pay_charges', all); done.forEach(r => cloudSave('payCharges', r)); try { updatePayHistBadge(); } catch (e) {}
+    store.set('bs_pay_charges', all); done.forEach(r => cloudSave('payCharges', r)); try { updatePayHistBadge(); jcRefresh(); } catch (e) {}
     done.forEach(r => { if (r.docs && r.docs.length) markDocsPaid(r.docs); flagBankInOwed(r.bankInId, (r.docs || []).map(d => d.no).filter(Boolean).join(', ') || r.name); });
     toast('✅ ' + done.map(r => (r.name || 'ลูกค้า') + ' ชำระ ' + money(r.amount) + ' บาทแล้ว').join(' · ')); playChime();
     renderPayHist(); if (typeof wkSync === 'function') wkSync();
@@ -4138,6 +4138,7 @@ function bahtText(value) {
   /* ---------- ประวัติ QR เรียกเก็บ: รอจ่าย / จ่ายแล้ว / ยกเลิก · เปิด QR เดิมซ้ำ · ยืนยันรับเงินเอง ---------- */
   const PH_CH = {line: 'แชต LINE', facebook: 'แชต Facebook', owed: 'บิลค้างชำระ', walkin: 'หน้าร้าน', job: 'ใบงาน'};
   const phAll = () => payCharges().filter(x => x.by !== 'auto');
+  function jcRefresh() { jcPayCache = null; try { renderJobHistory(); } catch (e) {} }
   function updatePayHistBadge() {
     const btn = $('payHistBtn'); if (btn) { try { btn.hidden = !(canBank || can('chat')); } catch (e) {} }
     const n = phAll().filter(x => x.status === 'pending').length;
@@ -4150,7 +4151,7 @@ function bahtText(value) {
     return m < 1 ? 'เมื่อสักครู่' : m < 60 ? m + ' นาทีที่แล้ว' : m < 1440 ? Math.round(m / 60) + ' ชม.ที่แล้ว' : Math.round(m / 1440) + ' วันที่แล้ว';
   }
   function phSave(rec) {
-    store.set('bs_pay_charges', payCharges().map(x => x.id === rec.id ? rec : x)); cloudSave('payCharges', rec); updatePayHistBadge();
+    store.set('bs_pay_charges', payCharges().map(x => x.id === rec.id ? rec : x)); cloudSave('payCharges', rec); updatePayHistBadge(); jcRefresh();
   }
   async function phShowQr(x) {
     const url = await payCardDataUrl(x.amount, String(x.note || x.name || '').slice(0, 44), x.ref, x.createdAt, payAcct(x.account || (x.channel === 'owed' ? 'วันทิม' : '')), x.refInQr);
@@ -5821,6 +5822,14 @@ function bahtText(value) {
     if (changed && typeof renderJobHistory === 'function') renderJobHistory();
   }
   setInterval(hubRefreshJobs, 60000);
+  let jcPayCache = null, jcPayAt = 0;
+  function jobChargesOf(id) {   // รายการเรียกเก็บที่ผูกกับใบงาน id (ใหม่ → เก่า) · แคชสั้นๆ ระหว่างวาดการ์ดทั้งหน้า
+    if (!jcPayCache || Date.now() - jcPayAt > 1500) {
+      jcPayCache = {}; jcPayAt = Date.now();
+      payCharges().forEach(x => { if (x.by === 'auto') return; (x.docs || []).forEach(d => { if (d.k === 'jobs') (jcPayCache[d.id] = jcPayCache[d.id] || []).push(x); }); });
+    }
+    return jcPayCache[id] || [];
+  }
   function jobCardDetail(j) {
     const its = (j.items || []).filter(i => (i.name || '').trim());
     const pieces = its.reduce((a, i) => a + (num(i.qty) > 0 ? num(i.qty) : 0), 0);
@@ -5843,8 +5852,19 @@ function bahtText(value) {
       return '<div class="jc-ship"><span class="jc-k">' + label + '</span><b class="' + c + '">' + (st === 'delivered' ? '✓ ' : '') + esc(txt) + '</b>' + (code ? '<small>' + esc(String(code)) + '</small>' : '') + '</div>';
     };
     const rvHtml = ((rv || j.trackCode) && j.status !== 'pickup') ? boxCodes.map((c, k) => shipLine(c, nBoxes > 1 ? 'พัสดุ กล่อง ' + (k + 1) : 'พัสดุ')).join('') : '';
+    // QR ที่เรียกเก็บของใบนี้ (ล่าสุด) — รู้ได้จากการ์ดเลยว่าส่งไปแล้ว/ลูกค้าจ่ายหรือยัง
+    let payHtml = '';
+    if (canBank || can('chat')) {
+      const cs = jobChargesOf(j.id);
+      if (cs.length) {
+        const x = cs[0], days = (Date.now() - (x.createdAt || 0)) / 864e5;
+        const st = x.status === 'paid' ? '<b class="ok">✓ จ่ายแล้ว ฿' + money(x.amount) + '</b>' : x.status === 'cancel' ? '<b class="none">ยกเลิก ฿' + money(x.amount) + '</b>' : '<b class="' + (days >= 3 ? 'bad' : 'go') + '">รอจ่าย ฿' + money(x.amount) + (days >= 3 ? ' · ค้าง ' + Math.floor(days) + ' วัน' : '') + '</b>';
+        const when = x.status === 'paid' && x.paidAt ? 'จ่าย ' + phAge(x.paidAt) : 'ส่ง ' + phAge(x.createdAt);
+        payHtml = '<div class="jc-ship jc-pay"><span class="jc-k">QR เรียกเก็บ</span>' + st + '<small>' + esc(when) + (cs.length > 1 ? ' · ทั้งหมด ' + cs.length + ' ครั้ง' : '') + '</small></div>';
+      }
+    }
 
-    return rvHtml ? '<div class="jc-det">' + rvHtml + '</div>' : '';   // การ์ดโชว์แค่สถานะพัสดุ (รายละเอียดงานอยู่ในปุ่ม เปิดดู)   // การ์ดไม่โชว์ยอดเงิน (ดูในรายละเอียด/บิล)
+    return (rvHtml || payHtml) ? '<div class="jc-det">' + rvHtml + payHtml + '</div>' : '';   // การ์ดโชว์แค่สถานะพัสดุ (รายละเอียดงานอยู่ในปุ่ม เปิดดู)   // การ์ดไม่โชว์ยอดเงิน (ดูในรายละเอียด/บิล)
   }
   /* ---------------- ลิงก์ติดตามงานให้ลูกค้า: สร้างโทเคน + ข้อความ (ใช้ร่วมกันทั้งปุ่มในใบงานและป๊อปอัปหลังคีย์ใบใหม่) ---------------- */
   function trackMsgFor(jt, url) {
@@ -6340,7 +6360,7 @@ function bahtText(value) {
         wkCh = {id: 'pay' + at, ref: wkPreRef, refInQr: !!$('wkRefQr').checked, chatId: '', name: v.name || 'ลูกค้าหน้าร้าน', channel: 'walkin', account: v.acc, total: v.total, deposit: v.dep, amount: v.bal,
           note: (job ? 'ใบงาน ' + (job.no || '') + ' · ' : 'หน้าร้าน · ') + 'ยอดงาน ' + money(v.total) + (v.dep > 0 ? ' หักมัดจำ ' + money(v.dep) : ''), status: 'pending', createdAt: at, by: chatBy() || 'app'};
         if (wkDocs.length) wkCh.docs = wkDocs;
-        store.set('bs_pay_charges', payCharges().concat([wkCh])); cloudSave('payCharges', wkCh);
+        store.set('bs_pay_charges', payCharges().concat([wkCh])); cloudSave('payCharges', wkCh); try { jcRefresh(); updatePayHistBadge(); } catch (e3) {}
         lock(true); wkCalc(); try { if (job && job.trackToken) publicJobMirror(job); } catch (e5) {}
         toast('บันทึกแล้ว รอเงินเข้า ฿' + money(wkCh.amount) + (job ? (job.trackToken ? ' · ลูกค้าเห็นยอดและสแกนจ่ายได้ในหน้าติดตามแล้ว' : ' · กด "ส่งลิงก์ติดตาม" เพื่อให้ลูกค้าสแกนจ่ายเองได้') : '')); return;
       }
@@ -7819,7 +7839,7 @@ function bahtText(value) {
       const t0 = Date.now();
       ch = {id: 'pay' + t0, ref: payRef(t0), chatId: '', name: $('jName').value.trim() || 'ลูกค้า', channel: 'job', account: acc, amount: a, note: jnote, status: 'pending', createdAt: t0, by: chatBy() || 'app'};
       if (currentJobId) ch.docs = [{k: 'jobs', id: currentJobId}];
-      store.set('bs_pay_charges', payCharges().concat([ch])); cloudSave('payCharges', ch); updatePayHistBadge();
+      store.set('bs_pay_charges', payCharges().concat([ch])); cloudSave('payCharges', ch); updatePayHistBadge(); jcRefresh();
     }
     const at = ch.createdAt, url = await payCardDataUrl(a, jnote, ch.ref, at, payAcct(acc));
     const ov = document.createElement('div'); ov.className = 'job-zoom pick-ov'; ov.style.cursor = 'default';
@@ -9668,7 +9688,7 @@ function bahtText(value) {
     watchBankIn();
     watchBankOut();
     watchLineChats();
-    if (can('chat') || canBank) watchCloud('payCharges', 'bs_pay_charges', () => { renderPayHist(); try { matchPayCharges(); } catch (e) {} updatePayHistBadge(); const o = document.getElementById('payHistOv'); if (o) { const on = o.querySelector('.ph-tabs .on'); o.remove(); openPayHist(on ? on.dataset.tab : 'pending'); } });
+    if (can('chat') || canBank) watchCloud('payCharges', 'bs_pay_charges', () => { renderPayHist(); try { matchPayCharges(); } catch (e) {} updatePayHistBadge(); jcRefresh(); const o = document.getElementById('payHistOv'); if (o) { const on = o.querySelector('.ph-tabs .on'); o.remove(); openPayHist(on ? on.dataset.tab : 'pending'); } });
     if (can('chat')) watchCloud('lineReplies', 'bs_line_replies', () => { if (chatPanel === 'replies') openChatPanel('replies'); });
     watchBankBalance();
     // ประวัติ "ติดตามพัสดุ" แต่ก่อนเก็บเฉพาะในเครื่องเท่านั้น — ครั้งแรกที่เปิดหน้านี้หลังอัปเดต
