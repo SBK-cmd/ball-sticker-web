@@ -3980,44 +3980,68 @@ function bahtText(value) {
   }
   let payLogo = null;
   const payLoadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
-  // รูปเรียกเก็บเงิน: เรียบ สะอาด แบบหน้ารับเงินของแอปธนาคาร — ฟอนต์ Noto Sans Thai (วางสระ/วรรณยุกต์ถูกตำแหน่ง)
+  // รูปเรียกเก็บเงิน: พื้นกรมท่าของร้าน การ์ดขาวตรงกลาง · QR อยู่บน "สติ๊กเกอร์" ที่มีเส้นไดคัทสีเหลือง (ลายเซ็นของร้านสติ๊กเกอร์)
+  // QR สีดำบนขาวล้วน + ขอบเงียบ 4 ช่อง เพื่อให้แอปธนาคารสแกนติดง่าย · ฟอนต์ Prompt (ตัวเลข/หัวข้อ) + Noto Sans Thai (เนื้อความ)
   async function payCardDataUrl(amount, note, ref, at, acct, refInQr) {
     acct = acct || payAcct('');
-    const FN = 'Noto Sans Thai';
-    try { await Promise.all(['400', '500', '600', '700'].map(w => document.fonts.load(w + " 40px '" + FN + "'", 'กขต้อง฿1'))); await document.fonts.ready; } catch (e) {}
+    const FB = 'Noto Sans Thai', FH = 'Prompt';
+    try { await Promise.all([['400', FB], ['500', FB], ['600', FB], ['500', FH], ['600', FH]].map(([w, f]) => document.fonts.load(w + " 40px '" + f + "'", 'กขต้อง฿1'))); await document.fonts.ready; } catch (e) {}
     if (payLogo === null) payLogo = await payLoadImg('icon-512.png');
-    const W = 1080, H = 1560, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-    const g = cv.getContext('2d'), F = "'" + FN + "','Sarabun',sans-serif";
-    const NAVY = '#1f4e79', TEAL = '#3aa99f', INK = '#3a3a3a', MUTE = '#9a9a9a', LINE = '#e6e6e6';
-    const font = (w, px) => { g.font = w + ' ' + px + 'px ' + F; };
-    g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
-    // แถบหัว: โลโก้ร้าน + ชื่อร้าน
-    g.fillStyle = NAVY; g.fillRect(0, 0, W, 200);
-    const lx = 300, ly = 100;
-    if (payLogo) { g.save(); g.beginPath(); g.arc(lx, ly, 62, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill(); g.clip(); g.drawImage(payLogo, lx - 60, ly - 60, 120, 120); g.restore(); }
-    g.textAlign = 'left'; g.fillStyle = '#fff'; font(700, 50); g.fillText(shop.name || 'บอลสติ๊กเกอร์', lx + 88, ly + 4);
-    g.fillStyle = 'rgba(255,255,255,.8)'; font(400, 28); g.fillText('ใบแจ้งชำระเงิน', lx + 88, ly + 48);
-    // ยอดเงิน
-    g.textAlign = 'center'; g.fillStyle = MUTE; font(400, 32); g.fillText('ยอดชำระ', W / 2, 290);
-    g.fillStyle = NAVY; font(700, 96); g.fillText(money(amount) + ' บาท', W / 2, 395);
-    if (note) { g.fillStyle = INK; font(400, 32); g.fillText(String(note).slice(0, 44), W / 2, 450); }
-    // QR
+    // คำนวณขนาด QR และความสูงการ์ดก่อน เพื่อให้การ์ดพอดีเนื้อหาเสมอ (มี/ไม่มีหมายเหตุ)
     const m = qrEncode(promptPayPayload(acct.id, amount, refInQr ? ref : '')), n = m.length;
-    const qs = 560, cell = Math.floor(qs / n), q = cell * n, qx = Math.round((W - q) / 2), qy = note ? 500 : 470;
+    const quiet = 4, cell = Math.floor(600 / (n + quiet * 2)), tile = cell * (n + quiet * 2);
+    const W = 1080, cy = 220, ch = 222 + (note ? 64 : 0) + 56 + tile + 92 + 44 + 66 + 58 * 3 + 76, H = cy + ch + 170;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const g = cv.getContext('2d');
+    const NAVY = '#14234b', NAVY2 = '#1d3163', YEL = '#f5c400', INK = '#1b2333', SUB = '#556080', LINE = '#e3e7ef';
+    const font = (w, px, f) => { g.font = w + ' ' + px + 'px ' + "'" + (f || FB) + "','Sarabun',sans-serif"; };
+    const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+    const fit = (t, max) => { t = String(t || ''); while (t.length > 1 && g.measureText(t).width > max) t = t.slice(0, -2) + '…'; return t; };
+    // พื้นหลัง
+    g.fillStyle = NAVY; g.fillRect(0, 0, W, H);
+    // หัว: โลโก้ + ชื่อร้าน (ชิดซ้าย)
+    const lx = 112, ly = 118;
+    if (payLogo) { g.save(); g.beginPath(); g.arc(lx, ly, 52, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill(); g.clip(); g.drawImage(payLogo, lx - 50, ly - 50, 100, 100); g.restore(); }
+    g.textAlign = 'left'; g.fillStyle = '#fff'; font(600, 46, FH); g.fillText(shop.name || 'บอลสติ๊กเกอร์', lx + 80, ly + 2);
+    g.fillStyle = 'rgba(255,255,255,.72)'; font(400, 28); g.fillText('ใบแจ้งชำระเงิน · พร้อมเพย์', lx + 80, ly + 44);
+    // การ์ดขาว
+    const cx = 60, cw = W - 120;
+    g.save(); g.shadowColor = 'rgba(0,0,0,.28)'; g.shadowBlur = 40; g.shadowOffsetY = 12; rr(cx, cy, cw, ch, 44); g.fillStyle = '#fff'; g.fill(); g.restore();
+    // ยอดเงิน
+    g.textAlign = 'center';
+    g.fillStyle = SUB; font(500, 32); g.fillText('ยอดชำระ', W / 2, cy + 92);
+    const amt = money(amount);
+    font(600, 112, FH); const aw = g.measureText(amt).width; font(500, 44, FH); const bw = g.measureText(' บาท').width;
+    const ax = W / 2 - (aw + bw) / 2;
+    g.textAlign = 'left'; g.fillStyle = INK; font(600, 112, FH); g.fillText(amt, ax, cy + 222);
+    g.fillStyle = SUB; font(500, 44, FH); g.fillText(' บาท', ax + aw, cy + 222);
+    g.textAlign = 'center';
+    let y = cy + 222;
+    if (note) { y += 64; g.fillStyle = SUB; font(400, 32); g.fillText(fit(note, cw - 120), W / 2, y); }
+    // สติ๊กเกอร์ QR: แผ่นขาว + เส้นไดคัทเหลืองประ + เงาบางๆ ให้ดูเป็นชิ้นที่ลอกได้
+    const tx = Math.round((W - tile) / 2), ty = y + 56;
+    g.save(); g.shadowColor = 'rgba(20,35,75,.18)'; g.shadowBlur = 24; g.shadowOffsetY = 6; rr(tx, ty, tile, tile, 36); g.fillStyle = '#fff'; g.fill(); g.restore();
+    g.save(); g.setLineDash([22, 14]); g.lineWidth = 6; g.strokeStyle = YEL; rr(tx - 16, ty - 16, tile + 32, tile + 32, 50); g.stroke(); g.restore();
+    const qx = tx + cell * quiet, qy = ty + cell * quiet;
     g.fillStyle = '#000';
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (m[r][c]) g.fillRect(qx + c * cell, qy + r * cell, cell, cell);
-    // ข้อมูลผู้รับ
-    let y = qy + q + 105;
-    g.fillStyle = TEAL; font(500, 50); g.fillText('สแกน QR เพื่อโอนเข้าบัญชี', W / 2, y);
-    y += 72; g.fillStyle = INK; font(400, 48); g.fillText('ชื่อ: ' + (acct.name || ''), W / 2, y);
-    y += 68; g.fillText('พร้อมเพย์: ' + ppMask(acct.id), W / 2, y);
-    y += 58; g.fillStyle = MUTE; font(400, 34); g.fillText('เลขที่อ้างอิง: ' + (ref || '—'), W / 2, y);
-    // ท้าย
-    const fy = H - 150; g.fillStyle = TEAL; g.fillRect(0, fy, W, 3);
-    g.fillStyle = MUTE; font(400, 34);
+    // ผู้รับเงิน
+    y = ty + tile + 92;
+    g.fillStyle = INK; font(500, 38); g.fillText('สแกนจ่ายได้ทุกแอปธนาคาร', W / 2, y);
+    y += 44; g.fillStyle = LINE; g.fillRect(cx + 90, y, cw - 180, 2);
+    const row = (label, val, yy, bold) => { g.textAlign = 'left'; g.fillStyle = SUB; font(400, 32); g.fillText(label, cx + 90, yy); g.textAlign = 'right'; g.fillStyle = INK; font(bold ? 600 : 500, 34, bold ? FH : FB); g.fillText(fit(val, cw - 420), cx + cw - 90, yy); };
+    y += 66; row('ชื่อบัญชี', acct.name || '', y, true);
+    y += 58; row('พร้อมเพย์', ppMask(acct.id), y);
+    y += 58; row('เลขอ้างอิง', ref || '—', y);
     const d = at ? new Date(at) : new Date();
-    g.fillText('รับเงินได้จากทุกธนาคาร · ' + d.toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'}), W / 2, fy + 70);
-    font(400, 26); g.fillText('โปรดตรวจชื่อผู้รับให้ตรงก่อนยืนยันการโอน · ติดต่อร้าน ' + String(shop.phone || '').split(/\s*[,/]\s*/)[0], W / 2, fy + 118);
+    y += 58; row('วันที่', d.toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'}), y);
+    // ท้าย (บนพื้นกรมท่า)
+    g.textAlign = 'center';
+    const fy = cy + ch + 74;
+    g.fillStyle = '#fff'; font(500, 32);
+    const tel = String(shop.phone || '').split(/\s*[,/]\s*/)[0];
+    g.fillText('โทร ' + tel + '  ·  LINE @bk25', W / 2, fy);
+    g.fillStyle = 'rgba(255,255,255,.66)'; font(400, 26); g.fillText('โปรดตรวจชื่อผู้รับให้ตรงก่อนยืนยันการโอน', W / 2, fy + 46);
     try { return cv.toDataURL('image/png'); } catch (e) { if (payLogo) { payLogo = false; return payCardDataUrl(amount, note, ref, at, acct, refInQr); } throw e; }
   }
   const payRef = t => 'BS' + new Date(t).toISOString().slice(2, 10).replace(/-/g, '') + '-' + String(t).slice(-4);
@@ -4038,7 +4062,7 @@ function bahtText(value) {
   function matchPayCharges() {
     if (!canBank) return;
     // จับเฉพาะ QR ที่เรากดส่งให้ลูกค้าจริง (ไม่รวมรายการรอรับเงินที่ระบบสร้างเอง by:'auto') — กันเงินเข้ายอดเท่ากันไปตัดบิลงานส่งผิด
-    const pend = payCharges().filter(x => x.status !== 'paid' && x.by !== 'auto' && Date.now() - (x.createdAt || 0) < (x.channel === 'walkin' && !(x.docs && x.docs.length) ? 12 * 3600000 : 7 * 86400000));   // QR หน้าร้านล้วนรอเงินเข้าไม่เกิน 12 ชม. · ที่ผูกใบงาน (ลูกค้าจ่ายทีหลังได้) 7 วัน
+    const pend = payCharges().filter(x => x.status !== 'paid' && x.status !== 'cancel' && x.by !== 'auto' && Date.now() - (x.createdAt || 0) < (x.channel === 'walkin' && !(x.docs && x.docs.length) ? 12 * 3600000 : 7 * 86400000));   // QR หน้าร้านล้วนรอเงินเข้าไม่เกิน 12 ชม. · ที่ผูกใบงาน (ลูกค้าจ่ายทีหลังได้) 7 วัน
     if (!pend.length) return;
     const used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
     const ins = wantimPoolAll();
@@ -4052,7 +4076,7 @@ function bahtText(value) {
     });
     if (!done.length) return;
     const all = payCharges().map(x => done.find(d => d.id === x.id) || x);
-    store.set('bs_pay_charges', all); done.forEach(r => cloudSave('payCharges', r));
+    store.set('bs_pay_charges', all); done.forEach(r => cloudSave('payCharges', r)); try { updatePayHistBadge(); } catch (e) {}
     done.forEach(r => { if (r.docs && r.docs.length) markDocsPaid(r.docs); flagBankInOwed(r.bankInId, (r.docs || []).map(d => d.no).filter(Boolean).join(', ') || r.name); });
     toast('✅ ' + done.map(r => (r.name || 'ลูกค้า') + ' ชำระ ' + money(r.amount) + ' บาทแล้ว').join(' · ')); playChime();
     renderPayHist(); if (typeof wkSync === 'function') wkSync();
@@ -4111,6 +4135,78 @@ function bahtText(value) {
       if (msgs.length) { toast('✅ เงินเข้าวันทิมตรงกับบิลค้าง: ' + msgs.join(' · ')); playChime(); }
     } catch (e) { console.error('matchOwedBankIns', e); }
   }
+  /* ---------- ประวัติ QR เรียกเก็บ: รอจ่าย / จ่ายแล้ว / ยกเลิก · เปิด QR เดิมซ้ำ · ยืนยันรับเงินเอง ---------- */
+  const PH_CH = {line: 'แชต LINE', facebook: 'แชต Facebook', owed: 'บิลค้างชำระ', walkin: 'หน้าร้าน', job: 'ใบงาน'};
+  const phAll = () => payCharges().filter(x => x.by !== 'auto');
+  function updatePayHistBadge() {
+    const btn = $('payHistBtn'); if (btn) { try { btn.hidden = !(canBank || can('chat')); } catch (e) {} }
+    const n = phAll().filter(x => x.status === 'pending').length;
+    const el = $('payHistN'); if (el) el.textContent = n ? '(' + n + ')' : '';
+    const nv = $('payHistNav'), nn = $('payHistNavN'); if (nv) { try { nv.hidden = !(canBank || can('chat')); } catch (e) {} } if (nn) nn.textContent = n ? '(' + n + ')' : '';
+    const tp = $('payHistTop'), tn = $('payHistTopN'); if (tp) { try { tp.hidden = !(canBank || can('chat')); } catch (e) {} } if (tn) tn.textContent = n ? n : '';
+  }
+  function phAge(t) {
+    const m = Math.max(0, Math.round((Date.now() - (t || 0)) / 60000));
+    return m < 1 ? 'เมื่อสักครู่' : m < 60 ? m + ' นาทีที่แล้ว' : m < 1440 ? Math.round(m / 60) + ' ชม.ที่แล้ว' : Math.round(m / 1440) + ' วันที่แล้ว';
+  }
+  function phSave(rec) {
+    store.set('bs_pay_charges', payCharges().map(x => x.id === rec.id ? rec : x)); cloudSave('payCharges', rec); updatePayHistBadge();
+  }
+  async function phShowQr(x) {
+    const url = await payCardDataUrl(x.amount, String(x.note || x.name || '').slice(0, 44), x.ref, x.createdAt, payAcct(x.account || (x.channel === 'owed' ? 'วันทิม' : '')), x.refInQr);
+    const ov = document.createElement('div'); ov.className = 'job-zoom pick-ov'; ov.style.cursor = 'default';
+    ov.innerHTML = '<div class="pick-box"><b>QR ' + esc(x.name || '') + ' · ' + money(x.amount) + ' บาท</b><div class="owed-qr"><img alt="QR พร้อมเพย์ ' + money(x.amount) + ' บาท" src="' + url + '"></div><button type="button" class="btn good" data-sv="1">บันทึก/แชร์รูป QR</button><button type="button" class="btn ghost" data-x="1">ปิด</button></div>';
+    ov.addEventListener('click', async ev => {
+      if (ev.target === ov || ev.target.closest('[data-x]')) return ov.remove();
+      if (!ev.target.closest('[data-sv]')) return;
+      try { const blob = await (await fetch(url)).blob(), file = new File([blob], 'QR-' + x.amount + '.png', {type: 'image/png'}); if (navigator.canShare && navigator.canShare({files: [file]})) { await navigator.share({files: [file], title: 'QR พร้อมเพย์ ' + money(x.amount) + ' บาท'}); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+      const l = document.createElement('a'); l.href = url; l.download = 'QR-' + x.amount + '.png'; l.click();
+    });
+    document.body.appendChild(ov);
+  }
+  function openPayHist(tab) {
+    tab = tab || 'pending';
+    const old = document.getElementById('payHistOv'); if (old) old.remove();
+    const ov = document.createElement('div'); ov.className = 'job-zoom pick-ov'; ov.id = 'payHistOv'; ov.style.cursor = 'default';
+    const draw = () => {
+      const all = phAll(), cnt = k => all.filter(x => k === 'all' || x.status === k).length;
+      const list = all.filter(x => tab === 'all' || x.status === tab);
+      const sum = list.reduce((s, x) => s + num(x.amount), 0);
+      const tabs = [['pending', 'รอจ่าย'], ['paid', 'จ่ายแล้ว'], ['cancel', 'ยกเลิก'], ['all', 'ทั้งหมด']];
+      const row = x => {
+        const days = (Date.now() - (x.createdAt || 0)) / 864e5;
+        const st = x.status === 'paid' ? '<span class="ph-st paid">จ่ายแล้ว' + (x.manual ? ' (ยืนยันเอง)' : '') + '</span>' : x.status === 'cancel' ? '<span class="ph-st cancel">ยกเลิก</span>' : days >= 3 ? '<span class="ph-st old">ค้าง ' + Math.floor(days) + ' วัน</span>' : '<span class="ph-st">รอจ่าย</span>';
+        const when = x.status === 'paid' && x.paidAt ? 'จ่ายเมื่อ ' + new Date(x.paidAt).toLocaleString('th-TH', {dateStyle: 'short', timeStyle: 'short'}) : 'ส่งเมื่อ ' + new Date(x.createdAt).toLocaleString('th-TH', {dateStyle: 'short', timeStyle: 'short'}) + ' · ' + phAge(x.createdAt);
+        const acts = x.status === 'pending' ? '<div class="ph-act"><button type="button" class="go" data-ph="qr" data-id="' + esc(x.id) + '">ดู/ส่ง QR อีกครั้ง</button>' +
+          (canBank ? '<button type="button" data-ph="paid" data-id="' + esc(x.id) + '">ลูกค้าจ่ายแล้ว</button><button type="button" data-ph="cancel" data-id="' + esc(x.id) + '">ยกเลิก</button>' : '') + '</div>'
+          : x.status === 'cancel' && canBank ? '<div class="ph-act"><button type="button" data-ph="undo" data-id="' + esc(x.id) + '">กลับเป็นรอจ่าย</button></div>' : '';
+        return '<div class="ph-row"><div class="ph-top"><span class="ph-name">' + esc(x.name || 'ไม่ระบุชื่อ') + '</span><span class="ph-amt">฿' + money(x.amount) + '</span></div>' +
+          '<div class="ph-meta">' + st + esc(PH_CH[x.channel] || x.channel || '') + (x.note ? ' · ' + esc(x.note) : '') + '</div>' +
+          '<div class="ph-meta">เลขอ้างอิง ' + esc(x.ref || '—') + ' · ' + esc(when) + '</div>' + acts + '</div>';
+      };
+      ov.innerHTML = '<div class="pick-box ph-box" role="dialog" aria-label="ประวัติ QR เรียกเก็บ"><div class="ph-top"><b style="font-size:18px">ประวัติ QR เรียกเก็บ</b><button type="button" class="btn ghost small" data-x="1">ปิด</button></div>' +
+        '<div class="ph-tabs" role="tablist">' + tabs.map(([k, l]) => '<button type="button" role="tab" aria-selected="' + (k === tab) + '" class="' + (k === tab ? 'on' : '') + '" data-tab="' + k + '">' + l + ' ' + cnt(k) + '</button>').join('') + '</div>' +
+        (list.length ? '<div class="ph-sum">' + list.length + ' รายการ · รวม <b>฿' + money(round2(sum)) + '</b>' + (tab === 'pending' ? ' · ระบบจับคู่กับเงินเข้าให้อัตโนมัติเมื่อยอดตรง' : '') + '</div>' : '') +
+        '<div class="ph-list">' + (list.length ? list.map(row).join('') : '<div class="ph-empty">' + (tab === 'pending' ? 'ไม่มี QR ที่รอจ่าย' : 'ยังไม่มีรายการ') + '</div>') + '</div></div>';
+    };
+    ov.addEventListener('click', async ev => {
+      if (ev.target === ov || ev.target.closest('[data-x]')) return ov.remove();
+      const t = ev.target.closest('[data-tab]'); if (t) { tab = t.dataset.tab; draw(); return; }
+      const b = ev.target.closest('[data-ph]'); if (!b) return;
+      const x = payCharges().find(c => c.id === b.dataset.id); if (!x) return;
+      const act = b.dataset.ph;
+      if (act === 'qr') { try { await phShowQr(x); } catch (e) { toast('สร้างรูป QR ไม่ได้'); } return; }
+      if (act === 'paid' || act === 'cancel') {   // กดสองครั้งเพื่อยืนยัน (ไม่ใช้กล่อง confirm ของเบราว์เซอร์)
+        if (b.dataset.arm !== '1') { b.dataset.arm = '1'; b.classList.add('arm'); b.textContent = act === 'paid' ? 'กดอีกครั้ง: ยืนยันได้รับเงินแล้ว' : 'กดอีกครั้ง: ยืนยันยกเลิก'; setTimeout(() => { if (b.isConnected) draw(); }, 4000); return; }
+        const rec = Object.assign({}, x, act === 'paid' ? {status: 'paid', paidAt: Date.now(), manual: true} : {status: 'cancel', cancelledAt: Date.now()});
+        phSave(rec); if (act === 'paid' && rec.docs && rec.docs.length) markDocsPaid(rec.docs);
+        toast(act === 'paid' ? 'บันทึกว่าได้รับเงิน ฿' + money(rec.amount) + ' แล้ว' : 'ยกเลิก QR ฿' + money(rec.amount) + ' แล้ว'); draw(); return;
+      }
+      if (act === 'undo') { const rec = Object.assign({}, x, {status: 'pending'}); delete rec.cancelledAt; phSave(rec); draw(); }
+    });
+    draw(); document.body.appendChild(ov);
+  }
+
   /* ---------- บิลค้างชำระ: รวมยอดต่อลูกค้า + QR พร้อมเพย์ยอดรวม ---------- */
   function owedGroups() {
     const g = {};
@@ -6120,7 +6216,7 @@ function bahtText(value) {
     const acct = payAcct('วันทิม'), payload = promptPayPayload(acct.id, g.total);
     // บันทึกรายการเรียกเก็บจริง (ให้เงินเข้าจับคู่ได้) · เปิดซ้ำยอดเดิม/บิลชุดเดิมใน 7 วัน ใช้เลขอ้างอิงเดิม ไม่สร้างซ้ำ
     const dkey = g.docs.map(d => d.id).sort().join(',');
-    let ch = payCharges().find(x => x.status !== 'paid' && x.by !== 'auto' && x.channel === 'owed' && x.name === nm && Math.abs(num(x.amount) - g.total) < 0.005 && (x.docs || []).map(d => d.id).sort().join(',') === dkey && Date.now() - (x.createdAt || 0) < 7 * 86400000);
+    let ch = payCharges().find(x => x.status !== 'paid' && x.status !== 'cancel' && x.by !== 'auto' && x.channel === 'owed' && x.name === nm && Math.abs(num(x.amount) - g.total) < 0.005 && (x.docs || []).map(d => d.id).sort().join(',') === dkey && Date.now() - (x.createdAt || 0) < 7 * 86400000);
     if (!ch) {
       const at0 = Date.now();
       ch = {id: 'pay' + at0, ref: payRef(at0), chatId: '', name: nm, channel: 'owed', amount: g.total, note: 'ยอดค้างรวม ' + g.docs.length + ' ใบ', status: 'pending', createdAt: at0, by: chatBy() || 'app', docs: g.docs.map(d => ({k: d.k, id: d.id}))};
@@ -7673,7 +7769,7 @@ function bahtText(value) {
   });
   document.addEventListener('click', e => { if (!e.target.closest('.tab-group')) { $('taxDropdown').hidden = true; $('taxTrigger').setAttribute('aria-expanded', 'false'); $('taxTrigger').closest('.tab-group').classList.remove('open'); } });
   $('bnavTaxTrigger').addEventListener('click', () => {
-    $('taxSheet').hidden = false;
+    $('taxSheet').hidden = false; try { updatePayHistBadge(); } catch (e) {}
     $('taxSheetBackdrop').hidden = false;
     $('bnavTaxTrigger').setAttribute('aria-expanded', 'true');
   });
@@ -7717,7 +7813,15 @@ function bahtText(value) {
     const a = round2(num($('jobSlipAmount').value));
     if (!(a > 0)) { toast('ใส่จำนวนเงินก่อน'); $('jobSlipAmount').focus(); return; }
     const jbs = /^JBS/i.test(String($('jobNo').value || '').trim()), acc = jbs ? 'วันทิม' : ($('jobAccount').value || 'กิติพงษ์');
-    const at = Date.now(), url = await payCardDataUrl(a, ($('jName').value.trim() + ' · ' + $('jobNo').value.trim()).slice(0, 44), payRef(at), at, payAcct(acc));
+    const jnote = ($('jName').value.trim() + ' · ' + $('jobNo').value.trim()).slice(0, 44);
+    let ch = payCharges().find(x => x.status === 'pending' && x.channel === 'job' && (currentJobId ? (x.docs || []).some(d => d.id === currentJobId) : (!x.docs && x.note === jnote)) && Math.abs(num(x.amount) - a) < 0.005 && Date.now() - (x.createdAt || 0) < 7 * 86400000);
+    if (!ch) {   // บันทึกไว้ในประวัติ QR รอจ่าย + ให้เงินเข้าจับคู่ได้
+      const t0 = Date.now();
+      ch = {id: 'pay' + t0, ref: payRef(t0), chatId: '', name: $('jName').value.trim() || 'ลูกค้า', channel: 'job', account: acc, amount: a, note: jnote, status: 'pending', createdAt: t0, by: chatBy() || 'app'};
+      if (currentJobId) ch.docs = [{k: 'jobs', id: currentJobId}];
+      store.set('bs_pay_charges', payCharges().concat([ch])); cloudSave('payCharges', ch); updatePayHistBadge();
+    }
+    const at = ch.createdAt, url = await payCardDataUrl(a, jnote, ch.ref, at, payAcct(acc));
     const ov = document.createElement('div'); ov.className = 'job-zoom pick-ov'; ov.style.cursor = 'default';
     ov.innerHTML = '<div class="pick-box"><b>QR เก็บเงิน ' + money(a) + ' บาท</b><div class="owed-qr"><img alt="QR พร้อมเพย์" src="' + url + '"></div><button type="button" class="btn good" data-sv="1">บันทึก/แชร์รูป</button><button type="button" class="btn" data-x="1">ปิด</button></div>';
     ov.addEventListener('click', async ev => {
@@ -7730,6 +7834,10 @@ function bahtText(value) {
     document.body.appendChild(ov);
   });
   $('wkBtn').addEventListener('click', openWalkInPay);
+  $('payHistTop').addEventListener('click', () => openPayHist('pending'));
+  $('payHistNav').addEventListener('click', () => { closeTaxMenus(); openPayHist('pending'); });
+  $('payHistBtn').addEventListener('click', () => { const sh = $('taxSheet'), bd = $('taxSheetBackdrop'); if (sh) sh.hidden = true; if (bd) bd.hidden = true; openPayHist('pending'); });
+  updatePayHistBadge();
   $('sheetOffice').addEventListener('click', () => { const sh = $('taxSheet'), bd = $('taxSheetBackdrop'); if (sh) sh.hidden = true; if (bd) bd.hidden = true; window.open('pixel-office.html', '_blank'); });
   $('wkBtn2').addEventListener('click', () => { const sh = $('taxSheet'), bd = $('taxSheetBackdrop'); if (sh) sh.hidden = true; if (bd) bd.hidden = true; openWalkInPay(); });
   $('jobSlipPending').addEventListener('change', () => { try { renderJob(); } catch (e) {} });
@@ -9560,7 +9668,7 @@ function bahtText(value) {
     watchBankIn();
     watchBankOut();
     watchLineChats();
-    if (can('chat') || canBank) watchCloud('payCharges', 'bs_pay_charges', () => { renderPayHist(); try { matchPayCharges(); } catch (e) {} });
+    if (can('chat') || canBank) watchCloud('payCharges', 'bs_pay_charges', () => { renderPayHist(); try { matchPayCharges(); } catch (e) {} updatePayHistBadge(); const o = document.getElementById('payHistOv'); if (o) { const on = o.querySelector('.ph-tabs .on'); o.remove(); openPayHist(on ? on.dataset.tab : 'pending'); } });
     if (can('chat')) watchCloud('lineReplies', 'bs_line_replies', () => { if (chatPanel === 'replies') openChatPanel('replies'); });
     watchBankBalance();
     // ประวัติ "ติดตามพัสดุ" แต่ก่อนเก็บเฉพาะในเครื่องเท่านั้น — ครั้งแรกที่เปิดหน้านี้หลังอัปเดต
