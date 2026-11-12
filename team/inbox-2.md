@@ -5,6 +5,10 @@
 ห้ามใส่รหัสผ่าน/คีย์/ข้อมูลลูกค้า — repo ยังเป็นสาธารณะ
 
 ## ค้าง
+- [2026-11-12 17:40] จาก 1 (เจ้าของสั่งตรง): **แก้บิลในแชต LINE ได้ตรงๆ** — bill-core.mjs (รัน mk_billcheck.py + mk_line_bills.py แล้ว dist ใหม่อยู่ใน repo) เพิ่ม: billFlex แถว ร้าน/เลขภาษี/สาขา/เลขที่/วันที่ + ยอด + VAT มี action postback `act=edit&f=<field>&id=<id>` พร้อม `inputOption:'openKeyboard', fillInText:'สาขา: '` (แตะแล้วคีย์บอร์ดขึ้นพร้อมคำนำ) · export `parseEditText(text)` → `{field, value, label, warn?}` / `{field, label, error}` / `null` (รับ "สาขา: 00001" "สาขา ใหญ่" "วันที่ 2/11/69" "ยอด 3,302" "VAT 216.02" "เลขที่ …" "เลขภาษี …" "ร้าน …") · ขอ Worker:
+  1) postback `act=edit` (คนส่งเท่านั้น, status new) → เก็บตัวชี้ `billEditing/{userId} = {id, f, at}` · ไม่ต้องตอบ (LINE เปิดคีย์บอร์ดเอง)
+  2) ข้อความตัวอักษรจากผู้ใช้ → `parseEditText` · null = เงียบ (หรือตอบสั้นถ้าอยากใส่วิธีใช้) · error → ตอบข้อความ error · ได้ค่า → บิลเป้าหมาย = ตัวชี้ (≤15 นาที) ไม่งั้นบิล status new ล่าสุดของคนนั้น → `edits[field]=value` → ตอบ billFlex ใหม่ (analyzeBill(ocrText, vendors, edits)) + ถ้ามี warn ส่งข้อความเตือนด้วย
+  3) วาง dist ใหม่ (เจ้าของวาง) · หน้า bill-check: ถ้ามี ocrText แสดงฟอร์มทันทีไม่รอโหลดรูป (เจ้าของเจอค้าง "กำลังดึงรูปบิล…" บน iPhone 17:05 — ช่วยดู log /content ว่าช้า/ค้างไหม)
 - [2026-11-11 22:40] จาก 1 (เจ้าของสั่งตรง · ไม่ใช้ Firebase เพื่อไม่ให้ยอดอ่านเพิ่ม): **ขอ Worker `social-stats` สำหรับหน้า "สถิติโซเชียล" ในแอป** · เก็บใน D1 (ใช้ `ball-books` เพิ่มตาราง หรือสร้าง `ball-social` ก็ได้) · cron วันละครั้ง (ตี 3 ไทย) เก็บ snapshot รายวัน:
   1) เพจ FB บอล สติ๊กเกอร์ (Graph API): followers_count, page_impressions_unique/วัน, page_post_engagements/วัน, จำนวนบทสนทนาใหม่/วัน (/conversations ตาม updated_time หรือ page_messages_new_conversations_unique), โพสต์ 60 วันล่าสุด (id, created_time, message 80 ตัว, permalink, รูป thumbnail, reach, reactions, comments, shares)
   2) ค่าโฆษณา FB (act_xxx/insights รายวัน): spend, impressions, clicks, messaging_conversation_started_7d (ถ้าโทเคนมี ads_read)

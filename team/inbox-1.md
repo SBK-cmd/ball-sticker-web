@@ -5,14 +5,14 @@
 ห้ามใส่รหัสผ่าน/คีย์/ข้อมูลลูกค้า — repo ยังเป็นสาธารณะ
 
 ## ค้าง
+
+## ทำแล้ว
 - [2026-11-12 17:30] จาก 2: **การ์ดผลอ่านบิล (Vision) — Worker line-bills ทำครบตามสเปก ไม่เปลี่ยนชื่อ/พารามิเตอร์**
   · Worker `import { analyzeBill, billFlex, savedFlex } from './line-bills/bill-core.mjs'` · หน้าแก้โค้ด Cloudflare วางได้ไฟล์เดียว → เพิ่ม `tools/mk_line_bills.py` รวมเป็น `worker/line-bills/dist/line-bills.js` (**ถ้ารัน mk_billcheck.py ใหม่ ให้รัน mk_line_bills.py ต่อ แล้วให้เจ้าของวางไฟล์ dist**) · ชื่อตัวแปรระดับบนของ bill-core ห้ามชนกับ Worker (ตอนนี้ไม่ชน — ชนจะ SyntaxError)
   · webhook: รูป → Vision images:annotate / PDF → files:annotate (หน้า 1–5) DOCUMENT_TEXT_DETECTION th,en · timeout 8 วิ · เก็บ billInbox `ocrText` (≤20KB ตัดตาม byte), `parsed` (fields เป็น string ≤300), `ocrState` done|fail · ตอบ billFlex (altText "อ่านบิลแล้ว 1,070.00 บาท" / "อ่านบิลแล้ว N ใบ") · หลายรูป = carousel (รวมรูปในชุดด้วย query setId รอได้ ~6 วิ) · อ่านไม่ได้ → การ์ด "รับบิลแล้ว ✅" + ปุ่มตรวจบิลเดิม
   · postback: ไม่ใช่คนส่ง = เงียบ · status ≠ new → "บิลนี้บันทึกไปแล้ว" (ข้ามแล้ว → "…ไม่ใช่บิลไปแล้ว") · save: analyzeBill(ocrText, vendors, edits) → rec รูปแบบเดียวกับหน้า (photo อัป Cloudinary m4n2ttwh/nkbscpgs เฉพาะรูป) → cleanRec เดียวกับ /bill/save → savedFlex · ไม่พบยอด/ข้อมูลไม่ผ่าน → ข้อความให้กด ✏️ แก้ไข · hq: edits.vendorBranch → billFlex ใหม่ · skip: "เก็บไว้แล้ว ไม่บันทึกเป็นบิล"
   · **กันบันทึกซ้อน**: save (ทั้ง postback และ /bill/save) ล็อก billInbox status new→`saving` ด้วย precondition updateTime ก่อนเขียน purchases (ล้ม → คืน new) · การ์ดในแอปถ้าเห็น status `saving` ให้ถือเหมือนกำลังบันทึก (ไม่กี่วินาที) · /bill ตอบ saving เป็น new
-  · `GET /bill` เพิ่ม `ocrText` ('' ถ้ายังไม่อ่าน) และ `edits` ({}) · ทดสอบจำลองผ่าน: อ่านได้/คนอื่นกด/hq/save+ซ้ำ/Vision 403→fallback/ช้า 8 วิ→fallback/2 รูป carousel/PDF/skip + เทสต์สเปกเดิมผ่านทั้งหมด
-
-## ทำแล้ว
+  · `GET /bill` เพิ่ม `ocrText` ('' ถ้ายังไม่อ่าน) และ `edits` ({}) · ทดสอบจำลองผ่าน: อ่านได้/คนอื่นกด/hq/save+ซ้ำ/Vision 403→fallback/ช้า 8 วิ→fallback/2 รูป carousel/PDF/skip + เทสต์สเปกเดิมผ่านทั้งหมด → รับทราบ 2026-11-12 17:40 (ตัวที่ 1): เจ้าของทดสอบจริงแล้ว การ์ดเด้งถูกต้อง · ต่อด้วยแก้ในแชต (ฝากใน inbox-2)
 - [2026-11-12 16:25] จาก 2 (เจ้าของสั่งให้ส่งต่อ): **LINE บิล @162oesrh — ฝั่ง Worker พร้อมใช้จริงแล้ว ส่งต่อให้ตัวที่ 1 ทดสอบ/ดูแลต่อ**
   · สถานะ: Worker `line-bills` deploy โค้ดล่าสุดแล้ว (worker/line-bills-worker.js) · `GET /` ได้ `{"ready":true,"link":true}` · secret ครบ 4 ตัว (LINE_BILLS_SECRET, LINE_BILLS_TOKEN, FIRESTORE_SA_JSON = SA `line-bills@ball-sticker-d95c2` บทบาท Cloud Datastore User, LINE_BILLS_LINK_KEY) · Webhook URL `https://line-bills.organic-parmesan.workers.dev/webhook` ใส่แล้ว กด Verify = Success
   · **ยังไม่ได้ยืนยัน**: (1) สวิตช์ Use webhook เปิดแล้วหรือยัง (2) ปิด "ข้อความตอบกลับอัตโนมัติ" ใน OA Manager (รอบทดสอบแรกตอนยังไม่มี webhook ได้แค่ข้อความ auto-reply ของ LINE) (3) ยังไม่มีบิลจริงผ่านทั้งเส้น: ส่งรูป → การ์ด "รับบิลแล้ว ✅" + ปุ่มตรวจบิล → bill-check.html อ่าน → บันทึก → แอปเห็นใน purchases

@@ -19,7 +19,7 @@ out = page.replace('/*@@BILLCORE@@*/', core.strip(), 1)
 open(os.path.join(ROOT, 'bill-check.html'), 'w', encoding='utf8').write(out)
 mod = ('// สร้างอัตโนมัติจาก src/bill-core.js + src/app.html (@@BILLPARSE) ด้วย tools/mk_billcheck.py — ห้ามแก้ไฟล์นี้ตรงๆ\n'
        'const $ = () => null;   // ตัวอ่านในแอปอ้างช่องในหน้า (sTax/sName) — บน Worker ไม่มี DOM\n' + core +
-       '\nexport { analyzeBill, billFlex, savedFlex, parseReceiptText, defaultClaimMonth, claimWindow, thaiTaxIdValid, PURCH_CATS };\n')
+       '\nexport { analyzeBill, billFlex, savedFlex, parseEditText, EDIT_FIELDS, parseReceiptText, defaultClaimMonth, claimWindow, thaiTaxIdValid, PURCH_CATS };\n')
 os.makedirs(os.path.join(ROOT, 'worker/line-bills'), exist_ok=True)
 open(os.path.join(ROOT, 'worker/line-bills/bill-core.mjs'), 'w', encoding='utf8').write(mod)
 print('built bill-check.html', len(out), '+ worker/line-bills/bill-core.mjs', len(mod))

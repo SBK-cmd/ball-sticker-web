@@ -138,18 +138,17 @@
     catch (e) { setState(e.status === 403 ? 'ลิงก์นี้ใช้ไม่ได้ ลองกดปุ่ม “ตรวจบิล” ใน LINE อีกครั้ง' : e.status === 404 ? 'ไม่พบบิลนี้แล้ว' : 'โหลดบิลไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่', true); return; }
     $('hdSub').textContent = 'ส่งโดย ' + (info.fromName || 'LINE') + (info.createdAt ? ' · ' + new Date(info.createdAt).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'}) : '');
     if (info.status === 'done') { showDone(info.purchaseId && !info.skipped ? 'saved' : 'skip', info.purchaseId && !info.skipped ? 'บิลนี้บันทึกไปแล้ว' : 'บิลนี้กด “ไม่ใช่บิล” ไปแล้ว'); return; }
-    setState('กำลังดึงรูปบิล…', false, true);
-    try { const r = await fetch(contentUrl()); if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; } fileBlob = await r.blob(); }
-    catch (e) { setState(e.status === 404 ? 'ไฟล์บิลนี้หมดอายุแล้ว (LINE เก็บไว้ราว 7 วัน) ส่งรูปบิลใหม่อีกครั้ง' : 'ดึงรูปบิลไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่', true); return; }
-    const isPdf = /pdf/i.test(fileBlob.type) || /\.pdf$/i.test(info.fileName || '');
-    $('photoCard').hidden = false;
-    const url = URL.createObjectURL(fileBlob);
-    $('phA').href = url;
+    const isPdf = info.type === 'file' || /\.pdf$/i.test(info.fileName || '');
+    $('photoCard').hidden = false; $('phA').href = contentUrl();
     if (isPdf) { $('ph').hidden = true; $('phT').textContent = 'ไฟล์ PDF · ' + (info.fileName || ''); }
-    else { $('ph').src = url; $('phT').textContent = 'รูปบิลจาก LINE'; }
+    else { $('ph').src = contentUrl(); $('phT').textContent = 'รูปบิลจาก LINE'; }
+    // Worker อ่านบิลไว้แล้ว → แสดงฟอร์มทันที ไม่ต้องรอโหลดรูป (รูปโหลดเองในกรอบด้านบน)
+    if (info.ocrText) { ocrText = info.ocrText; fillForm(); getBlob(); return; }
+    setState('กำลังดึงรูปบิล…', false, true);
+    try { await getBlob(true); }
+    catch (e) { setState(e.status === 404 ? 'ไฟล์บิลนี้หมดอายุแล้ว (LINE เก็บไว้ราว 7 วัน) ส่งรูปบิลใหม่อีกครั้ง' : 'ดึงรูปบิลไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่', true); return; }
     try {
-      if (info.ocrText) { ocrText = info.ocrText; }   // Worker อ่านบิลไว้แล้ว (Google Vision) ไม่ต้องอ่านซ้ำบนมือถือ
-      else if (isPdf) {
+      if (isPdf) {
         setState('กำลังอ่าน PDF…', false, true);
         await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js');
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -163,6 +162,16 @@
       }
     } catch (e) { console.warn(e); ocrText = ''; }
     fillForm();
+  }
+  let blobP = null;
+  function getBlob(strict) {   // โหลดไฟล์บิลครั้งเดียว (ใช้ตอนอ่านบนมือถือ และตอนอัปรูปขึ้นคลาวด์) · หมดเวลา 20 วิ
+    if (!blobP) blobP = (async () => {
+      const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 20000);
+      try { const r = await fetch(contentUrl(), {signal: ctl.signal}); if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; } fileBlob = await r.blob(); return fileBlob; }
+      finally { clearTimeout(tm); }
+    })();
+    const p = blobP; if (!strict) p.catch(() => { blobP = null; }); else p.catch(() => { blobP = null; });
+    return p;
   }
   function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('load ' + src)); document.head.appendChild(s); }); }
   async function pdfLines(pdf) {
@@ -262,6 +271,7 @@
 
   // ---------- บันทึก ----------
   async function uploadPhoto() {
+    try { await getBlob(); } catch (e) { return ''; }
     if (!fileBlob || /pdf/i.test(fileBlob.type)) return '';
     try {
       const fd = new FormData(); fd.append('file', fileBlob, 'bill-' + ID + '.jpg'); fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);

@@ -337,23 +337,62 @@
     const warn = isVat ? Object.keys(CHL).filter(k => chk[k] === false).map(k => CHL[k]) : [];
     return {fields: f, status: st, chk, bad, warn, readable: !!T.trim()};
   }
+  // ---------- แก้ในแชต: "สาขา: 00001" "วันที่ 2/11/69" "ยอด 3,302" ----------
+  const EDIT_FIELDS = {vendor: 'ร้าน', vendorTax: 'เลขภาษี', vendorBranch: 'สาขา', invoiceNo: 'เลขที่', date: 'วันที่', amount: 'ยอด', vat: 'VAT'};
+  const EDIT_ALIAS = [['vendorTax', /^(เลข\s*ภาษี|เลขผู้เสียภาษี|tax\s*id)/i], ['vendorBranch', /^(สาขา(ผู้ขาย)?|branch)/i], ['invoiceNo', /^(เลขที่(ใบกำกับ)?|เลขใบกำกับ|invoice(\s*no)?)/i],
+    ['date', /^(วันที่|date)/i], ['vat', /^(vat|แวท|ภาษีมูลค่าเพิ่ม|ภาษี)/i], ['amount', /^(ยอด(รวม|เงิน)?|รวม|amount|total)/i], ['vendor', /^(ร้าน(ค้า)?|ผู้ขาย|ชื่อร้าน|บริษัท)/i]];
+  function parseEditText(text) {   // คืน {field, value, label} หรือ {field, error} หรือ null (ไม่ใช่ข้อความแก้)
+    const t = String(text || '').trim().replace(/^แก้\s*/, '');
+    const hit = EDIT_ALIAS.find(([, re]) => re.test(t)); if (!hit) return null;
+    const field = hit[0], label = EDIT_FIELDS[field];
+    let v = t.replace(hit[1], '').replace(/^\s*[:：=]?\s*/, '').trim().replace(/[๐-๙]/g, c => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(c)));
+    if (field === 'vendor' && /^บริษัท/.test(t) && !v) v = t;
+    if (!v) return {field, label, error: 'พิมพ์ค่าหลัง "' + label + ':" ด้วย'};
+    if (field === 'vendorTax') { const d = v.replace(/\D/g, ''); if (d.length !== 13) return {field, label, error: 'เลขภาษีต้องมี 13 หลัก'}; return {field, label, value: d, warn: thaiTaxIdValid(d) ? '' : 'เลขนี้ไม่ผ่านสูตรตรวจ ตรวจอีกครั้ง'}; }
+    if (field === 'vendorBranch') {
+      if (/ใหญ่|hq|head/i.test(v)) return {field, label, value: 'สำนักงานใหญ่'};
+      const d = v.replace(/\D/g, ''); if (!d) return {field, label, error: 'พิมพ์ "สำนักงานใหญ่" หรือเลขสาขา เช่น 00001'};
+      return {field, label, value: 'สาขาที่ ' + d.padStart(5, '0')};
+    }
+    if (field === 'amount' || field === 'vat') { const n = parseFloat(v.replace(/[,฿\s]|บาท/g, '')); if (!isFinite(n) || n < 0) return {field, label, error: 'พิมพ์เป็นตัวเลข เช่น 3,302.00'}; return {field, label, value: n.toFixed(2)}; }
+    if (field === 'date') {
+      let y, mo, d, m;
+      if ((m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+      else if ((m = v.match(/^(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{2}|\d{4})$/))) { d = +m[1]; mo = +m[2]; y = +m[3]; }
+      else if ((m = v.match(new RegExp('^(\\d{1,2})\\s*(' + TH_MON_RE + ')\\s*(\\d{2}|\\d{4})$', 'i')))) { d = +m[1]; mo = thMonIdx(m[2]); y = +m[3]; }
+      else return {field, label, error: 'พิมพ์วันที่แบบ 2/11/69 หรือ 2 พ.ย. 69'};
+      if (y < 100) y += y >= 50 ? 2500 : 2000; if (y > 2400) y -= 543;
+      const iso = y + '-' + pad2(mo) + '-' + pad2(d), dt = new Date(y, mo - 1, d);
+      if (!(mo >= 1 && mo <= 12) || dt.getDate() !== d) return {field, label, error: 'วันที่ไม่ถูกต้อง'};
+      if (iso > todayISO()) return {field, label, error: 'วันที่อยู่ในอนาคต'};
+      return {field, label, value: iso};
+    }
+    return {field, label, value: v.slice(0, field === 'vendor' ? 80 : 40)};
+  }
   // การ์ดผลอ่านบิลสำหรับ LINE (Flex bubble) — links: {edit: url ไปหน้า bill-check}, postback data ให้ Worker จัดการ
   function billFlex(r, id, links) {
     const f = r.fields, st = r.status, isVat = f.claim === 'vat';
     const RED = '#b4372f', OK = '#1f7a4d', SUB = '#7a8499', INK = '#1b2333';
-    const row = (label, val, ok) => ({type: 'box', layout: 'horizontal', spacing: 'md', contents: [
+    // แตะแถว → LINE เปิดคีย์บอร์ดพร้อมพิมพ์ "สาขา: " ให้ พิมพ์ค่าใหม่แล้วส่ง (Worker อ่านด้วย parseEditText)
+    const edit = k => ({type: 'postback', label: 'แก้' + EDIT_FIELDS[k], data: 'act=edit&f=' + k + '&id=' + id, inputOption: 'openKeyboard', fillInText: EDIT_FIELDS[k] + ': '});
+    const row = (label, val, ok, k) => ({type: 'box', layout: 'horizontal', spacing: 'md', action: k ? edit(k) : undefined, contents: [
       {type: 'text', text: label, size: 'sm', color: SUB, flex: 3},
-      {type: 'text', text: (ok === false ? '✗ ' : '') + (String(val || '').trim() || 'อ่านไม่ได้'), size: 'sm', color: ok === false ? RED : INK, flex: 6, wrap: true}]});
+      {type: 'text', text: (ok === false ? '✗ ' : '') + (String(val || '').trim() || 'อ่านไม่ได้'), size: 'sm', color: ok === false ? RED : INK, flex: 6, wrap: true},
+      {type: 'text', text: k ? '✎' : ' ', size: 'sm', color: '#9aa3b5', flex: 1, align: 'end'}]});
     const okAll = r.readable && !r.bad.length;
     const title = !r.readable ? 'อ่านบิลไม่ได้' : okAll ? (r.warn.length ? 'อ่านบิลแล้ว · มีข้อควรระวัง' : 'อ่านบิลแล้ว ข้อมูลครบ') : 'อ่านบิลแล้ว · ต้องแก้ ' + r.bad.length + ' ช่อง';
     const body = [
-      {type: 'text', text: num(f.amount) ? money(num(f.amount)) + ' บาท' : '— บาท', size: 'xxl', weight: 'bold', color: INK},
-      {type: 'text', text: isVat ? (num(f.vat) ? 'VAT ' + money(num(f.vat)) + (st.vat === false ? ' ✗ ไม่ตรง 7%' : '') : 'ไม่พบ VAT') + (f.claimMonth ? ' · รอบ ' + thMonthFull(f.claimMonth) : '') : 'ค่าใช้จ่าย (ไม่ใช้สิทธิ์ภาษีซื้อ)', size: 'sm', color: st.vat === false ? RED : SUB, wrap: true},
+      {type: 'text', text: num(f.amount) ? money(num(f.amount)) + ' บาท' : '— บาท', size: 'xxl', weight: 'bold', color: st.amount === false ? RED : INK, action: edit('amount')},
+      {type: 'text', action: isVat ? edit('vat') : undefined, text: isVat ? (num(f.vat) ? 'VAT ' + money(num(f.vat)) + (st.vat === false ? ' ✗ ไม่ตรง 7%' : '') : 'ไม่พบ VAT') + (f.claimMonth ? ' · รอบ ' + thMonthFull(f.claimMonth) : '') : 'ค่าใช้จ่าย (ไม่ใช้สิทธิ์ภาษีซื้อ)', size: 'sm', color: st.vat === false ? RED : SUB, wrap: true},
       {type: 'separator', margin: 'lg'},
       {type: 'box', layout: 'vertical', margin: 'lg', spacing: 'sm', contents: [
-        row('ร้านค้า', f.vendor, st.vendor), row('เลขภาษี', f.vendorTax, st.vendorTax), row('สาขา', f.vendorBranch, st.vendorBranch),
-        row('เลขที่', f.invoiceNo, st.invoiceNo), row('วันที่', f.date ? (+f.date.slice(8, 10)) + ' ' + TH_MONTHS[+f.date.slice(5, 7) - 1].slice(0, 3) + '. ' + (+f.date.slice(0, 4) + 543) : '', st.date), row('หมวด', f.cat || '—')]}
+        row('ร้านค้า', f.vendor, st.vendor, 'vendor'), row('เลขภาษี', f.vendorTax, st.vendorTax, 'vendorTax'), row('สาขา', f.vendorBranch, st.vendorBranch, 'vendorBranch'),
+        row('เลขที่', f.invoiceNo, st.invoiceNo, 'invoiceNo'), row('วันที่', f.date ? (+f.date.slice(8, 10)) + ' ' + TH_MONTHS[+f.date.slice(5, 7) - 1].slice(0, 3) + '. ' + (+f.date.slice(0, 4) + 543) : '', st.date, 'date'), row('หมวด', f.cat || '—')]},
+      {type: 'text', text: 'แตะยอดเงินหรือแถวที่มี ✎ เพื่อพิมพ์แก้ในแชต', size: 'xxs', color: '#9aa3b5', margin: 'md', wrap: true}
     ];
+    // Flex ไม่รับ action: undefined → ลบทิ้ง
+    const strip = o => { if (Array.isArray(o)) o.forEach(strip); else if (o && typeof o === 'object') { Object.keys(o).forEach(k => { if (o[k] === undefined) delete o[k]; else strip(o[k]); }); } return o; };
+    strip(body);
     if (r.warn.length) body.push({type: 'text', text: '⚠ ' + r.warn.join(' · '), size: 'xs', color: '#8a5a00', wrap: true, margin: 'lg'});
     const btns = [];
     if (r.readable && st.amount) btns.push({type: 'button', style: 'primary', color: '#14234b', height: 'sm', action: {type: 'postback', label: 'บันทึกเข้าภาษีซื้อ', data: 'act=save&id=' + id, displayText: 'บันทึกบิลนี้'}});
@@ -398,18 +437,17 @@
     catch (e) { setState(e.status === 403 ? 'ลิงก์นี้ใช้ไม่ได้ ลองกดปุ่ม “ตรวจบิล” ใน LINE อีกครั้ง' : e.status === 404 ? 'ไม่พบบิลนี้แล้ว' : 'โหลดบิลไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่', true); return; }
     $('hdSub').textContent = 'ส่งโดย ' + (info.fromName || 'LINE') + (info.createdAt ? ' · ' + new Date(info.createdAt).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'}) : '');
     if (info.status === 'done') { showDone(info.purchaseId && !info.skipped ? 'saved' : 'skip', info.purchaseId && !info.skipped ? 'บิลนี้บันทึกไปแล้ว' : 'บิลนี้กด “ไม่ใช่บิล” ไปแล้ว'); return; }
-    setState('กำลังดึงรูปบิล…', false, true);
-    try { const r = await fetch(contentUrl()); if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; } fileBlob = await r.blob(); }
-    catch (e) { setState(e.status === 404 ? 'ไฟล์บิลนี้หมดอายุแล้ว (LINE เก็บไว้ราว 7 วัน) ส่งรูปบิลใหม่อีกครั้ง' : 'ดึงรูปบิลไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่', true); return; }
-    const isPdf = /pdf/i.test(fileBlob.type) || /\.pdf$/i.test(info.fileName || '');
-    $('photoCard').hidden = false;
-    const url = URL.createObjectURL(fileBlob);
-    $('phA').href = url;
+    const isPdf = info.type === 'file' || /\.pdf$/i.test(info.fileName || '');
+    $('photoCard').hidden = false; $('phA').href = contentUrl();
     if (isPdf) { $('ph').hidden = true; $('phT').textContent = 'ไฟล์ PDF · ' + (info.fileName || ''); }
-    else { $('ph').src = url; $('phT').textContent = 'รูปบิลจาก LINE'; }
+    else { $('ph').src = contentUrl(); $('phT').textContent = 'รูปบิลจาก LINE'; }
+    // Worker อ่านบิลไว้แล้ว → แสดงฟอร์มทันที ไม่ต้องรอโหลดรูป (รูปโหลดเองในกรอบด้านบน)
+    if (info.ocrText) { ocrText = info.ocrText; fillForm(); getBlob(); return; }
+    setState('กำลังดึงรูปบิล…', false, true);
+    try { await getBlob(true); }
+    catch (e) { setState(e.status === 404 ? 'ไฟล์บิลนี้หมดอายุแล้ว (LINE เก็บไว้ราว 7 วัน) ส่งรูปบิลใหม่อีกครั้ง' : 'ดึงรูปบิลไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่', true); return; }
     try {
-      if (info.ocrText) { ocrText = info.ocrText; }   // Worker อ่านบิลไว้แล้ว (Google Vision) ไม่ต้องอ่านซ้ำบนมือถือ
-      else if (isPdf) {
+      if (isPdf) {
         setState('กำลังอ่าน PDF…', false, true);
         await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js');
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -423,6 +461,16 @@
       }
     } catch (e) { console.warn(e); ocrText = ''; }
     fillForm();
+  }
+  let blobP = null;
+  function getBlob(strict) {   // โหลดไฟล์บิลครั้งเดียว (ใช้ตอนอ่านบนมือถือ และตอนอัปรูปขึ้นคลาวด์) · หมดเวลา 20 วิ
+    if (!blobP) blobP = (async () => {
+      const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 20000);
+      try { const r = await fetch(contentUrl(), {signal: ctl.signal}); if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; } fileBlob = await r.blob(); return fileBlob; }
+      finally { clearTimeout(tm); }
+    })();
+    const p = blobP; if (!strict) p.catch(() => { blobP = null; }); else p.catch(() => { blobP = null; });
+    return p;
   }
   function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('load ' + src)); document.head.appendChild(s); }); }
   async function pdfLines(pdf) {
@@ -522,6 +570,7 @@
 
   // ---------- บันทึก ----------
   async function uploadPhoto() {
+    try { await getBlob(); } catch (e) { return ''; }
     if (!fileBlob || /pdf/i.test(fileBlob.type)) return '';
     try {
       const fd = new FormData(); fd.append('file', fileBlob, 'bill-' + ID + '.jpg'); fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
