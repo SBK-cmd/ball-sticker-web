@@ -1309,6 +1309,12 @@ function bahtText(value) {
 
     set('priceTotal', baht(total));
     $('priceSub').innerHTML = 'เฉลี่ย <b>' + money(total / qty) + '</b> บาท/ชิ้น';
+    // ต้นทุน/กำไรของงานนี้ (เฉพาะเจ้าของ · เฉพาะ HP PVC เพจบอล) — ใช้ต้นทุนต่อแผ่นจากการ์ด "ต้นทุนจริง"
+    if (can('money') && pageKey === 'ball' && $('paper').value === 'hp') try {
+      const cr = costCalc(); if (!(cr.mat > 0)) throw 0;   // ยังไม่กรอกต้นทุน → ไม่โชว์
+      const jobCost = sheets * cr.perSheet, profit = total - jobCost;
+      $('priceSub').innerHTML += '<div class="price-cost">ต้นทุน ≈ ' + money(jobCost) + ' · กำไร ≈ <b class="' + (profit >= 0 ? 'pos' : 'neg') + '">' + money(profit) + '</b> (' + Math.round(profit / Math.max(1, total) * 100) + '%) <small>ก่อน VAT · ไม่รวมเงินเดือนเจ้าของ</small></div>';
+    } catch (e) { /* ตอนเปิดแอปครั้งแรก ข้อมูลต้นทุนยังไม่พร้อม */ }
     const lines = [];
     if (full > 0) lines.push('<li><span>แผ่นเต็ม ' + full.toLocaleString('en-US') + ' แผ่น × ' + money(fullSheetPrice) + '</span><b>' + money(fullCost) + '</b></li>');
     if (rem > 0) lines.push('<li><span>เศษ ' + rem.toLocaleString('en-US') + ' ชิ้น (' + n2(frac) + ' แผ่น) × ' + money(partSheetPrice) + '</span><b>' + money(partCost) + '</b></li>');
@@ -2241,6 +2247,7 @@ function bahtText(value) {
   function renderMoney() {
     const box = $('moneyBody'); if (!box) return;
     if (!can('money')) { box.innerHTML = '<p class="empty">หน้านี้เห็นเฉพาะเจ้าของร้าน</p>'; return; }
+    try { renderCost(); } catch (e) { console.error(e); }
     const d = moneyData(), keys = Object.keys(d.months).filter(Boolean).sort().reverse();
     const cur = localISO(new Date()).slice(0, 7);
     if (!moneyMonth || keys.indexOf(moneyMonth) < 0) moneyMonth = keys.indexOf(cur) >= 0 ? cur : (keys[0] || cur);
@@ -2408,6 +2415,69 @@ function bahtText(value) {
     finally { quotaBusy = false; if (btn) btn.disabled = false; renderQuota(); }
   }
 
+  // ---------- ต้นทุนจริง (เฉพาะเจ้าของ) ----------
+  // ค่าเริ่มต้นเป็นศูนย์ทั้งหมด — repo/โค้ดแอปเป็นสาธารณะ ห้ามใส่ตัวเลขการเงินจริงในโค้ด เจ้าของกรอกเองในการ์ด (เก็บใน Firestore costCfg/main เท่านั้น)
+  const COST_DEFAULT = {id: 'main', vinylRoll: 0, vinylW: 127, vinylL: 50, lamRoll: 0, lamW: 127, lamL: 50, inkCart: 0, inkMl: 700, inkPerSqm: 0, sheetsPerMonth: 0, withLam: true,
+    fixed: [{name: 'ค่าแรงลูกน้อง', amount: 0}, {name: 'ค่าโฆษณา', amount: 0}, {name: 'ค่าไฟ', amount: 0}, {name: 'ค่าเช่าที่', amount: 0}]};
+  const SHEET_H = 81, SHEET_SELL_SQM = 0.96;   // แผ่นเรียงจริง 121×81 · คิดเงินลูกค้า 120×80
+  function costCfg() { const l = store.get('bs_cost_cfg', []) || []; const r = Array.isArray(l) ? l.find(x => x && x.id === 'main') : null; return Object.assign({}, COST_DEFAULT, r || {}); }
+  function costCalc(c) {
+    c = c || costCfg(); const N = v => Math.max(0, num(v));
+    const usedSqm = (N(c.vinylW) / 100) * (SHEET_H / 100);   // แผ่นกินม้วนเต็มหน้ากว้าง × 81 ซม. (ขอบที่เหลือเป็นของเสีย)
+    const vinylSqm = N(c.vinylRoll) / Math.max(1e-9, N(c.vinylW) / 100 * N(c.vinylL));
+    const lamSqm = N(c.lamRoll) / Math.max(1e-9, N(c.lamW) / 100 * N(c.lamL));
+    const vinyl = vinylSqm * usedSqm, lam = c.withLam ? lamSqm * (N(c.lamW) / 100) * (SHEET_H / 100) : 0;
+    const ink = SHEET_SELL_SQM * N(c.inkPerSqm) * (N(c.inkCart) / Math.max(1e-9, N(c.inkMl)));
+    const ym = localISO(new Date()).slice(0, 7);
+    const fixedRows = (c.fixed || []).map(f => Object.assign({}, f, {active: !f.until || f.until >= ym}));
+    const fixed = fixedRows.filter(f => f.active).reduce((a, f) => a + N(f.amount), 0);
+    const sheets = Math.max(1, N(c.sheetsPerMonth));
+    const mat = vinyl + lam + ink, perSheet = mat + fixed / sheets;
+    const rate = PRICE_PAGES.ball.rates.hp.full, price = rate * SHEET_SELL_SQM;   // ราคาก่อน VAT ต่อแผ่นเต็ม
+    const margin = price - mat;
+    return {vinyl, lam, ink, mat, fixed, fixedRows, sheets, perSheet, price, left: price - perSheet, leftMonth: (price - perSheet) * sheets, breakeven: margin > 0 ? Math.ceil(fixed / margin) : Infinity};
+  }
+  let costSaveT = null;
+  function costSave(c) {
+    c.updatedAt = Date.now(); store.set('bs_cost_cfg', [c]);
+    clearTimeout(costSaveT); costSaveT = setTimeout(() => { cloudSave('costCfg', c); const el = $('costSaved'); if (el) el.textContent = 'บันทึกแล้ว'; }, 800);
+  }
+  function renderCostRes() {
+    const r = costCalc(), box = $('costRes'); if (!box) return;
+    const M = n => money(n), tile = (lbl, val, cls, sub) => '<div class="cs-tile ' + (cls || '') + '"><small>' + esc(lbl) + '</small><b>' + val + '</b>' + (sub ? '<em>' + esc(sub) + '</em>' : '') + '</div>';
+    box.innerHTML = tile('ต้นทุนต่อแผ่นเต็ม', M(r.perSheet), '', 'วัตถุดิบ ' + M(r.mat) + ' + ค่าใช้จ่าย ' + M(r.fixed / r.sheets)) +
+      tile('ราคาขายแผ่นเต็ม (ก่อน VAT)', M(r.price), '', 'เหลือ ' + M(r.left) + ' ต่อแผ่น') +
+      tile('เหลือเป็นเงินเดือนเจ้าของ', M(r.leftMonth), r.leftMonth >= 0 ? 'pos' : 'neg', 'ถ้าขาย ' + Math.round(r.sheets) + ' แผ่น/เดือน ราคาเต็มทุกแผ่น') +
+      tile('ต้องขายอย่างน้อย', isFinite(r.breakeven) ? r.breakeven.toLocaleString('th-TH') + ' แผ่น/เดือน' : '—', '', 'ค่าใช้จ่าย ' + M(r.fixed) + ' / เดือน') +
+      tile('วัตถุดิบต่อแผ่น', M(r.mat), '', 'สติ๊กเกอร์ ' + M(r.vinyl) + ' · เคลือบ ' + M(r.lam) + ' · หมึก ' + M(r.ink));
+  }
+  function renderCost() {
+    const card = $('costCard'); if (!card) return;
+    card.hidden = !can('money'); if (card.hidden) return;
+    const c = costCfg();
+    card.querySelectorAll('[data-cs]').forEach(el => { const k = el.dataset.cs; if (document.activeElement === el) return; if (el.type === 'checkbox') el.checked = !!c[k]; else el.value = c[k] != null ? c[k] : ''; });
+    const ym = localISO(new Date()).slice(0, 7);
+    $('costFixed').innerHTML = (c.fixed || []).map((f, i) => '<div class="cs-row' + (f.until && f.until < ym ? ' off' : '') + '" data-i="' + i + '">' +
+      '<input data-cf="name" value="' + esc(f.name || '') + '" placeholder="รายการ" aria-label="รายการ">' +
+      '<input data-cf="amount" inputmode="decimal" value="' + esc(f.amount != null ? f.amount : '') + '" placeholder="บาท/เดือน" aria-label="บาทต่อเดือน">' +
+      '<input data-cf="until" type="month" value="' + esc(f.until || '') + '" aria-label="ถึงเดือน" title="ถึงเดือน (เว้นว่าง = จ่ายตลอด)">' +
+      '<button type="button" class="cs-del" data-cdel="' + i + '" aria-label="ลบรายการ">×</button></div>').join('');
+    renderCostRes();
+  }
+  document.addEventListener('input', e => {
+    const t = e.target; if (!t || !t.closest || !t.closest('#costCard')) return;
+    const c = costCfg();
+    if (t.dataset.cs) c[t.dataset.cs] = t.type === 'checkbox' ? t.checked : num(t.value);
+    else if (t.dataset.cf) { const i = +t.closest('.cs-row').dataset.i, f = (c.fixed = (c.fixed || []).map(x => Object.assign({}, x)))[i]; if (!f) return; f[t.dataset.cf] = t.dataset.cf === 'amount' ? num(t.value) : t.value; }
+    else return;
+    costSave(c); renderCostRes(); try { renderPrice(); } catch (err) {}
+  });
+  document.addEventListener('change', e => { const t = e.target; if (t && t.closest && t.closest('#costCard') && (t.type === 'checkbox' || t.type === 'month')) { t.dispatchEvent(new Event('input', {bubbles: true})); if (t.type === 'month') renderCost(); } });
+  document.addEventListener('click', e => {
+    const t = e.target; if (!t || !t.closest) return;
+    if (t.id === 'costAddRow') { const c = costCfg(); c.fixed = (c.fixed || []).concat([{name: '', amount: 0}]); costSave(c); renderCost(); const rows = document.querySelectorAll('#costFixed .cs-row input[data-cf="name"]'); if (rows.length) rows[rows.length - 1].focus(); }
+    const d = t.closest('[data-cdel]'); if (d) { const c = costCfg(); const i = +d.dataset.cdel; if (!confirm('ลบ "' + ((c.fixed[i] || {}).name || 'รายการนี้') + '"?')) return; c.fixed = c.fixed.filter((_, j) => j !== i); costSave(c); renderCost(); }
+  });
   document.addEventListener('click', e => { if (e.target && e.target.id === 'quotaRefresh') loadQuota(true); });
   function renderDash() {
     renderQuota(); loadQuota(false);
@@ -10220,6 +10290,7 @@ function bahtText(value) {
     try { watchBillBox(); } catch (e) {}
     watchCloud('customers', 'bs_customers', () => { renderCustomerDatalist(); try { renderWholesaleHistory(); } catch (e) {} });
     watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
+    if (can('money')) watchCloud('costCfg', 'bs_cost_cfg', () => { renderCost(); try { renderPrice(); } catch (e) {} });
     watchBankIn();
     watchBankOut();
     watchLineChats();

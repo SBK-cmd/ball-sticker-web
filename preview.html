@@ -129,6 +129,25 @@ try { if (!localStorage.getItem('bs_session')) document.documentElement.classLis
   .qt-cap { font-size:12px; color:var(--muted,#889); margin-left:auto; }
   .qt-btn { min-height:32px; padding:0 12px; font-size:13px; border:1px solid rgba(127,127,127,.35); border-radius:8px; background:transparent; color:inherit; cursor:pointer; }
   .qt-note { font-size:12px; color:var(--muted,#889); margin:10px 0 0; }
+.cs-res { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:6px 0 12px; }
+  .cs-tile { border:1px solid rgba(127,127,127,.2); border-radius:12px; padding:10px 12px; }
+  .cs-tile small { display:block; font-size:12px; color:var(--muted,#778); }
+  .cs-tile b { font-size:20px; font-variant-numeric:tabular-nums; }
+  .cs-tile.pos b { color:#1f7a4d; } .cs-tile.neg b { color:#c8423a; }
+  .cs-tile em { display:block; font-style:normal; font-size:12px; color:var(--muted,#889); margin-top:2px; }
+  .cs-det { margin-top:8px; } .cs-det summary { cursor:pointer; font-weight:500; padding:6px 0; }
+  .cs-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr)); gap:10px; }
+  .cs-2 { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px; }
+  .cs-2 input, .cs-grid input, .cs-row input { min-width:0; width:100%; box-sizing:border-box; }
+  .cs-grid > .f { min-width:0; }
+  .cs-chk { display:flex; align-items:center; gap:8px; }
+  .cs-fixed { display:grid; gap:6px; margin:6px 0 8px; }
+  .cs-row { display:grid; grid-template-columns:1.6fr 1fr 1fr auto; gap:6px; align-items:center; }
+  .cs-row input { min-width:0; }
+  .cs-row .cs-del { min-height:36px; min-width:36px; border:0; background:transparent; color:#c8423a; cursor:pointer; font-size:18px; }
+  .cs-row.off input { opacity:.5; }
+  .price-cost { font-size:13px; margin-top:4px; color:var(--muted,#667); font-variant-numeric:tabular-nums; }
+  .price-cost b.pos { color:#1f7a4d; } .price-cost b.neg { color:#c8423a; }
 </style>
 <script>
 // ตั้งโหมดมืด/สว่างจากค่าที่จำไว้ทันทีตั้งแต่ก่อนวาดหน้าจอ กันไฟกะพริบสลับธีมตอนโหลด
@@ -3570,6 +3589,27 @@ body.jm-open .fab-newjob{display:none!important}
         <p>รายรับ-รายจ่ายรวมสองบัญชี (กิติพงษ์ = บัญชียื่นภาษี · วันทิม = งานส่ง) + ยอดขาย/ต้นทุนตามเอกสาร · เห็นเฉพาะเจ้าของร้าน</p>
       </div>
       <div id="moneyBody"></div>
+      <section class="card no-print" id="costCard" aria-labelledby="cost-h" hidden>
+        <div class="viz-head"><h2 id="cost-h">ต้นทุนจริง · บอล สติ๊กเกอร์ (HP PVC)</h2><span class="qt-cap" id="costSaved"></span></div>
+        <div class="cs-res" id="costRes"></div>
+        <details class="cs-det" open><summary>วัตถุดิบ</summary>
+          <div class="cs-grid">
+            <label class="f"><span>สติ๊กเกอร์ HP ราคาม้วน (บาท)</span><input data-cs="vinylRoll" inputmode="decimal"></label>
+            <label class="f"><span>หน้ากว้าง × ยาว (ซม. × ม.)</span><div class="cs-2"><input data-cs="vinylW" inputmode="decimal"><input data-cs="vinylL" inputmode="decimal"></div></label>
+            <label class="f"><span>ฟิล์มเคลือบ ราคาม้วนรวมค่าส่ง (บาท)</span><input data-cs="lamRoll" inputmode="decimal"></label>
+            <label class="f"><span>หน้ากว้าง × ยาว (ซม. × ม.)</span><div class="cs-2"><input data-cs="lamW" inputmode="decimal"><input data-cs="lamL" inputmode="decimal"></div></label>
+            <label class="f"><span>หมึก ราคาตลับ (บาท) / ml ต่อตลับ</span><div class="cs-2"><input data-cs="inkCart" inputmode="decimal"><input data-cs="inkMl" inputmode="decimal"></div></label>
+            <label class="f"><span>หมึกที่ใช้ ml ต่อ ตร.ม. (จาก Epson PORT)</span><input data-cs="inkPerSqm" inputmode="decimal"></label>
+            <label class="f"><span>แผ่นที่ขายได้ต่อเดือน (≈ ตร.ม. ใน PORT ÷ 0.96)</span><input data-cs="sheetsPerMonth" inputmode="decimal"></label>
+            <label class="f cs-chk"><input type="checkbox" data-cs="withLam"> <span>คิดฟิล์มเคลือบในต้นทุนทุกแผ่น</span></label>
+          </div>
+        </details>
+        <details class="cs-det" open><summary>ค่าใช้จ่ายต่อเดือน (ไม่รวมเงินเดือนเจ้าของ)</summary>
+          <div id="costFixed" class="cs-fixed"></div>
+          <button type="button" class="qt-btn" id="costAddRow">+ เพิ่มรายการ</button>
+          <p class="qt-note">ใส่ “ถึงเดือน” สำหรับรายการที่ผ่อนหมดแล้วจะหยุดนับเอง (เช่น รายการผ่อนที่มีกำหนดจบ) · ตัวเลขเก็บในระบบหลังร้าน เห็นเฉพาะเจ้าของร้าน</p>
+        </details>
+      </section>
     </section>
 
     <section id="panel-design" class="panel" role="tabpanel" aria-labelledby="tab-design">
@@ -3821,7 +3861,7 @@ body.jm-open .fab-newjob{display:none!important}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=6693738e2d",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=df2df8b9c7",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 </body>

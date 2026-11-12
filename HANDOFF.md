@@ -14,6 +14,7 @@
 - บอกเจ้าของร้านว่าอัปเดตสมุดแล้ว
 
 ## สถานะล่าสุด (อัปเดต 2026-11-09)
+- **พรีวิว (12 พ.ย.) การ์ด "ต้นทุนจริง"** ในหน้าการเงินรายเดือน (can('money')): วัตถุดิบ + ค่าใช้จ่ายรายเดือน (มี "ถึงเดือน") → ต้นทุนต่อแผ่น/จุดคุ้มทุน · เก็บ Firestore `costCfg/main` · หน้าคิดราคา HP เพจบอลโชว์ต้นทุน/กำไรต่องาน (เจ้าของเท่านั้น) · **ห้ามใส่ตัวเลขการเงินจริงในโค้ด/HANDOFF (repo สาธารณะ)** ค่าเริ่มต้นเป็น 0 เจ้าของกรอกเอง · เรทในแอป = ราคาก่อน VAT
 - **พรีวิว (12 พ.ย.) การ์ด "โควตาบริการฟรี"** ท้ายแดชบอร์ด: `QUOTA_BASE` (เพดานฟรีที่ประกาศ) + ตัวเลขสดจาก `line-bills /quota` (รอตัวที่ 2) · Cloudinary กรอกเอง 4.3/25 ณ 12 พ.ย. · วันทดลอง GCP คำนวณจากวันหมด 9 ก.พ. 2570
 - **พรีวิว (12 พ.ย.) การ์ดผลอ่านบิลในแชต LINE (Google Vision)**: ตัวอ่านกลาง `src/bill-core.js` → `tools/mk_billcheck.py` สร้าง bill-check.html + `worker/line-bills/bill-core.mjs` (analyzeBill/billFlex/savedFlex) · เปิด Cloud Vision API แล้ว · rules billInbox วางแล้ว 16:27 · **รอตัวที่ 2** ต่อ Vision + postback save/hq/skip (สเปกใน inbox-2) · GCP free trial หมด 9 ก.พ. 2027
 - **พรีวิว (12 พ.ย.) หน้า "ตรวจบิล" จาก LINE บิล**: `bill-check.html` สร้างจาก `src/bill-check.src.html` ด้วย `python3 tools/mk_billcheck.py` (คัดตัวอ่านบิลจาก src/app.html ช่วง `@@BILLPARSE-START/END` — แก้ parser ในแอปแล้วต้องรันซ้ำ) · OCR OpenThai บนมือถือ, ช่อง ✓/!, เช็กลิสต์ 8 ข้อ, VAT 7%, รอบใช้สิทธิ์, บันทึกผ่าน Worker `POST /bill/save` · **รอตัวที่ 2** ทำ token/Flex/`/bill`/`/bill/save`/`/bill/skip` (สเปกใน team/inbox-2.md)
