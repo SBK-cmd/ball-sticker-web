@@ -109,69 +109,10 @@
   const API = 'https://line-bills.organic-parmesan.workers.dev';
   const CLOUDINARY_CLOUD_NAME = 'm4n2ttwh', CLOUDINARY_UPLOAD_PRESET = 'nkbscpgs';
   const P = new URLSearchParams(location.search), ID = P.get('id') || '', TK = P.get('t') || '';
-  // ข้อมูลร้านที่ตัวอ่านบิลต้องใช้ (ตรงกับ SHOP_DEFAULT ในแอป · ที่อยู่ตาม ภ.พ.20)
-  const shop = {name: 'บอลสติ๊กเกอร์ พิษณุโลก', taxId: '1659900519381', address: '8 หมู่ 19 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140', promptpayName: 'นาย กิติพงษ์ สีทอง'};
   const $ = id => document.getElementById(id);
-  const pad2 = n => String(n).padStart(2, '0');
-  const round2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
-  const todayISO = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
-  const num = v => { const x = parseFloat(String(v == null ? '' : v).replace(/,/g, '')); return isFinite(x) ? x : 0; };
-  const money = n => n.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
-  const TH_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
-  const thMonthFull = m => { const [y, mo] = String(m).split('-').map(Number); return TH_MONTHS[mo - 1] + ' ' + (y + 543); };
 
-  /*@@BILLPARSE@@*/
-
-  const PURCH_CATS = ['วัสดุ สติ๊กเกอร์ กระดาษ ฟิล์ม', 'หมึกพิมพ์', 'บรรจุภัณฑ์ / วัสดุสิ้นเปลือง', 'อุปกรณ์ / เครื่องมือ', 'ค่าขนส่ง / ไปรษณีย์', 'ค่าไฟ น้ำ อินเทอร์เน็ต โทรศัพท์', 'ค่าเช่า', 'ค่าโฆษณา / การตลาด', 'ซ่อมบำรุง', 'ค่าเดินทาง / น้ำมัน', 'อื่นๆ'];
-  function guessCat(vendor, text) {
-    const t = [vendor, text].join(' ').toLowerCase();
-    if (/หมึก|ink|toner|โทนเนอร์/.test(t)) return 'หมึกพิมพ์';
-    if (/สติ๊กเกอร์|สติกเกอร์|sticker|กระดาษ|ฟิล์ม|film|pvc|ไวนิล|vinyl|โฮโลแกรม|สะท้อนแสง|ลามิเนต|laminat/.test(t)) return 'วัสดุ สติ๊กเกอร์ กระดาษ ฟิล์ม';
-    if (/เทป|กาว|เชือก|กล่อง|ซอง|ถุง|บับเบิ้ล|bubble|แพ็ค|packing/.test(t)) return 'บรรจุภัณฑ์ / วัสดุสิ้นเปลือง';
-    if (/ขนส่ง|ไปรษณีย์|kerry|flash|j&t|ems|ค่าส่ง|lalamove/.test(t)) return 'ค่าขนส่ง / ไปรษณีย์';
-    if (/การไฟฟ้า|ไฟฟ้า|ประปา|ทรู|true|ais|dtac|3bb|อินเทอร์เน็ต|internet|โทรศัพท์/.test(t)) return 'ค่าไฟ น้ำ อินเทอร์เน็ต โทรศัพท์';
-    if (/น้ำมัน|ปตท|ptt|บางจาก|shell|caltex/.test(t)) return 'ค่าเดินทาง / น้ำมัน';
-    if (/เครื่อง|ใบมีด|cutter|plotter|อุปกรณ์/.test(t)) return 'อุปกรณ์ / เครื่องมือ';
-    return '';
-  }
-  const ownNameRe = () => /กิติพงษ์|กิดิพงษ์|บอลสติ๊กเกอร์|บอล สติ๊กเกอร์|บอลสติกเกอร์/;
-  const brRe = /(ส[ำา]?นักงาน\s*[ใไ]?หญ|สนง\.?\s*ใหญ่|head\s*office|สาขา(?:ที่)?\s*[0-9๐-๙]{1,5})/i;
-  function addrKeys(a) {
-    a = String(a || '');
-    return {moo: (a.match(/หมู่(?:ที่)?\s*(\d+)/) || [])[1] || '', tb: (a.match(/(?:ต\.|ตำบล|แขวง)\s*([ก-๙]+)/) || [])[1] || '', zip: (a.match(/(\d{5})(?!\d)/) || [])[1] || ''};
-  }
-  // ดึงสาขา/ที่อยู่ผู้ขาย + เช็กลิสต์จากข้อความ (ตรรกะเดียวกับ autoTaxChecklist ในแอป)
-  function readExtras(T, f) {
-    const lines = T.split('\n'), own = shop.taxId, digits = T.replace(/[^\d\n]/g, '');
-    const vtax = String(f.vendorTax || '').replace(/\D/g, '');
-    const vLine = vtax ? (lines.find(l => l.replace(/\D/g, '').indexOf(vtax) >= 0) || '') : '';
-    const vName = String(f.vendor || '').slice(0, 8), nameLine = vName ? (lines.find(l => l.indexOf(vName) >= 0) || '') : '';
-    const out = {auto: {}};
-    const brM = (vLine.match(brRe) || nameLine.match(brRe) || [])[1] || '';
-    if (brM) out.vendorBranch = /สาขา/.test(brM) ? brM.replace(/[๐-๙]/g, c => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(c))).replace(/สาขา\s*(ที่)?\s*/, 'สาขาที่ ') : 'สำนักงานใหญ่';
-    else if (/สาขา(ที่)?/.test(nameLine + vLine)) out.vendorBranch = 'สาขาที่ ';
-    const addrRe = /(ถนน|ถ\.|ตำบล|ต\.|แขวง|เขต|อำเภอ|อ\.|จังหวัด|จ\.|หมู่|ซอย|(?<!\d)\d{5}(?!\d))/;
-    const ni = nameLine ? lines.indexOf(nameLine) : -1, vi = vLine ? lines.indexOf(vLine) : -1;
-    const cand = [ni + 1, ni + 2, vi, ni, vi - 1].filter(i => i >= 0 && i < lines.length).map(i => lines[i]);
-    const aLine = cand.find(l => addrRe.test(l) && l.replace(/\D/g, '').indexOf(own) < 0 && !ownNameRe().test(l));
-    const vAddr = aLine ? aLine.replace(/(เลขประจำตัว|เลขที่ผู้เสีย|โทร|tel|fax|เอกสารออก|www\.|e-?mail).*/i, '').replace(/^(บริษัท|ห้างหุ้นส่วน)[^0-9]*?(จำกัด|$)\s*/, '').replace(/\s+/g, ' ').trim() : '';
-    if (vAddr.length >= 10) out.vendorAddr = vAddr.slice(0, 160);
-    const a = out.auto, ownLine = lines.find(l => l.replace(/\D/g, '').indexOf(own) >= 0) || '', buyerNameLine = lines.find(l => ownNameRe().test(l)) || '';
-    a.title = /ใบกำกับภาษี|ใบกํากับภาษี|tax\s*invoice/i.test(T);
-    a.buyer = ownNameRe().test(T);
-    a.buyerTax = digits.indexOf(own) >= 0 ? (brRe.test(ownLine) || brRe.test(buyerNameLine)) : false;
-    const k = addrKeys(shop.address);
-    a.buyerAddr = T.indexOf(k.zip) >= 0 && T.indexOf(k.tb) >= 0 && (!k.moo || new RegExp('หมู่(?:ที่)?\\s*' + k.moo + '(?!\\d)').test(T));
-    a.itemsVat = /ภาษีมูลค่าเพิ่ม|vat/i.test(T);
-    return out;
-  }
-  function claimWindow(date) {
-    const m = String(date || '').slice(0, 7); if (!/^\d{4}-\d{2}$/.test(m)) return [];
-    const [y, mo] = m.split('-').map(Number), list = [];
-    for (let i = 0; i <= 6; i++) { const d = new Date(y, mo - 1 + i, 1); list.push(d.getFullYear() + '-' + pad2(d.getMonth() + 1)); }
-    return list;
-  }
+  /*@@BILLCORE@@*/
 
   // ---------- สถานะหน้า ----------
   let info = null, ocrText = '', auto = {}, fileBlob = null, docSrc = '', busy = false;
@@ -207,7 +148,8 @@
     if (isPdf) { $('ph').hidden = true; $('phT').textContent = 'ไฟล์ PDF · ' + (info.fileName || ''); }
     else { $('ph').src = url; $('phT').textContent = 'รูปบิลจาก LINE'; }
     try {
-      if (isPdf) {
+      if (info.ocrText) { ocrText = info.ocrText; }   // Worker อ่านบิลไว้แล้ว (Google Vision) ไม่ต้องอ่านซ้ำบนมือถือ
+      else if (isPdf) {
         setState('กำลังอ่าน PDF…', false, true);
         await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js');
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -252,6 +194,8 @@
     $('cat').innerHTML = '<option value="">— เลือกหมวด —</option>' + PURCH_CATS.map(c => '<option>' + esc(c) + '</option>').join('');
     $('cat').value = (known && known.cat) || guessCat(f.vendor, ocrText);
     $('claim').value = docSrc ? 'expense' : (num(f.vat) > 0 ? 'vat' : 'expense');
+    const ed = info.edits || {};   // ที่แก้จากปุ่มในแชตแล้ว (เช่น สำนักงานใหญ่)
+    ['vendor', 'vendorTax', 'vendorBranch', 'vendorAddr', 'invoiceNo', 'date', 'amount', 'vat'].forEach(k => { if (ed[k] != null && ed[k] !== '') $(k).value = ed[k]; });
     renderMonths(true);
     $('stateCard').hidden = true; $('form').hidden = false; $('bar').hidden = false;
     if (!ocrText.trim()) { setState('อ่านตัวหนังสือในรูปไม่ได้ (รูปอาจไม่ชัด) กรอกเองได้ หรือถ่ายใหม่ให้ชัดแล้วส่งอีกครั้ง', true); }
@@ -260,8 +204,7 @@
   function renderMonths(reset) {
     const w = claimWindow($('date').value), sel = $('claimMonth'), cur = reset ? '' : sel.value;
     // ค่าเริ่มต้น: เดือนที่ออกใบกำกับ ถ้ายื่นรอบนั้นไปแล้ว (เลยวันที่ 15 ของเดือนถัดไป) ใช้เดือนปัจจุบันแทน
-    let def = w[0] || '';
-    if (def) { const [y, m] = def.split('-').map(Number), due = new Date(y, m, 15); const now = todayISO().slice(0, 7); if (new Date() > due && w.indexOf(now) >= 0) def = now; }
+    const def = defaultClaimMonth($('date').value);
     sel.innerHTML = w.map((m, i) => '<option value="' + m + '">' + thMonthFull(m) + (i === 0 ? ' (เดือนที่ออกใบกำกับ)' : '') + '</option>').join('');
     sel.value = cur && w.indexOf(cur) >= 0 ? cur : def;
     const last = w[w.length - 1];
