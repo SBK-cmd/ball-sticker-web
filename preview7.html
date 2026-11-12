@@ -772,6 +772,14 @@ button.status-pill:active{filter:brightness(0.9)}
 .purch-paste{margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.purch-paste summary{cursor:pointer;font-weight:600;min-height:32px;display:flex;align-items:center}.purch-paste textarea{width:100%;margin:8px 0}.purch-paste .btn{min-height:44px}.purch-pick .btn{min-height:44px;cursor:pointer;position:relative}
 .purch-pick .vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
 .purch-pick label:focus-within{outline:3px solid var(--magenta);outline-offset:2px}
+.pt-box{border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:10px;background:var(--surface,#fff)}
+.pt-vat{display:grid;gap:10px}.pt-vat[hidden]{display:none}
+.pt-dl{margin:0;font-size:13.5px;line-height:1.5;color:#33405c}.pt-dl.bad{color:#9b1c43;font-weight:600}.pt-dl.warn{color:#8a5a00}
+.pt-chk{border:0;margin:0;padding:0;display:grid;gap:6px}.pt-chk legend{font-weight:600;font-size:14px;margin-bottom:4px;padding:0}.pt-chk legend small{font-weight:500;color:#556080;margin-left:6px}
+.pt-it{display:grid;grid-template-columns:24px 1fr;gap:2px 8px;align-items:start;font-size:14px;line-height:1.4;padding:6px 8px;border-radius:10px;background:var(--field,#f5f7fb);cursor:pointer}
+.pt-it input{width:20px;height:20px;margin:1px 0 0;accent-color:#15803d}
+.pt-it small{grid-column:2;font-size:12.5px;color:#556080}
+.pt-it.ok{background:#eaf7ef}.pt-it.no{background:#fdecef}.pt-it.no small{color:#9b1c43}
 .pchk{border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.5;border:1px solid var(--line);background:var(--field)}
 .pchk ul{margin:0;padding-left:18px}.pchk li{margin:2px 0}
 .pchk.bad{background:var(--warn-bg);border-color:#e7a3b9;color:var(--warn-ink)}
@@ -3749,6 +3757,25 @@ html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!importa
                 <label class="f"><span>ยอดเงินรวม (ถ้ามี)</span><div class="in"><input type="number" inputmode="decimal" step="any" min="0" id="purchAmount" placeholder="0.00"></div></label>
                 <label class="f"><span>จ่ายจากบัญชี</span><select id="purchAccount"><option value="กิติพงษ์">กิติพงษ์ (ยื่นภาษี)</option><option value="วันทิม">วันทิม (ไม่ยื่นภาษี)</option></select></label>
               </div>
+              <div class="pt-box" id="purchTaxBox">
+                <div class="row2">
+                  <label class="f"><span>ประเภทบิล</span><select id="purchClaim">
+                    <option value="vat">ใบกำกับภาษีเต็มรูป → ใช้เป็นภาษีซื้อ</option>
+                    <option value="expense">ใบเสร็จ / บิลเงินสด → ค่าใช้จ่ายอย่างเดียว</option>
+                    <option value="personal">ส่วนตัว (ไม่นับเป็นค่าใช้จ่ายร้าน)</option>
+                  </select></label>
+                  <label class="f"><span>หมวดค่าใช้จ่าย</span><select id="purchCat"></select></label>
+                </div>
+                <div class="pt-vat" id="purchVatOnly">
+                  <div class="row2">
+                    <label class="f"><span>สาขาของผู้ขาย</span><div class="in"><input type="text" id="purchVendorBranch" class="txt" list="branchOpts" placeholder="สำนักงานใหญ่ หรือ สาขาที่ 00001"></div></label>
+                    <label class="f"><span>ใช้สิทธิ์ในรอบภาษีเดือน</span><select id="purchClaimMonth"></select></label>
+                  </div>
+                  <datalist id="branchOpts"><option value="สำนักงานใหญ่"><option value="สาขาที่ 00001"></datalist>
+                  <p class="pt-dl" id="purchDeadline"></p>
+                  <fieldset class="pt-chk" id="purchChk"><legend>เช็กลิสต์ใบกำกับภาษีเต็มรูป <small id="purchChkSum"></small></legend></fieldset>
+                </div>
+              </div>
               <div class="pchk" id="purchCheck" role="status" aria-live="polite" hidden></div>
               <label class="f"><span>รายละเอียด / หมายเหตุ</span><textarea id="purchNote" placeholder="เช่น ซื้อกระดาษสติ๊กเกอร์ 10 ม้วน"></textarea></label>
               <label class="f">
@@ -4326,7 +4353,7 @@ html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!importa
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=23299b701b",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=6095d6f296",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

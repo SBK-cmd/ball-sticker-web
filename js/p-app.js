@@ -2233,7 +2233,7 @@ function bahtText(value) {
     outs.forEach(x => { const m = M(mk(x.createdAt)); if (xfer[x.id]) return; A(m, x.account || '-').out += num(x.amount); m.outT += num(x.amount); m.nOut++; });
     (store.get('bs_bills', []) || []).forEach(b => { if (!b.date) return; const c = billCalc(b), m = M(monthKey(b.date)); m.bill += c.sub - c.disc; m.billVat += c.vat; m.nBill++; });
     (store.get('bs_wholesale', []) || []).forEach(w => { if (!w.date) return; const m = M(monthKey(w.date)); m.wh += wholesaleCalc(w).total; m.nWh++; });
-    (store.get('bs_purchases', []) || []).forEach(p => { if (!p.date) return; const m = M(monthKey(p.date)); if (num(p.amount) > 0) m.purch += num(p.amount); else m.nPurchNoAmt++; m.nPurch++; });
+    (store.get('bs_purchases', []) || []).forEach(p => { if (!p.date || purchClaimOf(p) === 'personal') return; const m = M(monthKey(p.date)); if (num(p.amount) > 0) m.purch += num(p.amount); else m.nPurchNoAmt++; m.nPurch++; });
     Object.keys(months).forEach(k => { const m = months[k]; ['inT', 'outT', 'xferT', 'bill', 'billVat', 'wh', 'purch'].forEach(f => { m[f] = round2(m[f]); }); Object.keys(m.acc).forEach(a => { m.acc[a].in = round2(m.acc[a].in); m.acc[a].out = round2(m.acc[a].out); }); });
     const oldest = ins.concat(outs).reduce((a, x) => Math.min(a, x.createdAt), Infinity);
     return {months, oldest: isFinite(oldest) ? oldest : 0, capped: ins.length >= 300 || outs.length >= 300};
@@ -2375,7 +2375,7 @@ function bahtText(value) {
     $('dashTotal').textContent = money(total) + ' บาท';
 
     const purchList = store.get('bs_purchases', []);
-    const purchFiltered = sel ? purchList.filter(p => monthKey(p.date) === sel) : purchList;
+    const purchFiltered = (sel ? purchList.filter(p => purchVatMonth(p) === sel) : purchList).filter(isInputVat);
     const purchVat = round2(purchFiltered.reduce((a, p) => a + num(p.vat), 0));
     $('dashPurchVat').textContent = money(purchVat) + ' บาท';
     const netVat = round2(vat - purchVat);
@@ -2622,7 +2622,7 @@ function bahtText(value) {
   function reportPurchRows(sel) {
     // รายงานภาษีซื้อ (ยื่นสรรพากร) นับเฉพาะรายการที่มีใบกำกับภาษีซื้อ/มี VAT จริง
     // นับเฉพาะบัญชีที่ยื่นภาษี (กิติพงษ์ / รายการเก่าที่ไม่ระบุ) — จ่ายจากบัญชีวันทิมไม่เข้ารายงาน
-    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel).filter(p => num(p.vat) > 0).filter(p => NON_TAX_ACCOUNTS.indexOf(p.account) < 0)
+    const list = store.get('bs_purchases', []).filter(p => !sel || purchVatMonth(p) === sel).filter(isInputVat)
       .slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
     return list.map(p => {
       const vat = num(p.vat), amt = num(p.amount);
@@ -2633,7 +2633,7 @@ function bahtText(value) {
   }
   function reportPurchNonVatRows(sel) {
     // ค่าใช้จ่าย/รายการซื้อที่ไม่มี VAT (ไม่มีใบกำกับภาษีซื้อ) แยกไว้เพื่อดูต้นทุนเท่านั้น ไม่ใช้ยื่นภาษี
-    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel).filter(p => !(num(p.vat) > 0)).filter(p => NON_TAX_ACCOUNTS.indexOf(p.account) < 0)
+    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel).filter(p => purchClaimOf(p) === 'expense').filter(p => NON_TAX_ACCOUNTS.indexOf(p.account) < 0)
       .slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
     return list.map(p => ({date: p.date, no: p.invoiceNo, name: p.vendor, amount: num(p.amount), note: p.note}));
   }
@@ -2940,6 +2940,126 @@ function bahtText(value) {
     return out;
   }
 
+  // ---------- ประเภทบิล / หมวด / เช็กลิสต์ใบกำกับเต็มรูป (มาตรา 86/4 + ประกาศอธิบดีฯ ฉบับ 196) ----------
+  const purchClaimOf = p => p.claim || (num(p.vat) > 0 ? 'vat' : 'expense');   // รายการเก่าไม่มีช่องนี้: มี VAT = ภาษีซื้อ
+  const isInputVat = p => purchClaimOf(p) === 'vat' && num(p.vat) > 0 && NON_TAX_ACCOUNTS.indexOf(p.account) < 0;
+  const purchVatMonth = p => p.claimMonth || monthKey(p.date);
+  const PURCH_CATS = ['วัสดุ สติ๊กเกอร์ กระดาษ ฟิล์ม', 'หมึกพิมพ์', 'อุปกรณ์ / เครื่องมือ', 'ค่าขนส่ง / ไปรษณีย์', 'ค่าไฟ น้ำ อินเทอร์เน็ต โทรศัพท์', 'ค่าเช่า', 'ค่าโฆษณา / การตลาด', 'ซ่อมบำรุง', 'ค่าเดินทาง / น้ำมัน', 'อื่นๆ'];
+  function guessPurchCat(vendor, note, text) {
+    const remembered = (store.get('bs_vendors', []).find(v => String(v.name || '').trim() === String(vendor || '').trim()) || {}).cat;
+    if (remembered && PURCH_CATS.indexOf(remembered) >= 0) return remembered;
+    const t = [vendor, note, text].join(' ').toLowerCase();
+    if (/หมึก|ink|toner|โทนเนอร์/.test(t)) return 'หมึกพิมพ์';
+    if (/สติ๊กเกอร์|สติกเกอร์|sticker|กระดาษ|ฟิล์ม|film|pvc|ไวนิล|vinyl|โฮโลแกรม|สะท้อนแสง|ลามิเนต|laminat/.test(t)) return 'วัสดุ สติ๊กเกอร์ กระดาษ ฟิล์ม';
+    if (/ขนส่ง|ไปรษณีย์|kerry|flash|j&t|jt express|best express|ems|ค่าส่ง|lalamove|ไลน์แมน/.test(t)) return 'ค่าขนส่ง / ไปรษณีย์';
+    if (/การไฟฟ้า|ไฟฟ้า|ประปา|ทรู|true|ais|dtac|3bb|อินเทอร์เน็ต|internet|โทรศัพท์/.test(t)) return 'ค่าไฟ น้ำ อินเทอร์เน็ต โทรศัพท์';
+    if (/ค่าเช่า|rent/.test(t)) return 'ค่าเช่า';
+    if (/facebook|meta|google ads|tiktok|โฆษณา|ads/.test(t)) return 'ค่าโฆษณา / การตลาด';
+    if (/ซ่อม|อะไหล่|service|บำรุง/.test(t)) return 'ซ่อมบำรุง';
+    if (/น้ำมัน|ปตท|ptt|บางจาก|shell|caltex|ทางด่วน/.test(t)) return 'ค่าเดินทาง / น้ำมัน';
+    if (/เครื่อง|มีด|ใบมีด|cutter|plotter|คอมพิวเตอร์|อุปกรณ์/.test(t)) return 'อุปกรณ์ / เครื่องมือ';
+    return '';
+  }
+  // รายการตรวจ: auto = ผลจากข้อความที่สแกน (true/false/null=ตรวจไม่ได้) · ผู้ใช้ติ๊กแก้เองได้ (เก็บใน chk)
+  const TAX_CHK = [
+    ['title', 'มีคำว่า “ใบกำกับภาษี”', 'ใบเสร็จธรรมดา/บิลเงินสด/ใบกำกับอย่างย่อ ใช้เป็นภาษีซื้อไม่ได้'],
+    ['seller', 'ชื่อ ที่อยู่ และเลขผู้เสียภาษีของผู้ขายครบ', ''],
+    ['sellerBranch', 'ระบุ “สำนักงานใหญ่” หรือ “สาขาที่ …” ของผู้ขาย', ''],
+    ['buyer', 'ชื่อผู้ซื้อเป็นชื่อที่ร้านจด VAT', ''],
+    ['buyerTax', 'เลขผู้เสียภาษีผู้ซื้อเป็นของร้าน + ระบุ “สำนักงานใหญ่”', 'ผู้ซื้อจด VAT ต้องมีสถานประกอบการของผู้ซื้อด้วย (ประกาศฯ ฉบับ 196)'],
+    ['buyerAddr', 'ที่อยู่ผู้ซื้อตรงกับ ภ.พ.20 ของร้าน', ''],
+    ['itemsVat', 'มีรายการสินค้า และแยกยอด VAT ออกจากราคา', ''],
+    ['noDate', 'มีเลขที่และวันที่ของใบกำกับ', ''],
+  ];
+  let purchOcrText = '', purchChk = {};
+  const ownNameRe = () => { const parts = [String(shop.promptpayName || '').replace(/^(นาย|นาง|นางสาว)\s*/, '').split(/\s+/)[0], 'กิติพงษ์', 'กิดิพงษ์', 'บอลสติ๊กเกอร์', 'บอล สติ๊กเกอร์', 'บอลสติกเกอร์']; return new RegExp(parts.filter(Boolean).map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')); };
+  function addrKeys(a) {   // ตัวที่ใช้เทียบที่อยู่: บ้านเลขที่ หมู่ ตำบล รหัสไปรษณีย์
+    a = String(a || '');
+    const no = (a.match(/^\s*(\d+(?:\/\d+)?)/) || [])[1] || '', moo = (a.match(/หมู่(?:ที่)?\s*(\d+)/) || [])[1] || '';
+    const tb = (a.match(/(?:ต\.|ตำบล|แขวง)\s*([ก-๙]+)/) || [])[1] || '', zip = (a.match(/(\d{5})(?!\d)/) || [])[1] || '';
+    return {no, moo, tb, zip};
+  }
+  function autoTaxChecklist(text, f) {
+    const T = String(text || ''), own = ownTaxId(), digits = T.replace(/[^\d\n]/g, '');
+    if (!T.trim()) return;
+    const lines = T.split('\n'), ownLine = lines.find(l => l.replace(/\D/g, '').indexOf(own) >= 0) || '';
+    const vtax = String((f && f.vendorTax) || $('purchVendorTax').value || '').replace(/\D/g, '');
+    const vLine = vtax ? (lines.find(l => l.replace(/\D/g, '').indexOf(vtax) >= 0) || '') : '';
+    const brRe = /(ส[ำา]?นักงาน\s*[ใไ]?หญ|สนง\.?\s*ใหญ่|head\s*office|สาขา(?:ที่)?\s*[0-9๐-๙]{1,5})/i;   // ทนการอ่านเพี้ยน (สานักงานใหญี)
+    const auto = {};
+    auto.title = /ใบกำกับภาษี|ใบกํากับภาษี|tax\s*invoice/i.test(T);
+    // สาขาผู้ขาย: อยู่บรรทัดเลขภาษีผู้ขาย หรือบรรทัดชื่อบริษัทผู้ขาย
+    const vName = String((f && f.vendor) || $('purchVendor').value || '').slice(0, 8);
+    const nameLine = vName ? (lines.find(l => l.indexOf(vName) >= 0) || '') : '';
+    const brM = (vLine.match(brRe) || nameLine.match(brRe) || [])[1] || '';
+    if (brM && !$('purchVendorBranch').value.trim()) $('purchVendorBranch').value = /สาขา/.test(brM) ? brM.replace(/[๐-๙]/g, c => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(c))).replace(/สาขา\s*(ที่)?\s*/, 'สาขาที่ ') : 'สำนักงานใหญ่';
+    else if (!brM && /สาขา(ที่)?/.test(nameLine + vLine) && !$('purchVendorBranch').value.trim()) $('purchVendorBranch').value = 'สาขาที่ ';   // เห็นคำว่าสาขาแต่อ่านเลขไม่ออก → ให้กรอกเลขเอง
+    // ที่อยู่ผู้ขาย: บรรทัดที่มีคำบอกที่อยู่ ใกล้ชื่อ/เลขภาษีผู้ขาย (ไม่ใช่บรรทัดของร้านเรา)
+    const addrRe = /(ถนน|ถ\.|ตำบล|ต\.|แขวง|เขต|อำเภอ|อ\.|จังหวัด|จ\.|หมู่|ซอย|(?<!\d)\d{5}(?!\d))/;
+    const ni = nameLine ? lines.indexOf(nameLine) : -1, vi = vLine ? lines.indexOf(vLine) : -1;
+    const cand = [ni + 1, ni + 2, vi, ni, vi - 1].filter(i => i >= 0 && i < lines.length).map(i => lines[i]);
+    const aLine = cand.find(l => addrRe.test(l) && l.replace(/\D/g, '').indexOf(own) < 0 && !ownNameRe().test(l));
+    const vAddr = aLine ? aLine.replace(/(เลขประจำตัว|เลขที่ผู้เสีย|โทร|tel|fax|เอกสารออก|www\.|e-?mail).*/i, '').replace(/^(บริษัท|ห้างหุ้นส่วน)[^0-9]*?(จำกัด|$)\s*/, '').replace(/\s+/g, ' ').trim() : '';
+    if (vAddr.length >= 10 && !($('purchVendorAddr').value || '').trim()) $('purchVendorAddr').value = vAddr.slice(0, 160);
+    auto.seller = !!(vName && thaiTaxIdValid(vtax) && (vAddr.length >= 10 || ($('purchVendorAddr').value || '').trim()));
+    auto.buyer = ownNameRe().test(T);
+    const buyerNameLine = lines.find(l => ownNameRe().test(l)) || '';
+    auto.buyerTax = digits.indexOf(own) >= 0 ? (brRe.test(ownLine) || brRe.test(buyerNameLine)) : false;   // สาขาผู้ซื้ออาจอยู่บรรทัดชื่อหรือบรรทัดเลขภาษี
+    const k = addrKeys(shop.address);
+    auto.buyerAddr = k.zip && k.tb ? (T.indexOf(k.zip) >= 0 && T.indexOf(k.tb) >= 0 && (!k.moo || new RegExp('หมู่(?:ที่)?\\s*' + k.moo + '(?!\\d)').test(T))) : null;
+    auto.itemsVat = /ภาษีมูลค่าเพิ่ม|vat/i.test(T) && !!(f && f.vat);
+    auto.noDate = !!(f && f.invoiceNo && f.date);
+    purchChk = Object.assign({}, purchChk, auto, {_auto: Object.assign({}, auto)});
+    renderTaxChecklist();
+  }
+  function taxChkState() {   // ค่าที่ใช้จริง: ติ๊กเอง > ผลสแกน > เดาจากช่องที่กรอก
+    const v = $('purchVendorTax').value.replace(/\D/g, ''), st = {};
+    TAX_CHK.forEach(([key]) => { st[key] = purchChk[key]; });
+    if (st.seller == null) st.seller = !!($('purchVendor').value.trim() && thaiTaxIdValid(v) && ($('purchVendorAddr').value || '').trim());
+    if (st.sellerBranch == null) { const b = $('purchVendorBranch').value.trim(); st.sellerBranch = !b ? null : (/สาขา/.test(b) && !/\d/.test(b)) ? null : true; }
+    if (st.itemsVat == null) st.itemsVat = num($('purchVat').value) > 0 ? null : false;
+    if (st.noDate == null) st.noDate = !!($('purchInvoiceNo').value.trim() && $('purchDate').value);
+    return st;
+  }
+  function claimWindow(date) {   // ใช้สิทธิ์ได้ในเดือนที่ออก หรือภายใน 6 เดือนนับแต่เดือนถัดไป (มาตรา 82/3 วรรคสี่)
+    const m = monthKey(date); if (!m) return null;
+    const [y, mo] = m.split('-').map(Number), list = [];
+    for (let i = 0; i <= 6; i++) { const d = new Date(y, mo - 1 + i, 1); list.push(d.getFullYear() + '-' + pad2(d.getMonth() + 1)); }
+    return list;
+  }
+  function renderClaimMonths() {
+    const sel = $('purchClaimMonth'), w = claimWindow($('purchDate').value) || [];
+    const cur = sel.dataset.v || w[0] || '';
+    sel.innerHTML = w.map((m, i) => '<option value="' + m + '">' + esc(thMonthFull(m)) + (i === 0 ? ' (เดือนที่ออกใบกำกับ)' : '') + '</option>').join('') + (cur && w.indexOf(cur) < 0 ? '<option value="' + esc(cur) + '">' + esc(thMonthFull(cur)) + ' (เลยกำหนด)</option>' : '');
+    sel.value = cur || w[0] || ''; sel.dataset.v = sel.value;
+    const dl = $('purchDeadline');
+    if (!w.length) { dl.textContent = ''; return; }
+    const last = w[w.length - 1], [ly, lm] = last.split('-').map(Number), end = new Date(ly, lm, 0), days = Math.ceil((end - new Date(todayISO() + 'T00:00:00')) / 864e5);
+    const late = sel.value && w.indexOf(sel.value) < 0;
+    dl.className = 'pt-dl' + (late || days < 0 ? ' bad' : days <= 31 ? ' warn' : '');
+    dl.textContent = late ? 'รอบที่เลือกเลยกำหนด 6 เดือนแล้ว ใช้เป็นภาษีซื้อไม่ได้ — เปลี่ยนเป็น “ค่าใช้จ่ายอย่างเดียว”'
+      : 'ใช้สิทธิ์ได้ในรอบ ' + thMonthFull(w[0]) + ' ถึง ' + thMonthFull(last) + (days >= 0 ? ' · เหลือ ' + days + ' วัน' : ' · เลยกำหนดแล้ว') + ' (ตรวจกับผู้ทำบัญชีอีกครั้ง)';
+  }
+  function renderTaxChecklist() {
+    const box = $('purchChk'); if (!box) return;
+    const st = taxChkState(), auto = purchChk._auto || {};
+    box.innerHTML = '<legend>เช็กลิสต์ใบกำกับภาษีเต็มรูป <small id="purchChkSum"></small></legend>' + TAX_CHK.map(([key, label, hint]) => {
+      const v = st[key], cls = v === true ? 'ok' : v === false ? 'no' : '';
+      const src = key in auto && auto[key] != null && purchChk[key] === auto[key] ? (auto[key] ? 'พบในบิลที่สแกน' : 'ไม่พบในบิลที่สแกน') : (purchChk[key] != null ? 'ติ๊กเอง' : (v == null ? 'ยังไม่ได้ตรวจ — ดูในบิลแล้วติ๊ก' : 'จากข้อมูลที่กรอก'));
+      let extra = '';
+      if (key === 'buyerAddr' && v === false) extra = 'ที่อยู่ร้านในตั้งค่า: ' + shop.address;
+      return '<label class="pt-it ' + cls + '"><input type="checkbox" data-chk="' + key + '"' + (v ? ' checked' : '') + '><span>' + esc(label) + '</span><small>' + esc([src, extra || (v === false ? hint : '')].filter(Boolean).join(' · ')) + '</small></label>';
+    }).join('');
+    const n = TAX_CHK.length, ok = TAX_CHK.filter(([k]) => st[k] === true).length, bad = TAX_CHK.filter(([k]) => st[k] === false).length;
+    $('purchChkSum').textContent = 'ผ่าน ' + ok + '/' + n + (bad ? ' · ขาด ' + bad : '') + (n - ok - bad ? ' · รอตรวจ ' + (n - ok - bad) : '');
+  }
+  function renderPurchTaxBox() {
+    const cs = $('purchCat'); if (cs && !cs.options.length) cs.innerHTML = '<option value="">— เลือกหมวด —</option>' + PURCH_CATS.map(c => '<option>' + esc(c) + '</option>').join('');
+    const isVat = $('purchClaim').value === 'vat';
+    $('purchVatOnly').hidden = !isVat;
+    if (isVat) { renderClaimMonths(); renderTaxChecklist(); }
+  }
+
   // ---------- ตรวจข้อมูลในฟอร์มภาษีซื้อ (ใช้ทั้งหลังสแกนและตอนพิมพ์แก้) ----------
   let purchCheckSrc = '';
   function checkPurchaseFields() {
@@ -2957,10 +3077,19 @@ function bahtText(value) {
       if (vat >= amt) { issues.push('ยอด VAT มากกว่าหรือเท่ายอดเงินรวม'); bad.add('purchVat'); bad.add('purchAmount'); }
       else if (Math.abs(expect - vat) > 1) { issues.push('VAT ไม่ตรงกับ 7% ของยอดรวม: ยอดรวม ' + money(amt) + ' ควรมี VAT ' + money(expect) + ' บาท แต่กรอก ' + money(vat) + ' บาท (ถ้าบิลมีสินค้ายกเว้น VAT ปนอยู่ ข้ามได้)'); bad.add('purchVat'); bad.add('purchAmount'); }
     }
+    const claim = $('purchClaim') ? $('purchClaim').value : 'vat';
+    if (claim === 'vat') {
+      if (!(vat > 0) && (amt > 0 || taxEl.value.trim())) issues.push('ประเภท “ใบกำกับภาษีเต็มรูป” แต่ยังไม่มียอด VAT — ถ้าบิลไม่มี VAT ให้เปลี่ยนเป็น “ค่าใช้จ่ายอย่างเดียว”');
+      const st = taxChkState(), miss = TAX_CHK.filter(([k]) => st[k] === false).map(x => x[1]);
+      if (miss.length) issues.push('ใบกำกับยังไม่ครบ ' + miss.length + ' ข้อ (อาจใช้เป็นภาษีซื้อไม่ได้): ' + miss.join(' · '));
+      const w = claimWindow($('purchDate').value) || [], cm = $('purchClaimMonth') ? $('purchClaimMonth').value : '';
+      if (cm && w.length && w.indexOf(cm) < 0) issues.push('รอบภาษีที่เลือกเลยกำหนด 6 เดือนแล้ว');
+    }
+    if (claim === 'personal' && (vat > 0 || amt > 0)) issues.push('รายการนี้เป็น “ส่วนตัว” จะไม่ถูกนับในภาษีซื้อและค่าใช้จ่ายร้าน');
     const d = $('purchDate').value;
     if (d) {
       if (d > todayISO()) { issues.push('วันที่อยู่ในอนาคต (' + thDate(d) + ') ตรวจปี พ.ศ./ค.ศ. อีกครั้ง'); bad.add('purchDate'); }
-      else { const ago = (Date.parse(todayISO()) - Date.parse(d)) / 864e5; if (ago > 183) { issues.push('บิลเก่ากว่า 6 เดือน (' + thDate(d) + ') ตรวจวันที่ หรือสอบถามผู้ทำบัญชีว่ายังใช้เป็นภาษีซื้อได้ไหม'); bad.add('purchDate'); } }
+      else if (claim !== 'vat') { const ago = (Date.parse(todayISO()) - Date.parse(d)) / 864e5; if (ago > 400) { issues.push('บิลเก่ากว่า 1 ปี (' + thDate(d) + ') ตรวจวันที่อีกครั้ง'); bad.add('purchDate'); } }
     }
     ['purchVendorTax', 'purchVat', 'purchAmount', 'purchDate'].forEach(id => { const el = $(id); if (!el) return; el.classList.toggle('pbad', bad.has(id)); const w = el.closest('.in'); if (w) w.classList.toggle('pbad', bad.has(id)); });
     const hasAny = vat > 0 || amt > 0 || tax;
@@ -3078,7 +3207,7 @@ function bahtText(value) {
     const apiKey = (localStorage.getItem('bs_ai_key') || '').trim();
     try {
       let fields = null, usedAi = false, usedPdf = false, usedPaste = false, usedOpenThai = false;
-      if (pasted) { fields = parseReceiptText(pasted); usedPaste = true; }
+      if (pasted) { fields = parseReceiptText(pasted); usedPaste = true; purchOcrText = pasted; }
       if (!fields && provider !== 'none' && apiKey && !purchasePdfText) {
         btn.textContent = 'กำลังสแกนด้วย AI…';
         try {
@@ -3089,14 +3218,14 @@ function bahtText(value) {
           toast('สแกนด้วย AI ไม่สำเร็จ (' + (aiErr && aiErr.message ? aiErr.message : 'เชื่อมต่อไม่ได้') + ') กำลังลองสแกนด้วยระบบ OCR ธรรมดาแทน');
         }
       }
-      if (!fields && purchasePdfText) { fields = parseReceiptText(purchasePdfText); usedPdf = true; }
+      if (!fields && purchasePdfText) { fields = parseReceiptText(purchasePdfText); usedPdf = true; purchOcrText = purchasePdfText; }
       if (!fields) {
         btn.textContent = 'กำลังสแกนบิล…';
         // ตัวอ่านหลัก: OpenThai 2.0 OCR (รันในเครื่อง ไม่ส่งรูปออกไปไหน ไม่มีค่าใช้จ่าย) · โหลดไม่ได้ค่อยใช้ Tesseract
         try {
           await bsLoadScript('ocr/openthai-ocr.js');
           const r = await OpenThaiOCR.read(source, {onProgress: m => { btn.textContent = m; }});
-          fields = parseReceiptText(r.text); usedOpenThai = true;
+          fields = parseReceiptText(r.text); usedOpenThai = true; purchOcrText = r.text;
         } catch (e) { console.warn('OpenThai OCR', e); }
       }
       if (!fields) {
@@ -3105,7 +3234,7 @@ function bahtText(value) {
         if (typeof Tesseract === 'undefined') { toast('โหลดระบบสแกนบิลไม่สำเร็จ (ต้องใช้อินเทอร์เน็ต) กรอกข้อมูลด้วยตนเองได้เลย'); return; }
         const worker = await getOcrWorker();
         const {data: {text}} = await worker.recognize(source);
-        fields = parseReceiptText(text);
+        fields = parseReceiptText(text); purchOcrText = text;
       }
       // จำร้าน: เลขผู้เสียภาษีตรงกับร้านที่เคยบันทึก → ใช้ชื่อ/ที่อยู่จากประวัติแทนค่าที่สแกน (แม่นกว่า)
       let known = null;
@@ -3118,8 +3247,9 @@ function bahtText(value) {
         const el = $(map[k]);
         // วันที่ ช่องนี้เริ่มต้นเป็นวันนี้อยู่แล้ว จึงเขียนทับได้เสมอถ้าสแกนเจอวันที่จากบิล ส่วนช่องอื่นเขียนเฉพาะตอนยังว่าง
         const overwrite = k === 'date' ? true : (k === 'vendor' && known) ? true : !el.value.trim();
-        if (fields[k] && overwrite) { el.value = fields[k]; filled++; }
+        if (fields[k] && overwrite) { el.value = fields[k]; filled++; if (k === 'date' && $('purchClaimMonth')) $('purchClaimMonth').dataset.v = ''; }
       });
+      try { if (!$('purchCat').value) { const g = guessPurchCat($('purchVendor').value, $('purchNote').value, purchOcrText); if (g) $('purchCat').value = g; } if (!(num($('purchVat').value) > 0) && fields.amount && !/ใบกำกับภาษี|tax\s*invoice/i.test(purchOcrText || '')) $('purchClaim').value = 'expense'; renderPurchTaxBox(); autoTaxChecklist(purchOcrText, fields); } catch (eC) { console.warn('checklist', eC); }
       checkPurchaseFields();
       toast(filled > 0 ? (usedPaste ? 'แยกข้อความเสร็จแล้ว' : usedPdf ? 'อ่าน PDF เสร็จแล้ว' : usedAi ? 'สแกนด้วย AI เสร็จแล้ว' : 'สแกนเสร็จแล้ว') + ' กรอกให้ ' + filled + ' ช่อง — กรุณาตรวจสอบความถูกต้องก่อนบันทึก'
                         : 'สแกนไม่พบข้อมูลที่มั่นใจพอ กรุณากรอกข้อมูลด้วยตนเอง');
@@ -3353,7 +3483,10 @@ function bahtText(value) {
   function collectPurchase() {
     return {date: $('purchDate').value, vendor: $('purchVendor').value, invoiceNo: $('purchInvoiceNo').value,
       vendorTax: $('purchVendorTax').value, vendorAddr: $('purchVendorAddr') ? $('purchVendorAddr').value : '', amount: $('purchAmount').value,
-      vat: $('purchVat').value, note: $('purchNote').value, photo: purchasePhoto, account: $('purchAccount').value || 'กิติพงษ์'};
+      vat: $('purchVat').value, note: $('purchNote').value, photo: purchasePhoto, account: $('purchAccount').value || 'กิติพงษ์',
+      claim: $('purchClaim').value || 'vat', cat: $('purchCat').value || '', vendorBranch: $('purchVendorBranch').value.trim(),
+      claimMonth: $('purchClaim').value === 'vat' ? ($('purchClaimMonth').value || monthKey($('purchDate').value)) : '',
+      chk: (() => { const o = {}; TAX_CHK.forEach(([k]) => { if (purchChk[k] != null) o[k] = !!purchChk[k]; }); return o; })()};
   }
   function applyPurchase(p) {
     $('purchDate').value = p.date || todayISO(); $('purchVendor').value = p.vendor || '';
@@ -3362,7 +3495,12 @@ function bahtText(value) {
     $('purchNote').value = p.note || ''; purchasePhoto = p.photo || null;
     $('purchAccount').value = ACCOUNTS.indexOf(p.account) >= 0 ? p.account : 'กิติพงษ์';   // รายการเก่าไม่มีช่องนี้ = กิติพงษ์
     purchaseOcrSource = null; purchasePdfText = null; purchCheckSrc = ''; if ($('purchPasteText')) $('purchPasteText').value = '';
-    renderPurchasePhoto(); try { updateOcrButtonLabel(); checkPurchaseFields(); } catch (e) {}
+    purchOcrText = ''; purchChk = Object.assign({}, p.chk || {});
+    renderPurchTaxBox();   // เติมตัวเลือกหมวดก่อนตั้งค่า
+    $('purchClaim').value = p.claim || (p.id ? (num(p.vat) > 0 ? 'vat' : 'expense') : 'vat');
+    $('purchCat').value = p.cat || ''; $('purchVendorBranch').value = p.vendorBranch || '';
+    $('purchClaimMonth').dataset.v = p.claimMonth || '';
+    renderPurchasePhoto(); try { renderPurchTaxBox(); updateOcrButtonLabel(); checkPurchaseFields(); } catch (e) {}
   }
   function renderPurchEditState() {
     const el = $('purchEditState');
@@ -3389,14 +3527,14 @@ function bahtText(value) {
     const q = $('purchHistSearch') ? $('purchHistSearch').value : '';
     const shown = list.filter(p => (matchesSearch(p.vendor, q) || matchesSearch(p.invoiceNo, q)) && (!pm || monthKey(p.date) === pm));
     if ($('purchMonthSum')) {
-      const tv = shown.filter(p => NON_TAX_ACCOUNTS.indexOf(p.account) < 0).reduce((a, p) => a + num(p.vat), 0);
-      $('purchMonthSum').textContent = pm ? shown.length + ' ใบ · ภาษีซื้อ (บัญชียื่นภาษี) ' + money(round2(tv)) + ' บาท' : '';
+      const tv = store.get('bs_purchases', []).filter(p => isInputVat(p) && purchVatMonth(p) === pm).reduce((a, p) => a + num(p.vat), 0);
+      $('purchMonthSum').textContent = pm ? shown.length + ' ใบ · ภาษีซื้อที่ใช้สิทธิ์รอบนี้ ' + money(round2(tv)) + ' บาท' : '';
     }
     if (!shown.length) { $('purchHistory').innerHTML = notice + '<p class="empty">ไม่พบรายการของร้านค้าชื่อ “' + esc(q) + '”</p>'; renderDash(); renderReport(); return; }
     $('purchHistory').innerHTML = notice + '<ul>' + shown.map(p =>
       '<li data-id="' + esc(p.id) + '">' + (p.photo ? '<img class="thumb" src="' + p.photo + '" alt="">' : '') +
       '<div class="meta"><b>' + esc(p.vendor || 'ไม่ระบุร้านค้า') + '</b><small>' + esc(thDate(p.date)) + (p.createdBy ? ' · โดย ' + esc(p.createdBy) : '') + (NON_TAX_ACCOUNTS.indexOf(p.account) >= 0 ? ' · <span class="status-pill taxoff">' + esc(p.account) + ' · ไม่ยื่นภาษี</span>' : '') + '</small></div>' +
-      (num(p.vat) > 0 ? '<span class="amt">VAT ' + money(num(p.vat)) + ' บาท</span>' : '<span class="amt" style="color:#4a5a72">ไม่มี VAT · ' + money(num(p.amount)) + ' บาท</span>') +
+      (purchClaimOf(p) === 'personal' ? '<span class="amt" style="color:#6b7280">ส่วนตัว · ' + money(num(p.amount)) + ' บาท</span>' : purchClaimOf(p) === 'vat' ? '<span class="amt">VAT ' + money(num(p.vat)) + ' บาท' + (p.claimMonth && p.claimMonth !== monthKey(p.date) ? ' · รอบ ' + esc(thMonthFull(p.claimMonth)) : '') + '</span>' : '<span class="amt" style="color:#4a5a72">ค่าใช้จ่าย · ' + money(num(p.amount)) + ' บาท</span>') +
       '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
       '<button class="btn small del" data-act="del" type="button">ลบ</button></li>').join('') + '</ul>';
     renderDash();
@@ -3417,6 +3555,7 @@ function bahtText(value) {
     const persisted = store.set('bs_purchases', list);
     cloudSave('purchases', rec);
     upsertVendor(rec.vendor, rec.vendorTax, rec.vendorAddr);
+    try { const vl = store.get('bs_vendors', []), vi = vl.findIndex(v => String(v.name || '').trim() === String(rec.vendor || '').trim()); if (vi >= 0 && (rec.cat || rec.vendorBranch)) { vl[vi] = Object.assign({}, vl[vi], rec.cat ? {cat: rec.cat} : {}, rec.vendorBranch ? {branch: rec.vendorBranch} : {}); store.set('bs_vendors', vl); cloudSave('vendors', Object.assign({id: vendorCloudId(vl[vi].name)}, vl[vi])); } } catch (e) {}
     renderPurchHistory(); renderPurchEditState();
     syncRecordPhotosToCloud('bs_purchases', 'purchases', rec.id, 'photo', renderPurchHistory);
     if (docEdit.cur === 'purchase') setTimeout(closeDocEdit, 0);
@@ -9047,7 +9186,11 @@ function bahtText(value) {
   $('purchPhotoRemove').addEventListener('click', () => { purchasePhoto = null; purchaseOcrSource = null; purchasePdfText = null; updateOcrButtonLabel(); $('purchPhotoInput').value = ''; renderPurchasePhoto(); });
   $('ocrScanBtn').addEventListener('click', () => scanPurchasePhoto());
   $('purchPasteBtn').addEventListener('click', () => { const t = $('purchPasteText').value; if (!t.trim()) { toast('วางข้อความจากบิลก่อน'); $('purchPasteText').focus(); return; } scanPurchasePhoto(t); });
-  ['purchVendorTax', 'purchVat', 'purchAmount', 'purchDate'].forEach(id => { const el = $(id); if (el) { el.addEventListener('input', checkPurchaseFields); el.addEventListener('change', checkPurchaseFields); } });
+  ['purchVendorTax', 'purchVat', 'purchAmount', 'purchDate', 'purchVendor', 'purchVendorAddr', 'purchInvoiceNo', 'purchVendorBranch'].forEach(id => { const el = $(id); if (el) { const fn = () => { if (id === 'purchDate') { $('purchClaimMonth').dataset.v = ''; } try { renderPurchTaxBox(); } catch (e) {} checkPurchaseFields(); }; el.addEventListener('input', fn); el.addEventListener('change', fn); } });
+  $('purchClaim').addEventListener('change', () => { renderPurchTaxBox(); checkPurchaseFields(); });
+  $('purchClaimMonth').addEventListener('change', e => { e.target.dataset.v = e.target.value; renderClaimMonths(); checkPurchaseFields(); });
+  $('purchChk').addEventListener('change', e => { const k = e.target.dataset.chk; if (!k) return; purchChk[k] = e.target.checked; renderTaxChecklist(); checkPurchaseFields(); });
+  $('purchVendor').addEventListener('change', () => { const v = store.get('bs_vendors', []).find(x => String(x.name || '').trim() === $('purchVendor').value.trim()); if (v && v.branch && !$('purchVendorBranch').value.trim()) $('purchVendorBranch').value = v.branch; if (!$('purchCat').value) { const g = guessPurchCat($('purchVendor').value, $('purchNote').value, ''); if (g) $('purchCat').value = g; } renderPurchTaxBox(); });
 
   /* ---------------- ตั้งค่า AI ช่วยสแกนใบกำกับภาษี (เก็บใน localStorage ของเบราว์เซอร์นี้เท่านั้น ไม่ซิงก์ขึ้นคลาวด์) ---------------- */
   (function initAiSettings() {
