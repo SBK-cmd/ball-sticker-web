@@ -148,6 +148,37 @@ try { if (!localStorage.getItem('bs_session')) document.documentElement.classLis
   .cs-row.off input { opacity:.5; }
   .price-cost { font-size:13px; margin-top:4px; color:var(--muted,#667); font-variant-numeric:tabular-nums; }
   .price-cost b.pos { color:#1f7a4d; } .price-cost b.neg { color:#c8423a; }
+.qc{display:none}
+@media (max-width:760px){
+  .qc{display:grid;gap:8px;margin:0 0 12px}
+  #panel-calc .page-head{display:none}
+  #panel-calc .calc-grid.qc-hide>*:not(.qc){display:none}
+  .qc-in{display:grid;grid-template-columns:1fr auto 1fr 1fr;gap:6px;align-items:end;background:var(--card,#fff);border:1px solid var(--line,#e3e7ef);border-radius:14px;padding:10px}
+  .qc-in label{display:grid;gap:2px;font-size:11px;color:var(--muted,#667089)}
+  .qc-in input{font:600 20px/1.2 'Prompt','Noto Sans Thai',sans-serif;border:1px solid #cfd6e3;border-radius:10px;padding:6px 8px;min-height:44px;width:100%;min-width:0;box-sizing:border-box;background:transparent;color:inherit}
+  .qc-x{padding-bottom:12px;color:var(--muted,#667089)}
+  .qc-seg{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.qc-seg::-webkit-scrollbar{display:none}
+  .qc-seg button{flex:none;font-size:13px;padding:6px 12px;min-height:34px;border-radius:999px;border:1px solid var(--line,#e3e7ef);background:var(--card,#fff);color:inherit;cursor:pointer}
+  .qc-seg button.on{background:#14234b;color:#fff;border-color:#14234b}
+  .qc-sep{flex:none;width:1px;background:var(--line,#e3e7ef);margin:4px 2px}
+  .qc-res{background:#14234b;color:#fff;border-radius:16px;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:10px}
+  .qc-main small{color:rgba(255,255,255,.72);font-size:12px}
+  .qc-price b{font:600 38px/1 'Prompt',sans-serif;color:#f5c400;font-variant-numeric:tabular-nums}.qc-price i{font:500 15px 'Prompt',sans-serif;font-style:normal}
+  .qc-sub{font-size:13px;margin-top:2px}.qc-profit{font-size:12px;color:#9fe3bd;margin-top:6px}
+  .qc-viz{all:unset;cursor:pointer;background:#fff;border-radius:6px;padding:3px;align-self:start;display:block}.qc-viz svg{display:block;width:100%;height:auto}
+  .qc-stats{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;border-top:1px solid rgba(255,255,255,.15);padding-top:8px;font-size:11px;color:rgba(255,255,255,.72)}
+  .qc-stats b{display:block;font:600 16px 'Prompt',sans-serif;color:#fff;font-variant-numeric:tabular-nums}
+  .qc-tip{font-size:12px;background:#fff6cf;color:#5c4500;border-radius:10px;padding:7px 10px}
+  .qc-tier{background:var(--card,#fff);border:1px solid var(--line,#e3e7ef);border-radius:14px;padding:8px 10px}.qc-tier small{font-size:12px;color:var(--muted,#667089)}
+  .qc-tg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:6px}
+  .qc-tg button{border:0;border-radius:10px;padding:6px 0;background:rgba(127,127,127,.08);font-size:11px;color:var(--muted,#667089);cursor:pointer;min-height:44px}
+  .qc-tg button b{display:block;font:600 14px 'Prompt',sans-serif;color:var(--ink,#1b2333);font-variant-numeric:tabular-nums}
+  .qc-tg button.on{background:#fff6cf;outline:2px solid #f5c400}
+  .qc-act{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .qc-act button{min-height:44px;border-radius:12px;border:1px solid var(--line,#e3e7ef);background:var(--card,#fff);color:inherit;font-size:13px;font-weight:500;cursor:pointer}
+  .qc-act .qc-pri{background:#f5c400;border-color:#f5c400;color:#1b2333}
+  .qc-more{border:0;background:transparent;color:var(--muted,#667089);font-size:12px;min-height:36px;cursor:pointer}
+}
 </style>
 <script>
 // ตั้งโหมดมืด/สว่างจากค่าที่จำไว้ทันทีตั้งแต่ก่อนวาดหน้าจอ กันไฟกะพริบสลับธีมตอนโหลด
@@ -2666,7 +2697,39 @@ body.jm-open .fab-newjob{display:none!important}
           <p>ใส่ขนาด ดูจำนวนและการเรียงได้ทันที เลือกหน่วยขนาดสติ๊กเกอร์ได้ ส่วนกระดาษและช่องไฟเป็นเซนติเมตร</p>
         </div>
 
-        <div class="calc-grid">
+        <section class="qc no-print" id="qcCard" aria-label="คำนวณด่วน">
+          <div class="qc-in">
+            <label for="qcW">กว้าง (ซม.)<input id="qcW" type="number" inputmode="decimal" step="any" min="0"></label>
+            <span class="qc-x" aria-hidden="true">×</span>
+            <label for="qcH">สูง (ซม.)<input id="qcH" type="number" inputmode="decimal" step="any" min="0"></label>
+            <label for="qcQ">จำนวน (ชิ้น)<input id="qcQ" type="number" inputmode="numeric" min="0" placeholder="1 แผ่น"></label>
+          </div>
+          <div class="qc-seg" role="group" aria-label="วัสดุและเพจ">
+            <button type="button" data-qcp="hp">HP PVC</button><button type="button" data-qcp="holo">โฮโลแกรม</button><button type="button" data-qcp="hd">สะท้อนแสง</button>
+            <span class="qc-sep" aria-hidden="true"></span>
+            <button type="button" data-qcg="ball">บอล</button><button type="button" data-qcg="roll">Roll</button>
+          </div>
+          <div class="qc-res">
+            <div class="qc-main">
+              <small id="qcLbl">ราคา</small>
+              <div class="qc-price"><b id="qcPrice">—</b> <i>บาท</i></div>
+              <div class="qc-sub" id="qcSub"></div>
+              <div class="qc-profit" id="qcProfit" hidden></div>
+            </div>
+            <button type="button" class="qc-viz" id="qcViz" aria-label="ดูการเรียงเต็มจอ"></button>
+            <div class="qc-stats">
+              <div>ต่อแผ่น<b id="qcPer">—</b></div><div>ใช้กระดาษ<b id="qcSheets">—</b></div><div>เหลือที่ว่าง<b id="qcLeft">—</b></div>
+            </div>
+          </div>
+          <div class="qc-tip" id="qcTip" hidden></div>
+          <div class="qc-tier"><small>ราคาตามจำนวน · แตะเพื่อเลือก</small><div class="qc-tg" id="qcTiers"></div></div>
+          <div class="qc-act">
+            <button type="button" class="qc-pri" data-qca="confirm">ส่งเป็นใบงาน</button><button type="button" data-qca="quote">ใบเสนอราคา</button><button type="button" data-qca="copy">คัดลอกตอบลูกค้า</button>
+          </div>
+          <button type="button" class="qc-more" id="qcMore" aria-expanded="false">ตั้งค่าเพิ่มเติม (หน่วย ช่องไฟ ขอบ เติมพื้นที่) และรายละเอียด ▾</button>
+        </section>
+
+        <div class="calc-grid qc-hide" id="calcGrid">
           <div class="card">
             <fieldset>
               <legend>ขนาดสติ๊กเกอร์</legend>
@@ -5654,8 +5717,63 @@ function bahtText(value) {
       '</tbody></table>' +
       '<div class="sheet-viz">' + ((r.pw > 0 && r.ph > 0) ? layoutSVG(r, 'p') : '') + '</div>' +
       '<p class="foot-note">คำนวณแบบตารางตามแนวที่กำหนด ไม่สลับแนวหรือเรียงสลับฟันปลา ภาพตัวอย่างไม่ใช่ไฟล์สำหรับพิมพ์</p>';
-    renderPrice();
+    renderPrice(); try { renderQC(); } catch (e) { console.error(e); }
   }
+
+  // ---------- คำนวณด่วน (มือถือ: จอเดียวจบ) — ซิงก์กับช่องเดิม แล้วสรุปผลจากระบบเรียง/คิดราคาเดิม ----------
+  function qcPriceFor(q, r) {   // สูตรเดียวกับ renderPrice (เรทตามพื้นที่ เต็มแผ่น/เศษ)
+    const pageKey = PRICE_PAGES[$('pricePage').value] ? $('pricePage').value : 'ball', rate = PRICE_PAGES[pageKey].rates[$('paper').value];
+    const per = r.count, P = PAPERS[$('paper').value]; if (!rate || !(per > 0) || !P) return null;
+    const full = Math.floor(q / per), frac = (q - full * per) / per, unit = rate.unit === 'sqm' ? (P.nw * P.nh) / 10000 : P.nh / 100;
+    return {total: Math.round(full * unit * rate.full + frac * unit * rate.part), sheets: full + frac, cut: Math.ceil(q / per)};
+  }
+  function renderQC() {
+    if (!$('qcCard')) return;
+    const r = lastLayout; if (!r) return;
+    const act = document.activeElement;
+    if (act !== $('qcW')) $('qcW').value = r.sw > 0 ? +(+r.sw).toFixed(2) : '';
+    if (act !== $('qcH')) $('qcH').value = r.sh > 0 ? +(+r.sh).toFixed(2) : '';
+    if (act !== $('qcQ')) $('qcQ').value = $('priceQty').value || '';
+    document.querySelectorAll('[data-qcp]').forEach(b => b.classList.toggle('on', b.dataset.qcp === $('paper').value));
+    document.querySelectorAll('[data-qcg]').forEach(b => b.classList.toggle('on', b.dataset.qcg === $('pricePage').value));
+    const per = r.count || 0, typed = Math.max(0, Math.floor(num($('priceQty').value))), q = typed > 0 ? typed : per;
+    $('qcPer').textContent = per ? per.toLocaleString('th-TH') + ' ชิ้น' : '—';
+    $('qcViz').innerHTML = (r.pw > 0 && r.ph > 0 && per) ? layoutSVG(r, 'q') : '';
+    const pr = per ? qcPriceFor(q, r) : null;
+    $('qcSheets').textContent = pr ? (+pr.sheets.toFixed(2)) + ' แผ่น' : '—';
+    $('qcLeft').textContent = pr && q % per ? (per - q % per).toLocaleString('th-TH') + ' ช่อง' : (pr ? 'เต็มแผ่น' : '—');
+    $('qcLbl').textContent = !per ? (r.sw > 0 && r.sh > 0 ? 'ชิ้นใหญ่กว่าแผ่นนี้ · ลองวัสดุอื่น หรือคิดราคาแบบม้วน' : 'ใส่ขนาดสติ๊กเกอร์') : typed > 0 ? 'ราคา ' + q.toLocaleString('th-TH') + ' ชิ้น · ก่อน VAT' : 'ราคา 1 แผ่นเต็ม (' + per.toLocaleString('th-TH') + ' ชิ้น) · ก่อน VAT';
+    $('qcPrice').textContent = pr ? pr.total.toLocaleString('th-TH') : '—';
+    $('qcSub').textContent = pr ? 'ชิ้นละ ' + money(pr.total / q) + ' · รวม VAT ' + Math.round(pr.total * 1.07).toLocaleString('th-TH') : (per ? 'วัสดุนี้ยังไม่มีเรทราคา' : ($('warn').hidden ? '' : $('warn').textContent));
+    const pf = $('qcProfit'); pf.hidden = true;
+    if (pr && can('money') && $('pricePage').value === 'ball' && $('paper').value === 'hp') try { const cr = costCalc(); if (cr.mat > 0) { const c = pr.sheets * cr.perSheet; pf.hidden = false; pf.textContent = 'ต้นทุน ≈ ' + Math.round(c).toLocaleString('th-TH') + ' · กำไร ≈ ' + Math.round(pr.total - c).toLocaleString('th-TH') + ' (' + Math.round((pr.total - c) / Math.max(1, pr.total) * 100) + '%)'; } } catch (e) {}
+    const tip = $('qcTip');
+    if (pr && typed > 0 && q % per) { const up = Math.ceil(q / per) * per, dn = Math.floor(q / per) * per; tip.hidden = false; tip.textContent = '💡 ' + (dn > 0 ? 'สั่ง ' + dn.toLocaleString('th-TH') + ' ชิ้น พอดี ' + (dn / per) + ' แผ่น · หรือ ' : 'สั่ง ') + up.toLocaleString('th-TH') + ' ชิ้น = ' + (up / per) + ' แผ่นเต็ม ใช้ม้วนคุ้มสุด'; } else tip.hidden = true;
+    const tiers = per ? [10, 20, 50, 100, 200].map(t => ({t, p: qcPriceFor(t, r)})) : [];
+    $('qcTiers').innerHTML = tiers.map(x => '<button type="button" data-qct="' + x.t + '" class="' + (x.t === typed ? 'on' : '') + '">' + x.t + '<b>' + (x.p ? x.p.total.toLocaleString('th-TH') : '—') + '</b></button>').join('');
+  }
+  function qcSetSize(id, cm) { const el = $(id); el._cm = null; el.value = cm > 0 ? +(cm / SUNITS[sUnit].f).toFixed(4) : ''; el.dispatchEvent(new Event('input', {bubbles: true})); }
+  document.addEventListener('input', e => {
+    const t = e.target; if (!t || !t.id) return;
+    if (t.id === 'qcW') qcSetSize('sw', num(t.value));
+    else if (t.id === 'qcH') qcSetSize('sh', num(t.value));
+    else if (t.id === 'qcQ') { $('priceQty').value = t.value; $('priceQty').dispatchEvent(new Event('input', {bubbles: true})); renderQC(); }
+  });
+  document.addEventListener('click', e => {
+    const t = e.target && e.target.closest ? e.target.closest('[data-qcp],[data-qcg],[data-qct],[data-qca],#qcMore,#qcViz') : null; if (!t) return;
+    if (t.dataset.qcp) { $('paper').value = t.dataset.qcp; $('paper').dispatchEvent(new Event('change', {bubbles: true})); }
+    else if (t.dataset.qcg) { $('pricePage').value = t.dataset.qcg; $('pricePage').dispatchEvent(new Event('change', {bubbles: true})); }
+    else if (t.dataset.qct) { $('priceQty').value = t.dataset.qct; $('priceQty').dispatchEvent(new Event('input', {bubbles: true})); renderQC(); }
+    else if (t.id === 'qcMore' || t.id === 'qcViz') { const g = $('calcGrid'), open = g.classList.toggle('qc-hide') === false; $('qcMore').setAttribute('aria-expanded', String(open)); $('qcMore').textContent = open ? 'ซ่อนตั้งค่าและรายละเอียด ▴' : 'ตั้งค่าเพิ่มเติม (หน่วย ช่องไฟ ขอบ เติมพื้นที่) และรายละเอียด ▾'; if (open && t.id === 'qcViz') { const v = $('viz'); if (v) v.scrollIntoView({behavior: 'smooth', block: 'center'}); } }
+    else if (t.dataset.qca === 'confirm' || t.dataset.qca === 'quote') showTab(t.dataset.qca);
+    else if (t.dataset.qca === 'copy') {
+      const r = lastLayout, typed = Math.max(0, Math.floor(num($('priceQty').value))), q = typed > 0 ? typed : (r && r.count) || 0, pr = r && r.count ? qcPriceFor(q, r) : null;
+      if (!pr) return;
+      const sel = $('paper'), txt = 'สติ๊กเกอร์ ' + sel.options[sel.selectedIndex].text.replace(/\s*\d+\s*×\s*\d+.*$/, '') + ' ขนาด ' + fmt(r.sw) + ' × ' + fmt(r.sh) + ' ซม. จำนวน ' + q.toLocaleString('th-TH') + ' ชิ้น\nราคา ' + pr.total.toLocaleString('th-TH') + ' บาท (ชิ้นละ ' + money(pr.total / q) + ' บาท)\nต้องการใบกำกับภาษี +VAT 7% = ' + Math.round(pr.total * 1.07).toLocaleString('th-TH') + ' บาท';
+      const done = () => { t.textContent = 'คัดลอกแล้ว ✓'; setTimeout(() => { t.textContent = 'คัดลอกตอบลูกค้า'; }, 1600); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done).catch(() => { prompt('คัดลอกข้อความนี้', txt); }); else prompt('คัดลอกข้อความนี้', txt);
+    }
+  });
 
   function onPaperChange() {
     const v = $('paper').value, custom = v === 'custom';
@@ -12552,8 +12670,8 @@ function bahtText(value) {
   $('vat-copy').addEventListener('click', copyVatResult);
   $('paper').addEventListener('change', onPaperChange);
   try { const pg = localStorage.getItem('bs_price_page'); if (pg && PRICE_PAGES[pg]) $('pricePage').value = pg; } catch (e) {}
-  $('pricePage').addEventListener('change', () => { try { localStorage.setItem('bs_price_page', $('pricePage').value); } catch (e) {} renderPrice(); });
-  $('priceQty').addEventListener('input', renderPrice);
+  $('pricePage').addEventListener('change', () => { try { localStorage.setItem('bs_price_page', $('pricePage').value); } catch (e) {} renderPrice(); try { renderQC(); } catch (e) {} });
+  $('priceQty').addEventListener('input', () => { renderPrice(); try { renderQC(); } catch (e) {} });
   $('priceAdj').addEventListener('input', renderPrice);
   renderPrice();
   $('print-calc').addEventListener('click', () => {

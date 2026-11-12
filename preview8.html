@@ -148,6 +148,37 @@ try { if (!localStorage.getItem('bs_session')) document.documentElement.classLis
   .cs-row.off input { opacity:.5; }
   .price-cost { font-size:13px; margin-top:4px; color:var(--muted,#667); font-variant-numeric:tabular-nums; }
   .price-cost b.pos { color:#1f7a4d; } .price-cost b.neg { color:#c8423a; }
+.qc{display:none}
+@media (max-width:760px){
+  .qc{display:grid;gap:8px;margin:0 0 12px}
+  #panel-calc .page-head{display:none}
+  #panel-calc .calc-grid.qc-hide>*:not(.qc){display:none}
+  .qc-in{display:grid;grid-template-columns:1fr auto 1fr 1fr;gap:6px;align-items:end;background:var(--card,#fff);border:1px solid var(--line,#e3e7ef);border-radius:14px;padding:10px}
+  .qc-in label{display:grid;gap:2px;font-size:11px;color:var(--muted,#667089)}
+  .qc-in input{font:600 20px/1.2 'Prompt','Noto Sans Thai',sans-serif;border:1px solid #cfd6e3;border-radius:10px;padding:6px 8px;min-height:44px;width:100%;min-width:0;box-sizing:border-box;background:transparent;color:inherit}
+  .qc-x{padding-bottom:12px;color:var(--muted,#667089)}
+  .qc-seg{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.qc-seg::-webkit-scrollbar{display:none}
+  .qc-seg button{flex:none;font-size:13px;padding:6px 12px;min-height:34px;border-radius:999px;border:1px solid var(--line,#e3e7ef);background:var(--card,#fff);color:inherit;cursor:pointer}
+  .qc-seg button.on{background:#14234b;color:#fff;border-color:#14234b}
+  .qc-sep{flex:none;width:1px;background:var(--line,#e3e7ef);margin:4px 2px}
+  .qc-res{background:#14234b;color:#fff;border-radius:16px;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:10px}
+  .qc-main small{color:rgba(255,255,255,.72);font-size:12px}
+  .qc-price b{font:600 38px/1 'Prompt',sans-serif;color:#f5c400;font-variant-numeric:tabular-nums}.qc-price i{font:500 15px 'Prompt',sans-serif;font-style:normal}
+  .qc-sub{font-size:13px;margin-top:2px}.qc-profit{font-size:12px;color:#9fe3bd;margin-top:6px}
+  .qc-viz{all:unset;cursor:pointer;background:#fff;border-radius:6px;padding:3px;align-self:start;display:block}.qc-viz svg{display:block;width:100%;height:auto}
+  .qc-stats{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;border-top:1px solid rgba(255,255,255,.15);padding-top:8px;font-size:11px;color:rgba(255,255,255,.72)}
+  .qc-stats b{display:block;font:600 16px 'Prompt',sans-serif;color:#fff;font-variant-numeric:tabular-nums}
+  .qc-tip{font-size:12px;background:#fff6cf;color:#5c4500;border-radius:10px;padding:7px 10px}
+  .qc-tier{background:var(--card,#fff);border:1px solid var(--line,#e3e7ef);border-radius:14px;padding:8px 10px}.qc-tier small{font-size:12px;color:var(--muted,#667089)}
+  .qc-tg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:6px}
+  .qc-tg button{border:0;border-radius:10px;padding:6px 0;background:rgba(127,127,127,.08);font-size:11px;color:var(--muted,#667089);cursor:pointer;min-height:44px}
+  .qc-tg button b{display:block;font:600 14px 'Prompt',sans-serif;color:var(--ink,#1b2333);font-variant-numeric:tabular-nums}
+  .qc-tg button.on{background:#fff6cf;outline:2px solid #f5c400}
+  .qc-act{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .qc-act button{min-height:44px;border-radius:12px;border:1px solid var(--line,#e3e7ef);background:var(--card,#fff);color:inherit;font-size:13px;font-weight:500;cursor:pointer}
+  .qc-act .qc-pri{background:#f5c400;border-color:#f5c400;color:#1b2333}
+  .qc-more{border:0;background:transparent;color:var(--muted,#667089);font-size:12px;min-height:36px;cursor:pointer}
+}
 </style>
 <script>
 // ตั้งโหมดมืด/สว่างจากค่าที่จำไว้ทันทีตั้งแต่ก่อนวาดหน้าจอ กันไฟกะพริบสลับธีมตอนโหลด
@@ -3078,7 +3109,39 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
           <p>ใส่ขนาด ดูจำนวนและการเรียงได้ทันที เลือกหน่วยขนาดสติ๊กเกอร์ได้ ส่วนกระดาษและช่องไฟเป็นเซนติเมตร</p>
         </div>
 
-        <div class="calc-grid">
+        <section class="qc no-print" id="qcCard" aria-label="คำนวณด่วน">
+          <div class="qc-in">
+            <label for="qcW">กว้าง (ซม.)<input id="qcW" type="number" inputmode="decimal" step="any" min="0"></label>
+            <span class="qc-x" aria-hidden="true">×</span>
+            <label for="qcH">สูง (ซม.)<input id="qcH" type="number" inputmode="decimal" step="any" min="0"></label>
+            <label for="qcQ">จำนวน (ชิ้น)<input id="qcQ" type="number" inputmode="numeric" min="0" placeholder="1 แผ่น"></label>
+          </div>
+          <div class="qc-seg" role="group" aria-label="วัสดุและเพจ">
+            <button type="button" data-qcp="hp">HP PVC</button><button type="button" data-qcp="holo">โฮโลแกรม</button><button type="button" data-qcp="hd">สะท้อนแสง</button>
+            <span class="qc-sep" aria-hidden="true"></span>
+            <button type="button" data-qcg="ball">บอล</button><button type="button" data-qcg="roll">Roll</button>
+          </div>
+          <div class="qc-res">
+            <div class="qc-main">
+              <small id="qcLbl">ราคา</small>
+              <div class="qc-price"><b id="qcPrice">—</b> <i>บาท</i></div>
+              <div class="qc-sub" id="qcSub"></div>
+              <div class="qc-profit" id="qcProfit" hidden></div>
+            </div>
+            <button type="button" class="qc-viz" id="qcViz" aria-label="ดูการเรียงเต็มจอ"></button>
+            <div class="qc-stats">
+              <div>ต่อแผ่น<b id="qcPer">—</b></div><div>ใช้กระดาษ<b id="qcSheets">—</b></div><div>เหลือที่ว่าง<b id="qcLeft">—</b></div>
+            </div>
+          </div>
+          <div class="qc-tip" id="qcTip" hidden></div>
+          <div class="qc-tier"><small>ราคาตามจำนวน · แตะเพื่อเลือก</small><div class="qc-tg" id="qcTiers"></div></div>
+          <div class="qc-act">
+            <button type="button" class="qc-pri" data-qca="confirm">ส่งเป็นใบงาน</button><button type="button" data-qca="quote">ใบเสนอราคา</button><button type="button" data-qca="copy">คัดลอกตอบลูกค้า</button>
+          </div>
+          <button type="button" class="qc-more" id="qcMore" aria-expanded="false">ตั้งค่าเพิ่มเติม (หน่วย ช่องไฟ ขอบ เติมพื้นที่) และรายละเอียด ▾</button>
+        </section>
+
+        <div class="calc-grid qc-hide" id="calcGrid">
           <div class="card">
             <fieldset>
               <legend>ขนาดสติ๊กเกอร์</legend>
@@ -4588,7 +4651,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=d8afb695d2",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=733bc16ada",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

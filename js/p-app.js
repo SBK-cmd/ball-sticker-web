@@ -1476,8 +1476,63 @@ function bahtText(value) {
       '</tbody></table>' +
       '<div class="sheet-viz">' + ((r.pw > 0 && r.ph > 0) ? layoutSVG(r, 'p') : '') + '</div>' +
       '<p class="foot-note">คำนวณแบบตารางตามแนวที่กำหนด ไม่สลับแนวหรือเรียงสลับฟันปลา ภาพตัวอย่างไม่ใช่ไฟล์สำหรับพิมพ์</p>';
-    renderPrice();
+    renderPrice(); try { renderQC(); } catch (e) { console.error(e); }
   }
+
+  // ---------- คำนวณด่วน (มือถือ: จอเดียวจบ) — ซิงก์กับช่องเดิม แล้วสรุปผลจากระบบเรียง/คิดราคาเดิม ----------
+  function qcPriceFor(q, r) {   // สูตรเดียวกับ renderPrice (เรทตามพื้นที่ เต็มแผ่น/เศษ)
+    const pageKey = PRICE_PAGES[$('pricePage').value] ? $('pricePage').value : 'ball', rate = PRICE_PAGES[pageKey].rates[$('paper').value];
+    const per = r.count, P = PAPERS[$('paper').value]; if (!rate || !(per > 0) || !P) return null;
+    const full = Math.floor(q / per), frac = (q - full * per) / per, unit = rate.unit === 'sqm' ? (P.nw * P.nh) / 10000 : P.nh / 100;
+    return {total: Math.round(full * unit * rate.full + frac * unit * rate.part), sheets: full + frac, cut: Math.ceil(q / per)};
+  }
+  function renderQC() {
+    if (!$('qcCard')) return;
+    const r = lastLayout; if (!r) return;
+    const act = document.activeElement;
+    if (act !== $('qcW')) $('qcW').value = r.sw > 0 ? +(+r.sw).toFixed(2) : '';
+    if (act !== $('qcH')) $('qcH').value = r.sh > 0 ? +(+r.sh).toFixed(2) : '';
+    if (act !== $('qcQ')) $('qcQ').value = $('priceQty').value || '';
+    document.querySelectorAll('[data-qcp]').forEach(b => b.classList.toggle('on', b.dataset.qcp === $('paper').value));
+    document.querySelectorAll('[data-qcg]').forEach(b => b.classList.toggle('on', b.dataset.qcg === $('pricePage').value));
+    const per = r.count || 0, typed = Math.max(0, Math.floor(num($('priceQty').value))), q = typed > 0 ? typed : per;
+    $('qcPer').textContent = per ? per.toLocaleString('th-TH') + ' ชิ้น' : '—';
+    $('qcViz').innerHTML = (r.pw > 0 && r.ph > 0 && per) ? layoutSVG(r, 'q') : '';
+    const pr = per ? qcPriceFor(q, r) : null;
+    $('qcSheets').textContent = pr ? (+pr.sheets.toFixed(2)) + ' แผ่น' : '—';
+    $('qcLeft').textContent = pr && q % per ? (per - q % per).toLocaleString('th-TH') + ' ช่อง' : (pr ? 'เต็มแผ่น' : '—');
+    $('qcLbl').textContent = !per ? (r.sw > 0 && r.sh > 0 ? 'ชิ้นใหญ่กว่าแผ่นนี้ · ลองวัสดุอื่น หรือคิดราคาแบบม้วน' : 'ใส่ขนาดสติ๊กเกอร์') : typed > 0 ? 'ราคา ' + q.toLocaleString('th-TH') + ' ชิ้น · ก่อน VAT' : 'ราคา 1 แผ่นเต็ม (' + per.toLocaleString('th-TH') + ' ชิ้น) · ก่อน VAT';
+    $('qcPrice').textContent = pr ? pr.total.toLocaleString('th-TH') : '—';
+    $('qcSub').textContent = pr ? 'ชิ้นละ ' + money(pr.total / q) + ' · รวม VAT ' + Math.round(pr.total * 1.07).toLocaleString('th-TH') : (per ? 'วัสดุนี้ยังไม่มีเรทราคา' : ($('warn').hidden ? '' : $('warn').textContent));
+    const pf = $('qcProfit'); pf.hidden = true;
+    if (pr && can('money') && $('pricePage').value === 'ball' && $('paper').value === 'hp') try { const cr = costCalc(); if (cr.mat > 0) { const c = pr.sheets * cr.perSheet; pf.hidden = false; pf.textContent = 'ต้นทุน ≈ ' + Math.round(c).toLocaleString('th-TH') + ' · กำไร ≈ ' + Math.round(pr.total - c).toLocaleString('th-TH') + ' (' + Math.round((pr.total - c) / Math.max(1, pr.total) * 100) + '%)'; } } catch (e) {}
+    const tip = $('qcTip');
+    if (pr && typed > 0 && q % per) { const up = Math.ceil(q / per) * per, dn = Math.floor(q / per) * per; tip.hidden = false; tip.textContent = '💡 ' + (dn > 0 ? 'สั่ง ' + dn.toLocaleString('th-TH') + ' ชิ้น พอดี ' + (dn / per) + ' แผ่น · หรือ ' : 'สั่ง ') + up.toLocaleString('th-TH') + ' ชิ้น = ' + (up / per) + ' แผ่นเต็ม ใช้ม้วนคุ้มสุด'; } else tip.hidden = true;
+    const tiers = per ? [10, 20, 50, 100, 200].map(t => ({t, p: qcPriceFor(t, r)})) : [];
+    $('qcTiers').innerHTML = tiers.map(x => '<button type="button" data-qct="' + x.t + '" class="' + (x.t === typed ? 'on' : '') + '">' + x.t + '<b>' + (x.p ? x.p.total.toLocaleString('th-TH') : '—') + '</b></button>').join('');
+  }
+  function qcSetSize(id, cm) { const el = $(id); el._cm = null; el.value = cm > 0 ? +(cm / SUNITS[sUnit].f).toFixed(4) : ''; el.dispatchEvent(new Event('input', {bubbles: true})); }
+  document.addEventListener('input', e => {
+    const t = e.target; if (!t || !t.id) return;
+    if (t.id === 'qcW') qcSetSize('sw', num(t.value));
+    else if (t.id === 'qcH') qcSetSize('sh', num(t.value));
+    else if (t.id === 'qcQ') { $('priceQty').value = t.value; $('priceQty').dispatchEvent(new Event('input', {bubbles: true})); renderQC(); }
+  });
+  document.addEventListener('click', e => {
+    const t = e.target && e.target.closest ? e.target.closest('[data-qcp],[data-qcg],[data-qct],[data-qca],#qcMore,#qcViz') : null; if (!t) return;
+    if (t.dataset.qcp) { $('paper').value = t.dataset.qcp; $('paper').dispatchEvent(new Event('change', {bubbles: true})); }
+    else if (t.dataset.qcg) { $('pricePage').value = t.dataset.qcg; $('pricePage').dispatchEvent(new Event('change', {bubbles: true})); }
+    else if (t.dataset.qct) { $('priceQty').value = t.dataset.qct; $('priceQty').dispatchEvent(new Event('input', {bubbles: true})); renderQC(); }
+    else if (t.id === 'qcMore' || t.id === 'qcViz') { const g = $('calcGrid'), open = g.classList.toggle('qc-hide') === false; $('qcMore').setAttribute('aria-expanded', String(open)); $('qcMore').textContent = open ? 'ซ่อนตั้งค่าและรายละเอียด ▴' : 'ตั้งค่าเพิ่มเติม (หน่วย ช่องไฟ ขอบ เติมพื้นที่) และรายละเอียด ▾'; if (open && t.id === 'qcViz') { const v = $('viz'); if (v) v.scrollIntoView({behavior: 'smooth', block: 'center'}); } }
+    else if (t.dataset.qca === 'confirm' || t.dataset.qca === 'quote') showTab(t.dataset.qca);
+    else if (t.dataset.qca === 'copy') {
+      const r = lastLayout, typed = Math.max(0, Math.floor(num($('priceQty').value))), q = typed > 0 ? typed : (r && r.count) || 0, pr = r && r.count ? qcPriceFor(q, r) : null;
+      if (!pr) return;
+      const sel = $('paper'), txt = 'สติ๊กเกอร์ ' + sel.options[sel.selectedIndex].text.replace(/\s*\d+\s*×\s*\d+.*$/, '') + ' ขนาด ' + fmt(r.sw) + ' × ' + fmt(r.sh) + ' ซม. จำนวน ' + q.toLocaleString('th-TH') + ' ชิ้น\nราคา ' + pr.total.toLocaleString('th-TH') + ' บาท (ชิ้นละ ' + money(pr.total / q) + ' บาท)\nต้องการใบกำกับภาษี +VAT 7% = ' + Math.round(pr.total * 1.07).toLocaleString('th-TH') + ' บาท';
+      const done = () => { t.textContent = 'คัดลอกแล้ว ✓'; setTimeout(() => { t.textContent = 'คัดลอกตอบลูกค้า'; }, 1600); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done).catch(() => { prompt('คัดลอกข้อความนี้', txt); }); else prompt('คัดลอกข้อความนี้', txt);
+    }
+  });
 
   function onPaperChange() {
     const v = $('paper').value, custom = v === 'custom';
@@ -8374,8 +8429,8 @@ function bahtText(value) {
   $('vat-copy').addEventListener('click', copyVatResult);
   $('paper').addEventListener('change', onPaperChange);
   try { const pg = localStorage.getItem('bs_price_page'); if (pg && PRICE_PAGES[pg]) $('pricePage').value = pg; } catch (e) {}
-  $('pricePage').addEventListener('change', () => { try { localStorage.setItem('bs_price_page', $('pricePage').value); } catch (e) {} renderPrice(); });
-  $('priceQty').addEventListener('input', renderPrice);
+  $('pricePage').addEventListener('change', () => { try { localStorage.setItem('bs_price_page', $('pricePage').value); } catch (e) {} renderPrice(); try { renderQC(); } catch (e) {} });
+  $('priceQty').addEventListener('input', () => { renderPrice(); try { renderQC(); } catch (e) {} });
   $('priceAdj').addEventListener('input', renderPrice);
   renderPrice();
   $('print-calc').addEventListener('click', () => {
