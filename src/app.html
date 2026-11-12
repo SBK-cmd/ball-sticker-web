@@ -6150,11 +6150,11 @@ function bahtText(value) {
     const bills = store.get('bs_bills', []);
     const purchases = store.get('bs_purchases', []);
     const jobsM = store.get('bs_jobs', []);
-    const months = Array.from(new Set(bills.map(b => monthKey(b.date)).concat(purchases.map(p => monthKey(p.date)), jobsM.map(j => monthKey(j.date))).filter(Boolean))).sort().reverse();
+    const months = Array.from(new Set(bills.map(b => monthKey(b.date)).concat(purchases.map(p => monthKey(p.date)), purchases.map(purchVatMonth), jobsM.map(j => monthKey(j.date))).filter(Boolean))).sort().reverse();
     sel.innerHTML = '<option value="">— ดูทั้งหมด —</option>' +
       months.map(m => {
         const sCount = bills.filter(b => monthKey(b.date) === m).length;
-        const pCount = purchases.filter(p => monthKey(p.date) === m).length;
+        const pCount = purchases.filter(p => monthKey(p.date) === m || (isInputVat(p) && purchVatMonth(p) === m)).length;
         return '<option value="' + esc(m) + '">' + esc(thMonthFull(m)) + ' (ขาย ' + sCount + ' / ซื้อ ' + pCount + ')</option>';
       }).join('');
     sel.value = months.indexOf(prev) >= 0 ? prev : '';
@@ -6775,11 +6775,11 @@ function bahtText(value) {
     const prev = sel.value;
     const bills = store.get('bs_bills', []);
     const purchases = store.get('bs_purchases', []);
-    const months = Array.from(new Set(bills.map(b => monthKey(b.date)).concat(purchases.map(p => monthKey(p.date))).filter(Boolean))).sort().reverse();
+    const months = Array.from(new Set(bills.map(b => monthKey(b.date)).concat(purchases.map(p => monthKey(p.date)), purchases.map(purchVatMonth)).filter(Boolean))).sort().reverse();
     sel.innerHTML = '<option value="">— ดูทั้งหมด —</option>' +
       months.map(m => {
         const sCount = bills.filter(b => monthKey(b.date) === m).length;
-        const pCount = purchases.filter(p => monthKey(p.date) === m).length;
+        const pCount = purchases.filter(p => monthKey(p.date) === m || (isInputVat(p) && purchVatMonth(p) === m)).length;
         return '<option value="' + esc(m) + '">' + esc(thMonthFull(m)) + ' (ขาย ' + sCount + ' / ซื้อ ' + pCount + ')</option>';
       }).join('');
     sel.value = months.indexOf(prev) >= 0 ? prev : '';
