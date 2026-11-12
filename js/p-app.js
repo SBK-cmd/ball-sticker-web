@@ -3186,7 +3186,8 @@ function bahtText(value) {
   // Worker ของตัวที่ 2 เก็บแต่ละรูป/ไฟล์ที่ส่งเข้า OA รับบิล ไว้ใน Firestore 'billInbox' {from, fromName, type:'image'|'file', contentId, fileName, createdAt, status:'new'|'done', purchaseId}
   const BILL_OA_CH = 'bills';
   let billBox = [], billBoxTab = 'new', billBoxUnsub = null;
-  const billSrc = x => x.url || (LINE_OA_URL + '/content?ch=' + BILL_OA_CH + '&key=' + encodeURIComponent(LINE_OA_KEY) + '&id=' + encodeURIComponent(x.contentId || ''));
+  const BILL_OA_URL = 'https://line-bills.organic-parmesan.workers.dev';   // Worker ของตัวที่ 2 (OA บิล @162oesrh)
+  const billSrc = x => x.url || (BILL_OA_URL + '/content?ch=' + BILL_OA_CH + '&key=' + encodeURIComponent(LINE_OA_KEY) + '&id=' + encodeURIComponent(x.contentId || ''));
   function watchBillBox() {
     if (!cloudDb || billBoxUnsub || !can('purchase')) return;
     try {
