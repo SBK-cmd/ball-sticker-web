@@ -117,6 +117,18 @@ try { if (!localStorage.getItem('bs_session')) document.documentElement.classLis
 .ds-ok.on{border-style:solid;background:#c9f5d4}
 .ds-lb{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:12px;cursor:zoom-out}
 .ds-lb img{max-width:100%;max-height:100%;object-fit:contain}
+.qt-list { display:grid; gap:10px; margin-top:6px; }
+  .qt-g { font-size:13px; color:var(--muted,#667); margin:8px 0 0; font-weight:500; }
+  .qt-row { display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:baseline; }
+  .qt-name { font-size:14px; }
+  .qt-val { font-size:13px; font-variant-numeric:tabular-nums; color:var(--muted,#667); text-align:right; }
+  .qt-bar { grid-column:1 / -1; height:8px; border-radius:4px; background:rgba(127,127,127,.16); overflow:hidden; }
+  .qt-bar i { display:block; height:100%; border-radius:4px; background:#2e9d62; transition:width .4s ease; }
+  .qt-bar.qt-w i { background:#d9a400; } .qt-bar.qt-b i { background:#c8423a; } .qt-bar.qt-off i { background:rgba(127,127,127,.35); }
+  .qt-sub { grid-column:1 / -1; font-size:12px; color:var(--muted,#889); }
+  .qt-cap { font-size:12px; color:var(--muted,#889); margin-left:auto; }
+  .qt-btn { min-height:32px; padding:0 12px; font-size:13px; border:1px solid rgba(127,127,127,.35); border-radius:8px; background:transparent; color:inherit; cursor:pointer; }
+  .qt-note { font-size:12px; color:var(--muted,#889); margin:10px 0 0; }
 </style>
 <script>
 // ตั้งโหมดมืด/สว่างจากค่าที่จำไว้ทันทีตั้งแต่ก่อนวาดหน้าจอ กันไฟกะพริบสลับธีมตอนโหลด
@@ -4306,6 +4318,15 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
         </div>
         <button class="btn primary" id="dash-go-report" type="button">ไปหน้ารายงานภาษี</button>
       </div>
+      <section class="card no-print" id="quotaCard" aria-labelledby="quota-h">
+        <div class="viz-head">
+          <h2 id="quota-h">โควตาบริการฟรี</h2>
+          <span id="quotaCap" class="qt-cap"></span>
+          <button type="button" class="qt-btn" id="quotaRefresh">อัปเดต</button>
+        </div>
+        <div id="quotaList" class="qt-list"></div>
+        <p class="qt-note">เขียว = สบาย · เหลือง = เกิน 70% · แดง = เกิน 90% · ตัวเลขสดดึงจาก Worker (ถ้ายังไม่เชื่อมจะแสดงเพดานไว้ก่อน)</p>
+      </section>
     </section>
 
     <!-- ================= รายงานภาษีซื้อ-ขาย ================= -->
@@ -4568,7 +4589,7 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=a743c902c9",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=0b269462bf",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

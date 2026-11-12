@@ -5,6 +5,14 @@
 ห้ามใส่รหัสผ่าน/คีย์/ข้อมูลลูกค้า — repo ยังเป็นสาธารณะ
 
 ## ค้าง
+- [2026-11-12 20:45] จาก 1 (เจ้าของสั่งตรง): **หลอดโควตาบริการฟรี (แบบหน้า Usage ของ Firebase)** — แอปทำแล้วในพรีวิว: การ์ด "โควตาบริการฟรี" ท้ายแดชบอร์ด ดึง `GET https://line-bills.organic-parmesan.workers.dev/quota?key=<LINE_OA_KEY เดิมในแอป>` (แคช 30 นาที + ปุ่มอัปเดต) · ยังไม่มี endpoint = แสดงเพดานอย่างเดียว · ขอ Worker ตอบ `{items:[{id, used, limit?, sub?}]}` (ใส่เฉพาะตัวที่ดึงได้ · limit ใส่เมื่อผู้ให้บริการบอกเอง) id ที่แอปรู้จัก:
+  - `fs_reads` / `fs_writes` (วันนี้ เวลาแปซิฟิก ตามรอบรีเซ็ต Firestore) · `fs_storage` (MB) — Cloud Monitoring API (`firestore.googleapis.com/document/read_count`, `write_count`; storage จาก `firestore.googleapis.com/storage/...` ถ้ามี) ด้วย SA เดิม (อาจต้องเพิ่มบทบาท Monitoring Viewer — แจ้งเจ้าของ)
+  - `vision` (เดือนนี้) — Monitoring `serviceruntime.googleapis.com/api/request_count` service=vision.googleapis.com หรือนับเองใน Worker (KV/Firestore ตัวนับต่อเดือน) ก็ได้
+  - `cf_workers` (วันนี้ ทุก Worker ในบัญชี) · `cf_builds` (Pages build เดือนนี้) — Cloudflare GraphQL/API ต้องใช้ API token อ่านอย่างเดียว (เจ้าของสร้างเองใส่ secret)
+  - `cld_credits` (+ `sub` เช่น "ส่งรูป 3.8 GB · เก็บ 312 MB") — Cloudinary Admin API `GET /v1_1/m4n2ttwh/usage` ต้องมี API key/secret (เจ้าของใส่ secret เอง) · ตอนนี้แอปใส่ค่ากรอกเอง 4.3/25 ณ 12 พ.ย.
+  - `line_bk25` / `line_bills` — LINE `GET /v2/bot/message/quota` (limit) + `/quota/consumption` (used) ของแต่ละ OA
+  · ทั้งหมดแคชใน Worker ~10 นาที ห้ามส่ง secret/ข้อมูลลูกค้ากลับมา · ตัวไหนดึงไม่ได้ข้ามไป ไม่ต้อง error ทั้งก้อน
+  · เพิ่ม: **ปิดช่องเสี่ยง Cloudinary** — unsigned preset `nkbscpgs` อยู่ในโค้ดสาธารณะ ใครก็อัปขึ้นบัญชีร้านได้ · ระยะสั้นเจ้าของจำกัดชนิดไฟล์/ขนาดใน preset · ระยะยาวพิจารณา signed upload ผ่าน Worker
 - [2026-11-11 22:40] จาก 1 (เจ้าของสั่งตรง · ไม่ใช้ Firebase เพื่อไม่ให้ยอดอ่านเพิ่ม): **ขอ Worker `social-stats` สำหรับหน้า "สถิติโซเชียล" ในแอป** · เก็บใน D1 (ใช้ `ball-books` เพิ่มตาราง หรือสร้าง `ball-social` ก็ได้) · cron วันละครั้ง (ตี 3 ไทย) เก็บ snapshot รายวัน:
   1) เพจ FB บอล สติ๊กเกอร์ (Graph API): followers_count, page_impressions_unique/วัน, page_post_engagements/วัน, จำนวนบทสนทนาใหม่/วัน (/conversations ตาม updated_time หรือ page_messages_new_conversations_unique), โพสต์ 60 วันล่าสุด (id, created_time, message 80 ตัว, permalink, รูป thumbnail, reach, reactions, comments, shares)
   2) ค่าโฆษณา FB (act_xxx/insights รายวัน): spend, impressions, clicks, messaging_conversation_started_7d (ถ้าโทเคนมี ads_read)

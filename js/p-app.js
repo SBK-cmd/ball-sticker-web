@@ -2352,7 +2352,65 @@ function bahtText(value) {
   document.addEventListener('click', e => { if (e.target && e.target.id === 'usageLoad') usageLoadReads(); });
   document.addEventListener('change', e => { if (e.target && e.target.id === 'moneyMonthSel') { moneyMonth = e.target.value; renderMoney(); } });
   document.addEventListener('click', e => { const c = e.target.closest && e.target.closest('#moneyBody [data-mm]'); if (c) { moneyMonth = c.dataset.mm; renderMoney(); } });
+  // ---------- โควตาบริการฟรี (หลอดเหมือน Firebase) ----------
+  // เพดานฟรีตามที่ผู้ให้บริการประกาศ (ตรวจเมื่อ 12 พ.ย. 2569) · ตัวเลขใช้จริงมาจาก Worker line-bills /quota (ตัวที่ 2) ถ้ายังไม่มี = แสดงเพดานอย่างเดียว
+  const QUOTA_BASE = [
+    {id: 'fs_reads', group: 'Firebase (ฐานข้อมูลแอป)', name: 'อ่านข้อมูล', limit: 50000, unit: 'ครั้ง', period: 'day'},
+    {id: 'fs_writes', group: 'Firebase (ฐานข้อมูลแอป)', name: 'เขียนข้อมูล', limit: 20000, unit: 'ครั้ง', period: 'day'},
+    {id: 'fs_storage', group: 'Firebase (ฐานข้อมูลแอป)', name: 'พื้นที่เก็บข้อมูล', limit: 1024, unit: 'MB', period: 'total'},
+    {id: 'cf_workers', group: 'Cloudflare (เว็บ + Worker)', name: 'คำขอ Worker ทุกตัว', limit: 100000, unit: 'ครั้ง', period: 'day'},
+    {id: 'cf_builds', group: 'Cloudflare (เว็บ + Worker)', name: 'สร้างเว็บ (build)', limit: 500, unit: 'ครั้ง', period: 'month'},
+    {id: 'cld_credits', group: 'Cloudinary (รูป)', name: 'เครดิตรวม', limit: 25, unit: 'เครดิต', period: 'month', used: 4.3, at: '2026-11-12', manual: true, sub: 'ส่งรูป 3.54 GB · เก็บ 310 MB · ปรับรูป 452 ครั้ง'},
+    {id: 'vision', group: 'Google Vision (อ่านบิล LINE)', name: 'อ่านบิล', limit: 1000, unit: 'ใบ', period: 'month'},
+    {id: 'line_bk25', group: 'LINE', name: '@bk25 ข้อความส่งออก (push)', limit: 0, unit: 'ข้อความ', period: 'month', sub: 'ตอบกลับ (reply) ไม่นับโควตา'},
+    {id: 'line_bills', group: 'LINE', name: 'LINE บิล ข้อความส่งออก (push)', limit: 0, unit: 'ข้อความ', period: 'month', sub: 'ตอบกลับ (reply) ไม่นับโควตา'},
+    {id: 'gcp_trial_days', group: 'Google Cloud ทดลองใช้', name: 'วันทดลองที่ผ่านไป', limit: 90, unit: 'วัน', period: 'trial', trialEnd: '2027-02-09', sub: 'ต้องกดอัปเกรดก่อนหมด (เตือนไว้ 26 ม.ค. 2570)'}
+  ];
+  let quotaLive = null, quotaBusy = false;
+  const QUOTA_PERIOD = {day: 'วันนี้', month: 'เดือนนี้', total: 'ทั้งหมด', trial: ''};
+  function quotaItems() {
+    const live = {}; ((quotaLive && quotaLive.items) || []).forEach(x => { live[x.id] = x; });
+    return QUOTA_BASE.map(b => {
+      const it = Object.assign({}, b, live[b.id] ? Object.assign({}, live[b.id], {manual: false}) : {});
+      if (it.period === 'trial') {   // นับวันจากวันหมดทดลอง (ไม่ต้องพึ่ง Worker)
+        const end = new Date(it.trialEnd + 'T00:00:00+07:00'), start = new Date(end.getTime() - it.limit * 864e5);
+        it.used = Math.max(0, Math.min(it.limit, Math.ceil((Date.now() - start) / 864e5)));
+        const left = Math.max(0, Math.ceil((end - Date.now()) / 864e5)); it.sub = 'เหลือ ' + left + ' วัน (หมด ' + thDateShort(it.trialEnd) + ') · ' + b.sub; it.manual = false; it.calc = true;
+      }
+      return it;
+    });
+  }
+  function renderQuota() {
+    const box = $('quotaList'); if (!box) return;
+    const items = quotaItems(); let g = '', html = '';
+    const fmtN = (n, u) => (u === 'เครดิต' ? (+n).toFixed(1) : Math.round(+n).toLocaleString('th-TH'));
+    items.forEach(it => {
+      if (it.group !== g) { g = it.group; html += '<div class="qt-g">' + esc(g) + '</div>'; }
+      const has = it.used != null && it.limit > 0, pct = has ? Math.min(100, it.used / it.limit * 100) : 0;
+      const cls = !has ? 'qt-off' : pct >= 90 ? 'qt-b' : pct >= 70 ? 'qt-w' : '';
+      const val = has ? fmtN(it.used, it.unit) + ' / ' + fmtN(it.limit, it.unit) + ' ' + it.unit + ' · ' + Math.round(pct) + '%'
+        : it.limit > 0 ? 'เพดาน ' + fmtN(it.limit, it.unit) + ' ' + it.unit + (it.period === 'day' ? '/วัน' : it.period === 'month' ? '/เดือน' : '') : (it.used != null ? fmtN(it.used, it.unit) + ' ' + it.unit : 'รอเชื่อม');
+      const sub = [it.sub, it.manual && it.at ? 'ตัวเลขกรอกเอง ณ ' + thDateShort(it.at) : '', !has && !it.calc && it.used == null ? 'ยังไม่เชื่อมตัวเลขสด' : '', has && !it.manual && !it.calc && QUOTA_PERIOD[it.period] ? QUOTA_PERIOD[it.period] : ''].filter(Boolean).join(' · ');
+      html += '<div class="qt-row"><span class="qt-name">' + esc(it.name) + '</span><span class="qt-val">' + esc(val) + '</span>' +
+        '<div class="qt-bar ' + cls + '" role="progressbar" aria-label="' + esc(it.name) + '" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(pct) + '"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
+        (sub ? '<span class="qt-sub">' + esc(sub) + '</span>' : '') + '</div>';
+    });
+    box.innerHTML = html;
+    $('quotaCap').textContent = quotaLive && quotaLive.at ? 'อัปเดต ' + new Date(quotaLive.at).toLocaleString('th-TH', {dateStyle: 'short', timeStyle: 'short'}) : 'ยังไม่มีตัวเลขสด';
+  }
+  async function loadQuota(force) {
+    if (quotaBusy) return; quotaBusy = true; const btn = $('quotaRefresh'); if (btn) btn.disabled = true;
+    try {
+      if (!force) { const c = store.get('bs_quota_cache', null); if (c && c.at && Date.now() - c.at < 30 * 60e3) { quotaLive = c; return; } }
+      const r = await fetch('https://line-bills.organic-parmesan.workers.dev/quota?key=loa5408501ccebb8cc0e6155', {cache: 'no-store'});
+      if (r.ok) { const j = await r.json(); if (j && Array.isArray(j.items)) { quotaLive = Object.assign({at: Date.now()}, j); store.set('bs_quota_cache', quotaLive); } }
+    } catch (e) { /* Worker ยังไม่มี /quota → แสดงเพดานอย่างเดียว */ }
+    finally { quotaBusy = false; if (btn) btn.disabled = false; renderQuota(); }
+  }
+
+  document.addEventListener('click', e => { if (e.target && e.target.id === 'quotaRefresh') loadQuota(true); });
   function renderDash() {
+    renderQuota(); loadQuota(false);
     try { renderTodayJobs(); } catch (e) { console.error('todayJobs', e); }
     if (!$('dashChart')) return;
     populateDashMonthOptions();
