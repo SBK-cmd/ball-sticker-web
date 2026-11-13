@@ -6758,6 +6758,8 @@ function bahtText(value) {
   }
   function whDetailHTML(g) {
     let h = '<div class="wd">';
+    const hasJbs = store.get('bs_jobs', []).some(j => /^JBS/i.test(String(j.no || '').trim()) && String(j.jName || '').trim() === String(g.name || '').trim());
+    if (hasJbs) h += '<div class="wd-trk"><button class="btn small good" type="button" data-act="wtrack">🔗 ส่งลิงก์ติดตามงาน</button><button class="btn small" type="button" data-act="wtrackcopy">คัดลอกลิงก์</button><button class="btn small" type="button" data-act="wtrackopen">ดูหน้าที่ลูกค้าเห็น</button></div>';
     if (!g.open.length) h += '<p class="hint" style="margin:0 0 10px">ไม่มีบิลค้าง งานใหม่ที่คีย์ชื่อร้านนี้จะเปิดบิลใหม่ให้เองและเริ่มนับยอดใหม่</p>';
     g.open.forEach(w => {
       const its = w.items || [], t = wholesaleCalc(w);
@@ -9303,6 +9305,25 @@ function bahtText(value) {
     }
     const act = btn.dataset.act, box = btn.closest('[data-doc]'), id = box ? box.dataset.doc : '';
     const list = store.get('bs_wholesale', []);
+    if (act === 'wtrack' || act === 'wtrackcopy' || act === 'wtrackopen') {   // ลิงก์ติดตามงานของร้านส่งนี้ (หน้าเดียวเห็นทุกใบงาน + ยอดค้าง)
+      const url = chargeLinkFor(name); if (!url) { toast('ร้านนี้ยังไม่มีใบงานส่ง (JBS)'); return; }
+      if (act === 'wtrackopen') {
+        const old = document.getElementById('trkPop'); if (old) old.remove();
+        const pop = document.createElement('div'); pop.id = 'trkPop'; pop.className = 'trk-pop';
+        pop.innerHTML = '<div class="tp-box"><div class="tp-h"><span>หน้าติดตามของ ' + esc(name) + ' (ที่ลูกค้าเห็น)</span><button type="button" data-tpclose>ปิด ✕</button></div><div class="tp-ld">กำลังโหลด…</div></div>';
+        pop.addEventListener('click', ev => { if (ev.target === pop || ev.target.closest('[data-tpclose]')) pop.remove(); });
+        document.body.appendChild(pop);
+        setTimeout(() => { if (!pop.isConnected) return; const fr = document.createElement('iframe'); fr.title = 'หน้าติดตามของลูกค้า'; fr.src = url + '&_=' + Date.now(); fr.addEventListener('load', () => { const l = pop.querySelector('.tp-ld'); if (l) l.remove(); }); pop.querySelector('.tp-box').appendChild(fr); }, 900);
+        return;
+      }
+      const nm = /^(คุณ|พี่|น้อง|ร้าน)/.test(name) ? name : 'คุณ' + name;
+      const msg = act === 'wtrackcopy' ? url : nm + ' ติดตามสถานะงานทั้งหมดได้ที่นี่ค่ะ 👇\n' + url;
+      (async () => {
+        try { if (act === 'wtrack' && PHONE_SHARE && navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือกแชตของลูกค้าส่งได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+        try { await navigator.clipboard.writeText(msg); toast(act === 'wtrackcopy' ? 'คัดลอกลิงก์แล้ว' : 'คัดลอกข้อความพร้อมลิงก์แล้ว ไปวางส่งให้ลูกค้าได้เลย'); } catch (e) { prompt('คัดลอกลิงก์นี้', msg); }
+      })();
+      return;
+    }
     if (act === 'addjob') {
       if (btn.dataset.again) {   // งานที่อยู่ในบิลแล้ว (เช่น บิลเดิมจ่ายไปแล้ว) → ใส่เข้าบิลค้างปัจจุบัน/บิลใหม่อีกครั้ง · กดยืนยัน 2 ครั้งกันซ้ำโดยไม่ตั้งใจ
         if (whAgainArmed !== btn.dataset.jid) { whAgainArmed = btn.dataset.jid; btn.textContent = 'กดอีกครั้งเพื่อยืนยัน'; btn.classList.add('good'); setTimeout(() => { if (whAgainArmed === btn.dataset.jid) { whAgainArmed = null; renderWholesaleHistory(); } }, 4000); return; }
