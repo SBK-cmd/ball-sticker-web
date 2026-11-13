@@ -477,12 +477,12 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     var clogo = /^https:\/\//.test(j.clogo || '') ? '<img class="clogo" src="' + esc(j.clogo) + '" alt="โลโก้ลูกค้า">' : '';
     applyTheme(j.ctheme);
     var hi = '<div class="hi">' + '<div class="hn">' + clogo + (j.cname ? '<div>คุณ <b>' + esc(j.cname) + '</b></div>' : '<div>งานของคุณ</div>') + '</div>' + '<span>' + cards.length + ' ใบงาน</span></div>';
-    document.body.classList.toggle('hashero', !!(isJbs && others.length));
-    if (isJbs && others.length) hi = heroHTML(j, others, payOk);   // ลูกค้าส่ง (หลายใบ): หัวหน้าแบบโปรไฟล์ร้านลูกค้า
+    document.body.classList.toggle('hashero', isJbs);
+    if (isJbs) hi = heroHTML(j, others, payOk);   // ลูกค้าส่ง (หลายใบ): หัวหน้าแบบโปรไฟล์ร้านลูกค้า
     var payHtml = payOk ? '<div class="payBar"><div><small>ยังไม่ได้ชำระ</small><b>' + money(j.pay.total) + ' บาท</b></div><button type="button" class="payGo" id="payOpen">สแกนจ่าย</button></div>' : '';
     var upd = ''; if (j.updatedAt) { var d = new Date(j.updatedAt); upd = '<div class="upd">อัปเดตล่าสุด ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + (d.getFullYear() + 543) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' น.</div>'; }
     box.className = 'card multi';
-    if (isJbs && others.length) { payHtml = '<div class="secT"><b>ใบงานของคุณ</b><span>ล่าสุดอยู่บน</span></div>'; }   // ยอดค้างอยู่บนบัตรแล้ว · หัวข้อรายการ
+    if (isJbs) { payHtml = '<div class="secT"><b>ใบงานของคุณ</b><span>ล่าสุดอยู่บน</span></div>'; }   // ยอดค้างอยู่บนบัตรแล้ว · หัวข้อรายการ
     box.innerHTML = hi + payHtml + cards.map(function (c) { return c.h; }).join('') + upd;
     setPayModal(payOk ? j.pay : null);
     loadHubs();
