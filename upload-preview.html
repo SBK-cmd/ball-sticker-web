@@ -58,6 +58,9 @@
   .tiers button.on { border:2px solid var(--yel); background:#fffbe6; }
   .tiers button .tag { display:inline-block; font-size:11px; background:var(--yel); border-radius:999px; padding:0 8px; margin-top:4px; }
   .custom { margin-top:10px; }
+  .cq { margin-top:8px; padding:10px 12px; border-radius:12px; background:#fffbe6; border:2px solid var(--yel); display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .cq b { font:700 22px 'Prompt',sans-serif; font-variant-numeric:tabular-nums; }
+  .cq small { color:var(--sub); font-size:13px; }
   .lay { display:grid; grid-template-columns:150px minmax(0,1fr); gap:12px; align-items:center; margin-top:12px; }
   .lay svg { width:150px; height:auto; display:block; background:#fff; border:1px solid var(--line); border-radius:6px; }
   .lay p { margin:0; font-size:14px; color:var(--sub); }
@@ -118,6 +121,7 @@
     <h2 id="s3"><b>3</b>จำนวน</h2>
     <div class="tiers" id="tiers"></div>
     <label class="custom" for="qty">หรือใส่จำนวนเอง (ดวง)<input id="qty" type="number" inputmode="numeric" min="1" placeholder="เช่น 300"></label>
+    <div class="cq" id="cq" aria-live="polite" hidden></div>
     <div class="lay" id="layBox" hidden><svg id="lay" viewBox="0 0 121 81" role="img" aria-label="ตัวอย่างการเรียงบนแผ่น"></svg><p id="layTxt"></p></div>
   </section>
 
@@ -198,7 +202,7 @@
 
   // ---------- จำนวน ----------
   $('tiers').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; st.qty = +b.dataset.q; $('qty').value = ''; render(); });
-  $('qty').addEventListener('input', function () { var q = Math.floor(num(this.value)); if (q > 0) { st.qty = q; render(); } });
+  $('qty').addEventListener('input', function () { var q = Math.floor(num(this.value)); if (q > 0) st.qty = q; else if (TIERS.indexOf(st.qty) < 0) st.qty = 100; render(); });
 
   function render() {
     var w = Math.max(0, num($('w').value)), h = Math.max(0, num($('h').value)), ok = w >= 1 && h >= 1 && Math.min(w, h) <= USABLE;
@@ -206,6 +210,9 @@
     var best = 100;
     $('tiers').innerHTML = TIERS.map(function (q) { var p = ok ? price(q, w, h) : 0; return '<button type="button" data-q="' + q + '" class="' + (q === st.qty ? 'on' : '') + '"><b>' + (ok ? fmt(p) : '—') + '</b><small>' + q.toLocaleString('th-TH') + ' ดวง' + (ok ? ' · ' + (p / q).toFixed(2) + '/ดวง' : '') + '</small>' + (q === best ? '<br><span class="tag">ยอดนิยม</span>' : '') + '</button>'; }).join('');
     var p = ok ? price(st.qty, w, h) : 0;
+    var custom = !(TIERS.indexOf(st.qty) >= 0) || $('qty').value !== '', cq = $('cq');
+    cq.hidden = !(custom && ok && st.qty > 0);
+    if (!cq.hidden) cq.innerHTML = '<span><small>' + st.qty.toLocaleString('th-TH') + ' ดวง · ดวงละ ' + (p / st.qty).toFixed(2) + ' บาท</small></span><b>' + fmt(p) + ' บาท</b>';
     $('tot').textContent = ok ? fmt(p) + ' บาท' : '—';
     $('totLbl').textContent = st.qty.toLocaleString('th-TH') + ' ดวง · ' + (w || '?') + ' × ' + (h || '?') + ' ซม.';
     // ภาพเรียงบนแผ่น 120×80
