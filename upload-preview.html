@@ -650,7 +650,7 @@
         kc.svg = await upload(new File([kf.svg], tag + '.svg', {type: 'image/svg+xml'})).catch(function () { return ''; });
       } catch (e) {} }
     var w = num($('w').value), h = num($('h').value), p = price(st.qty, w, h), bl = bill(p), ref = (function () { var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); }; return 'WEB' + String(d.getFullYear() + 543).slice(2) + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + Math.random().toString(36).slice(2, 4).toUpperCase(); })().replace(/^WEB/, isTest ? 'TEST' : 'WEB'), tx = $('tx').checked;
-    var msg = (isTest ? '🧪 ทดสอบระบบ (ไม่ได้จ่ายจริง)\n' : '') + '🛒 สั่งสติ๊กเกอร์จากเว็บ\nเลขใบงาน: ' + ref + '\n' +
+    var msgFull = (isTest ? '🧪 ทดสอบระบบ (ไม่ได้จ่ายจริง)\n' : '') + '🛒 สั่งสติ๊กเกอร์จากเว็บ\nเลขใบงาน: ' + ref + '\n' +
       'แบบ: ' + st.url + '\n' +
       'ขนาดชิ้นไดคัท ' + w + ' × ' + h + ' ซม. · ' + st.qty.toLocaleString('th-TH') + ' ดวง · PVC เคลือบ ไดคัท\n' +
       (srcImg ? 'ตัวงาน ' + artCm(w, h).w + ' × ' + artCm(w, h).h + ' ซม. + ขอบขาว 2 มม. · ≈' + Math.round(printDpi(w, h)) + ' dpi' + (st.fileCm && st.fileCm.dpi ? ' · ไฟล์ระบุ ' + st.fileCm.aw + '×' + st.fileCm.ah + ' ซม. @' + st.fileCm.dpi + 'dpi' : '') + '\n' : (st.fileCm && st.fileCm.src === 'pdf' ? 'PDF หน้า ' + st.fileCm.w + ' × ' + st.fileCm.h + ' ซม.\n' : '')) +
@@ -663,7 +663,6 @@
       'ที่อยู่: ' + addrFull() +
       ($('cNote').value.trim() ? '\nหมายเหตุ: ' + $('cNote').value.trim() : '') +
       (Object.keys(utm).length ? '\n[ที่มา ' + (utm.utm_source || '') + ' ' + (utm.utm_campaign || '') + ' ' + (utm.utm_content || '') + ']' : '');
-    var lineUrl = 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA) + '/?' + encodeURIComponent(msg);
     this.textContent = 'กำลังบันทึกออเดอร์…';
     var L0 = perSheet(w, h), ap = addrParts();
     var saved = await saveOrderCloud(ref, {ref: ref, createdAt: Date.now(), status: 'new', src: 'shop', test: isTest, w: w, h: h, qty: st.qty, price: bl.price, ship: bl.ship, vat: bl.vat, total: bl.total,
@@ -672,6 +671,13 @@
       cust: {name: $('cName').value.trim(), tel: telFmt(telNorm($('cTel').value)), line: $('cLine').value.trim(), addr: addrFull(), zip: ap.zip || '', prov: ap.prov || ''},
       tax: tx ? {name: $('txName').value.trim(), id: $('txId').value.replace(/\D/g, ''), br: $('txBr').value.trim() || 'สำนักงานใหญ่', addr: ($('txAddr').value.trim() || addrFull()).replace(/\s+/g, ' ')} : null,
       note: $('cNote').value.trim(), utm: utm});
+    // ข้อความ LINE: ออเดอร์เข้าระบบแล้ว = สรุปสั้นๆ ให้ลูกค้าอ่านง่าย (รายละเอียด/ไฟล์อยู่ในแอปหลังร้าน) · บันทึกไม่สำเร็จ = ส่งรายละเอียดเต็มแทน
+    var msg = saved ? (isTest ? '🧪 ทดสอบระบบ (ไม่ได้จ่ายจริง)\n' : '') + '🛒 สั่งสติ๊กเกอร์ เลขใบงาน ' + ref + '\n' +
+      'สติ๊กเกอร์ไดคัท ' + w + ' × ' + h + ' ซม. × ' + st.qty.toLocaleString('th-TH') + ' ดวง\n' +
+      'ยอดชำระ ' + baht(bl.total) + ' บาท (รวมค่าส่ง' + (bl.vat ? ' + VAT · ขอใบกำกับ' : '') + ')\n' +
+      'ผู้รับ: ' + $('cName').value.trim() + ' · ' + telFmt(telNorm($('cTel').value)) + '\n' +
+      'แนบสลิปการโอนด้านล่างครับ 🙏' : msgFull;
+    var lineUrl = 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA) + '/?' + encodeURIComponent(msg);
     var payload = promptPayPayload(PP.id, bl.total), sz = w + ' × ' + h + ' ซม.';
     $('main').innerHTML = '<section class="card ocard">' +
       '<div class="oc-h"><span>เลขใบงาน <b>' + ref + '</b></span><span class="oc-st">' + (isTest ? 'ทดสอบ ไม่ต้องจ่าย' : 'รอชำระเงิน') + '</span></div>' +
