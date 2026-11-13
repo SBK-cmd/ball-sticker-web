@@ -849,33 +849,27 @@
     var lineUrl = 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA) + '/?' + encodeURIComponent(lineMsg);
     $('v4').innerHTML = orderCardHTML(o) + '<div class="done"><h2>✓ สั่งเรียบร้อย ขอบคุณครับ</h2>' +
       '<p class="note">' + (o.slip ? 'ได้รับสลิปแล้ว ร้านจะตรวจไฟล์และเริ่มทำงาน' : 'ร้านจะตรวจไฟล์และเริ่มทำงาน') + '</p>' +
-      '<div class="btns">' + (o.saved ? '<a class="bt pri" href="' + o.track + '" target="_blank" rel="noopener">📦 ติดตามสถานะงาน</a>' : '') +
-      '<button type="button" class="bt" id="shareCard">🖼️ ส่งการ์ดออเดอร์เข้า LINE</button>' +
-      '<a class="bt line" href="' + lineUrl + '" target="_blank" rel="noopener">💬 แชต LINE ร้าน</a>' +
-      '<button type="button" class="bt" id="newOrder">สั่งงานใหม่</button></div>' +
-      '<p class="note">โทร 093-535-3555 · LINE ' + LINE_OA + '</p></div>';
+      '<div class="btns"><button type="button" class="bt line" id="lineGo">💬 ติดตามพัสดุทาง LINE</button></div></div>';
     var cardData = {ref: o.ref, test: o.test, size: o.w + ' × ' + o.h + ' ซม.', qty: Number(o.qty).toLocaleString('th-TH'), name: o.name, tel: o.tel, addr: o.addr, price: baht(o.price), ship: String(o.ship), vat: o.vat ? baht(o.vat) : '', total: baht(o.total), payload: o.payload, payee: PP.name, track: o.track, img: o.localImg || o.img || ''};
-    $('shareCard').onclick = function () {   // เปิดใน LINE (LIFF) = ส่งการ์ด Flex เข้าแชตร้านทันที · มือถือ = แชร์รูปการ์ด · คอม = บันทึกรูป
-      var b = this; b.disabled = true; b.innerHTML = SPIN;
-      if (window.liff && lineUser && liff.isInClient()) { liff.sendMessages([orderFlex(o), {type: 'text', text: lineMsg}]).then(function () { b.textContent = '✓ ส่งการ์ดเข้าแชตแล้ว'; }).catch(function () { b.disabled = false; b.textContent = '🖼️ ส่งการ์ดออเดอร์เข้า LINE'; }); return; }
-      orderCardBlob(cardData).then(function (blob) {
-        var file = new File([blob], o.ref + '.png', {type: 'image/png'});
-        b.disabled = false; b.textContent = '🖼️ ส่งการ์ดออเดอร์เข้า LINE';
-        if (navigator.canShare && navigator.canShare({files: [file]})) return navigator.share({files: [file], text: lineMsg}).catch(function () {});
-        var u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = o.ref + '.png'; document.body.appendChild(a); a.click(); a.remove();
-        b.textContent = '✓ บันทึกรูปแล้ว ส่งใน LINE ' + LINE_OA + ' ได้เลย';
-      });
+    $('lineGo').onclick = function () {   // ใน LINE (LIFF): ส่งการ์ดออเดอร์เข้าแชตร้านแล้วปิดหน้า · นอก LINE: เปิดแชต @bk25 พร้อมข้อความออเดอร์ (มีลิงก์ติดตามงาน)
+      var b = this;
+      if (window.liff && lineUser && liff.isInClient()) {
+        b.disabled = true; b.innerHTML = SPIN;
+        liff.sendMessages([orderFlex(o), {type: 'text', text: lineMsg}]).then(function () { liff.closeWindow(); }).catch(function () { b.disabled = false; b.textContent = '💬 ติดตามพัสดุทาง LINE'; location.href = lineUrl; });
+        return;
+      }
+      location.href = lineUrl;
     };
-    $('newOrder').onclick = function () { try { localStorage.removeItem('bs_last_order'); } catch (e) {} location.href = location.pathname + location.search; };
+    void cardData;
   }
 
   if (isAdmin) $('testSend').onclick = function () { testMode = true; $('send').click(); };
   render(); show(1);
-  // กลับมาหน้านี้ระหว่างค้างจ่าย (เช่นสลับไปแอปธนาคาร) → กลับไปหน้า QR เดิม · จ่ายแล้วภายใน 6 ชม. → หน้าเสร็จ
+  // กลับมาหน้านี้ระหว่างค้างจ่าย (เช่นสลับไปแอปธนาคาร) → กลับไปหน้า QR เดิม
   try { var lo = JSON.parse(localStorage.getItem('bs_last_order') || 'null');
     if (lo && lo.ref && lo.payload) { var age = Date.now() - (lo.at || 0);
       if (!lo.paidAt && age < 24 * 3600e3) { renderPay(lo); show(3); }
-      else if (lo.paidAt && age < 6 * 3600e3) { renderDone(lo); show(4); }
+      else if (lo.paidAt) localStorage.removeItem('bs_last_order');   // จ่ายแล้ว = เปิดใหม่เริ่มสั่งงานใหม่
     } } catch (e) {}
 })();
 </script>
