@@ -122,6 +122,7 @@
     <div class="stage" id="stage" hidden aria-label="ตัวอย่างสติ๊กเกอร์ 3 มิติ ลากเพื่อหมุน">
       <div class="st3d" id="st3d"><canvas id="cv3d"></canvas><div class="gloss" id="gloss"></div></div><div class="shadow" aria-hidden="true"></div>
       <div class="scale"><span id="sdim"></span><span class="sb"><i id="sbar"></i><em id="sbarT"></em></span></div>
+      <p class="note" id="bgnote" hidden style="margin-top:10px">รูปถ่ายพื้นหลังหลายสี ตัวอย่างนี้แสดงเป็นไดคัทสี่เหลี่ยมมุมมน ถ้าอยากไดคัทตามตัวคน/วัตถุ เขียนในหมายเหตุ ร้านตัดพื้นหลังให้</p>
       <div class="st-tools"><span>👆 ลากเพื่อหมุนดู</span><label class="sw"><input type="checkbox" id="rmbg" checked> ลบพื้นหลังรอบรูป</label></div>
     </div>
     <div class="warn" id="qwarn" hidden></div>
@@ -225,10 +226,16 @@
     var a = document.createElement('canvas'); a.width = iw; a.height = ih; var ax = a.getContext('2d'); ax.drawImage(srcImg, 0, 0, iw, ih);
     var d = ax.getImageData(0, 0, iw, ih), px = d.data, n = iw * ih, i, opaque = true;
     for (i = 3; i < px.length; i += 4) if (px[i] < 250) { opaque = false; break; }
+    st.bgSkip = false;
     if (opaque && $('rmbg').checked) {   // ไล่จากขอบรูป ลบสีที่ใกล้สีมุม (พื้นหลังสีเดียว)
       var cs = [0, iw - 1, n - iw, n - 1].map(function (k) { return [px[k * 4], px[k * 4 + 1], px[k * 4 + 2]]; });
       var bg = cs[0], near = function (k, c, t) { var o = k * 4, dr = px[o] - c[0], dg = px[o + 1] - c[1], db = px[o + 2] - c[2]; return dr * dr + dg * dg + db * db <= t * t; };
       var same = cs.every(function (c) { var dr = c[0] - bg[0], dg = c[1] - bg[1], db = c[2] - bg[2]; return dr * dr + dg * dg + db * db < 45 * 45; });
+      var edgeN = 0, edgeOk = 0;   // ต้องเป็นพื้นสีเดียวเกือบรอบรูป (≥92% ของขอบ) ถ้าเป็นรูปถ่ายจริงไม่ลบ กันตัดเพี้ยน
+      for (i = 0; i < iw; i++) { edgeN += 2; edgeOk += near(i, bg, 48) + near(n - iw + i, bg, 48); }
+      for (i = 0; i < ih; i++) { edgeN += 2; edgeOk += near(i * iw, bg, 48) + near(i * iw + iw - 1, bg, 48); }
+      if (same && edgeOk / edgeN < 0.92) same = false;
+      st.bgSkip = !same;
       if (same) {
         var seen = new Uint8Array(n), q = [], push = function (k) { if (!seen[k] && near(k, bg, 48)) { seen[k] = 1; q.push(k); } };
         for (i = 0; i < iw; i++) { push(i); push(n - iw + i); } for (i = 0; i < ih; i++) { push(i * iw); push(i * iw + iw - 1); }
@@ -245,6 +252,11 @@
         }
         ax.putImageData(d, 0, 0);
       }
+    }
+    if (opaque && (st.bgSkip || !$('rmbg').checked)) {   // รูปเต็มกรอบ (รูปถ่าย) → ไดคัทสี่เหลี่ยมมุมมน
+      var rr = Math.round(Math.min(iw, ih) * 0.06); ax.globalCompositeOperation = 'destination-in'; ax.beginPath();
+      if (ax.roundRect) ax.roundRect(0, 0, iw, ih, rr); else ax.rect(0, 0, iw, ih); ax.fill(); ax.globalCompositeOperation = 'source-over';
+      d = ax.getImageData(0, 0, iw, ih); px = d.data;
     }
     var bw = 0, bh = 0, bx0 = iw, bx1 = -1, by0 = ih, by1 = -1;   // ขอบ 2 มม. เทียบกับตัวงานจริง (ไม่รวมพื้นหลังที่ลบ)
     for (i = 0; i < n; i++) if (px[i * 4 + 3] > 20) { var xx = i % iw, yy = (i - xx) / iw; if (xx < bx0) bx0 = xx; if (xx > bx1) bx1 = xx; if (yy < by0) by0 = yy; if (yy > by1) by1 = yy; }
@@ -269,7 +281,7 @@
     var url = m.toDataURL('image/png');
     var g = $('gloss'); g.style.webkitMaskImage = g.style.maskImage = 'url(' + url + ')'; g.style.bottom = (T / (H + T) * 100).toFixed(2) + '%';
     st.geo = {W: W, H: H, T: T, ow: iw + B * 2, oh: ih + B * 2};
-    $('stage').hidden = false; fitStage();
+    $('bgnote').hidden = !st.bgSkip; $('stage').hidden = false; fitStage();
   }
   // สเกลจริง: ทุกขนาดใช้อัตรา px/ซม. เดียวกัน (15 ซม. เต็มกรอบ) พร้อมแถบวัด
   function fitStage() {
