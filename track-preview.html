@@ -272,14 +272,14 @@ details.jc.pr2{border-left-color:#E5231B}details.jc.pr1{border-left-color:#F5B30
   // หัวโปรไฟล์ลูกค้าส่ง: โลโก้แบบสติ๊กเกอร์ไดคัท + ชื่อ + ตัวเลขสรุป + แถบผลงานของลูกค้า (รูปจากทุกใบงาน)
   function heroHTML(j, others, payOk) {
     var all = [{no: j.no, status: j.status, delivered: j.delivered, thumb: j.thumb, photos: j.photos, refs: j.refPhotos}].concat(others.map(function (o) { return {no: o.no, status: o.status, delivered: o.delivered, thumb: o.thumb, photos: o.photos, refs: o.refPhotos}; }));
-    var doing = 0, done = 0;
-    all.forEach(function (o) { var k = stIdx(o.status, o.delivered); if (k >= 4) done++; else doing++; });
+    var doing = 0, ship = 0, done = 0;
+    all.forEach(function (o) { var k = stIdx(o.status, o.delivered); if (k >= 4) done++; else if (k === 3) ship++; else doing++; });
     var init = String(j.cname || '?').trim().slice(0, 2).toUpperCase();
     var logo = /^https:\/\//.test(j.clogo || '') ? '<img src="' + esc(j.clogo) + '" alt="โลโก้ ' + esc(j.cname || '') + '">' : '<b>' + esc(init) + '</b>';
     var stat = function (v, l, c) { return '<div class="hs' + (c ? ' ' + c : '') + '"><b>' + v + '</b><span>' + l + '</span></div>'; };
     var h = '<section class="hero2"><div class="h2bg" aria-hidden="true"><i></i><i></i><i></i></div>' +
-      '<div class="h2id"><span class="h2logo">' + logo + '</span><div class="h2nm"><small>ลูกค้าประจำ บอลสติ๊กเกอร์</small><b>' + esc(j.cname || 'ลูกค้า') + '</b></div></div>' +
-      '<div class="h2st">' + stat(all.length, 'ใบงาน') + stat(doing, 'กำลังทำ', doing ? 'hot' : '') + stat(done, 'ส่งแล้ว') + '</div>';
+      '<div class="h2id"><span class="h2logo">' + logo + '</span><div class="h2nm"><small>ลูกค้าประจำ · ' + all.length + ' ใบงาน</small><b>' + esc(j.cname || 'ลูกค้า') + '</b></div></div>' +
+      '<div class="h2st">' + stat(doing, 'กำลังทำ', doing ? 'hot' : '') + stat(ship, 'กำลังส่ง', ship ? 'hot' : '') + stat(done, 'ได้รับแล้ว') + '</div>';
     // (ตัดแถบรูปผลงานออกตามเจ้าของร้าน 13 พ.ย.)
     return h + '</section>';
   }
