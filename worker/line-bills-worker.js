@@ -353,6 +353,26 @@ async function cardsFor(env, docs, vend) {
   return msgs;
 }
 
+// ชุดรูปที่ส่งพร้อมกัน (เช่น แคปหน้าช็อปปี้ + สลิป) = บิลเดียว:
+//   รูปหลัก = รูปที่ไม่ใช่สลิป (ชื่อร้าน/รายการ/หมวด) · ยอดเงิน (และวันที่ถ้ารูปหลักไม่มี) เอาจากสลิป · สลิปผูก groupOf → บันทึกพร้อมกัน
+const SLIP_RE = /โอนเงินสำเร็จ|จ่ายบิลสำเร็จ|ชำระเงินสำเร็จ|ทำรายการสำเร็จ|รายการสำเร็จ|เลขที่รายการ|ค่าธรรมเนียม|transaction\s*(?:id|ref)/i;
+const isSlip = (d) => !!d.ocrText && SLIP_RE.test(d.ocrText) && !/shopee|ช้อปปี้|lazada|ลาซาด้า|tiktok\s*shop/i.test(d.ocrText);
+async function mergeSet(env, docs, vend, setId) {
+  const read = docs.filter((d) => d.ocrText), slips = read.filter(isSlip), mains = read.filter((d) => !isSlip(d));
+  if (!slips.length || !mains.length) return null;
+  const main = mains[0], slip = slips[0], rs = analyzeBill(slip.ocrText, vend, slip.edits || {}), rm = analyzeBill(main.ocrText, vend, main.edits || {});
+  const edits = Object.assign({}, main.edits || {});
+  const amt = Number(String(rs.fields.amount || '').replace(/,/g, ''));
+  if (amt > 0 && edits.amount == null) edits.amount = amt.toFixed(2);
+  if (!rm.fields.date && rs.fields.date && edits.date == null) edits.date = rs.fields.date;
+  if (!rm.fields.invoiceNo && rs.fields.invoiceNo && edits.invoiceNo == null) edits.invoiceNo = rs.fields.invoiceNo;
+  const mid = main.contentId || main._id;
+  await fsWrite(env, COL, mid, { edits, groupId: setId, groupMain: true }, 'update').catch((e) => console.log('merge main', e.message));
+  for (const d of docs) { const id = d.contentId || d._id; if (id !== mid) await fsWrite(env, COL, id, { groupId: setId, groupOf: mid }, 'update').catch(() => {}); }
+  main.edits = edits;
+  return main;
+}
+
 // รูป/ไฟล์ใหม่: บันทึก → Vision → เก็บ ocrText/parsed → ตอบ (หลายรูปพร้อมกัน ตอบครั้งเดียวที่รูปสุดท้าย)
 async function onFile(env, ctx, ev, names) {
   const m = ev.message, uid = (ev.source || {}).userId || '';
@@ -389,6 +409,12 @@ async function onFile(env, ctx, ev, names) {
     }
     if (!docs.some((d) => d.contentId === doc.contentId)) docs.push(doc);
     docs.sort((a, b) => (a.setIndex || 0) - (b.setIndex || 0));
+    const main = await mergeSet(env, docs, vend, set.id).catch((e) => { console.log('mergeSet', e.message); return null; });
+    if (main) {
+      const msgs = await cardsFor(env, [main], vend);
+      msgs.push(textMsg('รวม ' + docs.length + ' รูปเป็นบิลเดียว · ยอดเงินจากสลิป ร้านค้าจากรูปหน้าร้าน (กดบันทึกครั้งเดียว เก็บทุกรูป)'));
+      return reply(env, ev.replyToken, msgs);
+    }
   }
   await reply(env, ev.replyToken, await cardsFor(env, docs, vend));
 }
@@ -444,8 +470,15 @@ async function onPostback(env, ctx, ev) {
   if (b.type === 'image') { const c = await lineContent(env, id); if (c) photo = await cloudinaryUpload(c.buf, c.mime, 'bill-' + id + '.jpg', env); }
   const [rec, err] = cleanRec(recFrom(r, b, photo));
   if (!rec) { await fsWrite(env, COL, id, { status: 'new' }, 'update').catch(() => {}); return say('บันทึกไม่ได้: ' + err + ' · กด "✏️ แก้ไข" เพื่อแก้'); }
+  const grp = b.groupMain ? (await fsQueryEq(env, COL, 'groupOf', id).catch(() => [])).filter((d) => d.from === uid && d.status === 'new') : [];
+  if (grp.length) {   // รูปอื่นในชุด (สลิป) → รูปประกอบ photos2
+    const ex = [];
+    for (const d of grp.slice(0, 4)) { const gid = d.contentId || d._id; const c = d.type === 'image' ? await lineContent(env, gid) : null; const u = c ? await cloudinaryUpload(c.buf, c.mime, 'bill-' + gid + '.jpg', env) : ''; if (/^https:\/\/res\.cloudinary\.com\/m4n2ttwh\//.test(u || '') && u.length <= 300) ex.push(u); }
+    if (ex.length) rec.photos2 = ex;
+  }
   const w = await saveRec(env, id, b, rec);
   if (w !== 'ok') return say('บันทึกไม่สำเร็จ ลองกดใหม่อีกครั้ง');
+  for (const d of grp) await fsWrite(env, COL, d.contentId || d._id, { status: 'done', doneAt: Date.now(), purchaseId: rec.id }, 'update').catch(() => {});
   return reply(env, ev.replyToken, [{ type: 'flex', altText: 'บันทึกแล้ว ' + fmtBaht(Number(rec.amount) || 0) + ' บาท', contents: savedFlex(rec) }]);
 }
 
