@@ -86,8 +86,6 @@ body:not(.themed) .hero2{--th:#1b1b2f;--thD:#0b0b16;--thL:#fff6cc;--thInk:#fff}
 .h2st{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
 .hs{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:8px 10px;text-align:center}.hs b{display:block;font-size:22px;font-weight:800;line-height:1.1}.hs span{font-size:12px;opacity:.85}
 .hs.hot{background:rgba(255,255,255,.95);color:var(--th,#1b1b2f)}
-.h2gal{position:relative;display:flex;gap:12px;overflow-x:auto;margin:16px -18px 0;padding:6px 18px 8px;scrollbar-width:none}.h2gal::-webkit-scrollbar{display:none}
-.stk{flex:none;width:76px;height:76px;border-radius:16px;background:#fff;padding:4px;box-shadow:0 6px 14px rgba(0,0,0,.3);transform:rotate(var(--r,0deg))}.stk img{width:100%;height:100%;object-fit:cover;border-radius:12px;display:block}
 .pst{display:inline-block;margin:2px 0 2px;padding:1px 9px;border-radius:99px;font-size:12px;font-weight:700;vertical-align:middle;white-space:nowrap}.pst.ok{background:#dcfce7;color:#166534}.pst.no{background:#fee2e2;color:#b91c1c}
 details.jc>summary .jt0{flex:none;width:52px;height:52px;border-radius:12px;display:grid;place-items:center;background:#eef0f4;color:#9aa1ad;font-weight:800;font-size:15px}
 body.themed .brand{background:linear-gradient(135deg,var(--th),var(--thD));color:var(--thInk);margin:-18px -16px 16px;padding:18px 16px 22px;border-radius:0 0 24px 24px}
@@ -274,16 +272,15 @@ details.jc.pr2{border-left-color:#E5231B}details.jc.pr1{border-left-color:#F5B30
   // หัวโปรไฟล์ลูกค้าส่ง: โลโก้แบบสติ๊กเกอร์ไดคัท + ชื่อ + ตัวเลขสรุป + แถบผลงานของลูกค้า (รูปจากทุกใบงาน)
   function heroHTML(j, others, payOk) {
     var all = [{no: j.no, status: j.status, delivered: j.delivered, thumb: j.thumb, photos: j.photos, refs: j.refPhotos}].concat(others.map(function (o) { return {no: o.no, status: o.status, delivered: o.delivered, thumb: o.thumb, photos: o.photos, refs: o.refPhotos}; }));
-    var doing = 0, done = 0, pics = [];
-    all.forEach(function (o) { var k = stIdx(o.status, o.delivered); if (k >= 4) done++; else doing++;
-      [o.thumb].concat(https(o.photos), https(o.refs)).forEach(function (u) { if (/^https:\/\//.test(u || '') && pics.indexOf(u) < 0) pics.push(u); }); });
+    var doing = 0, done = 0;
+    all.forEach(function (o) { var k = stIdx(o.status, o.delivered); if (k >= 4) done++; else doing++; });
     var init = String(j.cname || '?').trim().slice(0, 2).toUpperCase();
     var logo = /^https:\/\//.test(j.clogo || '') ? '<img src="' + esc(j.clogo) + '" alt="โลโก้ ' + esc(j.cname || '') + '">' : '<b>' + esc(init) + '</b>';
     var stat = function (v, l, c) { return '<div class="hs' + (c ? ' ' + c : '') + '"><b>' + v + '</b><span>' + l + '</span></div>'; };
     var h = '<section class="hero2"><div class="h2bg" aria-hidden="true"><i></i><i></i><i></i></div>' +
       '<div class="h2id"><span class="h2logo">' + logo + '</span><div class="h2nm"><small>ลูกค้าประจำ บอลสติ๊กเกอร์</small><b>' + esc(j.cname || 'ลูกค้า') + '</b></div></div>' +
       '<div class="h2st">' + stat(all.length, 'ใบงาน') + stat(doing, 'กำลังทำ', doing ? 'hot' : '') + stat(done, 'ส่งแล้ว') + '</div>';
-    if (pics.length) h += '<div class="h2gal" aria-label="ผลงานของคุณ">' + pics.slice(0, 10).map(function (u, i) { return '<span class="stk" style="--r:' + ((i % 2 ? 1 : -1) * (2 + i % 3)) + 'deg"><img src="' + esc(u) + '" alt="ผลงาน ' + (i + 1) + '" loading="lazy"></span>'; }).join('') + '</div>';
+    // (ตัดแถบรูปผลงานออกตามเจ้าของร้าน 13 พ.ย.)
     return h + '</section>';
   }
   function jobCard(o, open) {
