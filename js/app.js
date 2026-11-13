@@ -3451,10 +3451,11 @@ function bahtText(value) {
       return '<div class="wo-it">' + '<div class="wo-img">' + (img ? '<img src="' + esc(img) + '" alt="แบบของ ' + esc(c.name || '') + '" loading="lazy">' : (f.orig ? 'PDF' : '—')) + '</div>' +
         '<div class="wo-m"><b>' + esc(c.name || 'ไม่ทราบชื่อ') + '</b><span class="wo-ref">' + esc(x.ref || x.id) + ' · ' + esc(new Date(x.createdAt || 0).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + '</span>' +
         '<span>' + esc(x.w ? x.w + ' × ' + x.h + ' ซม. · ' + Number(x.qty || 0).toLocaleString('th-TH') + ' ดวง' : 'ไม่มีรายละเอียด') + (x.perSheet ? ' · แผ่นละ ' + x.perSheet + ' (≈' + x.sheets + ' แผ่น)' : '') + '</span>' +
-        '<span>' + esc(c.tel || '') + '</span><span class="wo-amt">' + (x.total ? '฿' + money(x.total) : '') + '</span>' +
-        '<span>' + (x.test ? '<i class="wo-tag">🧪 ทดสอบ</i>' : '') + (x.tax ? '<i class="wo-tag tx">ใบกำกับ</i>' : '') + (x.status === 'job' ? '<i class="wo-tag ok">ใบงาน ' + esc(x.jobNo || '') + '</i>' : x.status === 'hide' ? '<i class="wo-tag">ซ่อนแล้ว</i>' : '<i class="wo-tag">รอตรวจสลิป</i>') + '</span></div>' +
+        '<span>' + esc(c.tel || '') + (x.lineName ? ' · LINE ' + esc(x.lineName) : '') + '</span><span class="wo-amt">' + (x.total ? '฿' + money(x.total) : '') + '</span>' +
+        '<span>' + (x.test ? '<i class="wo-tag">🧪 ทดสอบ</i>' : '') + (x.tax ? '<i class="wo-tag tx">ใบกำกับ</i>' : '') + (x.slip ? '<i class="wo-tag ok">แนบสลิปแล้ว</i>' : '') + (x.status === 'job' ? '<i class="wo-tag ok">ใบงาน ' + esc(x.jobNo || '') + '</i>' : x.status === 'hide' ? '<i class="wo-tag">ซ่อนแล้ว</i>' : (x.slip ? '' : '<i class="wo-tag">ยังไม่แนบสลิป</i>')) + '</span></div>' +
         '<div class="wo-act">' + (woDone(x) ? '' : '<button type="button" class="btn small good" data-wojob="' + esc(x.id) + '">สร้างใบงาน</button>') +
         (f.orig ? '<a href="' + esc(f.orig) + '" target="_blank" rel="noopener">ไฟล์ลูกค้า</a>' : '') + (f.png ? '<a href="' + esc(f.png) + '" target="_blank" rel="noopener">ไฟล์ตรง</a>' : '') + (f.svg ? '<a href="' + esc(f.svg) + '" target="_blank" rel="noopener">เส้น Kiss Cut</a>' : '') +
+        (x.slip ? '<a href="' + esc(x.slip) + '" target="_blank" rel="noopener">ดูสลิป</a>' : '') +
         (woDone(x) ? '<button type="button" class="btn small" data-woback="' + esc(x.id) + '">คืนไปรอสร้าง</button>' : '<button type="button" class="btn small" data-wohide="' + esc(x.id) + '">ซ่อน</button>') + (x.test || /^TEST/.test(x.ref || x.id) ? '<button type="button" class="btn small" data-wodel="' + esc(x.id) + '">ลบ (ทดสอบ)</button>' : '') + '</div></div>';
     }).join('') : '<div class="bb-empty">' + (webOrdTab === 'done' ? 'ยังไม่มีออเดอร์ที่ทำแล้ว' : 'ไม่มีออเดอร์ใหม่') + '</div>';
   }
@@ -6611,7 +6612,8 @@ function bahtText(value) {
   function renderWholesaleItems() {
     $('wholesaleItems').innerHTML = wholesaleItems.map((it, i) =>
       '<div class="item" data-i="' + i + '">' +
-      '<input class="txt i-name" type="text" placeholder="ชื่อรายการ" aria-label="ชื่อรายการ" value="' + esc(it.name) + '">' +
+      '<div class="nmw"><button class="i-img' + (it.img ? ' has' : '') + '" type="button" aria-label="' + (it.img ? 'เปลี่ยน/ลบรูปรายการนี้' : 'แนบรูปรายการนี้') + '" title="แนบรูปงาน">' + (it.img ? '<img src="' + it.img + '" alt="">' : '📷') + '</button>' +
+      '<input class="txt i-name" type="text" placeholder="ชื่อรายการ" aria-label="ชื่อรายการ" value="' + esc(it.name) + '"></div>' +
       '<input class="num i-qty" type="number" inputmode="decimal" step="any" min="0" placeholder="จำนวน" aria-label="จำนวน" value="' + esc(it.qty) + '">' +
       '<input class="num i-price" type="number" inputmode="decimal" step="any" min="0" placeholder="ราคา/ชิ้น" aria-label="ราคาต่อชิ้น" value="' + esc(it.price) + '">' +
       '<output class="i-total" aria-label="รวม">' + money(num(it.qty) * num(it.price)) + '</output>' +
@@ -6642,7 +6644,7 @@ function bahtText(value) {
     const t = wholesaleTotals();
     const shown = wholesaleItems.filter(i => i.name.trim() || num(i.qty) * num(i.price) > 0);
     const rows = shown.length ? shown.map((i, n) =>
-      '<tr><td class="n">' + (n + 1) + '</td><td>' + esc(i.name) + '</td><td class="r">' + esc(fmt(num(i.qty))) +
+      '<tr><td class="n">' + (n + 1) + '</td><td>' + (i.img ? '<img class="it-img" src="' + i.img + '" alt="">' : '') + esc(i.name) + '</td><td class="r">' + esc(fmt(num(i.qty))) +
       '</td><td class="r">' + money(num(i.price)) + '</td><td class="r">' + money(num(i.qty) * num(i.price)) + '</td></tr>').join('')
       : '<tr><td class="n">—</td><td colspan="4" style="color:#4a5a72">ยังไม่มีรายการ</td></tr>';
     const custParts = [];
@@ -6713,7 +6715,7 @@ function bahtText(value) {
   }
   function collectWholesale() {
     return {no: $('whNo').value.trim(), ref: $('whRef').value, date: $('whDate').value, buyerName: $('whName').value,
-      items: wholesaleItems.map(i => { const o = {name: i.name, qty: i.qty, price: i.price}; if (i.job) o.job = i.job; return o; }),
+      items: wholesaleItems.map(i => { const o = {name: i.name, qty: i.qty, price: i.price}; if (i.job) o.job = i.job; if (i.img) o.img = i.img; return o; }),
       discount: $('whDiscount').value, note: $('whNote').value,
       buyerPhone: $('whPhone').value.trim(), buyerAddr: $('whAddr').value.trim(), due: $('whDue').value, prodNote: $('whProdNote').value, photos: whPhotos.slice(),
       recv: ($('whRName').value.trim() || $('whRPhone').value.trim() || $('whRAddr').value.trim()) ? {name: $('whRName').value.trim(), phone: $('whRPhone').value.trim(), addr: $('whRAddr').value.trim()} : null};
@@ -6721,7 +6723,7 @@ function bahtText(value) {
   function applyWholesale(w) {
     $('whNo').value = w.no || ''; $('whRef').value = w.ref || ''; $('whDate').value = w.date || todayISO();
     $('whName').value = w.buyerName || '';
-    wholesaleItems = (w.items && w.items.length) ? w.items.map(i => ({name: i.name || '', qty: i.qty, price: i.price, job: i.job})) : [{name: '', qty: 1, price: 0}];
+    wholesaleItems = (w.items && w.items.length) ? w.items.map(i => ({name: i.name || '', qty: i.qty, price: i.price, job: i.job, img: i.img || ''})) : [{name: '', qty: 1, price: 0}];
     $('whDiscount').value = w.discount || 0; $('whNote').value = w.note || '';
     $('whPhone').value = w.buyerPhone || ''; $('whAddr').value = w.buyerAddr || ''; $('whDue').value = w.due || ''; $('whProdNote').value = w.prodNote || '';
     { const rv = w.recv || {}; $('whRName').value = rv.name || ''; $('whRPhone').value = rv.phone || ''; $('whRAddr').value = rv.addr || ''; }
@@ -9281,7 +9283,22 @@ function bahtText(value) {
     row.querySelector('.i-total').textContent = money(num(it.qty) * num(it.price));
     renderWholesale();
   });
+  // รูปต่อรายการ (ย่อ 360px JPEG ~20KB เก็บในใบ · พิมพ์เป็นรูปเล็กหน้าชื่อรายการ)
+  let whImgIdx = -1;
+  const whImgIn = document.createElement('input'); whImgIn.type = 'file'; whImgIn.accept = 'image/*'; whImgIn.hidden = true; document.body.appendChild(whImgIn);
+  whImgIn.addEventListener('change', () => {
+    const f = whImgIn.files && whImgIn.files[0]; whImgIn.value = ''; if (!f || whImgIdx < 0 || !wholesaleItems[whImgIdx]) return;
+    const rd = new FileReader(); rd.onload = () => { const im = new Image(); im.onload = () => {
+      const k = Math.min(1, 360 / Math.max(im.width, im.height)), w = Math.round(im.width * k), h = Math.round(im.height * k), cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.drawImage(im, 0, 0, w, h);
+      wholesaleItems[whImgIdx].img = cv.toDataURL('image/jpeg', 0.72); renderWholesaleItems(); renderWholesale();
+    }; im.src = rd.result; }; rd.readAsDataURL(f);
+  });
   $('wholesaleItems').addEventListener('click', e => {
+    const ib = e.target.closest('.i-img');
+    if (ib) { const i = +ib.closest('.item').dataset.i, it = wholesaleItems[i];
+      if (it.img && confirm('ลบรูปของรายการนี้? (กด ยกเลิก เพื่อเลือกรูปใหม่)')) { it.img = ''; renderWholesaleItems(); renderWholesale(); return; }
+      whImgIdx = i; whImgIn.click(); return; }
     if (!e.target.closest('.del')) return;
     const i = +e.target.closest('.item').dataset.i;
     wholesaleItems.splice(i, 1);
