@@ -79,6 +79,16 @@
   .done .big { width:60px; height:60px; border-radius:50%; background:#e8f5ee; color:var(--ok); display:grid; place-items:center; margin:0 auto 10px; font-size:30px; }
   .note { font-size:13px; color:var(--sub); margin:8px 0 0; }
   .err { color:var(--bad); font-size:13px; margin-top:6px; }
+  .stage { margin-top:12px; border-radius:14px; background:radial-gradient(120% 90% at 50% 20%, #ffffff 0%, #e9edf5 70%, #dfe4ee 100%); padding:22px 12px 10px; overflow:hidden; touch-action:none; user-select:none; cursor:grab; }
+  .stage:active { cursor:grabbing; }
+  .st3d { position:relative; width:min(260px, 72vw); margin:0 auto; transition:transform .08s linear; will-change:transform; }
+  .st3d canvas { display:block; width:100%; height:auto; }
+  .shadow { width:min(220px, 60vw); height:18px; margin:6px auto 0; border-radius:50%; background:radial-gradient(closest-side, rgba(20,35,75,.28), rgba(20,35,75,0)); }
+  .gloss { position:absolute; inset:0; pointer-events:none; -webkit-mask-size:100% 100%; mask-size:100% 100%; mix-blend-mode:screen;
+    background:linear-gradient(var(--ga, 120deg), rgba(255,255,255,0) 30%, rgba(255,255,255,.55) 46%, rgba(255,255,255,0) 60%); background-size:220% 220%; background-position:var(--gx, 50%) var(--gy, 50%); }
+  .st-tools { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:14px; font-size:13px; color:var(--sub); flex-wrap:wrap; }
+  .sw { display:flex; align-items:center; gap:6px; font-size:13px; } .sw input { width:18px; min-height:18px; }
+  @media (prefers-reduced-motion: reduce) { .st3d { transition:none; } }
   [hidden] { display:none !important; }
   @media (max-width:380px) { .f2 { grid-template-columns:1fr; } .tiers { grid-template-columns:repeat(2,1fr); } }
 </style>
@@ -102,6 +112,10 @@
     <div class="prev" id="prev">
       <div class="ph"><img id="pimg" alt="แบบที่อัปโหลด"></div>
       <div class="meta"><b id="pname"></b><span id="pinfo"></span><br><button type="button" class="link" id="pchange">เปลี่ยนรูป</button></div>
+    </div>
+    <div class="stage" id="stage" hidden aria-label="ตัวอย่างสติ๊กเกอร์ 3 มิติ ลากเพื่อหมุน">
+      <div class="st3d" id="st3d"><canvas id="cv3d"></canvas><div class="gloss" id="gloss"></div></div><div class="shadow" aria-hidden="true"></div>
+      <div class="st-tools"><span>👆 ลากเพื่อหมุนดู</span><label class="sw"><input type="checkbox" id="rmbg" checked> ลบพื้นหลังรอบรูป</label></div>
     </div>
     <div class="warn" id="qwarn" hidden></div>
   </section>
@@ -179,15 +193,70 @@
     if (f.size > 20 * 1024 * 1024) { w.hidden = false; w.textContent = 'ไฟล์ใหญ่เกิน 20 MB ส่งทาง LINE @bk25 แทนได้'; return; }
     st.file = f; st.url = '';
     $('pname').textContent = f.name; drop.hidden = true; $('prev').classList.add('on');
-    if (/pdf/i.test(f.type)) { $('pimg').removeAttribute('src'); $('pimg').alt = 'PDF'; $('pinfo').textContent = 'ไฟล์ PDF · ร้านตรวจขนาดให้'; st.ratio = 0; $('ratioNote').hidden = true; render(); return; }
+    if (/pdf/i.test(f.type)) { $('pimg').removeAttribute('src'); $('pimg').alt = 'PDF'; $('pinfo').textContent = 'ไฟล์ PDF · ร้านตรวจขนาดให้'; st.ratio = 0; srcImg = null; $('stage').hidden = true; $('ratioNote').hidden = true; render(); return; }
     var url = URL.createObjectURL(f), img = new Image();
     img.onload = function () {
-      $('pimg').src = url; st.ratio = img.naturalWidth / img.naturalHeight; $('ratioNote').hidden = false;
+      $('pimg').src = url; st.ratio = img.naturalWidth / img.naturalHeight; $('ratioNote').hidden = false; srcImg = img; buildSticker();
       $('pinfo').textContent = img.naturalWidth + ' × ' + img.naturalHeight + ' px';
       $('h').value = +(num($('w').value) / st.ratio).toFixed(1); render();
     };
     img.src = url;
   }
+  // ---------- ตัวอย่าง 3 มิติ: ลบพื้นหลังสีเดียวรอบรูป (เฉพาะรูปที่ไม่มีพื้นใส) → ขอบขาวไดคัท → เลเยอร์ความหนา + แสงเงาเคลือบ ----------
+  var srcImg = null;
+  function buildSticker() {
+    if (!srcImg) return;
+    var MAX = 560, sc = Math.min(1, MAX / Math.max(srcImg.naturalWidth, srcImg.naturalHeight));
+    var iw = Math.max(1, Math.round(srcImg.naturalWidth * sc)), ih = Math.max(1, Math.round(srcImg.naturalHeight * sc));
+    var B = Math.round(Math.max(iw, ih) * 0.035) + 3, W = iw + B * 2 + 4, H = ih + B * 2 + 4;
+    var a = document.createElement('canvas'); a.width = iw; a.height = ih; var ax = a.getContext('2d'); ax.drawImage(srcImg, 0, 0, iw, ih);
+    var d = ax.getImageData(0, 0, iw, ih), px = d.data, n = iw * ih, i, opaque = true;
+    for (i = 3; i < px.length; i += 4) if (px[i] < 250) { opaque = false; break; }
+    if (opaque && $('rmbg').checked) {   // ไล่จากขอบรูป ลบสีที่ใกล้สีมุม (พื้นหลังสีเดียว)
+      var cs = [0, iw - 1, n - iw, n - 1].map(function (k) { return [px[k * 4], px[k * 4 + 1], px[k * 4 + 2]]; });
+      var bg = cs[0], near = function (k, c, t) { var o = k * 4, dr = px[o] - c[0], dg = px[o + 1] - c[1], db = px[o + 2] - c[2]; return dr * dr + dg * dg + db * db <= t * t; };
+      var same = cs.every(function (c) { var dr = c[0] - bg[0], dg = c[1] - bg[1], db = c[2] - bg[2]; return dr * dr + dg * dg + db * db < 45 * 45; });
+      if (same) {
+        var seen = new Uint8Array(n), q = [], push = function (k) { if (!seen[k] && near(k, bg, 48)) { seen[k] = 1; q.push(k); } };
+        for (i = 0; i < iw; i++) { push(i); push(n - iw + i); } for (i = 0; i < ih; i++) { push(i * iw); push(i * iw + iw - 1); }
+        while (q.length) { var k = q.pop(), x = k % iw; px[k * 4 + 3] = 0; if (x > 0) push(k - 1); if (x < iw - 1) push(k + 1); if (k >= iw) push(k - iw); if (k < n - iw) push(k + iw); }
+        // เก็บเศษที่หลงเหลือ: เส้นบางๆ (กรอบ/เส้นขอบรูป) และจุดเล็กๆ ที่ไม่ใช่ตัวงาน
+        var lab = new Int32Array(n), thin = Math.max(3, Math.round(Math.max(iw, ih) * 0.008)), id = 0;
+        for (i = 0; i < n; i++) {
+          if (lab[i] || !px[i * 4 + 3]) continue;
+          id++; var st2 = [i], comp = [], x0 = iw, x1 = 0, y0 = ih, y1 = 0; lab[i] = id;
+          while (st2.length) { var c = st2.pop(), cx0 = c % iw, cy0 = (c - cx0) / iw; comp.push(c);
+            if (cx0 < x0) x0 = cx0; if (cx0 > x1) x1 = cx0; if (cy0 < y0) y0 = cy0; if (cy0 > y1) y1 = cy0;
+            [cx0 > 0 ? c - 1 : -1, cx0 < iw - 1 ? c + 1 : -1, c >= iw ? c - iw : -1, c < n - iw ? c + iw : -1].forEach(function (nb) { if (nb >= 0 && !lab[nb] && px[nb * 4 + 3]) { lab[nb] = id; st2.push(nb); } }); }
+          if (comp.length < 12 || Math.min(x1 - x0, y1 - y0) < thin) comp.forEach(function (c) { px[c * 4 + 3] = 0; });
+        }
+        ax.putImageData(d, 0, 0);
+      }
+    }
+    // เงาขาวรอบรูป = วาดรูปทึบสีขาวซ้ำรอบวง (ขยายขอบ B px)
+    var m = document.createElement('canvas'); m.width = W; m.height = H; var mx = m.getContext('2d');
+    var sil = document.createElement('canvas'); sil.width = iw; sil.height = ih; var sx = sil.getContext('2d'); sx.drawImage(a, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = '#fff'; sx.fillRect(0, 0, iw, ih);
+    for (var t = 0; t < 24; t++) { var an = t / 24 * Math.PI * 2; mx.drawImage(sil, 2 + B + Math.cos(an) * B, 2 + B + Math.sin(an) * B); }
+    mx.drawImage(sil, 2 + B, 2 + B);
+    var T = Math.max(3, Math.round(Math.max(W, H) * 0.008));   // ความหนาของแผ่นสติ๊กเกอร์ (เห็นเป็นขอบเทาด้านล่าง)
+    var cv = $('cv3d'); cv.width = W; cv.height = H + T; var cx = cv.getContext('2d'); cx.clearRect(0, 0, W, H + T);
+    var edge = document.createElement('canvas'); edge.width = W; edge.height = H; var ex = edge.getContext('2d'); ex.drawImage(m, 0, 0); ex.globalCompositeOperation = 'source-in'; ex.fillStyle = '#c3c9d6'; ex.fillRect(0, 0, W, H);
+    for (var z = T; z > 0; z--) cx.drawImage(edge, 0, z);
+    cx.drawImage(m, 0, 0); cx.drawImage(a, 2 + B, 2 + B);
+    var url = m.toDataURL('image/png');
+    var g = $('gloss'); g.style.webkitMaskImage = g.style.maskImage = 'url(' + url + ')'; g.style.bottom = (T / (H + T) * 100).toFixed(2) + '%';
+    $('stage').hidden = false;
+  }
+  (function () {   // ลากเพื่อหมุน · ปล่อยแล้วโยกเบาๆ
+    var stg = $('stage'), el = $('st3d'), g = $('gloss'), rx = -8, ry = 14, drag = null, idle = 0, reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function apply() { el.style.transform = 'perspective(700px) rotateX(' + rx.toFixed(1) + 'deg) rotateY(' + ry.toFixed(1) + 'deg)'; g.style.setProperty('--gx', (50 + ry * 1.6) + '%'); g.style.setProperty('--gy', (50 - rx * 1.6) + '%'); }
+    stg.addEventListener('pointerdown', function (e) { if (e.target.closest('.st-tools')) return; drag = {x: e.clientX, y: e.clientY, rx: rx, ry: ry}; stg.setPointerCapture(e.pointerId); });
+    stg.addEventListener('pointermove', function (e) { if (!drag) return; ry = Math.max(-60, Math.min(60, drag.ry + (e.clientX - drag.x) * 0.5)); rx = Math.max(-50, Math.min(50, drag.rx - (e.clientY - drag.y) * 0.5)); apply(); });
+    ['pointerup', 'pointercancel'].forEach(function (t) { stg.addEventListener(t, function () { drag = null; idle = performance.now(); }); });
+    function loop(ts) { if (!drag && !reduce && !stg.hidden) { var k = (ts - idle) / 1000; rx += ((-8 + Math.sin(k * 0.9) * 6) - rx) * 0.04; ry += ((14 + Math.sin(k * 0.6) * 18) - ry) * 0.04; apply(); } requestAnimationFrame(loop); }
+    apply(); requestAnimationFrame(loop);
+  })();
+  $('rmbg').addEventListener('change', buildSticker);
   function qualityWarn(w, h) {   // รูปเล็กเกินขนาดที่เลือก → อาจไม่คม (ต่ำกว่า ~150 dpi)
     var el = $('qwarn'), img = $('pimg'); if (!st.file || !img.naturalWidth) return;
     var dpi = Math.min(img.naturalWidth / (w / 2.54), img.naturalHeight / (h / 2.54));
