@@ -383,10 +383,13 @@ function bahtText(value) {
       const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
       if (refs.length) doc.refPhotos = refs;
       { const th = (photos[0] || refs[0] || ''); if (th) doc.thumb = th; }   // รูปย่อหัวการ์ด
+      { const cu = store.get('bs_customers', []).find(c => String(c.name || '').trim() === String(rec.jName || '').trim()); if (cu && /^https:\/\//.test(cu.logo || '')) doc.clogo = cu.logo; if (cu && /^#[0-9a-f]{6}$/i.test(cu.color || '')) doc.ctheme = cu.color; }
+      { const ps = jobPayStateOf(rec); if (ps) doc.payst = ps; }   // โลโก้ลูกค้า (หัวหน้าติดตามงาน)
       if (isJbs) {   // ใบงานอื่นของลูกค้าคนนี้ (สถานะล่าสุดของแต่ละใบ)
         doc.others = siblingJobsOf(rec).map(x => {
           const trx = x.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(x.trackCode)) || null) : null, car2 = (trx && trx.carrier) || '';
           const px = publicItemsOf(x), o = {shipFrom: shipFromOf(x, trx), amt: px.amt || 0, delivered: jobDelivered(x), no: String(x.no || ''), status: x.status || 'pending', date: x.date || '', due: x.due || '', items: px.items};
+          { const ps = jobPayStateOf(x); if (ps) o.payst = ps; }
           { const https = a => (Array.isArray(a) ? a : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)); const ph = https(x.donePhotos).slice(0, 4), rf = https(x.photos).slice(0, 4); if (ph.length) o.photos = ph; if (rf.length) o.refPhotos = rf; const th2 = ph[0] || rf[0]; if (th2) o.thumb = th2; }
           if (x.recv && (x.recv.name || x.recv.addr)) o.receiver = {name: String(x.recv.name || '').replace(/\s+/g, ' ').trim().slice(0, 80), addr: String(x.recv.addr || '').replace(/\s+/g, ' ').trim().slice(0, 300)};
           if (x.trackCode) { o.trackCode = String(x.trackCode); o.carrier = car2; o.trackUrl = trackingLink(car2, x.trackCode) || ''; const sx = shipStOf(x.trackCode); if (sx) o.shipSt = sx; }
@@ -405,6 +408,17 @@ function bahtText(value) {
   }
   // หลังบันทึกแล้ว อัปโหลดรูปที่ยังเป็น data: URI ขึ้น Cloudinary เบื้องหลัง ไม่บล็อกหน้าจอ
   // แล้วแทนที่ด้วยลิงก์ https ถาวรทั้งในเครื่อง (เบาลง ไม่กิน localStorage) และในคลาวด์ (ดูได้ทุกเครื่อง)
+  // สถานะจ่ายของใบงาน JBS (โชว์ในหน้าติดตามงาน): ใบราคาส่งที่ผูก (เปิดจากใบงาน / ดึงรายการจากใบงาน) จ่ายครบ = ชำระแล้ว · ยังมีใบค้าง = ยังไม่ชำระ
+  //   ไม่มีใบราคาส่ง: ผูกเงินเข้า/กดรับเงินแล้ว = ชำระแล้ว · คีย์ยอดไว้แต่ยังไม่รับ = ยังไม่ชำระ · ยังไม่มียอด = ไม่แสดง
+  function jobPayStateOf(j) {
+    if (!j || !/^JBS/i.test(String(j.no || '').trim())) return '';
+    const docs = Object.values(j.whAdded || {}).map(x => String((x && x.doc) || '').trim()).filter(Boolean);
+    const ws = store.get('bs_wholesale', []).filter(w => w.jobId === j.id || (docs.length && (docs.indexOf(String(w.no || '').trim()) >= 0 || docs.indexOf(String(w.ref || '').trim()) >= 0)));
+    if (ws.length) return ws.every(w => w.paid) ? 'paid' : 'unpaid';
+    let bank = 0; try { bank = jobBankIdsOf(j).length; } catch (e) {}
+    if (j.owedPaid || bank) return 'paid';
+    return num(j.slipAmount) > 0 ? 'unpaid' : '';
+  }
   function syncRecordPhotosToCloud(key, cloudCol, id, field, renderFn) {
     (async () => {
       const list = store.get(key, []);
@@ -470,6 +484,31 @@ function bahtText(value) {
   // โลโก้ของร้าน (ลูกค้าราคาส่ง) เก็บใน bs_customers.logo (ลิงก์ Cloudinary) — ซิงก์ทุกเครื่อง
   const custRec = n => store.get('bs_customers', []).find(x => String(x.name || '').trim() === String(n || '').trim()) || null;
   const shopLogo = n => { const c = custRec(n); return c && c.logo ? c.logo : ''; };
+  // ธีมหน้าติดตามงานของลูกค้า = สีหลักของโลโก้ (คำนวณครั้งเดียวต่อร้าน เก็บใน bs_customers.color) แล้วอัปเดตหน้าติดตามของร้านนั้น
+  const themeTried = {};
+  function logoColor(cv) {   // สีหลักของโลโก้: นับสีอิ่มตัว (ข้ามขาว/ดำ/เทา/โปร่งใส) แบ่ง 24 กลุ่มเฉดสี เอากลุ่มที่มากสุด
+    const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data, bins = {};
+    for (let i = 0; i < d.length; i += 16) {
+      const a = d[i + 3]; if (a < 200) continue; const r = d[i], g = d[i + 1], b = d[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0;
+      if (sat < 0.35 || mx < 60 || mx > 250 && mn > 200) continue;
+      let h = 0; if (mx !== mn) { h = mx === r ? (g - b) / (mx - mn) : mx === g ? 2 + (b - r) / (mx - mn) : 4 + (r - g) / (mx - mn); h = ((h * 60) + 360) % 360; }
+      const k = Math.floor(h / 15), o = bins[k] || (bins[k] = {n: 0, r: 0, g: 0, b: 0}); o.n++; o.r += r; o.g += g; o.b += b;
+    }
+    const top = Object.values(bins).sort((a, b) => b.n - a.n)[0]; if (!top || top.n < 20) return '';
+    const hx = v => ('0' + Math.round(v / top.n).toString(16)).slice(-2); return '#' + hx(top.r) + hx(top.g) + hx(top.b);
+  }
+  function custThemeFor(name, force) {
+    const n = String(name || '').trim(), c = custRec(n); if (!c || !/^https:\/\//.test(c.logo || '')) return;
+    if ((c.color && !force) || themeTried[n + c.logo]) return; themeTried[n + c.logo] = 1;
+    const im = new Image(); im.crossOrigin = 'anonymous';
+    im.onload = () => { try {
+      const k = Math.min(1, 200 / Math.max(im.width, im.height)), cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(im.width * k)); cv.height = Math.max(1, Math.round(im.height * k));
+      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height); const col = logoColor(cv); if (!col) return;
+      setCustField(n, {color: col});
+      store.get('bs_jobs', []).filter(j => String(j.jName || '').trim() === n && j.trackToken).forEach(j => { try { publicJobMirror(j); } catch (e) {} });
+    } catch (e) {} };
+    im.src = c.logo;
+  }
   function setCustField(name, patch) {
     const n = String(name || '').trim(); if (!n) return;
     const list = store.get('bs_customers', []), idx = list.findIndex(c => String(c.name || '').trim() === n);
@@ -477,8 +516,8 @@ function bahtText(value) {
     if (idx >= 0) list[idx] = rec; else list.push(rec);
     store.set('bs_customers', list); cloudSave('customers', Object.assign({id: customerCloudId(n)}, rec));
   }
-  async function squareLogo(file) {   // ย่อเป็นจัตุรัส 320px พื้นขาว (โลโก้ไม่ถูกตัด) ให้ไฟล์เล็ก
-    const img = await createImageBitmap(file), S = 320, c = document.createElement('canvas'); c.width = c.height = S;
+  async function squareLogo(file) {   // ย่อเป็นจัตุรัส 640px (คมพอสำหรับลายโลโก้บนบัตรหน้าติดตาม) พื้นขาว (โลโก้ไม่ถูกตัด) ให้ไฟล์เล็ก
+    const img = await createImageBitmap(file), S = 640, c = document.createElement('canvas'); c.width = c.height = S;
     const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, S, S);
     const k = Math.min(S / img.width, S / img.height) * 0.92, w = img.width * k, h = img.height * k;
     g.drawImage(img, (S - w) / 2, (S - h) / 2, w, h); return c.toDataURL('image/jpeg', 0.9);
@@ -3431,6 +3470,22 @@ function bahtText(value) {
       webOrdUnsub = cloudDb.collection('webOrders').orderBy('createdAt', 'desc').limit(40).onSnapshot(snap => { countReads('webOrders', snap);
         const l = []; snap.forEach(d => l.push(Object.assign({id: d.id}, d.data()))); webOrd = l; renderWebOrders();
       }, e => { console.warn('webOrders', e); });
+    } catch (e) { console.warn(e); }
+  }
+  // ลูกค้าเปลี่ยนโลโก้เองจากหน้าติดตามงาน → logoReq/{trackToken} {url} → บันทึกเป็นโลโก้ลูกค้า (bs_customers) แล้วอัปเดตหน้าติดตามทุกใบของลูกค้านั้น
+  let logoReqUnsub = null;
+  function watchLogoReq() {
+    if (!cloudDb || logoReqUnsub) return;
+    try {
+      logoReqUnsub = cloudDb.collection('logoReq').limit(20).onSnapshot(snap => { countReads('logoReq', snap);
+        snap.forEach(d => { const x = d.data() || {}, url = String(x.url || '');
+          const job = store.get('bs_jobs', []).find(j => String(j.trackToken || '') === d.id), name = job ? String(job.jName || '').trim() : '';
+          if (!name || !/^https:\/\/res\.cloudinary\.com\//.test(url)) { if (!job && Date.now() - (+x.at || 0) > 864e5) d.ref.delete().catch(() => {}); return; }
+          setCustField(name, {logo: url, color: ''}); try { custThemeFor(name, true); } catch (e) {}
+          try { renderWholesaleHistory(); } catch (e) {} toast('ลูกค้า ' + name + ' เปลี่ยนโลโก้จากหน้าติดตามงาน');
+          d.ref.delete().catch(() => {});
+        });
+      }, e => { console.warn('logoReq', e); });
     } catch (e) { console.warn(e); }
   }
   const woDone = x => x.status === 'job' || x.status === 'hide';
@@ -6697,7 +6752,7 @@ function bahtText(value) {
     if (!items.length) return null;
     const jobItems2 = items.map(i => ({name: String(i.name).trim(), qty: i.qty, note: '', price: i.price}));
     const whAdded = {}; jobItems2.forEach((i, idx) => { whAdded[jobItemKey(i, idx)] = {at: Date.now(), doc: rec.no || rec.id}; });
-    const common = {jName: rec.buyerName, jPhone: rec.buyerPhone || '', jAddr: rec.buyerAddr || '', due: rec.due || '', note: rec.prodNote || '', items: jobItems2, photos: (rec.photos || []).slice(), recv: rec.recv || null, wholesale: true, whAdded, whDocId: rec.id};
+    const common = {jName: rec.buyerName, jPhone: rec.buyerPhone || '', jAddr: rec.buyerAddr || '', due: rec.due || '', note: rec.prodNote || '', items: jobItems2, photos: (rec.photos || []).concat((rec.items || []).filter(i => (i.name || '').trim() && !i.job).map(i => i.img).filter(Boolean)).slice(0, 12), recv: rec.recv || null, wholesale: true, whAdded, whDocId: rec.id};
     let job, isNew = false;
     if (ji >= 0) { job = Object.assign({}, jl[ji], common, {savedAt: Date.now()}); jl[ji] = job; }
     else {
@@ -6727,7 +6782,7 @@ function bahtText(value) {
     $('whDiscount').value = w.discount || 0; $('whNote').value = w.note || '';
     $('whPhone').value = w.buyerPhone || ''; $('whAddr').value = w.buyerAddr || ''; $('whDue').value = w.due || ''; $('whProdNote').value = w.prodNote || '';
     { const rv = w.recv || {}; $('whRName').value = rv.name || ''; $('whRPhone').value = rv.phone || ''; $('whRAddr').value = rv.addr || ''; }
-    whPhotos = (w.photos && w.photos.length) ? w.photos.slice() : []; renderWhPhotos();
+    whPhotos = (w.photos && w.photos.length) ? w.photos.slice() : []; renderWhPhotos(); try { renderWhLogo(); } catch (e) {}
     renderWholesaleItems(); renderWholesale(); try { syncWhFolds(); } catch (e) {}
   }
   function renderWholesaleEditState() {
@@ -6798,6 +6853,7 @@ function bahtText(value) {
     const IC_RC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>';
     const IC_QR = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-4"/></svg>';
     const IC_PL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+    gs.forEach(g => { try { custThemeFor(g.name); } catch (e) {} });
     $('wholesaleHistory').innerHTML = notice + '<ul>' + gs.map(g => {
       const ow = owed(g), has = g.open.length > 0, openN = g.open.reduce((a, w) => a + billSummary(w).jobs, 0), noP = g.open.reduce((a, w) => a + billSummary(w).noPrice, 0);
       const paidTotal = round2(g.paid.reduce((a, w) => a + wholesaleCalc(w).total, 0));
@@ -9283,6 +9339,33 @@ function bahtText(value) {
     row.querySelector('.i-total').textContent = money(num(it.qty) * num(it.price));
     renderWholesale();
   });
+  // โลโก้ลูกค้า: เก็บที่รายชื่อลูกค้า (bs_customers.logo เป็นลิงก์ Cloudinary) · ขึ้นหัวหน้าติดตามงานของลูกค้าคนนั้น
+  const custOf = nm => store.get('bs_customers', []).find(c => String(c.name || '').trim() === String(nm || '').trim());
+  function renderWhLogo() { const b = $('whLogoBtn'); if (!b) return; const cu = custOf($('whName').value); const lg = cu && cu.logo; b.classList.toggle('has', !!lg); b.innerHTML = lg ? '<img src="' + esc(lg) + '" alt="โลโก้ลูกค้า">' : 'โลโก้'; }
+  const whLogoIn = document.createElement('input'); whLogoIn.type = 'file'; whLogoIn.accept = 'image/*'; whLogoIn.hidden = true; document.body.appendChild(whLogoIn);
+  $('whLogoBtn').addEventListener('click', () => {
+    const nm = $('whName').value.trim(); if (!nm) { toast('ใส่ชื่อลูกค้าก่อน แล้วค่อยแนบโลโก้'); return; }
+    const cu = custOf(nm); if (cu && cu.logo && confirm('ลบโลโก้ของ ' + nm + '? (กด ยกเลิก เพื่อเลือกรูปใหม่)')) { setCustLogo(nm, ''); return; }
+    whLogoIn.click();
+  });
+  function setCustLogo(nm, url, color) {
+    if (!custOf(nm)) upsertCustomer(nm, $('whPhone').value, $('whAddr').value);
+    setCustField(nm, {logo: url, color: url ? (color || '') : ''});
+    renderWhLogo();
+    store.get('bs_jobs', []).filter(j => String(j.jName || '').trim() === nm && j.trackToken).forEach(j => { try { publicJobMirror(j); } catch (e) {} });   // อัปเดตหน้าติดตามงานที่มีอยู่
+    toast(url ? 'บันทึกโลโก้ลูกค้าแล้ว' : 'ลบโลโก้แล้ว');
+  }
+  whLogoIn.addEventListener('change', () => {
+    const f = whLogoIn.files && whLogoIn.files[0]; whLogoIn.value = ''; const nm = $('whName').value.trim(); if (!f || !nm) return;
+    const rd = new FileReader(); rd.onload = () => { const im = new Image(); im.onload = async () => {
+      const k = Math.min(1, 400 / Math.max(im.width, im.height)), w = Math.round(im.width * k), h = Math.round(im.height * k), cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(im, 0, 0, w, h); const du = cv.toDataURL('image/png'), col = logoColor(cv);
+      const b = $('whLogoBtn'); b.classList.add('has'); b.innerHTML = '<img src="' + du + '" alt="">';
+      const url = await uploadPhotoToCloudinary(du).catch(() => '');
+      if (url) setCustLogo(nm, url, col); else { toast('อัปโหลดโลโก้ไม่สำเร็จ ลองใหม่'); renderWhLogo(); }
+    }; im.src = rd.result; }; rd.readAsDataURL(f);
+  });
+  $('whName').addEventListener('input', renderWhLogo);
   // รูปต่อรายการ (ย่อ 360px JPEG ~20KB เก็บในใบ · พิมพ์เป็นรูปเล็กหน้าชื่อรายการ)
   let whImgIdx = -1;
   const whImgIn = document.createElement('input'); whImgIn.type = 'file'; whImgIn.accept = 'image/*'; whImgIn.hidden = true; document.body.appendChild(whImgIn);
@@ -9365,7 +9448,7 @@ function bahtText(value) {
     if (e.target.matches('[data-logo-in]')) {
       const f = e.target.files && e.target.files[0], li = e.target.closest('li.jc'); if (!f || !li) return;
       const name = li.dataset.name; toast('กำลังอัปโหลดโลโก้…');
-      try { const url = await uploadPhotoToCloudinary(await squareLogo(f)); if (!url) throw new Error('upload'); setCustField(name, {logo: url}); renderWholesaleHistory(); toast('ใส่โลโก้ร้าน ' + name + ' แล้ว'); }
+      try { const url = await uploadPhotoToCloudinary(await squareLogo(f)); if (!url) throw new Error('upload'); setCustField(name, {logo: url, color: ''}); custThemeFor(name, true); renderWholesaleHistory(); toast('ใส่โลโก้ร้าน ' + name + ' แล้ว'); }
       catch (er) { toast('อัปโหลดโลโก้ไม่สำเร็จ ลองใหม่อีกครั้ง'); }
       return;
     }
@@ -10471,6 +10554,7 @@ function bahtText(value) {
     watchCloud('purchases', 'bs_purchases', () => { renderPurchHistory(); renderVendorDatalist(); });
     try { watchBillBox(); } catch (e) {}
     try { watchWebOrders(); } catch (e) {}
+    try { watchLogoReq(); } catch (e) {}
     watchCloud('customers', 'bs_customers', () => { renderCustomerDatalist(); try { renderWholesaleHistory(); } catch (e) {} });
     watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
     if (can('money')) watchCloud('costCfg', 'bs_cost_cfg', () => { renderCost(); try { renderPrice(); } catch (e) {} });
