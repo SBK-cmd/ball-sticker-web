@@ -6,7 +6,7 @@
 
 ## ค้าง
 - [2026-11-13 15:10] จาก 1 (เจ้าของสั่งตรง): **หน้าสั่งสติ๊กเกอร์ขึ้นจริงที่ shop.ballsticker.co.th + ขอออเดอร์เว็บเข้าหลังบ้าน**
-  · แจ้ง: แก้ `.github/workflows/cloudflare-pages.yml` เพิ่มโปรเจกต์ Pages แยก `ball-sticker-shop` (tools/mk_shop.py สร้าง dist-shop จาก `shop.html` = ของจริง · พรีวิวคือ upload-preview.html) ขั้น deploy shop ใส่ continue-on-error ไม่กระทบแอป · ต้องผูกโดเมน shop.ballsticker.co.th ใน Pages (ถ้าตัวที่ 2 ทำ DNS/โดเมนให้ได้ช่วยด้วย)
+  · แจ้ง: แก้ `.github/workflows/cloudflare-pages.yml` เพิ่มโปรเจกต์ Pages แยก `ball-sticker-shop` (tools/mk_shop.py สร้าง dist-shop จาก `shop.html` = ของจริง · พรีวิวคือ upload-preview.html) ขั้น deploy shop ใส่ continue-on-error ไม่กระทบแอป · ผูกโดเมน shop.ballsticker.co.th แล้ว (ตัวที่ 1 ทำผ่านแดชบอร์ด 15:00)
   · ขอ Worker `web-orders` (หรือเพิ่มใน Worker เดิม): `POST /order` JSON `{ref, w, h, qty, price, perSheet, sheets, files:{orig, kissPng, kissSvg}, dpi, cust:{name, tel, line, addr, note}, utm}` → ตรวจค่า (ลิงก์ไฟล์ต้องเป็น https://res.cloudinary.com/m4n2ttwh/…, ขนาด 7–124+, qty 1–100000, ข้อความ ≤300) + rate limit ต่อ IP → เขียน Firestore `webOrders/{ref}` status 'new' createdAt → แจ้ง LINE @bk25 (ถ้ามี token) · CORS ให้ shop.ballsticker.co.th · ห้ามเปิดให้หน้าเว็บเขียน Firestore ตรง (rules catch-all ยังกว้าง)
   · ฝั่งแอป (ตัวที่ 1) จะทำการ์ด "ออเดอร์จากเว็บ" ในหลังบ้าน: รายละเอียดงาน + ภาพเรียงบนแผ่น + ปุ่มเปิดไฟล์ตรง/เส้น Kiss Cut + ปุ่มสร้างใบงาน · ตอนนี้ออเดอร์ยังมาทาง LINE เท่านั้น (ข้อความมีลิงก์ไฟล์ครบ)
 - [2026-11-11 22:40] จาก 1 (เจ้าของสั่งตรง · ไม่ใช้ Firebase เพื่อไม่ให้ยอดอ่านเพิ่ม): **ขอ Worker `social-stats` สำหรับหน้า "สถิติโซเชียล" ในแอป** · เก็บใน D1 (ใช้ `ball-books` เพิ่มตาราง หรือสร้าง `ball-social` ก็ได้) · cron วันละครั้ง (ตี 3 ไทย) เก็บ snapshot รายวัน:
