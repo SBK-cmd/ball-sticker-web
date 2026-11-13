@@ -375,7 +375,7 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
       '<input type="file" accept="image/*" id="logoIn" hidden aria-label="เลือกไฟล์โลโก้ร้าน"></label>' +
       '<div class="h2top"><span class="h2mem">Member</span></div>' +
       '<div class="h2nm"><b>' + esc(full) + '</b><small>' + all.length + ' ใบงาน · บอลสติ๊กเกอร์</small></div>' +
-      '<div class="h2bot">' + (payOk ? '<div class="h2bal"><small>ยอดค้างชำระ</small><b>' + money(j.pay.total) + '<span>บาท</span></b></div>'<button type="button" class="h2go" id="payOpen">สแกนจ่าย</button>'
+      '<div class="h2bot">' + (payOk ? '<div class="h2bal"><small>ยอดค้างชำระ</small><b>' + money(j.pay.total) + '<span>บาท</span></b></div><button type="button" class="h2go" id="payOpen">สแกนจ่าย</button>'
         : '<div class="h2bal"><small>ยอดค้างชำระ</small><b class="ok">ชำระครบแล้ว ✓</b></div>') + '</div>';
     // ตัวเลขสรุปอยู่ใต้บัตร (บัตรขนาดจริง 85.6×54 มม. ใส่ได้แค่ โลโก้ ชื่อ ยอด)
     return h + '</section><div class="h2st">' + stat(doing, 'กำลังทำ', doing ? 'hot' : '') + stat(ship, 'กำลังส่ง', ship ? 'hot' : '') + stat(done, 'ได้รับแล้ว') + '</div>';
