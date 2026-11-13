@@ -118,7 +118,7 @@
     <h2 id="s3"><b>3</b>จำนวน</h2>
     <div class="tiers" id="tiers"></div>
     <label class="custom" for="qty">หรือใส่จำนวนเอง (ดวง)<input id="qty" type="number" inputmode="numeric" min="1" placeholder="เช่น 300"></label>
-    <div class="lay"><svg id="lay" viewBox="0 0 121 81" role="img" aria-label="ตัวอย่างการเรียงบนแผ่น"></svg><p id="layTxt"></p></div>
+    <div class="lay" id="layBox" hidden><svg id="lay" viewBox="0 0 121 81" role="img" aria-label="ตัวอย่างการเรียงบนแผ่น"></svg><p id="layTxt"></p></div>
   </section>
 
   <section class="card" aria-labelledby="s4">
@@ -157,6 +157,9 @@
   function perSheet(w, h) { var g = function (L, s) { return s > L ? 0 : Math.floor((L + GAP) / (s + GAP)); }; var a = g(121, w) * g(81, h), b = g(121, h) * g(81, w); return a >= b ? {n: a, cx: g(121, w), pw: w, ph: h} : {n: b, cx: g(121, h), pw: h, ph: w}; }
   var TIERS = [50, 100, 200, 300, 500, 1000], SIZES = [[7, 7], [9, 9], [10, 10], [15, 10]];
   var st = {file: null, ratio: 0, qty: 100, url: '', busy: false};
+  // ภาพการเรียง/จำนวนต่อแผ่น เห็นเฉพาะแอดมิน: เปิดหน้านี้ด้วย ?admin=1 ครั้งเดียว เครื่องนั้นจะจำไว้ (ลูกค้าทั่วไปไม่เห็น)
+  var isAdmin = false; try { var qp = new URLSearchParams(location.search); if (qp.get('admin') === '1') localStorage.setItem('bs_upl_admin', '1'); if (qp.get('admin') === '0') localStorage.removeItem('bs_upl_admin'); isAdmin = localStorage.getItem('bs_upl_admin') === '1'; } catch (e) {}
+  $('layBox').hidden = !isAdmin;
   var utm = {}; try { new URLSearchParams(location.search).forEach(function (v, k) { if (/^utm_|^fbclid$/.test(k)) utm[k] = v.slice(0, 60); }); } catch (e) {}
 
   // ---------- รูป ----------
