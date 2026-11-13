@@ -330,7 +330,7 @@
   function showFileSize() {
     var el = $('fsize'), c = st.fileCm; el.hidden = !c; if (!c) return;
     el.innerHTML = c.src === 'pdf' ? 'ไฟล์ PDF ตั้งหน้าไว้ <b>' + c.w + ' × ' + c.h + ' ซม.</b> <button type="button" class="link" id="useF">ใช้ขนาดนี้</button>'
-      : 'ไฟล์ระบุขนาดจริง (' + c.dpi + ' dpi): ตัวงาน ' + c.aw + ' × ' + c.ah + ' ซม. → ชิ้นไดคัท <b>' + c.w + ' × ' + c.h + ' ซม.</b> <button type="button" class="link" id="useF">ใช้ขนาดตามไฟล์</button>';
+      : 'ไฟล์ระบุขนาดจริง: ตัวงาน ' + c.aw + ' × ' + c.ah + ' ซม. → ชิ้นไดคัท <b>' + c.w + ' × ' + c.h + ' ซม.</b> <button type="button" class="link" id="useF">ใช้ขนาดตามไฟล์</button>';
     $('useF').onclick = function () { $('w').value = c.w; $('h').value = c.h; render(); };
   }
   function artCm(w, h) { return {w: r1(Math.max(0, w - 0.4)), h: r1(Math.max(0, h - 0.4))}; }
@@ -342,8 +342,8 @@
   function qualityWarn(w, h) {   // ร้านพิมพ์แนะนำ 300 dpi ที่ขนาดจริง · ต่ำกว่า 150 เตือน
     var el = $('qwarn'), bd = $('sbreak'); if (!st.file || !srcImg) { el.hidden = true; bd.hidden = true; return; }
     var dpi = printDpi(w, h), a = artCm(w, h);
-    bd.hidden = !(w > 0 && h > 0); bd.innerHTML = 'ตัวงาน ' + a.w + ' × ' + a.h + ' ซม. + ขอบขาว 2 มม. รอบ = ชิ้นไดคัท <b>' + w + ' × ' + h + ' ซม.</b>' + (dpi ? ' · ความละเอียดที่ขนาดนี้ ≈ <b>' + Math.round(dpi) + ' dpi</b>' + (dpi >= 290 ? ' (คมชัด)' : dpi >= 150 ? ' (ใช้ได้)' : '') : '');
-    el.hidden = !(dpi && dpi < 150); if (!el.hidden) el.textContent = 'รูปนี้ความละเอียดประมาณ ' + Math.round(dpi) + ' dpi ที่ขนาด ' + w + ' × ' + h + ' ซม. อาจพิมพ์ออกมาไม่คม (ควร 300 dpi) แนะนำไฟล์ใหญ่ขึ้นหรือลดขนาดสติ๊กเกอร์';
+    bd.hidden = !(w > 0 && h > 0); bd.innerHTML = 'ตัวงาน ' + a.w + ' × ' + a.h + ' ซม. + ขอบขาว 2 มม. รอบ = ชิ้นไดคัท <b>' + w + ' × ' + h + ' ซม.</b>' + (dpi && isAdmin ? ' · ความละเอียดที่ขนาดนี้ ≈ <b>' + Math.round(dpi) + ' dpi</b>' + (dpi >= 290 ? ' (คมชัด)' : dpi >= 150 ? ' (ใช้ได้)' : '') : '');
+    el.hidden = true;   // ไม่เตือนลูกค้าเรื่องความละเอียด ร้านอัปสเกลภาพเอง (แอดมินเห็น dpi ในบรรทัดขนาด) if (!el.hidden) el.textContent = 'รูปนี้ความละเอียดประมาณ ' + Math.round(dpi) + ' dpi ที่ขนาด ' + w + ' × ' + h + ' ซม. อาจพิมพ์ออกมาไม่คม (ควร 300 dpi) แนะนำไฟล์ใหญ่ขึ้นหรือลดขนาดสติ๊กเกอร์';
   }
 
   // ---------- ขนาด ----------
