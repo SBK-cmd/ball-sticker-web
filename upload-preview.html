@@ -135,6 +135,7 @@
       <span class="x">×</span>
       <label for="h">สูง<input id="h" type="number" inputmode="decimal" step="0.1" min="1" value="9"></label>
     </div>
+    <div class="err" id="szerr" hidden></div>
     <div class="sz" id="sizes" role="group" aria-label="ขนาดยอดนิยม"></div>
     <p class="note" id="sbreak" hidden></p>
     <p class="note fsz" id="fsize" hidden></p>
@@ -183,7 +184,7 @@
   var nice = function (p) { return p < 100 ? Math.ceil(p) : Math.round(p / 10) * 10 - 1; };
   function price(n, w, h) { if (n === 100 && w === 9 && h === 9) return 999; return nice(A0 + A1 * n * (w + GAP) * (h + GAP)); }
   function perSheet(w, h) { var g = function (L, s) { return s > L ? 0 : Math.floor((L + GAP) / (s + GAP)); }; var a = g(121, w) * g(81, h), b = g(121, h) * g(81, w); return a >= b ? {n: a, cx: g(121, w), pw: w, ph: h} : {n: b, cx: g(121, h), pw: h, ph: w}; }
-  var TIERS = [50, 100, 200, 300, 500, 1000], SIZES = [[7, 7], [9, 9], [10, 10], [15, 10]];
+  var TIERS = [50, 100, 200, 300, 500, 1000], SIZES = [7, 8, 10, 12, 15, 20, 40, 70].map(function (v) { return [v, v]; }), MINL = 7;   // ไดคัทได้ตั้งแต่ด้านยาว 7 ซม. · หน้าม้วนพิมพ์ได้ 124 ซม.
   var st = {file: null, ratio: 0, qty: 100, url: '', busy: false};
   // ภาพการเรียง/จำนวนต่อแผ่น เห็นเฉพาะแอดมิน: เปิดหน้านี้ด้วย ?admin=1 ครั้งเดียว เครื่องนั้นจะจำไว้ (ลูกค้าทั่วไปไม่เห็น)
   var isAdmin = false; try { var qp = new URLSearchParams(location.search); if (qp.get('admin') === '1') localStorage.setItem('bs_upl_admin', '1'); if (qp.get('admin') === '0') localStorage.removeItem('bs_upl_admin'); isAdmin = localStorage.getItem('bs_upl_admin') === '1'; } catch (e) {}
@@ -355,7 +356,7 @@
     if (!st.artPx || !(st.fileDpi >= 100)) { st.fileCm = null; showFileSize(); return; }
     var aw = st.artPx.w / st.fileDpi * 2.54, ah = st.artPx.h / st.fileDpi * 2.54;
     st.fileCm = {w: r1(aw + 0.4), h: r1(ah + 0.4), aw: r1(aw), ah: r1(ah), dpi: Math.round(st.fileDpi)};
-    if (auto && st.fileCm.w >= 1 && st.fileCm.h >= 1 && Math.min(st.fileCm.w, st.fileCm.h) <= USABLE) { $('w').value = st.fileCm.w; $('h').value = st.fileCm.h; render(); }
+    if (auto && st.fileCm.w >= 1 && st.fileCm.h >= 1) { if (Math.max(st.fileCm.w, st.fileCm.h) < MINL) setLong(MINL); else if (Math.min(st.fileCm.w, st.fileCm.h) <= USABLE) { $('w').value = st.fileCm.w; $('h').value = st.fileCm.h; } render(); }
     showFileSize();
   }
   function showFileSize() {
@@ -392,7 +393,8 @@
   $('qty').addEventListener('input', function () { var q = Math.floor(num(this.value)); if (q > 0) st.qty = q; else if (TIERS.indexOf(st.qty) < 0) st.qty = 100; render(); });
 
   function render() {
-    var w = Math.max(0, num($('w').value)), h = Math.max(0, num($('h').value)), ok = w >= 1 && h >= 1 && Math.min(w, h) <= USABLE;
+    var w = Math.max(0, num($('w').value)), h = Math.max(0, num($('h').value)), ok = w >= 1 && h >= 1 && Math.max(w, h) >= MINL && Math.min(w, h) <= USABLE;
+    var se = $('szerr'); se.hidden = ok || !(w > 0 && h > 0); se.textContent = Math.max(w, h) < MINL ? 'ร้านไดคัทได้ตั้งแต่ด้านยาว ' + MINL + ' ซม. ขึ้นไป' : Math.min(w, h) > USABLE ? 'หน้าสติ๊กเกอร์พิมพ์ได้กว้างสุด ' + USABLE + ' ซม. (ด้านใดด้านหนึ่งต้องไม่เกิน ' + USABLE + ' ซม.)' : 'ขนาดต้องไม่ต่ำกว่า 1 ซม.';
     if (srcImg && w >= 1 && w !== lastCm) buildSticker(); else fitStage();
     document.querySelectorAll('#sizes button').forEach(function (b) { var s = SIZES[+b.dataset.i]; b.classList.toggle('on', st.ratio ? s[0] === Math.max(w, h) : (s[0] === w && s[1] === h)); b.textContent = st.ratio ? 'ยาว ' + s[0] : s[0] + '×' + s[1]; });
     var best = 100;
@@ -407,7 +409,7 @@
     var L = ok ? perSheet(w, h) : {n: 0}, svg = '<rect width="121" height="81" fill="#eef1f6"/>';
     if (L.n) { var cnt = Math.min(L.n, st.qty); for (var i = 0; i < cnt; i++) { var c = i % L.cx, r = Math.floor(i / L.cx); svg += '<rect x="' + (c * (L.pw + GAP)).toFixed(2) + '" y="' + (r * (L.ph + GAP)).toFixed(2) + '" width="' + L.pw + '" height="' + L.ph + '" rx="' + Math.min(L.pw, L.ph) * .2 + '" fill="#f5c400"/>'; } }
     $('lay').innerHTML = svg;
-    $('layTxt').innerHTML = !ok ? 'ใส่ขนาด 1–124 ซม.' : L.n ? 'แผ่นละ <b>' + L.n.toLocaleString('th-TH') + '</b> ดวง · สั่ง ' + st.qty.toLocaleString('th-TH') + ' ดวง ใช้ประมาณ <b>' + (st.qty / L.n).toFixed(2) + '</b> แผ่น' + (st.qty % L.n && st.qty > L.n ? '<br>สั่ง ' + (Math.ceil(st.qty / L.n) * L.n).toLocaleString('th-TH') + ' ดวง ได้เต็มแผ่นพอดี' : '') : 'ชิ้นใหญ่กว่าแผ่น ร้านพิมพ์แบบม้วนให้';
+    $('layTxt').innerHTML = !ok ? 'ด้านยาวตั้งแต่ ' + MINL + ' ซม. · ด้านสั้นไม่เกิน ' + USABLE + ' ซม.' : L.n ? 'แผ่นละ <b>' + L.n.toLocaleString('th-TH') + '</b> ดวง · สั่ง ' + st.qty.toLocaleString('th-TH') + ' ดวง ใช้ประมาณ <b>' + (st.qty / L.n).toFixed(2) + '</b> แผ่น' + (st.qty % L.n && st.qty > L.n ? '<br>สั่ง ' + (Math.ceil(st.qty / L.n) * L.n).toLocaleString('th-TH') + ' ดวง ได้เต็มแผ่นพอดี' : '') : 'ชิ้นใหญ่กว่าแผ่น ร้านพิมพ์แบบม้วนให้';
     qualityWarn(w, h);
     $('send').disabled = !ok || st.busy;
   }
