@@ -161,6 +161,20 @@ details.jc>summary .jn small{font-size:12.5px;color:#6b7280;margin-top:1px;line-
 details.jc>summary .js{align-self:start;padding:3px 10px;font-size:12px;font-weight:600;max-width:none;white-space:nowrap;line-height:1.5}
 details.jc>summary .pb{grid-column:1/-1;margin-top:0;gap:3px}details.jc>summary .pb i{height:3px}
 details.jc>summary .pst,details.jc>summary .chili-tag{transform:scale(.9);transform-origin:left center}
+/* แถบความคืบหน้า: เส้นต่อเนื่อง + ช่วงปัจจุบันมีแสงวิ่ง + จุดเรืองแสงที่ปลาย */
+details.jc>summary .pb{--c:var(--y);gap:0;height:6px;border-radius:99px;background:#eceef2;overflow:visible;position:relative}
+details.jc.dn>summary .pb{--c:var(--ok)}details.jc.rcv>summary .pb{--c:#2563eb}
+details.jc>summary .pb i{height:6px;border-radius:0;background:transparent;position:relative}
+details.jc>summary .pb i:first-child{border-radius:99px 0 0 99px}details.jc>summary .pb i:last-child{border-radius:0 99px 99px 0}
+details.jc>summary .pb i.on{background:var(--c)}
+details.jc>summary .pb i.on:not(:has(+ i.on)){border-radius:0 99px 99px 0;background:linear-gradient(90deg,var(--c),var(--c)) ,var(--c);overflow:hidden}
+details.jc>summary .pb i.on:first-child:not(:has(+ i.on)){border-radius:99px}
+details.jc>summary .pb i.on:not(:last-child):not(:has(+ i.on))::before{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 0 30%,rgba(255,255,255,.75) 50%,transparent 70% 100%);background-size:200% 100%;animation:pbRun 1.6s linear infinite}
+details.jc>summary .pb i.on:not(:last-child):not(:has(+ i.on))::after{content:'';position:absolute;right:-5px;top:50%;width:12px;height:12px;margin-top:-6px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px var(--c),0 0 10px 2px var(--c);animation:pbPulse 1.4s ease-in-out infinite}
+details.jc>summary .pb i.on:not(:last-child):not(:has(+ i.on)){overflow:visible}
+@keyframes pbRun{from{background-position:200% 0}to{background-position:-200% 0}}
+@keyframes pbPulse{0%,100%{box-shadow:0 0 0 3px var(--c),0 0 4px 0 var(--c)}50%{box-shadow:0 0 0 3px var(--c),0 0 14px 4px var(--c)}}
+@media (prefers-reduced-motion:reduce){details.jc>summary .pb i::before,details.jc>summary .pb i::after{animation:none}}
 </style>
 </head>
 <body>
