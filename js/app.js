@@ -3531,7 +3531,7 @@ function bahtText(value) {
         '<div class="wo-act">' + (woDone(x) ? '' : '<button type="button" class="btn small good" data-wojob="' + esc(x.id) + '">สร้างใบงาน</button>') +
         (f.orig ? '<a href="' + esc(f.orig) + '" target="_blank" rel="noopener">ไฟล์ลูกค้า</a>' : '') + (f.png ? '<a href="' + esc(f.png) + '" target="_blank" rel="noopener">ไฟล์ตรง</a>' : '') + (f.svg ? '<a href="' + esc(f.svg) + '" target="_blank" rel="noopener">เส้น Kiss Cut</a>' : '') +
         (x.slip ? '<a href="' + esc(x.slip) + '" target="_blank" rel="noopener">ดูสลิป</a>' : '') +
-        (woDone(x) ? '<button type="button" class="btn small" data-woback="' + esc(x.id) + '">คืนไปรอสร้าง</button>' : '<button type="button" class="btn small" data-wohide="' + esc(x.id) + '">ซ่อน</button>') + (x.test || /^TEST/.test(x.ref || x.id) ? '<button type="button" class="btn small" data-wodel="' + esc(x.id) + '">ลบ (ทดสอบ)</button>' : '') + '</div></div>';
+        (woDone(x) ? '<button type="button" class="btn small" data-woback="' + esc(x.id) + '">คืนไปรอสร้าง</button>' : '<button type="button" class="btn small" data-wohide="' + esc(x.id) + '">ซ่อน</button>') + '<button type="button" class="btn small danger" data-wodel="' + esc(x.id) + '">' + (x.test || /^TEST/.test(x.ref || x.id) ? 'ลบ (ทดสอบ)' : 'ลบ') + '</button>' + '</div></div>';
     }).join('') : '<div class="bb-empty">' + (webOrdTab === 'done' ? 'ยังไม่มีออเดอร์ที่ทำแล้ว' : 'ไม่มีออเดอร์ใหม่') + '</div>';
   }
   function markWebOrder(id, patch) {
@@ -3559,7 +3559,8 @@ function bahtText(value) {
     if (t.dataset.wo) { webOrdTab = t.dataset.wo; document.querySelectorAll('#webOrdTabs button').forEach(b => b.classList.toggle('on', b === t)); renderWebOrders(); }
     else if (t.dataset.wojob) webOrderToJob(t.dataset.wojob);
     else if (t.dataset.woback) markWebOrder(t.dataset.woback, {status: 'new', jobNo: '', jobAt: 0});
-    else if (t.dataset.wodel) { if (!confirm('ลบออเดอร์ทดสอบนี้ถาวร?')) return; const id = t.dataset.wodel; webOrd = webOrd.filter(x => x.id !== id); renderWebOrders(); try { cloudDb.collection('webOrders').doc(id).delete(); } catch (err) { console.warn(err); } }
+    else if (t.dataset.wodel) { const o = webOrd.find(x => x.id === t.dataset.wodel) || {}, isTest = o.test || /^TEST/.test(o.ref || o.id || '');
+      if (!confirm(isTest ? 'ลบออเดอร์ทดสอบนี้ถาวร?' : 'ลบออเดอร์ ' + (o.ref || o.id) + ((o.cust && o.cust.name) ? ' ของ ' + o.cust.name : '') + (o.total ? ' ยอด ' + money(+o.total) + ' บาท' : '') + ' ถาวร?\nกู้คืนไม่ได้ (ลิงก์ติดตามของลูกค้ายังเปิดได้)')) return; const id = t.dataset.wodel; webOrd = webOrd.filter(x => x.id !== id); renderWebOrders(); try { cloudDb.collection('webOrders').doc(id).delete(); } catch (err) { console.warn(err); } }
     else if (t.dataset.wohide && confirm('ซ่อนออเดอร์นี้? (ไม่ลบ ดูได้ในแท็บ "ทำแล้ว")')) markWebOrder(t.dataset.wohide, {status: 'hide'});
   });
   let billBoxPending = null;   // บิลที่กำลังสแกน → บันทึกภาษีซื้อแล้วตีว่าเสร็จ
