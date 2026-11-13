@@ -168,10 +168,21 @@
     <div class="f1">
       <div class="f2">
         <label for="cName">ชื่อผู้รับ<input id="cName" autocomplete="name" required></label>
-        <label for="cTel">เบอร์โทร<input id="cTel" type="tel" inputmode="tel" autocomplete="tel" required></label>
+        <label for="cTel">เบอร์โทร<input id="cTel" type="tel" inputmode="tel" autocomplete="tel" maxlength="12" placeholder="08X-XXX-XXXX" required></label>
       </div>
       <label for="cLine">LINE ID (สำหรับส่งแบบให้ยืนยัน)<input id="cLine" autocomplete="off" placeholder="ไม่บังคับ"></label>
-      <label for="cAddr">ที่อยู่จัดส่ง<textarea id="cAddr" rows="3" autocomplete="street-address" placeholder="บ้านเลขที่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์" required></textarea></label>
+      <div class="err" id="telErr" hidden></div>
+      <label for="cAddr">ที่อยู่จัดส่ง (บ้านเลขที่ หมู่ ซอย ถนน)<textarea id="cAddr" rows="2" autocomplete="address-line1" placeholder="เช่น 8 หมู่ 19 ซ.สุขใจ ถ.พิษณุโลก-บางระกำ" required></textarea></label>
+      <div class="f2">
+        <label for="cZip">รหัสไปรษณีย์<input id="cZip" inputmode="numeric" maxlength="5" autocomplete="postal-code" placeholder="65140" required></label>
+        <label for="cTam">ตำบล / แขวง<select id="cTam" disabled><option value="">ใส่รหัสไปรษณีย์ก่อน</option></select></label>
+      </div>
+      <div class="f2" id="manAddr" hidden>
+        <label for="mTam">ตำบล / แขวง<input id="mTam"></label>
+        <label for="mAmp">อำเภอ / เขต<input id="mAmp"></label>
+      </div>
+      <label for="mProv" id="manProv" hidden>จังหวัด<input id="mProv"></label>
+      <p class="note" id="addrPrev" hidden></p>
       <label class="consent"><input type="checkbox" id="tx"> <span>ต้องการใบกำกับภาษี (+VAT 7%)</span></label>
       <div class="f1" id="txBox" hidden>
         <label for="txName">ชื่อบริษัท / ผู้ซื้อ (ตามใบกำกับ)<input id="txName" autocomplete="organization"></label>
@@ -206,6 +217,20 @@
   function bill(price) { var sub = Math.round(price * 100) + SHIP * 100, vat = $('tx').checked ? Math.round(sub * VAT / 100) : 0; return {price: price, ship: SHIP, sub: sub / 100, vat: vat / 100, total: (sub + vat) / 100}; }
   var esc = function (t) { return String(t).replace(/[&<>"']/g, function (c) { return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]; }); };
   var baht = function (v) { return v.toLocaleString('th-TH', {minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2}); };
+  function telNorm(v) { var d = String(v).replace(/\D/g, ''); if (/^66\d{9}$/.test(d)) d = '0' + d.slice(2); return d; }
+  function telOk(v) { var d = telNorm(v); return /^0[689]\d{8}$/.test(d) || /^0[2-7]\d{7}$/.test(d); }   // มือถือ 10 หลัก 06/08/09 · บ้าน 9 หลัก 02–07
+  function telFmt(d) { return d.length === 10 ? d.slice(0, 3) + '-' + d.slice(3, 6) + '-' + d.slice(6) : d.length === 9 ? d.slice(0, 2) + '-' + d.slice(2, 5) + '-' + d.slice(5) : d; }
+  var ZIP = null, zipLoad = null;   // ตำบล/อำเภอ/จังหวัด ตามรหัสไปรษณีย์ (thai-zip.json จาก thai-address-database, ISC)
+  function zipDb() { return zipLoad || (zipLoad = fetch('thai-zip.json').then(function (r) { return r.json(); }).then(function (j) { ZIP = j; return j; }).catch(function () { ZIP = {}; return ZIP; })); }
+  function addrParts() {
+    var z = $('cZip').value.replace(/\D/g, ''), o = $('cTam').value, man = !$('manAddr').hidden;
+    if (man) return {tam: $('mTam').value.trim(), amp: $('mAmp').value.trim(), prov: $('mProv').value.trim(), zip: z};
+    if (!o) return {zip: z}; var a = o.split('|'); return {tam: a[0], amp: a[1], prov: a[2], zip: z};
+  }
+  function addrFull() { var p = addrParts(), bkk = p.prov === 'กรุงเทพมหานคร', line = $('cAddr').value.trim().replace(/\s+/g, ' ');
+    return line + (p.tam ? (bkk ? ' แขวง' : ' ต.') + p.tam : '') + (p.amp ? (bkk ? ' เขต' : ' อ.') + p.amp : '') + (p.prov ? (bkk ? ' ' : ' จ.') + p.prov : '') + ' ' + p.zip; }
+  function addrOk() { var p = addrParts(); return $('cAddr').value.trim().length >= 3 && /^\d{5}$/.test(p.zip || '') && !!(p.tam && p.amp && p.prov); }
+  function showAddr() { var el = $('addrPrev'); el.hidden = !addrOk(); if (!el.hidden) el.innerHTML = 'ส่งไปที่: <b>' + esc(addrFull()) + '</b>'; }
   function taxIdOk(t) { t = String(t).replace(/\D/g, ''); if (t.length !== 13) return false; var s = 0; for (var i = 0; i < 12; i++) s += +t[i] * (13 - i); return (11 - s % 11) % 10 === +t[12]; }
 
   var $ = function (id) { return document.getElementById(id); };
@@ -550,6 +575,20 @@
   }
   function qrSvgEl(text) { var m = qrEncode(text), n = m.length, q = 4, d = ''; for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (m[r][c]) d += 'M' + (c + q) + ' ' + (r + q) + 'h1v1h-1z'; var w = n + 2 * q;
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + w + '" shape-rendering="crispEdges" role="img" aria-label="QR พร้อมเพย์"><rect width="' + w + '" height="' + w + '" fill="#fff"/><path d="' + d + '" fill="#000"/></svg>'; }
+  $('cZip').addEventListener('input', function () {
+    var z = this.value.replace(/\D/g, '').slice(0, 5), sel = $('cTam'); this.value = z;
+    if (z.length < 5) { sel.disabled = true; sel.innerHTML = '<option value="">ใส่รหัสไปรษณีย์ก่อน</option>'; $('manAddr').hidden = $('manProv').hidden = true; showAddr(); return; }
+    zipDb().then(function (db) {
+      var rows = db[z] || [];
+      if (!rows.length) { sel.disabled = true; sel.innerHTML = '<option value="">ไม่พบรหัสนี้ กรอกเอง</option>'; $('manAddr').hidden = $('manProv').hidden = false; showAddr(); return; }
+      $('manAddr').hidden = $('manProv').hidden = true;
+      var opts = []; rows.forEach(function (r) { r[2].forEach(function (t) { opts.push([t, r[1], r[0]]); }); });
+      sel.innerHTML = (opts.length > 1 ? '<option value="">เลือกตำบล (' + opts.length + ')</option>' : '') + opts.map(function (o) { return '<option value="' + esc(o.join('|')) + '">' + esc(o[0] + ' · ' + o[1] + ' · ' + o[2]) + '</option>'; }).join('');
+      sel.disabled = false; showAddr();
+    });
+  });
+  ['cTam', 'cAddr', 'mTam', 'mAmp', 'mProv'].forEach(function (id) { $(id).addEventListener(id === 'cTam' ? 'change' : 'input', showAddr); });
+  $('cTel').addEventListener('blur', function () { var e = $('telErr'), v = this.value.trim(); e.hidden = !v || telOk(v); e.textContent = 'เบอร์โทรไม่ถูกต้อง ใส่มือถือ 10 หลัก (06/08/09) หรือเบอร์บ้าน 9 หลัก'; if (telOk(v)) this.value = telFmt(telNorm(v)); });
   $('tx').addEventListener('change', function () { $('txBox').hidden = !this.checked; render(); });
   function render() {
     var w = Math.max(0, num($('w').value)), h = Math.max(0, num($('h').value)), ok = w >= 1 && h >= 1 && Math.max(w, h) >= MINL && Math.min(w, h) <= USABLE;
@@ -579,7 +618,7 @@
   $('send').addEventListener('click', async function () {
     var err = $('ferr'); err.hidden = true;
     var miss = [];
-    if (!st.file) miss.push('รูปแบบ'); if (!$('cName').value.trim()) miss.push('ชื่อผู้รับ'); if (!/\d{9,10}/.test($('cTel').value.replace(/\D/g, ''))) miss.push('เบอร์โทร'); if ($('cAddr').value.trim().length < 15) miss.push('ที่อยู่'); if ($('tx').checked) { if ($('txName').value.trim().length < 2) miss.push('ชื่อในใบกำกับ'); if (!taxIdOk($('txId').value)) miss.push('เลขผู้เสียภาษีให้ถูก 13 หลัก'); } if (!$('cOk').checked) miss.push('ติ๊กยินยอม');
+    if (!st.file) miss.push('รูปแบบ'); if (!$('cName').value.trim()) miss.push('ชื่อผู้รับ'); if (!telOk($('cTel').value)) miss.push('เบอร์โทรให้ถูก'); if ($('cAddr').value.trim().length < 3) miss.push('บ้านเลขที่/ถนน'); if (!/^\d{5}$/.test($('cZip').value)) miss.push('รหัสไปรษณีย์'); else if (!addrOk()) miss.push('ตำบล/อำเภอ/จังหวัด'); if ($('tx').checked) { if ($('txName').value.trim().length < 2) miss.push('ชื่อในใบกำกับ'); if (!taxIdOk($('txId').value)) miss.push('เลขผู้เสียภาษีให้ถูก 13 หลัก'); } if (!$('cOk').checked) miss.push('ติ๊กยินยอม');
     if (miss.length) { err.hidden = false; err.textContent = 'ยังขาด: ' + miss.join(', '); (st.file ? $('cName') : $('drop')).scrollIntoView({behavior: 'smooth', block: 'center'}); return; }
     st.busy = true; this.disabled = true; this.textContent = 'กำลังอัปโหลดแบบ…';
     var w0 = num($('w').value), h0 = num($('h').value);
@@ -592,8 +631,8 @@
         kc.png = await upload(new File([kf.png], tag + '.png', {type: 'image/png'})).catch(function () { return ''; });
         kc.svg = await upload(new File([kf.svg], tag + '.svg', {type: 'image/svg+xml'})).catch(function () { return ''; });
       } catch (e) {} }
-    var w = num($('w').value), h = num($('h').value), p = price(st.qty, w, h), bl = bill(p), ref = 'WEB' + Date.now().toString(36).toUpperCase().slice(-6), tx = $('tx').checked;
-    var msg = '🛒 สั่งสติ๊กเกอร์จากเว็บ ' + ref + '\n' +
+    var w = num($('w').value), h = num($('h').value), p = price(st.qty, w, h), bl = bill(p), ref = (function () { var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); }; return 'WEB' + String(d.getFullYear() + 543).slice(2) + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + Math.random().toString(36).slice(2, 4).toUpperCase(); })(), tx = $('tx').checked;
+    var msg = '🛒 สั่งสติ๊กเกอร์จากเว็บ\nเลขใบงาน: ' + ref + '\n' +
       'แบบ: ' + st.url + '\n' +
       'ขนาดชิ้นไดคัท ' + w + ' × ' + h + ' ซม. · ' + st.qty.toLocaleString('th-TH') + ' ดวง · PVC เคลือบ ไดคัท\n' +
       (srcImg ? 'ตัวงาน ' + artCm(w, h).w + ' × ' + artCm(w, h).h + ' ซม. + ขอบขาว 2 มม. · ≈' + Math.round(printDpi(w, h)) + ' dpi' + (st.fileCm && st.fileCm.dpi ? ' · ไฟล์ระบุ ' + st.fileCm.aw + '×' + st.fileCm.ah + ' ซม. @' + st.fileCm.dpi + 'dpi' : '') + '\n' : (st.fileCm && st.fileCm.src === 'pdf' ? 'PDF หน้า ' + st.fileCm.w + ' × ' + st.fileCm.h + ' ซม.\n' : '')) +
@@ -601,24 +640,24 @@
       (kc.png ? 'ไฟล์ตรง+ขอบขาว (' + kc.px + ' px ≈' + kc.dpi + ' dpi): ' + kc.png + '\n' : '') +
       (kc.svg ? 'เส้น Kiss Cut (SVG มม.): ' + kc.svg + '\n' : '') +
       'ยอดชำระ ' + baht(bl.total) + ' บาท = สติ๊กเกอร์ ' + baht(bl.price) + ' + ค่าส่ง ' + bl.ship + (bl.vat ? ' + VAT ' + baht(bl.vat) : '') + ' (พร้อมเพย์ ' + PP.name + ')\n' +
-      (tx ? 'ใบกำกับภาษี: ' + $('txName').value.trim() + ' · เลข ' + $('txId').value.replace(/\D/g, '') + ' · สาขา ' + ($('txBr').value.trim() || 'สำนักงานใหญ่') + ' · ' + ($('txAddr').value.trim() || 'ที่อยู่เดียวกับจัดส่ง').replace(/\s+/g, ' ') + '\n' : '') +
-      'ผู้รับ: ' + $('cName').value.trim() + ' · ' + $('cTel').value.trim() + ($('cLine').value.trim() ? ' · LINE ' + $('cLine').value.trim() : '') + '\n' +
-      'ที่อยู่: ' + $('cAddr').value.trim().replace(/\s+/g, ' ') +
+      (tx ? 'ใบกำกับภาษี: ' + $('txName').value.trim() + ' · เลข ' + $('txId').value.replace(/\D/g, '') + ' · สาขา ' + ($('txBr').value.trim() || 'สำนักงานใหญ่') + ' · ' + ($('txAddr').value.trim() || addrFull()).replace(/\s+/g, ' ') + '\n' : '') +
+      'ผู้รับ: ' + $('cName').value.trim() + ' · โทร ' + telFmt(telNorm($('cTel').value)) + ($('cLine').value.trim() ? ' · LINE ' + $('cLine').value.trim() : '') + '\n' +
+      'ที่อยู่: ' + addrFull() +
       ($('cNote').value.trim() ? '\nหมายเหตุ: ' + $('cNote').value.trim() : '') +
       (Object.keys(utm).length ? '\n[ที่มา ' + (utm.utm_source || '') + ' ' + (utm.utm_campaign || '') + ' ' + (utm.utm_content || '') + ']' : '');
     var lineUrl = 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA) + '/?' + encodeURIComponent(msg);
     var payload = promptPayPayload(PP.id, bl.total), sz = w + ' × ' + h + ' ซม.';
     $('main').innerHTML = '<section class="card ocard">' +
-      '<div class="oc-h"><span>ออเดอร์ <b>' + ref + '</b></span><span class="oc-st">รอชำระเงิน</span></div>' +
+      '<div class="oc-h"><span>เลขใบงาน <b>' + ref + '</b></span><span class="oc-st">รอชำระเงิน</span></div>' +
       '<div class="oc-b">' + (flatUrl || (srcImg && st.url) ? '<div class="oc-img"><img src="' + (flatUrl || st.url) + '" alt="สติ๊กเกอร์ที่สั่ง"></div>' : '') +
-      '<dl><dt>ขนาด</dt><dd>' + sz + '</dd><dt>จำนวน</dt><dd>' + st.qty.toLocaleString('th-TH') + ' ดวง</dd><dt>วัสดุ</dt><dd>PVC เคลือบ ไดคัท</dd><dt>จัดส่ง</dt><dd>' + esc($('cName').value.trim()) + '</dd></dl></div>' +
+      '<dl><dt>ขนาด</dt><dd>' + sz + '</dd><dt>จำนวน</dt><dd>' + st.qty.toLocaleString('th-TH') + ' ดวง</dd><dt>วัสดุ</dt><dd>PVC เคลือบ ไดคัท</dd><dt>จัดส่ง</dt><dd>' + esc($('cName').value.trim()) + ' · ' + telFmt(telNorm($('cTel').value)) + '<br><small>' + esc(addrFull()) + '</small></dd></dl></div>' +
       '<div class="oc-sum"><div><span>สติ๊กเกอร์</span><span>' + baht(bl.price) + '</span></div><div><span>ค่าส่ง</span><span>' + bl.ship + '</span></div>' + (bl.vat ? '<div><span>VAT 7%</span><span>' + baht(bl.vat) + '</span></div>' : '') + '<div class="oc-t"><span>ยอดชำระ</span><span>' + baht(bl.total) + ' บาท</span></div></div>' +
       '</section>' +
       '<section class="card pay"><h2 style="justify-content:center">สแกนจ่ายพร้อมเพย์</h2><div class="qr">' + qrSvgEl(payload) + '</div>' +
       '<p class="pp-n">' + PP.name + '<br><b>' + baht(bl.total) + ' บาท</b></p>' +
       '<p class="note" style="text-align:center">กดค้างที่ QR เพื่อบันทึกรูป แล้วเปิดแอปธนาคารสแกนจากรูปได้</p>' +
       '<p style="margin:14px 0 0;text-align:center"><a class="lineBtn" href="' + lineUrl + '">💬 โอนแล้ว ส่งสลิปทาง LINE</a></p>' +
-      '<p class="note" style="text-align:center">LINE จะเปิดพร้อมข้อความออเดอร์ ' + ref + ' กดส่งแล้วแนบสลิป · ร้านตรวจไฟล์ก่อนพิมพ์ ถ้าต้องแก้ไขจะทักกลับ<br>LINE ไม่เปิด? แอดไลน์ <b>' + LINE_OA + '</b> แล้วส่งเลข <b>' + ref + '</b></p></section>';
+      '<p class="note" style="text-align:center">LINE จะเปิดพร้อมเลขใบงาน ' + ref + ' กดส่งแล้วแนบสลิป · ร้านตรวจไฟล์ก่อนพิมพ์ ถ้าต้องแก้ไขจะทักกลับ<br>LINE ไม่เปิด? แอดไลน์ <b>' + LINE_OA + '</b> แล้วส่งเลข <b>' + ref + '</b></p></section>';
     document.querySelector('.bar').hidden = true; window.scrollTo({top: 0, behavior: 'smooth'});
   });
   render();
