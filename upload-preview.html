@@ -220,12 +220,16 @@
   function fsVal(v) { if (v === null || v === undefined) return {nullValue: null}; if (typeof v === 'boolean') return {booleanValue: v};
     if (typeof v === 'number') return Number.isInteger(v) ? {integerValue: String(v)} : {doubleValue: v}; if (typeof v === 'string') return {stringValue: v};
     if (Array.isArray(v)) return {arrayValue: {values: v.map(fsVal)}}; var f = {}; Object.keys(v).forEach(function (k) { f[k] = fsVal(v[k]); }); return {mapValue: {fields: f}}; }
-  function saveOrderCloud(id, data) {
+  function newTrackToken() { var a = new Uint8Array(12); crypto.getRandomValues(a); return Array.from(a, function (b) { return (b % 36).toString(36); }).join('') + Date.now().toString(36).slice(-4); }   // แบบเดียวกับแอป
+  var TRACK_URL = 'https://www.ballsticker.co.th/track.html?t=';
+  function saveOrderCloud(id, data, pub) {
     var go = fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + FB.key, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({returnSecureToken: true})})
       .then(function (r) { return r.json(); }).then(function (a) {
         if (!a.idToken) throw new Error('auth');
-        return fetch('https://firestore.googleapis.com/v1/projects/' + FB.project + '/databases/(default)/documents/webOrders?documentId=' + encodeURIComponent(id), {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + a.idToken}, body: JSON.stringify({fields: fsVal(data).mapValue.fields})});
-      }).then(function (r) { if (!r.ok) throw new Error('fs ' + r.status); return true; });
+        var put = function (col, docId, d) { return fetch('https://firestore.googleapis.com/v1/projects/' + FB.project + '/databases/(default)/documents/' + col + '?documentId=' + encodeURIComponent(docId), {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + a.idToken}, body: JSON.stringify({fields: fsVal(d).mapValue.fields})}); };
+        return put('webOrders', id, data).then(function (r) { if (!r.ok) throw new Error('fs ' + r.status);
+          return pub ? put('publicJobs', data.trackToken, pub).then(function () { return true; }, function () { return true; }) : true; });   // หน้าติดตามงานเริ่มต้น (แอปบันทึกใบงานแล้วจะเขียนทับด้วยข้อมูลจริง)
+      });
     return Promise.race([go, new Promise(function (res) { setTimeout(function () { res(false); }, 8000); })]).catch(function (e) { console.warn('webOrders', e); return false; });
   }
   var SHIP = 60, VAT = 7, PP = {id: '0935353555', name: 'นาย กิติพงษ์ สีทอง'};   // ค่าส่งเหมา · พร้อมเพย์บัญชีกิติพงษ์ (บัญชีที่ส่ง VAT)
@@ -664,19 +668,22 @@
       ($('cNote').value.trim() ? '\nหมายเหตุ: ' + $('cNote').value.trim() : '') +
       (Object.keys(utm).length ? '\n[ที่มา ' + (utm.utm_source || '') + ' ' + (utm.utm_campaign || '') + ' ' + (utm.utm_content || '') + ']' : '');
     this.textContent = 'กำลังบันทึกออเดอร์…';
-    var L0 = perSheet(w, h), ap = addrParts();
-    var saved = await saveOrderCloud(ref, {ref: ref, createdAt: Date.now(), status: 'new', src: 'shop', test: isTest, w: w, h: h, qty: st.qty, price: bl.price, ship: bl.ship, vat: bl.vat, total: bl.total,
+    var L0 = perSheet(w, h), ap = addrParts(), tk = newTrackToken(), trackUrl = TRACK_URL + tk, today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+    var saved = await saveOrderCloud(ref, {ref: ref, createdAt: Date.now(), status: 'new', src: 'shop', test: isTest, trackToken: tk, w: w, h: h, qty: st.qty, price: bl.price, ship: bl.ship, vat: bl.vat, total: bl.total,
       perSheet: L0.n || 0, sheets: L0.n ? Math.round(st.qty / L0.n * 100) / 100 : 0, dpi: kc.dpi || 0,
       files: {orig: st.url || '', png: kc.png || '', svg: kc.svg || ''},
       cust: {name: $('cName').value.trim(), tel: telFmt(telNorm($('cTel').value)), line: $('cLine').value.trim(), addr: addrFull(), zip: ap.zip || '', prov: ap.prov || ''},
       tax: tx ? {name: $('txName').value.trim(), id: $('txId').value.replace(/\D/g, ''), br: $('txBr').value.trim() || 'สำนักงานใหญ่', addr: ($('txAddr').value.trim() || addrFull()).replace(/\s+/g, ' ')} : null,
-      note: $('cNote').value.trim(), utm: utm});
+      note: $('cNote').value.trim(), utm: utm},
+      {delivered: false, no: ref, cname: $('cName').value.trim().split(/\s+/)[0].slice(0, 40), status: 'pending', due: '', trackCode: '', carrier: '', trackUrl: '', date: today, web: true,
+        items: [{n: 'สติ๊กเกอร์ไดคัท ' + w + ' × ' + h + ' ซม.', q: String(st.qty), p: bl.price}, {n: 'ค่าจัดส่ง', q: '1', p: bl.ship}], thumb: kc.png || '', receiver: {name: $('cName').value.trim().slice(0, 80), addr: addrFull().slice(0, 300)}});
     // ข้อความ LINE: ออเดอร์เข้าระบบแล้ว = สรุปสั้นๆ ให้ลูกค้าอ่านง่าย (รายละเอียด/ไฟล์อยู่ในแอปหลังร้าน) · บันทึกไม่สำเร็จ = ส่งรายละเอียดเต็มแทน
     var msg = saved ? (isTest ? '🧪 ทดสอบระบบ (ไม่ได้จ่ายจริง)\n' : '') + '🛒 สั่งสติ๊กเกอร์ เลขใบงาน ' + ref + '\n' +
       'สติ๊กเกอร์ไดคัท ' + w + ' × ' + h + ' ซม. × ' + st.qty.toLocaleString('th-TH') + ' ดวง\n' +
       'ยอดชำระ ' + baht(bl.total) + ' บาท (รวมค่าส่ง' + (bl.vat ? ' + VAT · ขอใบกำกับ' : '') + ')\n' +
       'ผู้รับ: ' + $('cName').value.trim() + ' · ' + telFmt(telNorm($('cTel').value)) + '\n' +
-      'แนบสลิปการโอนด้านล่างครับ 🙏' : msgFull;
+      'ติดตามงาน: ' + trackUrl + '\n' +
+      'แนบสลิปการโอนด้านล่างครับ 🙏' : msgFull + '\nติดตามงาน: ' + trackUrl;
     var lineUrl = 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA) + '/?' + encodeURIComponent(msg);
     var payload = promptPayPayload(PP.id, bl.total), sz = w + ' × ' + h + ' ซม.';
     $('main').innerHTML = '<section class="card ocard">' +
@@ -692,6 +699,7 @@
       '<p style="margin:10px 0 0;text-align:center"><button type="button" class="cpBtn" id="cpMsg">คัดลอกข้อความออเดอร์</button> <a class="cpBtn" href="https://line.me/R/ti/p/' + encodeURIComponent(LINE_OA) + '" target="_blank" rel="noopener">เพิ่มเพื่อน LINE ' + LINE_OA + '</a></p>' +
       '<p class="note" style="text-align:center">' + (saved ? '✓ ร้านได้รับออเดอร์ ' + ref + ' แล้ว ' : '') + 'เปิดจากคอมพิวเตอร์แล้ว LINE ไม่เด้ง? กดคัดลอกข้อความ แล้ววางในแชต LINE ' + LINE_OA + ' พร้อมแนบสลิป</p>' +
       '<p class="note" style="text-align:center">LINE จะเปิดพร้อมเลขใบงาน ' + ref + ' กดส่งแล้วแนบสลิป · ร้านตรวจไฟล์ก่อนพิมพ์ ถ้าต้องแก้ไขจะทักกลับ<br>LINE ไม่เปิด? แอดไลน์ <b>' + LINE_OA + '</b> แล้วส่งเลข <b>' + ref + '</b></p>' +
+      (saved ? '<p style="margin:12px 0 0;text-align:center"><a class="cpBtn" href="' + trackUrl + '" target="_blank" rel="noopener">📦 ติดตามสถานะงาน</a></p><p class="note" style="text-align:center">บันทึกลิงก์นี้ไว้ ดูได้ว่างานถึงขั้นไหน · ส่งไปใน LINE ให้แล้ว</p>' : '') +
       '<div class="oc-sum" style="text-align:center"><b>ติดต่อร้าน</b> · โทร <a href="tel:0935353555">093-535-3555</a> · <a href="tel:0966697495">096-669-7495</a><br>LINE <a href="https://line.me/R/ti/p/' + encodeURIComponent(LINE_OA) + '" target="_blank" rel="noopener">' + LINE_OA + '</a> · แจ้งเลขใบงาน <b>' + ref + '</b> หรือแคปหน้าจอนี้ไว้</div></section>';
     document.querySelector('.bar').hidden = true; window.scrollTo({top: 0, behavior: 'smooth'});
     $('cpMsg').onclick = function () { var b = this; (navigator.clipboard ? navigator.clipboard.writeText(msg) : Promise.reject()).then(function () { b.textContent = '✓ คัดลอกแล้ว'; }).catch(function () { window.prompt('คัดลอกข้อความนี้', msg); }); };

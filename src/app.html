@@ -7690,6 +7690,12 @@ function bahtText(value) {
     } catch (e) { console.warn(e); }
   }
   const woDone = x => x.status === 'job' || x.status === 'hide';
+  // ออเดอร์เว็บถือว่า "ทำแล้ว" เมื่อบันทึกใบงานที่มีเลขออเดอร์ในหมายเหตุจริงๆ (เปิดฟอร์มแล้วปิดไม่บันทึก = ยังรอ)
+  function webOrderTrackFor(rec) { const note = String(rec.note || ''); const x = webOrd.find(o => o.ref && o.trackToken && note.indexOf(o.ref) >= 0); return x ? String(x.trackToken) : ''; }
+  function webOrderSaved(rec) {
+    const note = String(rec.note || ''); if (!/(WEB|TEST)\d{6}-/.test(note)) return;
+    webOrd.forEach(x => { if (!woDone(x) && x.ref && note.indexOf(x.ref) >= 0) markWebOrder(x.id, {status: 'job', jobNo: rec.no || '', jobAt: Date.now()}); });
+  }
   function renderWebOrders() {
     const card = $('webOrdCard'), box = $('webOrd'); if (!card || !box) return;
     const nNew = webOrd.filter(x => !woDone(x)).length;
@@ -7698,14 +7704,14 @@ function bahtText(value) {
     const list = webOrd.filter(x => webOrdTab === 'done' ? woDone(x) : !woDone(x));
     box.innerHTML = list.length ? list.map(x => {
       const c = x.cust || {}, f = x.files || {}, img = f.png || f.orig || '';
-      return '<div class="wo-it">' + '<div class="wo-img">' + (img ? '<img src="' + esc(img) + '" alt="แบบของ ' + esc(c.name || '') + '" loading="lazy">' : 'PDF') + '</div>' +
+      return '<div class="wo-it">' + '<div class="wo-img">' + (img ? '<img src="' + esc(img) + '" alt="แบบของ ' + esc(c.name || '') + '" loading="lazy">' : (f.orig ? 'PDF' : '—')) + '</div>' +
         '<div class="wo-m"><b>' + esc(c.name || 'ไม่ทราบชื่อ') + '</b><span class="wo-ref">' + esc(x.ref || x.id) + ' · ' + esc(new Date(x.createdAt || 0).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + '</span>' +
-        '<span>' + esc(x.w + ' × ' + x.h + ' ซม. · ' + Number(x.qty || 0).toLocaleString('th-TH') + ' ดวง') + (x.perSheet ? ' · แผ่นละ ' + x.perSheet + ' (≈' + x.sheets + ' แผ่น)' : '') + '</span>' +
-        '<span>' + esc(c.tel || '') + '</span><span class="wo-amt">฿' + money(x.total || 0) + '</span>' +
+        '<span>' + esc(x.w ? x.w + ' × ' + x.h + ' ซม. · ' + Number(x.qty || 0).toLocaleString('th-TH') + ' ดวง' : 'ไม่มีรายละเอียด') + (x.perSheet ? ' · แผ่นละ ' + x.perSheet + ' (≈' + x.sheets + ' แผ่น)' : '') + '</span>' +
+        '<span>' + esc(c.tel || '') + '</span><span class="wo-amt">' + (x.total ? '฿' + money(x.total) : '') + '</span>' +
         '<span>' + (x.test ? '<i class="wo-tag">🧪 ทดสอบ</i>' : '') + (x.tax ? '<i class="wo-tag tx">ใบกำกับ</i>' : '') + (x.status === 'job' ? '<i class="wo-tag ok">ใบงาน ' + esc(x.jobNo || '') + '</i>' : x.status === 'hide' ? '<i class="wo-tag">ซ่อนแล้ว</i>' : '<i class="wo-tag">รอตรวจสลิป</i>') + '</span></div>' +
         '<div class="wo-act">' + (woDone(x) ? '' : '<button type="button" class="btn small good" data-wojob="' + esc(x.id) + '">สร้างใบงาน</button>') +
         (f.orig ? '<a href="' + esc(f.orig) + '" target="_blank" rel="noopener">ไฟล์ลูกค้า</a>' : '') + (f.png ? '<a href="' + esc(f.png) + '" target="_blank" rel="noopener">ไฟล์ตรง</a>' : '') + (f.svg ? '<a href="' + esc(f.svg) + '" target="_blank" rel="noopener">เส้น Kiss Cut</a>' : '') +
-        (woDone(x) ? '' : '<button type="button" class="btn small" data-wohide="' + esc(x.id) + '">ซ่อน</button>') + '</div></div>';
+        (woDone(x) ? '<button type="button" class="btn small" data-woback="' + esc(x.id) + '">คืนไปรอสร้าง</button>' : '<button type="button" class="btn small" data-wohide="' + esc(x.id) + '">ซ่อน</button>') + (x.test || /^TEST/.test(x.ref || x.id) ? '<button type="button" class="btn small" data-wodel="' + esc(x.id) + '">ลบ (ทดสอบ)</button>' : '') + '</div></div>';
     }).join('') : '<div class="bb-empty">' + (webOrdTab === 'done' ? 'ยังไม่มีออเดอร์ที่ทำแล้ว' : 'ไม่มีออเดอร์ใหม่') + '</div>';
   }
   function markWebOrder(id, patch) {
@@ -7727,12 +7733,13 @@ function bahtText(value) {
     if (f.png || f.orig) jobPhotos = [f.png || f.orig];
     renderJobItems(); renderJobPhotos(); renderJob(); renderJobEditState();
     openJobModal();
-    markWebOrder(id, {status: 'job', jobNo: $('jobNo').value, jobAt: Date.now()});
   }
   document.addEventListener('click', e => {
-    const t = e.target.closest && e.target.closest('[data-wo],[data-wojob],[data-wohide]'); if (!t) return;
+    const t = e.target.closest && e.target.closest('[data-wo],[data-wojob],[data-wohide],[data-woback],[data-wodel]'); if (!t) return;
     if (t.dataset.wo) { webOrdTab = t.dataset.wo; document.querySelectorAll('#webOrdTabs button').forEach(b => b.classList.toggle('on', b === t)); renderWebOrders(); }
     else if (t.dataset.wojob) webOrderToJob(t.dataset.wojob);
+    else if (t.dataset.woback) markWebOrder(t.dataset.woback, {status: 'new', jobNo: '', jobAt: 0});
+    else if (t.dataset.wodel) { if (!confirm('ลบออเดอร์ทดสอบนี้ถาวร?')) return; const id = t.dataset.wodel; webOrd = webOrd.filter(x => x.id !== id); renderWebOrders(); try { cloudDb.collection('webOrders').doc(id).delete(); } catch (err) { console.warn(err); } }
     else if (t.dataset.wohide && confirm('ซ่อนออเดอร์นี้? (ไม่ลบ ดูได้ในแท็บ "ทำแล้ว")')) markWebOrder(t.dataset.wohide, {status: 'hide'});
   });
   let billBoxPending = null;   // บิลที่กำลังสแกน → บันทึกภาษีซื้อแล้วตีว่าเสร็จ
@@ -10828,11 +10835,13 @@ function bahtText(value) {
     // ฟิลด์ที่ไม่ได้อยู่ในฟอร์ม (รูปงานเสร็จ เลขพัสดุ ประวัติใส่ใบราคาส่ง) ต้องไม่หายตอนบันทึกทับ
     if (idx >= 0) ['donePhotos', 'trackCode', 'whAdded', 'trackToken', 'shippedAt', 'postOk', 'postedAt'].forEach(k => { if (list[idx][k] != null && rec[k] == null) rec[k] = list[idx][k]; });
     if (idx >= 0) migrateWhKeys(list[idx], rec);
+    if (!rec.trackToken) { try { const wt = webOrderTrackFor(rec); if (wt) rec.trackToken = wt; } catch (e) {} }   // ใบงานจากออเดอร์เว็บ: ใช้ลิงก์ติดตามเดิมที่ลูกค้าได้ไปแล้ว
     if (idx >= 0) list[idx] = rec; else list.push(rec);
     const wasEditing = idx >= 0;
     currentJobId = rec.id;
     const persisted = store.set('bs_jobs', list);
     cloudSave('jobs', rec);
+    try { webOrderSaved(rec); } catch (e) {}
     linkBankIn(rec, prevBankInIds);
     upsertCustomer(rec.jName, rec.jPhone, rec.jAddr);
     if (rec.wholesale) setWhCust(rec.jName, true);   // ร้านราคาส่งจัดการที่การ์ดในหน้าใบราคาส่ง · งานหน้าร้านชื่อซ้ำไม่ไปลบสถานะร้าน
