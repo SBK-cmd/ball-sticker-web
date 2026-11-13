@@ -3105,6 +3105,12 @@ function bahtText(value) {
 
   /* ---------------- ภาษีซื้อ ---------------- */
   let currentPurchaseId = null, purchasePhoto = null, purchaseOcrSource = null, purchasePdfText = null;
+  let purchaseExtra = [];   // รูปประกอบเพิ่ม (สลิป แคปหน้าร้าน ฯลฯ) เก็บย่อ 900px ใน photos2 · รูปหลักยังเป็น photo (ใช้สแกน)
+  const shrinkImg = (src, max, q) => new Promise((ok, no) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => { const k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); ok(c.toDataURL('image/jpeg', q)); }; im.onerror = no; im.src = src; });
+  function renderPurchExtra() {
+    const box = $('purchExtra'); if (!box) return;
+    box.innerHTML = purchaseExtra.map((u, i) => '<div class="px-it"><img src="' + esc(u) + '" alt="รูปประกอบ ' + (i + 1) + '"><button type="button" class="px-x" data-pxdel="' + i + '" aria-label="เอารูปประกอบ ' + (i + 1) + ' ออก">✕</button><button type="button" class="px-main" data-pxmain="' + i + '">ใช้เป็นรูปหลัก</button></div>').join('');
+  }
 
   function readPurchasePhoto(file) {
     if (!file) return;
@@ -3449,13 +3455,26 @@ function bahtText(value) {
     const nNew = billBox.filter(x => x.status !== 'done').length;
     card.hidden = !billBox.length;
     $('billBoxN').textContent = nNew ? '(' + nNew + ' ใบรอบันทึก)' : '';
-    const list = billBox.filter(x => billBoxTab === 'done' ? x.status === 'done' : x.status !== 'done');
-    box.innerHTML = list.length ? list.map(x => {
+    const list0 = billBox.filter(x => billBoxTab === 'done' ? x.status === 'done' : x.status !== 'done');
+    // รูปจากคนเดียวกันที่ส่งห่างกันไม่เกิน 10 นาที = บิลเดียวกัน (เช่น แคปหน้าช็อปปี้ + สลิป) → การ์ดเดียว บันทึกพร้อมกัน
+    const grp = billGroupsOf(list0), list = grp.map(g => g[0]);
+    box.innerHTML = list.length ? list.map((x, gi) => {
+      const g = grp[gi];
+      if (g.length > 1) return '<div class="bb-it"><div class="bb-grp">' + g.slice(0, 4).map((y, k) => k === 3 && g.length > 4 ? '<div class="bb-more">+' + (g.length - 3) + '</div>' : '<a href="' + esc(billSrc(y)) + '" target="_blank" rel="noopener"><img src="' + esc(billSrc(y)) + '" alt="บิลจาก ' + esc(y.fromName || 'LINE') + ' รูป ' + (k + 1) + '" loading="lazy"></a>').join('') + '</div>' +
+        '<div class="bb-meta"><b>' + esc(x.fromName || 'ไม่ทราบชื่อ') + '<span class="bb-n">' + g.length + ' รูป</span></b><span>' + esc(new Date(x.createdAt || 0).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + '</span>' +
+        (x.status === 'done' ? '<span>✓ บันทึกแล้ว</span>' : '<button type="button" class="btn small good" data-bbgrp="' + esc(g.map(y => y.id).join(',')) + '">สแกนบันทึก (' + g.length + ' รูปรวมกัน)</button><button type="button" class="btn small" data-bbdone="' + esc(g.map(y => y.id).join(',')) + '">บันทึกแล้ว</button>') + '</div></div>';
+      return (() => {
       const isPdf = x.type === 'file' && /\.pdf$/i.test(x.fileName || '');
       return '<div class="bb-it">' + (x.type === 'image' ? '<a href="' + esc(billSrc(x)) + '" target="_blank" rel="noopener"><img src="' + esc(billSrc(x)) + '" alt="บิลจาก ' + esc(x.fromName || 'LINE') + '" loading="lazy"></a>' : '<div class="bb-pdf">' + (isPdf ? 'PDF' : 'ไฟล์') + '</div>') +
         '<div class="bb-meta"><b>' + esc(x.fromName || 'ไม่ทราบชื่อ') + '</b><span>' + esc(new Date(x.createdAt || 0).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + (x.fileName ? ' · ' + esc(x.fileName) : '') + '</span>' +
         (x.status === 'done' ? '<span>✓ บันทึกแล้ว</span>' : (x.type === 'image' || isPdf ? '<button type="button" class="btn small good" data-bbscan="' + esc(x.id) + '">สแกนบันทึก</button>' : '') + '<button type="button" class="btn small" data-bbdone="' + esc(x.id) + '">ไม่ใช่บิล</button>') + '</div></div>';
-    }).join('') : '<div class="bb-empty">' + (billBoxTab === 'done' ? 'ยังไม่มีบิลที่บันทึก' : 'ไม่มีบิลรอบันทึก') + '</div>';
+    })(); }).join('') : '<div class="bb-empty">' + (billBoxTab === 'done' ? 'ยังไม่มีบิลที่บันทึก' : 'ไม่มีบิลรอบันทึก') + '</div>';
+  }
+  function billGroupsOf(list) {
+    const out = [], asc = list.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    asc.forEach(x => { const last = out[out.length - 1], p = last && last[last.length - 1];
+      if (p && x.type === 'image' && p.type === 'image' && ((x.groupId || x.setId) && (x.groupId || x.setId) === (p.groupId || p.setId) || (x.from || x.fromName || '') === (p.from || p.fromName || '') && (x.createdAt || 0) - (p.createdAt || 0) <= 10 * 60000) && (x.status === 'done') === (p.status === 'done')) last.push(x); else out.push([x]); });
+    return out.reverse();   // ใหม่สุดอยู่บน
   }
   function markBillBox(id, patch) {
     const x = billBox.find(b => b.id === id); if (!x) return;
@@ -3998,7 +4017,7 @@ function bahtText(value) {
   function collectPurchase() {
     return {date: $('purchDate').value, vendor: $('purchVendor').value, invoiceNo: $('purchInvoiceNo').value,
       vendorTax: $('purchVendorTax').value, vendorAddr: $('purchVendorAddr') ? $('purchVendorAddr').value : '', amount: $('purchAmount').value,
-      vat: $('purchVat').value, note: $('purchNote').value, photo: purchasePhoto, account: $('purchAccount').value || 'กิติพงษ์',
+      vat: $('purchVat').value, note: $('purchNote').value, photo: purchasePhoto, photos2: purchaseExtra.slice(0, 4), account: $('purchAccount').value || 'กิติพงษ์',
       claim: $('purchClaim').value || 'vat', cat: $('purchCat').value || '', evid: $('purchClaim').value === 'expense' ? $('purchEvid').value : '', evNo: $('purchEvid').dataset.no || '', bankOutId: purchBankOutId || '', docSrc: purchDocSrc || '', vendorBranch: $('purchVendorBranch').value.trim(),
       claimMonth: $('purchClaim').value === 'vat' ? ($('purchClaimMonth').value || monthKey($('purchDate').value)) : '',
       chk: (() => { const o = {}; TAX_CHK.forEach(([k]) => { if (purchChk[k] != null) o[k] = !!purchChk[k]; }); return o; })()};
@@ -4007,7 +4026,7 @@ function bahtText(value) {
     $('purchDate').value = p.date || todayISO(); $('purchVendor').value = p.vendor || '';
     $('purchInvoiceNo').value = p.invoiceNo || ''; $('purchVendorTax').value = p.vendorTax || ''; if ($('purchVendorAddr')) $('purchVendorAddr').value = p.vendorAddr || '';
     $('purchAmount').value = p.amount || ''; $('purchVat').value = p.vat || '';
-    $('purchNote').value = p.note || ''; purchasePhoto = p.photo || null;
+    $('purchNote').value = p.note || ''; purchasePhoto = p.photo || null; purchaseExtra = Array.isArray(p.photos2) ? p.photos2.slice() : []; renderPurchExtra();
     $('purchAccount').value = ACCOUNTS.indexOf(p.account) >= 0 ? p.account : 'กิติพงษ์';   // รายการเก่าไม่มีช่องนี้ = กิติพงษ์
     purchaseOcrSource = null; purchasePdfText = null; purchCheckSrc = ''; if ($('purchPasteText')) $('purchPasteText').value = '';
     purchOcrText = ''; purchChk = Object.assign({}, p.chk || {}); purchBankOutId = p.bankOutId || ''; purchDocSrc = p.docSrc || '';
@@ -4074,7 +4093,7 @@ function bahtText(value) {
     try { const vl = store.get('bs_vendors', []), vi = vl.findIndex(v => String(v.name || '').trim() === String(rec.vendor || '').trim()); if (vi >= 0 && (rec.cat || rec.vendorBranch)) { vl[vi] = Object.assign({}, vl[vi], rec.cat ? {cat: rec.cat} : {}, rec.vendorBranch ? {branch: rec.vendorBranch} : {}); store.set('bs_vendors', vl); cloudSave('vendors', Object.assign({id: vendorCloudId(vl[vi].name)}, vl[vi])); } } catch (e) {}
     renderPurchHistory(); renderPurchEditState();
     syncRecordPhotosToCloud('bs_purchases', 'purchases', rec.id, 'photo', renderPurchHistory);
-    if (billBoxPending) { markBillBox(billBoxPending, {status: 'done', doneAt: Date.now(), purchaseId: rec.id}); billBoxPending = null; }
+    if (billBoxPending) { [].concat(billBoxPending).forEach(id => markBillBox(id, {status: 'done', doneAt: Date.now(), purchaseId: rec.id})); billBoxPending = null; }
     if (docEdit.cur === 'purchase') setTimeout(closeDocEdit, 0);
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับรายการแล้ว' : 'บันทึกรายการภาษีซื้อแล้ว')
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
@@ -9846,6 +9865,17 @@ function bahtText(value) {
   window.addEventListener('afterprint', fitReports);
 
   ['purchPhotoInput', 'purchCamInput'].forEach(id => $(id).addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) readPurchasePhoto(f); e.target.value = ''; }));
+  $('purchExtraIn').addEventListener('change', async e => {
+    const fs = [...(e.target.files || [])]; e.target.value = ''; if (!fs.length) return;
+    for (const f of fs) { if (purchaseExtra.length >= 4) { toast('รูปประกอบได้สูงสุด 4 รูป'); break; } try { purchaseExtra.push(await shrinkImg(URL.createObjectURL(f), 900, 0.65)); } catch (er) {} }
+    renderPurchExtra();
+  });
+  $('purchExtra').addEventListener('click', e => {
+    const d = e.target.closest('[data-pxdel]'), m = e.target.closest('[data-pxmain]');
+    if (d) { purchaseExtra.splice(+d.dataset.pxdel, 1); renderPurchExtra(); return; }
+    if (m) { const i = +m.dataset.pxmain, u = purchaseExtra[i]; if (purchasePhoto) purchaseExtra[i] = purchasePhoto; else purchaseExtra.splice(i, 1);
+      purchasePhoto = u; purchaseOcrSource = u; purchasePdfText = null; renderPurchasePhoto(); renderPurchExtra(); updateOcrButtonLabel(); toast('สลับรูปหลักแล้ว กด “สแกนและกรอกข้อมูล” ได้'); }
+  });
   $('purchPhotoRemove').addEventListener('click', () => { purchasePhoto = null; purchaseOcrSource = null; purchasePdfText = null; updateOcrButtonLabel(); $('purchPhotoInput').value = ''; renderPurchasePhoto(); });
   $('ocrScanBtn').addEventListener('click', () => scanPurchasePhoto());
   $('purchPasteBtn').addEventListener('click', () => { const t = $('purchPasteText').value; if (!t.trim()) { toast('วางข้อความจากบิลก่อน'); $('purchPasteText').focus(); return; } scanPurchasePhoto(t); });
@@ -9854,7 +9884,21 @@ function bahtText(value) {
   $('purchEvid').addEventListener('change', () => { renderPurchTaxBox(); checkPurchaseFields(); });
   $('billBox').addEventListener('click', async e => {
     const sb = e.target.closest('[data-bbscan]'), db = e.target.closest('[data-bbdone]');
-    if (db) { markBillBox(db.dataset.bbdone, {status: 'done', doneAt: Date.now()}); toast('ย้ายไป “บันทึกแล้ว”'); return; }
+    if (db) { db.dataset.bbdone.split(',').forEach(id => markBillBox(id, {status: 'done', doneAt: Date.now()})); toast('ย้ายไป “บันทึกแล้ว”'); return; }
+    const gb = e.target.closest('[data-bbgrp]');
+    if (gb) {   // หลายรูปรวมเป็นบิลเดียว: รูปแรกเป็นรูปหลัก (สแกน) ที่เหลือเป็นรูปประกอบ
+      const ids = gb.dataset.bbgrp.split(','), items = ids.map(id => billBox.find(b => b.id === id)).filter(Boolean); if (!items.length) return;
+      gb.disabled = true; const t0 = gb.textContent; gb.textContent = 'กำลังดึงรูป…';
+      try {
+        billBoxPending = ids.slice(); await scanFromUrl(billSrc(items[0]), 'บิลจาก LINE · ' + (items[0].fromName || '') + ' (' + items.length + ' รูป)', items[0].fileName);
+        const ex = []; for (const y of items.slice(1)) { try { const b = await (await fetch(billSrc(y))).blob(); ex.push(await shrinkImg(URL.createObjectURL(b), 900, 0.65)); } catch (er) { console.warn(er); } }
+        purchaseExtra = ex.slice(0, 4); renderPurchExtra();
+        if (!$('purchNote').value.trim() && items[0].fromName) $('purchNote').value = 'บิลจาก LINE ' + items[0].fromName;
+        if (ex.length < items.length - 1) toast('ดึงรูปประกอบได้ ' + ex.length + '/' + (items.length - 1) + ' รูป');
+      } catch (er) { billBoxPending = null; console.error(er); toast('ดึงไฟล์จาก LINE ไม่ได้ ลองใหม่'); }
+      finally { gb.disabled = false; gb.textContent = t0; }
+      return;
+    }
     if (!sb) return;
     const x = billBox.find(b => b.id === sb.dataset.bbscan); if (!x) return;
     sb.disabled = true; const t = sb.textContent; sb.textContent = 'กำลังดึงไฟล์…';

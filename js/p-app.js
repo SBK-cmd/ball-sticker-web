@@ -3473,7 +3473,7 @@ function bahtText(value) {
   function billGroupsOf(list) {
     const out = [], asc = list.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
     asc.forEach(x => { const last = out[out.length - 1], p = last && last[last.length - 1];
-      if (p && x.type === 'image' && p.type === 'image' && (x.fromId || x.fromName || '') === (p.fromId || p.fromName || '') && (x.status === 'done') === (p.status === 'done') && (x.createdAt || 0) - (p.createdAt || 0) <= 10 * 60000) last.push(x); else out.push([x]); });
+      if (p && x.type === 'image' && p.type === 'image' && ((x.groupId || x.setId) && (x.groupId || x.setId) === (p.groupId || p.setId) || (x.from || x.fromName || '') === (p.from || p.fromName || '') && (x.createdAt || 0) - (p.createdAt || 0) <= 10 * 60000) && (x.status === 'done') === (p.status === 'done')) last.push(x); else out.push([x]); });
     return out.reverse();   // ใหม่สุดอยู่บน
   }
   function markBillBox(id, patch) {
