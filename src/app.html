@@ -652,6 +652,7 @@ details.shop{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
 details.shop summary{cursor:pointer;font-weight:700}
 details.shop .fields{margin-top:12px}
 .item{display:grid;grid-template-columns:minmax(0,1fr) 72px 92px 92px 36px;gap:8px;align-items:center;margin-bottom:8px}
+.cl-row{display:flex;gap:10px;align-items:flex-end}.cl-logo{flex:none;width:58px;height:58px;border-radius:14px;border:1px dashed var(--line);background:var(--field,#f5f7fb);cursor:pointer;font-size:12px;color:var(--sub,#5d6782);padding:0;overflow:hidden;display:grid;place-items:center}.cl-logo.has{border-style:solid;background:#fff}.cl-logo img{width:100%;height:100%;object-fit:contain;display:block}
 .item .nmw{display:flex;gap:6px;align-items:center;min-width:0}.item .nmw .i-name{flex:1;min-width:0}
 .item .i-img{flex:none;width:44px;height:44px;border-radius:10px;border:1px dashed var(--line);background:var(--field,#f5f7fb);cursor:pointer;font-size:18px;display:grid;place-items:center;padding:0;overflow:hidden}.item .i-img.has{border-style:solid}.item .i-img img{width:100%;height:100%;object-fit:cover;display:block}
 table.lines td img.it-img{width:42px;height:42px;object-fit:contain;border-radius:6px;border:1px solid #e3e9f0;vertical-align:middle;margin-right:8px;background:#fff}
@@ -3247,7 +3248,7 @@ body.jm-open .fab-newjob{display:none!important}
             <section class="jf-sec">
               <div class="jf-h"><i>1</i>ลูกค้า</div>
               <div class="fields">
-              <label class="f"><span>ชื่อลูกค้า / ผู้ซื้อ</span><input class="txt" id="whName" type="text" autocomplete="off"></label>
+              <div class="cl-row"><button type="button" class="cl-logo" id="whLogoBtn" title="โลโก้ลูกค้า (ขึ้นในหน้าติดตามงาน)" aria-label="โลโก้ลูกค้า">โลโก้</button><label class="f" style="flex:1;min-width:0"><span>ชื่อลูกค้า / ผู้ซื้อ</span><input class="txt" id="whName" type="text" autocomplete="off"></label></div>
               </div>
             </section>
             <details class="fold" id="whShipFold"><summary>ข้อมูลส่งพัสดุ / ผลิต <span class="fold-sub" id="whShipSum">(เบอร์ ที่อยู่ ผู้รับ รูป กำหนดส่ง)</span></summary>
@@ -4643,6 +4644,7 @@ function bahtText(value) {
       const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
       if (refs.length) doc.refPhotos = refs;
       { const th = (photos[0] || refs[0] || ''); if (th) doc.thumb = th; }   // รูปย่อหัวการ์ด
+      { const cu = store.get('bs_customers', []).find(c => String(c.name || '').trim() === String(rec.jName || '').trim()); if (cu && /^https:\/\//.test(cu.logo || '')) doc.clogo = cu.logo; }   // โลโก้ลูกค้า (หัวหน้าติดตามงาน)
       if (isJbs) {   // ใบงานอื่นของลูกค้าคนนี้ (สถานะล่าสุดของแต่ละใบ)
         doc.others = siblingJobsOf(rec).map(x => {
           const trx = x.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(x.trackCode)) || null) : null, car2 = (trx && trx.carrier) || '';
@@ -10957,7 +10959,7 @@ function bahtText(value) {
     if (!items.length) return null;
     const jobItems2 = items.map(i => ({name: String(i.name).trim(), qty: i.qty, note: '', price: i.price}));
     const whAdded = {}; jobItems2.forEach((i, idx) => { whAdded[jobItemKey(i, idx)] = {at: Date.now(), doc: rec.no || rec.id}; });
-    const common = {jName: rec.buyerName, jPhone: rec.buyerPhone || '', jAddr: rec.buyerAddr || '', due: rec.due || '', note: rec.prodNote || '', items: jobItems2, photos: (rec.photos || []).slice(), recv: rec.recv || null, wholesale: true, whAdded, whDocId: rec.id};
+    const common = {jName: rec.buyerName, jPhone: rec.buyerPhone || '', jAddr: rec.buyerAddr || '', due: rec.due || '', note: rec.prodNote || '', items: jobItems2, photos: (rec.photos || []).concat((rec.items || []).filter(i => (i.name || '').trim() && !i.job).map(i => i.img).filter(Boolean)).slice(0, 12), recv: rec.recv || null, wholesale: true, whAdded, whDocId: rec.id};
     let job, isNew = false;
     if (ji >= 0) { job = Object.assign({}, jl[ji], common, {savedAt: Date.now()}); jl[ji] = job; }
     else {
@@ -10987,7 +10989,7 @@ function bahtText(value) {
     $('whDiscount').value = w.discount || 0; $('whNote').value = w.note || '';
     $('whPhone').value = w.buyerPhone || ''; $('whAddr').value = w.buyerAddr || ''; $('whDue').value = w.due || ''; $('whProdNote').value = w.prodNote || '';
     { const rv = w.recv || {}; $('whRName').value = rv.name || ''; $('whRPhone').value = rv.phone || ''; $('whRAddr').value = rv.addr || ''; }
-    whPhotos = (w.photos && w.photos.length) ? w.photos.slice() : []; renderWhPhotos();
+    whPhotos = (w.photos && w.photos.length) ? w.photos.slice() : []; renderWhPhotos(); try { renderWhLogo(); } catch (e) {}
     renderWholesaleItems(); renderWholesale(); try { syncWhFolds(); } catch (e) {}
   }
   function renderWholesaleEditState() {
@@ -13543,6 +13545,34 @@ function bahtText(value) {
     row.querySelector('.i-total').textContent = money(num(it.qty) * num(it.price));
     renderWholesale();
   });
+  // โลโก้ลูกค้า: เก็บที่รายชื่อลูกค้า (bs_customers.logo เป็นลิงก์ Cloudinary) · ขึ้นหัวหน้าติดตามงานของลูกค้าคนนั้น
+  const custOf = nm => store.get('bs_customers', []).find(c => String(c.name || '').trim() === String(nm || '').trim());
+  function renderWhLogo() { const b = $('whLogoBtn'); if (!b) return; const cu = custOf($('whName').value); const lg = cu && cu.logo; b.classList.toggle('has', !!lg); b.innerHTML = lg ? '<img src="' + esc(lg) + '" alt="โลโก้ลูกค้า">' : 'โลโก้'; }
+  const whLogoIn = document.createElement('input'); whLogoIn.type = 'file'; whLogoIn.accept = 'image/*'; whLogoIn.hidden = true; document.body.appendChild(whLogoIn);
+  $('whLogoBtn').addEventListener('click', () => {
+    const nm = $('whName').value.trim(); if (!nm) { toast('ใส่ชื่อลูกค้าก่อน แล้วค่อยแนบโลโก้'); return; }
+    const cu = custOf(nm); if (cu && cu.logo && confirm('ลบโลโก้ของ ' + nm + '? (กด ยกเลิก เพื่อเลือกรูปใหม่)')) { setCustLogo(nm, ''); return; }
+    whLogoIn.click();
+  });
+  function setCustLogo(nm, url) {
+    if (!custOf(nm)) upsertCustomer(nm, $('whPhone').value, $('whAddr').value);
+    const list = store.get('bs_customers', []), i = list.findIndex(c => String(c.name || '').trim() === nm); if (i < 0) return;
+    list[i] = Object.assign({}, list[i], {logo: url}); store.set('bs_customers', list); try { cloudSave('customers', list[i]); } catch (e) {}
+    renderWhLogo();
+    store.get('bs_jobs', []).filter(j => String(j.jName || '').trim() === nm && j.trackToken).forEach(j => { try { publicJobMirror(j); } catch (e) {} });   // อัปเดตหน้าติดตามงานที่มีอยู่
+    toast(url ? 'บันทึกโลโก้ลูกค้าแล้ว' : 'ลบโลโก้แล้ว');
+  }
+  whLogoIn.addEventListener('change', () => {
+    const f = whLogoIn.files && whLogoIn.files[0]; whLogoIn.value = ''; const nm = $('whName').value.trim(); if (!f || !nm) return;
+    const rd = new FileReader(); rd.onload = () => { const im = new Image(); im.onload = async () => {
+      const k = Math.min(1, 400 / Math.max(im.width, im.height)), w = Math.round(im.width * k), h = Math.round(im.height * k), cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(im, 0, 0, w, h); const du = cv.toDataURL('image/png');
+      const b = $('whLogoBtn'); b.classList.add('has'); b.innerHTML = '<img src="' + du + '" alt="">';
+      const url = await uploadPhotoToCloudinary(du).catch(() => '');
+      if (url) setCustLogo(nm, url); else { toast('อัปโหลดโลโก้ไม่สำเร็จ ลองใหม่'); renderWhLogo(); }
+    }; im.src = rd.result; }; rd.readAsDataURL(f);
+  });
+  $('whName').addEventListener('input', renderWhLogo);
   // รูปต่อรายการ (ย่อ 360px JPEG ~20KB เก็บในใบ · พิมพ์เป็นรูปเล็กหน้าชื่อรายการ)
   let whImgIdx = -1;
   const whImgIn = document.createElement('input'); whImgIn.type = 'file'; whImgIn.accept = 'image/*'; whImgIn.hidden = true; document.body.appendChild(whImgIn);

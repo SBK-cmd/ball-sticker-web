@@ -75,7 +75,7 @@ details.jc>.jb{padding:2px 16px 16px;border-top:1px solid var(--line)}
 .pms small{display:block;color:#6b7280;margin-top:8px;line-height:1.5;text-align:center}
 
 /* ---- หน้าตาใหม่ (กระชับ: พับการ์ด แถบความคืบหน้า ขั้นตอนแนวนอน รูปเลื่อนข้าง) ---- */
-.hi{display:flex;justify-content:space-between;align-items:baseline;margin:2px 2px 10px;font-size:17px}.hi b{font-weight:800}.hi span{font-size:13.5px;color:var(--mut)}
+.hi{display:flex;justify-content:space-between;align-items:center;margin:2px 2px 10px;font-size:17px}.hi .hn{display:flex;align-items:center;gap:10px;min-width:0}.clogo{width:52px;height:52px;object-fit:contain;border-radius:14px;background:#fff;border:1px solid rgba(0,0,0,.08);padding:4px;flex:none}.hi b{font-weight:800}.hi span{font-size:13.5px;color:var(--mut)}
 .payBar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;padding:12px 14px;border-radius:16px;background:#fff7d6;border:1.5px solid #f5c542}
 .payBar small{display:block;color:#7a5b00;font-size:12.5px;font-weight:600}.payBar b{font-size:20px;font-weight:800}
 .payBar .payGo{margin:0;width:auto;min-height:44px;padding:0 20px;border-radius:12px;font-size:15px}
@@ -332,7 +332,8 @@ details.jc.pr2{border-left-color:#E5231B}details.jc.pr1{border-left-color:#F5B30
       cards.push(jobCard({no: o.no, date: o.date, status: o.status, delivered: o.delivered, items: o.items || [], amt: +o.amt || 0, due: o.due, thumb: o.thumb, boxes: bx, photos: https(o.photos), refs: https(o.refPhotos)}, false));
     });
     cards.sort(function (a, b2) { return (b2.date > a.date ? 1 : b2.date < a.date ? -1 : 0) || (b2.no > a.no ? 1 : b2.no < a.no ? -1 : 0); });
-    var hi = '<div class="hi">' + (j.cname ? '<div>คุณ <b>' + esc(j.cname) + '</b></div>' : '<div>งานของคุณ</div>') + '<span>' + cards.length + ' ใบงาน</span></div>';
+    var clogo = /^https:\/\//.test(j.clogo || '') ? '<img class="clogo" src="' + esc(j.clogo) + '" alt="โลโก้ลูกค้า">' : '';
+    var hi = '<div class="hi">' + '<div class="hn">' + clogo + (j.cname ? '<div>คุณ <b>' + esc(j.cname) + '</b></div>' : '<div>งานของคุณ</div>') + '</div>' + '<span>' + cards.length + ' ใบงาน</span></div>';
     var payHtml = payOk ? '<div class="payBar"><div><small>ยังไม่ได้ชำระ</small><b>' + money(j.pay.total) + ' บาท</b></div><button type="button" class="payGo" id="payOpen">สแกนจ่าย</button></div>' : '';
     var upd = ''; if (j.updatedAt) { var d = new Date(j.updatedAt); upd = '<div class="upd">อัปเดตล่าสุด ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + (d.getFullYear() + 543) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' น.</div>'; }
     box.className = 'card multi';

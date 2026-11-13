@@ -383,6 +383,7 @@ function bahtText(value) {
       const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
       if (refs.length) doc.refPhotos = refs;
       { const th = (photos[0] || refs[0] || ''); if (th) doc.thumb = th; }   // รูปย่อหัวการ์ด
+      { const cu = store.get('bs_customers', []).find(c => String(c.name || '').trim() === String(rec.jName || '').trim()); if (cu && /^https:\/\//.test(cu.logo || '')) doc.clogo = cu.logo; }   // โลโก้ลูกค้า (หัวหน้าติดตามงาน)
       if (isJbs) {   // ใบงานอื่นของลูกค้าคนนี้ (สถานะล่าสุดของแต่ละใบ)
         doc.others = siblingJobsOf(rec).map(x => {
           const trx = x.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(x.trackCode)) || null) : null, car2 = (trx && trx.carrier) || '';
@@ -6697,7 +6698,7 @@ function bahtText(value) {
     if (!items.length) return null;
     const jobItems2 = items.map(i => ({name: String(i.name).trim(), qty: i.qty, note: '', price: i.price}));
     const whAdded = {}; jobItems2.forEach((i, idx) => { whAdded[jobItemKey(i, idx)] = {at: Date.now(), doc: rec.no || rec.id}; });
-    const common = {jName: rec.buyerName, jPhone: rec.buyerPhone || '', jAddr: rec.buyerAddr || '', due: rec.due || '', note: rec.prodNote || '', items: jobItems2, photos: (rec.photos || []).slice(), recv: rec.recv || null, wholesale: true, whAdded, whDocId: rec.id};
+    const common = {jName: rec.buyerName, jPhone: rec.buyerPhone || '', jAddr: rec.buyerAddr || '', due: rec.due || '', note: rec.prodNote || '', items: jobItems2, photos: (rec.photos || []).concat((rec.items || []).filter(i => (i.name || '').trim() && !i.job).map(i => i.img).filter(Boolean)).slice(0, 12), recv: rec.recv || null, wholesale: true, whAdded, whDocId: rec.id};
     let job, isNew = false;
     if (ji >= 0) { job = Object.assign({}, jl[ji], common, {savedAt: Date.now()}); jl[ji] = job; }
     else {
@@ -6727,7 +6728,7 @@ function bahtText(value) {
     $('whDiscount').value = w.discount || 0; $('whNote').value = w.note || '';
     $('whPhone').value = w.buyerPhone || ''; $('whAddr').value = w.buyerAddr || ''; $('whDue').value = w.due || ''; $('whProdNote').value = w.prodNote || '';
     { const rv = w.recv || {}; $('whRName').value = rv.name || ''; $('whRPhone').value = rv.phone || ''; $('whRAddr').value = rv.addr || ''; }
-    whPhotos = (w.photos && w.photos.length) ? w.photos.slice() : []; renderWhPhotos();
+    whPhotos = (w.photos && w.photos.length) ? w.photos.slice() : []; renderWhPhotos(); try { renderWhLogo(); } catch (e) {}
     renderWholesaleItems(); renderWholesale(); try { syncWhFolds(); } catch (e) {}
   }
   function renderWholesaleEditState() {
@@ -9283,6 +9284,34 @@ function bahtText(value) {
     row.querySelector('.i-total').textContent = money(num(it.qty) * num(it.price));
     renderWholesale();
   });
+  // โลโก้ลูกค้า: เก็บที่รายชื่อลูกค้า (bs_customers.logo เป็นลิงก์ Cloudinary) · ขึ้นหัวหน้าติดตามงานของลูกค้าคนนั้น
+  const custOf = nm => store.get('bs_customers', []).find(c => String(c.name || '').trim() === String(nm || '').trim());
+  function renderWhLogo() { const b = $('whLogoBtn'); if (!b) return; const cu = custOf($('whName').value); const lg = cu && cu.logo; b.classList.toggle('has', !!lg); b.innerHTML = lg ? '<img src="' + esc(lg) + '" alt="โลโก้ลูกค้า">' : 'โลโก้'; }
+  const whLogoIn = document.createElement('input'); whLogoIn.type = 'file'; whLogoIn.accept = 'image/*'; whLogoIn.hidden = true; document.body.appendChild(whLogoIn);
+  $('whLogoBtn').addEventListener('click', () => {
+    const nm = $('whName').value.trim(); if (!nm) { toast('ใส่ชื่อลูกค้าก่อน แล้วค่อยแนบโลโก้'); return; }
+    const cu = custOf(nm); if (cu && cu.logo && confirm('ลบโลโก้ของ ' + nm + '? (กด ยกเลิก เพื่อเลือกรูปใหม่)')) { setCustLogo(nm, ''); return; }
+    whLogoIn.click();
+  });
+  function setCustLogo(nm, url) {
+    if (!custOf(nm)) upsertCustomer(nm, $('whPhone').value, $('whAddr').value);
+    const list = store.get('bs_customers', []), i = list.findIndex(c => String(c.name || '').trim() === nm); if (i < 0) return;
+    list[i] = Object.assign({}, list[i], {logo: url}); store.set('bs_customers', list); try { cloudSave('customers', list[i]); } catch (e) {}
+    renderWhLogo();
+    store.get('bs_jobs', []).filter(j => String(j.jName || '').trim() === nm && j.trackToken).forEach(j => { try { publicJobMirror(j); } catch (e) {} });   // อัปเดตหน้าติดตามงานที่มีอยู่
+    toast(url ? 'บันทึกโลโก้ลูกค้าแล้ว' : 'ลบโลโก้แล้ว');
+  }
+  whLogoIn.addEventListener('change', () => {
+    const f = whLogoIn.files && whLogoIn.files[0]; whLogoIn.value = ''; const nm = $('whName').value.trim(); if (!f || !nm) return;
+    const rd = new FileReader(); rd.onload = () => { const im = new Image(); im.onload = async () => {
+      const k = Math.min(1, 400 / Math.max(im.width, im.height)), w = Math.round(im.width * k), h = Math.round(im.height * k), cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(im, 0, 0, w, h); const du = cv.toDataURL('image/png');
+      const b = $('whLogoBtn'); b.classList.add('has'); b.innerHTML = '<img src="' + du + '" alt="">';
+      const url = await uploadPhotoToCloudinary(du).catch(() => '');
+      if (url) setCustLogo(nm, url); else { toast('อัปโหลดโลโก้ไม่สำเร็จ ลองใหม่'); renderWhLogo(); }
+    }; im.src = rd.result; }; rd.readAsDataURL(f);
+  });
+  $('whName').addEventListener('input', renderWhLogo);
   // รูปต่อรายการ (ย่อ 360px JPEG ~20KB เก็บในใบ · พิมพ์เป็นรูปเล็กหน้าชื่อรายการ)
   let whImgIdx = -1;
   const whImgIn = document.createElement('input'); whImgIn.type = 'file'; whImgIn.accept = 'image/*'; whImgIn.hidden = true; document.body.appendChild(whImgIn);
