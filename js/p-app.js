@@ -3508,6 +3508,7 @@ function bahtText(value) {
       }, e => { console.warn('logoReq', e); });
     } catch (e) { console.warn(e); }
   }
+  let woDelArmed = null, woDelTimer = null;
   const woDone = x => x.status === 'job' || x.status === 'hide';
   // ออเดอร์เว็บถือว่า "ทำแล้ว" เมื่อบันทึกใบงานที่มีเลขออเดอร์ในหมายเหตุจริงๆ (เปิดฟอร์มแล้วปิดไม่บันทึก = ยังรอ)
   function webOrderTrackFor(rec) { const note = String(rec.note || ''); const x = webOrd.find(o => o.ref && o.trackToken && note.indexOf(o.ref) >= 0); return x ? String(x.trackToken) : ''; }
@@ -3517,10 +3518,10 @@ function bahtText(value) {
   }
   function renderWebOrders() {
     const card = $('webOrdCard'), box = $('webOrd'); if (!card || !box) return;
-    const nNew = webOrd.filter(x => !woDone(x)).length;
-    card.hidden = !webOrd.length;
+    const shown = webOrd.filter(x => !x.deleted), nNew = shown.filter(x => !woDone(x)).length;
+    card.hidden = !shown.length;
     $('webOrdN').textContent = nNew ? '(' + nNew + ' ออเดอร์ใหม่)' : '';
-    const list = webOrd.filter(x => webOrdTab === 'done' ? woDone(x) : !woDone(x));
+    const list = shown.filter(x => webOrdTab === 'done' ? woDone(x) : !woDone(x));
     box.innerHTML = list.length ? list.map(x => {
       const c = x.cust || {}, f = x.files || {}, img = f.png || f.orig || '';
       return '<div class="wo-it">' + '<div class="wo-img">' + (img ? '<img src="' + esc(img) + '" alt="แบบของ ' + esc(c.name || '') + '" loading="lazy">' : (f.orig ? 'PDF' : '—')) + '</div>' +
@@ -3559,9 +3560,15 @@ function bahtText(value) {
     if (t.dataset.wo) { webOrdTab = t.dataset.wo; document.querySelectorAll('#webOrdTabs button').forEach(b => b.classList.toggle('on', b === t)); renderWebOrders(); }
     else if (t.dataset.wojob) webOrderToJob(t.dataset.wojob);
     else if (t.dataset.woback) markWebOrder(t.dataset.woback, {status: 'new', jobNo: '', jobAt: 0});
-    else if (t.dataset.wodel) { const o = webOrd.find(x => x.id === t.dataset.wodel) || {}, isTest = o.test || /^TEST/.test(o.ref || o.id || '');
-      if (!confirm(isTest ? 'ลบออเดอร์ทดสอบนี้ถาวร?' : 'ลบออเดอร์ ' + (o.ref || o.id) + ((o.cust && o.cust.name) ? ' ของ ' + o.cust.name : '') + (o.total ? ' ยอด ' + money(+o.total) + ' บาท' : '') + ' ถาวร?\nกู้คืนไม่ได้ (ลิงก์ติดตามของลูกค้ายังเปิดได้)')) return; const id = t.dataset.wodel; webOrd = webOrd.filter(x => x.id !== id); renderWebOrders(); try { cloudDb.collection('webOrders').doc(id).delete(); } catch (err) { console.warn(err); } }
-    else if (t.dataset.wohide && confirm('ซ่อนออเดอร์นี้? (ไม่ลบ ดูได้ในแท็บ "ทำแล้ว")')) markWebOrder(t.dataset.wohide, {status: 'hide'});
+    else if (t.dataset.wodel) {   // กด 2 ครั้งเพื่อลบ (ไม่ใช้ confirm: บางเบราว์เซอร์/LINE บล็อกกล่องยืนยัน)
+      const id = t.dataset.wodel, o = webOrd.find(x => x.id === id) || {};
+      if (woDelArmed !== id) { woDelArmed = id; t.textContent = 'กดอีกครั้งเพื่อลบ ' + (o.ref || ''); t.classList.add('confirm'); clearTimeout(woDelTimer); woDelTimer = setTimeout(() => { woDelArmed = null; renderWebOrders(); }, 4000); return; }
+      clearTimeout(woDelTimer); woDelArmed = null;
+      webOrd = webOrd.filter(x => x.id !== id); renderWebOrders();
+      const hideInstead = er => { console.warn('webOrders delete', er); try { cloudDb.collection('webOrders').doc(id).set({status: 'hide', deleted: true, hideAt: Date.now()}, {merge: true}); } catch (e2) {} toast('ลบในระบบไม่ได้ ซ่อนการ์ดให้แทนแล้ว'); };
+      try { cloudDb.collection('webOrders').doc(id).delete().then(() => toast('ลบออเดอร์ ' + (o.ref || '') + ' แล้ว')).catch(hideInstead); } catch (err) { hideInstead(err); }
+    }
+    else if (t.dataset.wohide) { markWebOrder(t.dataset.wohide, {status: 'hide'}); toast('ซ่อนแล้ว ดูได้ในแท็บ “ทำแล้ว”'); }
   });
   let billBoxPending = null;   // บิลที่กำลังสแกน → บันทึกภาษีซื้อแล้วตีว่าเสร็จ
   async function scanFromUrl(url, label, name) {
