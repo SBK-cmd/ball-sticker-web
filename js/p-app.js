@@ -286,6 +286,10 @@ function bahtText(value) {
     (window.__bsAuthReady || Promise.resolve()).then(() => {
       cloudDb.collection(col).doc(String(rec.id)).set(safeRec, {merge: true}).catch(e => console.error(col + ' save error', e));
       if (col === 'jobs') { if (rec.trackToken) publicJobMirror(rec); else refreshSiblingMirrors(rec); }
+      if (col === 'wholesale') {   // ราคาในบิลเปลี่ยน → หน้าติดตามของงานในบิลนี้อัปเดตยอดตาม
+        const nos = new Set((rec.items || []).map(i => String(i.job || '')).filter(Boolean));
+        if (nos.size) store.get('bs_jobs', []).filter(j => nos.has(String(j.no || '')) && j.trackToken).forEach(j => { try { publicJobMirror(j); } catch (e) {} });
+      }
     });
   }
   // หน้า "ติดตามงานของลูกค้า" (track.html) อ่านจากเอกสารนี้เท่านั้น — เก็บเฉพาะเลขใบ/สถานะ/กำหนดส่ง/เลขพัสดุ (ไม่มีชื่อ เบอร์ ที่อยู่ ราคา)
@@ -324,6 +328,23 @@ function bahtText(value) {
     if (!has && num(j.slipAmount) > 0) { amt = num(j.slipAmount); has = true; }
     return has ? round2(amt) : 0;
   }
+  // ราคาที่ลูกค้าเห็นในหน้าติดตาม: งานส่ง (JBS) ที่อยู่ในใบราคาส่งแล้ว ใช้ยอดจากบิล (บิลคือราคาที่เก็บจริง)
+  // เหตุ: ในใบงานช่อง "จำนวน" มักเป็นจำนวนชิ้น (เช่น 58 ชิ้น) แต่ราคาเป็นราคาทั้งรายการ (เช่น 1 เมตร 500) → จำนวน×ราคาเพี้ยนเป็น 29,000
+  function jobBillLines(j) {
+    const no = String(j.no || ''); if (!no) return [];
+    return store.get('bs_wholesale', []).reduce((a, w) => a.concat((w.items || []).filter(i => String(i.job || '') === no && (i.name || '').trim())), []);
+  }
+  function publicItemsOf(j) {
+    const named = (j.items || []).filter(i => (i.name || '').trim()), bl = jobBillLines(j);
+    const lineAmt = b => round2((num(b.qty) > 0 ? num(b.qty) : 1) * num(b.price));
+    if (bl.length) {
+      const used = new Set(), pick = (it, idx) => { let k = bl.findIndex((b, n) => !used.has(n) && it.uid && b.juid === it.uid); if (k < 0) k = bl.findIndex((b, n) => !used.has(n) && b.ji === idx); if (k < 0) k = bl.findIndex((b, n) => !used.has(n) && String(b.name).trim() === String(it.name).trim()); if (k >= 0) used.add(k); return k >= 0 ? bl[k] : null; };
+      const all = j.items || [], items = named.slice(0, 8).map(it => { const b = pick(it, all.indexOf(it)); return {n: String(it.name).trim().slice(0, 80), q: String(it.qty == null ? '' : it.qty).slice(0, 12), p: b && num(b.price) > 0 ? lineAmt(b) : 0}; });
+      if (bl.length === 1 && bl[0].jtot && items.length) items.forEach((x, n) => { x.p = n === 0 ? lineAmt(bl[0]) : 0; });
+      return {items, amt: round2(bl.reduce((a, b) => a + (num(b.price) > 0 ? lineAmt(b) : 0), 0))};
+    }
+    return {items: named.slice(0, 8).map(i => ({n: String(i.name).trim().slice(0, 80), q: String(i.qty == null ? '' : i.qty).slice(0, 12), p: itemLineAmt(i)})), amt: jobAmountOf(j)};
+  }
   function publicJobMirror(rec, opts) {
     try {
       const tr = rec.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(rec.trackCode)) || null) : null;
@@ -345,8 +366,9 @@ function bahtText(value) {
       const snd = addrOf(rec.jName, rec.jAddr), rcv = rec.recv ? addrOf(rec.recv.name, rec.recv.addr) : null;
       const isJbs = /^JBS/i.test(String(rec.no || '').trim());   // ที่อยู่/รูปอ้างอิง เฉพาะงานส่ง (JBS)
       if (isJbs && snd) doc.sender = snd;
-      if (isJbs) { const am = jobAmountOf(rec); if (am > 0) doc.amt = am; }
-      { doc.date = rec.date || ''; doc.items = (rec.items || []).filter(i => (i.name || '').trim()).slice(0, 8).map(i => ({n: String(i.name).trim().slice(0, 80), q: String(i.qty == null ? '' : i.qty).slice(0, 12), p: itemLineAmt(i)})); }   // รายการงานของใบนี้ (ให้ลูกค้าเห็นว่างานอะไร)
+      const pub = publicItemsOf(rec);
+      if (isJbs && pub.amt > 0) doc.amt = pub.amt;
+      { doc.date = rec.date || ''; doc.items = pub.items; }   // รายการงานของใบนี้ (ให้ลูกค้าเห็นว่างานอะไร)
       const custAddr = String(rec.jAddr || '').replace(/\s+/g, ' ').trim().slice(0, 300);
       const rcvAny = isJbs ? rcv : (rcv || (custAddr ? {name: firstNameOf(rec.jName), addr: custAddr} : null));   // งานร้าน (JB): ไม่มีผู้รับฝากส่ง → ใช้ที่อยู่ลูกค้าเป็นที่อยู่จัดส่ง
       if (rcvAny) { doc.receiver = rcvAny; const fn = String((rec.recv && rec.recv.name) || (isJbs ? '' : rec.jName) || '').replace(/\s+/g, ' ').trim().slice(0, 80); if (fn) doc.receiver.name = fn; }   // ผู้รับ: ชื่อเต็ม
@@ -364,7 +386,7 @@ function bahtText(value) {
       if (isJbs) {   // ใบงานอื่นของลูกค้าคนนี้ (สถานะล่าสุดของแต่ละใบ)
         doc.others = siblingJobsOf(rec).map(x => {
           const trx = x.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(x.trackCode)) || null) : null, car2 = (trx && trx.carrier) || '';
-          const o = {shipFrom: shipFromOf(x, trx), amt: jobAmountOf(x) || 0, delivered: jobDelivered(x), no: String(x.no || ''), status: x.status || 'pending', date: x.date || '', due: x.due || '', items: (x.items || []).filter(i => (i.name || '').trim()).slice(0, 8).map(i => ({n: String(i.name).trim().slice(0, 80), q: String(i.qty == null ? '' : i.qty).slice(0, 12), p: itemLineAmt(i)}))};
+          const px = publicItemsOf(x), o = {shipFrom: shipFromOf(x, trx), amt: px.amt || 0, delivered: jobDelivered(x), no: String(x.no || ''), status: x.status || 'pending', date: x.date || '', due: x.due || '', items: px.items};
           { const https = a => (Array.isArray(a) ? a : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)); const ph = https(x.donePhotos).slice(0, 4), rf = https(x.photos).slice(0, 4); if (ph.length) o.photos = ph; if (rf.length) o.refPhotos = rf; const th2 = ph[0] || rf[0]; if (th2) o.thumb = th2; }
           if (x.recv && (x.recv.name || x.recv.addr)) o.receiver = {name: String(x.recv.name || '').replace(/\s+/g, ' ').trim().slice(0, 80), addr: String(x.recv.addr || '').replace(/\s+/g, ' ').trim().slice(0, 300)};
           if (x.trackCode) { o.trackCode = String(x.trackCode); o.carrier = car2; o.trackUrl = trackingLink(car2, x.trackCode) || ''; const sx = shipStOf(x.trackCode); if (sx) o.shipSt = sx; }
