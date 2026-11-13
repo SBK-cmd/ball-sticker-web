@@ -91,6 +91,7 @@
   .oc-sum .oc-t { color:var(--ink); font:600 18px Prompt,sans-serif; padding-top:6px; }
   .pay .qr { width:min(240px, 70vw); margin:6px auto 0; } .pay .qr svg { display:block; width:100%; height:auto; }
   .pp-n { text-align:center; margin:10px 0 0; font-size:14px; color:var(--sub); } .pp-n b { font:600 22px Prompt,sans-serif; color:var(--ink); }
+  #testSend { background:#fff; border:1px dashed #b07d00; color:#6b5200; border-radius:14px; padding:0 12px; font:600 14px Prompt,sans-serif; min-height:52px; margin-right:6px; cursor:pointer; }
   .cpBtn { display:inline-block; background:#fff; border:1px solid #cfd6e3; color:var(--ink); border-radius:12px; padding:9px 14px; font:inherit; font-size:14px; text-decoration:none; cursor:pointer; margin:2px; }
   .lineBtn { display:inline-block; background:#06c755; color:#fff; text-decoration:none; font:600 17px Prompt,sans-serif; padding:14px 22px; border-radius:14px; }
   .note b { color:var(--ink); font-weight:600; white-space:nowrap; }
@@ -204,6 +205,7 @@
 
 <div class="bar"><div class="in">
   <div class="tot"><small id="totLbl">100 ดวง · 9 × 9 ซม.</small><b id="tot">999 บาท</b></div>
+  <button type="button" id="testSend" hidden>ทดสอบ (ไม่จ่าย)</button>
   <button type="button" id="send">สั่งและชำระเงิน</button>
 </div></div>
 
@@ -218,12 +220,16 @@
   function fsVal(v) { if (v === null || v === undefined) return {nullValue: null}; if (typeof v === 'boolean') return {booleanValue: v};
     if (typeof v === 'number') return Number.isInteger(v) ? {integerValue: String(v)} : {doubleValue: v}; if (typeof v === 'string') return {stringValue: v};
     if (Array.isArray(v)) return {arrayValue: {values: v.map(fsVal)}}; var f = {}; Object.keys(v).forEach(function (k) { f[k] = fsVal(v[k]); }); return {mapValue: {fields: f}}; }
-  function saveOrderCloud(id, data) {
+  function newTrackToken() { var a = new Uint8Array(12); crypto.getRandomValues(a); return Array.from(a, function (b) { return (b % 36).toString(36); }).join('') + Date.now().toString(36).slice(-4); }   // แบบเดียวกับแอป
+  var TRACK_URL = 'https://www.ballsticker.co.th/track.html?t=';
+  function saveOrderCloud(id, data, pub) {
     var go = fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + FB.key, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({returnSecureToken: true})})
       .then(function (r) { return r.json(); }).then(function (a) {
         if (!a.idToken) throw new Error('auth');
-        return fetch('https://firestore.googleapis.com/v1/projects/' + FB.project + '/databases/(default)/documents/webOrders?documentId=' + encodeURIComponent(id), {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + a.idToken}, body: JSON.stringify({fields: fsVal(data).mapValue.fields})});
-      }).then(function (r) { if (!r.ok) throw new Error('fs ' + r.status); return true; });
+        var put = function (col, docId, d) { return fetch('https://firestore.googleapis.com/v1/projects/' + FB.project + '/databases/(default)/documents/' + col + '?documentId=' + encodeURIComponent(docId), {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + a.idToken}, body: JSON.stringify({fields: fsVal(d).mapValue.fields})}); };
+        return put('webOrders', id, data).then(function (r) { if (!r.ok) throw new Error('fs ' + r.status);
+          return pub ? put('publicJobs', data.trackToken, pub).then(function () { return true; }, function () { return true; }) : true; });   // หน้าติดตามงานเริ่มต้น (แอปบันทึกใบงานแล้วจะเขียนทับด้วยข้อมูลจริง)
+      });
     return Promise.race([go, new Promise(function (res) { setTimeout(function () { res(false); }, 8000); })]).catch(function (e) { console.warn('webOrders', e); return false; });
   }
   var SHIP = 60, VAT = 7, PP = {id: '0935353555', name: 'นาย กิติพงษ์ สีทอง'};   // ค่าส่งเหมา · พร้อมเพย์บัญชีกิติพงษ์ (บัญชีที่ส่ง VAT)
@@ -256,6 +262,7 @@
   var TIERS = [50, 100, 200, 300, 500, 1000], SIZES = [7, 8, 10, 12, 15, 20, 40, 70].map(function (v) { return [v, v]; }), MINL = 7;   // ไดคัทได้ตั้งแต่ด้านยาว 7 ซม. · หน้าม้วนพิมพ์ได้ 124 ซม.
   var st = {file: null, ratio: 0, qty: 100, url: '', busy: false};
   // ภาพการเรียง/จำนวนต่อแผ่น เห็นเฉพาะแอดมิน: เปิดหน้านี้ด้วย ?admin=1 ครั้งเดียว เครื่องนั้นจะจำไว้ (ลูกค้าทั่วไปไม่เห็น)
+  var testMode = false;
   var isAdmin = false; try { var qp = new URLSearchParams(location.search); if (qp.get('admin') === '1') localStorage.setItem('bs_upl_admin', '1'); if (qp.get('admin') === '0') localStorage.removeItem('bs_upl_admin'); isAdmin = localStorage.getItem('bs_upl_admin') === '1'; } catch (e) {}
   var utm = {}; try { new URLSearchParams(location.search).forEach(function (v, k) { if (/^utm_|^fbclid$/.test(k)) utm[k] = v.slice(0, 60); }); } catch (e) {}
 
@@ -587,6 +594,45 @@
     for (let i = 0; i < p.length; i++) { c ^= p.charCodeAt(i) << 8; for (let k = 0; k < 8; k++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; }
     return p + c.toString(16).toUpperCase().padStart(4, '0');
   }
+  // รูปการ์ดออเดอร์ (ส่งเข้า LINE ได้ทั้งรูป): หัวเลขใบงาน · รูปงาน · ขนาด/จำนวน/ผู้รับ · ยอด · QR พร้อมเพย์ · ลิงก์ติดตาม
+  function orderCardBlob(o) {
+    return new Promise(function (done) {
+      var W = 1080, P = 56, cv = document.createElement('canvas'), g = cv.getContext('2d'), m = qrEncode(o.payload), n = m.length, cell = Math.floor(360 / (n + 8)), qs = cell * (n + 8);
+      var H = 1800 + (o.vat ? 56 : 0) + (o.test ? 60 : 0); cv.width = W; cv.height = H;
+      var F = function (w, px, f) { g.font = w + ' ' + px + "px '" + (f || 'Noto Sans Thai') + "','Prompt',sans-serif"; };
+      var rr = function (x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+      var fit = function (t, max) { t = String(t); while (t.length > 1 && g.measureText(t).width > max) t = t.slice(0, -2) + '…'; return t; };
+      var go = function (img) {
+        g.fillStyle = '#14234b'; g.fillRect(0, 0, W, H);
+        F('600', 38, 'Prompt'); g.fillStyle = '#fff'; g.fillText('บอลสติ๊กเกอร์ พิษณุโลก', P, 84); F('400', 26); g.fillStyle = 'rgba(255,255,255,.75)'; g.fillText('ใบสั่งงานจากเว็บ shop.ballsticker.co.th', P, 126);
+        var y0 = 170; g.fillStyle = '#fff'; rr(P - 16, y0, W - 2 * P + 32, H - y0 - 40, 32); g.fill();
+        var x = P + 24, y = y0 + 64, R = W - P - 24;
+        if (o.test) { g.fillStyle = '#fff6cf'; rr(x, y - 40, R - x, 48, 12); g.fill(); F('600', 24, 'Prompt'); g.fillStyle = '#6b5200'; g.fillText('🧪 ออเดอร์ทดสอบ ไม่ได้จ่ายจริง', x + 16, y - 7); y += 60; }
+        F('400', 26); g.fillStyle = '#5a6580'; g.fillText('เลขใบงาน', x, y); F('600', 34, 'Prompt'); g.fillStyle = '#1b2333'; g.fillText(o.ref, x + 130, y + 2);
+        var st = o.test ? 'ทดสอบ' : 'รอชำระเงิน'; F('600', 24, 'Prompt'); var sw = g.measureText(st).width + 36; g.fillStyle = '#fff6cf'; rr(R - sw, y - 32, sw, 46, 23); g.fill(); g.fillStyle = '#6b5200'; g.fillText(st, R - sw + 18, y);
+        y += 40; var ib = 260; g.fillStyle = '#cdd4e0'; rr(x, y, ib, ib, 24); g.fill();
+        if (img) { var k = Math.min((ib - 36) / img.width, (ib - 36) / img.height), iw = img.width * k, ih = img.height * k; g.save(); g.shadowColor = 'rgba(20,35,75,.35)'; g.shadowBlur = 10; g.shadowOffsetY = 4; g.drawImage(img, x + (ib - iw) / 2, y + (ib - ih) / 2, iw, ih); g.restore(); }
+        var tx = x + ib + 36, ty = y + 44, row = function (k2, v, small) { F('400', 26); g.fillStyle = '#5a6580'; g.fillText(k2, tx, ty); F(small ? '400' : '500', small ? 23 : 28); g.fillStyle = '#1b2333'; g.fillText(fit(v, R - tx - 120), tx + 120, ty); ty += small ? 40 : 54; };
+        row('ขนาด', o.size); row('จำนวน', o.qty + ' ดวง'); row('วัสดุ', 'PVC เคลือบ ไดคัท'); row('จัดส่ง', o.name + ' · ' + o.tel); row('', o.addr, true);
+        y += ib + 40; g.fillStyle = '#e3e7ef'; g.fillRect(x, y, R - x, 2); y += 56;
+        var line = function (k2, v, big) { F(big ? '600' : '400', big ? 36 : 28, big ? 'Prompt' : ''); g.fillStyle = big ? '#1b2333' : '#5a6580'; g.fillText(k2, x, y); var tw = g.measureText(v).width; g.fillText(v, R - tw, y); y += big ? 70 : 50; };
+        line('สติ๊กเกอร์', o.price); line('ค่าส่ง', o.ship); if (o.vat) line('VAT 7%', o.vat); y += 10; line('ยอดชำระ', o.total + ' บาท', true);
+        g.fillStyle = '#e3e7ef'; g.fillRect(x, y - 30, R - x, 2); y += 20;
+        var qx = x, qy = y; g.fillStyle = '#fff'; g.fillRect(qx, qy, qs, qs); g.fillStyle = '#000';
+        for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (m[r][c]) g.fillRect(qx + (c + 4) * cell, qy + (r + 4) * cell, cell, cell);
+        g.strokeStyle = '#e3e7ef'; g.lineWidth = 2; rr(qx, qy, qs, qs, 16); g.stroke();
+        var px = qx + qs + 36; F('600', 32, 'Prompt'); g.fillStyle = '#1b2333'; g.fillText('สแกนจ่ายพร้อมเพย์', px, qy + 60);
+        F('400', 26); g.fillStyle = '#5a6580'; g.fillText(o.payee, px, qy + 104); F('600', 44, 'Prompt'); g.fillStyle = '#1b2333'; g.fillText(o.total + ' บาท', px, qy + 166);
+        F('400', 24); g.fillStyle = '#5a6580'; g.fillText('โอนแล้วส่งสลิปใน LINE @bk25', px, qy + 214); g.fillText('ติดต่อ 093-535-3555', px, qy + 252);
+        y = qy + qs + 64; F('500', 26); g.fillStyle = '#2f5bd3'; g.fillText('📦 ติดตามงาน: ' + fit(o.track.replace('https://', ''), R - x - 220), x, y);
+        var endY = y + 60, out = document.createElement('canvas'); out.width = W; out.height = endY + 40; var og = out.getContext('2d');
+        og.drawImage(cv, 0, 0); og.fillStyle = '#14234b'; og.fillRect(0, endY, W, 40); og.fillStyle = '#fff'; og.beginPath(); og.moveTo(P - 16, endY - 40); og.lineTo(W - P + 16, endY - 40); og.lineTo(W - P + 16, endY - 32); og.arcTo(W - P + 16, endY, W - P - 16, endY, 32); og.lineTo(P + 16, endY); og.arcTo(P - 16, endY, P - 16, endY - 32, 32); og.closePath(); og.fill();
+        out.toBlob(function (b) { done(b); }, 'image/png');
+      };
+      if (o.img) { var im = new Image(); im.crossOrigin = 'anonymous'; im.onload = function () { go(im); }; im.onerror = function () { go(null); }; im.src = o.img; } else go(null);
+    });
+  }
+  window.__orderCard = orderCardBlob;   // ใช้ทดสอบ
   function qrSvgEl(text) { var m = qrEncode(text), n = m.length, q = 4, d = ''; for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (m[r][c]) d += 'M' + (c + q) + ' ' + (r + q) + 'h1v1h-1z'; var w = n + 2 * q;
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + w + '" shape-rendering="crispEdges" role="img" aria-label="QR พร้อมเพย์"><rect width="' + w + '" height="' + w + '" fill="#fff"/><path d="' + d + '" fill="#000"/></svg>'; }
   $('cZip').addEventListener('input', function () {
@@ -630,6 +676,7 @@
     var j = await r.json(); if (!j.secure_url) throw new Error('upload'); return j.secure_url;
   }
   $('send').addEventListener('click', async function () {
+    var isTest = isAdmin && testMode; testMode = false;
     var err = $('ferr'); err.hidden = true;
     var miss = [];
     if (!st.file) miss.push('รูปแบบ'); if (!$('cName').value.trim()) miss.push('ชื่อผู้รับ'); if (!telOk($('cTel').value)) miss.push('เบอร์โทรให้ถูก'); if ($('cAddr').value.trim().length < 3) miss.push('บ้านเลขที่/ถนน'); if (!/^\d{5}$/.test($('cZip').value)) miss.push('รหัสไปรษณีย์'); else if (!addrOk()) miss.push('ตำบล/อำเภอ/จังหวัด'); if ($('tx').checked) { if ($('txName').value.trim().length < 2) miss.push('ชื่อในใบกำกับ'); if (!taxIdOk($('txId').value)) miss.push('เลขผู้เสียภาษีให้ถูก 13 หลัก'); } if (!$('cOk').checked) miss.push('ติ๊กยินยอม');
@@ -645,8 +692,8 @@
         kc.png = await upload(new File([kf.png], tag + '.png', {type: 'image/png'})).catch(function () { return ''; });
         kc.svg = await upload(new File([kf.svg], tag + '.svg', {type: 'image/svg+xml'})).catch(function () { return ''; });
       } catch (e) {} }
-    var w = num($('w').value), h = num($('h').value), p = price(st.qty, w, h), bl = bill(p), ref = (function () { var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); }; return 'WEB' + String(d.getFullYear() + 543).slice(2) + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + Math.random().toString(36).slice(2, 4).toUpperCase(); })(), tx = $('tx').checked;
-    var msg = '🛒 สั่งสติ๊กเกอร์จากเว็บ\nเลขใบงาน: ' + ref + '\n' +
+    var w = num($('w').value), h = num($('h').value), p = price(st.qty, w, h), bl = bill(p), ref = (function () { var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); }; return 'WEB' + String(d.getFullYear() + 543).slice(2) + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + Math.random().toString(36).slice(2, 4).toUpperCase(); })().replace(/^WEB/, isTest ? 'TEST' : 'WEB'), tx = $('tx').checked;
+    var msgFull = (isTest ? '🧪 ทดสอบระบบ (ไม่ได้จ่ายจริง)\n' : '') + '🛒 สั่งสติ๊กเกอร์จากเว็บ\nเลขใบงาน: ' + ref + '\n' +
       'แบบ: ' + st.url + '\n' +
       'ขนาดชิ้นไดคัท ' + w + ' × ' + h + ' ซม. · ' + st.qty.toLocaleString('th-TH') + ' ดวง · PVC เคลือบ ไดคัท\n' +
       (srcImg ? 'ตัวงาน ' + artCm(w, h).w + ' × ' + artCm(w, h).h + ' ซม. + ขอบขาว 2 มม. · ≈' + Math.round(printDpi(w, h)) + ' dpi' + (st.fileCm && st.fileCm.dpi ? ' · ไฟล์ระบุ ' + st.fileCm.aw + '×' + st.fileCm.ah + ' ซม. @' + st.fileCm.dpi + 'dpi' : '') + '\n' : (st.fileCm && st.fileCm.src === 'pdf' ? 'PDF หน้า ' + st.fileCm.w + ' × ' + st.fileCm.h + ' ซม.\n' : '')) +
@@ -659,34 +706,53 @@
       'ที่อยู่: ' + addrFull() +
       ($('cNote').value.trim() ? '\nหมายเหตุ: ' + $('cNote').value.trim() : '') +
       (Object.keys(utm).length ? '\n[ที่มา ' + (utm.utm_source || '') + ' ' + (utm.utm_campaign || '') + ' ' + (utm.utm_content || '') + ']' : '');
-    var lineUrl = 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA) + '/?' + encodeURIComponent(msg);
     this.textContent = 'กำลังบันทึกออเดอร์…';
-    var L0 = perSheet(w, h), ap = addrParts();
-    var saved = await saveOrderCloud(ref, {ref: ref, createdAt: Date.now(), status: 'new', src: 'shop', w: w, h: h, qty: st.qty, price: bl.price, ship: bl.ship, vat: bl.vat, total: bl.total,
+    var L0 = perSheet(w, h), ap = addrParts(), tk = newTrackToken(), trackUrl = TRACK_URL + tk, today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+    var saved = await saveOrderCloud(ref, {ref: ref, createdAt: Date.now(), status: 'new', src: 'shop', test: isTest, trackToken: tk, w: w, h: h, qty: st.qty, price: bl.price, ship: bl.ship, vat: bl.vat, total: bl.total,
       perSheet: L0.n || 0, sheets: L0.n ? Math.round(st.qty / L0.n * 100) / 100 : 0, dpi: kc.dpi || 0,
       files: {orig: st.url || '', png: kc.png || '', svg: kc.svg || ''},
       cust: {name: $('cName').value.trim(), tel: telFmt(telNorm($('cTel').value)), line: $('cLine').value.trim(), addr: addrFull(), zip: ap.zip || '', prov: ap.prov || ''},
       tax: tx ? {name: $('txName').value.trim(), id: $('txId').value.replace(/\D/g, ''), br: $('txBr').value.trim() || 'สำนักงานใหญ่', addr: ($('txAddr').value.trim() || addrFull()).replace(/\s+/g, ' ')} : null,
-      note: $('cNote').value.trim(), utm: utm});
-    var payload = promptPayPayload(PP.id, bl.total), sz = w + ' × ' + h + ' ซม.';
+      note: $('cNote').value.trim(), utm: utm},
+      {delivered: false, no: ref, cname: $('cName').value.trim().split(/\s+/)[0].slice(0, 40), status: 'pending', due: '', trackCode: '', carrier: '', trackUrl: '', date: today, web: true,
+        items: [{n: 'สติ๊กเกอร์ไดคัท ' + w + ' × ' + h + ' ซม.', q: String(st.qty), p: bl.price}, {n: 'ค่าจัดส่ง', q: '1', p: bl.ship}], thumb: kc.png || '', receiver: {name: $('cName').value.trim().slice(0, 80), addr: addrFull().slice(0, 300)}});
+    // ข้อความ LINE: ออเดอร์เข้าระบบแล้ว = สรุปสั้นๆ ให้ลูกค้าอ่านง่าย (รายละเอียด/ไฟล์อยู่ในแอปหลังร้าน) · บันทึกไม่สำเร็จ = ส่งรายละเอียดเต็มแทน
+    var msg = saved ? (isTest ? '🧪 ทดสอบระบบ (ไม่ได้จ่ายจริง)\n' : '') + '🛒 สั่งสติ๊กเกอร์ เลขใบงาน ' + ref + '\n' +
+      'สติ๊กเกอร์ไดคัท ' + w + ' × ' + h + ' ซม. × ' + st.qty.toLocaleString('th-TH') + ' ดวง\n' +
+      'ยอดชำระ ' + baht(bl.total) + ' บาท (รวมค่าส่ง' + (bl.vat ? ' + VAT · ขอใบกำกับ' : '') + ')\n' +
+      'ผู้รับ: ' + $('cName').value.trim() + ' · ' + telFmt(telNorm($('cTel').value)) + '\n' +
+      'ติดตามงาน: ' + trackUrl + '\n' +
+      'แนบสลิปการโอนด้านล่างครับ 🙏' : msgFull + '\nติดตามงาน: ' + trackUrl;
+    var lineUrl = 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA) + '/?' + encodeURIComponent(msg);
+    var payload = promptPayPayload(PP.id, bl.total), sz = w + ' × ' + h + ' ซม.', who0 = {name: $('cName').value.trim(), tel: telFmt(telNorm($('cTel').value)), addr: addrFull()};
     $('main').innerHTML = '<section class="card ocard">' +
-      '<div class="oc-h"><span>เลขใบงาน <b>' + ref + '</b></span><span class="oc-st">รอชำระเงิน</span></div>' +
+      '<div class="oc-h"><span>เลขใบงาน <b>' + ref + '</b></span><span class="oc-st">' + (isTest ? 'ทดสอบ ไม่ต้องจ่าย' : 'รอชำระเงิน') + '</span></div>' +
       '<div class="oc-b">' + (flatUrl || (srcImg && st.url) ? '<div class="oc-img"><img src="' + (flatUrl || st.url) + '" alt="สติ๊กเกอร์ที่สั่ง"></div>' : '') +
       '<dl><dt>ขนาด</dt><dd>' + sz + '</dd><dt>จำนวน</dt><dd>' + st.qty.toLocaleString('th-TH') + ' ดวง</dd><dt>วัสดุ</dt><dd>PVC เคลือบ ไดคัท</dd><dt>จัดส่ง</dt><dd>' + esc($('cName').value.trim()) + ' · ' + telFmt(telNorm($('cTel').value)) + '<br><small>' + esc(addrFull()) + '</small></dd></dl></div>' +
       '<div class="oc-sum"><div><span>สติ๊กเกอร์</span><span>' + baht(bl.price) + '</span></div><div><span>ค่าส่ง</span><span>' + bl.ship + '</span></div>' + (bl.vat ? '<div><span>VAT 7%</span><span>' + baht(bl.vat) + '</span></div>' : '') + '<div class="oc-t"><span>ยอดชำระ</span><span>' + baht(bl.total) + ' บาท</span></div></div>' +
       '</section>' +
       '<section class="card pay"><h2 style="justify-content:center">สแกนจ่ายพร้อมเพย์</h2><div class="qr">' + qrSvgEl(payload) + '</div>' +
       '<p class="pp-n">' + PP.name + '<br><b>' + baht(bl.total) + ' บาท</b></p>' +
-      '<p class="note" style="text-align:center">กดค้างที่ QR เพื่อบันทึกรูป แล้วเปิดแอปธนาคารสแกนจากรูปได้</p>' +
+      '<p class="note" style="text-align:center">กดค้างที่ QR เพื่อบันทึกรูป แล้วสแกนในแอปธนาคาร</p>' +
       '<p style="margin:14px 0 0;text-align:center"><a class="lineBtn" href="' + lineUrl + '" target="_blank" rel="noopener">💬 โอนแล้ว ส่งสลิปทาง LINE</a></p>' +
-      '<p style="margin:10px 0 0;text-align:center"><button type="button" class="cpBtn" id="cpMsg">คัดลอกข้อความออเดอร์</button> <a class="cpBtn" href="https://line.me/R/ti/p/' + encodeURIComponent(LINE_OA) + '" target="_blank" rel="noopener">เพิ่มเพื่อน LINE ' + LINE_OA + '</a></p>' +
-      '<p class="note" style="text-align:center">' + (saved ? '✓ ร้านได้รับออเดอร์ ' + ref + ' แล้ว ' : '') + 'เปิดจากคอมพิวเตอร์แล้ว LINE ไม่เด้ง? กดคัดลอกข้อความ แล้ววางในแชต LINE ' + LINE_OA + ' พร้อมแนบสลิป</p>' +
-      '<p class="note" style="text-align:center">LINE จะเปิดพร้อมเลขใบงาน ' + ref + ' กดส่งแล้วแนบสลิป · ร้านตรวจไฟล์ก่อนพิมพ์ ถ้าต้องแก้ไขจะทักกลับ<br>LINE ไม่เปิด? แอดไลน์ <b>' + LINE_OA + '</b> แล้วส่งเลข <b>' + ref + '</b></p>' +
-      '<div class="oc-sum" style="text-align:center"><b>ติดต่อร้าน</b> · โทร <a href="tel:0935353555">093-535-3555</a> · <a href="tel:0966697495">096-669-7495</a><br>LINE <a href="https://line.me/R/ti/p/' + encodeURIComponent(LINE_OA) + '" target="_blank" rel="noopener">' + LINE_OA + '</a> · แจ้งเลขใบงาน <b>' + ref + '</b> หรือแคปหน้าจอนี้ไว้</div></section>';
+      '<p style="margin:10px 0 0;text-align:center"><button type="button" class="cpBtn" id="shareCard">🖼️ ส่งการ์ดเข้า LINE</button> <button type="button" class="cpBtn" id="cpMsg">คัดลอกข้อความ</button>' + (saved ? ' <a class="cpBtn" href="' + trackUrl + '" target="_blank" rel="noopener">📦 ติดตามงาน</a>' : '') + '</p>' +
+      '<p class="note" style="text-align:center;margin-top:14px">ติดต่อร้าน โทร <a href="tel:0935353555">093-535-3555</a> · LINE <a href="https://line.me/R/ti/p/' + encodeURIComponent(LINE_OA) + '" target="_blank" rel="noopener">' + LINE_OA + '</a></p></section>';
     document.querySelector('.bar').hidden = true; window.scrollTo({top: 0, behavior: 'smooth'});
+    var cardData = {ref: ref, test: isTest, size: sz, qty: st.qty.toLocaleString('th-TH'), name: who0.name, tel: who0.tel, addr: who0.addr, price: baht(bl.price), ship: String(bl.ship), vat: bl.vat ? baht(bl.vat) : '', total: baht(bl.total), payload: payload, payee: PP.name, track: trackUrl, img: flatUrl || ''};
+    $('shareCard').onclick = function () {   // มือถือ: แชร์รูปการ์ด + ข้อความไปแชต LINE ร้าน · คอม: เปิดรูปให้บันทึก
+      var b = this; b.disabled = true; b.textContent = 'กำลังทำรูป…';
+      orderCardBlob(cardData).then(function (blob) {
+        var file = new File([blob], ref + '.png', {type: 'image/png'});
+        b.disabled = false; b.textContent = '🖼️ ส่งการ์ดเข้า LINE';
+        if (navigator.canShare && navigator.canShare({files: [file]})) return navigator.share({files: [file], text: msg}).catch(function () {});
+        var u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = ref + '.png'; document.body.appendChild(a); a.click(); a.remove();
+        b.textContent = '✓ บันทึกรูปแล้ว ส่งรูปนี้ใน LINE @bk25 ได้เลย';
+      });
+    };
     $('cpMsg').onclick = function () { var b = this; (navigator.clipboard ? navigator.clipboard.writeText(msg) : Promise.reject()).then(function () { b.textContent = '✓ คัดลอกแล้ว'; }).catch(function () { window.prompt('คัดลอกข้อความนี้', msg); }); };
     try { localStorage.setItem('bs_last_order', JSON.stringify({at: Date.now(), html: $('main').innerHTML, msg: msg})); } catch (e) {}   // กลับมาหน้านี้ (เช่นลิงก์ LINE เปิดไม่ได้) ยังเห็นการ์ด/QR เดิม
   });
+  if (isAdmin) { $('testSend').hidden = false; $('testSend').onclick = function () { testMode = true; $('send').click(); }; }
   render();
   try { var lo = JSON.parse(localStorage.getItem('bs_last_order') || 'null'); if (lo && Date.now() - lo.at < 6 * 3600e3) {   // ออเดอร์ล่าสุดใน 6 ชม. → ให้กลับไปดูได้
     var bn = document.createElement('div'); bn.className = 'card'; bn.innerHTML = '<p class="note" style="margin:0">มีออเดอร์ล่าสุดที่ยังเปิดดูได้ <button type="button" class="cpBtn" id="loShow">ดูการ์ดออเดอร์ / QR</button> <button type="button" class="cpBtn" id="loDel">สั่งใหม่</button></p>';
