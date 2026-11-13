@@ -3423,6 +3423,62 @@ function bahtText(value) {
     Object.assign(x, patch); renderBillBox();
     try { if (cloudDb) cloudDb.collection('billInbox').doc(id).set(patch, {merge: true}); } catch (e) { console.warn(e); }
   }
+  // ---------- ออเดอร์จากเว็บ shop.ballsticker.co.th (หน้าเว็บเขียน Firestore 'webOrders' เอง ด้วยบัญชีไม่ระบุตัวตน) ----------
+  let webOrd = [], webOrdTab = 'new', webOrdUnsub = null;
+  function watchWebOrders() {
+    if (!cloudDb || webOrdUnsub) return;
+    try {
+      webOrdUnsub = cloudDb.collection('webOrders').orderBy('createdAt', 'desc').limit(40).onSnapshot(snap => { countReads('webOrders', snap);
+        const l = []; snap.forEach(d => l.push(Object.assign({id: d.id}, d.data()))); webOrd = l; renderWebOrders();
+      }, e => { console.warn('webOrders', e); });
+    } catch (e) { console.warn(e); }
+  }
+  const woDone = x => x.status === 'job' || x.status === 'hide';
+  function renderWebOrders() {
+    const card = $('webOrdCard'), box = $('webOrd'); if (!card || !box) return;
+    const nNew = webOrd.filter(x => !woDone(x)).length;
+    card.hidden = !webOrd.length;
+    $('webOrdN').textContent = nNew ? '(' + nNew + ' ออเดอร์ใหม่)' : '';
+    const list = webOrd.filter(x => webOrdTab === 'done' ? woDone(x) : !woDone(x));
+    box.innerHTML = list.length ? list.map(x => {
+      const c = x.cust || {}, f = x.files || {}, img = f.png || f.orig || '';
+      return '<div class="wo-it">' + '<div class="wo-img">' + (img ? '<img src="' + esc(img) + '" alt="แบบของ ' + esc(c.name || '') + '" loading="lazy">' : 'PDF') + '</div>' +
+        '<div class="wo-m"><b>' + esc(c.name || 'ไม่ทราบชื่อ') + '</b><span class="wo-ref">' + esc(x.ref || x.id) + ' · ' + esc(new Date(x.createdAt || 0).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + '</span>' +
+        '<span>' + esc(x.w + ' × ' + x.h + ' ซม. · ' + Number(x.qty || 0).toLocaleString('th-TH') + ' ดวง') + (x.perSheet ? ' · แผ่นละ ' + x.perSheet + ' (≈' + x.sheets + ' แผ่น)' : '') + '</span>' +
+        '<span>' + esc(c.tel || '') + '</span><span class="wo-amt">฿' + money(x.total || 0) + '</span>' +
+        '<span>' + (x.tax ? '<i class="wo-tag tx">ใบกำกับ</i>' : '') + (x.status === 'job' ? '<i class="wo-tag ok">ใบงาน ' + esc(x.jobNo || '') + '</i>' : x.status === 'hide' ? '<i class="wo-tag">ซ่อนแล้ว</i>' : '<i class="wo-tag">รอตรวจสลิป</i>') + '</span></div>' +
+        '<div class="wo-act">' + (woDone(x) ? '' : '<button type="button" class="btn small good" data-wojob="' + esc(x.id) + '">สร้างใบงาน</button>') +
+        (f.orig ? '<a href="' + esc(f.orig) + '" target="_blank" rel="noopener">ไฟล์ลูกค้า</a>' : '') + (f.png ? '<a href="' + esc(f.png) + '" target="_blank" rel="noopener">ไฟล์ตรง</a>' : '') + (f.svg ? '<a href="' + esc(f.svg) + '" target="_blank" rel="noopener">เส้น Kiss Cut</a>' : '') +
+        (woDone(x) ? '' : '<button type="button" class="btn small" data-wohide="' + esc(x.id) + '">ซ่อน</button>') + '</div></div>';
+    }).join('') : '<div class="bb-empty">' + (webOrdTab === 'done' ? 'ยังไม่มีออเดอร์ที่ทำแล้ว' : 'ไม่มีออเดอร์ใหม่') + '</div>';
+  }
+  function markWebOrder(id, patch) {
+    const x = webOrd.find(b => b.id === id); if (!x) return;
+    Object.assign(x, patch); renderWebOrders();
+    try { if (cloudDb) cloudDb.collection('webOrders').doc(id).set(patch, {merge: true}); } catch (e) { console.warn(e); }
+  }
+  function webOrderToJob(id) {   // เปิดฟอร์มใบงานใหม่ เติมข้อมูลจากออเดอร์เว็บ · กดบันทึกใบงานเองหลังตรวจ
+    const x = webOrd.find(b => b.id === id); if (!x) return;
+    const c = x.cust || {}, f = x.files || {}, t = x.tax;
+    newJob();
+    $('jName').value = c.name || ''; $('jPhone').value = c.tel || ''; $('jAddr').value = c.addr || '';
+    jobItems = [{name: 'สติ๊กเกอร์ PVC เคลือบ ไดคัท ' + x.w + '×' + x.h + ' ซม.', qty: String(x.qty || ''), note: '', price: '', total: String(x.price || ''), uid: newItemUid()},
+      {name: 'ค่าจัดส่ง', qty: '1', note: '', price: '', total: String(x.ship || ''), uid: newItemUid()}];
+    $('jobNote').value = ['เว็บ ' + (x.ref || x.id) + ' · ยอดชำระ ' + money(x.total || 0) + (x.vat ? ' (รวม VAT ' + money(x.vat) + ')' : ''),
+      f.orig ? 'ไฟล์ลูกค้า ' + f.orig : '', f.png ? 'ไฟล์ตรง ' + f.png : '', f.svg ? 'Kiss Cut ' + f.svg : '',
+      t ? 'ใบกำกับ: ' + t.name + ' · ' + t.id + ' · ' + (t.br || 'สำนักงานใหญ่') + ' · ' + (t.addr || c.addr || '') : '', x.note ? 'ลูกค้าแจ้ง: ' + x.note : ''].filter(Boolean).join('\n');
+    $('jobSlipAmount').value = x.total ? String(x.total) : '';
+    if (f.png || f.orig) jobPhotos = [f.png || f.orig];
+    renderJobItems(); renderJobPhotos(); renderJob(); renderJobEditState();
+    openJobModal();
+    markWebOrder(id, {status: 'job', jobNo: $('jobNo').value, jobAt: Date.now()});
+  }
+  document.addEventListener('click', e => {
+    const t = e.target.closest && e.target.closest('[data-wo],[data-wojob],[data-wohide]'); if (!t) return;
+    if (t.dataset.wo) { webOrdTab = t.dataset.wo; document.querySelectorAll('#webOrdTabs button').forEach(b => b.classList.toggle('on', b === t)); renderWebOrders(); }
+    else if (t.dataset.wojob) webOrderToJob(t.dataset.wojob);
+    else if (t.dataset.wohide && confirm('ซ่อนออเดอร์นี้? (ไม่ลบ ดูได้ในแท็บ "ทำแล้ว")')) markWebOrder(t.dataset.wohide, {status: 'hide'});
+  });
   let billBoxPending = null;   // บิลที่กำลังสแกน → บันทึกภาษีซื้อแล้วตีว่าเสร็จ
   async function scanFromUrl(url, label, name) {
     const res = await fetch(url); if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -10388,6 +10444,7 @@ function bahtText(value) {
     watchCloud('quotes', 'bs_quotes', renderQuoteHistory);
     watchCloud('purchases', 'bs_purchases', () => { renderPurchHistory(); renderVendorDatalist(); });
     try { watchBillBox(); } catch (e) {}
+    try { watchWebOrders(); } catch (e) {}
     watchCloud('customers', 'bs_customers', () => { renderCustomerDatalist(); try { renderWholesaleHistory(); } catch (e) {} });
     watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
     if (can('money')) watchCloud('costCfg', 'bs_cost_cfg', () => { renderCost(); try { renderPrice(); } catch (e) {} });
