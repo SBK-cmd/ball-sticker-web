@@ -359,7 +359,7 @@ function bahtText(value) {
       // ชื่อผู้ส่งบนพัสดุ (ให้ลูกค้าที่ฝากส่งรู้ว่าส่งในชื่อใคร): ชื่อบนใบจ่าหน้าจาก iship ถ้ามี · ไม่มี → ใบฝากส่งใช้ชื่อลูกค้า · งานร้านใช้ "บอล สติ๊กเกอร์"
       const shipFromOf = (job, t) => String((t && t.sender) || '').replace(/\s+/g, ' ').trim().slice(0, 80) || ((job.recv && (job.recv.name || job.recv.addr)) ? String(job.jName || '').replace(/\s+/g, ' ').trim().slice(0, 80) : '') || 'บอล สติ๊กเกอร์';
       const photos = (Array.isArray(rec.donePhotos) ? rec.donePhotos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 8);   // รูปงานเสร็จ (เฉพาะลิงก์ที่อัปโหลดแล้ว)
-      const doc = {delivered: jobDelivered(rec), no: String(rec.no || ''), cname: firstNameOf(rec.jName), cfull: /^JBS/i.test(String(rec.no || '').trim()) ? String(rec.jName || '').replace(/\s+/g, ' ').trim().slice(0, 60) : '', status: rec.status || 'pending', due: rec.due || '', trackCode: rec.trackCode || '', carrier, trackUrl: rec.trackCode ? trackingLink(carrier, rec.trackCode) : '', shipFrom: shipFromOf(rec, tr), photos, prio: Math.min(2, Math.max(0, +rec.prio || 0)), updatedAt: Date.now()}
+      const doc = {delivered: jobDelivered(rec), no: String(rec.no || ''), cname: firstNameOf(rec.jName), cfull: /^JBS/i.test(String(rec.no || '').trim()) ? String(((custRec(rec.jName) || {}).display) || rec.jName || '').replace(/\s+/g, ' ').trim().slice(0, 60) : '', status: rec.status || 'pending', due: rec.due || '', trackCode: rec.trackCode || '', carrier, trackUrl: rec.trackCode ? trackingLink(carrier, rec.trackCode) : '', shipFrom: shipFromOf(rec, tr), photos, prio: Math.min(2, Math.max(0, +rec.prio || 0)), updatedAt: Date.now()}
       { const ss = shipStOf(rec.trackCode); if (ss) doc.shipSt = ss; };
       // ผู้ส่ง = ลูกค้าของใบงาน · ผู้รับ = ผู้รับปลายทาง (ลูกค้าฝากส่ง) — โชว์เฉพาะชื่อแรก + ที่อยู่ ไม่ส่งเบอร์โทรขึ้นหน้าสาธารณะ
       const addrOf = (name, addr) => { const a = String(addr || '').replace(/\s+/g, ' ').trim().slice(0, 300); return a ? {name: firstNameOf(name), addr: a} : null; };
@@ -6905,7 +6905,9 @@ function bahtText(value) {
     h += '<div class="wd-h" style="margin-top:14px">ประวัติที่จ่ายแล้ว <small>' + g.paid.length + ' บิล' + (g.paid.length ? ' · รวม ' + money(round2(g.paid.reduce((a, w) => a + wholesaleCalc(w).total, 0))) + ' บาท' : '') + '</small></div>';
     h += g.paid.length ? g.paid.map(w => '<div class="wd-p2" data-doc="' + esc(w.id) + '"><div class="wd-jm"><b>' + esc(w.no || 'บิล') + ' <span class="wd-ok">จ่ายแล้ว</span></b><small>' + esc(thDate(w.paidAt ? new Date(w.paidAt).toISOString().slice(0, 10) : w.date)) + '</small><span class="wd-sl">' + esc(sumLine(w)) + '</span></div><div class="wd-pb"><button class="btn small" type="button" data-act="open">เปิด/พิมพ์</button><button class="btn small" type="button" data-act="togglepaid">ยกเลิกจ่าย</button></div></div>').join('') : '<p class="hint" style="margin:6px 0 0">ยังไม่มีประวัติ</p>';
     const others = whCustomers().map(x => x.name).filter(x => x !== g.name).sort((a, b) => a.localeCompare(b, 'th'));
+    const cdisp = (custRec(g.name) || {}).display || '';
     h += '<div class="wd-set"><div class="wd-h">ตั้งค่าร้าน</div>' +
+      '<div class="wd-set-r"><input type="text" data-disp-in="1" maxlength="60" value="' + esc(cdisp) + '" placeholder="ชื่อบนบัตรหน้าติดตาม (เว้นว่าง = ' + esc(g.name) + ')" aria-label="ชื่อร้านบนบัตรหน้าติดตามงาน" style="flex:1;min-width:0"><button class="btn small" type="button" data-act="dispsave">บันทึกชื่อ</button></div>' +
       '<div class="wd-set-r"><button class="btn small" type="button" data-act="logo">' + (shopLogo(g.name) ? 'เปลี่ยนโลโก้ร้าน' : 'ใส่โลโก้ร้าน') + '</button>' + (shopLogo(g.name) ? '<button class="btn small" type="button" data-act="logodel">เอาโลโก้ออก</button>' : '') + '<input type="file" accept="image/*" data-logo-in="1" hidden></div>' +
       (others.length ? '<div class="wd-set-r"><select data-merge-to="1" aria-label="รวมกับร้าน"><option value="">ร้านเดียวกับ… (เลือกเพื่อรวม)</option>' + others.map(o => '<option value="' + esc(o) + '">' + esc(o) + '</option>').join('') + '</select><button class="btn small" type="button" data-act="merge">รวมร้าน</button></div>' +
         '<p class="hint" style="margin:0">รวมร้าน = ย้ายบิล ใบงาน และประวัติทั้งหมดของ “' + esc(g.name) + '” ไปอยู่ใต้ชื่อร้านที่เลือก แล้วการ์ดนี้จะหายไป</p>' : '') + '</div>';
@@ -9511,6 +9513,12 @@ function bahtText(value) {
       const w = wholesaleOpenDocFor(name, false) || {buyerName: name}; openChargeModal(w); return;
     }
     if (act === 'logo') { const inp = li.querySelector('[data-logo-in]'); if (inp) inp.click(); return; }
+    if (act === 'dispsave') {   // ชื่อร้านบนบัตร Member หน้าติดตามงาน → bs_customers.display → อัปเดตหน้าติดตามทุกใบของร้าน
+      const v = String((li.querySelector('[data-disp-in]') || {}).value || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+      setCustField(name, {display: v});
+      store.get('bs_jobs', []).filter(j => String(j.jName || '').trim() === name && j.trackToken).forEach(j => { try { publicJobMirror(j); } catch (e) {} });
+      toast(v ? 'ตั้งชื่อบนบัตรเป็น “' + v + '” แล้ว' : 'ใช้ชื่อร้านเดิมบนบัตร'); return;
+    }
     if (act === 'logodel') { setCustField(name, {logo: ''}); renderWholesaleHistory(); toast('เอาโลโก้ออกแล้ว'); return; }
     if (act === 'merge') {
       const sel = li.querySelector('[data-merge-to]'), to = sel ? sel.value : '';
