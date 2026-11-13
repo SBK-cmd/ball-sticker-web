@@ -95,3 +95,4 @@
 - v152: ค้นใบงาน (ชื่อ/เลขงาน/เบอร์/เลขพัสดุ ค้นทุกใบไม่สนตัวกรอง) · #jobFiltAcc กรองบัญชี (เฉพาะ canBank) · ค้นบิลด้วยเลขที่ ค้นภาษีซื้อด้วยเลขใบกำกับ
 - v153: #docEditOv (generic) ใช้กับ quote (#quoteFormTop) + purchase (#purchFormTop) ฟอร์มซ่อนบนหน้า เปิดจากปุ่มใหม่/ประวัติ · ใบคอนเฟิร์มจอคอมใช้ jm-open เหมือนมือถือ (#jobNewBtn) · พิมพ์จากหน้าต่าง (บิล/ใบเสนอ/ใบงาน) ใช้ exportDoc PDF เพราะ overlay เป็น no-print · badge #dsTabBadge โน้ตออกแบบใหม่ (localStorage bs_ds_seen_<user>)
 - v154: บิลเงินสด b.docType='cash' เลขชุด CS ไม่มี VAT ไม่พิมพ์เลขภาษีร้าน · บัญชีวันทิม → cash อัตโนมัติ (billAccount/job-to-bill/addJobToBill)
+- 13 พ.ย. 22:10 พรีวิว (รออัพ): ใบราคาส่ง แนบรูปต่อรายการ (ปุ่ม 📷 หน้าชื่อรายการ · ย่อ 360px JPEG เก็บใน items[].img · พิมพ์ A4 โชว์รูปเล็กหน้าชื่อ · แตะรูปเดิม = ลบ/เปลี่ยน)
