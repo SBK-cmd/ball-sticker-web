@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>สั่งสติ๊กเกอร์จากแบบของคุณ · บอลสติ๊กเกอร์</title>
+<meta name="description" content="มีแบบแล้ว อัปโหลดได้เลย เลือกขนาดและจำนวน เห็นราคาทันที ไดคัทตามรูป ส่งทั่วประเทศ">
+<meta property="og:title" content="สั่งสติ๊กเกอร์จากแบบของคุณ · บอลสติ๊กเกอร์">
+<meta property="og:description" content="อัปโหลดแบบ เลือกขนาด เห็นราคาทันที · 100 ดวง 999 บาท">
+<meta property="og:image" content="https://www.ballsticker.co.th/icon-512.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600&family=Prompt:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- พรีวิว: หน้าสั่งสติ๊กเกอร์จากแบบลูกค้า (หน้าเดียวต่อโฆษณา) · ส่งออเดอร์เข้า LINE @bk25 พร้อมลิงก์รูป · รอ Worker รับออเดอร์เข้าระบบหลังร้าน -->
+<style>
+  :root { --navy:#14234b; --ink:#18213a; --sub:#5d6782; --line:#e1e5ee; --bg:#f5f6f9; --card:#fff; --yel:#f5c400; --ok:#1f7a4d; --bad:#b4372f; --pc:#f5c400; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; background:var(--bg); color:var(--ink); font:400 16px/1.55 'Noto Sans Thai','Sarabun',sans-serif; }
+  .hero { background:var(--navy); color:#fff; padding:18px max(16px, env(safe-area-inset-left)) 22px; }
+  .hero .in { max-width:620px; margin:0 auto; }
+  .brand { display:flex; align-items:center; gap:10px; font-size:14px; opacity:.9; }
+  .brand img { width:34px; height:34px; border-radius:50%; background:#fff; }
+  h1 { font:700 26px/1.25 'Prompt',sans-serif; margin:12px 0 6px; text-wrap:balance; }
+  h1 em { font-style:normal; color:var(--yel); }
+  .hero p { margin:0; color:rgba(255,255,255,.8); font-size:15px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+  .chips span { font-size:13px; padding:4px 10px; border-radius:999px; background:rgba(255,255,255,.12); }
+  main { max-width:620px; margin:-10px auto 0; padding:0 max(12px, env(safe-area-inset-left)) 120px; display:grid; gap:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; }
+  h2 { font:600 17px/1.3 'Prompt',sans-serif; margin:0 0 10px; display:flex; align-items:center; gap:8px; }
+  h2 b { display:inline-grid; place-items:center; width:24px; height:24px; border-radius:7px; background:var(--yel); color:var(--ink); font-size:14px; }
+  .drop { display:grid; place-items:center; text-align:center; gap:6px; border:2px dashed #cdd4e2; border-radius:14px; padding:22px 12px; cursor:pointer; background:#fafbfd; }
+  .drop.on { border-color:var(--navy); background:#eef2fb; }
+  .drop b { font:600 17px 'Prompt',sans-serif; }
+  .drop small { color:var(--sub); font-size:13px; }
+  .prev { display:none; grid-template-columns:120px minmax(0,1fr); gap:12px; align-items:center; }
+  .prev.on { display:grid; }
+  .prev .ph { width:120px; height:120px; border-radius:12px; border:1px solid var(--line); display:grid; place-items:center; overflow:hidden;
+    background:repeating-conic-gradient(#eef1f6 0 25%, #fff 0 50%) 0 0/16px 16px; }
+  .prev img { max-width:100%; max-height:100%; display:block; }
+  .prev .meta { font-size:14px; color:var(--sub); min-width:0; }
+  .prev .meta b { color:var(--ink); display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .link { background:none; border:0; color:var(--navy); text-decoration:underline; font:inherit; font-size:14px; padding:0; cursor:pointer; }
+  .warn { color:#8a5a00; background:#fff4d6; border-radius:10px; padding:8px 10px; font-size:13px; margin-top:8px; }
+  .row { display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:end; }
+  .row .x { padding-bottom:12px; color:var(--sub); }
+  label { display:grid; gap:4px; font-size:13px; color:var(--sub); }
+  input, textarea, select { font:inherit; font-size:16px; color:var(--ink); border:1px solid #cfd6e3; border-radius:10px; padding:10px 12px; min-height:46px; width:100%; background:#fff; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible { outline:2px solid var(--navy); outline-offset:2px; }
+  .sz { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+  .sz button, .seg button { font:inherit; font-size:14px; padding:6px 12px; min-height:38px; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer; }
+  .sz button.on, .seg button.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+  .seg { display:flex; gap:6px; flex-wrap:wrap; }
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .tiers button { font:inherit; border:1px solid var(--line); background:#fff; border-radius:12px; padding:10px 6px; cursor:pointer; text-align:center; color:var(--ink); }
+  .tiers button b { display:block; font:600 18px 'Prompt',sans-serif; font-variant-numeric:tabular-nums; }
+  .tiers button small { color:var(--sub); font-size:12px; }
+  .tiers button.on { border:2px solid var(--yel); background:#fffbe6; }
+  .tiers button .tag { display:inline-block; font-size:11px; background:var(--yel); border-radius:999px; padding:0 8px; margin-top:4px; }
+  .custom { margin-top:10px; }
+  .lay { display:grid; grid-template-columns:150px minmax(0,1fr); gap:12px; align-items:center; margin-top:12px; }
+  .lay svg { width:150px; height:auto; display:block; background:#fff; border:1px solid var(--line); border-radius:6px; }
+  .lay p { margin:0; font-size:14px; color:var(--sub); }
+  .lay b { color:var(--ink); }
+  .f2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .f1 { display:grid; gap:10px; }
+  .consent { display:flex; gap:8px; align-items:flex-start; font-size:13px; color:var(--sub); }
+  .consent input { width:20px; min-height:20px; margin-top:2px; }
+  .bar { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:10px max(12px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)); z-index:5; }
+  .bar .in { max-width:620px; margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; }
+  .bar .tot small { display:block; font-size:12px; color:var(--sub); }
+  .bar .tot b { font:700 24px 'Prompt',sans-serif; font-variant-numeric:tabular-nums; }
+  .bar button { font:600 16px 'Prompt',sans-serif; min-height:50px; padding:0 22px; border-radius:14px; border:0; background:var(--yel); color:var(--ink); cursor:pointer; }
+  .bar button:disabled { opacity:.5; cursor:default; }
+  .done { text-align:center; padding:26px 16px; }
+  .done .big { width:60px; height:60px; border-radius:50%; background:#e8f5ee; color:var(--ok); display:grid; place-items:center; margin:0 auto 10px; font-size:30px; }
+  .note { font-size:13px; color:var(--sub); margin:8px 0 0; }
+  .err { color:var(--bad); font-size:13px; margin-top:6px; }
+  [hidden] { display:none !important; }
+  @media (max-width:380px) { .f2 { grid-template-columns:1fr; } .tiers { grid-template-columns:repeat(2,1fr); } }
+</style>
+</head>
+<body>
+<header class="hero"><div class="in">
+  <div class="brand"><img src="icon-192.png" alt=""> บอลสติ๊กเกอร์ พิษณุโลก</div>
+  <h1>มีแบบแล้ว <em>อัปโหลดได้เลย</em><br>เห็นราคาทันที</h1>
+  <p>สติ๊กเกอร์ PVC เคลือบกันน้ำ ไดคัทตามรูป · ร้านตรวจไฟล์และส่งแบบให้ยืนยันก่อนผลิตทุกงาน</p>
+  <div class="chips"><span>100 ดวง 999 บาท*</span><span>ส่งทั่วประเทศ</span><span>ยังไม่ต้องจ่ายตอนสั่ง</span></div>
+</div></header>
+
+<main id="main">
+  <section class="card" aria-labelledby="s1">
+    <h2 id="s1"><b>1</b>อัปโหลดแบบ</h2>
+    <label class="drop" id="drop" for="file">
+      <b>แตะเพื่อเลือกรูปแบบ</b>
+      <small>PNG พื้นใส ไดคัทได้แม่นที่สุด · JPG หรือ PDF ก็ได้ · ไม่เกิน 20 MB</small>
+    </label>
+    <input type="file" id="file" accept="image/png,image/jpeg,image/webp,application/pdf" hidden>
+    <div class="prev" id="prev">
+      <div class="ph"><img id="pimg" alt="แบบที่อัปโหลด"></div>
+      <div class="meta"><b id="pname"></b><span id="pinfo"></span><br><button type="button" class="link" id="pchange">เปลี่ยนรูป</button></div>
+    </div>
+    <div class="warn" id="qwarn" hidden></div>
+  </section>
+
+  <section class="card" aria-labelledby="s2">
+    <h2 id="s2"><b>2</b>ขนาดสติ๊กเกอร์ (ซม.)</h2>
+    <div class="row">
+      <label for="w">กว้าง<input id="w" type="number" inputmode="decimal" step="0.1" min="1" value="9"></label>
+      <span class="x">×</span>
+      <label for="h">สูง<input id="h" type="number" inputmode="decimal" step="0.1" min="1" value="9"></label>
+    </div>
+    <div class="sz" id="sizes" role="group" aria-label="ขนาดยอดนิยม"></div>
+    <p class="note" id="ratioNote" hidden>ล็อกสัดส่วนตามรูปแล้ว แก้กว้างหรือสูงช่องเดียว อีกช่องปรับตาม</p>
+  </section>
+
+  <section class="card" aria-labelledby="s3">
+    <h2 id="s3"><b>3</b>จำนวน</h2>
+    <div class="tiers" id="tiers"></div>
+    <label class="custom" for="qty">หรือใส่จำนวนเอง (ดวง)<input id="qty" type="number" inputmode="numeric" min="1" placeholder="เช่น 300"></label>
+    <div class="lay"><svg id="lay" viewBox="0 0 121 81" role="img" aria-label="ตัวอย่างการเรียงบนแผ่น"></svg><p id="layTxt"></p></div>
+  </section>
+
+  <section class="card" aria-labelledby="s4">
+    <h2 id="s4"><b>4</b>ข้อมูลจัดส่ง</h2>
+    <div class="f1">
+      <div class="f2">
+        <label for="cName">ชื่อผู้รับ<input id="cName" autocomplete="name" required></label>
+        <label for="cTel">เบอร์โทร<input id="cTel" type="tel" inputmode="tel" autocomplete="tel" required></label>
+      </div>
+      <label for="cLine">LINE ID (สำหรับส่งแบบให้ยืนยัน)<input id="cLine" autocomplete="off" placeholder="ไม่บังคับ"></label>
+      <label for="cAddr">ที่อยู่จัดส่ง<textarea id="cAddr" rows="3" autocomplete="street-address" placeholder="บ้านเลขที่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์" required></textarea></label>
+      <label for="cNote">หมายเหตุถึงร้าน<input id="cNote" placeholder="เช่น ขอขอบขาว 2 มม. / ต้องการภายในวันที่…"></label>
+      <label class="consent"><input type="checkbox" id="cOk"> <span>ยินยอมให้ร้านใช้ชื่อ เบอร์ และที่อยู่นี้เพื่อติดต่อและจัดส่งงานนี้เท่านั้น</span></label>
+      <div class="err" id="ferr" hidden></div>
+    </div>
+  </section>
+  <p class="note">*ราคาเบื้องต้นสำหรับ PVC เคลือบ ไดคัทตามรูป ก่อน VAT (ขอใบกำกับภาษี +7%) ค่าส่งร้านแจ้งพร้อมแบบยืนยัน · ร้านตรวจไฟล์แล้วส่งแบบให้ยืนยันก่อน จ่ายเมื่อยืนยันแบบแล้ว</p>
+</main>
+
+<div class="bar"><div class="in">
+  <div class="tot"><small id="totLbl">100 ดวง · 9 × 9 ซม.</small><b id="tot">999 บาท</b></div>
+  <button type="button" id="send">ส่งแบบให้ร้าน</button>
+</div></div>
+
+<script>
+(function () {
+  'use strict';
+  // ราคา = A0 + A1 × พื้นที่ที่ใช้จริง (ช่องไฟ 0.45 ซม.) แล้วปัดลงท้าย 9 · ยึด 9×9 ซม. 100 ดวง = 999 บาท (สูตรเดียวกับตารางราคาของร้าน)
+  var A0 = 390.4718, A1 = 0.06814235, GAP = 0.45, USABLE = 124;
+  var CLOUD = 'm4n2ttwh', PRESET = 'nkbscpgs', LINE_OA = '@bk25';
+  var $ = function (id) { return document.getElementById(id); };
+  var num = function (v) { var x = parseFloat(String(v).replace(/,/g, '')); return isFinite(x) ? x : 0; };
+  var fmt = function (n) { return Math.round(n).toLocaleString('th-TH'); };
+  var nice = function (p) { return p < 100 ? Math.ceil(p) : Math.round(p / 10) * 10 - 1; };
+  function price(n, w, h) { if (n === 100 && w === 9 && h === 9) return 999; return nice(A0 + A1 * n * (w + GAP) * (h + GAP)); }
+  function perSheet(w, h) { var g = function (L, s) { return s > L ? 0 : Math.floor((L + GAP) / (s + GAP)); }; var a = g(121, w) * g(81, h), b = g(121, h) * g(81, w); return a >= b ? {n: a, cx: g(121, w), pw: w, ph: h} : {n: b, cx: g(121, h), pw: h, ph: w}; }
+  var TIERS = [50, 100, 200, 300, 500, 1000], SIZES = [[3, 3], [5, 5], [7, 7], [9, 9], [10, 10], [15, 10]];
+  var st = {file: null, ratio: 0, qty: 100, url: '', busy: false};
+  var utm = {}; try { new URLSearchParams(location.search).forEach(function (v, k) { if (/^utm_|^fbclid$/.test(k)) utm[k] = v.slice(0, 60); }); } catch (e) {}
+
+  // ---------- รูป ----------
+  function pick() { $('file').click(); }
+  $('pchange').addEventListener('click', pick);
+  var drop = $('drop');
+  ['dragenter', 'dragover'].forEach(function (t) { drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add('on'); }); });
+  ['dragleave', 'drop'].forEach(function (t) { drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.remove('on'); }); });
+  drop.addEventListener('drop', function (e) { var f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) useFile(f); });
+  $('file').addEventListener('change', function () { var f = this.files && this.files[0]; if (f) useFile(f); });
+  function useFile(f) {
+    var w = $('qwarn'); w.hidden = true;
+    if (f.size > 20 * 1024 * 1024) { w.hidden = false; w.textContent = 'ไฟล์ใหญ่เกิน 20 MB ส่งทาง LINE @bk25 แทนได้'; return; }
+    st.file = f; st.url = '';
+    $('pname').textContent = f.name; drop.hidden = true; $('prev').classList.add('on');
+    if (/pdf/i.test(f.type)) { $('pimg').removeAttribute('src'); $('pimg').alt = 'PDF'; $('pinfo').textContent = 'ไฟล์ PDF · ร้านตรวจขนาดให้'; st.ratio = 0; $('ratioNote').hidden = true; render(); return; }
+    var url = URL.createObjectURL(f), img = new Image();
+    img.onload = function () {
+      $('pimg').src = url; st.ratio = img.naturalWidth / img.naturalHeight; $('ratioNote').hidden = false;
+      $('pinfo').textContent = img.naturalWidth + ' × ' + img.naturalHeight + ' px';
+      $('h').value = +(num($('w').value) / st.ratio).toFixed(1); render();
+    };
+    img.src = url;
+  }
+  function qualityWarn(w, h) {   // รูปเล็กเกินขนาดที่เลือก → อาจไม่คม (ต่ำกว่า ~150 dpi)
+    var el = $('qwarn'), img = $('pimg'); if (!st.file || !img.naturalWidth) return;
+    var dpi = Math.min(img.naturalWidth / (w / 2.54), img.naturalHeight / (h / 2.54));
+    el.hidden = dpi >= 150; if (!el.hidden) el.textContent = 'รูปนี้ความละเอียดประมาณ ' + Math.round(dpi) + ' dpi ที่ขนาด ' + w + ' × ' + h + ' ซม. อาจพิมพ์ออกมาไม่คม แนะนำไฟล์ใหญ่ขึ้นหรือลดขนาดสติ๊กเกอร์';
+  }
+
+  // ---------- ขนาด ----------
+  $('sizes').innerHTML = SIZES.map(function (s, i) { return '<button type="button" data-i="' + i + '">' + s[0] + '×' + s[1] + '</button>'; }).join('');
+  $('sizes').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; var s = SIZES[+b.dataset.i]; $('w').value = s[0]; $('h').value = st.ratio ? +(s[0] / st.ratio).toFixed(1) : s[1]; render(); });
+  $('w').addEventListener('input', function () { if (st.ratio) $('h').value = +(num(this.value) / st.ratio).toFixed(1); render(); });
+  $('h').addEventListener('input', function () { if (st.ratio) $('w').value = +(num(this.value) * st.ratio).toFixed(1); render(); });
+
+  // ---------- จำนวน ----------
+  $('tiers').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; st.qty = +b.dataset.q; $('qty').value = ''; render(); });
+  $('qty').addEventListener('input', function () { var q = Math.floor(num(this.value)); if (q > 0) { st.qty = q; render(); } });
+
+  function render() {
+    var w = Math.max(0, num($('w').value)), h = Math.max(0, num($('h').value)), ok = w >= 1 && h >= 1 && Math.min(w, h) <= USABLE;
+    document.querySelectorAll('#sizes button').forEach(function (b) { var s = SIZES[+b.dataset.i]; b.classList.toggle('on', s[0] === w && (st.ratio ? true : s[1] === h)); });
+    var best = 100;
+    $('tiers').innerHTML = TIERS.map(function (q) { var p = ok ? price(q, w, h) : 0; return '<button type="button" data-q="' + q + '" class="' + (q === st.qty ? 'on' : '') + '"><b>' + (ok ? fmt(p) : '—') + '</b><small>' + q.toLocaleString('th-TH') + ' ดวง' + (ok ? ' · ' + (p / q).toFixed(2) + '/ดวง' : '') + '</small>' + (q === best ? '<br><span class="tag">ยอดนิยม</span>' : '') + '</button>'; }).join('');
+    var p = ok ? price(st.qty, w, h) : 0;
+    $('tot').textContent = ok ? fmt(p) + ' บาท' : '—';
+    $('totLbl').textContent = st.qty.toLocaleString('th-TH') + ' ดวง · ' + (w || '?') + ' × ' + (h || '?') + ' ซม.';
+    // ภาพเรียงบนแผ่น 120×80
+    var L = ok ? perSheet(w, h) : {n: 0}, svg = '<rect width="121" height="81" fill="#eef1f6"/>';
+    if (L.n) { var cnt = Math.min(L.n, st.qty); for (var i = 0; i < cnt; i++) { var c = i % L.cx, r = Math.floor(i / L.cx); svg += '<rect x="' + (c * (L.pw + GAP)).toFixed(2) + '" y="' + (r * (L.ph + GAP)).toFixed(2) + '" width="' + L.pw + '" height="' + L.ph + '" rx="' + Math.min(L.pw, L.ph) * .2 + '" fill="#f5c400"/>'; } }
+    $('lay').innerHTML = svg;
+    $('layTxt').innerHTML = !ok ? 'ใส่ขนาด 1–124 ซม.' : L.n ? 'แผ่นละ <b>' + L.n.toLocaleString('th-TH') + '</b> ดวง · สั่ง ' + st.qty.toLocaleString('th-TH') + ' ดวง ใช้ประมาณ <b>' + (st.qty / L.n).toFixed(2) + '</b> แผ่น' + (st.qty % L.n && st.qty > L.n ? '<br>สั่ง ' + (Math.ceil(st.qty / L.n) * L.n).toLocaleString('th-TH') + ' ดวง ได้เต็มแผ่นพอดี' : '') : 'ชิ้นใหญ่กว่าแผ่น ร้านพิมพ์แบบม้วนให้';
+    qualityWarn(w, h);
+    $('send').disabled = !ok || st.busy;
+  }
+
+  // ---------- ส่งแบบ ----------
+  async function upload(f) {
+    var fd = new FormData(); fd.append('file', f); fd.append('upload_preset', PRESET); fd.append('folder', 'web-orders');
+    var r = await fetch('https://api.cloudinary.com/v1_1/' + CLOUD + '/auto/upload', {method: 'POST', body: fd});
+    var j = await r.json(); if (!j.secure_url) throw new Error('upload'); return j.secure_url;
+  }
+  $('send').addEventListener('click', async function () {
+    var err = $('ferr'); err.hidden = true;
+    var miss = [];
+    if (!st.file) miss.push('รูปแบบ'); if (!$('cName').value.trim()) miss.push('ชื่อผู้รับ'); if (!/\d{9,10}/.test($('cTel').value.replace(/\D/g, ''))) miss.push('เบอร์โทร'); if ($('cAddr').value.trim().length < 15) miss.push('ที่อยู่'); if (!$('cOk').checked) miss.push('ติ๊กยินยอม');
+    if (miss.length) { err.hidden = false; err.textContent = 'ยังขาด: ' + miss.join(', '); (st.file ? $('cName') : $('drop')).scrollIntoView({behavior: 'smooth', block: 'center'}); return; }
+    st.busy = true; this.disabled = true; this.textContent = 'กำลังอัปโหลดแบบ…';
+    try { if (!st.url) st.url = await upload(st.file); }
+    catch (e) { st.busy = false; this.disabled = false; this.textContent = 'ส่งแบบให้ร้าน'; err.hidden = false; err.textContent = 'อัปโหลดรูปไม่สำเร็จ ลองใหม่ หรือส่งรูปทาง LINE @bk25'; return; }
+    var w = num($('w').value), h = num($('h').value), p = price(st.qty, w, h), ref = 'WEB' + Date.now().toString(36).toUpperCase().slice(-6);
+    var msg = '🛒 สั่งสติ๊กเกอร์จากเว็บ ' + ref + '\n' +
+      'แบบ: ' + st.url + '\n' +
+      'ขนาด ' + w + ' × ' + h + ' ซม. · ' + st.qty.toLocaleString('th-TH') + ' ดวง · PVC เคลือบ ไดคัท\n' +
+      'ราคาเบื้องต้น ' + fmt(p) + ' บาท (ก่อน VAT ไม่รวมค่าส่ง)\n' +
+      'ผู้รับ: ' + $('cName').value.trim() + ' · ' + $('cTel').value.trim() + ($('cLine').value.trim() ? ' · LINE ' + $('cLine').value.trim() : '') + '\n' +
+      'ที่อยู่: ' + $('cAddr').value.trim().replace(/\s+/g, ' ') +
+      ($('cNote').value.trim() ? '\nหมายเหตุ: ' + $('cNote').value.trim() : '') +
+      (Object.keys(utm).length ? '\n[ที่มา ' + (utm.utm_source || '') + ' ' + (utm.utm_campaign || '') + ' ' + (utm.utm_content || '') + ']' : '');
+    var lineUrl = 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA) + '/?' + encodeURIComponent(msg);
+    $('main').innerHTML = '<section class="card done"><div class="big">✓</div><h2 style="justify-content:center">อีกขั้นเดียว ส่งออเดอร์ทาง LINE</h2>' +
+      '<p class="note">กดปุ่มด้านล่าง LINE จะเปิดพร้อมข้อความออเดอร์ ' + ref + ' แล้วกด "ส่ง" ร้านจะตรวจไฟล์และส่งแบบให้ยืนยันภายในวันทำการ</p>' +
+      '<p style="margin:16px 0 0"><a href="' + lineUrl + '" style="display:inline-block;background:#06c755;color:#fff;text-decoration:none;font:600 17px Prompt,sans-serif;padding:14px 22px;border-radius:14px">💬 เปิด LINE ส่งออเดอร์</a></p>' +
+      '<p class="note">LINE ไม่เปิด? แอดไลน์ <b>' + LINE_OA + '</b> แล้วส่งเลขออเดอร์ <b>' + ref + '</b> มาได้เลย</p></section>';
+    document.querySelector('.bar').hidden = true; window.scrollTo({top: 0, behavior: 'smooth'});
+    location.href = lineUrl;
+  });
+  render();
+})();
+</script>
+</body>
+</html>
