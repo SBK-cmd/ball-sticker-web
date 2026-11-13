@@ -117,6 +117,68 @@ try { if (!localStorage.getItem('bs_session')) document.documentElement.classLis
 .ds-ok.on{border-style:solid;background:#c9f5d4}
 .ds-lb{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:12px;cursor:zoom-out}
 .ds-lb img{max-width:100%;max-height:100%;object-fit:contain}
+.qt-list { display:grid; gap:10px; margin-top:6px; }
+  .qt-g { font-size:13px; color:var(--muted,#667); margin:8px 0 0; font-weight:500; }
+  .qt-row { display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:baseline; }
+  .qt-name { font-size:14px; }
+  .qt-val { font-size:13px; font-variant-numeric:tabular-nums; color:var(--muted,#667); text-align:right; }
+  .qt-bar { grid-column:1 / -1; height:8px; border-radius:4px; background:rgba(127,127,127,.16); overflow:hidden; }
+  .qt-bar i { display:block; height:100%; border-radius:4px; background:#2e9d62; transition:width .4s ease; }
+  .qt-bar.qt-w i { background:#d9a400; } .qt-bar.qt-b i { background:#c8423a; } .qt-bar.qt-off i { background:rgba(127,127,127,.35); }
+  .qt-sub { grid-column:1 / -1; font-size:12px; color:var(--muted,#889); }
+  .qt-cap { font-size:12px; color:var(--muted,#889); margin-left:auto; }
+  .qt-btn { min-height:32px; padding:0 12px; font-size:13px; border:1px solid rgba(127,127,127,.35); border-radius:8px; background:transparent; color:inherit; cursor:pointer; }
+  .qt-note { font-size:12px; color:var(--muted,#889); margin:10px 0 0; }
+.cs-res { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:6px 0 12px; }
+  .cs-tile { border:1px solid rgba(127,127,127,.2); border-radius:12px; padding:10px 12px; }
+  .cs-tile small { display:block; font-size:12px; color:var(--muted,#778); }
+  .cs-tile b { font-size:20px; font-variant-numeric:tabular-nums; }
+  .cs-tile.pos b { color:#1f7a4d; } .cs-tile.neg b { color:#c8423a; }
+  .cs-tile em { display:block; font-style:normal; font-size:12px; color:var(--muted,#889); margin-top:2px; }
+  .cs-det { margin-top:8px; } .cs-det summary { cursor:pointer; font-weight:500; padding:6px 0; }
+  .cs-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr)); gap:10px; }
+  .cs-2 { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px; }
+  .cs-2 input, .cs-grid input, .cs-row input { min-width:0; width:100%; box-sizing:border-box; }
+  .cs-grid > .f { min-width:0; }
+  .cs-chk { display:flex; align-items:center; gap:8px; }
+  .cs-fixed { display:grid; gap:6px; margin:6px 0 8px; }
+  .cs-row { display:grid; grid-template-columns:1.6fr 1fr 1fr auto; gap:6px; align-items:center; }
+  .cs-row input { min-width:0; }
+  .cs-row .cs-del { min-height:36px; min-width:36px; border:0; background:transparent; color:#c8423a; cursor:pointer; font-size:18px; }
+  .cs-row.off input { opacity:.5; }
+  .price-cost { font-size:13px; margin-top:4px; color:var(--muted,#667); font-variant-numeric:tabular-nums; }
+  .price-cost b.pos { color:#1f7a4d; } .price-cost b.neg { color:#c8423a; }
+.qc{display:none}
+@media (max-width:760px){
+  .qc{display:grid;gap:8px;margin:0 0 12px}
+  #panel-calc .page-head{display:none}
+  #panel-calc .calc-grid.qc-hide>*:not(.qc){display:none}
+  .qc-in{display:grid;grid-template-columns:1fr auto 1fr 1fr;gap:6px;align-items:end;background:var(--card,#fff);border:1px solid var(--line,#e3e7ef);border-radius:14px;padding:10px}
+  .qc-in label{display:grid;gap:2px;font-size:11px;color:var(--muted,#667089)}
+  .qc-in input{font:600 20px/1.2 'Prompt','Noto Sans Thai',sans-serif;border:1px solid #cfd6e3;border-radius:10px;padding:6px 8px;min-height:44px;width:100%;min-width:0;box-sizing:border-box;background:transparent;color:inherit}
+  .qc-x{padding-bottom:12px;color:var(--muted,#667089)}
+  .qc-seg{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.qc-seg::-webkit-scrollbar{display:none}
+  .qc-seg button{flex:none;font-size:13px;padding:6px 12px;min-height:34px;border-radius:999px;border:1px solid var(--line,#e3e7ef);background:var(--card,#fff);color:inherit;cursor:pointer}
+  .qc-seg button.on{background:#14234b;color:#fff;border-color:#14234b}
+  .qc-sep{flex:none;width:1px;background:var(--line,#e3e7ef);margin:4px 2px}
+  .qc-res{background:#14234b;color:#fff;border-radius:16px;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:10px}
+  .qc-main small{color:rgba(255,255,255,.72);font-size:12px}
+  .qc-price b{font:600 38px/1 'Prompt',sans-serif;color:#f5c400;font-variant-numeric:tabular-nums}.qc-price i{font:500 15px 'Prompt',sans-serif;font-style:normal}
+  .qc-sub{font-size:13px;margin-top:2px}.qc-profit{font-size:12px;color:#9fe3bd;margin-top:6px}
+  .qc-viz{all:unset;cursor:pointer;background:#fff;border-radius:6px;padding:3px;align-self:start;display:block}.qc-viz svg{display:block;width:100%;height:auto}
+  .qc-stats{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;border-top:1px solid rgba(255,255,255,.15);padding-top:8px;font-size:11px;color:rgba(255,255,255,.72)}
+  .qc-stats b{display:block;font:600 16px 'Prompt',sans-serif;color:#fff;font-variant-numeric:tabular-nums}
+  .qc-tip{font-size:12px;background:#fff6cf;color:#5c4500;border-radius:10px;padding:7px 10px}
+  .qc-tier{background:var(--card,#fff);border:1px solid var(--line,#e3e7ef);border-radius:14px;padding:8px 10px}.qc-tier small{font-size:12px;color:var(--muted,#667089)}
+  .qc-tg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:6px}
+  .qc-tg button{border:0;border-radius:10px;padding:6px 0;background:rgba(127,127,127,.08);font-size:11px;color:var(--muted,#667089);cursor:pointer;min-height:44px}
+  .qc-tg button b{display:block;font:600 14px 'Prompt',sans-serif;color:var(--ink,#1b2333);font-variant-numeric:tabular-nums}
+  .qc-tg button.on{background:#fff6cf;outline:2px solid #f5c400}
+  .qc-act{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .qc-act button{min-height:44px;border-radius:12px;border:1px solid var(--line,#e3e7ef);background:var(--card,#fff);color:inherit;font-size:13px;font-weight:500;cursor:pointer}
+  .qc-act .qc-pri{background:#f5c400;border-color:#f5c400;color:#1b2333}
+  .qc-more{border:0;background:transparent;color:var(--muted,#667089);font-size:12px;min-height:36px;cursor:pointer}
+}
 </style>
 <script>
 // ตั้งโหมดมืด/สว่างจากค่าที่จำไว้ทันทีตั้งแต่ก่อนวาดหน้าจอ กันไฟกะพริบสลับธีมตอนโหลด
@@ -772,6 +834,27 @@ button.status-pill:active{filter:brightness(0.9)}
 .purch-paste{margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.purch-paste summary{cursor:pointer;font-weight:600;min-height:32px;display:flex;align-items:center}.purch-paste textarea{width:100%;margin:8px 0}.purch-paste .btn{min-height:44px}.purch-pick .btn{min-height:44px;cursor:pointer;position:relative}
 .purch-pick .vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
 .purch-pick label:focus-within{outline:3px solid var(--magenta);outline-offset:2px}
+.yr-quick{display:flex;gap:8px;margin:0 0 12px}.yr-quick .txt{flex:1;min-width:0;min-height:44px}.yr-quick .btn{min-height:44px}
+.yr-t{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}.yr-t th,.yr-t td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right}.yr-t th:first-child,.yr-t td:first-child{text-align:left}
+.yr-t thead th{font-size:12.5px;color:#556080;font-weight:600}.yr-t tfoot td{font-weight:700;border-top:2px solid #14234b;border-bottom:0}.yr-t td small{display:block;font-size:12px;color:#556080;font-weight:400}
+.yr-note{font-size:13px;color:#556080;margin:8px 0 0;line-height:1.6}.yr-note b{color:#9b1c43}
+.pt-bm{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13.5px;color:#33405c;border:1px dashed #c9d2de;border-radius:12px;padding:10px 12px}.pt-bm.ok{border-style:solid;border-color:#a9dcbc;background:#eaf7ef;color:#14532d}.pt-bm[hidden]{display:none}.pt-bm .btn{min-height:40px;text-align:left}
+.bb-tabs{display:flex;gap:6px;margin:0 0 10px}.bb-tabs button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #d8dde8;background:#fff;font:inherit;font-size:14px;cursor:pointer}.bb-tabs button.on{background:#14234b;color:#fff;border-color:#14234b}
+.bb-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.bb-it{border:1px solid var(--line);border-radius:14px;overflow:hidden;display:grid;background:#fff}
+.bb-it img{width:100%;aspect-ratio:3/4;object-fit:cover;background:#f2f4f8;display:block}
+.bb-it .bb-pdf{aspect-ratio:3/4;display:grid;place-items:center;background:#f2f4f8;font-weight:700;color:#556080}
+.bb-meta{padding:8px 10px;font-size:12.5px;color:#556080;display:grid;gap:6px}.bb-meta b{color:#1b2333;font-size:13px;overflow-wrap:anywhere}
+.bb-meta .btn{min-height:40px;width:100%}.bb-empty{grid-column:1/-1;color:#556080;text-align:center;padding:18px 0}
+.pt-box{border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:10px;background:var(--surface,#fff)}
+.pt-vat,.pt-ev{display:grid;gap:10px}.pt-vat[hidden],.pt-ev[hidden],.pt-evr[hidden]{display:none}
+.pt-evr{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13.5px;color:#33405c}.pt-evr .btn{min-height:44px}
+.pt-dl{margin:0;font-size:13.5px;line-height:1.5;color:#33405c}.pt-dl.bad{color:#9b1c43;font-weight:600}.pt-dl.warn{color:#8a5a00}
+.pt-chk{border:0;margin:0;padding:0;display:grid;gap:6px}.pt-chk legend{font-weight:600;font-size:14px;margin-bottom:4px;padding:0}.pt-chk legend small{font-weight:500;color:#556080;margin-left:6px}
+.pt-it{display:grid;grid-template-columns:24px 1fr;gap:2px 8px;align-items:start;font-size:14px;line-height:1.4;padding:6px 8px;border-radius:10px;background:var(--field,#f5f7fb);cursor:pointer}
+.pt-it input{width:20px;height:20px;margin:1px 0 0;accent-color:#15803d}
+.pt-it small{grid-column:2;font-size:12.5px;color:#556080}
+.pt-it.ok{background:#eaf7ef}.pt-it.no{background:#fdecef}.pt-it.no small{color:#9b1c43}
 .pchk{border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.5;border:1px solid var(--line);background:var(--field)}
 .pchk ul{margin:0;padding-left:18px}.pchk li{margin:2px 0}
 .pchk.bad{background:var(--warn-bg);border-color:#e7a3b9;color:var(--warn-ink)}
@@ -908,6 +991,7 @@ input.pbad,.in.pbad{border-color:#d0466f!important;box-shadow:0 0 0 2px rgba(208
 .chat-attach:hover{color:var(--ink)}
 .chat-attach svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .chat-img.sending{opacity:.55}
+.chat-topurch{display:block;margin-top:6px;min-height:36px;padding:0 12px;border-radius:10px;border:1px solid #d8dde8;background:#fff;color:#14234b;font:inherit;font-size:13px;cursor:pointer}.chat-topurch:disabled{opacity:.6}
 .chat-free{color:#06c755;font-weight:800}
 .ch-tag{display:inline-block;font-style:normal;font-size:10px;font-weight:800;padding:0 6px;border-radius:999px;margin-right:5px;vertical-align:1px;color:#fff}
 .ch-tag.ln{background:#06c755} .ch-tag.fb{background:#1877f2}
@@ -1778,6 +1862,7 @@ body.chg-open{overflow:hidden}
 #wholesaleHistory .wd-r{display:grid;grid-template-columns:minmax(0,1fr) 92px 74px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06)}
 #wholesaleHistory .wd-n{font-size:14.5px;line-height:1.3;min-width:0;overflow-wrap:anywhere}
 #wholesaleHistory .wd-n small{display:block;color:#6b7280;font-size:12.5px}
+#wholesaleHistory .wd-trk{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
 #wholesaleHistory .wd-p{padding:8px 10px!important;text-align:right;font-size:15px}
 #wholesaleHistory .wd-t{text-align:right;font-size:14px;font-variant-numeric:tabular-nums}
 #wholesaleHistory .wd-sum{display:flex;justify-content:space-between;padding-top:10px;font-size:15px}
@@ -3346,7 +3431,7 @@ html body .dash-tile.accent .dash-tile-val{color:var(--ink)!important}
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.56</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.57</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
@@ -3390,6 +3475,7 @@ html body .dash-tile.accent .dash-tile-val{color:var(--ink)!important}
         <div class="tab-dropdown" id="taxDropdown" role="menu" hidden>
           <button role="tab" id="tab-dash" data-tab="dash" aria-selected="false" aria-controls="panel-dash"><svg class="tab-ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="20" x2="5" y2="12"></line><line x1="12" y1="20" x2="12" y2="6"></line><line x1="19" y1="20" x2="19" y2="15"></line></svg><span>แดชบอร์ด</span></button>
           <button role="tab" id="tab-money" data-tab="money" aria-selected="false" aria-controls="panel-money" hidden><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>การเงินรายเดือน</span></button>
+          <button role="tab" id="tab-cost" data-tab="cost" aria-selected="false" aria-controls="panel-cost" hidden><svg class="tab-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 0 0-2.5-1.5c-1.4 0-2.5.8-2.5 2s1.1 1.7 2.5 2 2.5.9 2.5 2-1.1 2-2.5 2A2.5 2.5 0 0 1 9.5 15"/><path d="M12 6v1.5M12 16.5V18"/></svg><span>ต้นทุนจริง</span></button>
           <button role="tab" id="tab-bill" data-tab="bill" aria-selected="false" aria-controls="panel-bill"><svg class="tab-ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"></path><line x1="9" y1="8" x2="15" y2="8"></line><line x1="9" y1="12" x2="15" y2="12"></line></svg><span>ใบเสร็จ / ใบกำกับภาษี</span></button>
           <button role="tab" id="tab-purchase" data-tab="purchase" aria-selected="false" aria-controls="panel-purchase"><svg class="tab-ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7L6 7z"></path><path d="M9 7a3 3 0 0 1 6 0"></path></svg><span>ภาษีซื้อ</span></button>
           <button role="tab" id="tab-vat" data-tab="vat" aria-selected="false" aria-controls="panel-vat"><svg class="tab-ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="8" y1="16" x2="16" y2="8"></line><circle cx="8.5" cy="8.5" r="1"></circle><circle cx="15.5" cy="15.5" r="1"></circle></svg><span>คำนวณ VAT</span></button>
@@ -3512,6 +3598,7 @@ html body .dash-tile.accent .dash-tile-val{color:var(--ink)!important}
     <div class="tax-sheet-sec" role="group" aria-label="เงิน &amp; ภาษี"><div class="tax-sheet-h" aria-hidden="true">เงิน &amp; ภาษี</div>
       <button type="button" class="tax-sheet-item" data-tab="dash">แดชบอร์ด</button>
       <button type="button" class="tax-sheet-item" data-tab="money" id="sheetMoney" hidden>📊 การเงินรายเดือน (เจ้าของ)</button>
+      <button type="button" class="tax-sheet-item" data-tab="cost" id="sheetCost" hidden>🧮 ต้นทุนจริง (เจ้าของ)</button>
       <button type="button" class="tax-sheet-item" data-tab="bill">ใบเสร็จ / ใบกำกับภาษี</button>
       <button type="button" class="tax-sheet-item" data-tab="purchase">ภาษีซื้อ</button>
       <button type="button" class="tax-sheet-item" data-tab="vat">คำนวณ VAT</button>
@@ -3533,7 +3620,39 @@ html body .dash-tile.accent .dash-tile-val{color:var(--ink)!important}
           <p>ใส่ขนาด ดูจำนวนและการเรียงได้ทันที เลือกหน่วยขนาดสติ๊กเกอร์ได้ ส่วนกระดาษและช่องไฟเป็นเซนติเมตร</p>
         </div>
 
-        <div class="calc-grid">
+        <section class="qc no-print" id="qcCard" aria-label="คำนวณด่วน">
+          <div class="qc-in">
+            <label for="qcW">กว้าง (ซม.)<input id="qcW" type="number" inputmode="decimal" step="any" min="0"></label>
+            <span class="qc-x" aria-hidden="true">×</span>
+            <label for="qcH">สูง (ซม.)<input id="qcH" type="number" inputmode="decimal" step="any" min="0"></label>
+            <label for="qcQ">จำนวน (ชิ้น)<input id="qcQ" type="number" inputmode="numeric" min="0" placeholder="1 แผ่น"></label>
+          </div>
+          <div class="qc-seg" role="group" aria-label="วัสดุและเพจ">
+            <button type="button" data-qcp="hp">HP PVC</button><button type="button" data-qcp="holo">โฮโลแกรม</button><button type="button" data-qcp="hd">สะท้อนแสง</button>
+            <span class="qc-sep" aria-hidden="true"></span>
+            <button type="button" data-qcg="ball">บอล</button><button type="button" data-qcg="roll">Roll</button>
+          </div>
+          <div class="qc-res">
+            <div class="qc-main">
+              <small id="qcLbl">ราคา</small>
+              <div class="qc-price"><b id="qcPrice">—</b> <i>บาท</i></div>
+              <div class="qc-sub" id="qcSub"></div>
+              <div class="qc-profit" id="qcProfit" hidden></div>
+            </div>
+            <button type="button" class="qc-viz" id="qcViz" aria-label="ดูการเรียงเต็มจอ"></button>
+            <div class="qc-stats">
+              <div>ต่อแผ่น<b id="qcPer">—</b></div><div>ใช้กระดาษ<b id="qcSheets">—</b></div><div>เหลือที่ว่าง<b id="qcLeft">—</b></div>
+            </div>
+          </div>
+          <div class="qc-tip" id="qcTip" hidden></div>
+          <div class="qc-tier"><small>ราคาตามจำนวน · แตะเพื่อเลือก</small><div class="qc-tg" id="qcTiers"></div></div>
+          <div class="qc-act">
+            <button type="button" class="qc-pri" data-qca="confirm">ส่งเป็นใบงาน</button><button type="button" data-qca="quote">ใบเสนอราคา</button><button type="button" data-qca="copy">คัดลอกตอบลูกค้า</button>
+          </div>
+          <button type="button" class="qc-more" id="qcMore" aria-expanded="false">ตั้งค่าเพิ่มเติม (หน่วย ช่องไฟ ขอบ เติมพื้นที่) และรายละเอียด ▾</button>
+        </section>
+
+        <div class="calc-grid qc-hide" id="calcGrid">
           <div class="card">
             <fieldset>
               <legend>ขนาดสติ๊กเกอร์</legend>
@@ -4377,6 +4496,34 @@ html body .dash-tile.accent .dash-tile-val{color:var(--ink)!important}
                 <label class="f"><span>ยอดเงินรวม (ถ้ามี)</span><div class="in"><input type="number" inputmode="decimal" step="any" min="0" id="purchAmount" placeholder="0.00"></div></label>
                 <label class="f"><span>จ่ายจากบัญชี</span><select id="purchAccount"><option value="กิติพงษ์">กิติพงษ์ (ยื่นภาษี)</option><option value="วันทิม">วันทิม (ไม่ยื่นภาษี)</option></select></label>
               </div>
+              <div class="pt-box" id="purchTaxBox">
+                <div class="row2">
+                  <label class="f"><span>ประเภทบิล</span><select id="purchClaim">
+                    <option value="vat">ใบกำกับภาษีเต็มรูป → ใช้เป็นภาษีซื้อ</option>
+                    <option value="expense">ใบเสร็จ / บิลเงินสด → ค่าใช้จ่ายอย่างเดียว</option>
+                    <option value="personal">ส่วนตัว (ไม่นับเป็นค่าใช้จ่ายร้าน)</option>
+                  </select></label>
+                  <label class="f"><span>หมวดค่าใช้จ่าย</span><select id="purchCat"></select></label>
+                </div>
+                <div class="pt-ev" id="purchExpOnly" hidden>
+                  <label class="f"><span>หลักฐานรายจ่าย</span><select id="purchEvid">
+                    <option value="receipt">มีใบเสร็จ / บิลเงินสดจากผู้ขาย</option>
+                    <option value="sub">ไม่มีบิล → ทำใบรับรองแทนใบเสร็จรับเงิน</option>
+                    <option value="voucher">บิลออกในชื่อคนอื่น แต่ร้านจ่าย → ทำใบสำคัญจ่าย</option>
+                  </select></label>
+                  <div class="pt-evr" id="purchEvidRow" hidden><span id="purchEvidHint"></span><button class="btn small" type="button" id="purchEvidPdf">สร้างเอกสาร PDF</button></div>
+                </div>
+                <div class="pt-vat" id="purchVatOnly">
+                  <div class="row2">
+                    <label class="f"><span>สาขาของผู้ขาย</span><div class="in"><input type="text" id="purchVendorBranch" class="txt" list="branchOpts" placeholder="สำนักงานใหญ่ หรือ สาขาที่ 00001"></div></label>
+                    <label class="f"><span>ใช้สิทธิ์ในรอบภาษีเดือน</span><select id="purchClaimMonth"></select></label>
+                  </div>
+                  <datalist id="branchOpts"><option value="สำนักงานใหญ่"><option value="สาขาที่ 00001"></datalist>
+                  <p class="pt-dl" id="purchDeadline"></p>
+                  <fieldset class="pt-chk" id="purchChk"><legend>เช็กลิสต์ใบกำกับภาษีเต็มรูป <small id="purchChkSum"></small></legend></fieldset>
+                </div>
+              </div>
+              <div class="pt-bm" id="purchBankMatch" hidden></div>
               <div class="pchk" id="purchCheck" role="status" aria-live="polite" hidden></div>
               <label class="f"><span>รายละเอียด / หมายเหตุ</span><textarea id="purchNote" placeholder="เช่น ซื้อกระดาษสติ๊กเกอร์ 10 ม้วน"></textarea></label>
               <label class="f">
@@ -4421,6 +4568,15 @@ html body .dash-tile.accent .dash-tile-val{color:var(--ink)!important}
           </div>
         </div>
       </div>
+
+      <section class="card no-print" id="billBoxCard" aria-labelledby="billbox-h" hidden>
+        <div class="viz-head">
+          <h2 id="billbox-h">กล่องบิลจาก LINE <small id="billBoxN"></small></h2>
+          <span>รูป/ไฟล์ที่ส่งเข้า LINE รับบิลของร้าน</span>
+        </div>
+        <div class="bb-tabs" role="tablist"><button type="button" class="on" data-bb="new">รอบันทึก</button><button type="button" data-bb="done">บันทึกแล้ว</button></div>
+        <div id="billBox" class="bb-list"></div>
+      </section>
 
       <section class="card history no-print" aria-labelledby="purchhist-h">
         <div class="viz-head">
@@ -4705,6 +4861,15 @@ html body .dash-tile.accent .dash-tile-val{color:var(--ink)!important}
         </div>
         <button class="btn primary" id="dash-go-report" type="button">ไปหน้ารายงานภาษี</button>
       </div>
+      <section class="card no-print" id="quotaCard" aria-labelledby="quota-h">
+        <div class="viz-head">
+          <h2 id="quota-h">โควตาบริการฟรี</h2>
+          <span id="quotaCap" class="qt-cap"></span>
+          <button type="button" class="qt-btn" id="quotaRefresh">อัปเดต</button>
+        </div>
+        <div id="quotaList" class="qt-list"></div>
+        <p class="qt-note">เขียว = สบาย · เหลือง = เกิน 70% · แดง = เกิน 90% · ตัวเลขสดดึงจาก Worker (ถ้ายังไม่เชื่อมจะแสดงเพดานไว้ก่อน)</p>
+      </section>
     </section>
 
     <!-- ================= รายงานภาษีซื้อ-ขาย ================= -->
@@ -4716,6 +4881,36 @@ html body .dash-tile.accent .dash-tile-val{color:var(--ink)!important}
         <p>รายรับ-รายจ่ายรวมสองบัญชี (กิติพงษ์ = บัญชียื่นภาษี · วันทิม = งานส่ง) + ยอดขาย/ต้นทุนตามเอกสาร · เห็นเฉพาะเจ้าของร้าน</p>
       </div>
       <div id="moneyBody"></div>
+    </section>
+
+    <!-- ================= ต้นทุนจริง (เฉพาะเจ้าของ) ================= -->
+    <section id="panel-cost" class="panel" role="tabpanel" aria-labelledby="tab-cost">
+      <div class="page-head no-print">
+        <h1>ต้นทุนจริง.</h1>
+        <p>ต้นทุนต่อแผ่น จุดคุ้มทุน และกำไรร้านต่อเดือน · ตัวเลขเก็บในระบบหลังร้าน เห็นเฉพาะเจ้าของร้าน</p>
+      </div>
+      <section class="card no-print" id="costCard" aria-labelledby="cost-h">
+        <div class="viz-head"><h2 id="cost-h">ต้นทุนจริง · บอล สติ๊กเกอร์ (HP PVC)</h2><span class="qt-cap" id="costSaved"></span></div>
+        <div class="cs-res" id="costRes"></div>
+        <details class="cs-det" open><summary>วัตถุดิบ</summary>
+          <div class="cs-grid">
+            <label class="f"><span>สติ๊กเกอร์ HP ราคาม้วน (บาท)</span><input data-cs="vinylRoll" inputmode="decimal"></label>
+            <label class="f"><span>หน้ากว้าง × ยาว (ซม. × ม.)</span><div class="cs-2"><input data-cs="vinylW" inputmode="decimal"><input data-cs="vinylL" inputmode="decimal"></div></label>
+            <label class="f"><span>ฟิล์มเคลือบ ราคาม้วนรวมค่าส่ง (บาท)</span><input data-cs="lamRoll" inputmode="decimal"></label>
+            <label class="f"><span>หน้ากว้าง × ยาว (ซม. × ม.)</span><div class="cs-2"><input data-cs="lamW" inputmode="decimal"><input data-cs="lamL" inputmode="decimal"></div></label>
+            <label class="f"><span>หมึก ราคาตลับ (บาท) / ml ต่อตลับ</span><div class="cs-2"><input data-cs="inkCart" inputmode="decimal"><input data-cs="inkMl" inputmode="decimal"></div></label>
+            <label class="f"><span>หมึกที่ใช้ ml ต่อ ตร.ม. (จาก Epson PORT)</span><input data-cs="inkPerSqm" inputmode="decimal"></label>
+            <label class="f"><span>แผ่นที่ขายได้ต่อเดือน (≈ ตร.ม. ใน PORT ÷ 0.96)</span><input data-cs="sheetsPerMonth" inputmode="decimal"></label>
+            <label class="f"><span>ของเสีย % (พิมพ์เสีย ตัดผิด หัวท้ายม้วน)</span><input data-cs="wastePct" inputmode="decimal" placeholder="เช่น 5"></label>
+            <label class="f cs-chk"><input type="checkbox" data-cs="withLam"> <span>คิดฟิล์มเคลือบในต้นทุนทุกแผ่น</span></label>
+          </div>
+        </details>
+        <details class="cs-det" open><summary>ค่าใช้จ่ายร้านต่อเดือน (ใส่เงินเดือนเจ้าของได้ ไม่ใส่หนี้ส่วนตัว)</summary>
+          <div id="costFixed" class="cs-fixed"></div>
+          <button type="button" class="qt-btn" id="costAddRow">+ เพิ่มรายการ</button>
+          <p class="qt-note">ใส่ “ถึงเดือน” สำหรับรายการที่ผ่อนหมดแล้วจะหยุดนับเอง (เช่น รายการผ่อนที่มีกำหนดจบ) · ตัวเลขเก็บในระบบหลังร้าน เห็นเฉพาะเจ้าของร้าน</p>
+        </details>
+      </section>
     </section>
 
     <section id="panel-design" class="panel" role="tabpanel" aria-labelledby="tab-design">
@@ -4839,6 +5034,19 @@ html body .dash-tile.accent .dash-tile-val{color:var(--ink)!important}
           <button class="btn" id="report-csv-nonvat" type="button">ส่งออก Excel (CSV)</button>
         </div>
       </section>
+
+      <section class="card" aria-labelledby="report-year-h" style="margin-top:20px">
+        <div class="viz-head">
+          <h2 id="report-year-h">สรุปค่าใช้จ่ายทั้งปี (ภาษีเงินได้)</h2>
+          <select class="txt" id="yrSel" aria-label="ปีภาษี" style="max-width:160px"></select>
+        </div>
+        <p class="hint" style="margin:0 0 10px">สำหรับหักค่าใช้จ่ายตามจริงตอนยื่นภาษีเงินได้ปลายปี · ใบที่ใช้ VAT เป็นภาษีซื้อแล้วนับเฉพาะยอดก่อน VAT · ไม่นับรายการ “ส่วนตัว” และบัญชีที่ไม่ยื่นภาษี · ให้ผู้ทำบัญชียืนยันอีกครั้ง</p>
+        <div class="yr-quick no-print"><input type="text" class="txt" id="yrQuick" placeholder="จดด่วน เช่น ค่าเทปกาว 85" aria-label="จดค่าใช้จ่ายด่วน"><button class="btn small" type="button" id="yrQuickBtn">เพิ่ม</button></div>
+        <div id="yrSum"></div>
+        <div class="actions" style="margin-top:14px">
+          <button class="btn primary" id="yr-xlsx" type="button">ส่งออก Excel ให้ผู้ทำบัญชี</button>
+        </div>
+      </section>
     </section>
   </main>
 
@@ -4954,7 +5162,7 @@ html body .dash-tile.accent .dash-tile-val{color:var(--ink)!important}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=bad5b62c4b",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=35ca350965",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

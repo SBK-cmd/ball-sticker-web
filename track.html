@@ -20,7 +20,7 @@
 :root{--y:#ffd23f;--ink:#1b1b2f;--mut:#6b7280;--ok:#16a34a;--bg:#eef0f4;--line:#e5e7eb}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans Thai',system-ui,sans-serif;-webkit-text-size-adjust:100%}
 .wrap{max-width:480px;margin:0 auto;padding:18px 16px 40px}
-.brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}.brand img{width:40px;height:40px;border-radius:10px}.brand b{font-size:17px}.brand small{display:block;color:var(--mut);font-size:12.5px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}.brand>div{flex:1;min-width:0}.shr{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#fff;color:inherit;font:inherit;font-size:14px;font-weight:600;cursor:pointer;flex:none}.shr svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}.shr.ok{background:#e8f5ee;border-color:#bfe3cc;color:#1f7a4d}.brand img{width:40px;height:40px;border-radius:10px}.brand b{font-size:17px}.brand small{display:block;color:var(--mut);font-size:12.5px}
 .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
 h1{font-size:15px;margin:0 0 2px;color:var(--mut);font-weight:600}.no{font-size:24px;font-weight:700;margin:0 0 4px}
 .now{display:inline-block;margin:6px 0 14px;padding:6px 14px;border-radius:999px;background:var(--y);font-weight:700;font-size:15px}.now.done{background:#dcfce7;color:#166534}.now.rcv{background:#dbeafe;color:#1e40af}
@@ -139,7 +139,7 @@ details.jc.pr2{border-left-color:#E5231B}details.jc.pr1{border-left-color:#F5B30
 </head>
 <body>
 <div class="wrap">
-  <div class="brand"><img src="icon-192.png" alt=""><div><b>บอลสติ๊กเกอร์ พิษณุโลก</b><small>ติดตามสถานะงานของคุณ</small></div></div>
+  <div class="brand"><img src="icon-192.png" alt=""><div><b>บอลสติ๊กเกอร์ พิษณุโลก</b><small>ติดตามสถานะงานของคุณ</small></div><button type="button" class="shr" id="shareBtn" aria-label="แชร์ลิงก์ติดตามสถานะ"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg><span>แชร์</span></button></div>
   <div class="card" id="box"><p style="text-align:center;color:var(--mut);margin:20px 0">กำลังโหลดสถานะงาน…</p></div>
   <div class="ct">สอบถามเพิ่มเติม LINE <a href="https://line.me/R/ti/p/@bk25">@bk25</a> · โทร <a href="tel:0935353555">093-535-3555</a><br>จ–ส 09:00–17:00 น. (หยุดวันอาทิตย์)</div>
 </div>
@@ -398,6 +398,24 @@ details.jc.pr2{border-left-color:#E5231B}details.jc.pr1{border-left-color:#F5B30
       if (!snap.exists) fail('ไม่พบงานนี้', 'ลิงก์อาจถูกยกเลิกหรือไม่ถูกต้อง สอบถามร้านทาง LINE @bk25 ได้เลย');
       else show(snap.data());
     }, function () { fail('โหลดสถานะไม่สำเร็จ', 'ลองรีเฟรชหน้านี้ หรือสอบถามร้านทาง LINE @bk25'); });
+  });
+})();
+</script>
+<script>
+// แชร์ลิงก์ติดตามสถานะ: มือถือเปิดแผ่นแชร์ (LINE, Messenger ฯลฯ) · คอม/เบราว์เซอร์ที่แชร์ไม่ได้ → คัดลอกลิงก์
+(function () {
+  var b = document.getElementById('shareBtn'); if (!b) return;
+  var lbl = b.querySelector('span');
+  function done(t) { lbl.textContent = t; b.classList.add('ok'); setTimeout(function () { lbl.textContent = 'แชร์'; b.classList.remove('ok'); }, 1800); }
+  function copy(u) {
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(u).then(function () { done('คัดลอกลิงก์แล้ว'); }, function () { window.prompt('คัดลอกลิงก์นี้', u); });
+    window.prompt('คัดลอกลิงก์นี้', u);
+  }
+  b.addEventListener('click', function () {
+    var u = location.href, no = (document.querySelector('details.jc .jn b') || {}).textContent || '';
+    var data = {title: 'ติดตามงาน' + (no ? ' ' + no : '') + ' · บอลสติ๊กเกอร์', text: 'ดูสถานะงาน' + (no ? ' ' + no : '') + ' ได้ที่ลิงก์นี้', url: u};
+    if (navigator.share) navigator.share(data).catch(function (e) { if (e && e.name !== 'AbortError') copy(u); });
+    else copy(u);
   });
 })();
 </script>

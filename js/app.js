@@ -118,7 +118,7 @@ function bahtText(value) {
   // สั่งตัดจากมือถือ: เปิดเฉพาะบัญชี ball กับ top (ไม่ขึ้นกับตารางสิทธิ์รายหน้า)
   const CUT_USERS = ['ball', 'top'];
   const canCutRemote = !!currentUser && CUT_USERS.indexOf(String(currentUser.username || '').trim().toLowerCase()) >= 0;
-  const can = k => k === 'lekha' ? (isSuper || isOwnerFixed(meRec)) : k === 'money' ? isSuper : k === 'cutq' ? canCutRemote : (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'pagechat' && !PAGECHAT_ENABLED) ? false : (k === 'floor' ? (isSuper || !!myPerms.dash) : k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
+  const can = k => k === 'lekha' ? (isSuper || isOwnerFixed(meRec)) : (k === 'money' || k === 'cost') ? isSuper : k === 'cutq' ? canCutRemote : (k === 'chat' && !CHAT_ENABLED) ? false : (k === 'pagechat' && !PAGECHAT_ENABLED) ? false : (k === 'floor' ? (isSuper || !!myPerms.dash) : k === 'design' ? (isSuper || !!myPerms.confirm) : (isSuper || !!myPerms[k]));   // งานออกแบบ: ใช้สิทธิ์เดียวกับใบคอนเฟิร์มงาน
   const canBank = can('bank');
   // พนักงาน (ไม่ใช่เจ้าของ) ดูประวัติใบคอนเฟิร์มงานได้อย่างเดียว คีย์/แก้/ลบไม่ได้
   const canKey = isSuper || isOwnerFixed(meRec) || !!(meRec && meRec.role === 'owner');
@@ -286,6 +286,10 @@ function bahtText(value) {
     (window.__bsAuthReady || Promise.resolve()).then(() => {
       cloudDb.collection(col).doc(String(rec.id)).set(safeRec, {merge: true}).catch(e => console.error(col + ' save error', e));
       if (col === 'jobs') { if (rec.trackToken) publicJobMirror(rec); else refreshSiblingMirrors(rec); }
+      if (col === 'wholesale') {   // ราคาในบิลเปลี่ยน → หน้าติดตามของงานในบิลนี้อัปเดตยอดตาม
+        const nos = new Set((rec.items || []).map(i => String(i.job || '')).filter(Boolean));
+        if (nos.size) store.get('bs_jobs', []).filter(j => nos.has(String(j.no || '')) && j.trackToken).forEach(j => { try { publicJobMirror(j); } catch (e) {} });
+      }
     });
   }
   // หน้า "ติดตามงานของลูกค้า" (track.html) อ่านจากเอกสารนี้เท่านั้น — เก็บเฉพาะเลขใบ/สถานะ/กำหนดส่ง/เลขพัสดุ (ไม่มีชื่อ เบอร์ ที่อยู่ ราคา)
@@ -324,6 +328,23 @@ function bahtText(value) {
     if (!has && num(j.slipAmount) > 0) { amt = num(j.slipAmount); has = true; }
     return has ? round2(amt) : 0;
   }
+  // ราคาที่ลูกค้าเห็นในหน้าติดตาม: งานส่ง (JBS) ที่อยู่ในใบราคาส่งแล้ว ใช้ยอดจากบิล (บิลคือราคาที่เก็บจริง)
+  // เหตุ: ในใบงานช่อง "จำนวน" มักเป็นจำนวนชิ้น (เช่น 58 ชิ้น) แต่ราคาเป็นราคาทั้งรายการ (เช่น 1 เมตร 500) → จำนวน×ราคาเพี้ยนเป็น 29,000
+  function jobBillLines(j) {
+    const no = String(j.no || ''); if (!no) return [];
+    return store.get('bs_wholesale', []).reduce((a, w) => a.concat((w.items || []).filter(i => String(i.job || '') === no && (i.name || '').trim())), []);
+  }
+  function publicItemsOf(j) {
+    const named = (j.items || []).filter(i => (i.name || '').trim()), bl = jobBillLines(j);
+    const lineAmt = b => round2((num(b.qty) > 0 ? num(b.qty) : 1) * num(b.price));
+    if (bl.length) {
+      const used = new Set(), pick = (it, idx) => { let k = bl.findIndex((b, n) => !used.has(n) && it.uid && b.juid === it.uid); if (k < 0) k = bl.findIndex((b, n) => !used.has(n) && b.ji === idx); if (k < 0) k = bl.findIndex((b, n) => !used.has(n) && String(b.name).trim() === String(it.name).trim()); if (k >= 0) used.add(k); return k >= 0 ? bl[k] : null; };
+      const all = j.items || [], items = named.slice(0, 8).map(it => { const b = pick(it, all.indexOf(it)); return {n: String(it.name).trim().slice(0, 80), q: String(it.qty == null ? '' : it.qty).slice(0, 12), p: b && num(b.price) > 0 ? lineAmt(b) : 0}; });
+      if (bl.length === 1 && bl[0].jtot && items.length) items.forEach((x, n) => { x.p = n === 0 ? lineAmt(bl[0]) : 0; });
+      return {items, amt: round2(bl.reduce((a, b) => a + (num(b.price) > 0 ? lineAmt(b) : 0), 0))};
+    }
+    return {items: named.slice(0, 8).map(i => ({n: String(i.name).trim().slice(0, 80), q: String(i.qty == null ? '' : i.qty).slice(0, 12), p: itemLineAmt(i)})), amt: jobAmountOf(j)};
+  }
   function publicJobMirror(rec, opts) {
     try {
       const tr = rec.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(rec.trackCode)) || null) : null;
@@ -345,8 +366,9 @@ function bahtText(value) {
       const snd = addrOf(rec.jName, rec.jAddr), rcv = rec.recv ? addrOf(rec.recv.name, rec.recv.addr) : null;
       const isJbs = /^JBS/i.test(String(rec.no || '').trim());   // ที่อยู่/รูปอ้างอิง เฉพาะงานส่ง (JBS)
       if (isJbs && snd) doc.sender = snd;
-      if (isJbs) { const am = jobAmountOf(rec); if (am > 0) doc.amt = am; }
-      { doc.date = rec.date || ''; doc.items = (rec.items || []).filter(i => (i.name || '').trim()).slice(0, 8).map(i => ({n: String(i.name).trim().slice(0, 80), q: String(i.qty == null ? '' : i.qty).slice(0, 12), p: itemLineAmt(i)})); }   // รายการงานของใบนี้ (ให้ลูกค้าเห็นว่างานอะไร)
+      const pub = publicItemsOf(rec);
+      if (isJbs && pub.amt > 0) doc.amt = pub.amt;
+      { doc.date = rec.date || ''; doc.items = pub.items; }   // รายการงานของใบนี้ (ให้ลูกค้าเห็นว่างานอะไร)
       const custAddr = String(rec.jAddr || '').replace(/\s+/g, ' ').trim().slice(0, 300);
       const rcvAny = isJbs ? rcv : (rcv || (custAddr ? {name: firstNameOf(rec.jName), addr: custAddr} : null));   // งานร้าน (JB): ไม่มีผู้รับฝากส่ง → ใช้ที่อยู่ลูกค้าเป็นที่อยู่จัดส่ง
       if (rcvAny) { doc.receiver = rcvAny; const fn = String((rec.recv && rec.recv.name) || (isJbs ? '' : rec.jName) || '').replace(/\s+/g, ' ').trim().slice(0, 80); if (fn) doc.receiver.name = fn; }   // ผู้รับ: ชื่อเต็ม
@@ -364,7 +386,7 @@ function bahtText(value) {
       if (isJbs) {   // ใบงานอื่นของลูกค้าคนนี้ (สถานะล่าสุดของแต่ละใบ)
         doc.others = siblingJobsOf(rec).map(x => {
           const trx = x.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(x.trackCode)) || null) : null, car2 = (trx && trx.carrier) || '';
-          const o = {shipFrom: shipFromOf(x, trx), amt: jobAmountOf(x) || 0, delivered: jobDelivered(x), no: String(x.no || ''), status: x.status || 'pending', date: x.date || '', due: x.due || '', items: (x.items || []).filter(i => (i.name || '').trim()).slice(0, 8).map(i => ({n: String(i.name).trim().slice(0, 80), q: String(i.qty == null ? '' : i.qty).slice(0, 12), p: itemLineAmt(i)}))};
+          const px = publicItemsOf(x), o = {shipFrom: shipFromOf(x, trx), amt: px.amt || 0, delivered: jobDelivered(x), no: String(x.no || ''), status: x.status || 'pending', date: x.date || '', due: x.due || '', items: px.items};
           { const https = a => (Array.isArray(a) ? a : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)); const ph = https(x.donePhotos).slice(0, 4), rf = https(x.photos).slice(0, 4); if (ph.length) o.photos = ph; if (rf.length) o.refPhotos = rf; const th2 = ph[0] || rf[0]; if (th2) o.thumb = th2; }
           if (x.recv && (x.recv.name || x.recv.addr)) o.receiver = {name: String(x.recv.name || '').replace(/\s+/g, ' ').trim().slice(0, 80), addr: String(x.recv.addr || '').replace(/\s+/g, ' ').trim().slice(0, 300)};
           if (x.trackCode) { o.trackCode = String(x.trackCode); o.carrier = car2; o.trackUrl = trackingLink(car2, x.trackCode) || ''; const sx = shipStOf(x.trackCode); if (sx) o.shipSt = sx; }
@@ -1309,6 +1331,12 @@ function bahtText(value) {
 
     set('priceTotal', baht(total));
     $('priceSub').innerHTML = 'เฉลี่ย <b>' + money(total / qty) + '</b> บาท/ชิ้น';
+    // ต้นทุน/กำไรของงานนี้ (เฉพาะเจ้าของ · เฉพาะ HP PVC เพจบอล) — ใช้ต้นทุนต่อแผ่นจากการ์ด "ต้นทุนจริง"
+    if (can('money') && pageKey === 'ball' && $('paper').value === 'hp') try {
+      const cr = costCalc(); if (!(cr.mat > 0)) throw 0;   // ยังไม่กรอกต้นทุน → ไม่โชว์
+      const jobCost = sheets * cr.perSheet, profit = total - jobCost;
+      $('priceSub').innerHTML += '<div class="price-cost">ต้นทุน ≈ ' + money(jobCost) + ' · กำไร ≈ <b class="' + (profit >= 0 ? 'pos' : 'neg') + '">' + money(profit) + '</b> (' + Math.round(profit / Math.max(1, total) * 100) + '%) <small>ก่อน VAT · ' + (cr.ownerPaid ? 'หลังหักเงินเดือนเจ้าของ' : 'ยังไม่หักเงินเดือนเจ้าของ') + '</small></div>';
+    } catch (e) { /* ตอนเปิดแอปครั้งแรก ข้อมูลต้นทุนยังไม่พร้อม */ }
     const lines = [];
     if (full > 0) lines.push('<li><span>แผ่นเต็ม ' + full.toLocaleString('en-US') + ' แผ่น × ' + money(fullSheetPrice) + '</span><b>' + money(fullCost) + '</b></li>');
     if (rem > 0) lines.push('<li><span>เศษ ' + rem.toLocaleString('en-US') + ' ชิ้น (' + n2(frac) + ' แผ่น) × ' + money(partSheetPrice) + '</span><b>' + money(partCost) + '</b></li>');
@@ -1470,8 +1498,63 @@ function bahtText(value) {
       '</tbody></table>' +
       '<div class="sheet-viz">' + ((r.pw > 0 && r.ph > 0) ? layoutSVG(r, 'p') : '') + '</div>' +
       '<p class="foot-note">คำนวณแบบตารางตามแนวที่กำหนด ไม่สลับแนวหรือเรียงสลับฟันปลา ภาพตัวอย่างไม่ใช่ไฟล์สำหรับพิมพ์</p>';
-    renderPrice();
+    renderPrice(); try { renderQC(); } catch (e) { console.error(e); }
   }
+
+  // ---------- คำนวณด่วน (มือถือ: จอเดียวจบ) — ซิงก์กับช่องเดิม แล้วสรุปผลจากระบบเรียง/คิดราคาเดิม ----------
+  function qcPriceFor(q, r) {   // สูตรเดียวกับ renderPrice (เรทตามพื้นที่ เต็มแผ่น/เศษ)
+    const pageKey = PRICE_PAGES[$('pricePage').value] ? $('pricePage').value : 'ball', rate = PRICE_PAGES[pageKey].rates[$('paper').value];
+    const per = r.count, P = PAPERS[$('paper').value]; if (!rate || !(per > 0) || !P) return null;
+    const full = Math.floor(q / per), frac = (q - full * per) / per, unit = rate.unit === 'sqm' ? (P.nw * P.nh) / 10000 : P.nh / 100;
+    return {total: Math.round(full * unit * rate.full + frac * unit * rate.part), sheets: full + frac, cut: Math.ceil(q / per)};
+  }
+  function renderQC() {
+    if (!$('qcCard')) return;
+    const r = lastLayout; if (!r) return;
+    const act = document.activeElement;
+    if (act !== $('qcW')) $('qcW').value = r.sw > 0 ? +(+r.sw).toFixed(2) : '';
+    if (act !== $('qcH')) $('qcH').value = r.sh > 0 ? +(+r.sh).toFixed(2) : '';
+    if (act !== $('qcQ')) $('qcQ').value = $('priceQty').value || '';
+    document.querySelectorAll('[data-qcp]').forEach(b => b.classList.toggle('on', b.dataset.qcp === $('paper').value));
+    document.querySelectorAll('[data-qcg]').forEach(b => b.classList.toggle('on', b.dataset.qcg === $('pricePage').value));
+    const per = r.count || 0, typed = Math.max(0, Math.floor(num($('priceQty').value))), q = typed > 0 ? typed : per;
+    $('qcPer').textContent = per ? per.toLocaleString('th-TH') + ' ชิ้น' : '—';
+    $('qcViz').innerHTML = (r.pw > 0 && r.ph > 0 && per) ? layoutSVG(r, 'q') : '';
+    const pr = per ? qcPriceFor(q, r) : null;
+    $('qcSheets').textContent = pr ? (+pr.sheets.toFixed(2)) + ' แผ่น' : '—';
+    $('qcLeft').textContent = pr && q % per ? (per - q % per).toLocaleString('th-TH') + ' ช่อง' : (pr ? 'เต็มแผ่น' : '—');
+    $('qcLbl').textContent = !per ? (r.sw > 0 && r.sh > 0 ? 'ชิ้นใหญ่กว่าแผ่นนี้ · ลองวัสดุอื่น หรือคิดราคาแบบม้วน' : 'ใส่ขนาดสติ๊กเกอร์') : typed > 0 ? 'ราคา ' + q.toLocaleString('th-TH') + ' ชิ้น · ก่อน VAT' : 'ราคา 1 แผ่นเต็ม (' + per.toLocaleString('th-TH') + ' ชิ้น) · ก่อน VAT';
+    $('qcPrice').textContent = pr ? pr.total.toLocaleString('th-TH') : '—';
+    $('qcSub').textContent = pr ? 'ชิ้นละ ' + money(pr.total / q) + ' · รวม VAT ' + Math.round(pr.total * 1.07).toLocaleString('th-TH') : (per ? 'วัสดุนี้ยังไม่มีเรทราคา' : ($('warn').hidden ? '' : $('warn').textContent));
+    const pf = $('qcProfit'); pf.hidden = true;
+    if (pr && can('money') && $('pricePage').value === 'ball' && $('paper').value === 'hp') try { const cr = costCalc(); if (cr.mat > 0) { const c = pr.sheets * cr.perSheet; pf.hidden = false; pf.textContent = 'ต้นทุน ≈ ' + Math.round(c).toLocaleString('th-TH') + ' · กำไร ≈ ' + Math.round(pr.total - c).toLocaleString('th-TH') + ' (' + Math.round((pr.total - c) / Math.max(1, pr.total) * 100) + '%)'; } } catch (e) {}
+    const tip = $('qcTip');
+    if (pr && typed > 0 && q % per) { const up = Math.ceil(q / per) * per, dn = Math.floor(q / per) * per; tip.hidden = false; tip.textContent = '💡 ' + (dn > 0 ? 'สั่ง ' + dn.toLocaleString('th-TH') + ' ชิ้น พอดี ' + (dn / per) + ' แผ่น · หรือ ' : 'สั่ง ') + up.toLocaleString('th-TH') + ' ชิ้น = ' + (up / per) + ' แผ่นเต็ม ใช้ม้วนคุ้มสุด'; } else tip.hidden = true;
+    const tiers = per ? [10, 20, 50, 100, 200].map(t => ({t, p: qcPriceFor(t, r)})) : [];
+    $('qcTiers').innerHTML = tiers.map(x => '<button type="button" data-qct="' + x.t + '" class="' + (x.t === typed ? 'on' : '') + '">' + x.t + '<b>' + (x.p ? x.p.total.toLocaleString('th-TH') : '—') + '</b></button>').join('');
+  }
+  function qcSetSize(id, cm) { const el = $(id); el._cm = null; el.value = cm > 0 ? +(cm / SUNITS[sUnit].f).toFixed(4) : ''; el.dispatchEvent(new Event('input', {bubbles: true})); }
+  document.addEventListener('input', e => {
+    const t = e.target; if (!t || !t.id) return;
+    if (t.id === 'qcW') qcSetSize('sw', num(t.value));
+    else if (t.id === 'qcH') qcSetSize('sh', num(t.value));
+    else if (t.id === 'qcQ') { $('priceQty').value = t.value; $('priceQty').dispatchEvent(new Event('input', {bubbles: true})); renderQC(); }
+  });
+  document.addEventListener('click', e => {
+    const t = e.target && e.target.closest ? e.target.closest('[data-qcp],[data-qcg],[data-qct],[data-qca],#qcMore,#qcViz') : null; if (!t) return;
+    if (t.dataset.qcp) { $('paper').value = t.dataset.qcp; $('paper').dispatchEvent(new Event('change', {bubbles: true})); }
+    else if (t.dataset.qcg) { $('pricePage').value = t.dataset.qcg; $('pricePage').dispatchEvent(new Event('change', {bubbles: true})); }
+    else if (t.dataset.qct) { $('priceQty').value = t.dataset.qct; $('priceQty').dispatchEvent(new Event('input', {bubbles: true})); renderQC(); }
+    else if (t.id === 'qcMore' || t.id === 'qcViz') { const g = $('calcGrid'), open = g.classList.toggle('qc-hide') === false; $('qcMore').setAttribute('aria-expanded', String(open)); $('qcMore').textContent = open ? 'ซ่อนตั้งค่าและรายละเอียด ▴' : 'ตั้งค่าเพิ่มเติม (หน่วย ช่องไฟ ขอบ เติมพื้นที่) และรายละเอียด ▾'; if (open && t.id === 'qcViz') { const v = $('viz'); if (v) v.scrollIntoView({behavior: 'smooth', block: 'center'}); } }
+    else if (t.dataset.qca === 'confirm' || t.dataset.qca === 'quote') showTab(t.dataset.qca);
+    else if (t.dataset.qca === 'copy') {
+      const r = lastLayout, typed = Math.max(0, Math.floor(num($('priceQty').value))), q = typed > 0 ? typed : (r && r.count) || 0, pr = r && r.count ? qcPriceFor(q, r) : null;
+      if (!pr) return;
+      const sel = $('paper'), txt = 'สติ๊กเกอร์ ' + sel.options[sel.selectedIndex].text.replace(/\s*\d+\s*×\s*\d+.*$/, '') + ' ขนาด ' + fmt(r.sw) + ' × ' + fmt(r.sh) + ' ซม. จำนวน ' + q.toLocaleString('th-TH') + ' ชิ้น\nราคา ' + pr.total.toLocaleString('th-TH') + ' บาท (ชิ้นละ ' + money(pr.total / q) + ' บาท)\nต้องการใบกำกับภาษี +VAT 7% = ' + Math.round(pr.total * 1.07).toLocaleString('th-TH') + ' บาท';
+      const done = () => { t.textContent = 'คัดลอกแล้ว ✓'; setTimeout(() => { t.textContent = 'คัดลอกตอบลูกค้า'; }, 1600); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done).catch(() => { prompt('คัดลอกข้อความนี้', txt); }); else prompt('คัดลอกข้อความนี้', txt);
+    }
+  });
 
   function onPaperChange() {
     const v = $('paper').value, custom = v === 'custom';
@@ -2060,11 +2143,11 @@ function bahtText(value) {
     const bills = store.get('bs_bills', []);
     const purchases = store.get('bs_purchases', []);
     const jobsM = store.get('bs_jobs', []);
-    const months = Array.from(new Set(bills.map(b => monthKey(b.date)).concat(purchases.map(p => monthKey(p.date)), jobsM.map(j => monthKey(j.date))).filter(Boolean))).sort().reverse();
+    const months = Array.from(new Set(bills.map(b => monthKey(b.date)).concat(purchases.map(p => monthKey(p.date)), purchases.map(purchVatMonth), jobsM.map(j => monthKey(j.date))).filter(Boolean))).sort().reverse();
     sel.innerHTML = '<option value="">— ดูทั้งหมด —</option>' +
       months.map(m => {
         const sCount = bills.filter(b => monthKey(b.date) === m).length;
-        const pCount = purchases.filter(p => monthKey(p.date) === m).length;
+        const pCount = purchases.filter(p => monthKey(p.date) === m || (isInputVat(p) && purchVatMonth(p) === m)).length;
         return '<option value="' + esc(m) + '">' + esc(thMonthFull(m)) + ' (ขาย ' + sCount + ' / ซื้อ ' + pCount + ')</option>';
       }).join('');
     sel.value = months.indexOf(prev) >= 0 ? prev : '';
@@ -2233,7 +2316,7 @@ function bahtText(value) {
     outs.forEach(x => { const m = M(mk(x.createdAt)); if (xfer[x.id]) return; A(m, x.account || '-').out += num(x.amount); m.outT += num(x.amount); m.nOut++; });
     (store.get('bs_bills', []) || []).forEach(b => { if (!b.date) return; const c = billCalc(b), m = M(monthKey(b.date)); m.bill += c.sub - c.disc; m.billVat += c.vat; m.nBill++; });
     (store.get('bs_wholesale', []) || []).forEach(w => { if (!w.date) return; const m = M(monthKey(w.date)); m.wh += wholesaleCalc(w).total; m.nWh++; });
-    (store.get('bs_purchases', []) || []).forEach(p => { if (!p.date) return; const m = M(monthKey(p.date)); if (num(p.amount) > 0) m.purch += num(p.amount); else m.nPurchNoAmt++; m.nPurch++; });
+    (store.get('bs_purchases', []) || []).forEach(p => { if (!p.date || purchClaimOf(p) === 'personal') return; const m = M(monthKey(p.date)); if (num(p.amount) > 0) m.purch += num(p.amount); else m.nPurchNoAmt++; m.nPurch++; });
     Object.keys(months).forEach(k => { const m = months[k]; ['inT', 'outT', 'xferT', 'bill', 'billVat', 'wh', 'purch'].forEach(f => { m[f] = round2(m[f]); }); Object.keys(m.acc).forEach(a => { m.acc[a].in = round2(m.acc[a].in); m.acc[a].out = round2(m.acc[a].out); }); });
     const oldest = ins.concat(outs).reduce((a, x) => Math.min(a, x.createdAt), Infinity);
     return {months, oldest: isFinite(oldest) ? oldest : 0, capped: ins.length >= 300 || outs.length >= 300};
@@ -2352,7 +2435,130 @@ function bahtText(value) {
   document.addEventListener('click', e => { if (e.target && e.target.id === 'usageLoad') usageLoadReads(); });
   document.addEventListener('change', e => { if (e.target && e.target.id === 'moneyMonthSel') { moneyMonth = e.target.value; renderMoney(); } });
   document.addEventListener('click', e => { const c = e.target.closest && e.target.closest('#moneyBody [data-mm]'); if (c) { moneyMonth = c.dataset.mm; renderMoney(); } });
+  // ---------- โควตาบริการฟรี (หลอดเหมือน Firebase) ----------
+  // เพดานฟรีตามที่ผู้ให้บริการประกาศ (ตรวจเมื่อ 12 พ.ย. 2569) · ตัวเลขใช้จริงมาจาก Worker line-bills /quota (ตัวที่ 2) ถ้ายังไม่มี = แสดงเพดานอย่างเดียว
+  const QUOTA_BASE = [
+    {id: 'fs_reads', group: 'Firebase (ฐานข้อมูลแอป)', name: 'อ่านข้อมูล', limit: 50000, unit: 'ครั้ง', period: 'day'},
+    {id: 'fs_writes', group: 'Firebase (ฐานข้อมูลแอป)', name: 'เขียนข้อมูล', limit: 20000, unit: 'ครั้ง', period: 'day'},
+    {id: 'fs_storage', group: 'Firebase (ฐานข้อมูลแอป)', name: 'พื้นที่เก็บข้อมูล', limit: 1024, unit: 'MB', period: 'total'},
+    {id: 'cf_workers', group: 'Cloudflare (เว็บ + Worker)', name: 'คำขอ Worker ทุกตัว', limit: 100000, unit: 'ครั้ง', period: 'day'},
+    {id: 'cf_builds', group: 'Cloudflare (เว็บ + Worker)', name: 'สร้างเว็บ (build)', limit: 500, unit: 'ครั้ง', period: 'month'},
+    {id: 'cld_credits', group: 'Cloudinary (รูป)', name: 'เครดิตรวม', limit: 25, unit: 'เครดิต', period: 'month', used: 4.3, at: '2026-11-12', manual: true, sub: 'ส่งรูป 3.54 GB · เก็บ 310 MB · ปรับรูป 452 ครั้ง'},
+    {id: 'vision', group: 'Google Vision (อ่านบิล LINE)', name: 'อ่านบิล', limit: 1000, unit: 'ใบ', period: 'month'},
+    {id: 'line_bk25', group: 'LINE', name: '@bk25 ข้อความส่งออก (push)', limit: 0, unit: 'ข้อความ', period: 'month', sub: 'ตอบกลับ (reply) ไม่นับโควตา'},
+    {id: 'line_bills', group: 'LINE', name: 'LINE บิล ข้อความส่งออก (push)', limit: 0, unit: 'ข้อความ', period: 'month', sub: 'ตอบกลับ (reply) ไม่นับโควตา'},
+    {id: 'gcp_trial_days', group: 'Google Cloud ทดลองใช้', name: 'วันทดลองที่ผ่านไป', limit: 90, unit: 'วัน', period: 'trial', trialEnd: '2027-02-09', sub: 'ต้องกดอัปเกรดก่อนหมด (เตือนไว้ 26 ม.ค. 2570)'}
+  ];
+  let quotaLive = null, quotaBusy = false;
+  const QUOTA_PERIOD = {day: 'วันนี้', month: 'เดือนนี้', total: 'ทั้งหมด', trial: ''};
+  function quotaItems() {
+    const live = {}; ((quotaLive && quotaLive.items) || []).forEach(x => { live[x.id] = x; });
+    return QUOTA_BASE.map(b => {
+      const it = Object.assign({}, b, live[b.id] ? Object.assign({}, live[b.id], {manual: false}) : {});
+      if (it.period === 'trial') {   // นับวันจากวันหมดทดลอง (ไม่ต้องพึ่ง Worker)
+        const end = new Date(it.trialEnd + 'T00:00:00+07:00'), start = new Date(end.getTime() - it.limit * 864e5);
+        it.used = Math.max(0, Math.min(it.limit, Math.ceil((Date.now() - start) / 864e5)));
+        const left = Math.max(0, Math.ceil((end - Date.now()) / 864e5)); it.sub = 'เหลือ ' + left + ' วัน (หมด ' + thDateShort(it.trialEnd) + ') · ' + b.sub; it.manual = false; it.calc = true;
+      }
+      return it;
+    });
+  }
+  function renderQuota() {
+    const box = $('quotaList'); if (!box) return;
+    const items = quotaItems(); let g = '', html = '';
+    const fmtN = (n, u) => (u === 'เครดิต' ? (+n).toFixed(1) : Math.round(+n).toLocaleString('th-TH'));
+    items.forEach(it => {
+      if (it.group !== g) { g = it.group; html += '<div class="qt-g">' + esc(g) + '</div>'; }
+      const has = it.used != null && it.limit > 0, pct = has ? Math.min(100, it.used / it.limit * 100) : 0;
+      const cls = !has ? 'qt-off' : pct >= 90 ? 'qt-b' : pct >= 70 ? 'qt-w' : '';
+      const val = has ? fmtN(it.used, it.unit) + ' / ' + fmtN(it.limit, it.unit) + ' ' + it.unit + ' · ' + Math.round(pct) + '%'
+        : it.limit > 0 ? 'เพดาน ' + fmtN(it.limit, it.unit) + ' ' + it.unit + (it.period === 'day' ? '/วัน' : it.period === 'month' ? '/เดือน' : '') : (it.used != null ? fmtN(it.used, it.unit) + ' ' + it.unit : 'รอเชื่อม');
+      const sub = [it.sub, it.manual && it.at ? 'ตัวเลขกรอกเอง ณ ' + thDateShort(it.at) : '', !has && !it.calc && it.used == null ? 'ยังไม่เชื่อมตัวเลขสด' : '', has && !it.manual && !it.calc && QUOTA_PERIOD[it.period] ? QUOTA_PERIOD[it.period] : ''].filter(Boolean).join(' · ');
+      html += '<div class="qt-row"><span class="qt-name">' + esc(it.name) + '</span><span class="qt-val">' + esc(val) + '</span>' +
+        '<div class="qt-bar ' + cls + '" role="progressbar" aria-label="' + esc(it.name) + '" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(pct) + '"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
+        (sub ? '<span class="qt-sub">' + esc(sub) + '</span>' : '') + '</div>';
+    });
+    box.innerHTML = html;
+    $('quotaCap').textContent = quotaLive && quotaLive.at ? 'อัปเดต ' + new Date(quotaLive.at).toLocaleString('th-TH', {dateStyle: 'short', timeStyle: 'short'}) : 'ยังไม่มีตัวเลขสด';
+  }
+  async function loadQuota(force) {
+    if (quotaBusy) return; quotaBusy = true; const btn = $('quotaRefresh'); if (btn) btn.disabled = true;
+    try {
+      if (!force) { const c = store.get('bs_quota_cache', null); if (c && c.at && Date.now() - c.at < 30 * 60e3) { quotaLive = c; return; } }
+      const r = await fetch('https://line-bills.organic-parmesan.workers.dev/quota?key=loa5408501ccebb8cc0e6155' + (force ? '&fresh=1' : ''), {cache: 'no-store'});
+      if (r.ok) { const j = await r.json(); if (j && Array.isArray(j.items)) { quotaLive = Object.assign({at: Date.now()}, j); store.set('bs_quota_cache', quotaLive); } }
+    } catch (e) { /* Worker ยังไม่มี /quota → แสดงเพดานอย่างเดียว */ }
+    finally { quotaBusy = false; if (btn) btn.disabled = false; renderQuota(); }
+  }
+
+  // ---------- ต้นทุนจริง (เฉพาะเจ้าของ) ----------
+  // ค่าเริ่มต้นเป็นศูนย์ทั้งหมด — repo/โค้ดแอปเป็นสาธารณะ ห้ามใส่ตัวเลขการเงินจริงในโค้ด เจ้าของกรอกเองในการ์ด (เก็บใน Firestore costCfg/main เท่านั้น)
+  const COST_DEFAULT = {id: 'main', vinylRoll: 0, vinylW: 127, vinylL: 50, lamRoll: 0, lamW: 127, lamL: 50, inkCart: 0, inkMl: 700, inkPerSqm: 0, sheetsPerMonth: 0, wastePct: 0, withLam: true,
+    fixed: [{name: 'ค่าแรงลูกน้อง', amount: 0}, {name: 'ค่าโฆษณา', amount: 0}, {name: 'ค่าไฟ', amount: 0}, {name: 'ค่าเช่าที่', amount: 0}]};
+  const SHEET_H = 81, SHEET_SELL_SQM = 0.96;   // แผ่นเรียงจริง 121×81 · คิดเงินลูกค้า 120×80
+  function costCfg() { const l = store.get('bs_cost_cfg', []) || []; const r = Array.isArray(l) ? l.find(x => x && x.id === 'main') : null; return Object.assign({}, COST_DEFAULT, r || {}); }
+  function costCalc(c) {
+    c = c || costCfg(); const N = v => Math.max(0, num(v));
+    const usedSqm = (N(c.vinylW) / 100) * (SHEET_H / 100);   // แผ่นกินม้วนเต็มหน้ากว้าง × 81 ซม. (ขอบที่เหลือเป็นของเสีย)
+    const vinylSqm = N(c.vinylRoll) / Math.max(1e-9, N(c.vinylW) / 100 * N(c.vinylL));
+    const lamSqm = N(c.lamRoll) / Math.max(1e-9, N(c.lamW) / 100 * N(c.lamL));
+    const vinyl = vinylSqm * usedSqm, lam = c.withLam ? lamSqm * (N(c.lamW) / 100) * (SHEET_H / 100) : 0;
+    const ink = SHEET_SELL_SQM * N(c.inkPerSqm) * (N(c.inkCart) / Math.max(1e-9, N(c.inkMl)));
+    const ym = localISO(new Date()).slice(0, 7);
+    const fixedRows = (c.fixed || []).map(f => Object.assign({}, f, {active: !f.until || f.until >= ym}));
+    const fixed = fixedRows.filter(f => f.active).reduce((a, f) => a + N(f.amount), 0);
+    const sheets = Math.max(1, N(c.sheetsPerMonth));
+    const waste = (vinyl + lam + ink) * Math.min(50, N(c.wastePct)) / 100;
+    const mat = vinyl + lam + ink + waste, perSheet = mat + fixed / sheets;
+    const ownerPaid = fixedRows.some(f => f.active && N(f.amount) > 0 && /เงินเดือน/.test(f.name || '') && /เจ้าของ|ผม|ตัวเอง|ฉัน/.test(f.name || ''));
+    const rate = PRICE_PAGES.ball.rates.hp.full, price = rate * SHEET_SELL_SQM;   // ราคาก่อน VAT ต่อแผ่นเต็ม
+    const margin = price - mat;
+    return {vinyl, lam, ink, waste, ownerPaid, mat, fixed, fixedRows, sheets, perSheet, price, left: price - perSheet, leftMonth: (price - perSheet) * sheets, breakeven: margin > 0 ? Math.ceil(fixed / margin) : Infinity};
+  }
+  let costSaveT = null;
+  function costSave(c) {
+    c.updatedAt = Date.now(); store.set('bs_cost_cfg', [c]);
+    clearTimeout(costSaveT); costSaveT = setTimeout(() => { cloudSave('costCfg', c); const el = $('costSaved'); if (el) el.textContent = 'บันทึกแล้ว'; }, 800);
+  }
+  function renderCostRes() {
+    const r = costCalc(), box = $('costRes'); if (!box) return;
+    const M = n => money(n), tile = (lbl, val, cls, sub) => '<div class="cs-tile ' + (cls || '') + '"><small>' + esc(lbl) + '</small><b>' + val + '</b>' + (sub ? '<em>' + esc(sub) + '</em>' : '') + '</div>';
+    box.innerHTML = tile('ต้นทุนต่อแผ่นเต็ม', M(r.perSheet), '', 'วัตถุดิบ ' + M(r.mat) + ' + ค่าใช้จ่าย ' + M(r.fixed / r.sheets)) +
+      tile('ราคาขายแผ่นเต็ม (ก่อน VAT)', M(r.price), '', 'เหลือ ' + M(r.left) + ' ต่อแผ่น') +
+      tile(r.ownerPaid ? 'กำไรร้านต่อเดือน (หลังจ่ายเงินเดือนเจ้าของ)' : 'เหลือเป็นเงินเดือนเจ้าของ', M(r.leftMonth), r.leftMonth >= 0 ? 'pos' : 'neg', 'ถ้าขาย ' + Math.round(r.sheets) + ' แผ่น/เดือน ราคาเต็มทุกแผ่น') +
+      tile('ต้องขายอย่างน้อย', isFinite(r.breakeven) ? r.breakeven.toLocaleString('th-TH') + ' แผ่น/เดือน' : '—', '', 'ค่าใช้จ่าย ' + M(r.fixed) + ' / เดือน') +
+      tile('วัตถุดิบต่อแผ่น', M(r.mat), '', 'สติ๊กเกอร์ ' + M(r.vinyl) + ' · เคลือบ ' + M(r.lam) + ' · หมึก ' + M(r.ink) + (r.waste ? ' · ของเสีย ' + M(r.waste) : ''));
+  }
+  function renderCost() {
+    const card = $('costCard'); if (!card) return;
+    if (!can('money')) return;
+    const c = costCfg();
+    card.querySelectorAll('[data-cs]').forEach(el => { const k = el.dataset.cs; if (document.activeElement === el) return; if (el.type === 'checkbox') el.checked = !!c[k]; else el.value = c[k] != null ? c[k] : ''; });
+    const ym = localISO(new Date()).slice(0, 7);
+    $('costFixed').innerHTML = (c.fixed || []).map((f, i) => '<div class="cs-row' + (f.until && f.until < ym ? ' off' : '') + '" data-i="' + i + '">' +
+      '<input data-cf="name" value="' + esc(f.name || '') + '" placeholder="รายการ" aria-label="รายการ">' +
+      '<input data-cf="amount" inputmode="decimal" value="' + esc(f.amount != null ? f.amount : '') + '" placeholder="บาท/เดือน" aria-label="บาทต่อเดือน">' +
+      '<input data-cf="until" type="month" value="' + esc(f.until || '') + '" aria-label="ถึงเดือน" title="ถึงเดือน (เว้นว่าง = จ่ายตลอด)">' +
+      '<button type="button" class="cs-del" data-cdel="' + i + '" aria-label="ลบรายการ">×</button></div>').join('');
+    renderCostRes();
+  }
+  document.addEventListener('input', e => {
+    const t = e.target; if (!t || !t.closest || !t.closest('#costCard')) return;
+    const c = costCfg();
+    if (t.dataset.cs) c[t.dataset.cs] = t.type === 'checkbox' ? t.checked : num(t.value);
+    else if (t.dataset.cf) { const i = +t.closest('.cs-row').dataset.i, f = (c.fixed = (c.fixed || []).map(x => Object.assign({}, x)))[i]; if (!f) return; f[t.dataset.cf] = t.dataset.cf === 'amount' ? num(t.value) : t.value; }
+    else return;
+    costSave(c); renderCostRes(); try { renderPrice(); } catch (err) {}
+  });
+  document.addEventListener('change', e => { const t = e.target; if (t && t.closest && t.closest('#costCard') && (t.type === 'checkbox' || t.type === 'month')) { t.dispatchEvent(new Event('input', {bubbles: true})); if (t.type === 'month') renderCost(); } });
+  document.addEventListener('click', e => {
+    const t = e.target; if (!t || !t.closest) return;
+    if (t.id === 'costAddRow') { const c = costCfg(); c.fixed = (c.fixed || []).concat([{name: '', amount: 0}]); costSave(c); renderCost(); const rows = document.querySelectorAll('#costFixed .cs-row input[data-cf="name"]'); if (rows.length) rows[rows.length - 1].focus(); }
+    const d = t.closest('[data-cdel]'); if (d) { const c = costCfg(); const i = +d.dataset.cdel; if (!confirm('ลบ "' + ((c.fixed[i] || {}).name || 'รายการนี้') + '"?')) return; c.fixed = c.fixed.filter((_, j) => j !== i); costSave(c); renderCost(); }
+  });
+  document.addEventListener('click', e => { if (e.target && e.target.id === 'quotaRefresh') loadQuota(true); });
   function renderDash() {
+    renderQuota(); loadQuota(false);
     try { renderTodayJobs(); } catch (e) { console.error('todayJobs', e); }
     if (!$('dashChart')) return;
     populateDashMonthOptions();
@@ -2375,7 +2581,7 @@ function bahtText(value) {
     $('dashTotal').textContent = money(total) + ' บาท';
 
     const purchList = store.get('bs_purchases', []);
-    const purchFiltered = sel ? purchList.filter(p => monthKey(p.date) === sel) : purchList;
+    const purchFiltered = (sel ? purchList.filter(p => purchVatMonth(p) === sel) : purchList).filter(isInputVat);
     const purchVat = round2(purchFiltered.reduce((a, p) => a + num(p.vat), 0));
     $('dashPurchVat').textContent = money(purchVat) + ' บาท';
     const netVat = round2(vat - purchVat);
@@ -2622,7 +2828,7 @@ function bahtText(value) {
   function reportPurchRows(sel) {
     // รายงานภาษีซื้อ (ยื่นสรรพากร) นับเฉพาะรายการที่มีใบกำกับภาษีซื้อ/มี VAT จริง
     // นับเฉพาะบัญชีที่ยื่นภาษี (กิติพงษ์ / รายการเก่าที่ไม่ระบุ) — จ่ายจากบัญชีวันทิมไม่เข้ารายงาน
-    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel).filter(p => num(p.vat) > 0).filter(p => NON_TAX_ACCOUNTS.indexOf(p.account) < 0)
+    const list = store.get('bs_purchases', []).filter(p => !sel || purchVatMonth(p) === sel).filter(isInputVat)
       .slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
     return list.map(p => {
       const vat = num(p.vat), amt = num(p.amount);
@@ -2633,7 +2839,7 @@ function bahtText(value) {
   }
   function reportPurchNonVatRows(sel) {
     // ค่าใช้จ่าย/รายการซื้อที่ไม่มี VAT (ไม่มีใบกำกับภาษีซื้อ) แยกไว้เพื่อดูต้นทุนเท่านั้น ไม่ใช้ยื่นภาษี
-    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel).filter(p => !(num(p.vat) > 0)).filter(p => NON_TAX_ACCOUNTS.indexOf(p.account) < 0)
+    const list = store.get('bs_purchases', []).filter(p => !sel || monthKey(p.date) === sel).filter(p => purchClaimOf(p) === 'expense').filter(p => NON_TAX_ACCOUNTS.indexOf(p.account) < 0)
       .slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
     return list.map(p => ({date: p.date, no: p.invoiceNo, name: p.vendor, amount: num(p.amount), note: p.note}));
   }
@@ -2685,11 +2891,11 @@ function bahtText(value) {
     const prev = sel.value;
     const bills = store.get('bs_bills', []);
     const purchases = store.get('bs_purchases', []);
-    const months = Array.from(new Set(bills.map(b => monthKey(b.date)).concat(purchases.map(p => monthKey(p.date))).filter(Boolean))).sort().reverse();
+    const months = Array.from(new Set(bills.map(b => monthKey(b.date)).concat(purchases.map(p => monthKey(p.date)), purchases.map(purchVatMonth)).filter(Boolean))).sort().reverse();
     sel.innerHTML = '<option value="">— ดูทั้งหมด —</option>' +
       months.map(m => {
         const sCount = bills.filter(b => monthKey(b.date) === m).length;
-        const pCount = purchases.filter(p => monthKey(p.date) === m).length;
+        const pCount = purchases.filter(p => monthKey(p.date) === m || (isInputVat(p) && purchVatMonth(p) === m)).length;
         return '<option value="' + esc(m) + '">' + esc(thMonthFull(m)) + ' (ขาย ' + sCount + ' / ซื้อ ' + pCount + ')</option>';
       }).join('');
     sel.value = months.indexOf(prev) >= 0 ? prev : '';
@@ -2729,8 +2935,83 @@ function bahtText(value) {
     fitFrame('reportPurchFrame', 'reportPurchDoc');
 
     renderReportNonVat();
+    try { renderYearSummary(); } catch (e) { console.error('yearSummary', e); }
   }
 
+  // ---------- สรุปค่าใช้จ่ายทั้งปีตามหมวด (หักค่าใช้จ่ายตามจริง) ----------
+  function yearExpenseRows(year) {   // คืนรายการพร้อมยอดที่นับเป็นค่าใช้จ่าย
+    const out = [], skipped = {personal: 0, other: 0, noAmt: 0};
+    store.get('bs_purchases', []).forEach(p => {
+      if (String(p.date || '').slice(0, 4) !== String(year)) return;
+      const claim = purchClaimOf(p);
+      if (claim === 'personal') { skipped.personal++; return; }
+      if (NON_TAX_ACCOUNTS.indexOf(p.account) >= 0) { skipped.other++; return; }
+      const amt = num(p.amount), vat = num(p.vat), isV = claim === 'vat' && vat > 0;
+      let base, total, est = false;
+      if (isV) { base = amt > 0 ? round2(amt - vat) : round2(vat / 0.07); total = amt > 0 ? amt : round2(base + vat); est = !(amt > 0); }
+      else { base = amt > 0 ? amt : round2(vat / 0.07 * 1.07); total = base; est = !(amt > 0); }
+      if (est) skipped.noAmt++;
+      out.push({p, cat: p.cat || guessPurchCat(p.vendor, p.note, '') || 'อื่นๆ (ยังไม่เลือกหมวด)', claim, base, vat: isV ? vat : 0, total, est,
+        evid: isV ? 'ใบกำกับภาษี' : ({sub: 'ใบรับรองแทนใบเสร็จ', voucher: 'ใบสำคัญจ่าย'}[p.evid] || 'ใบเสร็จ/บิลเงินสด')});
+    });
+    return {rows: out, skipped};
+  }
+  function renderYearSummary() {
+    const sel = $('yrSel'); if (!sel) return;
+    const years = Array.from(new Set(store.get('bs_purchases', []).map(p => String(p.date || '').slice(0, 4)).filter(y => /^\d{4}$/.test(y)))).sort().reverse();
+    const cur = sel.value || String(new Date().getFullYear());
+    if (years.indexOf(cur) < 0) years.unshift(cur);
+    sel.innerHTML = years.map(y => '<option value="' + y + '">ปีภาษี ' + (+y + 543) + '</option>').join(''); sel.value = cur;
+    const {rows, skipped} = yearExpenseRows(cur), g = {};
+    rows.forEach(r => { const k = r.cat; (g[k] = g[k] || {n: 0, base: 0, vat: 0, total: 0}); g[k].n++; g[k].base += r.base; g[k].vat += r.vat; g[k].total += r.total; });
+    const cats = Object.keys(g).sort((a, b) => g[b].base - g[a].base);
+    const T = rows.reduce((a, r) => ({base: a.base + r.base, vat: a.vat + r.vat, total: a.total + r.total}), {base: 0, vat: 0, total: 0});
+    $('yrSum').innerHTML = rows.length ? '<div style="overflow-x:auto"><table class="yr-t"><thead><tr><th>หมวด</th><th>ใบ</th><th>ค่าใช้จ่าย (นับได้)</th><th>VAT ที่ใช้เป็นภาษีซื้อ</th><th>จ่ายจริง</th></tr></thead><tbody>' +
+      cats.map(k => '<tr><td>' + esc(k) + '</td><td>' + g[k].n + '</td><td>' + money(round2(g[k].base)) + '</td><td>' + money(round2(g[k].vat)) + '</td><td>' + money(round2(g[k].total)) + '</td></tr>').join('') +
+      '</tbody><tfoot><tr><td>รวมทั้งปี</td><td>' + rows.length + '</td><td>' + money(round2(T.base)) + '</td><td>' + money(round2(T.vat)) + '</td><td>' + money(round2(T.total)) + '</td></tr></tfoot></table></div>' +
+      '<p class="yr-note">ค่าใช้จ่ายที่นับได้ = ยอดก่อน VAT สำหรับใบกำกับที่ใช้เป็นภาษีซื้อ + ยอดเต็มของใบเสร็จอื่น' +
+      (skipped.noAmt ? '<br><b>' + skipped.noAmt + ' ใบไม่มียอดเงินรวม</b> ระบบประมาณจาก VAT 7% — เปิดแก้ใส่ยอดจริงจะแม่นกว่า' : '') +
+      (skipped.personal ? '<br>ไม่นับรายการส่วนตัว ' + skipped.personal + ' ใบ' : '') + (skipped.other ? '<br>ไม่นับบัญชีที่ไม่ยื่นภาษี ' + skipped.other + ' ใบ' : '') + '</p>'
+      : '<p class="empty">ยังไม่มีค่าใช้จ่ายในปีนี้</p>';
+  }
+  function quickExpense() {
+    const t = $('yrQuick').value.trim(), m = t.match(/(\d[\d,]*(?:\.\d{1,2})?)\s*(?:บาท|฿)?\s*$/);
+    if (!m) { toast('พิมพ์รายการตามด้วยจำนวนเงิน เช่น ค่าเทปกาว 85'); $('yrQuick').focus(); return; }
+    const amount = round2(num(m[1].replace(/,/g, ''))), desc = t.slice(0, m.index).trim() || 'ค่าใช้จ่าย';
+    if (!(amount > 0)) { toast('จำนวนเงินไม่ถูกต้อง'); return; }
+    const rec = {id: 'p' + Date.now(), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', date: todayISO(), vendor: '', invoiceNo: '', vendorTax: '', vendorAddr: '',
+      amount: amount.toFixed(2), vat: '', note: desc, photo: null, account: 'กิติพงษ์', claim: 'expense', cat: guessPurchCat('', desc, '') || 'อื่นๆ', evid: 'sub', evNo: '', vendorBranch: '', claimMonth: '', chk: {}, quick: true};
+    const list = store.get('bs_purchases', []); list.push(rec); store.set('bs_purchases', list); cloudSave('purchases', rec);
+    $('yrQuick').value = ''; renderPurchHistory(); renderYearSummary();
+    toast('จดแล้ว ' + desc + ' ' + money(amount) + ' บาท · ไม่มีบิล ทำใบรับรองแทนใบเสร็จได้ที่หน้าภาษีซื้อ');
+  }
+  async function exportYearXlsx(btn) {
+    const y = $('yrSel').value, {rows} = yearExpenseRows(y);
+    if (!rows.length) { toast('ยังไม่มีค่าใช้จ่ายในปีนี้'); return; }
+    const html = btn.textContent; btn.disabled = true; btn.textContent = 'กำลังสร้างไฟล์…';
+    try {
+      try { await bsLoadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); } catch (e) {}
+      const detail = [['วันที่', 'ผู้ขาย/ผู้รับเงิน', 'เลขผู้เสียภาษีผู้ขาย', 'เลขที่เอกสาร', 'หมวด', 'ประเภท', 'หลักฐาน', 'ค่าใช้จ่าย (นับได้)', 'VAT ใช้เป็นภาษีซื้อ', 'จ่ายจริง', 'รอบภาษีซื้อ', 'ประมาณยอด', 'รายละเอียด']]
+        .concat(rows.slice().sort((a, b) => String(a.p.date).localeCompare(String(b.p.date))).map(r => [r.p.date, r.p.vendor || '', r.p.vendorTax || '', r.p.invoiceNo || r.p.evNo || '', r.cat, r.claim === 'vat' ? 'ภาษีซื้อ' : 'ค่าใช้จ่าย', r.evid, r.base, r.vat, r.total, r.claim === 'vat' ? purchVatMonth(r.p) : '', r.est ? 'ใช่' : '', r.p.note || '']));
+      const g = {}; rows.forEach(r => { (g[r.cat] = g[r.cat] || [0, 0, 0, 0]); g[r.cat][0]++; g[r.cat][1] += r.base; g[r.cat][2] += r.vat; g[r.cat][3] += r.total; });
+      const sum = [['หมวด', 'จำนวนใบ', 'ค่าใช้จ่าย (นับได้)', 'VAT ใช้เป็นภาษีซื้อ', 'จ่ายจริง']].concat(Object.keys(g).sort().map(k => [k, g[k][0], round2(g[k][1]), round2(g[k][2]), round2(g[k][3])]));
+      sum.push(['รวมทั้งปี', rows.length, round2(rows.reduce((a, r) => a + r.base, 0)), round2(rows.reduce((a, r) => a + r.vat, 0)), round2(rows.reduce((a, r) => a + r.total, 0))]);
+      const name = 'ค่าใช้จ่าย-ปีภาษี-' + (+y + 543) + '.' + (window.XLSX ? 'xlsx' : 'csv');
+      let blob;
+      if (window.XLSX) {
+        const wb = XLSX.utils.book_new(), ws1 = XLSX.utils.aoa_to_sheet(sum), ws2 = XLSX.utils.aoa_to_sheet(detail);
+        ws1['!cols'] = [{wch: 34}, {wch: 10}, {wch: 18}, {wch: 18}, {wch: 14}]; ws2['!cols'] = [{wch: 11}, {wch: 30}, {wch: 15}, {wch: 16}, {wch: 26}, {wch: 10}, {wch: 20}, {wch: 14}, {wch: 12}, {wch: 12}, {wch: 10}, {wch: 8}, {wch: 40}];
+        [ws1, ws2].forEach(ws => { Object.keys(ws).forEach(k => { const c = ws[k]; if (c && c.t === 'n') c.z = '#,##0.00'; }); });
+        XLSX.utils.book_append_sheet(wb, ws1, 'สรุปตามหมวด'); XLSX.utils.book_append_sheet(wb, ws2, 'รายการทั้งหมด');
+        blob = new Blob([XLSX.write(wb, {bookType: 'xlsx', type: 'array'})], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      } else {   // โหลดไลบรารีไม่ได้ → CSV ที่ Excel เปิดได้
+        blob = new Blob(['﻿' + sum.concat([[]], detail).map(r => r.map(csvEsc).join(',')).join('\n')], {type: 'text/csv;charset=utf-8'});
+      }
+      const st = await saveBlob(blob, name);
+      toast(st === 'failed' ? 'บันทึกไฟล์ไม่สำเร็จ' : 'ส่งออก ' + name + ' แล้ว');
+    } catch (e) { console.error(e); toast('สร้างไฟล์ไม่สำเร็จ'); }
+    finally { btn.disabled = false; btn.textContent = html; }
+  }
   function csvEsc(v) {
     const s = String(v == null ? '' : v);
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -2852,6 +3133,7 @@ function bahtText(value) {
     return ocrWorker;
   }
   // ---------- ตรวจเลขประจำตัวผู้เสียภาษี 13 หลัก (สูตรหลักตรวจของกรมสรรพากร) ----------
+  /*@@BILLPARSE-START@@ ใช้ร่วมกับ bill-check.html (tools/mk_billcheck.py) */
   function thaiTaxIdValid(t) {
     const d = String(t || '').replace(/\D/g, ''); if (d.length !== 13) return false;
     let sum = 0; for (let i = 0; i < 12; i++) sum += (+d[i]) * (13 - i);
@@ -2859,6 +3141,38 @@ function bahtText(value) {
   }
   const ownTaxId = () => String(($('sTax') && $('sTax').value) || (shop && shop.taxId) || '').replace(/\D/g, '');
   const moneyNum = s => { const v = parseFloat(String(s).replace(/,/g, '')); return isFinite(v) ? v : NaN; };
+  const TH_MON = [['ม.ค.', 'มกราคม', 'jan'], ['ก.พ.', 'กุมภาพันธ์', 'feb'], ['มี.ค.', 'มีนาคม', 'mar'], ['เม.ย.', 'เมษายน', 'apr'], ['พ.ค.', 'พฤษภาคม', 'may'], ['มิ.ย.', 'มิถุนายน', 'jun'], ['ก.ค.', 'กรกฎาคม', 'jul'], ['ส.ค.', 'สิงหาคม', 'aug'], ['ก.ย.', 'กันยายน', 'sep'], ['ต.ค.', 'ตุลาคม', 'oct'], ['พ.ย.', 'พฤศจิกายน', 'nov'], ['ธ.ค.', 'ธันวาคม', 'dec']];
+  const TH_MON_RE = TH_MON.map(a => a.map((x, k) => k === 2 ? x + '[a-z]*' : x.replace(/\./g, '\\.?')).join('|')).join('|');
+  const thMonIdx = t => { t = String(t).toLowerCase().replace(/[\s.]/g, ''); return TH_MON.findIndex(a => a.some((x, k) => k === 2 ? t.indexOf(x) === 0 : t === x.replace(/\./g, ''))) + 1; };
+  // ชนิดเอกสาร: สลิปโอนเงิน / คำสั่งซื้อ Shopee Lazada TikTok (ไม่ใช่ใบกำกับภาษี)
+  function docSourceOf(T) {
+    T = String(T || '');
+    if (/ใบกำกับภาษี|tax\s*invoice/i.test(T)) return '';
+    if (/shopee|ช้อปปี้/i.test(T)) return 'shopee';
+    if (/lazada|ลาซาด้า/i.test(T)) return 'lazada';
+    if (/tiktok\s*shop|ติ๊กต็อก/i.test(T)) return 'tiktok';
+    if (/โอนเงินสำเร็จ|รายการสำเร็จ|ทำรายการสำเร็จ|จ่ายบิลสำเร็จ|ชำระเงินสำเร็จ|เลขที่รายการ|transaction|transfer\s*(successful|completed)|ค่าธรรมเนียม|k\s*plus|make by kbank|scb\s*easy|krungthai\s*next|bualuang|พร้อมเพย์|promptpay/i.test(T)) return 'slip';
+    return '';
+  }
+  function parseSlipShop(T, src) {   // ยอด ผู้รับ เลขคำสั่งซื้อ จากสลิป/หน้าคำสั่งซื้อ
+    const lines = String(T || '').split('\n').map(l => l.trim()).filter(Boolean), out = {};
+    const nums = l => (l.match(/(\d{1,3}(?:,\d{3})+|\d+)\.\d{2}(?!\d)/g) || []).map(x => moneyNum(x));
+    const kw = src === 'slip' ? /จำนวนเงิน|amount|ยอดเงิน|ยอดโอน|จำนวน/i : /ยอดชำระทั้งหมด|ยอดคำสั่งซื้อทั้งหมด|รวมการสั่งซื้อ|รวมทั้งหมด|ยอดรวม|order\s*total|total/i;
+    let amt = null;
+    lines.forEach((l, i) => { if (amt == null && kw.test(l)) { const n = nums(l).concat(nums(lines[i + 1] || '')); if (n.length) amt = n[0]; } });
+    if (amt == null) { const all = lines.flatMap(nums).filter(v => v > 0); if (all.length) amt = src === 'slip' ? all[0] : Math.max(...all); }
+    if (amt != null) out.amount = amt.toFixed(2);
+    if (src === 'slip') {   // ผู้รับ: บรรทัดที่ขึ้นต้นด้วย ไปยัง/ถึง/ผู้รับ/To (หรือบรรทัดถัดไป)
+      const i = lines.findIndex(l => /^(ไปยัง|ไปที่|ถึง|ผู้รับเงิน|ผู้รับ|to\b)/i.test(l));
+      if (i >= 0) { const rest = lines[i].replace(/^(ไปยัง|ไปที่|ถึง|ผู้รับเงิน|ผู้รับ|to)\s*:?\s*/i, ''); out.vendor = (rest.length > 2 ? rest : lines[i + 1] || '').slice(0, 60); }
+      const ref = (String(T).match(/(?:เลขที่รายการ|รหัสอ้างอิง|เลขอ้างอิง|ref(?:erence)?(?:\s*no)?\.?)\s*:?\s*([A-Za-z0-9]{8,})/i) || [])[1]; if (ref) out.invoiceNo = ref;
+    } else {
+      out.vendor = {shopee: 'Shopee', lazada: 'Lazada', tiktok: 'TikTok Shop'}[src];
+      const shop = lines.find(l => /^(ร้านค้า|ร้าน|ผู้ขาย)\s*:?\s*\S|^(shop|seller)\s*:/i.test(l)); if (shop) out.vendor += ' · ' + shop.replace(/^(ร้านค้า|ร้าน|ผู้ขาย|shop|seller)\s*:?\s*/i, '').slice(0, 40);
+      const oid = (String(T).match(/(?:หมายเลขคำสั่งซื้อ|รหัสคำสั่งซื้อ|order\s*(?:id|no\.?|number|sn))\s*:?\s*([A-Za-z0-9]{8,})/i) || [])[1]; if (oid) out.invoiceNo = oid;
+    }
+    return out;
+  }
   function parseReceiptText(text) {
     let clean = String(text || '').replace(/\r/g, '').replace(/[๐-๙]/g, c => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(c)));
     // OCR มักอ่านจุดทศนิยมเป็นจุลภาค/มีช่องว่างแทรก: "3,302 ,00" "3,085,98" → "3,302.00" "3,085.98"
@@ -2884,6 +3198,9 @@ function bahtText(value) {
       while ((m = iso.exec(l))) dateCands.push({y: +m[1], mo: +m[2], d: +m[3], pri: pri - 0.5, li});
       const dmy = /(?<![\d-])(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{2}|\d{4})(?![\d-])/g;
       while ((m = dmy.exec(l))) dateCands.push({y: +m[3], mo: +m[2], d: +m[1], pri, li});
+      // 12 พ.ย. 69 / 12 พฤศจิกายน 2569 / 12 Nov 2026 (สลิปธนาคาร แอปช้อปปิ้ง)
+      const thm = new RegExp('(?<!\\d)(\\d{1,2})\\s*(' + TH_MON_RE + ')\\s*(\\d{2}|\\d{4})(?!\\d)', 'gi');
+      while ((m = thm.exec(l))) dateCands.push({y: +m[3], mo: thMonIdx(m[2]), d: +m[1], pri: pri - 0.25, li});
     });
     dateCands.sort((a, b) => a.pri - b.pri || a.li - b.li);
     for (const c of dateCands) {
@@ -2939,6 +3256,194 @@ function bahtText(value) {
     if (vname) out.vendor = vname.replace(/^(ผู้ขาย|ชื่อ)\s*[:：]?\s*/, '').replace(/\s+สาขา.*$/, '').trim().slice(0, 60);
     return out;
   }
+  /*@@BILLPARSE-END@@*/
+
+  // ---------- ประเภทบิล / หมวด / เช็กลิสต์ใบกำกับเต็มรูป (มาตรา 86/4 + ประกาศอธิบดีฯ ฉบับ 196) ----------
+  const purchClaimOf = p => p.claim || (num(p.vat) > 0 ? 'vat' : 'expense');   // รายการเก่าไม่มีช่องนี้: มี VAT = ภาษีซื้อ
+  const isInputVat = p => purchClaimOf(p) === 'vat' && num(p.vat) > 0 && NON_TAX_ACCOUNTS.indexOf(p.account) < 0;
+  const purchVatMonth = p => p.claimMonth || monthKey(p.date);
+  const PURCH_CATS = ['วัสดุ สติ๊กเกอร์ กระดาษ ฟิล์ม', 'หมึกพิมพ์', 'บรรจุภัณฑ์ / วัสดุสิ้นเปลือง', 'อุปกรณ์ / เครื่องมือ', 'ค่าขนส่ง / ไปรษณีย์', 'ค่าไฟ น้ำ อินเทอร์เน็ต โทรศัพท์', 'ค่าเช่า', 'ค่าโฆษณา / การตลาด', 'ซ่อมบำรุง', 'ค่าเดินทาง / น้ำมัน', 'อื่นๆ'];
+  function guessPurchCat(vendor, note, text) {
+    const remembered = (store.get('bs_vendors', []).find(v => String(v.name || '').trim() === String(vendor || '').trim()) || {}).cat;
+    if (remembered && PURCH_CATS.indexOf(remembered) >= 0) return remembered;
+    const t = [vendor, note, text].join(' ').toLowerCase();
+    if (/หมึก|ink|toner|โทนเนอร์/.test(t)) return 'หมึกพิมพ์';
+    if (/สติ๊กเกอร์|สติกเกอร์|sticker|กระดาษ|ฟิล์ม|film|pvc|ไวนิล|vinyl|โฮโลแกรม|สะท้อนแสง|ลามิเนต|laminat/.test(t)) return 'วัสดุ สติ๊กเกอร์ กระดาษ ฟิล์ม';
+    if (/เทป|กาว|เชือก|กล่อง|ซอง|ถุง|บับเบิ้ล|bubble|แพ็ค|packing/.test(t)) return 'บรรจุภัณฑ์ / วัสดุสิ้นเปลือง';
+    if (/ขนส่ง|ไปรษณีย์|kerry|flash|j&t|jt express|best express|ems|ค่าส่ง|lalamove|ไลน์แมน/.test(t)) return 'ค่าขนส่ง / ไปรษณีย์';
+    if (/การไฟฟ้า|ไฟฟ้า|ประปา|ทรู|true|ais|dtac|3bb|อินเทอร์เน็ต|internet|โทรศัพท์/.test(t)) return 'ค่าไฟ น้ำ อินเทอร์เน็ต โทรศัพท์';
+    if (/ค่าเช่า|rent/.test(t)) return 'ค่าเช่า';
+    if (/facebook|meta|google ads|tiktok|โฆษณา|ads/.test(t)) return 'ค่าโฆษณา / การตลาด';
+    if (/ซ่อม|อะไหล่|service|บำรุง/.test(t)) return 'ซ่อมบำรุง';
+    if (/น้ำมัน|ปตท|ptt|บางจาก|shell|caltex|ทางด่วน/.test(t)) return 'ค่าเดินทาง / น้ำมัน';
+    if (/เครื่อง|มีด|ใบมีด|cutter|plotter|คอมพิวเตอร์|อุปกรณ์/.test(t)) return 'อุปกรณ์ / เครื่องมือ';
+    return '';
+  }
+  // รายการตรวจ: auto = ผลจากข้อความที่สแกน (true/false/null=ตรวจไม่ได้) · ผู้ใช้ติ๊กแก้เองได้ (เก็บใน chk)
+  const TAX_CHK = [
+    ['title', 'มีคำว่า “ใบกำกับภาษี”', 'ใบเสร็จธรรมดา/บิลเงินสด/ใบกำกับอย่างย่อ ใช้เป็นภาษีซื้อไม่ได้'],
+    ['seller', 'ชื่อ ที่อยู่ และเลขผู้เสียภาษีของผู้ขายครบ', ''],
+    ['sellerBranch', 'ระบุ “สำนักงานใหญ่” หรือ “สาขาที่ …” ของผู้ขาย', ''],
+    ['buyer', 'ชื่อผู้ซื้อเป็นชื่อที่ร้านจด VAT', ''],
+    ['buyerTax', 'เลขผู้เสียภาษีผู้ซื้อเป็นของร้าน + ระบุ “สำนักงานใหญ่”', 'ผู้ซื้อจด VAT ต้องมีสถานประกอบการของผู้ซื้อด้วย (ประกาศฯ ฉบับ 196)'],
+    ['buyerAddr', 'ที่อยู่ผู้ซื้อตรงกับ ภ.พ.20 ของร้าน', ''],
+    ['itemsVat', 'มีรายการสินค้า และแยกยอด VAT ออกจากราคา', ''],
+    ['noDate', 'มีเลขที่และวันที่ของใบกำกับ', ''],
+  ];
+  let purchOcrText = '', purchChk = {}, purchDocSrc = '', purchBankOutId = '';
+  const ownNameRe = () => { const parts = [String(shop.promptpayName || '').replace(/^(นาย|นาง|นางสาว)\s*/, '').split(/\s+/)[0], 'กิติพงษ์', 'กิดิพงษ์', 'บอลสติ๊กเกอร์', 'บอล สติ๊กเกอร์', 'บอลสติกเกอร์']; return new RegExp(parts.filter(Boolean).map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')); };
+  function addrKeys(a) {   // ตัวที่ใช้เทียบที่อยู่: บ้านเลขที่ หมู่ ตำบล รหัสไปรษณีย์
+    a = String(a || '');
+    const no = (a.match(/^\s*(\d+(?:\/\d+)?)/) || [])[1] || '', moo = (a.match(/หมู่(?:ที่)?\s*(\d+)/) || [])[1] || '';
+    const tb = (a.match(/(?:ต\.|ตำบล|แขวง)\s*([ก-๙]+)/) || [])[1] || '', zip = (a.match(/(\d{5})(?!\d)/) || [])[1] || '';
+    return {no, moo, tb, zip};
+  }
+  function autoTaxChecklist(text, f) {
+    const T = String(text || ''), own = ownTaxId(), digits = T.replace(/[^\d\n]/g, '');
+    if (!T.trim()) return;
+    const lines = T.split('\n'), ownLine = lines.find(l => l.replace(/\D/g, '').indexOf(own) >= 0) || '';
+    const vtax = String((f && f.vendorTax) || $('purchVendorTax').value || '').replace(/\D/g, '');
+    const vLine = vtax ? (lines.find(l => l.replace(/\D/g, '').indexOf(vtax) >= 0) || '') : '';
+    const brRe = /(ส[ำา]?นักงาน\s*[ใไ]?หญ|สนง\.?\s*ใหญ่|head\s*office|สาขา(?:ที่)?\s*[0-9๐-๙]{1,5})/i;   // ทนการอ่านเพี้ยน (สานักงานใหญี)
+    const auto = {};
+    auto.title = /ใบกำกับภาษี|ใบกํากับภาษี|tax\s*invoice/i.test(T);
+    // สาขาผู้ขาย: อยู่บรรทัดเลขภาษีผู้ขาย หรือบรรทัดชื่อบริษัทผู้ขาย
+    const vName = String((f && f.vendor) || $('purchVendor').value || '').slice(0, 8);
+    const nameLine = vName ? (lines.find(l => l.indexOf(vName) >= 0) || '') : '';
+    const brM = (vLine.match(brRe) || nameLine.match(brRe) || [])[1] || '';
+    if (brM && !$('purchVendorBranch').value.trim()) $('purchVendorBranch').value = /สาขา/.test(brM) ? brM.replace(/[๐-๙]/g, c => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(c))).replace(/สาขา\s*(ที่)?\s*/, 'สาขาที่ ') : 'สำนักงานใหญ่';
+    else if (!brM && /สาขา(ที่)?/.test(nameLine + vLine) && !$('purchVendorBranch').value.trim()) $('purchVendorBranch').value = 'สาขาที่ ';   // เห็นคำว่าสาขาแต่อ่านเลขไม่ออก → ให้กรอกเลขเอง
+    // ที่อยู่ผู้ขาย: บรรทัดที่มีคำบอกที่อยู่ ใกล้ชื่อ/เลขภาษีผู้ขาย (ไม่ใช่บรรทัดของร้านเรา)
+    const addrRe = /(ถนน|ถ\.|ตำบล|ต\.|แขวง|เขต|อำเภอ|อ\.|จังหวัด|จ\.|หมู่|ซอย|(?<!\d)\d{5}(?!\d))/;
+    const ni = nameLine ? lines.indexOf(nameLine) : -1, vi = vLine ? lines.indexOf(vLine) : -1;
+    const cand = [ni + 1, ni + 2, vi, ni, vi - 1].filter(i => i >= 0 && i < lines.length).map(i => lines[i]);
+    const aLine = cand.find(l => addrRe.test(l) && l.replace(/\D/g, '').indexOf(own) < 0 && !ownNameRe().test(l));
+    const vAddr = aLine ? aLine.replace(/(เลขประจำตัว|เลขที่ผู้เสีย|โทร|tel|fax|เอกสารออก|www\.|e-?mail).*/i, '').replace(/^(บริษัท|ห้างหุ้นส่วน)[^0-9]*?(จำกัด|$)\s*/, '').replace(/\s+/g, ' ').trim() : '';
+    if (vAddr.length >= 10 && !($('purchVendorAddr').value || '').trim()) $('purchVendorAddr').value = vAddr.slice(0, 160);
+    auto.seller = !!(vName && thaiTaxIdValid(vtax) && (vAddr.length >= 10 || ($('purchVendorAddr').value || '').trim()));
+    auto.buyer = ownNameRe().test(T);
+    const buyerNameLine = lines.find(l => ownNameRe().test(l)) || '';
+    auto.buyerTax = digits.indexOf(own) >= 0 ? (brRe.test(ownLine) || brRe.test(buyerNameLine)) : false;   // สาขาผู้ซื้ออาจอยู่บรรทัดชื่อหรือบรรทัดเลขภาษี
+    const k = addrKeys(shop.address);
+    auto.buyerAddr = k.zip && k.tb ? (T.indexOf(k.zip) >= 0 && T.indexOf(k.tb) >= 0 && (!k.moo || new RegExp('หมู่(?:ที่)?\\s*' + k.moo + '(?!\\d)').test(T))) : null;
+    auto.itemsVat = /ภาษีมูลค่าเพิ่ม|vat/i.test(T) && !!(f && f.vat);
+    auto.noDate = !!(f && f.invoiceNo && f.date);
+    purchChk = Object.assign({}, purchChk, auto, {_auto: Object.assign({}, auto)});
+    renderTaxChecklist();
+  }
+  function taxChkState() {   // ค่าที่ใช้จริง: ติ๊กเอง > ผลสแกน > เดาจากช่องที่กรอก
+    const v = $('purchVendorTax').value.replace(/\D/g, ''), st = {};
+    TAX_CHK.forEach(([key]) => { st[key] = purchChk[key]; });
+    if (st.seller == null) st.seller = !!($('purchVendor').value.trim() && thaiTaxIdValid(v) && ($('purchVendorAddr').value || '').trim());
+    if (st.sellerBranch == null) { const b = $('purchVendorBranch').value.trim(); st.sellerBranch = !b ? null : (/สาขา/.test(b) && !/\d/.test(b)) ? null : true; }
+    if (st.itemsVat == null) st.itemsVat = num($('purchVat').value) > 0 ? null : false;
+    if (st.noDate == null) st.noDate = !!($('purchInvoiceNo').value.trim() && $('purchDate').value);
+    return st;
+  }
+  function claimWindow(date) {   // ใช้สิทธิ์ได้ในเดือนที่ออก หรือภายใน 6 เดือนนับแต่เดือนถัดไป (มาตรา 82/3 วรรคสี่)
+    const m = monthKey(date); if (!m) return null;
+    const [y, mo] = m.split('-').map(Number), list = [];
+    for (let i = 0; i <= 6; i++) { const d = new Date(y, mo - 1 + i, 1); list.push(d.getFullYear() + '-' + pad2(d.getMonth() + 1)); }
+    return list;
+  }
+  function renderClaimMonths() {
+    const sel = $('purchClaimMonth'), w = claimWindow($('purchDate').value) || [];
+    const cur = sel.dataset.v || w[0] || '';
+    sel.innerHTML = w.map((m, i) => '<option value="' + m + '">' + esc(thMonthFull(m)) + (i === 0 ? ' (เดือนที่ออกใบกำกับ)' : '') + '</option>').join('') + (cur && w.indexOf(cur) < 0 ? '<option value="' + esc(cur) + '">' + esc(thMonthFull(cur)) + ' (เลยกำหนด)</option>' : '');
+    sel.value = cur || w[0] || ''; sel.dataset.v = sel.value;
+    const dl = $('purchDeadline');
+    if (!w.length) { dl.textContent = ''; return; }
+    const last = w[w.length - 1], [ly, lm] = last.split('-').map(Number), end = new Date(ly, lm, 0), days = Math.ceil((end - new Date(todayISO() + 'T00:00:00')) / 864e5);
+    const late = sel.value && w.indexOf(sel.value) < 0;
+    dl.className = 'pt-dl' + (late || days < 0 ? ' bad' : days <= 31 ? ' warn' : '');
+    dl.textContent = late ? 'รอบที่เลือกเลยกำหนด 6 เดือนแล้ว ใช้เป็นภาษีซื้อไม่ได้ — เปลี่ยนเป็น “ค่าใช้จ่ายอย่างเดียว”'
+      : 'ใช้สิทธิ์ได้ในรอบ ' + thMonthFull(w[0]) + ' ถึง ' + thMonthFull(last) + (days >= 0 ? ' · เหลือ ' + days + ' วัน' : ' · เลยกำหนดแล้ว') + ' (ตรวจกับผู้ทำบัญชีอีกครั้ง)';
+  }
+  function renderTaxChecklist() {
+    const box = $('purchChk'); if (!box) return;
+    const st = taxChkState(), auto = purchChk._auto || {};
+    box.innerHTML = '<legend>เช็กลิสต์ใบกำกับภาษีเต็มรูป <small id="purchChkSum"></small></legend>' + TAX_CHK.map(([key, label, hint]) => {
+      const v = st[key], cls = v === true ? 'ok' : v === false ? 'no' : '';
+      const src = key in auto && auto[key] != null && purchChk[key] === auto[key] ? (auto[key] ? 'พบในบิลที่สแกน' : 'ไม่พบในบิลที่สแกน') : (purchChk[key] != null ? 'ติ๊กเอง' : (v == null ? 'ยังไม่ได้ตรวจ — ดูในบิลแล้วติ๊ก' : 'จากข้อมูลที่กรอก'));
+      let extra = '';
+      if (key === 'buyerAddr' && v === false) extra = 'ที่อยู่ร้านในตั้งค่า: ' + shop.address;
+      return '<label class="pt-it ' + cls + '"><input type="checkbox" data-chk="' + key + '"' + (v ? ' checked' : '') + '><span>' + esc(label) + '</span><small>' + esc([src, extra || (v === false ? hint : '')].filter(Boolean).join(' · ')) + '</small></label>';
+    }).join('');
+    const n = TAX_CHK.length, ok = TAX_CHK.filter(([k]) => st[k] === true).length, bad = TAX_CHK.filter(([k]) => st[k] === false).length;
+    $('purchChkSum').textContent = 'ผ่าน ' + ok + '/' + n + (bad ? ' · ขาด ' + bad : '') + (n - ok - bad ? ' · รอตรวจ ' + (n - ok - bad) : '');
+  }
+  // จับคู่กับเงินออกจาก SMS ธนาคาร: ยอดเท่ากัน · ภายใน ±3 วันจากวันที่บิล · ยังไม่ผูกกับใบอื่น
+  function bankOutCandidates() {
+    const amt = round2(num($('purchAmount').value)), d = $('purchDate').value; if (!(amt > 0) || !d) return [];
+    const t0 = Date.parse(d + 'T12:00:00+07:00'), used = new Set(store.get('bs_purchases', []).filter(p => p.id !== currentPurchaseId).map(p => p.bankOutId).filter(Boolean));
+    return (store.get('bs_bank_out', []) || []).filter(x => x && Math.abs(num(x.amount) - amt) < 0.005 && Math.abs((x.createdAt || 0) - t0) <= 3.5 * 864e5 && !used.has(x.id))
+      .sort((a, b) => Math.abs(a.createdAt - t0) - Math.abs(b.createdAt - t0));
+  }
+  function renderBankMatch() {
+    const box = $('purchBankMatch'); if (!box) return;
+    if (!canBank) { box.hidden = true; return; }
+    const linked = purchBankOutId ? (store.get('bs_bank_out', []) || []).find(x => x.id === purchBankOutId) : null;
+    const fmt = x => new Date(x.createdAt).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'}) + ' · ' + esc(x.account || '') + ' · ฿' + money(num(x.amount)) + (x.note ? ' · ' + esc(x.note) : '');
+    if (linked) { box.hidden = false; box.className = 'pt-bm ok'; box.innerHTML = '<span>✓ ผูกกับเงินออก ' + fmt(linked) + '</span><button type="button" class="btn small" data-bm="">เลิกผูก</button>'; return; }
+    const c = bankOutCandidates();
+    if (!c.length) { box.hidden = !(num($('purchAmount').value) > 0); box.className = 'pt-bm'; box.innerHTML = '<span>ยังไม่พบเงินออกจาก SMS ที่ยอดตรง (±3 วัน)</span>'; return; }
+    box.hidden = false; box.className = 'pt-bm';
+    box.innerHTML = '<span>พบเงินออกยอดตรง ' + c.length + ' รายการ — กดเพื่อผูกเป็นหลักฐานการจ่าย</span>' + c.slice(0, 4).map(x => '<button type="button" class="btn small" data-bm="' + esc(x.id) + '">' + fmt(x) + '</button>').join('');
+  }
+  // ---------- กล่องบิลจาก LINE รับบิล (แยกจาก LINE ลูกค้า @bk25) ----------
+  // Worker ของตัวที่ 2 เก็บแต่ละรูป/ไฟล์ที่ส่งเข้า OA รับบิล ไว้ใน Firestore 'billInbox' {from, fromName, type:'image'|'file', contentId, fileName, createdAt, status:'new'|'done', purchaseId}
+  const BILL_OA_CH = 'bills';
+  let billBox = [], billBoxTab = 'new', billBoxUnsub = null;
+  const BILL_OA_URL = 'https://line-bills.organic-parmesan.workers.dev';   // Worker ของตัวที่ 2 (OA บิล @162oesrh)
+  const billSrc = x => x.url || (BILL_OA_URL + '/content?ch=' + BILL_OA_CH + '&key=' + encodeURIComponent(LINE_OA_KEY) + '&id=' + encodeURIComponent(x.contentId || ''));
+  function watchBillBox() {
+    if (!cloudDb || billBoxUnsub || !can('purchase')) return;
+    try {
+      billBoxUnsub = cloudDb.collection('billInbox').orderBy('createdAt', 'desc').limit(60).onSnapshot(snap => { countReads('billInbox', snap);
+        const l = []; snap.forEach(d => l.push(Object.assign({id: d.id}, d.data()))); billBox = l; renderBillBox();
+      }, e => { console.warn('billInbox', e); });
+    } catch (e) { console.warn(e); }
+  }
+  function renderBillBox() {
+    const card = $('billBoxCard'), box = $('billBox'); if (!card || !box) return;
+    if (!can('purchase')) { card.hidden = true; return; }
+    const nNew = billBox.filter(x => x.status !== 'done').length;
+    card.hidden = !billBox.length;
+    $('billBoxN').textContent = nNew ? '(' + nNew + ' ใบรอบันทึก)' : '';
+    const list = billBox.filter(x => billBoxTab === 'done' ? x.status === 'done' : x.status !== 'done');
+    box.innerHTML = list.length ? list.map(x => {
+      const isPdf = x.type === 'file' && /\.pdf$/i.test(x.fileName || '');
+      return '<div class="bb-it">' + (x.type === 'image' ? '<a href="' + esc(billSrc(x)) + '" target="_blank" rel="noopener"><img src="' + esc(billSrc(x)) + '" alt="บิลจาก ' + esc(x.fromName || 'LINE') + '" loading="lazy"></a>' : '<div class="bb-pdf">' + (isPdf ? 'PDF' : 'ไฟล์') + '</div>') +
+        '<div class="bb-meta"><b>' + esc(x.fromName || 'ไม่ทราบชื่อ') + '</b><span>' + esc(new Date(x.createdAt || 0).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + (x.fileName ? ' · ' + esc(x.fileName) : '') + '</span>' +
+        (x.status === 'done' ? '<span>✓ บันทึกแล้ว</span>' : (x.type === 'image' || isPdf ? '<button type="button" class="btn small good" data-bbscan="' + esc(x.id) + '">สแกนบันทึก</button>' : '') + '<button type="button" class="btn small" data-bbdone="' + esc(x.id) + '">ไม่ใช่บิล</button>') + '</div></div>';
+    }).join('') : '<div class="bb-empty">' + (billBoxTab === 'done' ? 'ยังไม่มีบิลที่บันทึก' : 'ไม่มีบิลรอบันทึก') + '</div>';
+  }
+  function markBillBox(id, patch) {
+    const x = billBox.find(b => b.id === id); if (!x) return;
+    Object.assign(x, patch); renderBillBox();
+    try { if (cloudDb) cloudDb.collection('billInbox').doc(id).set(patch, {merge: true}); } catch (e) { console.warn(e); }
+  }
+  let billBoxPending = null;   // บิลที่กำลังสแกน → บันทึกภาษีซื้อแล้วตีว่าเสร็จ
+  async function scanFromUrl(url, label, name) {
+    const res = await fetch(url); if (!res.ok) throw new Error('HTTP ' + res.status);
+    const blob = await res.blob(), isPdf = /pdf/i.test(blob.type) || /\.pdf$/i.test(name || '');
+    const file = new File([blob], name || (isPdf ? 'bill.pdf' : 'line-bill.jpg'), {type: blob.type || (isPdf ? 'application/pdf' : 'image/jpeg')});
+    showTab('purchase'); DOC_FORMS.purchase.reset(); openDocEdit('purchase', label);
+    readPurchasePhoto(file);
+    for (let i = 0; i < 60 && !purchaseOcrSource && !purchasePdfText; i++) await new Promise(r => setTimeout(r, 100));
+    if (purchaseOcrSource || purchasePdfText) scanPurchasePhoto(); else toast('แนบไฟล์แล้ว กด “สแกนและกรอกข้อมูล” ได้เลย');
+  }
+  function renderPurchTaxBox() {
+    const cs = $('purchCat'); if (cs && !cs.options.length) cs.innerHTML = '<option value="">— เลือกหมวด —</option>' + PURCH_CATS.map(c => '<option>' + esc(c) + '</option>').join('');
+    const isVat = $('purchClaim').value === 'vat';
+    $('purchVatOnly').hidden = !isVat;
+    const isExp = $('purchClaim').value === 'expense', ev = $('purchEvid').value;
+    $('purchExpOnly').hidden = !isExp;
+    $('purchEvidRow').hidden = !(isExp && ev !== 'receipt');
+    if (isExp && ev !== 'receipt') $('purchEvidHint').textContent = ev === 'sub' ? 'ใช้กับรายจ่ายเล็กๆ ที่ขอบิลไม่ได้ (ค่ารถ ของตลาด) — พิมพ์แล้วลงชื่อผู้จ่ายเงิน' : 'แนบบิลต้นฉบับ (เช่นค่าไฟชื่อเจ้าของบ้าน) + สลิปโอน — พิมพ์แล้วให้ผู้รับเงินลงชื่อ';
+    if (isVat) { renderClaimMonths(); renderTaxChecklist(); }
+    try { renderBankMatch(); } catch (e) {}
+  }
 
   // ---------- ตรวจข้อมูลในฟอร์มภาษีซื้อ (ใช้ทั้งหลังสแกนและตอนพิมพ์แก้) ----------
   let purchCheckSrc = '';
@@ -2957,10 +3462,26 @@ function bahtText(value) {
       if (vat >= amt) { issues.push('ยอด VAT มากกว่าหรือเท่ายอดเงินรวม'); bad.add('purchVat'); bad.add('purchAmount'); }
       else if (Math.abs(expect - vat) > 1) { issues.push('VAT ไม่ตรงกับ 7% ของยอดรวม: ยอดรวม ' + money(amt) + ' ควรมี VAT ' + money(expect) + ' บาท แต่กรอก ' + money(vat) + ' บาท (ถ้าบิลมีสินค้ายกเว้น VAT ปนอยู่ ข้ามได้)'); bad.add('purchVat'); bad.add('purchAmount'); }
     }
+    const claim = $('purchClaim') ? $('purchClaim').value : 'vat';
+    if (claim === 'vat') {
+      if (!(vat > 0) && (amt > 0 || taxEl.value.trim())) issues.push('ประเภท “ใบกำกับภาษีเต็มรูป” แต่ยังไม่มียอด VAT — ถ้าบิลไม่มี VAT ให้เปลี่ยนเป็น “ค่าใช้จ่ายอย่างเดียว”');
+      const st = taxChkState(), miss = TAX_CHK.filter(([k]) => st[k] === false).map(x => x[1]);
+      if (miss.length) issues.push('ใบกำกับยังไม่ครบ ' + miss.length + ' ข้อ (อาจใช้เป็นภาษีซื้อไม่ได้): ' + miss.join(' · '));
+      const w = claimWindow($('purchDate').value) || [], cm = $('purchClaimMonth') ? $('purchClaimMonth').value : '';
+      if (cm && w.length && w.indexOf(cm) < 0) issues.push('รอบภาษีที่เลือกเลยกำหนด 6 เดือนแล้ว');
+    }
+    if (purchDocSrc === 'slip') issues.push('รูปนี้เป็นสลิปโอนเงิน — สลิปอย่างเดียวไม่พอเป็นหลักฐานรายจ่าย ควรมีใบเสร็จ หรือทำใบสำคัญจ่ายแนบคู่กัน');
+    if (purchDocSrc && purchDocSrc !== 'slip') issues.push('หน้าคำสั่งซื้อ ' + ({shopee: 'Shopee', lazada: 'Lazada', tiktok: 'TikTok Shop'}[purchDocSrc]) + ' ไม่ใช่ใบกำกับภาษี — ถ้าต้องการใช้ VAT ให้ขอใบกำกับภาษีจากร้านในแอป');
+    if (claim === 'expense' && $('purchEvid').value !== 'receipt') {
+      if (!(amt > 0)) issues.push('ใส่ยอดเงินรวมก่อนสร้าง' + ($('purchEvid').value === 'sub' ? 'ใบรับรองแทนใบเสร็จ' : 'ใบสำคัญจ่าย'));
+      if (!$('purchNote').value.trim()) issues.push('ใส่รายละเอียดว่าจ่ายค่าอะไร (ช่องรายละเอียด) — เอกสารต้องระบุรายการ');
+      if ($('purchEvid').value === 'voucher' && !$('purchVendor').value.trim()) issues.push('ใบสำคัญจ่ายต้องมีชื่อผู้รับเงิน (ช่องร้านค้า/ผู้ขาย)');
+    }
+    if (claim === 'personal' && (vat > 0 || amt > 0)) issues.push('รายการนี้เป็น “ส่วนตัว” จะไม่ถูกนับในภาษีซื้อและค่าใช้จ่ายร้าน');
     const d = $('purchDate').value;
     if (d) {
       if (d > todayISO()) { issues.push('วันที่อยู่ในอนาคต (' + thDate(d) + ') ตรวจปี พ.ศ./ค.ศ. อีกครั้ง'); bad.add('purchDate'); }
-      else { const ago = (Date.parse(todayISO()) - Date.parse(d)) / 864e5; if (ago > 183) { issues.push('บิลเก่ากว่า 6 เดือน (' + thDate(d) + ') ตรวจวันที่ หรือสอบถามผู้ทำบัญชีว่ายังใช้เป็นภาษีซื้อได้ไหม'); bad.add('purchDate'); } }
+      else if (claim !== 'vat') { const ago = (Date.parse(todayISO()) - Date.parse(d)) / 864e5; if (ago > 400) { issues.push('บิลเก่ากว่า 1 ปี (' + thDate(d) + ') ตรวจวันที่อีกครั้ง'); bad.add('purchDate'); } }
     }
     ['purchVendorTax', 'purchVat', 'purchAmount', 'purchDate'].forEach(id => { const el = $(id); if (!el) return; el.classList.toggle('pbad', bad.has(id)); const w = el.closest('.in'); if (w) w.classList.toggle('pbad', bad.has(id)); });
     const hasAny = vat > 0 || amt > 0 || tax;
@@ -3078,7 +3599,7 @@ function bahtText(value) {
     const apiKey = (localStorage.getItem('bs_ai_key') || '').trim();
     try {
       let fields = null, usedAi = false, usedPdf = false, usedPaste = false, usedOpenThai = false;
-      if (pasted) { fields = parseReceiptText(pasted); usedPaste = true; }
+      if (pasted) { fields = parseReceiptText(pasted); usedPaste = true; purchOcrText = pasted; }
       if (!fields && provider !== 'none' && apiKey && !purchasePdfText) {
         btn.textContent = 'กำลังสแกนด้วย AI…';
         try {
@@ -3089,14 +3610,14 @@ function bahtText(value) {
           toast('สแกนด้วย AI ไม่สำเร็จ (' + (aiErr && aiErr.message ? aiErr.message : 'เชื่อมต่อไม่ได้') + ') กำลังลองสแกนด้วยระบบ OCR ธรรมดาแทน');
         }
       }
-      if (!fields && purchasePdfText) { fields = parseReceiptText(purchasePdfText); usedPdf = true; }
+      if (!fields && purchasePdfText) { fields = parseReceiptText(purchasePdfText); usedPdf = true; purchOcrText = purchasePdfText; }
       if (!fields) {
         btn.textContent = 'กำลังสแกนบิล…';
         // ตัวอ่านหลัก: OpenThai 2.0 OCR (รันในเครื่อง ไม่ส่งรูปออกไปไหน ไม่มีค่าใช้จ่าย) · โหลดไม่ได้ค่อยใช้ Tesseract
         try {
           await bsLoadScript('ocr/openthai-ocr.js');
           const r = await OpenThaiOCR.read(source, {onProgress: m => { btn.textContent = m; }});
-          fields = parseReceiptText(r.text); usedOpenThai = true;
+          fields = parseReceiptText(r.text); usedOpenThai = true; purchOcrText = r.text;
         } catch (e) { console.warn('OpenThai OCR', e); }
       }
       if (!fields) {
@@ -3105,8 +3626,11 @@ function bahtText(value) {
         if (typeof Tesseract === 'undefined') { toast('โหลดระบบสแกนบิลไม่สำเร็จ (ต้องใช้อินเทอร์เน็ต) กรอกข้อมูลด้วยตนเองได้เลย'); return; }
         const worker = await getOcrWorker();
         const {data: {text}} = await worker.recognize(source);
-        fields = parseReceiptText(text);
+        fields = parseReceiptText(text); purchOcrText = text;
       }
+      // สลิปโอน / คำสั่งซื้อออนไลน์: อ่านยอด-ผู้รับ-เลขคำสั่งซื้อแบบเฉพาะ และไม่ใช่ใบกำกับภาษี
+      purchDocSrc = docSourceOf(purchOcrText);
+      if (purchDocSrc) { const ss = parseSlipShop(purchOcrText, purchDocSrc); Object.keys(ss).forEach(k => { if (ss[k]) fields[k] = ss[k]; }); delete fields.vat; delete fields.vendorTax; fields._matched = false; }
       // จำร้าน: เลขผู้เสียภาษีตรงกับร้านที่เคยบันทึก → ใช้ชื่อ/ที่อยู่จากประวัติแทนค่าที่สแกน (แม่นกว่า)
       let known = null;
       if (fields.vendorTax) known = allVendors().find(v => String(v.tax || '').replace(/\D/g, '') === fields.vendorTax) || null;
@@ -3118,8 +3642,9 @@ function bahtText(value) {
         const el = $(map[k]);
         // วันที่ ช่องนี้เริ่มต้นเป็นวันนี้อยู่แล้ว จึงเขียนทับได้เสมอถ้าสแกนเจอวันที่จากบิล ส่วนช่องอื่นเขียนเฉพาะตอนยังว่าง
         const overwrite = k === 'date' ? true : (k === 'vendor' && known) ? true : !el.value.trim();
-        if (fields[k] && overwrite) { el.value = fields[k]; filled++; }
+        if (fields[k] && overwrite) { el.value = fields[k]; filled++; if (k === 'date' && $('purchClaimMonth')) $('purchClaimMonth').dataset.v = ''; }
       });
+      try { if (purchDocSrc) { $('purchClaim').value = 'expense'; $('purchEvid').value = purchDocSrc === 'slip' ? 'voucher' : 'receipt'; } if (!$('purchCat').value) { const g = guessPurchCat($('purchVendor').value, $('purchNote').value, purchOcrText); if (g) $('purchCat').value = g; } if (!(num($('purchVat').value) > 0) && fields.amount && !/ใบกำกับภาษี|tax\s*invoice/i.test(purchOcrText || '')) $('purchClaim').value = 'expense'; renderPurchTaxBox(); autoTaxChecklist(purchOcrText, fields); } catch (eC) { console.warn('checklist', eC); }
       checkPurchaseFields();
       toast(filled > 0 ? (usedPaste ? 'แยกข้อความเสร็จแล้ว' : usedPdf ? 'อ่าน PDF เสร็จแล้ว' : usedAi ? 'สแกนด้วย AI เสร็จแล้ว' : 'สแกนเสร็จแล้ว') + ' กรอกให้ ' + filled + ' ช่อง — กรุณาตรวจสอบความถูกต้องก่อนบันทึก'
                         : 'สแกนไม่พบข้อมูลที่มั่นใจพอ กรุณากรอกข้อมูลด้วยตนเอง');
@@ -3353,7 +3878,10 @@ function bahtText(value) {
   function collectPurchase() {
     return {date: $('purchDate').value, vendor: $('purchVendor').value, invoiceNo: $('purchInvoiceNo').value,
       vendorTax: $('purchVendorTax').value, vendorAddr: $('purchVendorAddr') ? $('purchVendorAddr').value : '', amount: $('purchAmount').value,
-      vat: $('purchVat').value, note: $('purchNote').value, photo: purchasePhoto, account: $('purchAccount').value || 'กิติพงษ์'};
+      vat: $('purchVat').value, note: $('purchNote').value, photo: purchasePhoto, account: $('purchAccount').value || 'กิติพงษ์',
+      claim: $('purchClaim').value || 'vat', cat: $('purchCat').value || '', evid: $('purchClaim').value === 'expense' ? $('purchEvid').value : '', evNo: $('purchEvid').dataset.no || '', bankOutId: purchBankOutId || '', docSrc: purchDocSrc || '', vendorBranch: $('purchVendorBranch').value.trim(),
+      claimMonth: $('purchClaim').value === 'vat' ? ($('purchClaimMonth').value || monthKey($('purchDate').value)) : '',
+      chk: (() => { const o = {}; TAX_CHK.forEach(([k]) => { if (purchChk[k] != null) o[k] = !!purchChk[k]; }); return o; })()};
   }
   function applyPurchase(p) {
     $('purchDate').value = p.date || todayISO(); $('purchVendor').value = p.vendor || '';
@@ -3362,7 +3890,13 @@ function bahtText(value) {
     $('purchNote').value = p.note || ''; purchasePhoto = p.photo || null;
     $('purchAccount').value = ACCOUNTS.indexOf(p.account) >= 0 ? p.account : 'กิติพงษ์';   // รายการเก่าไม่มีช่องนี้ = กิติพงษ์
     purchaseOcrSource = null; purchasePdfText = null; purchCheckSrc = ''; if ($('purchPasteText')) $('purchPasteText').value = '';
-    renderPurchasePhoto(); try { updateOcrButtonLabel(); checkPurchaseFields(); } catch (e) {}
+    purchOcrText = ''; purchChk = Object.assign({}, p.chk || {}); purchBankOutId = p.bankOutId || ''; purchDocSrc = p.docSrc || '';
+    renderPurchTaxBox();   // เติมตัวเลือกหมวดก่อนตั้งค่า
+    $('purchClaim').value = p.claim || (p.id ? (num(p.vat) > 0 ? 'vat' : 'expense') : 'vat');
+    $('purchCat').value = p.cat || ''; $('purchVendorBranch').value = p.vendorBranch || '';
+    $('purchEvid').value = p.evid || 'receipt'; $('purchEvid').dataset.no = p.evNo || '';
+    $('purchClaimMonth').dataset.v = p.claimMonth || '';
+    renderPurchasePhoto(); try { renderPurchTaxBox(); updateOcrButtonLabel(); checkPurchaseFields(); } catch (e) {}
   }
   function renderPurchEditState() {
     const el = $('purchEditState');
@@ -3389,14 +3923,14 @@ function bahtText(value) {
     const q = $('purchHistSearch') ? $('purchHistSearch').value : '';
     const shown = list.filter(p => (matchesSearch(p.vendor, q) || matchesSearch(p.invoiceNo, q)) && (!pm || monthKey(p.date) === pm));
     if ($('purchMonthSum')) {
-      const tv = shown.filter(p => NON_TAX_ACCOUNTS.indexOf(p.account) < 0).reduce((a, p) => a + num(p.vat), 0);
-      $('purchMonthSum').textContent = pm ? shown.length + ' ใบ · ภาษีซื้อ (บัญชียื่นภาษี) ' + money(round2(tv)) + ' บาท' : '';
+      const tv = store.get('bs_purchases', []).filter(p => isInputVat(p) && purchVatMonth(p) === pm).reduce((a, p) => a + num(p.vat), 0);
+      $('purchMonthSum').textContent = pm ? shown.length + ' ใบ · ภาษีซื้อที่ใช้สิทธิ์รอบนี้ ' + money(round2(tv)) + ' บาท' : '';
     }
     if (!shown.length) { $('purchHistory').innerHTML = notice + '<p class="empty">ไม่พบรายการของร้านค้าชื่อ “' + esc(q) + '”</p>'; renderDash(); renderReport(); return; }
     $('purchHistory').innerHTML = notice + '<ul>' + shown.map(p =>
       '<li data-id="' + esc(p.id) + '">' + (p.photo ? '<img class="thumb" src="' + p.photo + '" alt="">' : '') +
       '<div class="meta"><b>' + esc(p.vendor || 'ไม่ระบุร้านค้า') + '</b><small>' + esc(thDate(p.date)) + (p.createdBy ? ' · โดย ' + esc(p.createdBy) : '') + (NON_TAX_ACCOUNTS.indexOf(p.account) >= 0 ? ' · <span class="status-pill taxoff">' + esc(p.account) + ' · ไม่ยื่นภาษี</span>' : '') + '</small></div>' +
-      (num(p.vat) > 0 ? '<span class="amt">VAT ' + money(num(p.vat)) + ' บาท</span>' : '<span class="amt" style="color:#4a5a72">ไม่มี VAT · ' + money(num(p.amount)) + ' บาท</span>') +
+      (purchClaimOf(p) === 'personal' ? '<span class="amt" style="color:#6b7280">ส่วนตัว · ' + money(num(p.amount)) + ' บาท</span>' : purchClaimOf(p) === 'vat' ? '<span class="amt">VAT ' + money(num(p.vat)) + ' บาท' + (p.claimMonth && p.claimMonth !== monthKey(p.date) ? ' · รอบ ' + esc(thMonthFull(p.claimMonth)) : '') + '</span>' : '<span class="amt" style="color:#4a5a72">ค่าใช้จ่าย · ' + money(num(p.amount)) + ' บาท</span>') + (p.bankOutId ? '<span class="status-pill" style="cursor:default" title="ผูกกับเงินออกจาก SMS แล้ว">✓ เงินออก</span>' : '') +
       '<button class="btn small edit" data-act="open" type="button">เปิดแก้ไข</button>' +
       '<button class="btn small del" data-act="del" type="button">ลบ</button></li>').join('') + '</ul>';
     renderDash();
@@ -3417,8 +3951,10 @@ function bahtText(value) {
     const persisted = store.set('bs_purchases', list);
     cloudSave('purchases', rec);
     upsertVendor(rec.vendor, rec.vendorTax, rec.vendorAddr);
+    try { const vl = store.get('bs_vendors', []), vi = vl.findIndex(v => String(v.name || '').trim() === String(rec.vendor || '').trim()); if (vi >= 0 && (rec.cat || rec.vendorBranch)) { vl[vi] = Object.assign({}, vl[vi], rec.cat ? {cat: rec.cat} : {}, rec.vendorBranch ? {branch: rec.vendorBranch} : {}); store.set('bs_vendors', vl); cloudSave('vendors', Object.assign({id: vendorCloudId(vl[vi].name)}, vl[vi])); } } catch (e) {}
     renderPurchHistory(); renderPurchEditState();
     syncRecordPhotosToCloud('bs_purchases', 'purchases', rec.id, 'photo', renderPurchHistory);
+    if (billBoxPending) { markBillBox(billBoxPending, {status: 'done', doneAt: Date.now(), purchaseId: rec.id}); billBoxPending = null; }
     if (docEdit.cur === 'purchase') setTimeout(closeDocEdit, 0);
     toast((persisted || cloudStatus === 'on') ? (wasEditing ? 'บันทึกทับรายการแล้ว' : 'บันทึกรายการภาษีซื้อแล้ว')
                     : 'บันทึกชั่วคราวแล้ว (เบราว์เซอร์เครื่องนี้ไม่อนุญาตให้เก็บถาวร และยังต่อคลาวด์ไม่ได้ — อย่าเพิ่งปิดหน้านี้)');
@@ -3646,9 +4182,10 @@ function bahtText(value) {
     if (m.type === 'flex') return '<span class="chat-flex">🃏 ' + esc(m.text || 'การ์ด') + '</span>';
     if (m.type === 'video' && m.url) return m.preview ? '<a class="chat-vid" href="' + esc(m.url) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(m.preview) + '" alt="วิดีโอ" loading="lazy"><i>▶</i></a>' : '<a class="chat-file" href="' + esc(m.url) + '" target="_blank" rel="noopener">▶ เปิดวิดีโอ</a>';
     if (m.type === 'file' && m.url) return '<a class="chat-file" href="' + esc(m.url) + '" target="_blank" rel="noopener">' + esc(m.text || 'เปิดไฟล์') + '</a>';
-    if (m.type === 'image' && m.url) return '<a href="' + esc(m.url) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(m.preview || m.url) + '" alt="รูปที่ส่ง" loading="lazy"></a>';
+    const toP = u => can('purchase') ? '<button type="button" class="chat-topurch" data-topurch="' + esc(u) + '">ส่งเข้าภาษีซื้อ</button>' : '';   // รูปบิลในแชต → บันทึกภาษีซื้อ + สแกนให้
+    if (m.type === 'image' && m.url) return '<a href="' + esc(m.url) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(m.preview || m.url) + '" alt="รูปที่ส่ง" loading="lazy"></a>' + toP(m.url);
     if (m.type === 'image' && m.localUrl) return '<img class="chat-img sending" src="' + esc(m.localUrl) + '" alt="กำลังส่งรูป">';
-    if (m.type === 'image' && m.contentId) return '<a href="' + esc(src(m.contentId)) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(src(m.contentId)) + '" alt="รูปจากลูกค้า" loading="lazy"></a>';
+    if (m.type === 'image' && m.contentId) return '<a href="' + esc(src(m.contentId)) + '" target="_blank" rel="noopener"><img class="chat-img" src="' + esc(src(m.contentId)) + '" alt="รูปจากลูกค้า" loading="lazy"></a>' + toP(src(m.contentId));
     if (m.type === 'sticker' && m.stickerId) return '<img class="chat-sticker" src="https://stickershop.line-scdn.net/stickershop/v1/sticker/' + esc(m.stickerId) + '/android/sticker.png" alt="สติกเกอร์" loading="lazy">';
     if ((m.type === 'video' || m.type === 'audio' || m.type === 'file') && m.contentId) return '<a class="chat-file" href="' + esc(src(m.contentId)) + '" target="_blank" rel="noopener">' + esc(m.text || 'เปิดไฟล์') + '</a>';
     return esc(m.text || '').replace(/\n/g, '<br>');
@@ -3657,7 +4194,25 @@ function bahtText(value) {
   let voiceAudio = null, voiceBtn = null;
   const fmtSec = t => isFinite(t) && t > 0 ? Math.floor(t / 60) + ':' + pad2(Math.floor(t % 60)) : '';
   function voiceUi(btn, playing) { if (!btn) return; btn.querySelector('.cv-ico').textContent = playing ? '❚❚' : '▶'; btn.classList.toggle('on', playing); }
-  $('chatMsgs').addEventListener('click', e => {
+  $('chatMsgs').addEventListener('click', async e => {
+    const tp = e.target.closest('[data-topurch]');
+    if (tp) {
+      e.preventDefault(); tp.disabled = true; const lbl = tp.textContent; tp.textContent = 'กำลังดึงรูป…';
+      try {
+        const res = await fetch(tp.dataset.topurch); if (!res.ok) throw new Error('HTTP ' + res.status);
+        const blob = await res.blob(); if (!/^image\//.test(blob.type || 'image/jpeg')) throw new Error('not image');
+        const file = new File([blob], 'line-bill.jpg', {type: blob.type || 'image/jpeg'});
+        showTab('purchase'); DOC_FORMS.purchase.reset(); openDocEdit('purchase', 'บันทึกภาษีซื้อจากแชต');
+        readPurchasePhoto(file);
+        // รอให้แนบรูปเสร็จ แล้วสแกนให้เลย (ผู้ใช้กดสั่งเองจากปุ่มนี้)
+        for (let i = 0; i < 40 && !purchaseOcrSource; i++) await new Promise(r => setTimeout(r, 100));
+        const c = chatList.find(x => x.userId === chatSel) || {};
+        if (c.name && !$('purchNote').value.trim()) $('purchNote').value = 'บิลจากแชต ' + c.name;
+        if (purchaseOcrSource) scanPurchasePhoto(); else toast('แนบรูปแล้ว กด “สแกนและกรอกข้อมูล” ได้เลย');
+      } catch (er) { console.error(er); toast('ดึงรูปจากแชตไม่ได้ ลองบันทึกรูปแล้วแนบเองในหน้าภาษีซื้อ'); }
+      finally { tp.disabled = false; tp.textContent = lbl; }
+      return;
+    }
     const btn = e.target.closest('[data-voice]'); if (!btn) return;
     e.preventDefault();
     if (voiceAudio && voiceBtn === btn) { if (voiceAudio.paused) voiceAudio.play().catch(() => {}); else voiceAudio.pause(); return; }
@@ -6203,6 +6758,8 @@ function bahtText(value) {
   }
   function whDetailHTML(g) {
     let h = '<div class="wd">';
+    const hasJbs = store.get('bs_jobs', []).some(j => /^JBS/i.test(String(j.no || '').trim()) && String(j.jName || '').trim() === String(g.name || '').trim());
+    if (hasJbs) h += '<div class="wd-trk"><button class="btn small good" type="button" data-act="wtrack">🔗 ส่งลิงก์ติดตามงาน</button><button class="btn small" type="button" data-act="wtrackcopy">คัดลอกลิงก์</button><button class="btn small" type="button" data-act="wtrackopen">ดูหน้าที่ลูกค้าเห็น</button></div>';
     if (!g.open.length) h += '<p class="hint" style="margin:0 0 10px">ไม่มีบิลค้าง งานใหม่ที่คีย์ชื่อร้านนี้จะเปิดบิลใหม่ให้เองและเริ่มนับยอดใหม่</p>';
     g.open.forEach(w => {
       const its = w.items || [], t = wholesaleCalc(w);
@@ -6936,6 +7493,55 @@ function bahtText(value) {
     } catch (e) { return iso || '—'; }
   }
 
+  // ---------- ใบรับรองแทนใบเสร็จรับเงิน (SR) / ใบสำคัญจ่าย (PV) จากข้อมูลในฟอร์มภาษีซื้อ ----------
+  function evidNo(kind, date) {
+    const el = $('purchEvid'); if (el.dataset.no && el.dataset.no.indexOf(kind) === 0) return el.dataset.no;
+    const d = new Date((date || todayISO()) + 'T00:00:00'), pre = kind + String((d.getFullYear() + 543) % 100).padStart(2, '0') + pad2(d.getMonth() + 1) + '-';
+    const used = store.get('bs_purchases', []).map(p => String(p.evNo || '')).filter(n => n.indexOf(pre) === 0).map(n => parseInt(n.slice(pre.length), 10) || 0);
+    const no = pre + String((used.length ? Math.max(...used) : 0) + 1).padStart(3, '0');
+    el.dataset.no = no; return no;
+  }
+  async function drawEvidencePages(kind) {   // kind: 'sub' | 'voucher'
+    await prepAssets();
+    const isSub = kind === 'sub', date = $('purchDate').value || todayISO(), amt = round2(num($('purchAmount').value));
+    const no = evidNo(isSub ? 'SR' : 'PV', date), payee = $('purchVendor').value.trim(), note = $('purchNote').value.trim() || $('purchCat').value || 'ค่าใช้จ่าย';
+    const pages = []; const pg = mkPage(), x = pg.x; pages.push(pg.c);
+    let y = drawHeader(x, isSub ? 'ใบรับรองแทนใบเสร็จรับเงิน' : 'ใบสำคัญจ่าย', ['เลขที่ ' + no, 'วันที่ ' + thDate(date)], null);
+    const L = M, R = PW - M, row = (k, v, yy) => { T(x, k, L, yy, {s: 3.6, c: MUTED}); wrapText(x, v || '—', CW - 42, {s: 3.8}).forEach((ln, i) => T(x, ln, L + 42, yy + i * 5, {s: 3.8, w: i ? 400 : 600})); };
+    if (!isSub) {
+      row('จ่ายให้', payee, y); y += 6.5;
+      row('ที่อยู่', ($('purchVendorAddr').value || '').trim(), y); y += 6.5;
+      row('เลขภาษี / บัตร ปชช.', ($('purchVendorTax').value || '').trim(), y); y += 9;
+    }
+    // ตาราง
+    const cols = [L, L + 22, R - 34, R];
+    RECT(x, L, y, CW, 8, HEAD); HL(x, L, R, y, LINE, 0.3); HL(x, L, R, y + 8, LINE, 0.3);
+    T(x, 'วัน เดือน ปี', cols[0] + 2, y + 5.4, {s: 3.4, w: 700}); T(x, 'รายละเอียดรายจ่าย', cols[1] + 2, y + 5.4, {s: 3.4, w: 700}); T(x, 'จำนวนเงิน (บาท)', cols[3] - 2, y + 5.4, {s: 3.4, w: 700, a: 'right'});
+    y += 8;
+    const lines = wrapText(x, note + (isSub && payee ? ' (ผู้ขาย: ' + payee + ')' : ''), cols[2] - cols[1] - 4, {s: 3.7});
+    const h = Math.max(30, lines.length * 5.2 + 6);
+    lines.forEach((ln, i) => T(x, ln, cols[1] + 2, y + 6 + i * 5.2, {s: 3.7}));
+    T(x, thDateShort(date), cols[0] + 2, y + 6, {s: 3.6}); T(x, money(amt), cols[3] - 2, y + 6, {s: 3.8, w: 600, a: 'right'});
+    [cols[0], cols[1], cols[2], cols[3]].forEach(cx => RECT(x, cx - 0.15, y - 8, 0.3, h + 8 + 9, LINE));
+    y += h; HL(x, L, R, y, LINE, 0.3);
+    RECT(x, L, y, CW, 9, '#f7f9fc'); T(x, '(' + bahtText(amt) + ')', cols[1] + 2, y + 6, {s: 3.6, c: MUTED}); T(x, 'รวม', cols[2] + 2, y + 6, {s: 3.6, w: 700}); T(x, money(amt), cols[3] - 2, y + 6, {s: 4, w: 700, a: 'right'});
+    y += 9; HL(x, L, R, y, INK, 0.45); y += 10;
+    if (isSub) {
+      const who = shop.promptpayName || shop.name;
+      wrapText(x, 'ข้าพเจ้า ' + who + ' ผู้ประกอบการ ' + shop.name + ' ขอรับรองว่า รายจ่ายข้างต้นนี้ไม่อาจเรียกเก็บใบเสร็จรับเงินจากผู้รับได้ และข้าพเจ้าได้จ่ายไปในกิจการของร้านโดยแท้', CW, {s: 3.8}).forEach(ln => { T(x, ln, L, y, {s: 3.8}); y += 5.6; });
+      y += 18;
+      const sig = (cx, t) => { HL(x, cx - 30, cx + 30, y, INK, 0.3); T(x, t, cx, y + 5, {s: 3.4, a: 'center', c: MUTED}); T(x, 'วันที่ ......../......../........', cx, y + 10.5, {s: 3.2, a: 'center', c: MUTED}); };
+      sig(L + 45, 'ผู้เบิกจ่าย (ลงชื่อ)'); sig(R - 45, 'ผู้อนุมัติ (ลงชื่อ)');
+    } else {
+      const acc = $('purchAccount').value || 'กิติพงษ์';
+      T(x, 'จ่ายโดย', L, y, {s: 3.6, c: MUTED}); T(x, '☐ เงินสด    ☐ โอนเงิน  บัญชี ' + acc + '    ☐ เช็ค เลขที่ ..................', L + 42, y, {s: 3.7}); y += 7;
+      T(x, 'เอกสารแนบ', L, y, {s: 3.6, c: MUTED}); T(x, '☐ บิล/ใบแจ้งหนี้ต้นฉบับ    ☐ สลิปโอนเงิน    ☐ สำเนาบัตรผู้รับเงิน (กรณีจ่ายเงินสด)', L + 42, y, {s: 3.7}); y += 22;
+      const sig = (cx, t) => { HL(x, cx - 25, cx + 25, y, INK, 0.3); T(x, t, cx, y + 5, {s: 3.3, a: 'center', c: MUTED}); T(x, 'วันที่ ....../....../......', cx, y + 10.5, {s: 3.1, a: 'center', c: MUTED}); };
+      sig(L + 31, 'ผู้จ่ายเงิน'); sig(PW / 2, 'ผู้อนุมัติ'); sig(R - 31, 'ผู้รับเงิน');
+    }
+    T(x, 'สร้างจากระบบ ' + shop.name + ' · เก็บคู่กับหลักฐานการจ่ายเงิน', PW / 2, PH - 8, {s: 2.8, c: MUTED, a: 'center'});
+    return pages;
+  }
   async function drawReportPages(kind) {
     await prepAssets();
     const sel = $('reportMonth').value;
@@ -7111,6 +7717,7 @@ function bahtText(value) {
       : kind === 'wholesale' ? await drawWholesalePages()
       : kind === 'quote' ? await drawQuotePages()
       : kind === 'reportSales' ? await drawReportPages('sales') : kind === 'reportPurch' ? await drawReportPages('purchase')
+      : kind === 'subReceipt' ? await drawEvidencePages('sub') : kind === 'voucher' ? await drawEvidencePages('voucher')
       : await drawCalcPages();
     const imgs = await Promise.all(pages.map(pageToPdfImage));
     const blob = buildPdf(imgs);
@@ -7122,6 +7729,7 @@ function bahtText(value) {
     else if (kind === 'quote') name = 'ใบเสนอราคา-' + ($('quoteNo').value || 'เอกสาร') + '.pdf';
     else if (kind === 'reportSales') name = 'รายงานภาษีขาย-' + (sel || 'ทั้งหมด') + '.pdf';
     else if (kind === 'reportPurch') name = 'รายงานภาษีซื้อ-' + (sel || 'ทั้งหมด') + '.pdf';
+    else if (kind === 'subReceipt' || kind === 'voucher') name = (kind === 'voucher' ? 'ใบสำคัญจ่าย-' : 'ใบรับรองแทนใบเสร็จ-') + ($('purchEvid').dataset.no || 'เอกสาร') + '.pdf';
     else { const r = lastLayout || readLayout(); name = 'ผลคำนวณสติ๊กเกอร์-' + fmt(r.sw) + 'x' + fmt(r.sh) + 'cm.pdf'; }
     name = name.replace(/[\\\\/:*?"<>|]/g, '-');
     return {blob, name, pages};
@@ -7507,7 +8115,7 @@ function bahtText(value) {
   if (!PAGECHAT_ENABLED) document.querySelectorAll('[data-tab="pagechat"]').forEach(el => { el.hidden = true; });   // ซ่อนปุ่มเมนูแชตเพจทุกที่ (รวมผู้ดูแลสูงสุด)
 
   /* ---------------- events ---------------- */
-  const TAX_TABS = ['dash', 'money', 'bill', 'purchase', 'vat', 'report'];   // กลุ่ม "เงิน & ภาษี" ในเมนู
+  const TAX_TABS = ['dash', 'money', 'cost', 'bill', 'purchase', 'vat', 'report'];   // กลุ่ม "เงิน & ภาษี" ในเมนู
 
   /* ---------------- งานออกแบบ: โน้ต + รูป (แปะรูปแชท/แบบ) → ส่งไปใบคอนเฟิร์มงาน ----------------
      เก็บที่ bs_designs ซิงก์คลาวด์คอลเลกชัน 'designs' · โน้ต = {text, photos[], approved[] (รูปที่ติ๊กใช้), sentAt}
@@ -7784,7 +8392,7 @@ function bahtText(value) {
   function showTab(name) {
     closeJobModal();
     if (!can(name)) name = firstAllowedTab(); // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้ หรือโค้ดส่วนอื่นที่สั่งเปิดหน้า
-    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost', 'pagechat', 'floor', 'cutq', 'money', 'lekha'].forEach(n => {
+    ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost', 'pagechat', 'floor', 'cutq', 'money', 'cost', 'lekha'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
       $('tab-' + n).setAttribute('aria-selected', String(n === name));
     });
@@ -7811,6 +8419,7 @@ function bahtText(value) {
     if (name === 'pagechat') renderPageChat(); else pcStop();
     if (name === 'cutq') renderCutq();
     if (name === 'money') renderMoney();
+    if (name === 'cost') renderCost();
     if (name === 'lekha') lekhaOpen(); else lekhaStop();
     const activeTab = isTax ? $('taxTrigger') : $('tab-' + name);
     if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
@@ -7844,8 +8453,8 @@ function bahtText(value) {
   $('vat-copy').addEventListener('click', copyVatResult);
   $('paper').addEventListener('change', onPaperChange);
   try { const pg = localStorage.getItem('bs_price_page'); if (pg && PRICE_PAGES[pg]) $('pricePage').value = pg; } catch (e) {}
-  $('pricePage').addEventListener('change', () => { try { localStorage.setItem('bs_price_page', $('pricePage').value); } catch (e) {} renderPrice(); });
-  $('priceQty').addEventListener('input', renderPrice);
+  $('pricePage').addEventListener('change', () => { try { localStorage.setItem('bs_price_page', $('pricePage').value); } catch (e) {} renderPrice(); try { renderQC(); } catch (e) {} });
+  $('priceQty').addEventListener('input', () => { renderPrice(); try { renderQC(); } catch (e) {} });
   $('priceAdj').addEventListener('input', renderPrice);
   renderPrice();
   $('print-calc').addEventListener('click', () => {
@@ -8696,6 +9305,25 @@ function bahtText(value) {
     }
     const act = btn.dataset.act, box = btn.closest('[data-doc]'), id = box ? box.dataset.doc : '';
     const list = store.get('bs_wholesale', []);
+    if (act === 'wtrack' || act === 'wtrackcopy' || act === 'wtrackopen') {   // ลิงก์ติดตามงานของร้านส่งนี้ (หน้าเดียวเห็นทุกใบงาน + ยอดค้าง)
+      const url = chargeLinkFor(name); if (!url) { toast('ร้านนี้ยังไม่มีใบงานส่ง (JBS)'); return; }
+      if (act === 'wtrackopen') {
+        const old = document.getElementById('trkPop'); if (old) old.remove();
+        const pop = document.createElement('div'); pop.id = 'trkPop'; pop.className = 'trk-pop';
+        pop.innerHTML = '<div class="tp-box"><div class="tp-h"><span>หน้าติดตามของ ' + esc(name) + ' (ที่ลูกค้าเห็น)</span><button type="button" data-tpclose>ปิด ✕</button></div><div class="tp-ld">กำลังโหลด…</div></div>';
+        pop.addEventListener('click', ev => { if (ev.target === pop || ev.target.closest('[data-tpclose]')) pop.remove(); });
+        document.body.appendChild(pop);
+        setTimeout(() => { if (!pop.isConnected) return; const fr = document.createElement('iframe'); fr.title = 'หน้าติดตามของลูกค้า'; fr.src = url + '&_=' + Date.now(); fr.addEventListener('load', () => { const l = pop.querySelector('.tp-ld'); if (l) l.remove(); }); pop.querySelector('.tp-box').appendChild(fr); }, 900);
+        return;
+      }
+      const nm = /^(คุณ|พี่|น้อง|ร้าน)/.test(name) ? name : 'คุณ' + name;
+      const msg = act === 'wtrackcopy' ? url : nm + ' ติดตามสถานะงานทั้งหมดได้ที่นี่ค่ะ 👇\n' + url;
+      (async () => {
+        try { if (act === 'wtrack' && PHONE_SHARE && navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือกแชตของลูกค้าส่งได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+        try { await navigator.clipboard.writeText(msg); toast(act === 'wtrackcopy' ? 'คัดลอกลิงก์แล้ว' : 'คัดลอกข้อความพร้อมลิงก์แล้ว ไปวางส่งให้ลูกค้าได้เลย'); } catch (e) { prompt('คัดลอกลิงก์นี้', msg); }
+      })();
+      return;
+    }
     if (act === 'addjob') {
       if (btn.dataset.again) {   // งานที่อยู่ในบิลแล้ว (เช่น บิลเดิมจ่ายไปแล้ว) → ใส่เข้าบิลค้างปัจจุบัน/บิลใหม่อีกครั้ง · กดยืนยัน 2 ครั้งกันซ้ำโดยไม่ตั้งใจ
         if (whAgainArmed !== btn.dataset.jid) { whAgainArmed = btn.dataset.jid; btn.textContent = 'กดอีกครั้งเพื่อยืนยัน'; btn.classList.add('good'); setTimeout(() => { if (whAgainArmed === btn.dataset.jid) { whAgainArmed = null; renderWholesaleHistory(); } }, 4000); return; }
@@ -9047,7 +9675,25 @@ function bahtText(value) {
   $('purchPhotoRemove').addEventListener('click', () => { purchasePhoto = null; purchaseOcrSource = null; purchasePdfText = null; updateOcrButtonLabel(); $('purchPhotoInput').value = ''; renderPurchasePhoto(); });
   $('ocrScanBtn').addEventListener('click', () => scanPurchasePhoto());
   $('purchPasteBtn').addEventListener('click', () => { const t = $('purchPasteText').value; if (!t.trim()) { toast('วางข้อความจากบิลก่อน'); $('purchPasteText').focus(); return; } scanPurchasePhoto(t); });
-  ['purchVendorTax', 'purchVat', 'purchAmount', 'purchDate'].forEach(id => { const el = $(id); if (el) { el.addEventListener('input', checkPurchaseFields); el.addEventListener('change', checkPurchaseFields); } });
+  ['purchVendorTax', 'purchVat', 'purchAmount', 'purchDate', 'purchVendor', 'purchVendorAddr', 'purchInvoiceNo', 'purchVendorBranch'].forEach(id => { const el = $(id); if (el) { const fn = () => { if (id === 'purchDate') { $('purchClaimMonth').dataset.v = ''; } try { renderPurchTaxBox(); } catch (e) {} checkPurchaseFields(); }; el.addEventListener('input', fn); el.addEventListener('change', fn); } });
+  $('purchClaim').addEventListener('change', () => { renderPurchTaxBox(); checkPurchaseFields(); });
+  $('purchEvid').addEventListener('change', () => { renderPurchTaxBox(); checkPurchaseFields(); });
+  $('billBox').addEventListener('click', async e => {
+    const sb = e.target.closest('[data-bbscan]'), db = e.target.closest('[data-bbdone]');
+    if (db) { markBillBox(db.dataset.bbdone, {status: 'done', doneAt: Date.now()}); toast('ย้ายไป “บันทึกแล้ว”'); return; }
+    if (!sb) return;
+    const x = billBox.find(b => b.id === sb.dataset.bbscan); if (!x) return;
+    sb.disabled = true; const t = sb.textContent; sb.textContent = 'กำลังดึงไฟล์…';
+    try { billBoxPending = x.id; await scanFromUrl(billSrc(x), 'บิลจาก LINE · ' + (x.fromName || ''), x.fileName); if (!$('purchNote').value.trim() && x.fromName) $('purchNote').value = 'บิลจาก LINE ' + x.fromName; }
+    catch (er) { billBoxPending = null; console.error(er); toast('ดึงไฟล์จาก LINE ไม่ได้ ลองใหม่ หรือบันทึกรูปแล้วแนบเอง'); }
+    finally { sb.disabled = false; sb.textContent = t; }
+  });
+  document.querySelector('.bb-tabs').addEventListener('click', e => { const b = e.target.closest('[data-bb]'); if (!b) return; billBoxTab = b.dataset.bb; document.querySelectorAll('.bb-tabs button').forEach(x => x.classList.toggle('on', x === b)); renderBillBox(); });
+  $('purchBankMatch').addEventListener('click', e => { const b = e.target.closest('[data-bm]'); if (!b) return; purchBankOutId = b.dataset.bm; renderBankMatch(); checkPurchaseFields(); toast(purchBankOutId ? 'ผูกกับเงินออกแล้ว (บันทึกเพื่อเก็บ)' : 'เลิกผูกแล้ว'); });
+  $('purchEvidPdf').addEventListener('click', e => { const ev = $('purchEvid').value; exportDoc(ev === 'voucher' ? 'voucher' : 'subReceipt', e.currentTarget); });
+  $('purchClaimMonth').addEventListener('change', e => { e.target.dataset.v = e.target.value; renderClaimMonths(); checkPurchaseFields(); });
+  $('purchChk').addEventListener('change', e => { const k = e.target.dataset.chk; if (!k) return; purchChk[k] = e.target.checked; renderTaxChecklist(); checkPurchaseFields(); });
+  $('purchVendor').addEventListener('change', () => { const v = store.get('bs_vendors', []).find(x => String(x.name || '').trim() === $('purchVendor').value.trim()); if (v && v.branch && !$('purchVendorBranch').value.trim()) $('purchVendorBranch').value = v.branch; if (!$('purchCat').value) { const g = guessPurchCat($('purchVendor').value, $('purchNote').value, ''); if (g) $('purchCat').value = g; } renderPurchTaxBox(); });
 
   /* ---------------- ตั้งค่า AI ช่วยสแกนใบกำกับภาษี (เก็บใน localStorage ของเบราว์เซอร์นี้เท่านั้น ไม่ซิงก์ขึ้นคลาวด์) ---------------- */
   (function initAiSettings() {
@@ -9079,7 +9725,7 @@ function bahtText(value) {
   })();
   updateOcrButtonLabel();
   $('save-purchase').addEventListener('click', savePurchase);
-  $('new-purchase').addEventListener('click', () => { $('purchPhotoInput').value = ''; newPurchase(); toast('เปิดรายการใหม่แล้ว'); });
+  $('new-purchase').addEventListener('click', () => { billBoxPending = null; $('purchPhotoInput').value = ''; newPurchase(); toast('เปิดรายการใหม่แล้ว'); });
   let purchDelArmed = null, purchDelTimer = null;
   $('purchHistory').addEventListener('click', e => {
     const btn = e.target.closest('button[data-act]'); if (!btn) return;
@@ -9118,7 +9764,7 @@ function bahtText(value) {
   }
   function applyRoleUI() {
     setTimeout(syncNavSections, 0);
-    if (can('money')) { ['tab-money', 'sheetMoney'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }
+    if (can('money')) { ['tab-money', 'sheetMoney', 'tab-cost', 'sheetCost'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }
     if (isSuper || isOwnerFixed(meRec)) { ['sheetOffice', 'tab-office', 'tab-lekha', 'sheetLekha'].forEach(id => { const e = $(id); if (e) e.hidden = false; }); }   // ออฟฟิศ AI: เปิดแชต Claude ได้ เฉพาะเจ้าของ
     if (isSuper) return;
     // ซ่อนหน้าที่ไม่ได้รับสิทธิ์ ทั้งแถบเมนูบน เมนูภาษี เมนูล่างบนมือถือ และแผ่น "เพิ่มเติม"
@@ -9741,8 +10387,10 @@ function bahtText(value) {
     watchCloud('wholesale', 'bs_wholesale', renderWholesaleHistory);
     watchCloud('quotes', 'bs_quotes', renderQuoteHistory);
     watchCloud('purchases', 'bs_purchases', () => { renderPurchHistory(); renderVendorDatalist(); });
+    try { watchBillBox(); } catch (e) {}
     watchCloud('customers', 'bs_customers', () => { renderCustomerDatalist(); try { renderWholesaleHistory(); } catch (e) {} });
     watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
+    if (can('money')) watchCloud('costCfg', 'bs_cost_cfg', () => { renderCost(); try { renderPrice(); } catch (e) {} });
     watchBankIn();
     watchBankOut();
     watchLineChats();
@@ -9778,6 +10426,10 @@ function bahtText(value) {
   $('report-all').addEventListener('click', () => { $('reportMonth').value = ''; renderReport(); });
   $('report-csv-sales').addEventListener('click', () => exportReportCsv('sales'));
   $('report-csv-purch').addEventListener('click', () => exportReportCsv('purchase'));
+  $('yrSel').addEventListener('change', renderYearSummary);
+  $('yrQuickBtn').addEventListener('click', quickExpense);
+  $('yrQuick').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); quickExpense(); } });
+  $('yr-xlsx').addEventListener('click', e => exportYearXlsx(e.currentTarget));
   $('report-csv-nonvat').addEventListener('click', () => exportReportCsv('purchaseNonVat'));
   $('report-pdf-sales').addEventListener('click', () => exportDoc('reportSales', $('report-pdf-sales'), {forPrint: true}));
   $('report-pdf-purch').addEventListener('click', () => exportDoc('reportPurch', $('report-pdf-purch'), {forPrint: true}));
