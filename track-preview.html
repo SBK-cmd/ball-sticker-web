@@ -321,6 +321,18 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
   // หัวโปรไฟล์ลูกค้าส่ง: โลโก้แบบสติ๊กเกอร์ไดคัท + ชื่อ + ตัวเลขสรุป + แถบผลงานของลูกค้า (รูปจากทุกใบงาน)
   // ลูกค้าอัปโลโก้เอง: ย่อจัตุรัส 640px → Cloudinary → logoReq/{token} ให้แอปร้านบันทึกเป็นโลโก้ลูกค้า (แสดงบนหน้านี้ทันที)
   function toast2(t) { var d = document.createElement('div'); d.className = 'toast2'; d.setAttribute('role', 'status'); d.textContent = t; document.body.appendChild(d); setTimeout(function () { d.remove(); }, 2600); }
+  var upCol = '';
+  function logoColorOf(cv) {   // สีหลักของโลโก้ (สูตรเดียวกับแอปร้าน): สีอิ่มตัว 24 กลุ่มเฉด เอากลุ่มที่มากสุด
+    var d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data, bins = {}, i, top = null;
+    for (i = 0; i < d.length; i += 16) {
+      var a = d[i + 3]; if (a < 200) continue; var r = d[i], g = d[i + 1], b = d[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0;
+      if (sat < 0.35 || mx < 60 || (mx > 250 && mn > 200)) continue;
+      var h = 0; if (mx !== mn) { h = mx === r ? (g - b) / (mx - mn) : mx === g ? 2 + (b - r) / (mx - mn) : 4 + (r - g) / (mx - mn); h = ((h * 60) + 360) % 360; }
+      var k = Math.floor(h / 15), o = bins[k] || (bins[k] = {n: 0, r: 0, g: 0, b: 0}); o.n++; o.r += r; o.g += g; o.b += b;
+    }
+    Object.keys(bins).forEach(function (k) { if (!top || bins[k].n > top.n) top = bins[k]; }); if (!top || top.n < 20) return '';
+    var hx = function (v) { return ('0' + Math.round(v / top.n).toString(16)).slice(-2); }; return '#' + hx(top.r) + hx(top.g) + hx(top.b);
+  }
   function uploadLogo(f, j) {
     var wm = document.querySelector('.h2wm'); if (!/^image\//.test(f.type || '')) return toast2('เลือกไฟล์รูปภาพนะครับ');
     wm.classList.add('busy');
@@ -333,13 +345,17 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
         if (q > 0.55) { q -= 0.1; return enc(); }
         var c2 = document.createElement('canvas'); c2.width = c2.height = Math.round(c.width * 0.8); c2.getContext('2d').drawImage(c, 0, 0, c2.width, c2.height); c = c2; q = 0.85; return enc();
       }); }
+      try { upCol = logoColorOf(c); } catch (e) { upCol = ''; }
       return enc();
     }).then(function (blob) {
       var fd = new FormData(); fd.append('file', blob); fd.append('upload_preset', 'nkbscpgs'); fd.append('folder', 'logos');
       return fetch('https://api.cloudinary.com/v1_1/m4n2ttwh/image/upload', {method: 'POST', body: fd}).then(function (r) { return r.json(); });
     }).then(function (res) {
       var url = res && res.secure_url; if (!url) throw new Error('upload');
-      return db.collection('logoReq').doc(t).set({url: url, no: j.no || '', at: Date.now()}).then(function () {
+      var pub = {clogo: url}; if (upCol) pub.ctheme = upCol;
+      db.collection('publicJobs').doc(t).update(pub).catch(function () {});   // หน้านี้เห็นโลโก้/สีใหม่ทันทีแม้รีเฟรช (แอปร้านจะอัปเดตใบอื่นของลูกค้าตามมา)
+      if (upCol) applyTheme(upCol);
+      return db.collection('logoReq').doc(t).set({url: url, color: upCol || '', no: j.no || '', at: Date.now()}).then(function () {
         wm.classList.remove('empty'); var im = wm.querySelector('img'); if (!im) { wm.querySelectorAll('b,small').forEach(function (e) { e.remove(); }); im = document.createElement('img'); im.alt = 'โลโก้ร้าน'; wm.insertBefore(im, wm.firstChild); }
         im.src = url; toast2('เปลี่ยนโลโก้แล้ว ✓');
       });
