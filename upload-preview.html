@@ -203,12 +203,13 @@
     img.src = url;
   }
   // ---------- ตัวอย่าง 3 มิติ: ลบพื้นหลังสีเดียวรอบรูป (เฉพาะรูปที่ไม่มีพื้นใส) → ขอบขาวไดคัท → เลเยอร์ความหนา + แสงเงาเคลือบ ----------
-  var srcImg = null;
+  var srcImg = null, lastCm = 0;
   function buildSticker() {
     if (!srcImg) return;
     var MAX = 560, sc = Math.min(1, MAX / Math.max(srcImg.naturalWidth, srcImg.naturalHeight));
     var iw = Math.max(1, Math.round(srcImg.naturalWidth * sc)), ih = Math.max(1, Math.round(srcImg.naturalHeight * sc));
-    var B = Math.round(Math.max(iw, ih) * 0.035) + 3, W = iw + B * 2 + 4, H = ih + B * 2 + 4;
+    var cm = Math.max(num($('w').value), num($('h').value)) || 9;   // ขอบไดคัทจริง 2 มม. เทียบกับขนาดที่ลูกค้าเลือก
+    var B = Math.max(2, Math.round(Math.max(iw, ih) * 0.2 / Math.max(1, cm - 0.4))); lastCm = cm; var W = iw + B * 2 + 4, H = ih + B * 2 + 4;
     var a = document.createElement('canvas'); a.width = iw; a.height = ih; var ax = a.getContext('2d'); ax.drawImage(srcImg, 0, 0, iw, ih);
     var d = ax.getImageData(0, 0, iw, ih), px = d.data, n = iw * ih, i, opaque = true;
     for (i = 3; i < px.length; i += 4) if (px[i] < 250) { opaque = false; break; }
@@ -233,6 +234,9 @@
         ax.putImageData(d, 0, 0);
       }
     }
+    var bw = 0, bh = 0, bx0 = iw, bx1 = -1, by0 = ih, by1 = -1;   // ขอบ 2 มม. เทียบกับตัวงานจริง (ไม่รวมพื้นหลังที่ลบ)
+    for (i = 0; i < n; i++) if (px[i * 4 + 3] > 20) { var xx = i % iw, yy = (i - xx) / iw; if (xx < bx0) bx0 = xx; if (xx > bx1) bx1 = xx; if (yy < by0) by0 = yy; if (yy > by1) by1 = yy; }
+    if (bx1 >= bx0) { bw = bx1 - bx0 + 1; bh = by1 - by0 + 1; B = Math.max(2, Math.round(Math.max(bw, bh) * 0.2 / Math.max(1, cm - 0.4))); W = iw + B * 2 + 4; H = ih + B * 2 + 4; }
     // เงาขาวรอบรูป = วาดรูปทึบสีขาวซ้ำรอบวง (ขยายขอบ B px)
     var m = document.createElement('canvas'); m.width = W; m.height = H; var mx = m.getContext('2d');
     var sil = document.createElement('canvas'); sil.width = iw; sil.height = ih; var sx = sil.getContext('2d'); sx.drawImage(a, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = '#fff'; sx.fillRect(0, 0, iw, ih);
@@ -275,6 +279,7 @@
 
   function render() {
     var w = Math.max(0, num($('w').value)), h = Math.max(0, num($('h').value)), ok = w >= 1 && h >= 1 && Math.min(w, h) <= USABLE;
+    if (srcImg && Math.max(w, h) >= 1 && Math.max(w, h) !== lastCm) buildSticker();
     document.querySelectorAll('#sizes button').forEach(function (b) { var s = SIZES[+b.dataset.i]; b.classList.toggle('on', s[0] === w && (st.ratio ? true : s[1] === h)); });
     var best = 100;
     $('tiers').innerHTML = TIERS.map(function (q) { var p = ok ? price(q, w, h) : 0; return '<button type="button" data-q="' + q + '" class="' + (q === st.qty ? 'on' : '') + '"><b>' + (ok ? fmt(p) : '—') + '</b><small>' + q.toLocaleString('th-TH') + ' ดวง' + (ok ? ' · ' + (p / q).toFixed(2) + '/ดวง' : '') + '</small>' + (q === best ? '<br><span class="tag">ยอดนิยม</span>' : '') + '</button>'; }).join('');
