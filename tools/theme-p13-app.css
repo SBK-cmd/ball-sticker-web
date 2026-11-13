@@ -1,0 +1,90 @@
+/* ===== p13 "แอปจริง" (ซ้อนบน p11+p12 · พรีวิวเท่านั้นจนกว่าเจ้าของสั่งอัพ) =====
+   ทิศทาง: แอปหลังร้านที่ใช้ทุกวัน = เงียบ แน่น อ่านเร็ว · พื้นเป็นกลาง 90–95% · สีเหลืองแบรนด์ใช้กับ "ปุ่มหลักปุ่มเดียวต่อจอ"
+   หลัก: ระบบเดียว (ปุ่ม 2 แบบ / การ์ด 1 แบบ / มุมโค้งชุดเดียว 8·12·16) · ไม่มีกล่องซ้อนกล่อง · ไม่มีเงา/ไล่สี/เรืองแสง
+   · ตัวอักษรไม่เล็กกว่า 13px · ช่องกรอก 48px · ที่แตะ ≥44px
+   อ้างอิงหลักการ: taste-skill (Leonxlnx, MIT) หมวด system/colour/buttons/forms + unslop (@heydamir, CC BY 4.0) */
+:root{--a-bg:#F4F5F7;--a-card:#fff;--a-line:#E3E5EA;--a-line2:#EEF0F3;--a-ink:#161B33;--a-ink2:#3D4460;--a-mute:#5B6275;--a-navy:#0E1E5B;--a-yel:#F5B301;--a-yel-h:#E0A300;--a-red:#B42318;--a-green:#157F3B;--a-r1:8px;--a-r2:12px;--a-r3:16px}
+html:root,html:root body{background:var(--a-bg)!important;color:var(--a-ink)}
+
+/* ---------- หัวข้อหน้า ---------- */
+html:root body .page-head h1,html:root body h1{font-size:22px!important;line-height:1.3!important;font-weight:600!important;color:var(--a-ink)!important;letter-spacing:0!important}
+html:root body h2{font-size:16px!important;line-height:1.4!important;font-weight:600!important;color:var(--a-ink)!important}
+html:root body h3{font-size:14.5px!important;font-weight:600!important;color:var(--a-ink)!important}
+html:root body .tip-q{width:20px!important;height:20px!important;min-width:20px!important;min-height:20px!important;font-size:12px!important;line-height:18px!important;border-width:1px!important;color:var(--a-mute)!important;border-color:#C9CDD6!important;background:transparent!important;font-weight:500!important;vertical-align:2px}
+html:root body .hint,html:root body .actions-note{font-size:13px!important;line-height:1.5!important;color:var(--a-mute)!important}
+
+/* ---------- ปุ่ม: หลัก 1 แบบ (เหลือง) · รอง 1 แบบ (ขาวเส้นบาง) · ลบ = ตัวแดงพื้นขาว ---------- */
+html:root body .btn{min-height:44px!important;padding:0 16px!important;border-radius:var(--a-r1)!important;background:#fff!important;color:var(--a-ink)!important;border:1px solid #CFD3DB!important;box-shadow:none!important;font-size:15px!important;font-weight:500!important;letter-spacing:0!important;background-image:none!important}
+html:root body .btn:hover{background:#F6F7F9!important}
+html:root body .btn:active{background:#ECEEF2!important}
+html:root body .btn.small{min-height:40px!important;padding:0 12px!important;font-size:14px!important}
+html:root body .btn.primary,html:root body .btn.good,html:root body .jc-b.main{background:var(--a-yel)!important;border-color:var(--a-yel)!important;color:#1A1A1A!important;font-weight:600!important}
+html:root body .btn.primary:hover,html:root body .btn.good:hover{background:var(--a-yel-h)!important;border-color:var(--a-yel-h)!important}
+html:root body .btn.danger,html:root body .btn.del,html:root body .btn.small.del{background:#fff!important;color:var(--a-red)!important;border-color:#E9C3BE!important}
+html:root body .btn.danger.confirm,html:root body .btn.confirm{background:var(--a-red)!important;border-color:var(--a-red)!important;color:#fff!important}
+html:root body .btn.ghost{background:transparent!important;border-color:transparent!important;color:var(--a-ink2)!important}
+html:root body .btn[disabled],html:root body .btn:disabled{opacity:.5!important}
+html:root body .btn svg{stroke-width:1.75}
+
+/* ---------- ช่องกรอก ---------- */
+html:root body .txt,html:root body input.txt,html:root body select.txt,html:root body textarea.txt,html:root body select,html:root body textarea{border:1px solid #CFD3DB!important;border-radius:var(--a-r1)!important;background:#fff!important;box-shadow:none!important;font-size:16px!important;color:var(--a-ink)!important}
+html:root body input.txt,html:root body select.txt,html:root body select{min-height:48px!important}
+html:root body .txt:focus,html:root body select:focus,html:root body textarea:focus{border-color:var(--a-navy)!important;outline:2px solid rgba(14,30,91,.18)!important;outline-offset:0!important;box-shadow:none!important}
+html:root body .txt::placeholder,html:root body textarea::placeholder{color:#8A90A0!important}
+html:root body label.f>span,html:root body .f>span{font-size:14px!important;font-weight:500!important;color:var(--a-ink2)!important;letter-spacing:0!important}
+
+/* ---------- การ์ด: แบบเดียว ขาว เส้นบาง ไม่มีเงา ---------- */
+html:root body .card,html:root body .acd-card,html:root body .fold,html:root body .dash-stat-card,html:root body .dash-tile,html:root body .dash-cat-card,html:root body .lock-card{background:#fff!important;border:1px solid var(--a-line)!important;border-radius:var(--a-r3)!important;box-shadow:none!important}
+html:root body .jc,html:root body li.jc{border:1px solid var(--a-line)!important;border-radius:var(--a-r2)!important;box-shadow:none!important;background:#fff!important}
+/* กล่องในกล่อง → แบน คั่นด้วยเส้น */
+html:root body .acd-card .hero{background:transparent!important;padding:4px 0 12px!important;border-radius:0!important;border-bottom:1px solid var(--a-line2)!important}
+html:root body .acd-card .hero b{font-size:32px!important;font-weight:600!important}
+html:root body .kp{gap:0!important;border-bottom:1px solid var(--a-line2)}
+html:root body .kp>div,html:root body .kp>.ci,html:root body .kp>.co,html:root body .kp>div.ci,html:root body .kp>div.co{background:transparent!important;border-radius:0!important;padding:10px 0!important}
+html:root body .acd-card .net.pos,html:root body .acd-card .net.neg,html:root body .acd-card .net{background:transparent!important;border-radius:0!important;padding-left:0!important;padding-right:0!important}
+html:root body .card .card{border:0!important;padding:0!important;border-radius:0!important}
+html:root body .history li:not(.jc){border:0!important;border-bottom:1px solid var(--a-line2)!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;padding-left:0!important;padding-right:0!important}
+html:root body .history li:not(.jc):last-child{border-bottom:0!important}
+
+/* ---------- จุดเด่นเดียว: แถบกรมท่า (สรุปวันนี้ / ผลคำนวณ) ---------- */
+html:root body .tdy,html:root body .result{border-radius:var(--a-r3)!important;box-shadow:none!important;background:var(--a-navy)!important;background-image:none!important}
+
+html:root body .jc-b{min-height:44px!important;border-radius:var(--a-r1)!important;background:#fff!important;color:var(--a-ink)!important;border:1px solid #CFD3DB!important;box-shadow:none!important;font-weight:500!important}
+html:root body .jc-b.main{background:var(--a-yel)!important;border-color:var(--a-yel)!important;color:#1A1A1A!important;font-weight:600!important}
+
+/* ---------- ป้าย/ชิป ---------- */
+html:root body .chip,html:root body .jc-chip,html:root body .tax-tag{border-radius:6px!important;font-weight:500!important;box-shadow:none!important}
+
+/* ---------- มือถือ: แถบบน + แถบล่างแบบแอปจริง ---------- */
+@media (max-width:560px){
+  html:root body header.top{background:#fff!important;border-bottom:1px solid var(--a-line)!important;box-shadow:none!important;min-height:52px!important;padding-bottom:6px!important}
+  html:root body header.top .brand .mark{width:30px!important;height:30px!important}
+  html:root body header.top .brand b{font-size:15px!important;font-weight:600!important;letter-spacing:.01em!important;color:var(--a-ink)!important}
+  html:root body header.top .bver{background:transparent!important;padding:0!important;font-size:11px!important;color:var(--a-mute)!important;font-weight:400!important}
+  html:root body .user-chip-btn{box-shadow:none!important;border:1px solid var(--a-line)!important;min-height:40px!important}
+  html:root body .page-head{margin-top:12px!important;margin-bottom:10px!important}
+
+  html:root body .bnav,html:root body nav.bnav{background:#fff!important;border-radius:0!important;box-shadow:none!important;border-top:1px solid var(--a-line)!important;padding-top:4px!important}
+  html:root body .btab{color:var(--a-mute)!important;font-weight:500!important;gap:2px!important}
+  html:root body .btab .btab-ico,html:root body .btab.active .btab-ico{background:transparent!important;border-radius:0!important;width:auto!important;height:28px!important;color:inherit!important}
+  html:root body .btab svg{width:22px!important;height:22px!important;stroke-width:1.6}
+  html:root body .btab::after,html:root body .btab.active::after{display:none!important;content:none!important}
+  html:root body .btab .btab-label{font-size:11.5px!important;color:var(--a-mute)!important;font-weight:500!important}
+  html:root body .btab.active,html:root body .btab[aria-selected="true"]{color:var(--a-navy)!important}
+  html:root body .btab.active .btab-label,html:root body .btab[aria-selected="true"] .btab-label{color:var(--a-navy)!important;font-weight:600!important}
+  html:root body .btab.active svg{stroke-width:2}
+  html:root body .btab-fab .btab-fab-circle{width:46px!important;height:46px!important;margin-top:-14px!important;box-shadow:0 0 0 4px #fff!important;background:var(--a-yel)!important}
+  html:root body .btab-fab.active .btab-fab-circle{box-shadow:0 0 0 4px #fff!important}
+  html:root body .fab-newjob{box-shadow:0 2px 8px rgba(0,0,0,.18)!important}
+}
+
+/* ---------- รอบ 2: แถบล่างไม่มีขอบหนา/มุมโค้ง · ปุ่มและช่องที่หลุดระบบ ---------- */
+@media (max-width:560px){
+  html:root body .bnav::after,html:root body nav.bnav::after{box-shadow:none!important;border-radius:0!important;border:0!important;border-top:1px solid var(--a-line)!important;background:#fff!important}
+  html:root body .bnav::before{display:none!important}
+}
+html:root body .ds-btn{min-height:44px!important;padding:0 16px!important;border-radius:var(--a-r1)!important;background:#fff!important;color:var(--a-ink)!important;border:1px solid #CFD3DB!important;box-shadow:none!important;font-weight:500!important;font-size:15px!important}
+html:root body .ds-btn.ds-main{background:var(--a-yel)!important;border-color:var(--a-yel)!important;color:#1A1A1A!important;font-weight:600!important}
+html:root body .ds-btn.ds-del{color:var(--a-red)!important;border-color:#E9C3BE!important}
+html:root body .wrap input:not(.txt):not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=color]):not([type=hidden]){border:1px solid #CFD3DB!important;border-radius:var(--a-r1)!important;min-height:44px;padding:8px 12px;font-size:16px;background:#fff;color:var(--a-ink);box-shadow:none!important}
+html:root body .wrap input[type=checkbox]{accent-color:var(--a-navy)}
