@@ -516,8 +516,8 @@ function bahtText(value) {
     if (idx >= 0) list[idx] = rec; else list.push(rec);
     store.set('bs_customers', list); cloudSave('customers', Object.assign({id: customerCloudId(n)}, rec));
   }
-  async function squareLogo(file) {   // ย่อเป็นจัตุรัส 320px พื้นขาว (โลโก้ไม่ถูกตัด) ให้ไฟล์เล็ก
-    const img = await createImageBitmap(file), S = 320, c = document.createElement('canvas'); c.width = c.height = S;
+  async function squareLogo(file) {   // ย่อเป็นจัตุรัส 640px (คมพอสำหรับลายโลโก้บนบัตรหน้าติดตาม) พื้นขาว (โลโก้ไม่ถูกตัด) ให้ไฟล์เล็ก
+    const img = await createImageBitmap(file), S = 640, c = document.createElement('canvas'); c.width = c.height = S;
     const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, S, S);
     const k = Math.min(S / img.width, S / img.height) * 0.92, w = img.width * k, h = img.height * k;
     g.drawImage(img, (S - w) / 2, (S - h) / 2, w, h); return c.toDataURL('image/jpeg', 0.9);
