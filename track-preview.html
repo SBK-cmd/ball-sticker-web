@@ -199,6 +199,12 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
  background:linear-gradient(115deg,#8a6a22 0%,#f7e7a1 22%,#c9a24c 40%,#fff3c4 52%,#b8902f 70%,#f2dc8c 88%,#8a6a22 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
  box-shadow:inset 0 0 0 1px rgba(233,205,128,.55),0 0 18px -6px rgba(233,205,128,.5)}
 .h2mem::before{content:'';width:6px;height:6px;transform:rotate(45deg);background:linear-gradient(135deg,#fff3c4,#b8902f)}
+.h2wm{cursor:pointer}.h2wm.empty{display:grid;place-items:center;align-content:center;gap:2px;background:rgba(255,255,255,.08);border:1.5px dashed rgba(255,255,255,.35)}.h2wm.empty b{font-size:24px;font-weight:600}.h2wm.empty small{font-size:11px;opacity:.75}
+.h2edit{position:absolute;right:6px;bottom:6px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#111;box-shadow:0 2px 6px rgba(0,0,0,.4);opacity:0;transform:scale(.8);transition:opacity .15s,transform .15s}
+.h2wm:hover .h2edit,.h2wm:focus-within .h2edit{opacity:1;transform:none}
+@media (hover:none){.h2edit{opacity:1;transform:none;width:22px;height:22px}}
+.h2wm.busy::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.45) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='white' stroke-width='3' stroke-dasharray='40 20'%3E%3CanimateTransform attributeName='transform' type='rotate' from='0 12 12' to='360 12 12' dur='.8s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/svg%3E") center/26px no-repeat}
+.toast2{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#111;color:#fff;font-size:13.5px;padding:9px 16px;border-radius:999px;z-index:99;box-shadow:0 6px 18px rgba(0,0,0,.3)}
 </style>
 </head>
 <body>
@@ -317,6 +323,26 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     document.body.classList.add('themed');
   }
   // หัวโปรไฟล์ลูกค้าส่ง: โลโก้แบบสติ๊กเกอร์ไดคัท + ชื่อ + ตัวเลขสรุป + แถบผลงานของลูกค้า (รูปจากทุกใบงาน)
+  // ลูกค้าอัปโลโก้เอง: ย่อจัตุรัส 640px → Cloudinary → logoReq/{token} ให้แอปร้านบันทึกเป็นโลโก้ลูกค้า (แสดงบนหน้านี้ทันที)
+  function toast2(t) { var d = document.createElement('div'); d.className = 'toast2'; d.setAttribute('role', 'status'); d.textContent = t; document.body.appendChild(d); setTimeout(function () { d.remove(); }, 2600); }
+  function uploadLogo(f, j) {
+    var wm = document.querySelector('.h2wm'); if (!/^image\//.test(f.type || '')) return toast2('เลือกไฟล์รูปภาพนะครับ');
+    wm.classList.add('busy');
+    createImageBitmap(f).then(function (im) {
+      var S = 640, c = document.createElement('canvas'); c.width = c.height = S; var g = c.getContext('2d'), k = Math.max(S / im.width, S / im.height);
+      g.fillStyle = '#fff'; g.fillRect(0, 0, S, S); g.drawImage(im, (S - im.width * k) / 2, (S - im.height * k) / 2, im.width * k, im.height * k);
+      return new Promise(function (r) { c.toBlob(r, 'image/jpeg', 0.9); });
+    }).then(function (blob) {
+      var fd = new FormData(); fd.append('file', blob); fd.append('upload_preset', 'nkbscpgs'); fd.append('folder', 'logos');
+      return fetch('https://api.cloudinary.com/v1_1/m4n2ttwh/image/upload', {method: 'POST', body: fd}).then(function (r) { return r.json(); });
+    }).then(function (res) {
+      var url = res && res.secure_url; if (!url) throw new Error('upload');
+      return db.collection('logoReq').doc(t).set({url: url, no: j.no || '', at: Date.now()}).then(function () {
+        wm.classList.remove('empty'); var im = wm.querySelector('img'); if (!im) { wm.querySelectorAll('b,small').forEach(function (e) { e.remove(); }); im = document.createElement('img'); im.alt = 'โลโก้ร้าน'; wm.insertBefore(im, wm.firstChild); }
+        im.src = url; toast2('เปลี่ยนโลโก้แล้ว ✓');
+      });
+    }).catch(function () { toast2('อัปโหลดไม่สำเร็จ ลองใหม่อีกครั้ง'); }).then(function () { wm.classList.remove('busy'); });
+  }
   function heroHTML(j, others, payOk) {
     var all = [{no: j.no, status: j.status, delivered: j.delivered, thumb: j.thumb, photos: j.photos, refs: j.refPhotos}].concat(others.map(function (o) { return {no: o.no, status: o.status, delivered: o.delivered, thumb: o.thumb, photos: o.photos, refs: o.refPhotos}; }));
     var doing = 0, ship = 0, done = 0;
@@ -326,7 +352,9 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     var stat = function (v, l, c) { return '<div class="hs' + (c ? ' ' + c : '') + '"><b>' + v + '</b><span>' + l + '</span></div>'; };
     var full = String(j.cfull || j.shipFrom || j.cname || 'ลูกค้า').trim();   // ชื่อเต็มร้านลูกค้า (ชื่อผู้ส่งในใบงาน) แทนชื่อย่อ
     var h = '<section class="hero2"><i class="h2sheen" aria-hidden="true"></i>' +
-      (/^https:\/\//.test(j.clogo || '') ? '<span class="h2wm" aria-hidden="true"><img src="' + esc(j.clogo) + '" alt=""></span>' : '') +   // โลโก้ลูกค้าแบบรูปโปรไฟล์ (ชัด มีเงา) ด้านขวาของบัตร
+      '<label class="h2wm' + (/^https:\/\//.test(j.clogo || '') ? '' : ' empty') + '" title="เปลี่ยนโลโก้ร้าน">' + (/^https:\/\//.test(j.clogo || '') ? '<img src="' + esc(j.clogo) + '" alt="โลโก้ร้าน">' : '<b>' + esc(init) + '</b><small>ใส่โลโก้</small>') +   // โลโก้ลูกค้าแบบรูปโปรไฟล์ · ลูกค้ากดเปลี่ยนเองได้
+      '<span class="h2edit" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>' +
+      '<input type="file" accept="image/*" id="logoIn" hidden aria-label="เลือกไฟล์โลโก้ร้าน"></label>' +
       '<div class="h2top"><span class="h2mem">Member</span></div>' +
       '<div class="h2nm"><b>' + esc(full) + '</b><small>' + all.length + ' ใบงาน · บอลสติ๊กเกอร์</small></div>' +
       '<div class="h2bot">' + (payOk ? '<div class="h2bal"><small>ยอดค้างชำระ</small><b>' + money(j.pay.total) + ' <span>บาท</span></b></div><button type="button" class="h2go" id="payOpen">สแกนจ่าย</button>'
@@ -438,6 +466,7 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     setPayModal(payOk ? j.pay : null);
     loadHubs();
     var po = document.getElementById('payOpen'); if (po) po.onclick = function () { openPay(true); };
+    var li = document.getElementById('logoIn'); if (li) li.onchange = function () { var f = li.files && li.files[0]; li.value = ''; if (f) uploadLogo(f, j); };
     [].forEach.call(document.querySelectorAll('img.jt'), function (im) {   // รูปเล็กหน้าเลขใบ: แตะเพื่อดูใหญ่ (ไม่พับ/เปิดการ์ด)
       im.style.cursor = 'zoom-in';
       im.addEventListener('click', function (e) {

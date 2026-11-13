@@ -3472,6 +3472,22 @@ function bahtText(value) {
       }, e => { console.warn('webOrders', e); });
     } catch (e) { console.warn(e); }
   }
+  // ลูกค้าเปลี่ยนโลโก้เองจากหน้าติดตามงาน → logoReq/{trackToken} {url} → บันทึกเป็นโลโก้ลูกค้า (bs_customers) แล้วอัปเดตหน้าติดตามทุกใบของลูกค้านั้น
+  let logoReqUnsub = null;
+  function watchLogoReq() {
+    if (!cloudDb || logoReqUnsub) return;
+    try {
+      logoReqUnsub = cloudDb.collection('logoReq').limit(20).onSnapshot(snap => { countReads('logoReq', snap);
+        snap.forEach(d => { const x = d.data() || {}, url = String(x.url || '');
+          const job = store.get('bs_jobs', []).find(j => String(j.trackToken || '') === d.id), name = job ? String(job.jName || '').trim() : '';
+          if (!name || !/^https:\/\/res\.cloudinary\.com\//.test(url)) { if (!job && Date.now() - (+x.at || 0) > 864e5) d.ref.delete().catch(() => {}); return; }
+          setCustField(name, {logo: url, color: ''}); try { custThemeFor(name, true); } catch (e) {}
+          try { renderWholesaleHistory(); } catch (e) {} toast('ลูกค้า ' + name + ' เปลี่ยนโลโก้จากหน้าติดตามงาน');
+          d.ref.delete().catch(() => {});
+        });
+      }, e => { console.warn('logoReq', e); });
+    } catch (e) { console.warn(e); }
+  }
   const woDone = x => x.status === 'job' || x.status === 'hide';
   // ออเดอร์เว็บถือว่า "ทำแล้ว" เมื่อบันทึกใบงานที่มีเลขออเดอร์ในหมายเหตุจริงๆ (เปิดฟอร์มแล้วปิดไม่บันทึก = ยังรอ)
   function webOrderTrackFor(rec) { const note = String(rec.note || ''); const x = webOrd.find(o => o.ref && o.trackToken && note.indexOf(o.ref) >= 0); return x ? String(x.trackToken) : ''; }
@@ -10538,6 +10554,7 @@ function bahtText(value) {
     watchCloud('purchases', 'bs_purchases', () => { renderPurchHistory(); renderVendorDatalist(); });
     try { watchBillBox(); } catch (e) {}
     try { watchWebOrders(); } catch (e) {}
+    try { watchLogoReq(); } catch (e) {}
     watchCloud('customers', 'bs_customers', () => { renderCustomerDatalist(); try { renderWholesaleHistory(); } catch (e) {} });
     watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
     if (can('money')) watchCloud('costCfg', 'bs_cost_cfg', () => { renderCost(); try { renderPrice(); } catch (e) {} });
