@@ -172,9 +172,8 @@
       </div>
       <label for="cLine">LINE ID (สำหรับส่งแบบให้ยืนยัน)<input id="cLine" autocomplete="off" placeholder="ไม่บังคับ"></label>
       <div class="err" id="telErr" hidden></div>
-      <label for="cAddr">ที่อยู่จัดส่ง (บ้านเลขที่ หมู่ ซอย ถนน)<textarea id="cAddr" rows="2" autocomplete="address-line1" placeholder="เช่น 8 หมู่ 19 ซ.สุขใจ ถ.พิษณุโลก-บางระกำ" required></textarea></label>
       <div class="f2">
-        <label for="cZip">รหัสไปรษณีย์<input id="cZip" inputmode="numeric" maxlength="5" autocomplete="postal-code" placeholder="65140" required></label>
+        <label for="cZip">รหัสไปรษณีย์ (ใส่ก่อน)<input id="cZip" inputmode="numeric" maxlength="5" autocomplete="postal-code" placeholder="65140" required></label>
         <label for="cTam">ตำบล / แขวง<select id="cTam" disabled><option value="">ใส่รหัสไปรษณีย์ก่อน</option></select></label>
       </div>
       <div class="f2" id="manAddr" hidden>
@@ -182,6 +181,7 @@
         <label for="mAmp">อำเภอ / เขต<input id="mAmp"></label>
       </div>
       <label for="mProv" id="manProv" hidden>จังหวัด<input id="mProv"></label>
+      <label for="cAddr">บ้านเลขที่ หมู่ ซอย ถนน<textarea id="cAddr" rows="2" autocomplete="address-line1" placeholder="เช่น 8 หมู่ 19 ซ.สุขใจ ถ.พิษณุโลก-บางระกำ" required></textarea></label>
       <p class="note" id="addrPrev" hidden></p>
       <label class="consent"><input type="checkbox" id="tx"> <span>ต้องการใบกำกับภาษี (+VAT 7%)</span></label>
       <div class="f1" id="txBox" hidden>
