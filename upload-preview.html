@@ -147,7 +147,6 @@
     <div class="tiers" id="tiers"></div>
     <label class="custom" for="qty">หรือใส่จำนวนเอง (ดวง)<input id="qty" type="number" inputmode="numeric" min="1" placeholder="เช่น 300"></label>
     <div class="cq" id="cq" aria-live="polite" hidden></div>
-    <div class="lay" id="layBox" hidden><svg id="lay" viewBox="0 0 121 81" role="img" aria-label="ตัวอย่างการเรียงบนแผ่น"></svg><p id="layTxt"></p></div>
   </section>
 
   <section class="card" aria-labelledby="s4">
@@ -188,7 +187,6 @@
   var st = {file: null, ratio: 0, qty: 100, url: '', busy: false};
   // ภาพการเรียง/จำนวนต่อแผ่น เห็นเฉพาะแอดมิน: เปิดหน้านี้ด้วย ?admin=1 ครั้งเดียว เครื่องนั้นจะจำไว้ (ลูกค้าทั่วไปไม่เห็น)
   var isAdmin = false; try { var qp = new URLSearchParams(location.search); if (qp.get('admin') === '1') localStorage.setItem('bs_upl_admin', '1'); if (qp.get('admin') === '0') localStorage.removeItem('bs_upl_admin'); isAdmin = localStorage.getItem('bs_upl_admin') === '1'; } catch (e) {}
-  $('layBox').hidden = !isAdmin;
   var utm = {}; try { new URLSearchParams(location.search).forEach(function (v, k) { if (/^utm_|^fbclid$/.test(k)) utm[k] = v.slice(0, 60); }); } catch (e) {}
 
   // ---------- รูป ----------
@@ -218,16 +216,14 @@
   // ---------- ตัวอย่าง 3 มิติ: ลบพื้นหลังสีเดียวรอบรูป (เฉพาะรูปที่ไม่มีพื้นใส) → ขอบขาวไดคัท → เลเยอร์ความหนา + แสงเงาเคลือบ ----------
   var srcImg = null, lastCm = 0;
   st.artPx = null; st.fileDpi = 0; st.fileCm = null;
-  function buildSticker() {
-    if (!srcImg) return;
-    var MAX = 560, sc = Math.min(1, MAX / Math.max(srcImg.naturalWidth, srcImg.naturalHeight));
+  // ตัดตัวงานออกจากพื้น (ใช้ทั้งพรีวิว 560px และไฟล์ทำเส้น Kiss Cut ความละเอียดสูง)
+  function cutout(MAX) {
+    var sc = Math.min(1, MAX / Math.max(srcImg.naturalWidth, srcImg.naturalHeight));
     var iw = Math.max(1, Math.round(srcImg.naturalWidth * sc)), ih = Math.max(1, Math.round(srcImg.naturalHeight * sc));
-    var cm = num($('w').value) || 9;   // ขนาดที่กรอก = ขนาดชิ้นไดคัทจริง (ตัวงาน + ขอบขาว 2 มม. รอบ)
-    var B = Math.max(2, Math.round(iw * 0.2 / Math.max(0.6, cm - 0.4))); lastCm = cm; var W = iw + B * 2 + 4, H = ih + B * 2 + 4;
     var a = document.createElement('canvas'); a.width = iw; a.height = ih; var ax = a.getContext('2d'); ax.drawImage(srcImg, 0, 0, iw, ih);
     var d = ax.getImageData(0, 0, iw, ih), px = d.data, n = iw * ih, i, opaque = true;
     for (i = 3; i < px.length; i += 4) if (px[i] < 250) { opaque = false; break; }
-    st.bgSkip = false; st.darkRim = false;
+    var bgSkip = false, darkRim = false;
     if (opaque && $('rmbg').checked) {   // ไล่จากขอบรูป ลบสีที่ใกล้สีมุม (พื้นหลังสีเดียว)
       var cs = [0, iw - 1, n - iw, n - 1].map(function (k) { return [px[k * 4], px[k * 4 + 1], px[k * 4 + 2]]; });
       var bg = cs[0], near = function (k, c, t) { var o = k * 4, dr = px[o] - c[0], dg = px[o + 1] - c[1], db = px[o + 2] - c[2]; return dr * dr + dg * dg + db * db <= t * t; };
@@ -236,7 +232,7 @@
       for (i = 0; i < iw; i++) { edgeN += 2; edgeOk += near(i, bg, 48) + near(n - iw + i, bg, 48); }
       for (i = 0; i < ih; i++) { edgeN += 2; edgeOk += near(i * iw, bg, 48) + near(i * iw + iw - 1, bg, 48); }
       if (same && edgeOk / edgeN < 0.92) same = false;
-      st.bgSkip = !same;
+      bgSkip = !same;
       if (same) {
         var lum = function (o) { return 0.299 * px[o] + 0.587 * px[o + 1] + 0.114 * px[o + 2]; }, dark = lum(0) < 60, TF = dark ? 30 : 48;   // พื้นดำ: ลบเฉพาะที่ดำจริง กันกินเส้นขอบดำของงาน
         var seen = new Uint8Array(n), q = [], push = function (k) { if (!seen[k] && near(k, bg, TF)) { seen[k] = 1; q.push(k); } };
@@ -269,11 +265,11 @@
           for (var lv = 1; lv < 5 && fr.length; lv++) { var nx = []; fr.forEach(function (k) { var xk = k % iw; [xk > 0 ? k - 1 : -1, xk < iw - 1 ? k + 1 : -1, k >= iw ? k - iw : -1, k < n - iw ? k + iw : -1].forEach(function (nb) { if (nb >= 0 && !dd[nb]) { dd[nb] = lv + 1; nx.push(nb); } }); }); fr = nx; }
           fr.forEach(function (k) { rimN++; if (lum(k * 4) < 60) rimDark++; });
         }
-        st.darkRim = dark && rimN > 0 && rimDark / rimN > 0.3;   // งานมีเส้นขอบดำติดพื้นดำ
+        darkRim = dark && rimN > 0 && rimDark / rimN > 0.3;   // งานมีเส้นขอบดำติดพื้นดำ
         ax.putImageData(d, 0, 0);
       }
     }
-    if (opaque && (st.bgSkip || !$('rmbg').checked)) {   // รูปเต็มกรอบ (รูปถ่าย) → ไดคัทสี่เหลี่ยมมุมมน
+    if (opaque && (bgSkip || !$('rmbg').checked)) {   // รูปเต็มกรอบ (รูปถ่าย) → ไดคัทสี่เหลี่ยมมุมมน
       var rr = Math.round(Math.min(iw, ih) * 0.06); ax.globalCompositeOperation = 'destination-in'; ax.beginPath();
       if (ax.roundRect) ax.roundRect(0, 0, iw, ih, rr); else ax.rect(0, 0, iw, ih); ax.fill(); ax.globalCompositeOperation = 'source-over';
       d = ax.getImageData(0, 0, iw, ih); px = d.data;
@@ -281,16 +277,29 @@
     var bw = 0, bh = 0, bx0 = iw, bx1 = -1, by0 = ih, by1 = -1;   // ขอบ 2 มม. เทียบกับตัวงานจริง (ไม่รวมพื้นหลังที่ลบ)
     for (i = 0; i < n; i++) if (px[i * 4 + 3] > 20) { var xx = i % iw, yy = (i - xx) / iw; if (xx < bx0) bx0 = xx; if (xx > bx1) bx1 = xx; if (yy < by0) by0 = yy; if (yy > by1) by1 = yy; }
     if (bx1 >= bx0) {   // ตัดส่วนใส/พื้นหลังที่ลบออก ให้สัดส่วนเท่าตัวงานจริง
-      bw = bx1 - bx0 + 1; bh = by1 - by0 + 1;
+      var bw = bx1 - bx0 + 1, bh = by1 - by0 + 1;
       var a2 = document.createElement('canvas'); a2.width = bw; a2.height = bh; a2.getContext('2d').drawImage(a, bx0, by0, bw, bh, 0, 0, bw, bh);
-      a = a2; iw = bw; ih = bh; st.ratio = bw / bh; st.artPx = {w: bw / sc, h: bh / sc};
-      B = Math.max(2, Math.round(bw * 0.2 / Math.max(0.6, cm - 0.4))); W = iw + B * 2 + 4; H = ih + B * 2 + 4;
+      a = a2; iw = bw; ih = bh;
     }
-    // เงาขาวรอบรูป = วาดรูปทึบสีขาวซ้ำรอบวง (ขยายขอบ B px)
+    return {a: a, iw: iw, ih: ih, sc: sc, bgSkip: bgSkip, darkRim: darkRim};
+  }
+  // ขอบขาวไดคัท: วาดเงาทึบของตัวงานวนรอบเป็นวงกลมรัศมี B (เพิ่มจำนวนมุมตามขนาด ให้ขอบเรียบ)
+  function dieMask(c, B, pad) {
+    var W = c.iw + B * 2 + pad * 2, H = c.ih + B * 2 + pad * 2;
     var m = document.createElement('canvas'); m.width = W; m.height = H; var mx = m.getContext('2d');
-    var sil = document.createElement('canvas'); sil.width = iw; sil.height = ih; var sx = sil.getContext('2d'); sx.drawImage(a, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = '#fff'; sx.fillRect(0, 0, iw, ih);
-    for (var t = 0; t < 24; t++) { var an = t / 24 * Math.PI * 2; mx.drawImage(sil, 2 + B + Math.cos(an) * B, 2 + B + Math.sin(an) * B); }
-    mx.drawImage(sil, 2 + B, 2 + B);
+    var sil = document.createElement('canvas'); sil.width = c.iw; sil.height = c.ih; var sx = sil.getContext('2d'); sx.drawImage(c.a, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = '#fff'; sx.fillRect(0, 0, c.iw, c.ih);
+    for (var r = B; r > 0; r -= Math.max(1, B / 4)) { var steps = Math.max(24, Math.ceil(Math.PI * 2 * r / 1.5));
+      for (var t = 0; t < steps; t++) { var an = t / steps * Math.PI * 2; mx.drawImage(sil, pad + B + Math.cos(an) * r, pad + B + Math.sin(an) * r); } }
+    mx.drawImage(sil, pad + B, pad + B);
+    return {m: m, W: W, H: H};
+  }
+  function buildSticker() {
+    if (!srcImg) return;
+    var cm = num($('w').value) || 9; lastCm = cm;   // ขนาดที่กรอก = ขนาดชิ้นไดคัทจริง (ตัวงาน + ขอบขาว 2 มม. รอบ)
+    var c = cutout(560), a = c.a, iw = c.iw, ih = c.ih;
+    st.bgSkip = c.bgSkip; st.darkRim = c.darkRim; st.ratio = iw / ih; st.artPx = {w: iw / c.sc, h: ih / c.sc};
+    var B = Math.max(2, Math.round(iw * 0.2 / Math.max(0.6, cm - 0.4)));
+    var dm = dieMask(c, B, 2), m = dm.m, W = dm.W, H = dm.H;
     var T = Math.max(3, Math.round(Math.max(W, H) * 0.008));   // ความหนาของแผ่นสติ๊กเกอร์ (เห็นเป็นขอบเทาด้านล่าง)
     var cv = $('cv3d'); cv.width = W; cv.height = H + T; var cx = cv.getContext('2d'); cx.clearRect(0, 0, W, H + T);
     var edge = document.createElement('canvas'); edge.width = W; edge.height = H; var ex = edge.getContext('2d'); ex.drawImage(m, 0, 0); ex.globalCompositeOperation = 'source-in'; ex.fillStyle = '#aab2c1'; ex.fillRect(0, 0, W, H);
@@ -316,6 +325,44 @@
     $('sdim').textContent = 'ขนาดจริง ' + w + ' × ' + h + ' ซม.' + (ppc < base - 0.01 ? ' (ย่อให้พอดีจอ)' : '');
   }
   window.addEventListener('resize', fitStage);
+
+  // ---------- ไฟล์สำหรับทำเส้น Kiss Cut (สร้างตอนลูกค้ากดส่ง) ----------
+  // PNG ตรง (ตัวงาน + ขอบขาว 2 มม. พื้นใส) ความละเอียดสูง + SVG เส้นตัด CutContour หน่วย มม. ตามขนาดจริง
+  function traceCut(m, W, H, mmPx, pad) {
+    var dd = m.getContext('2d').getImageData(0, 0, W, H).data, g = new Uint8Array(W * H), done = new Uint8Array(W * H), i, paths = [];
+    for (i = 0; i < W * H; i++) g[i] = dd[i * 4 + 3] > 127 ? 1 : 0;
+    var DX = [1, 1, 0, -1, -1, -1, 0, 1], DY = [0, 1, 1, 1, 0, -1, -1, -1];
+    function fg(x, y) { return x >= 0 && y >= 0 && x < W && y < H && g[y * W + x]; }
+    for (i = 0; i < W * H; i++) {
+      if (!g[i] || done[i]) continue;
+      var area = 0, stk = [i]; done[i] = 1;   // ทำเครื่องหมายทั้งชิ้น (ไม่ตามรูด้านใน)
+      while (stk.length) { var k = stk.pop(), kx = k % W; area++; [kx > 0 ? k - 1 : -1, kx < W - 1 ? k + 1 : -1, k - W, k + W].forEach(function (nb) { if (nb >= 0 && nb < W * H && g[nb] && !done[nb]) { done[nb] = 1; stk.push(nb); } }); }
+      if (area < 60) continue;
+      var sx = i % W, sy = (i - sx) / W, x = sx, y = sy, d = 0, pts = [[x, y]], guard = 0;   // ไล่ขอบนอกแบบ Moore (ตามเข็มนาฬิกา)
+      do { var f = false; for (var t = 0; t < 8; t++) { var nd = (d + 6 + t) % 8, nx = x + DX[nd], ny = y + DY[nd]; if (fg(nx, ny)) { x = nx; y = ny; d = nd; f = true; break; } }
+        if (!f) break; pts.push([x, y]); } while ((x !== sx || y !== sy) && ++guard < W * H * 2);
+      paths.push(rdp(pts, 0.8));
+    }
+    return paths.map(function (pt) { return 'M' + pt.map(function (q) { return ((q[0] + 0.5 - pad) * mmPx).toFixed(2) + ' ' + ((q[1] + 0.5 - pad) * mmPx).toFixed(2); }).join(' L') + ' Z'; }).join(' ');
+  }
+  function rdp(p, e) {   // ลดจุดเส้น (Ramer–Douglas–Peucker แบบไม่เรียกซ้ำ) · เส้นปิด: จุดแรก=จุดท้าย ใช้ระยะจากจุดแรกแทน
+    if (p.length < 3) return p; var keep = new Uint8Array(p.length), stk = [[0, p.length - 1]]; keep[0] = keep[p.length - 1] = 1;
+    while (stk.length) { var se = stk.pop(), s0 = se[0], e0 = se[1], a = p[s0], b = p[e0], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy), md = 0, mi = -1;
+      for (var i = s0 + 1; i < e0; i++) { var dist = L ? Math.abs(dy * p[i][0] - dx * p[i][1] + b[0] * a[1] - b[1] * a[0]) / L : Math.hypot(p[i][0] - a[0], p[i][1] - a[1]); if (dist > md) { md = dist; mi = i; } }
+      if (mi > 0 && md > e) { keep[mi] = 1; stk.push([s0, mi], [mi, e0]); } }
+    return p.filter(function (q, i) { return keep[i]; });
+  }
+  function kissCutFiles(w, h) {
+    var c = cutout(Math.min(2400, Math.max(srcImg.naturalWidth, srcImg.naturalHeight)));
+    var B = Math.max(2, Math.round(c.iw * 0.2 / Math.max(0.6, w - 0.4))), pad = 4, dm = dieMask(c, B, pad);
+    var flat = document.createElement('canvas'); flat.width = c.iw + B * 2; flat.height = c.ih + B * 2; var fx = flat.getContext('2d');
+    fx.drawImage(dm.m, -pad, -pad); fx.drawImage(c.a, B, B);
+    var mmPx = w * 10 / flat.width, Wmm = (flat.width * mmPx).toFixed(2), Hmm = (flat.height * mmPx).toFixed(2);
+    var svg = '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="' + Wmm + 'mm" height="' + Hmm + 'mm" viewBox="0 0 ' + Wmm + ' ' + Hmm + '">\n' +
+      '<!-- บอลสติ๊กเกอร์ · เส้น Kiss Cut ' + w + ' × ' + h + ' ซม. (ขอบขาว 2 มม.) -->\n<g id="CutContour"><path d="' + traceCut(dm.m, dm.W, dm.H, mmPx, pad) + '" fill="none" stroke="#ec008c" stroke-width="0.25"/></g>\n</svg>\n';
+    return new Promise(function (res) { flat.toBlob(function (b) { res({png: b, svg: new Blob([svg], {type: 'image/svg+xml'}), dpi: Math.round(flat.width / (w / 2.54)), px: flat.width + '×' + flat.height}); }, 'image/png'); });
+  }
+  window.__kissCut = kissCutFiles;   // ใช้ทดสอบ
   (function () {   // ลากเพื่อหมุน · ปล่อยแล้วโยกเบาๆ
     var stg = $('stage'), el = $('st3d'), g = $('gloss'), rx = -8, ry = 14, drag = null, idle = 0, reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     function apply() { el.style.transform = 'perspective(700px) rotateX(' + rx.toFixed(1) + 'deg) rotateY(' + ry.toFixed(1) + 'deg)'; g.style.setProperty('--gx', (50 + ry * 1.6) + '%'); g.style.setProperty('--gy', (50 - rx * 1.6) + '%'); }
@@ -405,18 +452,13 @@
     if (!cq.hidden) cq.innerHTML = '<span><small>' + st.qty.toLocaleString('th-TH') + ' ดวง · ดวงละ ' + (p / st.qty).toFixed(2) + ' บาท</small></span><b>' + fmt(p) + ' บาท</b>';
     $('tot').textContent = ok ? fmt(p) + ' บาท' : '—';
     $('totLbl').textContent = st.qty.toLocaleString('th-TH') + ' ดวง · ' + (w || '?') + ' × ' + (h || '?') + ' ซม.';
-    // ภาพเรียงบนแผ่น 120×80
-    var L = ok ? perSheet(w, h) : {n: 0}, svg = '<rect width="121" height="81" fill="#eef1f6"/>';
-    if (L.n) { var cnt = Math.min(L.n, st.qty); for (var i = 0; i < cnt; i++) { var c = i % L.cx, r = Math.floor(i / L.cx); svg += '<rect x="' + (c * (L.pw + GAP)).toFixed(2) + '" y="' + (r * (L.ph + GAP)).toFixed(2) + '" width="' + L.pw + '" height="' + L.ph + '" rx="' + Math.min(L.pw, L.ph) * .2 + '" fill="#f5c400"/>'; } }
-    $('lay').innerHTML = svg;
-    $('layTxt').innerHTML = !ok ? 'ด้านยาวตั้งแต่ ' + MINL + ' ซม. · ด้านสั้นไม่เกิน ' + USABLE + ' ซม.' : L.n ? 'แผ่นละ <b>' + L.n.toLocaleString('th-TH') + '</b> ดวง · สั่ง ' + st.qty.toLocaleString('th-TH') + ' ดวง ใช้ประมาณ <b>' + (st.qty / L.n).toFixed(2) + '</b> แผ่น' + (st.qty % L.n && st.qty > L.n ? '<br>สั่ง ' + (Math.ceil(st.qty / L.n) * L.n).toLocaleString('th-TH') + ' ดวง ได้เต็มแผ่นพอดี' : '') : 'ชิ้นใหญ่กว่าแผ่น ร้านพิมพ์แบบม้วนให้';
     qualityWarn(w, h);
     $('send').disabled = !ok || st.busy;
   }
 
   // ---------- ส่งแบบ ----------
   async function upload(f) {
-    var fd = new FormData(); fd.append('file', f); fd.append('upload_preset', PRESET); fd.append('folder', 'web-orders');
+    var fd = new FormData(); fd.append('file', f, (f.name || 'file')); fd.append('upload_preset', PRESET); fd.append('folder', 'web-orders');
     var r = await fetch('https://api.cloudinary.com/v1_1/' + CLOUD + '/auto/upload', {method: 'POST', body: fd});
     var j = await r.json(); if (!j.secure_url) throw new Error('upload'); return j.secure_url;
   }
@@ -426,13 +468,24 @@
     if (!st.file) miss.push('รูปแบบ'); if (!$('cName').value.trim()) miss.push('ชื่อผู้รับ'); if (!/\d{9,10}/.test($('cTel').value.replace(/\D/g, ''))) miss.push('เบอร์โทร'); if ($('cAddr').value.trim().length < 15) miss.push('ที่อยู่'); if (!$('cOk').checked) miss.push('ติ๊กยินยอม');
     if (miss.length) { err.hidden = false; err.textContent = 'ยังขาด: ' + miss.join(', '); (st.file ? $('cName') : $('drop')).scrollIntoView({behavior: 'smooth', block: 'center'}); return; }
     st.busy = true; this.disabled = true; this.textContent = 'กำลังอัปโหลดแบบ…';
+    var w0 = num($('w').value), h0 = num($('h').value);
     try { if (!st.url) st.url = await upload(st.file); }
     catch (e) { st.busy = false; this.disabled = false; this.textContent = 'ส่งแบบให้ร้าน'; err.hidden = false; err.textContent = 'อัปโหลดรูปไม่สำเร็จ ลองใหม่ หรือส่งรูปทาง LINE @bk25'; return; }
+    var kc = {};   // ไฟล์ Kiss Cut ไม่สำเร็จก็ส่งออเดอร์ต่อได้ ร้านทำเส้นเองจากรูปต้นฉบับ
+    if (srcImg) { this.textContent = 'กำลังเตรียมไฟล์ไดคัท…';
+      try { var kf = await kissCutFiles(w0, h0), tag = 'kisscut-' + w0 + 'x' + h0;
+        kc.dpi = kf.dpi; kc.px = kf.px;
+        kc.png = await upload(new File([kf.png], tag + '.png', {type: 'image/png'})).catch(function () { return ''; });
+        kc.svg = await upload(new File([kf.svg], tag + '.svg', {type: 'image/svg+xml'})).catch(function () { return ''; });
+      } catch (e) {} }
     var w = num($('w').value), h = num($('h').value), p = price(st.qty, w, h), ref = 'WEB' + Date.now().toString(36).toUpperCase().slice(-6);
     var msg = '🛒 สั่งสติ๊กเกอร์จากเว็บ ' + ref + '\n' +
       'แบบ: ' + st.url + '\n' +
       'ขนาดชิ้นไดคัท ' + w + ' × ' + h + ' ซม. · ' + st.qty.toLocaleString('th-TH') + ' ดวง · PVC เคลือบ ไดคัท\n' +
       (srcImg ? 'ตัวงาน ' + artCm(w, h).w + ' × ' + artCm(w, h).h + ' ซม. + ขอบขาว 2 มม. · ≈' + Math.round(printDpi(w, h)) + ' dpi' + (st.fileCm && st.fileCm.dpi ? ' · ไฟล์ระบุ ' + st.fileCm.aw + '×' + st.fileCm.ah + ' ซม. @' + st.fileCm.dpi + 'dpi' : '') + '\n' : (st.fileCm && st.fileCm.src === 'pdf' ? 'PDF หน้า ' + st.fileCm.w + ' × ' + st.fileCm.h + ' ซม.\n' : '')) +
+      (function () { var L = perSheet(w, h); return L.n ? 'เรียง: แผ่นละ ' + L.n + ' ดวง · ใช้ ≈' + (st.qty / L.n).toFixed(2) + ' แผ่น\n' : 'เรียง: ชิ้นใหญ่กว่าแผ่น พิมพ์ม้วน\n'; })() +
+      (kc.png ? 'ไฟล์ตรง+ขอบขาว (' + kc.px + ' px ≈' + kc.dpi + ' dpi): ' + kc.png + '\n' : '') +
+      (kc.svg ? 'เส้น Kiss Cut (SVG มม.): ' + kc.svg + '\n' : '') +
       'ราคาเบื้องต้น ' + fmt(p) + ' บาท (ก่อน VAT ไม่รวมค่าส่ง)\n' +
       'ผู้รับ: ' + $('cName').value.trim() + ' · ' + $('cTel').value.trim() + ($('cLine').value.trim() ? ' · LINE ' + $('cLine').value.trim() : '') + '\n' +
       'ที่อยู่: ' + $('cAddr').value.trim().replace(/\s+/g, ' ') +

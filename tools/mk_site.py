@@ -4,7 +4,7 @@
 import os, shutil, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'dist'))
-SKIP_DIRS = {'.git', '.github', '.claude', 'src', 'tools', 'worker', 'team', 'tests', 'node_modules', 'dist'}
+SKIP_DIRS = {'.git', '.github', '.claude', 'src', 'tools', 'worker', 'team', 'tests', 'node_modules', 'dist', 'dist-shop'}
 SKIP_FILES = {'CNAME', '.gitignore'}
 SKIP_EXT = {'.md', '.py', '.sh', '.toml', '.cjs', '.mjs'}
 if os.path.exists(OUT): shutil.rmtree(OUT)

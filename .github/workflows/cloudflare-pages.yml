@@ -25,6 +25,7 @@ jobs:
         run: |
           python3 tools/mk_site.py dist
           python3 tools/mk_office_json.py dist/office.json
+          python3 tools/mk_shop.py dist-shop
       - name: Create Pages project (first run only)
         if: ${{ env.CF_TOKEN != '' && env.CF_ACCOUNT != '' }}
         continue-on-error: true   # มีโปรเจกต์อยู่แล้ว = ข้าม
@@ -40,6 +41,23 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=ball-sticker-app --branch=main --commit-dirty=true
+      # หน้าสั่งสติ๊กเกอร์ shop.ballsticker.co.th = โปรเจกต์แยก ball-sticker-shop (มีแค่หน้าร้านสั่งงาน ไม่มีไฟล์แอป)
+      - name: Create shop Pages project (first run only)
+        if: ${{ env.CF_TOKEN != '' && env.CF_ACCOUNT != '' }}
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create ball-sticker-shop --production-branch=main
+      - name: Deploy shop
+        if: ${{ env.CF_TOKEN != '' && env.CF_ACCOUNT != '' }}
+        continue-on-error: true   # หน้าร้านสั่งงานล้ม ไม่ให้กระทบแอป
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist-shop --project-name=ball-sticker-shop --branch=main --commit-dirty=true
       - name: Secrets not set yet
         if: ${{ env.CF_TOKEN == '' || env.CF_ACCOUNT == '' }}
         run: echo "ยังไม่ได้ตั้ง CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID — ข้ามการอัปโหลด"
