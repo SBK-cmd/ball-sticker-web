@@ -7777,6 +7777,7 @@ function bahtText(value) {
       }, e => { console.warn('logoReq', e); });
     } catch (e) { console.warn(e); }
   }
+  const WEBORD_ON = /พรีวิว/.test((document.getElementById('buildVer') || {}).textContent || '');   // การ์ด "ออเดอร์จากเว็บ" แสดงเฉพาะรุ่นพรีวิว (เปิดของจริง: ตั้งเป็น true)
   let woDelArmed = null, woDelTimer = null;
   const woDone = x => x.status === 'job' || x.status === 'hide';
   // ออเดอร์เว็บถือว่า "ทำแล้ว" เมื่อบันทึกใบงานที่มีเลขออเดอร์ในหมายเหตุจริงๆ (เปิดฟอร์มแล้วปิดไม่บันทึก = ยังรอ)
@@ -7788,7 +7789,7 @@ function bahtText(value) {
   function renderWebOrders() {
     const card = $('webOrdCard'), box = $('webOrd'); if (!card || !box) return;
     const shown = webOrd.filter(x => !x.deleted), nNew = shown.filter(x => !woDone(x)).length;
-    card.hidden = !shown.length;
+    card.hidden = !shown.length || !WEBORD_ON;   // เจ้าของสั่ง 14 พ.ย.: ของจริงซ่อนการ์ดออเดอร์เว็บไว้ก่อน ทำต่อในพรีวิว
     $('webOrdN').textContent = nNew ? '(' + nNew + ' ออเดอร์ใหม่)' : '';
     const list = shown.filter(x => webOrdTab === 'done' ? woDone(x) : !woDone(x));
     box.innerHTML = list.length ? list.map(x => {
