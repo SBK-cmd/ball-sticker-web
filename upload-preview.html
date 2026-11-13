@@ -155,7 +155,7 @@
   var nice = function (p) { return p < 100 ? Math.ceil(p) : Math.round(p / 10) * 10 - 1; };
   function price(n, w, h) { if (n === 100 && w === 9 && h === 9) return 999; return nice(A0 + A1 * n * (w + GAP) * (h + GAP)); }
   function perSheet(w, h) { var g = function (L, s) { return s > L ? 0 : Math.floor((L + GAP) / (s + GAP)); }; var a = g(121, w) * g(81, h), b = g(121, h) * g(81, w); return a >= b ? {n: a, cx: g(121, w), pw: w, ph: h} : {n: b, cx: g(121, h), pw: h, ph: w}; }
-  var TIERS = [50, 100, 200, 300, 500, 1000], SIZES = [[3, 3], [5, 5], [7, 7], [9, 9], [10, 10], [15, 10]];
+  var TIERS = [50, 100, 200, 300, 500, 1000], SIZES = [[7, 7], [9, 9], [10, 10], [15, 10]];
   var st = {file: null, ratio: 0, qty: 100, url: '', busy: false};
   var utm = {}; try { new URLSearchParams(location.search).forEach(function (v, k) { if (/^utm_|^fbclid$/.test(k)) utm[k] = v.slice(0, 60); }); } catch (e) {}
 
