@@ -853,6 +853,12 @@ button.status-pill:active{filter:brightness(0.9)}
 .bb-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .bb-it{border:1px solid var(--line);border-radius:14px;overflow:hidden;display:grid;background:#fff}
 .bb-it img{width:100%;aspect-ratio:3/4;object-fit:cover;background:#f2f4f8;display:block}
+.bb-grp{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;background:#f2f4f8}.bb-grp img{aspect-ratio:1}.bb-grp .bb-more{display:grid;place-items:center;font-weight:700;color:#556080;aspect-ratio:1}
+.bb-n{display:inline-block;margin-left:6px;padding:0 7px;border-radius:99px;background:#eef2ff;color:#3346a8;font-size:11.5px;font-weight:600}
+.purch-extra{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.purch-extra:empty{display:none}
+.px-it{position:relative;width:72px;height:72px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}.px-it img{width:100%;height:100%;object-fit:cover;display:block}
+.px-it button{position:absolute;border:0;font:inherit;cursor:pointer}.px-it .px-x{top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:12px;line-height:22px;padding:0}
+.px-it .px-main{left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:10.5px;padding:2px 0}
 .bb-it .bb-pdf{aspect-ratio:3/4;display:grid;place-items:center;background:#f2f4f8;font-weight:700;color:#556080}
 .bb-meta{padding:8px 10px;font-size:12.5px;color:#556080;display:grid;gap:6px}.bb-meta b{color:#1b2333;font-size:13px;overflow-wrap:anywhere}
 .bb-meta .btn{min-height:40px;width:100%}.bb-empty{grid-column:1/-1;color:#556080;text-align:center;padding:18px 0}
@@ -4361,6 +4367,8 @@ html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:60
                     <button class="btn small danger" id="purchPhotoRemove" type="button">เอาภาพออก</button>
                   </div>
                 </div>
+                <div class="purch-extra" id="purchExtra" aria-label="รูปประกอบเพิ่มเติม"></div>
+                <label class="btn small" style="margin-top:8px;width:fit-content">＋ เพิ่มรูปประกอบ (สลิป / หน้าร้านค้า)<input type="file" id="purchExtraIn" accept="image/*" multiple hidden></label>
               </label>
             </div>
             <details class="shop" id="aiSettings">
@@ -4985,7 +4993,7 @@ html body #jobHistory .jd .jd-warn{color:#a15c00;font-size:12.5px;font-weight:60
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=7698d17cc3",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=d9da10c6c5",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
