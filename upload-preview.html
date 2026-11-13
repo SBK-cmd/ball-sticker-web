@@ -91,6 +91,7 @@
   .oc-sum .oc-t { color:var(--ink); font:600 18px Prompt,sans-serif; padding-top:6px; }
   .pay .qr { width:min(240px, 70vw); margin:6px auto 0; } .pay .qr svg { display:block; width:100%; height:auto; }
   .pp-n { text-align:center; margin:10px 0 0; font-size:14px; color:var(--sub); } .pp-n b { font:600 22px Prompt,sans-serif; color:var(--ink); }
+  .cpBtn { display:inline-block; background:#fff; border:1px solid #cfd6e3; color:var(--ink); border-radius:12px; padding:9px 14px; font:inherit; font-size:14px; text-decoration:none; cursor:pointer; margin:2px; }
   .lineBtn { display:inline-block; background:#06c755; color:#fff; text-decoration:none; font:600 17px Prompt,sans-serif; padding:14px 22px; border-radius:14px; }
   .note b { color:var(--ink); font-weight:600; white-space:nowrap; }
   .fsz { background:#eef6ff; border-radius:10px; padding:8px 10px; color:#1d3a66; }
@@ -212,6 +213,19 @@
   // ราคา = A0 + A1 × พื้นที่ที่ใช้จริง (ช่องไฟ 0.45 ซม.) แล้วปัดลงท้าย 9 · ยึด 9×9 ซม. 100 ดวง = 999 บาท (สูตรเดียวกับตารางราคาของร้าน)
   var A0 = 390.4718, A1 = 0.06814235, GAP = 0.45, USABLE = 124;
   var CLOUD = 'm4n2ttwh', PRESET = 'nkbscpgs', LINE_OA = '@bk25';
+  // ส่งออเดอร์เข้าแอปหลังร้าน: Firestore 'webOrders' (ล็อกอินแบบไม่ระบุตัวตนก่อน เหมือนแอป) · ไม่สำเร็จก็ยังจ่าย/ส่ง LINE ได้
+  var FB = {key: 'AIzaSyDgIyeVed6xnG7A8YLRhbvZfxJOoHYpVco', project: 'ball-sticker-d95c2'};
+  function fsVal(v) { if (v === null || v === undefined) return {nullValue: null}; if (typeof v === 'boolean') return {booleanValue: v};
+    if (typeof v === 'number') return Number.isInteger(v) ? {integerValue: String(v)} : {doubleValue: v}; if (typeof v === 'string') return {stringValue: v};
+    if (Array.isArray(v)) return {arrayValue: {values: v.map(fsVal)}}; var f = {}; Object.keys(v).forEach(function (k) { f[k] = fsVal(v[k]); }); return {mapValue: {fields: f}}; }
+  function saveOrderCloud(id, data) {
+    var go = fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + FB.key, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({returnSecureToken: true})})
+      .then(function (r) { return r.json(); }).then(function (a) {
+        if (!a.idToken) throw new Error('auth');
+        return fetch('https://firestore.googleapis.com/v1/projects/' + FB.project + '/databases/(default)/documents/webOrders?documentId=' + encodeURIComponent(id), {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + a.idToken}, body: JSON.stringify({fields: fsVal(data).mapValue.fields})});
+      }).then(function (r) { if (!r.ok) throw new Error('fs ' + r.status); return true; });
+    return Promise.race([go, new Promise(function (res) { setTimeout(function () { res(false); }, 8000); })]).catch(function (e) { console.warn('webOrders', e); return false; });
+  }
   var SHIP = 60, VAT = 7, PP = {id: '0935353555', name: 'นาย กิติพงษ์ สีทอง'};   // ค่าส่งเหมา · พร้อมเพย์บัญชีกิติพงษ์ (บัญชีที่ส่ง VAT)
   // ยอดชำระ (คิดเป็นสตางค์ กันทศนิยมเพี้ยน): สติ๊กเกอร์ + ค่าส่ง · ใบกำกับ = VAT 7% ของทั้งก้อน
   function bill(price) { var sub = Math.round(price * 100) + SHIP * 100, vat = $('tx').checked ? Math.round(sub * VAT / 100) : 0; return {price: price, ship: SHIP, sub: sub / 100, vat: vat / 100, total: (sub + vat) / 100}; }
@@ -646,6 +660,14 @@
       ($('cNote').value.trim() ? '\nหมายเหตุ: ' + $('cNote').value.trim() : '') +
       (Object.keys(utm).length ? '\n[ที่มา ' + (utm.utm_source || '') + ' ' + (utm.utm_campaign || '') + ' ' + (utm.utm_content || '') + ']' : '');
     var lineUrl = 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA) + '/?' + encodeURIComponent(msg);
+    this.textContent = 'กำลังบันทึกออเดอร์…';
+    var L0 = perSheet(w, h), ap = addrParts();
+    var saved = await saveOrderCloud(ref, {ref: ref, createdAt: Date.now(), status: 'new', src: 'shop', w: w, h: h, qty: st.qty, price: bl.price, ship: bl.ship, vat: bl.vat, total: bl.total,
+      perSheet: L0.n || 0, sheets: L0.n ? Math.round(st.qty / L0.n * 100) / 100 : 0, dpi: kc.dpi || 0,
+      files: {orig: st.url || '', png: kc.png || '', svg: kc.svg || ''},
+      cust: {name: $('cName').value.trim(), tel: telFmt(telNorm($('cTel').value)), line: $('cLine').value.trim(), addr: addrFull(), zip: ap.zip || '', prov: ap.prov || ''},
+      tax: tx ? {name: $('txName').value.trim(), id: $('txId').value.replace(/\D/g, ''), br: $('txBr').value.trim() || 'สำนักงานใหญ่', addr: ($('txAddr').value.trim() || addrFull()).replace(/\s+/g, ' ')} : null,
+      note: $('cNote').value.trim(), utm: utm});
     var payload = promptPayPayload(PP.id, bl.total), sz = w + ' × ' + h + ' ซม.';
     $('main').innerHTML = '<section class="card ocard">' +
       '<div class="oc-h"><span>เลขใบงาน <b>' + ref + '</b></span><span class="oc-st">รอชำระเงิน</span></div>' +
@@ -656,11 +678,21 @@
       '<section class="card pay"><h2 style="justify-content:center">สแกนจ่ายพร้อมเพย์</h2><div class="qr">' + qrSvgEl(payload) + '</div>' +
       '<p class="pp-n">' + PP.name + '<br><b>' + baht(bl.total) + ' บาท</b></p>' +
       '<p class="note" style="text-align:center">กดค้างที่ QR เพื่อบันทึกรูป แล้วเปิดแอปธนาคารสแกนจากรูปได้</p>' +
-      '<p style="margin:14px 0 0;text-align:center"><a class="lineBtn" href="' + lineUrl + '">💬 โอนแล้ว ส่งสลิปทาง LINE</a></p>' +
+      '<p style="margin:14px 0 0;text-align:center"><a class="lineBtn" href="' + lineUrl + '" target="_blank" rel="noopener">💬 โอนแล้ว ส่งสลิปทาง LINE</a></p>' +
+      '<p style="margin:10px 0 0;text-align:center"><button type="button" class="cpBtn" id="cpMsg">คัดลอกข้อความออเดอร์</button> <a class="cpBtn" href="https://line.me/R/ti/p/' + encodeURIComponent(LINE_OA) + '" target="_blank" rel="noopener">เพิ่มเพื่อน LINE ' + LINE_OA + '</a></p>' +
+      '<p class="note" style="text-align:center">' + (saved ? '✓ ร้านได้รับออเดอร์ ' + ref + ' แล้ว ' : '') + 'เปิดจากคอมพิวเตอร์แล้ว LINE ไม่เด้ง? กดคัดลอกข้อความ แล้ววางในแชต LINE ' + LINE_OA + ' พร้อมแนบสลิป</p>' +
       '<p class="note" style="text-align:center">LINE จะเปิดพร้อมเลขใบงาน ' + ref + ' กดส่งแล้วแนบสลิป · ร้านตรวจไฟล์ก่อนพิมพ์ ถ้าต้องแก้ไขจะทักกลับ<br>LINE ไม่เปิด? แอดไลน์ <b>' + LINE_OA + '</b> แล้วส่งเลข <b>' + ref + '</b></p></section>';
     document.querySelector('.bar').hidden = true; window.scrollTo({top: 0, behavior: 'smooth'});
+    $('cpMsg').onclick = function () { var b = this; (navigator.clipboard ? navigator.clipboard.writeText(msg) : Promise.reject()).then(function () { b.textContent = '✓ คัดลอกแล้ว'; }).catch(function () { window.prompt('คัดลอกข้อความนี้', msg); }); };
+    try { localStorage.setItem('bs_last_order', JSON.stringify({at: Date.now(), html: $('main').innerHTML, msg: msg})); } catch (e) {}   // กลับมาหน้านี้ (เช่นลิงก์ LINE เปิดไม่ได้) ยังเห็นการ์ด/QR เดิม
   });
   render();
+  try { var lo = JSON.parse(localStorage.getItem('bs_last_order') || 'null'); if (lo && Date.now() - lo.at < 6 * 3600e3) {   // ออเดอร์ล่าสุดใน 6 ชม. → ให้กลับไปดูได้
+    var bn = document.createElement('div'); bn.className = 'card'; bn.innerHTML = '<p class="note" style="margin:0">มีออเดอร์ล่าสุดที่ยังเปิดดูได้ <button type="button" class="cpBtn" id="loShow">ดูการ์ดออเดอร์ / QR</button> <button type="button" class="cpBtn" id="loDel">สั่งใหม่</button></p>';
+    $('main').insertBefore(bn, $('main').firstChild);
+    $('loShow').onclick = function () { $('main').innerHTML = lo.html; document.querySelector('.bar').hidden = true; var c = $('cpMsg'); if (c) c.onclick = function () { navigator.clipboard.writeText(lo.msg).then(function () { c.textContent = '✓ คัดลอกแล้ว'; }); }; window.scrollTo(0, 0); };
+    $('loDel').onclick = function () { try { localStorage.removeItem('bs_last_order'); } catch (e) {} bn.remove(); };
+  } } catch (e) {}
 })();
 </script>
 </body>
