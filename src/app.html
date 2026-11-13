@@ -4745,6 +4745,31 @@ function bahtText(value) {
   // โลโก้ของร้าน (ลูกค้าราคาส่ง) เก็บใน bs_customers.logo (ลิงก์ Cloudinary) — ซิงก์ทุกเครื่อง
   const custRec = n => store.get('bs_customers', []).find(x => String(x.name || '').trim() === String(n || '').trim()) || null;
   const shopLogo = n => { const c = custRec(n); return c && c.logo ? c.logo : ''; };
+  // ธีมหน้าติดตามงานของลูกค้า = สีหลักของโลโก้ (คำนวณครั้งเดียวต่อร้าน เก็บใน bs_customers.color) แล้วอัปเดตหน้าติดตามของร้านนั้น
+  const themeTried = {};
+  function logoColor(cv) {   // สีหลักของโลโก้: นับสีอิ่มตัว (ข้ามขาว/ดำ/เทา/โปร่งใส) แบ่ง 24 กลุ่มเฉดสี เอากลุ่มที่มากสุด
+    const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data, bins = {};
+    for (let i = 0; i < d.length; i += 16) {
+      const a = d[i + 3]; if (a < 200) continue; const r = d[i], g = d[i + 1], b = d[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0;
+      if (sat < 0.35 || mx < 60 || mx > 250 && mn > 200) continue;
+      let h = 0; if (mx !== mn) { h = mx === r ? (g - b) / (mx - mn) : mx === g ? 2 + (b - r) / (mx - mn) : 4 + (r - g) / (mx - mn); h = ((h * 60) + 360) % 360; }
+      const k = Math.floor(h / 15), o = bins[k] || (bins[k] = {n: 0, r: 0, g: 0, b: 0}); o.n++; o.r += r; o.g += g; o.b += b;
+    }
+    const top = Object.values(bins).sort((a, b) => b.n - a.n)[0]; if (!top || top.n < 20) return '';
+    const hx = v => ('0' + Math.round(v / top.n).toString(16)).slice(-2); return '#' + hx(top.r) + hx(top.g) + hx(top.b);
+  }
+  function custThemeFor(name, force) {
+    const n = String(name || '').trim(), c = custRec(n); if (!c || !/^https:\/\//.test(c.logo || '')) return;
+    if ((c.color && !force) || themeTried[n + c.logo]) return; themeTried[n + c.logo] = 1;
+    const im = new Image(); im.crossOrigin = 'anonymous';
+    im.onload = () => { try {
+      const k = Math.min(1, 200 / Math.max(im.width, im.height)), cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(im.width * k)); cv.height = Math.max(1, Math.round(im.height * k));
+      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height); const col = logoColor(cv); if (!col) return;
+      setCustField(n, {color: col});
+      store.get('bs_jobs', []).filter(j => String(j.jName || '').trim() === n && j.trackToken).forEach(j => { try { publicJobMirror(j); } catch (e) {} });
+    } catch (e) {} };
+    im.src = c.logo;
+  }
   function setCustField(name, patch) {
     const n = String(name || '').trim(); if (!n) return;
     const list = store.get('bs_customers', []), idx = list.findIndex(c => String(c.name || '').trim() === n);
@@ -11073,6 +11098,7 @@ function bahtText(value) {
     const IC_RC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>';
     const IC_QR = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-4"/></svg>';
     const IC_PL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+    gs.forEach(g => { try { custThemeFor(g.name); } catch (e) {} });
     $('wholesaleHistory').innerHTML = notice + '<ul>' + gs.map(g => {
       const ow = owed(g), has = g.open.length > 0, openN = g.open.reduce((a, w) => a + billSummary(w).jobs, 0), noP = g.open.reduce((a, w) => a + billSummary(w).noPrice, 0);
       const paidTotal = round2(g.paid.reduce((a, w) => a + wholesaleCalc(w).total, 0));
@@ -13567,21 +13593,9 @@ function bahtText(value) {
     const cu = custOf(nm); if (cu && cu.logo && confirm('ลบโลโก้ของ ' + nm + '? (กด ยกเลิก เพื่อเลือกรูปใหม่)')) { setCustLogo(nm, ''); return; }
     whLogoIn.click();
   });
-  function logoColor(cv) {   // สีหลักของโลโก้: นับสีอิ่มตัว (ข้ามขาว/ดำ/เทา/โปร่งใส) แบ่ง 24 กลุ่มเฉดสี เอากลุ่มที่มากสุด
-    const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data, bins = {};
-    for (let i = 0; i < d.length; i += 16) {
-      const a = d[i + 3]; if (a < 200) continue; const r = d[i], g = d[i + 1], b = d[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0;
-      if (sat < 0.35 || mx < 60 || mx > 250 && mn > 200) continue;
-      let h = 0; if (mx !== mn) { h = mx === r ? (g - b) / (mx - mn) : mx === g ? 2 + (b - r) / (mx - mn) : 4 + (r - g) / (mx - mn); h = ((h * 60) + 360) % 360; }
-      const k = Math.floor(h / 15), o = bins[k] || (bins[k] = {n: 0, r: 0, g: 0, b: 0}); o.n++; o.r += r; o.g += g; o.b += b;
-    }
-    const top = Object.values(bins).sort((a, b) => b.n - a.n)[0]; if (!top || top.n < 20) return '';
-    const hx = v => ('0' + Math.round(v / top.n).toString(16)).slice(-2); return '#' + hx(top.r) + hx(top.g) + hx(top.b);
-  }
   function setCustLogo(nm, url, color) {
     if (!custOf(nm)) upsertCustomer(nm, $('whPhone').value, $('whAddr').value);
-    const list = store.get('bs_customers', []), i = list.findIndex(c => String(c.name || '').trim() === nm); if (i < 0) return;
-    list[i] = Object.assign({}, list[i], {logo: url, color: url ? (color || '') : ''}); store.set('bs_customers', list); try { cloudSave('customers', list[i]); } catch (e) {}
+    setCustField(nm, {logo: url, color: url ? (color || '') : ''});
     renderWhLogo();
     store.get('bs_jobs', []).filter(j => String(j.jName || '').trim() === nm && j.trackToken).forEach(j => { try { publicJobMirror(j); } catch (e) {} });   // อัปเดตหน้าติดตามงานที่มีอยู่
     toast(url ? 'บันทึกโลโก้ลูกค้าแล้ว' : 'ลบโลโก้แล้ว');
@@ -13679,7 +13693,7 @@ function bahtText(value) {
     if (e.target.matches('[data-logo-in]')) {
       const f = e.target.files && e.target.files[0], li = e.target.closest('li.jc'); if (!f || !li) return;
       const name = li.dataset.name; toast('กำลังอัปโหลดโลโก้…');
-      try { const url = await uploadPhotoToCloudinary(await squareLogo(f)); if (!url) throw new Error('upload'); setCustField(name, {logo: url}); renderWholesaleHistory(); toast('ใส่โลโก้ร้าน ' + name + ' แล้ว'); }
+      try { const url = await uploadPhotoToCloudinary(await squareLogo(f)); if (!url) throw new Error('upload'); setCustField(name, {logo: url, color: ''}); custThemeFor(name, true); renderWholesaleHistory(); toast('ใส่โลโก้ร้าน ' + name + ' แล้ว'); }
       catch (er) { toast('อัปโหลดโลโก้ไม่สำเร็จ ลองใหม่อีกครั้ง'); }
       return;
     }

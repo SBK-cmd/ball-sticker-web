@@ -76,9 +76,23 @@ details.jc>.jb{padding:2px 16px 16px;border-top:1px solid var(--line)}
 
 /* ---- หน้าตาใหม่ (กระชับ: พับการ์ด แถบความคืบหน้า ขั้นตอนแนวนอน รูปเลื่อนข้าง) ---- */
 .hi{display:flex;justify-content:space-between;align-items:center;margin:2px 2px 10px;font-size:17px}.hi .hn{display:flex;align-items:center;gap:10px;min-width:0}.clogo{width:52px;height:52px;object-fit:contain;border-radius:14px;background:#fff;border:1px solid rgba(0,0,0,.08);padding:4px;flex:none}.hi b{font-weight:800}.hi span{font-size:13.5px;color:var(--mut)}
+.hero2{position:relative;margin:-4px -16px 16px;padding:22px 18px 18px;border-radius:0 0 28px 28px;background:linear-gradient(150deg,var(--th,#1b1b2f),var(--thD,#000));color:var(--thInk,#fff);overflow:hidden}
+body:not(.themed) .hero2{--th:#1b1b2f;--thD:#0b0b16;--thL:#fff6cc;--thInk:#fff}
+.h2bg i{position:absolute;border-radius:50%;background:rgba(255,255,255,.08)}.h2bg i:nth-child(1){width:220px;height:220px;right:-70px;top:-90px}.h2bg i:nth-child(2){width:120px;height:120px;right:60px;bottom:-60px;background:rgba(255,255,255,.06)}.h2bg i:nth-child(3){width:70px;height:70px;left:-20px;bottom:30px;background:rgba(0,0,0,.12)}
+.h2id{position:relative;display:flex;align-items:center;gap:14px}
+.h2logo{flex:none;width:84px;height:84px;border-radius:22px;background:#fff;padding:6px;box-shadow:0 0 0 4px #fff,0 8px 18px rgba(0,0,0,.35);transform:rotate(-4deg);display:grid;place-items:center;overflow:hidden}
+.h2logo img{width:100%;height:100%;object-fit:contain;border-radius:16px}.h2logo b{font-size:30px;font-weight:800;color:var(--th,#1b1b2f)}
+.h2nm{min-width:0}.h2nm small{display:block;font-size:12.5px;opacity:.8;letter-spacing:.02em}.h2nm b{display:block;font-size:26px;font-weight:800;line-height:1.2;overflow-wrap:anywhere}
+.h2st{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.hs{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:8px 10px;text-align:center}.hs b{display:block;font-size:22px;font-weight:800;line-height:1.1}.hs span{font-size:12px;opacity:.85}
+.hs.hot{background:rgba(255,255,255,.95);color:var(--th,#1b1b2f)}
+.h2gal{position:relative;display:flex;gap:12px;overflow-x:auto;margin:16px -18px 0;padding:6px 18px 8px;scrollbar-width:none}.h2gal::-webkit-scrollbar{display:none}
+.stk{flex:none;width:76px;height:76px;border-radius:16px;background:#fff;padding:4px;box-shadow:0 6px 14px rgba(0,0,0,.3);transform:rotate(var(--r,0deg))}.stk img{width:100%;height:100%;object-fit:cover;border-radius:12px;display:block}
+body.themed .hero2 ~ * {}
 .pst{display:inline-block;margin:2px 0 2px;padding:1px 9px;border-radius:99px;font-size:12px;font-weight:700;vertical-align:middle;white-space:nowrap}.pst.ok{background:#dcfce7;color:#166534}.pst.no{background:#fee2e2;color:#b91c1c}
 details.jc>summary .jt0{flex:none;width:52px;height:52px;border-radius:12px;display:grid;place-items:center;background:#eef0f4;color:#9aa1ad;font-weight:800;font-size:15px}
 body.themed .brand{background:linear-gradient(135deg,var(--th),var(--thD));color:var(--thInk);margin:-18px -16px 16px;padding:18px 16px 22px;border-radius:0 0 24px 24px}
+body.hashero .brand{border-radius:0;margin-bottom:0;padding-bottom:6px}body.hashero:not(.themed) .brand{background:#1b1b2f;color:#fff;margin:-18px -16px 0;padding:18px 16px 6px}body.hashero:not(.themed) .brand small{color:#fff;opacity:.8}body.hashero:not(.themed) .shr{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.35)}
 body.themed .brand small{color:var(--thInk);opacity:.85}body.themed .brand img{background:#fff;border-radius:12px}
 body.themed .shr{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4);color:var(--thInk)}
 body.themed .clogo{border:2px solid var(--th)}
@@ -261,6 +275,21 @@ details.jc.pr2{border-left-color:#E5231B}details.jc.pr1{border-left-color:#F5B30
     st.setProperty('--thInk', lum > 0.62 ? '#1b1b2f' : '#fff'); st.setProperty('--bg', mix(0.94, 255));
     document.body.classList.add('themed');
   }
+  // หัวโปรไฟล์ลูกค้าส่ง: โลโก้แบบสติ๊กเกอร์ไดคัท + ชื่อ + ตัวเลขสรุป + แถบผลงานของลูกค้า (รูปจากทุกใบงาน)
+  function heroHTML(j, others, payOk) {
+    var all = [{no: j.no, status: j.status, delivered: j.delivered, thumb: j.thumb, photos: j.photos, refs: j.refPhotos}].concat(others.map(function (o) { return {no: o.no, status: o.status, delivered: o.delivered, thumb: o.thumb, photos: o.photos, refs: o.refPhotos}; }));
+    var doing = 0, done = 0, pics = [];
+    all.forEach(function (o) { var k = stIdx(o.status, o.delivered); if (k >= 4) done++; else doing++;
+      [o.thumb].concat(https(o.photos), https(o.refs)).forEach(function (u) { if (/^https:\/\//.test(u || '') && pics.indexOf(u) < 0) pics.push(u); }); });
+    var init = String(j.cname || '?').trim().slice(0, 2).toUpperCase();
+    var logo = /^https:\/\//.test(j.clogo || '') ? '<img src="' + esc(j.clogo) + '" alt="โลโก้ ' + esc(j.cname || '') + '">' : '<b>' + esc(init) + '</b>';
+    var stat = function (v, l, c) { return '<div class="hs' + (c ? ' ' + c : '') + '"><b>' + v + '</b><span>' + l + '</span></div>'; };
+    var h = '<section class="hero2"><div class="h2bg" aria-hidden="true"><i></i><i></i><i></i></div>' +
+      '<div class="h2id"><span class="h2logo">' + logo + '</span><div class="h2nm"><small>ลูกค้าประจำ บอลสติ๊กเกอร์</small><b>' + esc(j.cname || 'ลูกค้า') + '</b></div></div>' +
+      '<div class="h2st">' + stat(all.length, 'ใบงาน') + stat(doing, 'กำลังทำ', doing ? 'hot' : '') + stat(done, 'ส่งแล้ว') + '</div>';
+    if (pics.length) h += '<div class="h2gal" aria-label="ผลงานของคุณ">' + pics.slice(0, 10).map(function (u, i) { return '<span class="stk" style="--r:' + ((i % 2 ? 1 : -1) * (2 + i % 3)) + 'deg"><img src="' + esc(u) + '" alt="ผลงาน ' + (i + 1) + '" loading="lazy"></span>'; }).join('') + '</div>';
+    return h + '</section>';
+  }
   function jobCard(o, open) {
     var pk = o.status === 'pickup', k = stIdx(o.status, o.delivered), sub = (o.items && o.items[0]) ? String(o.items[0].n || '') + (o.items[0].q ? ' × ' + o.items[0].q : '') + (o.items.length > 1 ? ' +' + (o.items.length - 1) + ' รายการ' : '') : '';
     var pr = (+o.prio > 0 && k < 4) ? Math.min(2, +o.prio) : 0;
@@ -355,6 +384,8 @@ details.jc.pr2{border-left-color:#E5231B}details.jc.pr1{border-left-color:#F5B30
     var clogo = /^https:\/\//.test(j.clogo || '') ? '<img class="clogo" src="' + esc(j.clogo) + '" alt="โลโก้ลูกค้า">' : '';
     applyTheme(j.ctheme);
     var hi = '<div class="hi">' + '<div class="hn">' + clogo + (j.cname ? '<div>คุณ <b>' + esc(j.cname) + '</b></div>' : '<div>งานของคุณ</div>') + '</div>' + '<span>' + cards.length + ' ใบงาน</span></div>';
+    document.body.classList.toggle('hashero', !!(isJbs && others.length));
+    if (isJbs && others.length) hi = heroHTML(j, others, payOk);   // ลูกค้าส่ง (หลายใบ): หัวหน้าแบบโปรไฟล์ร้านลูกค้า
     var payHtml = payOk ? '<div class="payBar"><div><small>ยังไม่ได้ชำระ</small><b>' + money(j.pay.total) + ' บาท</b></div><button type="button" class="payGo" id="payOpen">สแกนจ่าย</button></div>' : '';
     var upd = ''; if (j.updatedAt) { var d = new Date(j.updatedAt); upd = '<div class="upd">อัปเดตล่าสุด ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + (d.getFullYear() + 543) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' น.</div>'; }
     box.className = 'card multi';
@@ -413,8 +444,9 @@ details.jc.pr2{border-left-color:#E5231B}details.jc.pr1{border-left-color:#F5B30
   var smp = new URLSearchParams(location.search).get('sample');
   if (smp) {   // ตัวอย่างหน้าตา (ข้อมูลสมมติ ไม่ใช่งานจริง) · ?sample=%23d32f2f ใส่สีธีมได้
     var col = /^#?[0-9a-f]{6}$/i.test(smp) ? (smp[0] === '#' ? smp : '#' + smp) : '#d32f2f';
-    show({no: 'JBS000000-003', cname: 'ตัวอย่าง', status: 'pending', date: '2026-11-13', ctheme: col, clogo: '', items: [{n: 'สติ๊กเกอร์ตัวอย่าง 120 ชิ้น', q: '1'}], payst: 'unpaid', amt: 0,
-      pay: null, others: [{no: 'JBS000000-002', status: 'printed', date: '2026-11-07', items: [{n: 'สติ๊กเกอร์ตัวอย่าง 60 ชิ้น', q: '1'}], payst: 'paid'}, {no: 'JBS000000-001', status: 'shipped', delivered: true, date: '2026-11-04', items: [{n: 'สติ๊กเกอร์ตัวอย่าง 60 ชิ้น', q: '1'}], payst: 'paid'}], updatedAt: Date.now()});
+    var sp = new URLSearchParams(location.search), simg = function (k) { var v = sp.get(k) || ''; return /^https:\/\//.test(v) ? v : ''; };
+    show({no: 'JBS000000-003', cname: sp.get('name') || 'ตัวอย่าง', status: 'pending', date: '2026-11-13', ctheme: col, clogo: simg('logo'), thumb: simg('p0'), items: [{n: 'สติ๊กเกอร์ตัวอย่าง 120 ชิ้น', q: '1'}], payst: 'unpaid', amt: 0,
+      pay: null, others: [{no: 'JBS000000-002', thumb: simg('p1'), status: 'printed', date: '2026-11-07', items: [{n: 'สติ๊กเกอร์ตัวอย่าง 60 ชิ้น', q: '1'}], payst: 'paid'}, {no: 'JBS000000-001', thumb: simg('p2'), status: 'shipped', delivered: true, date: '2026-11-04', items: [{n: 'สติ๊กเกอร์ตัวอย่าง 60 ชิ้น', q: '1'}], payst: 'paid'}], updatedAt: Date.now()});
     return;
   }
   var t = (new URLSearchParams(location.search).get('t') || '').trim();
