@@ -91,6 +91,7 @@
   .oc-sum .oc-t { color:var(--ink); font:600 18px Prompt,sans-serif; padding-top:6px; }
   .pay .qr { width:min(240px, 70vw); margin:6px auto 0; } .pay .qr svg { display:block; width:100%; height:auto; }
   .pp-n { text-align:center; margin:10px 0 0; font-size:14px; color:var(--sub); } .pp-n b { font:600 22px Prompt,sans-serif; color:var(--ink); }
+  #testSend { background:#fff; border:1px dashed #b07d00; color:#6b5200; border-radius:14px; padding:0 12px; font:600 14px Prompt,sans-serif; min-height:52px; margin-right:6px; cursor:pointer; }
   .cpBtn { display:inline-block; background:#fff; border:1px solid #cfd6e3; color:var(--ink); border-radius:12px; padding:9px 14px; font:inherit; font-size:14px; text-decoration:none; cursor:pointer; margin:2px; }
   .lineBtn { display:inline-block; background:#06c755; color:#fff; text-decoration:none; font:600 17px Prompt,sans-serif; padding:14px 22px; border-radius:14px; }
   .note b { color:var(--ink); font-weight:600; white-space:nowrap; }
@@ -204,6 +205,7 @@
 
 <div class="bar"><div class="in">
   <div class="tot"><small id="totLbl">100 ดวง · 9 × 9 ซม.</small><b id="tot">999 บาท</b></div>
+  <button type="button" id="testSend" hidden>ทดสอบ (ไม่จ่าย)</button>
   <button type="button" id="send">สั่งและชำระเงิน</button>
 </div></div>
 
@@ -256,6 +258,7 @@
   var TIERS = [50, 100, 200, 300, 500, 1000], SIZES = [7, 8, 10, 12, 15, 20, 40, 70].map(function (v) { return [v, v]; }), MINL = 7;   // ไดคัทได้ตั้งแต่ด้านยาว 7 ซม. · หน้าม้วนพิมพ์ได้ 124 ซม.
   var st = {file: null, ratio: 0, qty: 100, url: '', busy: false};
   // ภาพการเรียง/จำนวนต่อแผ่น เห็นเฉพาะแอดมิน: เปิดหน้านี้ด้วย ?admin=1 ครั้งเดียว เครื่องนั้นจะจำไว้ (ลูกค้าทั่วไปไม่เห็น)
+  var testMode = false;
   var isAdmin = false; try { var qp = new URLSearchParams(location.search); if (qp.get('admin') === '1') localStorage.setItem('bs_upl_admin', '1'); if (qp.get('admin') === '0') localStorage.removeItem('bs_upl_admin'); isAdmin = localStorage.getItem('bs_upl_admin') === '1'; } catch (e) {}
   var utm = {}; try { new URLSearchParams(location.search).forEach(function (v, k) { if (/^utm_|^fbclid$/.test(k)) utm[k] = v.slice(0, 60); }); } catch (e) {}
 
@@ -630,6 +633,7 @@
     var j = await r.json(); if (!j.secure_url) throw new Error('upload'); return j.secure_url;
   }
   $('send').addEventListener('click', async function () {
+    var isTest = isAdmin && testMode; testMode = false;
     var err = $('ferr'); err.hidden = true;
     var miss = [];
     if (!st.file) miss.push('รูปแบบ'); if (!$('cName').value.trim()) miss.push('ชื่อผู้รับ'); if (!telOk($('cTel').value)) miss.push('เบอร์โทรให้ถูก'); if ($('cAddr').value.trim().length < 3) miss.push('บ้านเลขที่/ถนน'); if (!/^\d{5}$/.test($('cZip').value)) miss.push('รหัสไปรษณีย์'); else if (!addrOk()) miss.push('ตำบล/อำเภอ/จังหวัด'); if ($('tx').checked) { if ($('txName').value.trim().length < 2) miss.push('ชื่อในใบกำกับ'); if (!taxIdOk($('txId').value)) miss.push('เลขผู้เสียภาษีให้ถูก 13 หลัก'); } if (!$('cOk').checked) miss.push('ติ๊กยินยอม');
@@ -645,8 +649,8 @@
         kc.png = await upload(new File([kf.png], tag + '.png', {type: 'image/png'})).catch(function () { return ''; });
         kc.svg = await upload(new File([kf.svg], tag + '.svg', {type: 'image/svg+xml'})).catch(function () { return ''; });
       } catch (e) {} }
-    var w = num($('w').value), h = num($('h').value), p = price(st.qty, w, h), bl = bill(p), ref = (function () { var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); }; return 'WEB' + String(d.getFullYear() + 543).slice(2) + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + Math.random().toString(36).slice(2, 4).toUpperCase(); })(), tx = $('tx').checked;
-    var msg = '🛒 สั่งสติ๊กเกอร์จากเว็บ\nเลขใบงาน: ' + ref + '\n' +
+    var w = num($('w').value), h = num($('h').value), p = price(st.qty, w, h), bl = bill(p), ref = (function () { var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); }; return 'WEB' + String(d.getFullYear() + 543).slice(2) + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + Math.random().toString(36).slice(2, 4).toUpperCase(); })().replace(/^WEB/, isTest ? 'TEST' : 'WEB'), tx = $('tx').checked;
+    var msg = (isTest ? '🧪 ทดสอบระบบ (ไม่ได้จ่ายจริง)\n' : '') + '🛒 สั่งสติ๊กเกอร์จากเว็บ\nเลขใบงาน: ' + ref + '\n' +
       'แบบ: ' + st.url + '\n' +
       'ขนาดชิ้นไดคัท ' + w + ' × ' + h + ' ซม. · ' + st.qty.toLocaleString('th-TH') + ' ดวง · PVC เคลือบ ไดคัท\n' +
       (srcImg ? 'ตัวงาน ' + artCm(w, h).w + ' × ' + artCm(w, h).h + ' ซม. + ขอบขาว 2 มม. · ≈' + Math.round(printDpi(w, h)) + ' dpi' + (st.fileCm && st.fileCm.dpi ? ' · ไฟล์ระบุ ' + st.fileCm.aw + '×' + st.fileCm.ah + ' ซม. @' + st.fileCm.dpi + 'dpi' : '') + '\n' : (st.fileCm && st.fileCm.src === 'pdf' ? 'PDF หน้า ' + st.fileCm.w + ' × ' + st.fileCm.h + ' ซม.\n' : '')) +
@@ -662,7 +666,7 @@
     var lineUrl = 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA) + '/?' + encodeURIComponent(msg);
     this.textContent = 'กำลังบันทึกออเดอร์…';
     var L0 = perSheet(w, h), ap = addrParts();
-    var saved = await saveOrderCloud(ref, {ref: ref, createdAt: Date.now(), status: 'new', src: 'shop', w: w, h: h, qty: st.qty, price: bl.price, ship: bl.ship, vat: bl.vat, total: bl.total,
+    var saved = await saveOrderCloud(ref, {ref: ref, createdAt: Date.now(), status: 'new', src: 'shop', test: isTest, w: w, h: h, qty: st.qty, price: bl.price, ship: bl.ship, vat: bl.vat, total: bl.total,
       perSheet: L0.n || 0, sheets: L0.n ? Math.round(st.qty / L0.n * 100) / 100 : 0, dpi: kc.dpi || 0,
       files: {orig: st.url || '', png: kc.png || '', svg: kc.svg || ''},
       cust: {name: $('cName').value.trim(), tel: telFmt(telNorm($('cTel').value)), line: $('cLine').value.trim(), addr: addrFull(), zip: ap.zip || '', prov: ap.prov || ''},
@@ -670,7 +674,7 @@
       note: $('cNote').value.trim(), utm: utm});
     var payload = promptPayPayload(PP.id, bl.total), sz = w + ' × ' + h + ' ซม.';
     $('main').innerHTML = '<section class="card ocard">' +
-      '<div class="oc-h"><span>เลขใบงาน <b>' + ref + '</b></span><span class="oc-st">รอชำระเงิน</span></div>' +
+      '<div class="oc-h"><span>เลขใบงาน <b>' + ref + '</b></span><span class="oc-st">' + (isTest ? 'ทดสอบ ไม่ต้องจ่าย' : 'รอชำระเงิน') + '</span></div>' +
       '<div class="oc-b">' + (flatUrl || (srcImg && st.url) ? '<div class="oc-img"><img src="' + (flatUrl || st.url) + '" alt="สติ๊กเกอร์ที่สั่ง"></div>' : '') +
       '<dl><dt>ขนาด</dt><dd>' + sz + '</dd><dt>จำนวน</dt><dd>' + st.qty.toLocaleString('th-TH') + ' ดวง</dd><dt>วัสดุ</dt><dd>PVC เคลือบ ไดคัท</dd><dt>จัดส่ง</dt><dd>' + esc($('cName').value.trim()) + ' · ' + telFmt(telNorm($('cTel').value)) + '<br><small>' + esc(addrFull()) + '</small></dd></dl></div>' +
       '<div class="oc-sum"><div><span>สติ๊กเกอร์</span><span>' + baht(bl.price) + '</span></div><div><span>ค่าส่ง</span><span>' + bl.ship + '</span></div>' + (bl.vat ? '<div><span>VAT 7%</span><span>' + baht(bl.vat) + '</span></div>' : '') + '<div class="oc-t"><span>ยอดชำระ</span><span>' + baht(bl.total) + ' บาท</span></div></div>' +
@@ -687,6 +691,7 @@
     $('cpMsg').onclick = function () { var b = this; (navigator.clipboard ? navigator.clipboard.writeText(msg) : Promise.reject()).then(function () { b.textContent = '✓ คัดลอกแล้ว'; }).catch(function () { window.prompt('คัดลอกข้อความนี้', msg); }); };
     try { localStorage.setItem('bs_last_order', JSON.stringify({at: Date.now(), html: $('main').innerHTML, msg: msg})); } catch (e) {}   // กลับมาหน้านี้ (เช่นลิงก์ LINE เปิดไม่ได้) ยังเห็นการ์ด/QR เดิม
   });
+  if (isAdmin) { $('testSend').hidden = false; $('testSend').onclick = function () { testMode = true; $('send').click(); }; }
   render();
   try { var lo = JSON.parse(localStorage.getItem('bs_last_order') || 'null'); if (lo && Date.now() - lo.at < 6 * 3600e3) {   // ออเดอร์ล่าสุดใน 6 ชม. → ให้กลับไปดูได้
     var bn = document.createElement('div'); bn.className = 'card'; bn.innerHTML = '<p class="note" style="margin:0">มีออเดอร์ล่าสุดที่ยังเปิดดูได้ <button type="button" class="cpBtn" id="loShow">ดูการ์ดออเดอร์ / QR</button> <button type="button" class="cpBtn" id="loDel">สั่งใหม่</button></p>';

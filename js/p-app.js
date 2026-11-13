@@ -3446,7 +3446,7 @@ function bahtText(value) {
         '<div class="wo-m"><b>' + esc(c.name || 'ไม่ทราบชื่อ') + '</b><span class="wo-ref">' + esc(x.ref || x.id) + ' · ' + esc(new Date(x.createdAt || 0).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + '</span>' +
         '<span>' + esc(x.w + ' × ' + x.h + ' ซม. · ' + Number(x.qty || 0).toLocaleString('th-TH') + ' ดวง') + (x.perSheet ? ' · แผ่นละ ' + x.perSheet + ' (≈' + x.sheets + ' แผ่น)' : '') + '</span>' +
         '<span>' + esc(c.tel || '') + '</span><span class="wo-amt">฿' + money(x.total || 0) + '</span>' +
-        '<span>' + (x.tax ? '<i class="wo-tag tx">ใบกำกับ</i>' : '') + (x.status === 'job' ? '<i class="wo-tag ok">ใบงาน ' + esc(x.jobNo || '') + '</i>' : x.status === 'hide' ? '<i class="wo-tag">ซ่อนแล้ว</i>' : '<i class="wo-tag">รอตรวจสลิป</i>') + '</span></div>' +
+        '<span>' + (x.test ? '<i class="wo-tag">🧪 ทดสอบ</i>' : '') + (x.tax ? '<i class="wo-tag tx">ใบกำกับ</i>' : '') + (x.status === 'job' ? '<i class="wo-tag ok">ใบงาน ' + esc(x.jobNo || '') + '</i>' : x.status === 'hide' ? '<i class="wo-tag">ซ่อนแล้ว</i>' : '<i class="wo-tag">รอตรวจสลิป</i>') + '</span></div>' +
         '<div class="wo-act">' + (woDone(x) ? '' : '<button type="button" class="btn small good" data-wojob="' + esc(x.id) + '">สร้างใบงาน</button>') +
         (f.orig ? '<a href="' + esc(f.orig) + '" target="_blank" rel="noopener">ไฟล์ลูกค้า</a>' : '') + (f.png ? '<a href="' + esc(f.png) + '" target="_blank" rel="noopener">ไฟล์ตรง</a>' : '') + (f.svg ? '<a href="' + esc(f.svg) + '" target="_blank" rel="noopener">เส้น Kiss Cut</a>' : '') +
         (woDone(x) ? '' : '<button type="button" class="btn small" data-wohide="' + esc(x.id) + '">ซ่อน</button>') + '</div></div>';
