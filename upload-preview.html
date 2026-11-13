@@ -79,10 +79,10 @@
   .done .big { width:60px; height:60px; border-radius:50%; background:#e8f5ee; color:var(--ok); display:grid; place-items:center; margin:0 auto 10px; font-size:30px; }
   .note { font-size:13px; color:var(--sub); margin:8px 0 0; }
   .err { color:var(--bad); font-size:13px; margin-top:6px; }
-  .stage { margin-top:12px; border-radius:14px; background:radial-gradient(120% 90% at 50% 20%, #ffffff 0%, #e9edf5 70%, #dfe4ee 100%); padding:22px 12px 10px; overflow:hidden; touch-action:none; user-select:none; cursor:grab; }
+  .stage { margin-top:12px; border-radius:14px; background:radial-gradient(120% 90% at 50% 20%, #e4e8f0 0%, #cdd4e0 70%, #c2cad8 100%); padding:22px 12px 10px; overflow:hidden; touch-action:none; user-select:none; cursor:grab; }
   .stage:active { cursor:grabbing; }
   .st3d { position:relative; width:min(260px, 72vw); margin:0 auto; transition:transform .08s linear; will-change:transform; }
-  .st3d canvas { display:block; width:100%; height:auto; }
+  .st3d canvas { display:block; width:100%; height:auto; filter:drop-shadow(0 3px 5px rgba(20,35,75,.28)) drop-shadow(0 0 1px rgba(20,35,75,.25)); }
   .shadow { width:min(220px, 60vw); height:18px; margin:6px auto 0; border-radius:50%; background:radial-gradient(closest-side, rgba(20,35,75,.28), rgba(20,35,75,0)); }
   .gloss { position:absolute; inset:0; pointer-events:none; -webkit-mask-size:100% 100%; mask-size:100% 100%; mix-blend-mode:screen;
     background:linear-gradient(var(--ga, 120deg), rgba(255,255,255,0) 30%, rgba(255,255,255,.55) 46%, rgba(255,255,255,0) 60%); background-size:220% 220%; background-position:var(--gx, 50%) var(--gy, 50%); }
@@ -244,8 +244,10 @@
     mx.drawImage(sil, 2 + B, 2 + B);
     var T = Math.max(3, Math.round(Math.max(W, H) * 0.008));   // ความหนาของแผ่นสติ๊กเกอร์ (เห็นเป็นขอบเทาด้านล่าง)
     var cv = $('cv3d'); cv.width = W; cv.height = H + T; var cx = cv.getContext('2d'); cx.clearRect(0, 0, W, H + T);
-    var edge = document.createElement('canvas'); edge.width = W; edge.height = H; var ex = edge.getContext('2d'); ex.drawImage(m, 0, 0); ex.globalCompositeOperation = 'source-in'; ex.fillStyle = '#c3c9d6'; ex.fillRect(0, 0, W, H);
+    var edge = document.createElement('canvas'); edge.width = W; edge.height = H; var ex = edge.getContext('2d'); ex.drawImage(m, 0, 0); ex.globalCompositeOperation = 'source-in'; ex.fillStyle = '#aab2c1'; ex.fillRect(0, 0, W, H);
     for (var z = T; z > 0; z--) cx.drawImage(edge, 0, z);
+    var ol = document.createElement('canvas'); ol.width = W; ol.height = H; var ox = ol.getContext('2d'); ox.drawImage(m, 0, 0); ox.globalCompositeOperation = 'source-in'; ox.fillStyle = '#9aa3b4'; ox.fillRect(0, 0, W, H);
+    [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]].forEach(function (o) { cx.drawImage(ol, o[0], o[1]); });   // เส้นขอบไดคัทบางๆ ให้ขอบขาวแยกจากพื้น
     cx.drawImage(m, 0, 0); cx.drawImage(a, 2 + B, 2 + B);
     var url = m.toDataURL('image/png');
     var g = $('gloss'); g.style.webkitMaskImage = g.style.maskImage = 'url(' + url + ')'; g.style.bottom = (T / (H + T) * 100).toFixed(2) + '%';
