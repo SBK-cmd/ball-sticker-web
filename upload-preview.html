@@ -594,6 +594,45 @@
     for (let i = 0; i < p.length; i++) { c ^= p.charCodeAt(i) << 8; for (let k = 0; k < 8; k++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; }
     return p + c.toString(16).toUpperCase().padStart(4, '0');
   }
+  // รูปการ์ดออเดอร์ (ส่งเข้า LINE ได้ทั้งรูป): หัวเลขใบงาน · รูปงาน · ขนาด/จำนวน/ผู้รับ · ยอด · QR พร้อมเพย์ · ลิงก์ติดตาม
+  function orderCardBlob(o) {
+    return new Promise(function (done) {
+      var W = 1080, P = 56, cv = document.createElement('canvas'), g = cv.getContext('2d'), m = qrEncode(o.payload), n = m.length, cell = Math.floor(360 / (n + 8)), qs = cell * (n + 8);
+      var H = 1800 + (o.vat ? 56 : 0) + (o.test ? 60 : 0); cv.width = W; cv.height = H;
+      var F = function (w, px, f) { g.font = w + ' ' + px + "px '" + (f || 'Noto Sans Thai') + "','Prompt',sans-serif"; };
+      var rr = function (x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+      var fit = function (t, max) { t = String(t); while (t.length > 1 && g.measureText(t).width > max) t = t.slice(0, -2) + '…'; return t; };
+      var go = function (img) {
+        g.fillStyle = '#14234b'; g.fillRect(0, 0, W, H);
+        F('600', 38, 'Prompt'); g.fillStyle = '#fff'; g.fillText('บอลสติ๊กเกอร์ พิษณุโลก', P, 84); F('400', 26); g.fillStyle = 'rgba(255,255,255,.75)'; g.fillText('ใบสั่งงานจากเว็บ shop.ballsticker.co.th', P, 126);
+        var y0 = 170; g.fillStyle = '#fff'; rr(P - 16, y0, W - 2 * P + 32, H - y0 - 40, 32); g.fill();
+        var x = P + 24, y = y0 + 64, R = W - P - 24;
+        if (o.test) { g.fillStyle = '#fff6cf'; rr(x, y - 40, R - x, 48, 12); g.fill(); F('600', 24, 'Prompt'); g.fillStyle = '#6b5200'; g.fillText('🧪 ออเดอร์ทดสอบ ไม่ได้จ่ายจริง', x + 16, y - 7); y += 60; }
+        F('400', 26); g.fillStyle = '#5a6580'; g.fillText('เลขใบงาน', x, y); F('600', 34, 'Prompt'); g.fillStyle = '#1b2333'; g.fillText(o.ref, x + 130, y + 2);
+        var st = o.test ? 'ทดสอบ' : 'รอชำระเงิน'; F('600', 24, 'Prompt'); var sw = g.measureText(st).width + 36; g.fillStyle = '#fff6cf'; rr(R - sw, y - 32, sw, 46, 23); g.fill(); g.fillStyle = '#6b5200'; g.fillText(st, R - sw + 18, y);
+        y += 40; var ib = 260; g.fillStyle = '#cdd4e0'; rr(x, y, ib, ib, 24); g.fill();
+        if (img) { var k = Math.min((ib - 36) / img.width, (ib - 36) / img.height), iw = img.width * k, ih = img.height * k; g.save(); g.shadowColor = 'rgba(20,35,75,.35)'; g.shadowBlur = 10; g.shadowOffsetY = 4; g.drawImage(img, x + (ib - iw) / 2, y + (ib - ih) / 2, iw, ih); g.restore(); }
+        var tx = x + ib + 36, ty = y + 44, row = function (k2, v, small) { F('400', 26); g.fillStyle = '#5a6580'; g.fillText(k2, tx, ty); F(small ? '400' : '500', small ? 23 : 28); g.fillStyle = '#1b2333'; g.fillText(fit(v, R - tx - 120), tx + 120, ty); ty += small ? 40 : 54; };
+        row('ขนาด', o.size); row('จำนวน', o.qty + ' ดวง'); row('วัสดุ', 'PVC เคลือบ ไดคัท'); row('จัดส่ง', o.name + ' · ' + o.tel); row('', o.addr, true);
+        y += ib + 40; g.fillStyle = '#e3e7ef'; g.fillRect(x, y, R - x, 2); y += 56;
+        var line = function (k2, v, big) { F(big ? '600' : '400', big ? 36 : 28, big ? 'Prompt' : ''); g.fillStyle = big ? '#1b2333' : '#5a6580'; g.fillText(k2, x, y); var tw = g.measureText(v).width; g.fillText(v, R - tw, y); y += big ? 70 : 50; };
+        line('สติ๊กเกอร์', o.price); line('ค่าส่ง', o.ship); if (o.vat) line('VAT 7%', o.vat); y += 10; line('ยอดชำระ', o.total + ' บาท', true);
+        g.fillStyle = '#e3e7ef'; g.fillRect(x, y - 30, R - x, 2); y += 20;
+        var qx = x, qy = y; g.fillStyle = '#fff'; g.fillRect(qx, qy, qs, qs); g.fillStyle = '#000';
+        for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (m[r][c]) g.fillRect(qx + (c + 4) * cell, qy + (r + 4) * cell, cell, cell);
+        g.strokeStyle = '#e3e7ef'; g.lineWidth = 2; rr(qx, qy, qs, qs, 16); g.stroke();
+        var px = qx + qs + 36; F('600', 32, 'Prompt'); g.fillStyle = '#1b2333'; g.fillText('สแกนจ่ายพร้อมเพย์', px, qy + 60);
+        F('400', 26); g.fillStyle = '#5a6580'; g.fillText(o.payee, px, qy + 104); F('600', 44, 'Prompt'); g.fillStyle = '#1b2333'; g.fillText(o.total + ' บาท', px, qy + 166);
+        F('400', 24); g.fillStyle = '#5a6580'; g.fillText('โอนแล้วส่งสลิปใน LINE @bk25', px, qy + 214); g.fillText('ติดต่อ 093-535-3555', px, qy + 252);
+        y = qy + qs + 64; F('500', 26); g.fillStyle = '#2f5bd3'; g.fillText('📦 ติดตามงาน: ' + fit(o.track.replace('https://', ''), R - x - 220), x, y);
+        var endY = y + 60, out = document.createElement('canvas'); out.width = W; out.height = endY + 40; var og = out.getContext('2d');
+        og.drawImage(cv, 0, 0); og.fillStyle = '#14234b'; og.fillRect(0, endY, W, 40); og.fillStyle = '#fff'; og.beginPath(); og.moveTo(P - 16, endY - 40); og.lineTo(W - P + 16, endY - 40); og.lineTo(W - P + 16, endY - 32); og.arcTo(W - P + 16, endY, W - P - 16, endY, 32); og.lineTo(P + 16, endY); og.arcTo(P - 16, endY, P - 16, endY - 32, 32); og.closePath(); og.fill();
+        out.toBlob(function (b) { done(b); }, 'image/png');
+      };
+      if (o.img) { var im = new Image(); im.crossOrigin = 'anonymous'; im.onload = function () { go(im); }; im.onerror = function () { go(null); }; im.src = o.img; } else go(null);
+    });
+  }
+  window.__orderCard = orderCardBlob;   // ใช้ทดสอบ
   function qrSvgEl(text) { var m = qrEncode(text), n = m.length, q = 4, d = ''; for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (m[r][c]) d += 'M' + (c + q) + ' ' + (r + q) + 'h1v1h-1z'; var w = n + 2 * q;
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + w + '" shape-rendering="crispEdges" role="img" aria-label="QR พร้อมเพย์"><rect width="' + w + '" height="' + w + '" fill="#fff"/><path d="' + d + '" fill="#000"/></svg>'; }
   $('cZip').addEventListener('input', function () {
@@ -685,7 +724,7 @@
       'ติดตามงาน: ' + trackUrl + '\n' +
       'แนบสลิปการโอนด้านล่างครับ 🙏' : msgFull + '\nติดตามงาน: ' + trackUrl;
     var lineUrl = 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA) + '/?' + encodeURIComponent(msg);
-    var payload = promptPayPayload(PP.id, bl.total), sz = w + ' × ' + h + ' ซม.';
+    var payload = promptPayPayload(PP.id, bl.total), sz = w + ' × ' + h + ' ซม.', who0 = {name: $('cName').value.trim(), tel: telFmt(telNorm($('cTel').value)), addr: addrFull()};
     $('main').innerHTML = '<section class="card ocard">' +
       '<div class="oc-h"><span>เลขใบงาน <b>' + ref + '</b></span><span class="oc-st">' + (isTest ? 'ทดสอบ ไม่ต้องจ่าย' : 'รอชำระเงิน') + '</span></div>' +
       '<div class="oc-b">' + (flatUrl || (srcImg && st.url) ? '<div class="oc-img"><img src="' + (flatUrl || st.url) + '" alt="สติ๊กเกอร์ที่สั่ง"></div>' : '') +
@@ -694,14 +733,22 @@
       '</section>' +
       '<section class="card pay"><h2 style="justify-content:center">สแกนจ่ายพร้อมเพย์</h2><div class="qr">' + qrSvgEl(payload) + '</div>' +
       '<p class="pp-n">' + PP.name + '<br><b>' + baht(bl.total) + ' บาท</b></p>' +
-      '<p class="note" style="text-align:center">กดค้างที่ QR เพื่อบันทึกรูป แล้วเปิดแอปธนาคารสแกนจากรูปได้</p>' +
+      '<p class="note" style="text-align:center">กดค้างที่ QR เพื่อบันทึกรูป แล้วสแกนในแอปธนาคาร</p>' +
       '<p style="margin:14px 0 0;text-align:center"><a class="lineBtn" href="' + lineUrl + '" target="_blank" rel="noopener">💬 โอนแล้ว ส่งสลิปทาง LINE</a></p>' +
-      '<p style="margin:10px 0 0;text-align:center"><button type="button" class="cpBtn" id="cpMsg">คัดลอกข้อความออเดอร์</button> <a class="cpBtn" href="https://line.me/R/ti/p/' + encodeURIComponent(LINE_OA) + '" target="_blank" rel="noopener">เพิ่มเพื่อน LINE ' + LINE_OA + '</a></p>' +
-      '<p class="note" style="text-align:center">' + (saved ? '✓ ร้านได้รับออเดอร์ ' + ref + ' แล้ว ' : '') + 'เปิดจากคอมพิวเตอร์แล้ว LINE ไม่เด้ง? กดคัดลอกข้อความ แล้ววางในแชต LINE ' + LINE_OA + ' พร้อมแนบสลิป</p>' +
-      '<p class="note" style="text-align:center">LINE จะเปิดพร้อมเลขใบงาน ' + ref + ' กดส่งแล้วแนบสลิป · ร้านตรวจไฟล์ก่อนพิมพ์ ถ้าต้องแก้ไขจะทักกลับ<br>LINE ไม่เปิด? แอดไลน์ <b>' + LINE_OA + '</b> แล้วส่งเลข <b>' + ref + '</b></p>' +
-      (saved ? '<p style="margin:12px 0 0;text-align:center"><a class="cpBtn" href="' + trackUrl + '" target="_blank" rel="noopener">📦 ติดตามสถานะงาน</a></p><p class="note" style="text-align:center">บันทึกลิงก์นี้ไว้ ดูได้ว่างานถึงขั้นไหน · ส่งไปใน LINE ให้แล้ว</p>' : '') +
-      '<div class="oc-sum" style="text-align:center"><b>ติดต่อร้าน</b> · โทร <a href="tel:0935353555">093-535-3555</a> · <a href="tel:0966697495">096-669-7495</a><br>LINE <a href="https://line.me/R/ti/p/' + encodeURIComponent(LINE_OA) + '" target="_blank" rel="noopener">' + LINE_OA + '</a> · แจ้งเลขใบงาน <b>' + ref + '</b> หรือแคปหน้าจอนี้ไว้</div></section>';
+      '<p style="margin:10px 0 0;text-align:center"><button type="button" class="cpBtn" id="shareCard">🖼️ ส่งการ์ดเข้า LINE</button> <button type="button" class="cpBtn" id="cpMsg">คัดลอกข้อความ</button>' + (saved ? ' <a class="cpBtn" href="' + trackUrl + '" target="_blank" rel="noopener">📦 ติดตามงาน</a>' : '') + '</p>' +
+      '<p class="note" style="text-align:center;margin-top:14px">ติดต่อร้าน โทร <a href="tel:0935353555">093-535-3555</a> · LINE <a href="https://line.me/R/ti/p/' + encodeURIComponent(LINE_OA) + '" target="_blank" rel="noopener">' + LINE_OA + '</a></p></section>';
     document.querySelector('.bar').hidden = true; window.scrollTo({top: 0, behavior: 'smooth'});
+    var cardData = {ref: ref, test: isTest, size: sz, qty: st.qty.toLocaleString('th-TH'), name: who0.name, tel: who0.tel, addr: who0.addr, price: baht(bl.price), ship: String(bl.ship), vat: bl.vat ? baht(bl.vat) : '', total: baht(bl.total), payload: payload, payee: PP.name, track: trackUrl, img: flatUrl || ''};
+    $('shareCard').onclick = function () {   // มือถือ: แชร์รูปการ์ด + ข้อความไปแชต LINE ร้าน · คอม: เปิดรูปให้บันทึก
+      var b = this; b.disabled = true; b.textContent = 'กำลังทำรูป…';
+      orderCardBlob(cardData).then(function (blob) {
+        var file = new File([blob], ref + '.png', {type: 'image/png'});
+        b.disabled = false; b.textContent = '🖼️ ส่งการ์ดเข้า LINE';
+        if (navigator.canShare && navigator.canShare({files: [file]})) return navigator.share({files: [file], text: msg}).catch(function () {});
+        var u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = ref + '.png'; document.body.appendChild(a); a.click(); a.remove();
+        b.textContent = '✓ บันทึกรูปแล้ว ส่งรูปนี้ใน LINE @bk25 ได้เลย';
+      });
+    };
     $('cpMsg').onclick = function () { var b = this; (navigator.clipboard ? navigator.clipboard.writeText(msg) : Promise.reject()).then(function () { b.textContent = '✓ คัดลอกแล้ว'; }).catch(function () { window.prompt('คัดลอกข้อความนี้', msg); }); };
     try { localStorage.setItem('bs_last_order', JSON.stringify({at: Date.now(), html: $('main').innerHTML, msg: msg})); } catch (e) {}   // กลับมาหน้านี้ (เช่นลิงก์ LINE เปิดไม่ได้) ยังเห็นการ์ด/QR เดิม
   });
