@@ -76,6 +76,15 @@ details.jc>.jb{padding:2px 16px 16px;border-top:1px solid var(--line)}
 
 /* ---- หน้าตาใหม่ (กระชับ: พับการ์ด แถบความคืบหน้า ขั้นตอนแนวนอน รูปเลื่อนข้าง) ---- */
 .hi{display:flex;justify-content:space-between;align-items:center;margin:2px 2px 10px;font-size:17px}.hi .hn{display:flex;align-items:center;gap:10px;min-width:0}.clogo{width:52px;height:52px;object-fit:contain;border-radius:14px;background:#fff;border:1px solid rgba(0,0,0,.08);padding:4px;flex:none}.hi b{font-weight:800}.hi span{font-size:13.5px;color:var(--mut)}
+.pst{display:inline-block;margin:2px 0 2px;padding:1px 9px;border-radius:99px;font-size:12px;font-weight:700;vertical-align:middle;white-space:nowrap}.pst.ok{background:#dcfce7;color:#166534}.pst.no{background:#fee2e2;color:#b91c1c}
+details.jc>summary .jt0{flex:none;width:52px;height:52px;border-radius:12px;display:grid;place-items:center;background:#eef0f4;color:#9aa1ad;font-weight:800;font-size:15px}
+body.themed .brand{background:linear-gradient(135deg,var(--th),var(--thD));color:var(--thInk);margin:-18px -16px 16px;padding:18px 16px 22px;border-radius:0 0 24px 24px}
+body.themed .brand small{color:var(--thInk);opacity:.85}body.themed .brand img{background:#fff;border-radius:12px}
+body.themed .shr{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4);color:var(--thInk)}
+body.themed .clogo{border:2px solid var(--th)}
+body.themed .payBar{background:var(--thL);border-color:var(--th)}body.themed .payBar small{color:var(--thD)}body.themed .payBar .payGo{background:var(--th);color:var(--thInk)}
+body.themed details.jc{border-left-color:var(--th)}body.themed details.jc>summary .pb i.on{background:var(--th)}body.themed details.jc>summary .js{background:var(--th);color:var(--thInk)}
+body.themed details.jc>summary .jt0{background:var(--thL);color:var(--th)}
 .payBar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;padding:12px 14px;border-radius:16px;background:#fff7d6;border:1.5px solid #f5c542}
 .payBar small{display:block;color:#7a5b00;font-size:12.5px;font-weight:600}.payBar b{font-size:20px;font-weight:800}
 .payBar .payGo{margin:0;width:auto;min-height:44px;padding:0 20px;border-radius:12px;font-size:15px}
@@ -242,10 +251,21 @@ details.jc.pr2{border-left-color:#E5231B}details.jc.pr1{border-left-color:#F5B30
     const flames = n === 2 ? fl(11, 8, 1.1, 0) + fl(17, 6, 1.4, .15) + fl(23, 9, 1, .3) : n === 1 ? fl(17, 7, 1, 0) : '';
     return '<svg class="chili" viewBox="0 0 32 32" aria-hidden="true"><path d="M8.500 12C8 9.800 9.500 8.500 11.500 9 19.500 11.500 25.500 17 27.500 26 21.500 22.500 16 22.800 11.500 20.500 8.800 19 8.800 15 8.500 12z" fill="' + col + '" stroke="' + dark + '" stroke-width="1.200" stroke-linejoin="round"/><path d="M9.500 9.500C9 7 10.500 5.500 13 5.800" fill="none" stroke="#15803D" stroke-width="2" stroke-linecap="round"/>' + flames + '</svg>';
   }
+  // ธีมตามสีโลโก้ลูกค้า (ร้านคำนวณสีหลักจากโลโก้ตอนแนบ → ctheme) · ไม่มีสี = ธีมร้านเดิม
+  function applyTheme(hex) {
+    if (!/^#[0-9a-f]{6}$/i.test(hex || '')) { document.body.classList.remove('themed'); return; }
+    var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    var mix = function (t, w) { return 'rgb(' + Math.round(r + (w - r) * t) + ',' + Math.round(g + (w - g) * t) + ',' + Math.round(b + (w - b) * t) + ')'; };
+    var lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255, st = document.documentElement.style;
+    st.setProperty('--th', hex); st.setProperty('--thD', mix(0.35, 0)); st.setProperty('--thL', mix(0.88, 255)); st.setProperty('--thM', mix(0.7, 255));
+    st.setProperty('--thInk', lum > 0.62 ? '#1b1b2f' : '#fff'); st.setProperty('--bg', mix(0.94, 255));
+    document.body.classList.add('themed');
+  }
   function jobCard(o, open) {
     var pk = o.status === 'pickup', k = stIdx(o.status, o.delivered), sub = (o.items && o.items[0]) ? String(o.items[0].n || '') + (o.items[0].q ? ' × ' + o.items[0].q : '') + (o.items.length > 1 ? ' +' + (o.items.length - 1) + ' รายการ' : '') : '';
     var pr = (+o.prio > 0 && k < 4) ? Math.min(2, +o.prio) : 0;
-    var head = '<summary>' + (pr ? '<span class="jc-fire" aria-hidden="true"></span>' : '') + (o.thumb ? '<img class="jt" src="' + esc(o.thumb) + '" alt="" loading="lazy">' : '') + '<span class="jn"><b>' + esc(o.no) + '</b>' + (pr ? '<span class="chili-tag p' + pr + '">' + chiliSvg(pr) + '<b>' + PRIO_SHORT[pr] + '</b></span>' : '') + ((o.date || sub) ? '<small>' + esc([thDate(o.date), sub].filter(Boolean).join(' · ')) + '</small>' : '') + '</span><span class="js' + (k === 4 ? ' rcv' : k === 3 ? ' done' : '') + '">' + esc(pk ? 'พร้อมรับหน้าร้าน' : STEPS[k][1]) + '</span>' +
+    var pay = o.payst === 'paid' ? '<span class="pst ok">✓ ชำระแล้ว</span>' : o.payst === 'unpaid' ? '<span class="pst no">ยังไม่ชำระ</span>' : '';
+    var head = '<summary>' + (pr ? '<span class="jc-fire" aria-hidden="true"></span>' : '') + (o.thumb ? '<img class="jt" src="' + esc(o.thumb) + '" alt="" loading="lazy">' : '<span class="jt jt0" aria-hidden="true">' + esc(String(o.no || '').slice(-3)) + '</span>') + '<span class="jn"><b>' + esc(o.no) + '</b>' + pay + (pr ? '<span class="chili-tag p' + pr + '">' + chiliSvg(pr) + '<b>' + PRIO_SHORT[pr] + '</b></span>' : '') + ((o.date || sub) ? '<small>' + esc([thDate(o.date), sub].filter(Boolean).join(' · ')) + '</small>' : '') + '</span><span class="js' + (k === 4 ? ' rcv' : k === 3 ? ' done' : '') + '">' + esc(pk ? 'พร้อมรับหน้าร้าน' : STEPS[k][1]) + '</span>' +
       '<span class="pb" aria-hidden="true">' + SHORT.map(function (s, n) { return '<i class="' + (n <= k ? 'on' : '') + '"></i>'; }).join('') + '</span></summary>';
     var b = stepper(k, pk);
     if (o.items && o.items.length) b += '<ul class="it">' + o.items.map(function (i) { return '<li><span>' + esc(i.n) + '</span><b>' + (+i.p > 0 ? fmt(i.p) + ' ฿' : (i.q ? '× ' + esc(i.q) : '')) + '</b></li>'; }).join('') + '</ul>';
@@ -264,7 +284,7 @@ details.jc.pr2{border-left-color:#E5231B}details.jc.pr1{border-left-color:#F5B30
       else if (j.receiver || j.trackCode) boxes = [{from: j.shipFrom || '', name: j.receiver ? j.receiver.name : '', addr: j.receiver ? j.receiver.addr : '', trackCode: j.trackCode || '', carrier: j.carrier || '', trackUrl: j.trackUrl || '', st: j.shipSt || null}];
     }
     return {no: j.no, date: j.date || '', status: j.status, delivered: j.delivered, items: j.items || [], amt: isJbs ? (+j.amt || 0) : 0, due: j.due, thumb: j.thumb, boxes: boxes, sender: isJbs ? j.sender : null,
-      photos: k >= 2 ? https(j.photos) : [], refs: https(j.refPhotos), prio: +j.prio || 0};
+      photos: k >= 2 ? https(j.photos) : [], refs: https(j.refPhotos), prio: +j.prio || 0, payst: j.payst || ''};
   }
   /* เส้นทางพัสดุระหว่าง hub (iShip Trace routes ผ่าน Worker iship-orders-proxy เส้น ?trace=) — ถ้าเรียกไม่ได้จะไม่แสดงอะไร ไม่กระทบหน้าเดิม
      ใส่ HUB_KEY (APP_KEY ของ Worker) หลัง deploy; ทดสอบหน้าตาด้วย ?hubdemo=1 (ข้อมูลตัวอย่าง ไม่ใช่ของจริง) */
@@ -329,10 +349,11 @@ details.jc.pr2{border-left-color:#E5231B}details.jc.pr1{border-left-color:#F5B30
     var cards = [jobCard(recOf(j), !others.length)];   // มีใบเดียว = เปิดให้เลย · หลายใบ = พับไว้ กดดูทีละใบ
     others.forEach(function (o) {
       var bx = (o.receiver || o.trackCode) ? [{from: o.shipFrom || '', name: o.receiver ? o.receiver.name : '', addr: o.receiver ? o.receiver.addr : '', trackCode: o.trackCode || '', carrier: o.carrier || '', trackUrl: o.trackUrl || '', st: o.shipSt || null}] : [];
-      cards.push(jobCard({no: o.no, date: o.date, status: o.status, delivered: o.delivered, items: o.items || [], amt: +o.amt || 0, due: o.due, thumb: o.thumb, boxes: bx, photos: https(o.photos), refs: https(o.refPhotos)}, false));
+      cards.push(jobCard({no: o.no, date: o.date, status: o.status, delivered: o.delivered, items: o.items || [], amt: +o.amt || 0, due: o.due, thumb: o.thumb, boxes: bx, photos: https(o.photos), refs: https(o.refPhotos), payst: o.payst || ''}, false));
     });
     cards.sort(function (a, b2) { return (b2.date > a.date ? 1 : b2.date < a.date ? -1 : 0) || (b2.no > a.no ? 1 : b2.no < a.no ? -1 : 0); });
     var clogo = /^https:\/\//.test(j.clogo || '') ? '<img class="clogo" src="' + esc(j.clogo) + '" alt="โลโก้ลูกค้า">' : '';
+    applyTheme(j.ctheme);
     var hi = '<div class="hi">' + '<div class="hn">' + clogo + (j.cname ? '<div>คุณ <b>' + esc(j.cname) + '</b></div>' : '<div>งานของคุณ</div>') + '</div>' + '<span>' + cards.length + ' ใบงาน</span></div>';
     var payHtml = payOk ? '<div class="payBar"><div><small>ยังไม่ได้ชำระ</small><b>' + money(j.pay.total) + ' บาท</b></div><button type="button" class="payGo" id="payOpen">สแกนจ่าย</button></div>' : '';
     var upd = ''; if (j.updatedAt) { var d = new Date(j.updatedAt); upd = '<div class="upd">อัปเดตล่าสุด ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + (d.getFullYear() + 543) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' น.</div>'; }
@@ -389,6 +410,13 @@ details.jc.pr2{border-left-color:#E5231B}details.jc.pr1{border-left-color:#F5B30
     var row = a.closest('.pr'), links = [].slice.call(row.querySelectorAll('figure > a:first-child'));
     e.preventDefault(); openLightbox(links.map(function (x) { return x.getAttribute('href'); }), Math.max(0, links.indexOf(a)), links.map(function (x) { return x.getAttribute('data-nm') || ''; }));
   });
+  var smp = new URLSearchParams(location.search).get('sample');
+  if (smp) {   // ตัวอย่างหน้าตา (ข้อมูลสมมติ ไม่ใช่งานจริง) · ?sample=%23d32f2f ใส่สีธีมได้
+    var col = /^#?[0-9a-f]{6}$/i.test(smp) ? (smp[0] === '#' ? smp : '#' + smp) : '#d32f2f';
+    show({no: 'JBS000000-003', cname: 'ตัวอย่าง', status: 'pending', date: '2026-11-13', ctheme: col, clogo: '', items: [{n: 'สติ๊กเกอร์ตัวอย่าง 120 ชิ้น', q: '1'}], payst: 'unpaid', amt: 0,
+      pay: null, others: [{no: 'JBS000000-002', status: 'printed', date: '2026-11-07', items: [{n: 'สติ๊กเกอร์ตัวอย่าง 60 ชิ้น', q: '1'}], payst: 'paid'}, {no: 'JBS000000-001', status: 'shipped', delivered: true, date: '2026-11-04', items: [{n: 'สติ๊กเกอร์ตัวอย่าง 60 ชิ้น', q: '1'}], payst: 'paid'}], updatedAt: Date.now()});
+    return;
+  }
   var t = (new URLSearchParams(location.search).get('t') || '').trim();
   if (!/^[a-z0-9]{12,40}$/i.test(t)) { fail('ลิงก์ไม่ถูกต้อง', 'กรุณาเปิดลิงก์ที่ร้านส่งให้ หรือสอบถามร้านทาง LINE'); return; }
   if (typeof firebase === 'undefined') { fail('เปิดหน้านี้ไม่ได้ชั่วคราว', 'ลองรีเฟรชหรือสอบถามร้านทาง LINE'); return; }

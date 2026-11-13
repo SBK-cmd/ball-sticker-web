@@ -4644,11 +4644,13 @@ function bahtText(value) {
       const refs = (Array.isArray(rec.photos) ? rec.photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 6);   // รูปอ้างอิงที่ลูกค้าส่งมา (เฉพาะที่อัปโหลดเป็น https แล้ว)
       if (refs.length) doc.refPhotos = refs;
       { const th = (photos[0] || refs[0] || ''); if (th) doc.thumb = th; }   // รูปย่อหัวการ์ด
-      { const cu = store.get('bs_customers', []).find(c => String(c.name || '').trim() === String(rec.jName || '').trim()); if (cu && /^https:\/\//.test(cu.logo || '')) doc.clogo = cu.logo; }   // โลโก้ลูกค้า (หัวหน้าติดตามงาน)
+      { const cu = store.get('bs_customers', []).find(c => String(c.name || '').trim() === String(rec.jName || '').trim()); if (cu && /^https:\/\//.test(cu.logo || '')) doc.clogo = cu.logo; if (cu && /^#[0-9a-f]{6}$/i.test(cu.color || '')) doc.ctheme = cu.color; }
+      { const ps = jobPayStateOf(rec); if (ps) doc.payst = ps; }   // โลโก้ลูกค้า (หัวหน้าติดตามงาน)
       if (isJbs) {   // ใบงานอื่นของลูกค้าคนนี้ (สถานะล่าสุดของแต่ละใบ)
         doc.others = siblingJobsOf(rec).map(x => {
           const trx = x.trackCode ? (store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(x.trackCode)) || null) : null, car2 = (trx && trx.carrier) || '';
           const px = publicItemsOf(x), o = {shipFrom: shipFromOf(x, trx), amt: px.amt || 0, delivered: jobDelivered(x), no: String(x.no || ''), status: x.status || 'pending', date: x.date || '', due: x.due || '', items: px.items};
+          { const ps = jobPayStateOf(x); if (ps) o.payst = ps; }
           { const https = a => (Array.isArray(a) ? a : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u)); const ph = https(x.donePhotos).slice(0, 4), rf = https(x.photos).slice(0, 4); if (ph.length) o.photos = ph; if (rf.length) o.refPhotos = rf; const th2 = ph[0] || rf[0]; if (th2) o.thumb = th2; }
           if (x.recv && (x.recv.name || x.recv.addr)) o.receiver = {name: String(x.recv.name || '').replace(/\s+/g, ' ').trim().slice(0, 80), addr: String(x.recv.addr || '').replace(/\s+/g, ' ').trim().slice(0, 300)};
           if (x.trackCode) { o.trackCode = String(x.trackCode); o.carrier = car2; o.trackUrl = trackingLink(car2, x.trackCode) || ''; const sx = shipStOf(x.trackCode); if (sx) o.shipSt = sx; }
@@ -4667,6 +4669,17 @@ function bahtText(value) {
   }
   // หลังบันทึกแล้ว อัปโหลดรูปที่ยังเป็น data: URI ขึ้น Cloudinary เบื้องหลัง ไม่บล็อกหน้าจอ
   // แล้วแทนที่ด้วยลิงก์ https ถาวรทั้งในเครื่อง (เบาลง ไม่กิน localStorage) และในคลาวด์ (ดูได้ทุกเครื่อง)
+  // สถานะจ่ายของใบงาน JBS (โชว์ในหน้าติดตามงาน): ใบราคาส่งที่ผูก (เปิดจากใบงาน / ดึงรายการจากใบงาน) จ่ายครบ = ชำระแล้ว · ยังมีใบค้าง = ยังไม่ชำระ
+  //   ไม่มีใบราคาส่ง: ผูกเงินเข้า/กดรับเงินแล้ว = ชำระแล้ว · คีย์ยอดไว้แต่ยังไม่รับ = ยังไม่ชำระ · ยังไม่มียอด = ไม่แสดง
+  function jobPayStateOf(j) {
+    if (!j || !/^JBS/i.test(String(j.no || '').trim())) return '';
+    const docs = Object.values(j.whAdded || {}).map(x => String((x && x.doc) || '').trim()).filter(Boolean);
+    const ws = store.get('bs_wholesale', []).filter(w => w.jobId === j.id || (docs.length && (docs.indexOf(String(w.no || '').trim()) >= 0 || docs.indexOf(String(w.ref || '').trim()) >= 0)));
+    if (ws.length) return ws.every(w => w.paid) ? 'paid' : 'unpaid';
+    let bank = 0; try { bank = jobBankIdsOf(j).length; } catch (e) {}
+    if (j.owedPaid || bank) return 'paid';
+    return num(j.slipAmount) > 0 ? 'unpaid' : '';
+  }
   function syncRecordPhotosToCloud(key, cloudCol, id, field, renderFn) {
     (async () => {
       const list = store.get(key, []);
@@ -13554,10 +13567,21 @@ function bahtText(value) {
     const cu = custOf(nm); if (cu && cu.logo && confirm('ลบโลโก้ของ ' + nm + '? (กด ยกเลิก เพื่อเลือกรูปใหม่)')) { setCustLogo(nm, ''); return; }
     whLogoIn.click();
   });
-  function setCustLogo(nm, url) {
+  function logoColor(cv) {   // สีหลักของโลโก้: นับสีอิ่มตัว (ข้ามขาว/ดำ/เทา/โปร่งใส) แบ่ง 24 กลุ่มเฉดสี เอากลุ่มที่มากสุด
+    const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data, bins = {};
+    for (let i = 0; i < d.length; i += 16) {
+      const a = d[i + 3]; if (a < 200) continue; const r = d[i], g = d[i + 1], b = d[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0;
+      if (sat < 0.35 || mx < 60 || mx > 250 && mn > 200) continue;
+      let h = 0; if (mx !== mn) { h = mx === r ? (g - b) / (mx - mn) : mx === g ? 2 + (b - r) / (mx - mn) : 4 + (r - g) / (mx - mn); h = ((h * 60) + 360) % 360; }
+      const k = Math.floor(h / 15), o = bins[k] || (bins[k] = {n: 0, r: 0, g: 0, b: 0}); o.n++; o.r += r; o.g += g; o.b += b;
+    }
+    const top = Object.values(bins).sort((a, b) => b.n - a.n)[0]; if (!top || top.n < 20) return '';
+    const hx = v => ('0' + Math.round(v / top.n).toString(16)).slice(-2); return '#' + hx(top.r) + hx(top.g) + hx(top.b);
+  }
+  function setCustLogo(nm, url, color) {
     if (!custOf(nm)) upsertCustomer(nm, $('whPhone').value, $('whAddr').value);
     const list = store.get('bs_customers', []), i = list.findIndex(c => String(c.name || '').trim() === nm); if (i < 0) return;
-    list[i] = Object.assign({}, list[i], {logo: url}); store.set('bs_customers', list); try { cloudSave('customers', list[i]); } catch (e) {}
+    list[i] = Object.assign({}, list[i], {logo: url, color: url ? (color || '') : ''}); store.set('bs_customers', list); try { cloudSave('customers', list[i]); } catch (e) {}
     renderWhLogo();
     store.get('bs_jobs', []).filter(j => String(j.jName || '').trim() === nm && j.trackToken).forEach(j => { try { publicJobMirror(j); } catch (e) {} });   // อัปเดตหน้าติดตามงานที่มีอยู่
     toast(url ? 'บันทึกโลโก้ลูกค้าแล้ว' : 'ลบโลโก้แล้ว');
@@ -13566,10 +13590,10 @@ function bahtText(value) {
     const f = whLogoIn.files && whLogoIn.files[0]; whLogoIn.value = ''; const nm = $('whName').value.trim(); if (!f || !nm) return;
     const rd = new FileReader(); rd.onload = () => { const im = new Image(); im.onload = async () => {
       const k = Math.min(1, 400 / Math.max(im.width, im.height)), w = Math.round(im.width * k), h = Math.round(im.height * k), cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-      cv.getContext('2d').drawImage(im, 0, 0, w, h); const du = cv.toDataURL('image/png');
+      cv.getContext('2d').drawImage(im, 0, 0, w, h); const du = cv.toDataURL('image/png'), col = logoColor(cv);
       const b = $('whLogoBtn'); b.classList.add('has'); b.innerHTML = '<img src="' + du + '" alt="">';
       const url = await uploadPhotoToCloudinary(du).catch(() => '');
-      if (url) setCustLogo(nm, url); else { toast('อัปโหลดโลโก้ไม่สำเร็จ ลองใหม่'); renderWhLogo(); }
+      if (url) setCustLogo(nm, url, col); else { toast('อัปโหลดโลโก้ไม่สำเร็จ ลองใหม่'); renderWhLogo(); }
     }; im.src = rd.result; }; rd.readAsDataURL(f);
   });
   $('whName').addEventListener('input', renderWhLogo);
