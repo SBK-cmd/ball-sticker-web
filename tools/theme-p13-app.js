@@ -51,3 +51,33 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',build);else build();
   setTimeout(build,800);
 })();
+
+/* PREVIEW: การ์ดงานพับ/กาง — แตะการ์ดแล้วรายละเอียดกางลงมา (กางทีละใบ) */
+(function(){
+  var open=null;
+  function key(li){var n=li.querySelector('.jc-no');return n?n.textContent.trim():null}
+  function apply(){
+    var h=document.getElementById('jobHistory'); if(!h)return;
+    h.querySelectorAll('li.jc').forEach(function(li){
+      var k=key(li); li.classList.toggle('xp',!!k&&k===open);
+      li.setAttribute('aria-expanded',li.classList.contains('xp'));
+      if(!li.querySelector('.jc-chev')){var c=document.createElement('span');c.className='jc-chev';c.setAttribute('aria-hidden','true');li.appendChild(c)}
+      var m=li.querySelector('.jc-main');
+      if(m&&!m.querySelector('.jc-urg')){var p=li.querySelector('.jc-prio.p1,.jc-prio.p2');if(p){var s=document.createElement('span');s.className='jc-urg'+(p.classList.contains('p2')?' p2':'');s.textContent=p.classList.contains('p2')?'ด่วนมาก':'ด่วน';m.appendChild(s)}}
+    });
+  }
+  function init(){
+    var h=document.getElementById('jobHistory'); if(!h||h.dataset.xp)return; h.dataset.xp='1';
+    h.addEventListener('click',function(e){
+      var li=e.target.closest('li.jc'); if(!li)return;
+      if(li.classList.contains('open')||e.target.closest('select,button,a,input,textarea,label,.jd,#whSweepBtn'))return;
+      e.stopPropagation();
+      var k=key(li); if(!k)return; open=(open===k)?null:k; apply();
+      if(open){var r=li.getBoundingClientRect();if(r.bottom>innerHeight-90)li.scrollIntoView({block:'center',behavior:'smooth'})}
+    },true);
+    new MutationObserver(function(){apply()}).observe(h,{childList:true});
+    apply();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+  setTimeout(init,800);setInterval(init,2000);
+})();
