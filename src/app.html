@@ -9290,7 +9290,7 @@ function bahtText(value) {
         const gs = owedGroups(), byName = {}; gs.forEach(x => { byName[x.name] = x; });
         store.get('bs_jobs', []).filter(j => j.trackToken && /^JBS/i.test(String(j.no || '').trim())).forEach(j => {
           const ow = byName[String(j.jName || '').trim() || 'ไม่ระบุชื่อ'];
-          const sig = (ow ? ow.total + '|' + ow.docs.map(d => d.id).join(',') : '') + '#' + jobAmountOf(j);
+          const sig = (ow ? ow.total + '|' + ow.docs.map(d => d.id).join(',') : '') + '#' + jobAmountOf(j) + '#' + siblingJobsOf(j).map(x => String(x.no || '') + ':' + (x.status || '') + ':' + (x.date || '')).join(',');   // รวมรายชื่อใบงานของลูกค้าไว้ในลายเซ็นด้วย: ใบใหม่มาทีหลัง (ซิงก์ช้ากว่าบิล) หน้าลูกค้าจะอัปเดตตาม
           if (owedSig[j.id] === sig) return;
           owedSig[j.id] = sig; publicJobMirror(j);
         });
