@@ -10055,7 +10055,7 @@ function bahtText(value) {
     const rows = jobPendingWhItems(j); if (!rows.length) return null;
     const wl = store.get('bs_wholesale', []);
     let doc = wl.filter(w => !w.paid && String(w.buyerName || '').trim() === name).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0], isNew = false;
-    if (!doc) { doc = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: false, no: whNextNo(todayISO()), ref: '', date: todayISO(), buyerName: name, items: [], discount: 0, note: ''}; wl.push(doc); isNew = true; }
+    if (!doc) { doc = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: false, no: '', ref: '', date: todayISO(), buyerName: name, items: [], discount: 0, note: ''}; wl.push(doc); isNew = true; }
     const add = jobBillRows(j, rows);
     doc.items = (doc.items || []).filter(i => (i.name || '').trim()).concat(add);
     doc.savedAt = Date.now();
@@ -11374,7 +11374,7 @@ function bahtText(value) {
   function wholesaleOpenDocFor(name, create) {
     const nm = String(name || '').trim(), wl = store.get('bs_wholesale', []);
     let doc = wl.filter(w => !w.paid && String(w.buyerName || '').trim() === nm).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0];
-    if (!doc && create) { doc = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: false, no: whNextNo(todayISO()), ref: '', date: todayISO(), buyerName: nm, items: [], discount: 0, note: ''}; wl.push(doc); store.set('bs_wholesale', wl); cloudSave('wholesale', doc); }
+    if (!doc && create) { doc = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: false, no: '', ref: '', date: todayISO(), buyerName: nm, items: [], discount: 0, note: ''}; wl.push(doc); store.set('bs_wholesale', wl); cloudSave('wholesale', doc); }
     return doc || null;
   }
   function addJobToWholesaleDoc(jobId, docId) {
