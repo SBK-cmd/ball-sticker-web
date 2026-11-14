@@ -14,28 +14,28 @@ html:root body .tip-q{width:20px!important;height:20px!important;min-width:20px!
 html:root body .hint,html:root body .actions-note{font-size:13px!important;line-height:1.5!important;color:var(--a-mute)!important}
 
 /* ---------- ปุ่ม: หลัก 1 แบบ (เหลือง) · รอง 1 แบบ (ขาวเส้นบาง) · ลบ = ตัวแดงพื้นขาว ---------- */
-html:root body .btn{min-height:44px!important;padding:0 16px!important;border-radius:var(--a-r1)!important;background:#fff!important;color:var(--a-ink)!important;border:1px solid #CFD3DB!important;box-shadow:none!important;font-size:15px!important;font-weight:500!important;letter-spacing:0!important;background-image:none!important}
+html:root body .btn{min-height:44px!important;padding:0 16px!important;border-radius:var(--a-r1)!important;background:var(--a-card)!important;color:var(--a-ink)!important;border:1px solid #CFD3DB!important;box-shadow:none!important;font-size:15px!important;font-weight:500!important;letter-spacing:0!important;background-image:none!important}
 html:root body .btn:hover{background:#F6F7F9!important}
 html:root body .btn:active{background:#ECEEF2!important}
 html:root body .btn.small{min-height:40px!important;padding:0 12px!important;font-size:14px!important}
 html:root body .btn.primary,html:root body .btn.good,html:root body .jc-b.main{background:var(--a-yel)!important;border-color:var(--a-yel)!important;color:#1A1A1A!important;font-weight:600!important}
 html:root body .btn.primary:hover,html:root body .btn.good:hover{background:var(--a-yel-h)!important;border-color:var(--a-yel-h)!important}
-html:root body .btn.danger,html:root body .btn.del,html:root body .btn.small.del{background:#fff!important;color:var(--a-red)!important;border-color:#E9C3BE!important}
+html:root body .btn.danger,html:root body .btn.del,html:root body .btn.small.del{background:var(--a-card)!important;color:var(--a-red)!important;border-color:#E9C3BE!important}
 html:root body .btn.danger.confirm,html:root body .btn.confirm{background:var(--a-red)!important;border-color:var(--a-red)!important;color:#fff!important}
 html:root body .btn.ghost{background:transparent!important;border-color:transparent!important;color:var(--a-ink2)!important}
 html:root body .btn[disabled],html:root body .btn:disabled{opacity:.5!important}
 html:root body .btn svg{stroke-width:1.75}
 
 /* ---------- ช่องกรอก ---------- */
-html:root body .txt,html:root body input.txt,html:root body select.txt,html:root body textarea.txt,html:root body select,html:root body textarea{border:1px solid #CFD3DB!important;border-radius:var(--a-r1)!important;background:#fff!important;box-shadow:none!important;font-size:16px!important;color:var(--a-ink)!important}
+html:root body .txt,html:root body input.txt,html:root body select.txt,html:root body textarea.txt,html:root body select,html:root body textarea{border:1px solid #CFD3DB!important;border-radius:var(--a-r1)!important;background:var(--a-card)!important;box-shadow:none!important;font-size:16px!important;color:var(--a-ink)!important}
 html:root body input.txt,html:root body select.txt,html:root body select{min-height:48px!important}
 html:root body .txt:focus,html:root body select:focus,html:root body textarea:focus{border-color:var(--a-navy)!important;outline:2px solid rgba(14,30,91,.18)!important;outline-offset:0!important;box-shadow:none!important}
 html:root body .txt::placeholder,html:root body textarea::placeholder{color:#8A90A0!important}
 html:root body label.f>span,html:root body .f>span{font-size:14px!important;font-weight:500!important;color:var(--a-ink2)!important;letter-spacing:0!important}
 
 /* ---------- การ์ด: แบบเดียว ขาว เส้นบาง ไม่มีเงา ---------- */
-html:root body .card,html:root body .acd-card,html:root body .fold,html:root body .dash-stat-card,html:root body .dash-tile,html:root body .dash-cat-card,html:root body .lock-card{background:#fff!important;border:1px solid var(--a-line)!important;border-radius:var(--a-r3)!important;box-shadow:none!important}
-html:root body .jc,html:root body li.jc{border:1px solid var(--a-line)!important;border-radius:var(--a-r2)!important;box-shadow:none!important;background:#fff!important}
+html:root body .card,html:root body .acd-card,html:root body .fold,html:root body .dash-stat-card,html:root body .dash-tile,html:root body .dash-cat-card,html:root body .lock-card{background:var(--a-card)!important;border:1px solid var(--a-line)!important;border-radius:var(--a-r3)!important;box-shadow:none!important}
+html:root body .jc,html:root body li.jc{border:1px solid var(--a-line)!important;border-radius:var(--a-r2)!important;box-shadow:none!important;background:var(--a-card)!important}
 /* กล่องในกล่อง → แบน คั่นด้วยเส้น */
 html:root body .acd-card .hero{background:transparent!important;padding:4px 0 12px!important;border-radius:0!important;border-bottom:1px solid var(--a-line2)!important}
 html:root body .acd-card .hero b{font-size:32px!important;font-weight:600!important}
@@ -49,7 +49,7 @@ html:root body .history li:not(.jc):last-child{border-bottom:0!important}
 /* ---------- จุดเด่นเดียว: แถบกรมท่า (สรุปวันนี้ / ผลคำนวณ) ---------- */
 html:root body .tdy,html:root body .result{border-radius:var(--a-r3)!important;box-shadow:none!important;background:var(--a-navy)!important;background-image:none!important}
 
-html:root body .jc-b{min-height:44px!important;border-radius:var(--a-r1)!important;background:#fff!important;color:var(--a-ink)!important;border:1px solid #CFD3DB!important;box-shadow:none!important;font-weight:500!important}
+html:root body .jc-b{min-height:44px!important;border-radius:var(--a-r1)!important;background:var(--a-card)!important;color:var(--a-ink)!important;border:1px solid #CFD3DB!important;box-shadow:none!important;font-weight:500!important}
 html:root body .jc-b.main{background:var(--a-yel)!important;border-color:var(--a-yel)!important;color:#1A1A1A!important;font-weight:600!important}
 
 /* ---------- ป้าย/ชิป ---------- */
@@ -57,14 +57,14 @@ html:root body .chip,html:root body .jc-chip,html:root body .tax-tag{border-radi
 
 /* ---------- มือถือ: แถบบน + แถบล่างแบบแอปจริง ---------- */
 @media (max-width:560px){
-  html:root body header.top{background:#fff!important;border-bottom:1px solid var(--a-line)!important;box-shadow:none!important;min-height:52px!important;padding-bottom:6px!important}
+  html:root body header.top{background:var(--a-card)!important;border-bottom:1px solid var(--a-line)!important;box-shadow:none!important;min-height:52px!important;padding-bottom:6px!important}
   html:root body header.top .brand .mark{width:30px!important;height:30px!important}
   html:root body header.top .brand b{font-size:15px!important;font-weight:600!important;letter-spacing:.01em!important;color:var(--a-ink)!important}
   html:root body header.top .bver{background:transparent!important;padding:0!important;font-size:11px!important;color:var(--a-mute)!important;font-weight:400!important}
   html:root body .user-chip-btn{box-shadow:none!important;border:1px solid var(--a-line)!important;min-height:40px!important}
   html:root body .page-head{margin-top:12px!important;margin-bottom:10px!important}
 
-  html:root body .bnav,html:root body nav.bnav{background:#fff!important;border-radius:0!important;box-shadow:none!important;border-top:1px solid var(--a-line)!important;padding-top:4px!important}
+  html:root body .bnav,html:root body nav.bnav{background:var(--a-card)!important;border-radius:0!important;box-shadow:none!important;border-top:1px solid var(--a-line)!important;padding-top:4px!important}
   html:root body .btab{color:var(--a-mute)!important;font-weight:500!important;gap:2px!important}
   html:root body .btab .btab-ico,html:root body .btab.active .btab-ico{background:transparent!important;border-radius:0!important;width:auto!important;height:28px!important;color:inherit!important}
   html:root body .btab svg{width:22px!important;height:22px!important;stroke-width:1.6}
@@ -80,18 +80,18 @@ html:root body .chip,html:root body .jc-chip,html:root body .tax-tag{border-radi
 
 /* ---------- รอบ 2: แถบล่างไม่มีขอบหนา/มุมโค้ง · ปุ่มและช่องที่หลุดระบบ ---------- */
 @media (max-width:560px){
-  html:root body .bnav::after,html:root body nav.bnav::after{box-shadow:none!important;border-radius:0!important;border:0!important;border-top:1px solid var(--a-line)!important;background:#fff!important}
+  html:root body .bnav::after,html:root body nav.bnav::after{box-shadow:none!important;border-radius:0!important;border:0!important;border-top:1px solid var(--a-line)!important;background:var(--a-card)!important}
   html:root body .bnav::before{display:none!important}
 }
-html:root body .ds-btn{min-height:44px!important;padding:0 16px!important;border-radius:var(--a-r1)!important;background:#fff!important;color:var(--a-ink)!important;border:1px solid #CFD3DB!important;box-shadow:none!important;font-weight:500!important;font-size:15px!important}
+html:root body .ds-btn{min-height:44px!important;padding:0 16px!important;border-radius:var(--a-r1)!important;background:var(--a-card)!important;color:var(--a-ink)!important;border:1px solid #CFD3DB!important;box-shadow:none!important;font-weight:500!important;font-size:15px!important}
 html:root body .ds-btn.ds-main{background:var(--a-yel)!important;border-color:var(--a-yel)!important;color:#1A1A1A!important;font-weight:600!important}
 html:root body .ds-btn.ds-del{color:var(--a-red)!important;border-color:#E9C3BE!important}
-html:root body .wrap input:not(.txt):not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=color]):not([type=hidden]){border:1px solid #CFD3DB!important;border-radius:var(--a-r1)!important;min-height:44px;padding:8px 12px;font-size:16px;background:#fff;color:var(--a-ink);box-shadow:none!important}
+html:root body .wrap input:not(.txt):not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=color]):not([type=hidden]){border:1px solid #CFD3DB!important;border-radius:var(--a-r1)!important;min-height:44px;padding:8px 12px;font-size:16px;background:var(--a-card);color:var(--a-ink);box-shadow:none!important}
 html:root body .wrap input[type=checkbox]{accent-color:var(--a-navy)}
 
 /* ---------- รอบ 3: การ์ดงาน (ตรวจด้วย taste-skill: ระบบเดียว · สีเดียวต่อบทบาท · ไม่มีกล่องซ้อนกล่อง · ตัวอักษร ≥13px · ที่แตะ ≥44px) ----------
    ปัญหาเดิม: สถานะซ้ำ 3 ที่ (แถบซ้าย+หลอด+ปุ่มกรมท่า) · กล่องเทาในการ์ด · ตัวเลขน้ำเงิน+ป้ายเหลือง+ส้ม ปนกัน · แถวพัสดุว่างทุกใบ · มุม 18 ชนกับ 12/16 */
-#jobHistory ul>li.jc,#trackHistory ul>li.jc,#wholesaleHistory ul>li.jc{border:1px solid var(--a-line)!important;border-radius:var(--a-r2)!important;box-shadow:none!important;background:#fff!important;padding:16px!important;margin:0 0 12px!important}
+#jobHistory ul>li.jc,#trackHistory ul>li.jc,#wholesaleHistory ul>li.jc{border:1px solid var(--a-line)!important;border-radius:var(--a-r2)!important;box-shadow:none!important;background:var(--a-card)!important;padding:16px!important;margin:0 0 12px!important}
 #jobHistory li.jc::before,#jobHistory li.jc::after,#trackHistory li.jc::before,#wholesaleHistory li.jc::before{display:none!important;content:none!important}
 #jobHistory li.jc .jc-fire{display:none!important}
 /* แถวบน: รูป 40 · ชื่อลูกค้าเด่น · เลขใบรอง · สถานะเป็นตัวหนังสือ ไม่ใช่ปุ่มทึบ */
@@ -164,7 +164,7 @@ html:root body h1{letter-spacing:0!important}
 #jobHistory li.jc .jc-prog.s4::after{content:"ขั้นที่ 4 จาก 5 · จัดส่ง"}
 #jobHistory li.jc .jc-prog.s5::after{content:"ขั้นที่ 5 จาก 5 · รับแล้ว"}
 #jobHistory li.jc.st-pickup .jc-prog.s5::after{content:"ขั้นที่ 5 จาก 5 · รับหน้าร้าน"}
-#jobHistory li.jc .jc-prog i,#jobHistory li.jc .jc-prog i.on{position:absolute;top:0;width:10px!important;height:10px!important;border-radius:50%!important;background:#fff!important;border:1.5px solid #D4D7DF!important;box-sizing:border-box;display:block!important;padding:0}
+#jobHistory li.jc .jc-prog i,#jobHistory li.jc .jc-prog i.on{position:absolute;top:0;width:10px!important;height:10px!important;border-radius:50%!important;background:var(--a-card)!important;border:1.5px solid #D4D7DF!important;box-sizing:border-box;display:block!important;padding:0}
 #jobHistory li.jc .jc-prog i::before,#jobHistory li.jc .jc-prog i::after{display:none!important;content:none!important}
 #jobHistory li.jc .jc-prog i:nth-child(1){left:0}#jobHistory li.jc .jc-prog i:nth-child(2){left:calc((100% - 10px)*.25)}#jobHistory li.jc .jc-prog i:nth-child(3){left:calc((100% - 10px)*.5)}#jobHistory li.jc .jc-prog i:nth-child(4){left:calc((100% - 10px)*.75)}#jobHistory li.jc .jc-prog i:nth-child(5){left:calc(100% - 10px)}
 #jobHistory li.jc .jc-prog i.on{background:#8C9BE0!important;border-color:#8C9BE0!important}
@@ -198,7 +198,7 @@ html:root body .tdy-t b em{font-size:13px!important;color:#AEB4C6!important;font
 html:root body .tdy-t .lb{font-size:13px!important;color:#AEB4C6!important;white-space:normal!important}
 /* เมนูล่าง = แผ่นขาวลอย */
 @media (max-width:560px){
-  html:root body .bnav,html:root body nav.bnav{left:12px!important;right:12px!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;border-radius:28px!important;border-top:0!important;background:#fff!important;box-shadow:0 8px 28px rgba(20,30,60,.12)!important;padding:8px 4px 6px!important}
+  html:root body .bnav,html:root body nav.bnav{left:12px!important;right:12px!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;border-radius:28px!important;border-top:0!important;background:var(--a-card)!important;box-shadow:0 8px 28px rgba(20,30,60,.12)!important;padding:8px 4px 6px!important}
   html:root body .bnav::after,html:root body nav.bnav::after{display:none!important}
   html:root body .btab .btab-label{font-size:12px!important}
   html:root body .wrap{padding-bottom:110px}
@@ -231,7 +231,7 @@ html:root body #jobHistory li.jc .jw-i small{display:inline!important;margin:0!i
 html:root body #jobHistory li.jc .jw-2{min-height:20px;font-size:13px;line-height:1.5;color:var(--a-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:20px}
 html:root body #jobHistory li.jc .jc-chips{min-height:20px}
 /* ช่องเลือกเพจ/บัญชี (โผล่เมื่อกดปุ่ม "เพจ/บัญชี"): เบากว่าเดิม ให้เข้ากับปุ่มแคปซูล */
-html:root body .jf-filt select{height:44px!important;min-height:44px!important;font-size:14px!important;font-weight:500!important;border:1px solid #CFD3DB!important;border-radius:999px!important;box-shadow:none!important;padding:0 14px!important;background:#fff!important}
+html:root body .jf-filt select{height:44px!important;min-height:44px!important;font-size:14px!important;font-weight:500!important;border:1px solid #CFD3DB!important;border-radius:999px!important;box-shadow:none!important;padding:0 14px!important;background:var(--a-card)!important}
 /* แก้: เมนูล่างล้นขอบขวา (กว้างเกินจอ 12px) */
 @media (max-width:560px){html:root body .bnav,html:root body nav.bnav{width:auto!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important;margin:0!important}}
 
@@ -242,7 +242,7 @@ html:root body .tax-sheet{left:0!important;right:0!important;bottom:0!important;
 html:root body .tax-sheet[hidden]{display:none!important}
 html:root body .tax-sheet::before{content:""!important;position:absolute;top:8px;left:50%;width:44px;height:5px;margin-left:-22px;border-radius:3px;background:#C4C9D4;padding:0!important}
 html:root body .ts-title{font:600 20px/1.3 'Prompt','Noto Sans Thai',sans-serif;color:var(--a-ink);padding:2px 4px 0}
-html:root body .tax-sheet-sec{display:block!important;background:#fff;border-radius:24px;padding:16px 12px 12px}
+html:root body .tax-sheet-sec{display:block!important;background:var(--a-card);border-radius:24px;padding:16px 12px 12px}
 html:root body .tax-sheet-h{font:600 13px/1.3 'Prompt','Noto Sans Thai',sans-serif!important;color:var(--a-mute)!important;margin:0 8px 8px!important;letter-spacing:0}
 html:root body .ts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
 html:root body .tax-sheet-item{display:flex!important;flex-direction:column;justify-content:flex-start!important;align-items:center;gap:8px;min-height:96px!important;padding:10px 4px!important;
@@ -257,7 +257,7 @@ html:root body .tax-sheet-item.active .tsi{background:var(--a-yel);color:#1a1c20
 html:root body .ts-foot{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 html:root body .ts-foot button{display:flex;align-items:center;gap:10px;min-height:60px;padding:0 16px;border:0;border-radius:24px;font:600 15px 'Noto Sans Thai',sans-serif;cursor:pointer}
 html:root body .ts-foot svg{width:22px;height:22px;flex:none}
-html:root body .ts-dark{background:#fff;color:var(--a-ink)}
+html:root body .ts-dark{background:var(--a-card);color:var(--a-ink)}
 html:root body .ts-sw{margin-left:auto;width:40px;height:24px;border-radius:12px;background:#D5D8DF;position:relative;flex:none}
 html:root body .ts-sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s}
 html:root body .ts-dark.on .ts-sw{background:var(--a-navy)}
@@ -296,7 +296,7 @@ html:root body .tax-sheet-item .tsi svg{width:24px;height:24px}
 html:root body .ts-tabs{display:flex;gap:6px;padding:4px;border-radius:999px;background:#E3E5EA}
 html:root body .ts-tabs button{flex:1;min-height:44px;padding:0 6px;border:0;border-radius:999px;background:transparent;font:600 13px 'Noto Sans Thai',sans-serif;color:var(--a-mute);cursor:pointer;white-space:nowrap}
 html:root body .ts-tabs button[hidden]{display:none}
-html:root body .ts-tabs button.on{background:#fff;color:var(--a-ink);box-shadow:0 1px 3px rgba(14,30,91,.15)}
+html:root body .ts-tabs button.on{background:var(--a-card);color:var(--a-ink);box-shadow:0 1px 3px rgba(14,30,91,.15)}
 html:root body .ts-body{min-height:0}
 html:root body .tax-sheet-sec.on{min-height:306px}
 
@@ -327,9 +327,9 @@ html:root body #jobFormTop .stack{padding:0 10px 90px!important;gap:0!important}
 html:root body #jobFormTop .card.jf{background:transparent!important;box-shadow:none!important;border:0!important;padding:0!important;margin:0!important}
 html:root body #jobFormTop .card.jf>h2{display:none!important}
 html:root body #jobFormTop .jf-intro{margin:0 0 8px!important;padding:10px 12px!important;border-radius:14px!important;font-size:13px!important;line-height:1.45!important}
-html:root body #jobFormTop .jf-paste{margin:0 0 10px!important;background:#fff!important;border-radius:16px!important;border:0!important}
+html:root body #jobFormTop .jf-paste{margin:0 0 10px!important;background:var(--a-card)!important;border-radius:16px!important;border:0!important}
 html:root body #jobFormTop .jf-paste>summary{padding:12px 14px!important;font-size:14px!important;min-height:0!important}
-html:root body #jobFormTop .jf-sec{background:#fff!important;border:0!important;border-radius:20px!important;padding:14px!important;margin:0 0 10px!important;box-shadow:0 1px 2px rgba(14,30,91,.05)}
+html:root body #jobFormTop .jf-sec{background:var(--a-card)!important;border:0!important;border-radius:20px!important;padding:14px!important;margin:0 0 10px!important;box-shadow:0 1px 2px rgba(14,30,91,.05)}
 html:root body #jobFormTop .jf-h{margin:0 0 10px!important;font-size:17px!important;gap:8px}
 html:root body #jobFormTop .jf-h i{width:26px!important;height:26px!important;font-size:14px!important}
 html:root body #jobFormTop .fields{gap:10px!important}
@@ -399,3 +399,39 @@ html:root body #jobHistory li.jc select.job-status-select{width:128px!important;
   html:root body .tdy-t b em{font-size:15px!important;margin-left:6px!important}
   html:root body .tdy-t .lb{font-size:14px!important;color:#C3C8D8!important}
 }
+
+/* ---------- โหมดมืด (p13) ---------- */
+html[data-theme="dark"]{--a-bg:#0F1320;--a-card:#1A2033;--a-line:#2B3350;--a-line2:#232A42;--a-ink:#ECEFF7;--a-ink2:#C3C9DC;--a-mute:#9BA3BC;--a-navy:#5468C9;--a-yel:#F5B301;--a-yel-h:#FFC83A;--a-red:#FF8A80;--a-green:#5FD38A;--a-dk:#232B45;color-scheme:dark}
+html[data-theme="dark"] body{background:var(--a-bg)!important;color:var(--a-ink)}
+html[data-theme="dark"] body header.top,html[data-theme="dark"] body .bnav,html[data-theme="dark"] body nav.bnav{background:var(--a-card)!important}
+@media(max-width:560px){html[data-theme="dark"] body header.top{background:var(--a-bg)!important}html[data-theme="dark"] body .bnav,html[data-theme="dark"] body nav.bnav{box-shadow:0 8px 28px rgba(0,0,0,.5)!important}}
+html[data-theme="dark"] body .tdy{background:#232B45!important}
+html[data-theme="dark"] body input,html[data-theme="dark"] body select,html[data-theme="dark"] body textarea{background:var(--a-card)!important;color:var(--a-ink)!important;border-color:var(--a-line)!important}
+html[data-theme="dark"] body input::placeholder{color:var(--a-mute)!important}
+html[data-theme="dark"] body .ts-tabs{background:#10152A}
+html[data-theme="dark"] body .ts-tabs button.on{background:#2B3350!important;color:var(--a-ink)!important;box-shadow:none}
+html[data-theme="dark"] body .ts-sw{background:#3A4262}
+html[data-theme="dark"] body .tsi{background:#3A3320!important}
+html[data-theme="dark"] body .ts-out{background:#3A1E24!important;color:#FF9A92!important}
+html[data-theme="dark"] body .tax-sheet{background:var(--a-bg)!important}
+html[data-theme="dark"] body #jobHistory li.jc .jc-prog{background-color:transparent}
+html[data-theme="dark"] body #jobHistory li.jc select.job-status-select{--pc-bg:#14301F;--pc-b:#24593A;--pc-t:#7FE0A3;--pc:#5FD38A}
+html[data-theme="dark"] body #jobHistory li.jc select.job-status-select.pending,html[data-theme="dark"] body #jobHistory li.jc select.job-status-select.pickup{--pc:#F5B301;--pc-bg:#3A2F10;--pc-b:#6B5516;--pc-t:#F5CF6B}
+html[data-theme="dark"] body #jobHistory li.jc select.job-status-select.received,html[data-theme="dark"] body #jobHistory li.jc select.job-status-select.rcvd{--pc:#9AA1B8;--pc-bg:#262D45;--pc-b:#3A4262;--pc-t:#C3C9DC}
+html[data-theme="dark"] body .chip,html[data-theme="dark"] body .fchip,html[data-theme="dark"] body .job-filter button{background:var(--a-card)!important;color:var(--a-ink2)!important;border-color:var(--a-line)!important}
+html[data-theme="dark"] body .btn:not(.primary):not(.danger){background:var(--a-card)!important;color:var(--a-ink)!important;border-color:var(--a-line)!important}
+html[data-theme="dark"] body #jobHistSearch,html[data-theme="dark"] body .user-chip-btn,html[data-theme="dark"] body .jf-more,html[data-theme="dark"] body .jf-filt button,html[data-theme="dark"] body .job-filter button,html[data-theme="dark"] body #jobFilterBar button{background:var(--a-card)!important;color:var(--a-ink)!important;border-color:var(--a-line)!important}
+html[data-theme="dark"] body .jf-more.on,html[data-theme="dark"] body .jf-filt button.on,html[data-theme="dark"] body .job-filter button.on,html[data-theme="dark"] body #jobFilterBar button.on,html[data-theme="dark"] body .chip.on{background:var(--a-yel)!important;color:#1A1A1A!important;border-color:var(--a-yel)!important}
+html[data-theme="dark"] body #jobHistory li.jc .jc-prog::before{background:linear-gradient(90deg,#3B4C8F var(--w,10px),#2B3350 var(--w,10px))}
+html[data-theme="dark"] body #jobHistory li.jc .jc-prog i{background:var(--a-card)!important;border-color:#4A5478!important}
+html[data-theme="dark"] body #jobHistory li.jc .jc-prog i.on{background:#8C9BE0!important;border-color:#8C9BE0!important}
+html[data-theme="dark"] body .jf-chips button{background:var(--a-card)!important;color:var(--a-ink2)!important;border-color:var(--a-line)!important}
+html[data-theme="dark"] body .jf-chips button.on{background:var(--a-yel)!important;color:#1A1A1A!important;border-color:var(--a-yel)!important}
+html[data-theme="dark"] body .jf-chips button.on *{color:#1A1A1A!important}
+html[data-theme="dark"] body header.top .brand b{color:var(--a-ink)!important}
+html[data-theme="dark"] body header.top .tabs button,html[data-theme="dark"] body header.top .tabs a{color:var(--a-ink2)!important}
+html[data-theme="dark"] body header.top .tabs button span,html[data-theme="dark"] body header.top .tabs a span{color:inherit!important}
+html[data-theme="dark"] body header.top .tabs button.active,html[data-theme="dark"] body header.top .tabs button.on,html[data-theme="dark"] body header.top .tabs button[aria-selected="true"],html[data-theme="dark"] body header.top .tabs button[aria-current],html[data-theme="dark"] body #tab-confirm{background:#2B3350!important;color:var(--a-ink)!important}
+html[data-theme="dark"] body #payHistNav,html[data-theme="dark"] body .wk-top{background:var(--a-card)!important;color:var(--a-ink)!important;border-color:var(--a-line)!important}
+html[data-theme="dark"] body hr,html[data-theme="dark"] body .shop-foot,html[data-theme="dark"] body footer{border-color:var(--a-line)!important}
+html[data-theme="dark"] body footer *,html[data-theme="dark"] body .shop-foot *{color:var(--a-ink2)}
