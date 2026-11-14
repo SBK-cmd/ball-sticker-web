@@ -13,7 +13,7 @@ assert m, 'ไม่พบตัวโหลดสคริปต์ใน previ
 qr = open(R + '/js/html5-qrcode.min.js', encoding='utf8').read()
 h = h.replace(m.group(0), '<script>' + qr.replace('</script', '<\\/script') + '</script><script>' + lock.replace('</script', '<\\/script') + '</script><script>' + app.replace('</script', '<\\/script') + '</script>', 1)
 h = re.sub(r'<script src="https://www\.gstatic\.com[^"]*"></script>\n?', '', h)
-h = re.sub(r'<link[^>]+(fonts\.googleapis|fonts\.gstatic)[^>]*>\n?', '', h)
+if not os.environ.get('BS_KEEP_FONTS'): h = re.sub(r'<link[^>]+(fonts\.googleapis|fonts\.gstatic)[^>]*>\n?', '', h)
 h = re.sub(r'<link rel="manifest"[^>]*>\n?', '', h)
 def uri(path, mime, size=None):
     if size:

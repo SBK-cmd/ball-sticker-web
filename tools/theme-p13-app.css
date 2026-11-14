@@ -232,3 +232,5 @@ html:root body #jobHistory li.jc .jw-2{min-height:20px;font-size:13px;line-heigh
 html:root body #jobHistory li.jc .jc-chips{min-height:20px}
 /* ช่องเลือกเพจ/บัญชี (โผล่เมื่อกดปุ่ม "เพจ/บัญชี"): เบากว่าเดิม ให้เข้ากับปุ่มแคปซูล */
 html:root body .jf-filt select{height:44px!important;min-height:44px!important;font-size:14px!important;font-weight:500!important;border:1px solid #CFD3DB!important;border-radius:999px!important;box-shadow:none!important;padding:0 14px!important;background:#fff!important}
+/* แก้: เมนูล่างล้นขอบขวา (กว้างเกินจอ 12px) */
+@media (max-width:560px){html:root body .bnav,html:root body nav.bnav{width:auto!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important;margin:0!important}}
