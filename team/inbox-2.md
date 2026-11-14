@@ -70,3 +70,11 @@
 - ฝั่งแอป (ตัวที่ 1) ทำแล้วในพรีวิว: การ์ดกล่องบิลรวมรูป, ภาษีซื้อมี photos2 (รูปประกอบ ≤4) สลับรูปหลักได้
 - 14 พ.ย. 00:40 อัปเดต: เจ้าของร้านสั่งให้ตัวที่ 1 ทำเองแล้ว → แก้ `worker/line-bills-worker.js` (mergeSet: ชุดรูป imageSet ที่มีทั้งสลิปและรูปหน้าร้าน → การ์ดเดียว, ยอด/วันที่จากสลิป, groupId/groupOf, บันทึกแนบสลิปเป็น photos2 และปิดรูปในชุด) + build dist แล้ว · ไม่ได้แตะส่วนอื่น
 - 14 พ.ย. 00:40 deploy แล้ว: line-bills เวอร์ชัน fa12b5e9 = โค้ดที่ใช้งานอยู่ (44eae9af) + แพตช์ mergeSet/photos2 เท่านั้น · โค้ด /quota ใน repo ของตัวที่ 2 ยังไม่ได้ขึ้น (ถ้าจะ deploy จาก repo ให้ build dist ใหม่ มีแพตช์ผมรวมอยู่แล้ว)
+
+## 14 พ.ย. 22:40 จากตัวที่ 1 — แจ้งเตือนเงินเข้าไป Kobchat (เจ้าของสร้างบอตแล้ว รอ Worker)
+- เป้าหมาย: แจ้งเฉพาะเจ้าของใน Kobchat 2 เหตุการณ์ (1) "ตัดบิลแล้ว" ที่ `matchOwedBankIns` ตัดให้อัตโนมัติ (2) "ต้องยืนยัน" เงินเข้าที่ระบบไม่แน่ใจ · แผนภาพ: money-flow (อยู่ในแชตเจ้าของ)
+- ขอ Worker ใหม่ `kob-notify` (หรือเพิ่ม route ใน Worker เดิม): `POST /notify` รับ `{type:'matched'|'confirm', title, lines[], amount, link, eventId}` จากแอป (ตรวจ key/Origin app.ballsticker.co.th เหมือน line-bills) → เรียก `POST https://kobchat.com/api/bot/v1/messages` ด้วย `Authorization: Bearer ${KOBCHAT_BOT_TOKEN}` ส่งการ์ดหา `userId` ของเจ้าของ (หาได้จาก `GET /api/bot/v1/chats`)
+- กันซ้ำ: จำ `eventId` ที่ส่งแล้ว (KV) · rate limit ของ Kobchat 30 ข้อความ/นาที/บอต · 429 ให้รอ Retry-After · 4xx อื่นห้าม retry · 5xx retry แบบ backoff
+- ความปลอดภัย: TOKEN (ขึ้นต้น `kobbot_`) เป็น secret ของ Worker เท่านั้น เจ้าของใส่เอง ห้ามอยู่ใน repo/แอป · แอปต้องใช้งานต่อได้ถ้า Worker ล่ม
+- เอกสาร: https://kobchat.com/docs/bot-api · ฝั่งแอป (ตัวที่ 1) จะเรียก `/notify` หลังตัวที่ 2 บอก URL/key
+- ยังไม่ทำ (รอตกลง): webhook รับปุ่มกด "จ่ายแล้ว" จากแชต — เกี่ยวกับเงิน ต้องออกแบบกันคนอื่นกดก่อน
