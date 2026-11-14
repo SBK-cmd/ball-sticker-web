@@ -415,7 +415,8 @@ function bahtText(value) {
     const docs = Object.values(j.whAdded || {}).map(x => String((x && x.doc) || '').trim()).filter(Boolean);
     const jno = String(j.no || '').trim();
     // ผูกกับใบราคาส่งได้ 3 ทาง: jobId · เลขเอกสาร/อ้างอิงที่บันทึกในใบงาน (whAdded) · บรรทัดรายการในบิลที่ระบุเลขใบงาน (i.job) — ทางที่ 3 กันกรณี whAdded ว่าง ป้ายจะได้ไม่หาย
-    const ws = store.get('bs_wholesale', []).filter(w => w.jobId === j.id || (docs.length && (docs.indexOf(String(w.no || '').trim()) >= 0 || docs.indexOf(String(w.ref || '').trim()) >= 0)) || (w.items || []).some(i => String(i.job || '').trim() === jno && String(i.name || '').trim()));
+    const all = store.get('bs_wholesale', []), tagged = all.filter(w => (w.items || []).some(i => String(i.job || '').trim() === jno && String(i.name || '').trim()));
+    const ws = tagged.length ? tagged : all.filter(w => w.jobId === j.id || (docs.length && (docs.indexOf(String(w.no || '').trim()) >= 0 || docs.indexOf(String(w.ref || '').trim()) >= 0)));   // มีบรรทัดติดเลขใบงานในบิลไหน ใช้ตามนั้น (บิลที่สรุปตอนจ่ายแล้วจะถูกต้อง) · ไม่มี ค่อยใช้ทางเก่า
     if (ws.length) return ws.every(w => whPaidFor(w, jno)) ? 'paid' : 'unpaid';
     let bank = 0; try { bank = jobBankIdsOf(j).length; } catch (e) {}
     if (j.owedPaid || bank) return 'paid';
@@ -5038,23 +5039,48 @@ function bahtText(value) {
   function whItemPaid(w, i) { return (w.paidJobs || []).indexOf(whKey(i)) >= 0; }
   function whPaidSum(w) { return round2((w.items || []).filter(i => String(i.name || '').trim() && whItemPaid(w, i)).reduce((t, i) => t + num(i.qty) * num(i.price), 0)); }
   function whPaidFor(w, jno) { return !!w.paid || (w.paidJobs || []).indexOf(String(jno || '').trim()) >= 0; }
-  // keys = รายการเลขใบงานที่จ่าย (null = ทั้งหมด) · แตะเฉพาะใบราคาส่ง/งานของลูกค้าชื่อนี้ที่ยังค้าง
+  // keys = เลขใบงานที่จ่าย ('' = รายการที่ไม่ระบุงาน · null = ทั้งหมด) · ยังไม่จ่าย = ไม่รวมเป็น WS · พอจ่ายจึงย้ายบรรทัดของใบงานที่จ่ายไปสรุปเป็นใบ WS ใหม่ (จ่ายแล้ว) เตรียมออกใบเสร็จ
+  // บิลเดิมที่ไม่เหลือรายการจะถูกลบ · ส่วนลดย้ายตามไปเฉพาะเมื่อย้ายบรรทัดหมดทั้งบิล · คืนเลข WS ที่สร้าง ('' ถ้าไม่มีบรรทัดให้ย้าย)
   function markJobsPaid(name, keys) {
     const nm = String(name || '').trim() || 'ไม่ระบุชื่อ', all = keys == null, has = k => all || keys.indexOf(k) >= 0;
-    const wl = store.get('bs_wholesale', []);
-    wl.forEach((w, i) => {
-      if (w.paid || (String(w.buyerName || '').trim() || 'ไม่ระบุชื่อ') !== nm) return;
-      const named = (w.items || []).filter(x => String(x.name || '').trim()), hit = named.filter(x => has(whKey(x)));
-      if (!hit.length) return;
-      const pj = Array.from(new Set((w.paidJobs || []).concat(hit.map(whKey))));
-      const done = named.every(x => pj.indexOf(whKey(x)) >= 0);
-      wl[i] = Object.assign({}, w, done ? {paid: true, paidJobs: pj} : {paidJobs: pj}); cloudSave('wholesale', wl[i]);
-    });
+    let wl = store.get('bs_wholesale', []), newNo = '';
+    const moved = []; let disc = 0; const deletes = [];
+    wl = wl.map(w => {
+      if (w.paid || (String(w.buyerName || '').trim() || 'ไม่ระบุชื่อ') !== nm) return w;
+      const its = w.items || [], take = its.filter(x => String(x.name || '').trim() && has(whKey(x)));
+      if (!take.length) return w;
+      moved.push.apply(moved, take.map(x => Object.assign({}, x)));
+      const rest = its.filter(x => take.indexOf(x) < 0), restNamed = rest.filter(x => String(x.name || '').trim());
+      if (!restNamed.length) { disc += num(w.discount); deletes.push(w.id); return null; }
+      const nw = Object.assign({}, w, {items: rest, savedAt: Date.now()}); cloudSave('wholesale', nw); return nw;
+    }).filter(Boolean);
+    if (moved.length) {
+      newNo = whNextNo(todayISO());
+      const keysUsed = Array.from(new Set(moved.map(whKey)));
+      const doc = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: true, paidAt: Date.now(), no: newNo, ref: '', date: todayISO(), buyerName: nm, items: moved, discount: disc, note: 'สรุปจากใบงาน ' + keysUsed.map(k => k || 'รายการอื่น').join(', ')};
+      wl.push(doc); cloudSave('wholesale', doc);
+      deletes.forEach(id => cloudDelete('wholesale', id));
+    }
     store.set('bs_wholesale', wl);
     const jl = store.get('bs_jobs', []);
     jl.forEach((j, i) => { if ((String(j.jName || '').trim() || 'ไม่ระบุชื่อ') === nm && !j.owedPaid && num(j.slipAmount) > 0 && !jobBankIdsOf(j).length && has(String(j.no || '').trim())) { jl[i] = Object.assign({}, j, {owedPaid: true, slipPending: false}); cloudSave('jobs', jl[i]); } });
     store.set('bs_jobs', jl);
     try { renderDash(); renderHistory(); renderWholesaleHistory(); refreshOwedMirrors(); jl.filter(j => j.trackToken && /^JBS/i.test(String(j.no || ''))).forEach(j => publicJobMirror(j)); } catch (e) {}
+    return newNo;
+  }
+  // ยกเลิกจ่ายรายงาน: ถอดเลขใบงานออกจาก paidJobs ของบิลร้านนั้น (บิลที่เคยปิดแล้วกลับมาค้าง โดยงานอื่นในบิลยังคงจ่ายแล้วอยู่)
+  function markJobUnpaid(name, key) {
+    const nm = String(name || '').trim() || 'ไม่ระบุชื่อ', wl = store.get('bs_wholesale', []);
+    wl.forEach((w, i) => {
+      if ((String(w.buyerName || '').trim() || 'ไม่ระบุชื่อ') !== nm) return;
+      const named = (w.items || []).filter(x => String(x.name || '').trim());
+      if (!named.some(x => whKey(x) === key)) return;
+      const base = w.paid ? named.map(whKey) : (w.paidJobs || []);
+      const pj = Array.from(new Set(base)).filter(k => k !== key);
+      wl[i] = Object.assign({}, w, {paid: false, paidJobs: pj}); cloudSave('wholesale', wl[i]);
+    });
+    store.set('bs_wholesale', wl);
+    try { renderDash(); renderHistory(); renderWholesaleHistory(); refreshOwedMirrors(); store.get('bs_jobs', []).filter(j => j.trackToken && /^JBS/i.test(String(j.no || ''))).forEach(j => publicJobMirror(j)); } catch (e) {}
   }
   function markDocsPaid(docs) {
     (docs || []).forEach(d => {
@@ -6985,12 +7011,27 @@ function bahtText(value) {
     const m = billSummary(w);
     return m.jobs + ' งาน' + (m.hasShip ? ' · ค่าส่ง ' + money(m.shipAmt) : '') + ' · รวม ' + money(m.total) + ' บาท';
   }
-  function whDetailHTML(g) {
-    let h = '<div class="wd">';
-    const hasJbs = store.get('bs_jobs', []).some(j => /^JBS/i.test(String(j.no || '').trim()) && String(j.jName || '').trim() === String(g.name || '').trim());
-    if (hasJbs) h += '<div class="wd-trk"><button class="btn small good" type="button" data-act="wtrack">🔗 ส่งลิงก์ติดตามงาน</button><button class="btn small" type="button" data-act="wtrackcopy">คัดลอกลิงก์</button><button class="btn small" type="button" data-act="wtrackopen">ดูหน้าที่ลูกค้าเห็น</button></div>';
-    if (!g.open.length) h += '<p class="hint" style="margin:0 0 10px">ไม่มีบิลค้าง งานใหม่ที่คีย์ชื่อร้านนี้จะเปิดบิลใหม่ให้เองและเริ่มนับยอดใหม่</p>';
-    g.open.forEach(w => {
+  // ผูกบรรทัดในบิลของร้านนี้กับใบงานให้เอง (ทั้งบิลค้างและที่จ่ายแล้ว): เฉพาะบรรทัดที่ยังไม่มีเลขใบงาน และชื่อรายการตรงกับรายการของใบงานเพียงใบเดียวของร้านนี้เท่านั้น (ไม่แตะราคา/ยอด)
+  function whAutoLink(name) {
+    const nm = String(name || '').trim(), norm = s => String(s || '').replace(/\s+/g, ' ').trim();
+    const jobs = store.get('bs_jobs', []).filter(j => String(j.jName || '').trim() === nm && String(j.no || '').trim());
+    const wl = store.get('bs_wholesale', []); let linked = 0, left = 0; const touched = new Set();
+    wl.forEach((w, wi) => {
+      if ((String(w.buyerName || '').trim() || 'ไม่ระบุชื่อ') !== (nm || 'ไม่ระบุชื่อ')) return;
+      let ch = false;
+      const items = (w.items || []).map(it => {
+        if (!String(it.name || '').trim() || String(it.job || '').trim()) return it;
+        const c = jobs.filter(j => (j.items || []).some(x => norm(x.name) === norm(it.name)));
+        if (c.length === 1) { ch = true; linked++; touched.add(c[0].id); return Object.assign({}, it, {job: String(c[0].no).trim()}); }
+        left++; return it;
+      });
+      if (ch) { wl[wi] = Object.assign({}, w, {items, savedAt: Date.now()}); cloudSave('wholesale', wl[wi]); }
+    });
+    if (linked) { store.set('bs_wholesale', wl); try { jobs.filter(j => touched.has(j.id)).forEach(j => publicJobMirror(j)); refreshOwedMirrors(); } catch (e) {} }
+    return {linked, left};
+  }
+  // การ์ดต่อใบงานของบิลหนึ่งใบ (ใช้ทั้งบิลค้างและประวัติที่จ่ายแล้ว)
+  function whCardsHTML(w, g) {
       const its = w.items || [], t = wholesaleCalc(w);
       // จัดบรรทัดเป็นการ์ดต่อใบงาน (เหมือนที่ลูกค้าเห็น) · บรรทัดไม่มีเลขใบงาน = การ์ด "ยังไม่ผูกใบงาน" เลือกผูกได้ในช่อง
       const myJobs = store.get('bs_jobs', []).filter(x => String(x.jName || '').trim() === String(g.name || '').trim() && String(x.no || '').trim()).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
@@ -7012,24 +7053,34 @@ function bahtText(value) {
           '<div class="wd-jh">' + (key ? '<span class="wd-th">' + (th ? '<img src="' + esc(th) + '" alt="" loading="lazy">' : '') + '</span>' : '') +
           '<div class="wd-jt"><div class="wd-jl"><b>' + (key ? esc(key) : 'ยังไม่ผูกใบงาน') + '</b>' + (jr ? '<span class="wd-st ' + esc(st) + '">' + esc(JOB_STATUS_LABEL[st] || 'รอทำ') + '</span>' : '') + '</div>' +
           '<small class="wd-jd">' + (key ? esc(jr ? thDate(jr.date) : '') + (nm1 ? ' · ' + esc(nm1) + more : '') : 'บรรทัดเหล่านี้ยังไม่รู้ว่าเป็นของใบงานไหน ลูกค้าจะเห็นเป็น “รายการอื่น”') + '</small>' +
-          '<div class="wd-jr">' + (key ? '<span class="wd-pc ' + (paidJ ? 'ok' : 'no') + '">' + (paidJ ? 'จ่ายแล้ว' : 'ยังไม่ชำระ') + '</span>' : '<span></span>') + '<em>' + (sub > 0 ? money(sub) + ' บาท' : 'รอราคา') + '</em></div></div></div>' +
+          '<div class="wd-jr">' + (key ? '<span class="wd-pc ' + (paidJ ? 'ok' : 'no') + '">' + (paidJ ? 'จ่ายแล้ว' : 'ยังไม่ชำระ') + '</span>' : '<span></span>') + (w.paid ? '' : key ? (paidJ ? '<button class="btn small wd-jb" type="button" data-act="jobpaid" data-key="' + esc(key) + '" data-paid="1">ยกเลิกจ่าย</button>' : '<label class="wd-jk"><input type="checkbox" class="wd-ck" data-key="' + esc(key) + '" data-sub="' + sub + '"> จ่ายแล้ว</label>') : '<label class="wd-jk"><input type="checkbox" class="wd-ck" data-key="" data-sub="' + sub + '"> จ่ายแล้ว</label>') + '<em>' + (sub > 0 ? money(sub) + ' บาท' : 'รอราคา') + '</em></div></div></div>' +
           (jr ? '<div class="wd-bar"><i style="width:' + pct + '%"></i></div>' : '') +
           ks.map(k => rowHtml(its[k], k, key)).join('') + '</div>';
       }).join('');
-      h += '<div class="wd-bill" data-doc="' + esc(w.id) + '"><div class="wd-h">บิล ' + esc(w.no || '') + ' <small>' + esc(thDate(w.date)) + ' · ใส่ราคาทีหลังได้ ช่องว่าง = รอราคา' + (w.chargeRef ? ' · อ้างอิงเก็บเงิน ' + esc(w.chargeRef) : '') + '</small></div>' + (rows || '<p class="hint">ยังไม่มีรายการ</p>') +
-        '<div class="wd-sum"><span>' + esc(sumLine(w)) + '</span></div>' +
-        '<div class="wd-btns"><button class="btn small" type="button" data-act="addship">＋ ค่าส่ง</button><button class="btn small good" type="button" data-act="togglepaid">จ่ายแล้ว ✓</button><button class="btn small" type="button" data-act="open">แก้ไขเต็ม</button><button class="btn small del" type="button" data-act="del">ลบ</button></div></div>';
+      return rows;
+  }
+  function whDetailHTML(g) {
+    let h = '<div class="wd">';
+    const hasJbs = store.get('bs_jobs', []).some(j => /^JBS/i.test(String(j.no || '').trim()) && String(j.jName || '').trim() === String(g.name || '').trim());
+    if (hasJbs) h += '<div class="wd-trk"><button class="btn small good" type="button" data-act="wtrack">🔗 ส่งลิงก์ติดตามงาน</button><button class="btn small" type="button" data-act="wtrackcopy">คัดลอกลิงก์</button><button class="btn small" type="button" data-act="wtrackopen">ดูหน้าที่ลูกค้าเห็น</button><button class="btn small" type="button" data-act="autolink">🔗 ผูกใบงานให้อัตโนมัติ</button></div>';
+    if (!g.open.length) h += '<p class="hint" style="margin:0 0 10px">ไม่มีบิลค้าง งานใหม่ที่คีย์ชื่อร้านนี้จะเปิดบิลใหม่ให้เองและเริ่มนับยอดใหม่</p>';
+    g.open.forEach(w => {
+      const rows = whCardsHTML(w, g);
+      h += '<div class="wd-bill flat" data-doc="' + esc(w.id) + '">' + (rows || '<p class="hint">ยังไม่มีรายการ</p>') +
+        '<details class="wd-bd"><summary>บิลต้นทาง ' + esc(w.no || '') + ' · ' + esc(sumLine(w)) + '</summary><div class="wd-sum"><span>' + esc(thDate(w.date)) + (w.chargeRef ? ' · อ้างอิงเก็บเงิน ' + esc(w.chargeRef) : '') + '</span></div>' +
+        '<div class="wd-btns"><button class="btn small" type="button" data-act="addship">＋ ค่าส่ง</button><button class="btn small" type="button" data-act="open">แก้ไขเต็ม</button><button class="btn small del" type="button" data-act="del">ลบ</button></div></details></div>';
     });
+    if (g.open.some(w => (w.items || []).some(i => String(i.name || '').trim()))) h += '<div class="wd-payrow"><span>ยังไม่จ่าย = ยังไม่รวมเป็น WS · ติ๊กใบงานที่ลูกค้าจ่ายแล้ว แล้วกดปุ่ม ระบบสรุปเป็น WS ให้</span><button class="btn small good" type="button" data-act="paysel">จ่ายแล้ว ✓ (สรุป WS)</button></div>';
     const pj = whPendingJobsFor(g.name);
-    h += '<div class="wd-h" style="margin-top:12px">งานของร้านนี้ที่คีย์ไว้ <small>เพิ่มเข้าบิลได้แม้ยังไม่มีราคา</small></div>' + (pj.length ? pj.map(j => {
+    h += '<div class="wd-h" style="margin-top:12px">งานของร้านนี้ที่คีย์ไว้ <small>เพิ่มเข้าบิลได้แม้ยังไม่มีราคา</small></div>' + (pj.length ? (() => { const cards = pj.map(j => {
       const rs = jobPendingWhItems(j), named = (j.items || []).filter(i => (i.name || '').trim()), refs = Object.keys(j.whAdded || {}).map(k => j.whAdded[k] && j.whAdded[k].doc).filter(Boolean);
-      const where = refs.length ? refs[refs.length - 1] : '';
+      const where0 = refs.length ? refs[refs.length - 1] : '', wbill = store.get('bs_wholesale', []).find(x => x.id === where0 || x.no === where0 || x.ref === where0), where = wbill ? (wbill.no || wbill.ref || '') : (/^w\d{8,}$/.test(String(where0)) ? '' : where0);
       const amt = num(j.slipAmount) > 0 ? ' · ยอด ' + money(num(j.slipAmount)) + ' บาท' : '';
-      return '<div class="wd-j"><div class="wd-jm"><b>' + esc(j.no || 'ใบงาน') + '</b><small>' + esc(thDate(j.date)) + ' · ' + (rs.length ? rs : named.map(i => ({i}))).map(r => esc(String(r.i.name).trim()) + ' ×' + esc(r.i.qty || 1)).join(', ') + esc(amt) + '</small>' + (rs.length ? '' : '<small class="wd-in">✓ อยู่ในบิล ' + esc(where) + ' แล้ว</small>') + '</div>' +
-        (rs.length ? '<button class="btn small good" type="button" data-act="addjob" data-jid="' + esc(j.id) + '">＋ เพิ่มเข้าบิล</button>' : '<button class="btn small" type="button" data-act="addjob" data-again="1" data-jid="' + esc(j.id) + '">เพิ่มอีกครั้ง</button>') + '</div>';
-    }).join('') : '<p class="hint" style="margin:6px 0 0">ยังไม่มีงานของร้านนี้ (ย้อนหลัง 45 วัน)</p>');
+      return '<div class="wd-j"><div class="wd-jm"><b>' + esc(j.no || 'ใบงาน') + '</b><small>' + esc(thDate(j.date)) + ' · ' + (rs.length ? rs : named.map(i => ({i}))).map(r => esc(String(r.i.name).trim()) + ' ×' + esc(r.i.qty || 1)).join(', ') + esc(amt) + '</small>' + (rs.length ? (j.owedPaid ? '<small class="wd-in">✓ จ่ายแล้ว</small>' : '') : '<small class="wd-in">✓ อยู่ในบิล ' + esc(where) + ' แล้ว</small>') + '</div>' +
+        '<div class="wd-jbs">' + (rs.length ? '<button class="btn small good" type="button" data-act="addjob" data-jid="' + esc(j.id) + '">＋ เพิ่มเข้าบิล</button>' : '<button class="btn small" type="button" data-act="addjob" data-again="1" data-jid="' + esc(j.id) + '">เพิ่มอีกครั้ง</button>') + (rs.length ? '<button class="btn small' + (j.owedPaid ? '' : ' good') + '" type="button" data-act="jobowed" data-jid="' + esc(j.id) + '">' + (j.owedPaid ? 'ยกเลิกจ่าย' : 'จ่ายแล้ว ✓') + '</button>' : '') + '</div></div>';
+    }); const fresh = pj.map((j, i) => jobPendingWhItems(j).length ? cards[i] : '').join(''), inb = pj.map((j, i) => jobPendingWhItems(j).length ? '' : cards[i]).join(''); return (fresh || '<p class="hint" style="margin:6px 0 0">ไม่มีงานที่ยังไม่เข้าบิล</p>') + (inb ? '<details class="wd-inb"><summary>งานที่เข้าบิลแล้ว (' + pj.filter(j => !jobPendingWhItems(j).length).length + ')</summary>' + inb + '</details>' : ''); })() : '<p class="hint" style="margin:6px 0 0">ยังไม่มีงานของร้านนี้ (ย้อนหลัง 45 วัน)</p>');
     h += '<div class="wd-h" style="margin-top:14px">ประวัติที่จ่ายแล้ว <small>' + g.paid.length + ' บิล' + (g.paid.length ? ' · รวม ' + money(round2(g.paid.reduce((a, w) => a + wholesaleCalc(w).total, 0))) + ' บาท' : '') + '</small></div>';
-    h += g.paid.length ? g.paid.map(w => '<div class="wd-p2" data-doc="' + esc(w.id) + '"><div class="wd-jm"><b>' + esc(w.no || 'บิล') + ' <span class="wd-ok">จ่ายแล้ว</span></b><small>' + esc(thDate(w.paidAt ? new Date(w.paidAt).toISOString().slice(0, 10) : w.date)) + '</small><span class="wd-sl">' + esc(sumLine(w)) + '</span></div><div class="wd-pb"><button class="btn small" type="button" data-act="open">เปิด/พิมพ์</button><button class="btn small" type="button" data-act="togglepaid">ยกเลิกจ่าย</button></div></div>').join('') : '<p class="hint" style="margin:6px 0 0">ยังไม่มีประวัติ</p>';
+    h += g.paid.length ? g.paid.map(w => '<details class="wd-ph"><summary><span><b>' + esc(w.no || 'บิล') + '</b> <span class="wd-ok">จ่ายแล้ว</span> <small>' + esc(thDate(w.paidAt ? new Date(w.paidAt).toISOString().slice(0, 10) : w.date)) + '</small></span><em>' + money(wholesaleCalc(w).total) + ' บาท</em></summary><div class="wd-bill flat" data-doc="' + esc(w.id) + '">' + whCardsHTML(w, g) + '<div class="wd-sum"><span>' + esc(sumLine(w)) + '</span></div><div class="wd-btns"><button class="btn small" type="button" data-act="open">เปิด/พิมพ์</button><button class="btn small" type="button" data-act="togglepaid">ยกเลิกจ่าย</button></div></div></details>').join('') : '<p class="hint" style="margin:6px 0 0">ยังไม่มีประวัติ</p>';
     const others = whCustomers().map(x => x.name).filter(x => x !== g.name).sort((a, b) => a.localeCompare(b, 'th'));
     const cdisp = (custRec(g.name) || {}).display || '';
     h += '<div class="wd-set"><div class="wd-h">ตั้งค่าร้าน</div>' +
@@ -9581,6 +9632,8 @@ function bahtText(value) {
       catch (er) { toast('อัปโหลดโลโก้ไม่สำเร็จ ลองใหม่อีกครั้ง'); }
       return;
     }
+    const ck = e.target.closest('input.wd-ck');
+    if (ck) { const lw = ck.closest('li.jc'), on = Array.from(lw.querySelectorAll('input.wd-ck:checked')), sm = on.reduce((t, x) => t + (+x.dataset.sub || 0), 0), sp = lw.querySelector('.wd-payrow span'); if (sp) sp.textContent = on.length ? 'เลือก ' + on.length + ' ใบงาน · รวม ' + money(round2(sm)) + ' บาท' : 'ยังไม่จ่าย = ยังไม่รวมเป็น WS · ติ๊กใบงานที่ลูกค้าจ่ายแล้ว แล้วกดปุ่ม ระบบสรุปเป็น WS ให้'; return; }
     const asg = e.target.closest('select.wd-asg');
     if (asg) {   // ผูกบรรทัดในบิลกับใบงาน → หน้าลูกค้า/ยอดงาน/สถานะจ่ายใช้เลขนี้
       if (!asg.value) return;
@@ -9605,10 +9658,23 @@ function bahtText(value) {
     const name = li.dataset.name;
     if (!btn) {
       if (e.target.closest('input,select,textarea,a,.wd')) return;
-      whOpen[name] = !whOpen[name]; renderWholesaleHistory(); return;
+      whOpen[name] = !whOpen[name]; if (whOpen[name]) { try { const r = whAutoLink(name); if (r.linked) toast('ผูกใบงานให้อัตโนมัติ ' + r.linked + ' บรรทัด'); } catch (er) {} } renderWholesaleHistory(); return;
     }
     const act = btn.dataset.act, box = btn.closest('[data-doc]'), id = box ? box.dataset.doc : '';
     const list = store.get('bs_wholesale', []);
+    if (act === 'paysel') {
+      const keys = Array.from(li.querySelectorAll('input.wd-ck:checked')).map(x => x.dataset.key || '');
+      if (!keys.length) { toast('ติ๊กใบงานที่ลูกค้าจ่ายแล้วก่อน'); return; }
+      const no = markJobsPaid(name, keys); renderWholesaleHistory(); toast(no ? 'จ่ายแล้ว ✓ สรุปเป็นใบ ' + no : 'จ่ายแล้ว ✓'); return;
+    }
+    if (act === 'jobowed') {   // งานที่ยังไม่เข้าบิล: ทำเครื่องหมายจ่ายแล้ว/ยกเลิก
+      const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === btn.dataset.jid); if (ji < 0) return;
+      jl[ji] = Object.assign({}, jl[ji], {owedPaid: !jl[ji].owedPaid, slipPending: false}); store.set('bs_jobs', jl); cloudSave('jobs', jl[ji]);
+      try { publicJobMirror(jl[ji]); refreshOwedMirrors(); } catch (er) {}
+      renderWholesaleHistory(); toast(jl[ji].owedPaid ? 'ใบงาน ' + jl[ji].no + ' จ่ายแล้ว ✓' : 'ยกเลิกจ่าย ' + jl[ji].no); return;
+    }
+    if (act === 'jobpaid') { const key = btn.dataset.key || ''; if (!key) return; if (btn.dataset.paid) { markJobUnpaid(name, key); toast('ยกเลิกจ่าย ' + key + ' แล้ว'); } else { markJobsPaid(name, [key]); toast('ใบงาน ' + key + ' จ่ายแล้ว ✓'); } renderWholesaleHistory(); return; }
+    if (act === 'autolink') { const r = whAutoLink(name); renderWholesaleHistory(); toast(r.linked ? 'ผูกใบงานให้แล้ว ' + r.linked + ' บรรทัด' + (r.left ? ' · เหลือ ' + r.left + ' บรรทัดที่ผูกเองไม่ได้ (ชื่อไม่ตรง/ตรงหลายงาน)' : ' · ครบทุกบรรทัด') : (r.left ? 'ไม่มีบรรทัดที่ผูกได้อัตโนมัติ · ' + r.left + ' บรรทัดต้องเลือกใบงานเอง' : 'ทุกบรรทัดผูกใบงานครบแล้ว')); return; }
     if (act === 'wtrack' || act === 'wtrackcopy' || act === 'wtrackopen') {   // ลิงก์ติดตามงานของร้านส่งนี้ (หน้าเดียวเห็นทุกใบงาน + ยอดค้าง)
       const url = chargeLinkFor(name); if (!url) { toast('ร้านนี้ยังไม่มีใบงานส่ง (JBS)'); return; }
       if (act === 'wtrackopen') {
