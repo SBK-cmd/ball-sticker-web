@@ -7,7 +7,7 @@ R = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 py = sys.executable
 subprocess.check_call([py, R + '/tools/build.py', 'live'])
 shutil.copy(R + '/index.html', R + '/preview.html')   # ใช้ไฟล์ live เป็นฐานของโซ่ธีม
-subprocess.check_call([py, R + '/tools/mk_p11.py'], stdout=subprocess.DEVNULL, env=dict(os.environ, BS_LIVE='1'))   # ของจริงยังไม่ใส่ธีม p12-unslop (รอเจ้าของอนุมัติ)
+subprocess.check_call([py, R + '/tools/mk_p11.py'], stdout=subprocess.DEVNULL)   # 14 พ.ย. 69: เจ้าของอนุมัติ p12+p13 แล้ว (สั่ง "อัพ") → ขึ้นของจริงพร้อมธีมทั้งหมด
 for f in ('index.html', 'ball-sticker.html'):
     shutil.copy(R + '/preview11.html', R + '/' + f)
 subprocess.check_call([py, R + '/tools/build.py', 'preview'])   # คืน preview.html ปกติ
