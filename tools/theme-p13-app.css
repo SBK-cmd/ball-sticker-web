@@ -387,3 +387,15 @@ html:root body #jobHistory li.jc select.job-status-select{width:128px!important;
   html:root body .page-head{padding:6px 0 4px!important;margin:0!important}
   html:root body .page-head h1{font-size:20px!important}
 }
+@media (min-width:900px){
+  html:root body .tdy{padding:22px 0 20px!important;border-radius:24px!important}
+  html:root body .tdy-head{margin:0 32px 18px!important;align-items:center!important}
+  html:root body .tdy-head h2{font-size:18px!important}
+  html:root body .tdy-head span{font-size:14px!important}
+  html:root body .tdy-grid{gap:0!important}
+  html:root body .tdy-t{padding:2px 32px!important;gap:6px!important;border-left:1px solid rgba(255,255,255,.14)!important}
+  html:root body .tdy-t:first-child{border-left:0!important}
+  html:root body .tdy-t b{font-size:36px!important;line-height:1!important}
+  html:root body .tdy-t b em{font-size:15px!important;margin-left:6px!important}
+  html:root body .tdy-t .lb{font-size:14px!important;color:#C3C8D8!important}
+}
