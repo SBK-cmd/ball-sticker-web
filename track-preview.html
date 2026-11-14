@@ -229,7 +229,7 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
   function money(n) { return Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
   // หน้าต่างบิลค้างชำระ: รายการ + ยอดรวม + QR พร้อมเพย์ (วาดจาก payload ที่ร้านสร้าง) · จ่ายแล้ว/ไม่มียอดค้าง = ไม่มีปุ่ม ไม่มีหน้าต่าง
   var payM = null;
-  var payCard = {}, flt = {g: '', p: ''};
+  var payCard = {}, flt = {g: '', p: ''}, fltInit = false;
   function applyFlt() {
     var box0 = document.querySelector('.card'); if (!box0) return;
     var n = 0; [].forEach.call(box0.querySelectorAll('details.jc'), function (d) { var ok = (!flt.g || d.getAttribute('data-g') === flt.g) && (!flt.p || d.getAttribute('data-p') === flt.p); d.hidden = !ok; if (ok) n++; });
@@ -548,6 +548,13 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
       cards.push(jobCard({no: o.no, date: o.date, status: o.status, delivered: o.delivered, items: o.items || [], amt: +o.amt || 0, due: o.due, thumb: o.thumb, boxes: bx, photos: https(o.photos), refs: https(o.refPhotos), payst: o.payst || ''}, false));
     });
     cards.sort(function (a, b2) { return (b2.date > a.date ? 1 : b2.date < a.date ? -1 : 0) || (b2.no > a.no ? 1 : b2.no < a.no ? -1 : 0); });
+    if (!fltInit) {   // เปิดมาครั้งแรก: เลือก "กำลังทำ" + "ยังไม่ได้ชำระ" ให้เลย (ถ้าไม่มีใบที่ตรง ก็ไม่กรอง)
+      fltInit = true;
+      var isD = function (c) { return c.k < 3; }, isU = function (c) { return c.payst === 'unpaid'; };
+      if (cards.some(function (c) { return isD(c) && isU(c); })) flt = {g: 'doing', p: 'unpaid'};
+      else if (cards.some(isU)) flt = {g: '', p: 'unpaid'};
+      else if (cards.some(isD)) flt = {g: 'doing', p: ''};
+    }
     var clogo = /^https:\/\//.test(j.clogo || '') ? '<img class="clogo" src="' + esc(j.clogo) + '" alt="โลโก้ลูกค้า">' : '';
     applyTheme(j.ctheme);
     var hi = '<div class="hi">' + '<div class="hn">' + clogo + (j.cname ? '<div>คุณ <b>' + esc(j.cname) + '</b></div>' : '<div>งานของคุณ</div>') + '</div>' + '<span>' + cards.length + ' ใบงาน</span></div>';
