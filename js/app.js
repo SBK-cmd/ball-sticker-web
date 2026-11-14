@@ -97,8 +97,9 @@ function bahtText(value) {
   function permsOf(u) {
     const o = {};
     if (!u || isSuperUser(u) || isOwnerFixed(u)) { PERM_KEYS.forEach(k => { o[k] = true; }); return o; }
-    if (u.perms && typeof u.perms === 'object') { PERM_KEYS.forEach(k => { o[k] = !!u.perms[k]; }); return o; }
-    PERM_KEYS.forEach(k => { o[k] = u.role === 'owner' || STAFF_PERMS.indexOf(k) >= 0; });
+    if (u.perms && typeof u.perms === 'object') PERM_KEYS.forEach(k => { o[k] = !!u.perms[k]; });
+    else PERM_KEYS.forEach(k => { o[k] = u.role === 'owner' || STAFF_PERMS.indexOf(k) >= 0; });
+    if (String(u.username || '').trim().toLowerCase() === 'top') o.track = true;   // TOP สแกนเลขพัสดุหน้ากล่องได้ (เจ้าของสั่ง 14 พ.ย.)
     return o;
   }
   const permSig = u => !u ? 'none' : (isSuperUser(u) ? 'super' : isOwnerFixed(u) ? 'ownerfixed' : PERM_KEYS.filter(k => permsOf(u)[k]).join(','));
@@ -472,6 +473,16 @@ function bahtText(value) {
     if (c && c.wh === true) return true;
     if (c && c.wh === false) return false;
     return store.get('bs_wholesale', []).some(w => String(w.buyerName || '').trim() === n) || store.get('bs_jobs', []).some(j => j.wholesale && String(j.jName || '').trim() === n);
+  }
+  // ชื่อที่คีย์ ("TN") → ชื่อร้านราคาส่งเดิม ("TN SHOP สติ๊กเกอร์") ถ้าตรงร้านเดียว (ชื่อตรงเป๊ะคืนชื่อเดิม · ไม่ตรงคืน '')
+  function whCanonName(typed) {
+    try {
+      const t = String(typed || '').trim(), tl = t.toLowerCase(); if (!t) return '';
+      const names = whCustomers().map(x => x.name).filter(n => n && n !== 'ไม่ระบุชื่อ');
+      if (names.indexOf(t) >= 0) return t;
+      const hits = names.filter(n => { const m = n.toLowerCase(); return m.startsWith(tl + ' ') || tl.startsWith(m + ' '); });
+      return hits.length === 1 ? hits[0] : '';
+    } catch (e) { return ''; }
   }
   function setWhCust(name, on) {
     const n = String(name || '').trim(); if (!n) return;
@@ -6418,7 +6429,13 @@ function bahtText(value) {
     const t = $('jobFormTop'); if (t) t.scrollIntoView({behavior: 'smooth', block: 'start'});
     const n = $('jName'); if (n) setTimeout(() => n.focus({preventScroll: true}), 350);
   });
-  { const jn = $('jName'); const auto = () => { if (currentJobId || jobMode !== 'deliv') return; const want = whCustState(jn.value); if ($('jobWholesale').checked !== want) { $('jobWholesale').checked = want; $('jobWholesale').dispatchEvent(new Event('change')); } };
+  { const jn = $('jName');
+    // ใบใหม่ที่คีย์ในฟอร์มปกติ (JB) แต่ชื่อตรงร้านราคาส่ง → สลับเป็นงานส่ง (JBS + ราคาส่ง) ใช้ชื่อร้านเดิม
+    const toDeliv = () => { if (currentJobId || jobMode === 'deliv') return; const canon = whCanonName(jn.value); if (!canon || !whCustState(canon)) return;
+      const typed = jn.value.trim(); jn.value = canon; jobMode = 'deliv'; $('jobWholesale').checked = true; $('jobWholesale').dispatchEvent(new Event('change'));
+      toast('"' + typed + '" เป็นร้านราคาส่ง "' + canon + '" — เปลี่ยนเป็นงานส่ง (JBS) ให้แล้ว'); };
+    jn.addEventListener('change', toDeliv); jn.addEventListener('blur', toDeliv);
+    const auto = () => { if (currentJobId || jobMode !== 'deliv') return; const want = whCustState(jn.value); if ($('jobWholesale').checked !== want) { $('jobWholesale').checked = want; $('jobWholesale').dispatchEvent(new Event('change')); } };
     jn.addEventListener('change', auto); jn.addEventListener('blur', auto); jn.addEventListener('input', () => { clearTimeout(jn._wt); jn._wt = setTimeout(auto, 400); }); }
   $('jobWholesale').addEventListener('change', () => {
     syncJobWholesaleBtn(); renderJobItems();
@@ -6764,6 +6781,10 @@ function bahtText(value) {
     const prevBankInIds = idx >= 0 ? jobBankIdsOf(list[idx]) : [];
     const rec = Object.assign({id, savedAt: Date.now(), createdBy}, data);
     const prevJobStatus = idx >= 0 ? (list[idx].status || 'pending') : null;
+    if (rec.wholesale) {   // คีย์ชื่อสั้น/ยาวไม่เท่ากับร้านราคาส่งเดิม (เช่น "TN" กับ "TN SHOP สติ๊กเกอร์") → ใช้ชื่อร้านเดิมถ้าตรงร้านเดียว ให้เข้ากลุ่มเดียวกัน
+      const typed = String(rec.jName || '').trim(), canon = whCanonName(typed);
+      if (canon && canon !== typed) { rec.jName = canon; toast('ชื่อ "' + typed + '" ตรงกับร้านราคาส่ง "' + canon + '" ใช้ชื่อร้านเดิมให้แล้ว'); }
+    }
     if (rec.status === 'shipped' && prevJobStatus !== 'shipped') rec.shippedAt = Date.now();
     // ฟิลด์ที่ไม่ได้อยู่ในฟอร์ม (รูปงานเสร็จ เลขพัสดุ ประวัติใส่ใบราคาส่ง) ต้องไม่หายตอนบันทึกทับ
     if (idx >= 0) ['donePhotos', 'trackCode', 'whAdded', 'trackToken', 'shippedAt', 'postOk', 'postedAt'].forEach(k => { if (list[idx][k] != null && rec[k] == null) rec[k] = list[idx][k]; });
