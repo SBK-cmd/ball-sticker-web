@@ -27,6 +27,9 @@
       });
       sec.appendChild(g);
     });
+    var secs=sh.querySelectorAll('.tax-sheet-sec'),c1=document.createElement('div'),c2=document.createElement('div'),cw=document.createElement('div');
+    c1.className=c2.className='ts-col';cw.className='ts-cols';
+    if(secs.length>=4){c1.appendChild(secs[0]);c1.appendChild(secs[1]);c1.appendChild(secs[3]);c2.appendChild(secs[2]);cw.appendChild(c1);cw.appendChild(c2);sh.appendChild(cw)}
     var f=document.createElement('div'); f.className='ts-foot';
     f.innerHTML='<button type="button" class="ts-dark" id="tsDark">'+svg('moon')+'<span>โหมดมืด</span><i class="ts-sw"></i></button><button type="button" class="ts-out" id="tsOut">'+svg('out')+'<span>ออกจากระบบ</span></button>';
     sh.appendChild(f);

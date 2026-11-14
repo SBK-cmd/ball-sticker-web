@@ -264,3 +264,19 @@ html:root body .ts-dark.on .ts-sw{background:var(--a-navy)}
 html:root body .ts-dark.on .ts-sw::after{left:18px}
 html:root body .ts-out{background:#FBE4E6;color:var(--a-red);justify-content:center}
 html:root body .ts-foot{position:sticky;bottom:calc(-18px - env(safe-area-inset-bottom,0px));margin:0 -16px -4px;padding:10px 16px calc(18px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(238,239,242,0),var(--a-bg) 28%)}
+
+/* ===== รอบ 2: ให้เหมือนตัวอย่าง — การ์ด 2 คอลัมน์ เห็นครบในหน้าเดียว ใช้ง่าย ===== */
+html:root body .tax-sheet{gap:10px;max-height:92vh}
+html:root body .ts-title{font-size:19px}
+html:root body .ts-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+html:root body .ts-col{display:flex;flex-direction:column;gap:10px;min-width:0}
+html:root body .tax-sheet-sec{padding:14px 8px 8px;border-radius:22px;box-shadow:0 1px 2px rgba(14,30,91,.06)}
+html:root body .tax-sheet-h{margin:0 8px 6px!important;font-size:13px!important}
+html:root body .ts-grid{display:flex;flex-direction:column;gap:0}
+html:root body .tax-sheet-item{flex-direction:row!important;justify-content:flex-start!important;align-items:center;gap:10px;min-height:48px!important;padding:6px 8px!important;
+  text-align:left;border-radius:14px;font-size:13px!important;line-height:1.25!important}
+html:root body .tax-sheet-item .tsi{width:36px;height:36px;flex:none}
+html:root body .tax-sheet-item .tsi svg{width:19px;height:19px}
+html:root body .tax-sheet-item span:not(.tsi){min-width:0}
+html:root body .ts-foot{position:static;margin:0;padding:0;background:none}
+html:root body .ts-foot button{min-height:56px;border-radius:22px;font-size:14px}
