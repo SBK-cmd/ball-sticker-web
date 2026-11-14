@@ -4692,7 +4692,9 @@ function bahtText(value) {
   function jobPayStateOf(j) {
     if (!j || !/^JBS/i.test(String(j.no || '').trim())) return '';
     const docs = Object.values(j.whAdded || {}).map(x => String((x && x.doc) || '').trim()).filter(Boolean);
-    const ws = store.get('bs_wholesale', []).filter(w => w.jobId === j.id || (docs.length && (docs.indexOf(String(w.no || '').trim()) >= 0 || docs.indexOf(String(w.ref || '').trim()) >= 0)));
+    const jno = String(j.no || '').trim();
+    // ผูกกับใบราคาส่งได้ 3 ทาง: jobId · เลขเอกสาร/อ้างอิงที่บันทึกในใบงาน (whAdded) · บรรทัดรายการในบิลที่ระบุเลขใบงาน (i.job) — ทางที่ 3 กันกรณี whAdded ว่าง ป้ายจะได้ไม่หาย
+    const ws = store.get('bs_wholesale', []).filter(w => w.jobId === j.id || (docs.length && (docs.indexOf(String(w.no || '').trim()) >= 0 || docs.indexOf(String(w.ref || '').trim()) >= 0)) || (w.items || []).some(i => String(i.job || '').trim() === jno && String(i.name || '').trim()));
     if (ws.length) return ws.every(w => w.paid) ? 'paid' : 'unpaid';
     let bank = 0; try { bank = jobBankIdsOf(j).length; } catch (e) {}
     if (j.owedPaid || bank) return 'paid';
