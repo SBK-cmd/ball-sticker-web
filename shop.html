@@ -28,14 +28,15 @@
   .steps span.ok { background:rgba(245,196,0,.25); color:#fff; }
   .views { flex:1; min-height:0; position:relative; }
   .view { position:absolute; inset:0; overflow-y:auto; padding:12px max(12px, env(safe-area-inset-left)) 12px; display:flex; flex-direction:column; gap:10px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; }
   h2 { font:600 17px/1.3 'Prompt',sans-serif; margin:0; }
   .lbl { font:600 13px 'Prompt',sans-serif; color:var(--sub); margin:0 0 6px; display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
   .lbl small { font:400 12px 'Noto Sans Thai',sans-serif; text-align:right; }
   /* ขั้น 1 */
-  .drop { flex:1; min-height:220px; display:grid; place-content:center; justify-items:center; text-align:center; gap:8px; border:2px dashed #c4ccdc; border-radius:18px; padding:20px 16px; cursor:pointer; background:#fff; }
+  .drop { flex:1; min-height:220px; display:grid; place-content:center; justify-items:center; text-align:center; gap:8px; border:1.5px dashed #b9c0cf; border-radius:12px; padding:20px 16px; cursor:pointer; background:#fff; }
   .drop.on { border-color:var(--navy); background:#eef2fb; }
-  .drop .ic { width:68px; height:68px; border-radius:50%; background:#fff6cf; display:grid; place-items:center; font-size:32px; }
+  .drop .ic { width:52px; height:52px; border-radius:12px; background:#f1f3f7; color:var(--navy); display:grid; place-items:center; }
+  .drop .facts { font-size:13px; color:var(--sub); margin-top:4px; max-width:34ch; }
   .drop b { font:600 19px 'Prompt',sans-serif; }
   .drop small { color:var(--sub); font-size:13px; max-width:30ch; }
   .drop .chips { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:6px; }
@@ -64,13 +65,13 @@
   .row .x { color:var(--sub); }
   .sz { display:flex; gap:6px; overflow-x:auto; margin-top:6px; padding-bottom:2px; scrollbar-width:none; }
   .sz::-webkit-scrollbar { display:none; }
-  .sz button { flex:none; font:inherit; font-size:13px; padding:4px 11px; min-height:32px; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer; }
+  .sz button { flex:none; font:inherit; font-size:13px; padding:4px 12px; min-height:36px; border-radius:8px; border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer; }
   .sz button.on { background:var(--navy); color:#fff; border-color:var(--navy); }
   .tiers { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
-  .tiers button, .tiers .oth { font:inherit; border:1px solid var(--line); background:#fff; border-radius:12px; padding:6px 4px; cursor:pointer; text-align:center; color:var(--ink); min-height:50px; display:grid; align-content:center; }
+  .tiers button, .tiers .oth { font:inherit; border:1px solid var(--line); background:#fff; border-radius:8px; padding:6px 4px; cursor:pointer; text-align:center; color:var(--ink); min-height:50px; display:grid; align-content:center; }
   .tiers button b { font:600 15px 'Prompt',sans-serif; font-variant-numeric:tabular-nums; }
   .tiers button small { color:var(--sub); font-size:12px; font-variant-numeric:tabular-nums; }
-  .tiers button.on, .tiers .oth.on { border:2px solid var(--yel); background:#fffbe6; }
+  .tiers button.on, .tiers .oth.on { border-color:var(--navy); box-shadow:inset 0 0 0 1px var(--navy); background:#fff; }
   .tiers .oth { padding:4px; cursor:text; }
   .tiers .oth input { min-height:0; height:40px; border:0; text-align:center; padding:0 4px; font-size:15px; background:transparent; }
   label { display:grid; gap:3px; font-size:12.5px; color:var(--sub); }
@@ -117,15 +118,15 @@
   .pay { display:grid; justify-items:center; text-align:center; gap:4px; flex:1; align-content:center; }
   .pay .qr { width:min(180px, 48vw, 24dvh); } .pay .qr svg { display:block; width:100%; height:auto; }
   .pay .amt { font:700 22px 'Prompt',sans-serif; font-variant-numeric:tabular-nums; }
-  .slip { display:flex; gap:10px; align-items:center; border:2px dashed #c4ccdc; border-radius:14px; padding:10px 12px; cursor:pointer; background:#fff; }
+  .slip { display:flex; gap:10px; align-items:center; border:1.5px dashed #b9c0cf; border-radius:12px; padding:10px 12px; cursor:pointer; background:#fff; }
   .slip.on { border-style:solid; border-color:var(--ok); background:#f2fbf6; }
   .slip img { width:44px; height:56px; object-fit:cover; border-radius:6px; flex:none; }
-  .slip .ic { width:44px; height:44px; border-radius:50%; background:#eef1f6; display:grid; place-items:center; font-size:22px; flex:none; }
+  .slip .ic { width:44px; height:44px; border-radius:10px; background:#f1f3f7; color:var(--navy); display:grid; place-items:center; font-size:22px; flex:none; }
   .slip b { font:600 15px 'Prompt',sans-serif; display:block; } .slip small { color:var(--sub); font-size:12.5px; }
   .done { flex:1; display:grid; align-content:center; justify-items:center; text-align:center; gap:8px; }
   .done .big { width:72px; height:72px; border-radius:50%; background:#e3f5ea; color:var(--ok); display:grid; place-items:center; font-size:36px; }
   .btns { display:grid; gap:8px; width:100%; max-width:340px; }
-  .bt { display:block; text-align:center; font:600 15px 'Prompt',sans-serif; padding:12px 14px; border-radius:14px; border:1px solid #cfd6e3; background:#fff; color:var(--ink); text-decoration:none; cursor:pointer; }
+  .bt { display:block; text-align:center; font:600 15px 'Prompt',sans-serif; padding:12px 14px; border-radius:10px; border:1px solid #cfd6e3; background:#fff; color:var(--ink); text-decoration:none; cursor:pointer; }
   .bt.pri { background:var(--yel); border-color:var(--yel); } .bt.line { background:#06c755; border-color:#06c755; color:#fff; }
   @media (prefers-reduced-motion: reduce) { .st3d { transition:none; } .spin { animation-duration:2s; } }
   [hidden] { display:none !important; }
@@ -143,10 +144,10 @@
   <!-- ขั้น 1: อัปรูป ขนาด จำนวน ราคา -->
   <section class="view" id="v1" aria-label="ออกแบบสติ๊กเกอร์">
     <label class="drop" id="drop" for="file">
-      <span class="ic">🖼️</span>
+      <span class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></span>
       <b>แตะเพื่ออัปโหลดแบบ</b>
       <small>PNG พื้นใสดีที่สุด · หรือพื้นสีเดียว · JPG / PDF ไม่เกิน 20 MB</small>
-      <span class="chips"><span>100 ดวง 999 บาท*</span><span>ส่งทั่วประเทศ 60</span><span>จ่ายพร้อมเพย์</span></span>
+      <span class="facts">100 ดวง 999 บาท* · ส่งทั่วประเทศ 60 บาท · จ่ายพร้อมเพย์</span>
     </label>
     <input type="file" id="file" accept="image/png,image/jpeg,image/webp,application/pdf" hidden>
     <div class="prev" id="prev"><div class="ph"><img id="pimg" alt=""></div><div class="meta"><b id="pname"></b></div></div>
@@ -817,7 +818,7 @@
     $('v3').innerHTML = orderCardHTML(o) +
       '<div class="card pay"><b style="font:600 16px Prompt,sans-serif">สแกนจ่ายพร้อมเพย์</b><div class="qr">' + qrSvgEl(o.payload) + '</div>' +
       '<span class="amt">' + baht(o.total) + ' บาท</span><span class="note">' + PP.name + ' · กดค้างที่ QR เพื่อบันทึกรูป</span></div>' +
-      '<label class="slip" id="slipBox" for="slipIn"><span class="ic">📎</span><span><b>แนบสลิปการโอน</b><small>ต้องแนบสลิปก่อนไปขั้นต่อไป</small></span></label>' +
+      '<label class="slip" id="slipBox" for="slipIn"><span class="ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 11-8.6 8.6a5 5 0 0 1-7-7L13.5 4.4a3.3 3.3 0 0 1 4.7 4.7l-8.2 8.1a1.7 1.7 0 0 1-2.3-2.3l7.5-7.5"/></svg></span><span><b>แนบสลิปการโอน</b><small>ต้องแนบสลิปก่อนไปขั้นต่อไป</small></span></label>' +
       '<input type="file" id="slipIn" accept="image/*" hidden><div class="err" id="perr" hidden></div>' +
       '<p class="note" style="text-align:center">ติดปัญหา โทร 093-535-3555 · LINE ' + LINE_OA + ' แจ้งเลข ' + o.ref + '</p>';
     $('tot').textContent = baht(o.total) + ' บาท'; $('totLbl').textContent = 'ยอดที่ต้องโอน';
@@ -849,13 +850,13 @@
     var lineUrl = 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA) + '/?' + encodeURIComponent(lineMsg);
     $('v4').innerHTML = orderCardHTML(o) + '<div class="done"><h2>✓ สั่งเรียบร้อย ขอบคุณครับ</h2>' +
       '<p class="note">' + (o.slip ? 'ได้รับสลิปแล้ว ร้านจะตรวจไฟล์และเริ่มทำงาน' : 'ร้านจะตรวจไฟล์และเริ่มทำงาน') + '</p>' +
-      '<div class="btns"><button type="button" class="bt line" id="lineGo">💬 ติดตามพัสดุทาง LINE</button></div></div>';
+      '<div class="btns"><button type="button" class="bt line" id="lineGo">ติดตามพัสดุทาง LINE</button></div></div>';
     var cardData = {ref: o.ref, test: o.test, size: o.w + ' × ' + o.h + ' ซม.', qty: Number(o.qty).toLocaleString('th-TH'), name: o.name, tel: o.tel, addr: o.addr, price: baht(o.price), ship: String(o.ship), vat: o.vat ? baht(o.vat) : '', total: baht(o.total), payload: o.payload, payee: PP.name, track: o.track, img: o.localImg || o.img || ''};
     $('lineGo').onclick = function () {   // ใน LINE (LIFF): ส่งการ์ดออเดอร์เข้าแชตร้านแล้วปิดหน้า · นอก LINE: เปิดแชต @bk25 พร้อมข้อความออเดอร์ (มีลิงก์ติดตามงาน)
       var b = this;
       if (window.liff && lineUser && liff.isInClient()) {
         b.disabled = true; b.innerHTML = SPIN;
-        liff.sendMessages([orderFlex(o), {type: 'text', text: lineMsg}]).then(function () { liff.closeWindow(); }).catch(function () { b.disabled = false; b.textContent = '💬 ติดตามพัสดุทาง LINE'; location.href = lineUrl; });
+        liff.sendMessages([orderFlex(o), {type: 'text', text: lineMsg}]).then(function () { liff.closeWindow(); }).catch(function () { b.disabled = false; b.textContent = 'ติดตามพัสดุทาง LINE'; location.href = lineUrl; });
         return;
       }
       location.href = lineUrl;

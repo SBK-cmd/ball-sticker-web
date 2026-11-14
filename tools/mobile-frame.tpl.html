@@ -55,7 +55,7 @@ function shim(role){const s=seeds(role);return '<script>(function(){var d='+JSON
 let role='owner';
 const f=document.getElementById('f'),phone=document.getElementById('phone'),slot=document.getElementById('slot');
 function fit(){return;const s=Math.min((innerWidth-20)/412,(innerHeight-120)/866,1.25);phone.style.transform='scale('+s+')';slot.style.width=412*s+'px';slot.style.height=866*s+'px'}
-function load(r){role=r;f.srcdoc=SRC.replace(/<head[^>]*>/,function(m){return m+shim(r)});b1.classList.toggle('on',r==='owner');b2.classList.toggle('on',r==='staff')}
+function load(r){role=r;f.srcdoc=SRC.replace(/<head[^>]*>/,function(m){return m+'<style>html:root{padding-top:0!important}html{scroll-padding-top:0!important}</style>'+shim(r)});b1.classList.toggle('on',r==='owner');b2.classList.toggle('on',r==='staff')}
 b1.onclick=()=>load('owner');b2.onclick=()=>load('staff');rl.onclick=()=>load(role);
 addEventListener('resize',fit);fit();load('owner');
 </script>
