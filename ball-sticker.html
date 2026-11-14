@@ -3984,6 +3984,41 @@ html[data-theme="dark"] body #jobHistory li.jc select.job-status-select.filed{--
 html[data-theme="dark"] body #jobHistory li.jc select.job-status-select.printed{--pc:#A3D94A;--pc-bg:#24330F;--pc-b:#44601A;--pc-t:#B8E070}
 html[data-theme="dark"] body #jobHistory li.jc select.job-status-select.shipped{--pc:#5FD38A;--pc-bg:#14301F;--pc-b:#24593A;--pc-t:#7FE0A3}
 html[data-theme="dark"] body #jobHistory li.jc select.job-status-select.pickup{--pc:#3FD0A8;--pc-bg:#10332B;--pc-b:#1E6350;--pc-t:#7FE3C6}
+
+/* ---- ราคาส่ง: การ์ดต่อใบงาน (ลูกค้าเห็นแบบเดียวกัน) ---- */
+html:root body #wholesaleHistory .wd-jc{margin:0 0 10px!important;padding:10px 12px 4px!important;border:1px solid var(--a-line)!important;border-left:5px solid var(--a-yel)!important;border-radius:var(--a-r2)!important;background:var(--a-card)!important;box-shadow:0 1px 4px rgba(20,30,70,.06)!important}
+html:root body #wholesaleHistory .wd-jc.paid{border-left-color:var(--a-green)!important}
+html:root body #wholesaleHistory .wd-jc.none{border-left-color:var(--a-red)!important;background:rgba(180,35,24,.04)!important}
+html:root body #wholesaleHistory .wd-jh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+html:root body #wholesaleHistory .wd-jh b{font-size:15px;color:var(--a-ink)}
+html:root body #wholesaleHistory .wd-jh em{margin-left:auto;font-style:normal;font-weight:800;color:var(--a-ink)}
+html:root body #wholesaleHistory .wd-pc{font-size:11.5px;font-weight:800;padding:2px 9px;border-radius:999px}
+html:root body #wholesaleHistory .wd-pc.no{background:rgba(180,35,24,.12);color:var(--a-red)}
+html:root body #wholesaleHistory .wd-pc.ok{background:rgba(21,127,59,.14);color:var(--a-green)}
+html:root body #wholesaleHistory .wd-jd{display:block;margin:2px 0 4px;color:var(--a-mute);font-size:12px}
+html:root body #wholesaleHistory .wd-jc .wd-r:last-child{border-bottom:0!important}
+html:root body #wholesaleHistory select.wd-asg{grid-column:1/-1;display:block;margin:0 0 6px;width:100%;font-size:13px;padding:5px 8px;border:1px solid var(--a-line);border-radius:8px;background:var(--a-card);color:var(--a-ink)}
+
+html:root body #wholesaleHistory .wd-jc{--st:var(--a-yel)}
+html:root body #wholesaleHistory .wd-jc.st-printed{--st:#86BB2A}html:root body #wholesaleHistory .wd-jc.st-filed{--st:#C4BE1A}
+html:root body #wholesaleHistory .wd-jc.st-shipped{--st:#1E9A55}html:root body #wholesaleHistory .wd-jc.st-pickup{--st:#0F8F6E}
+html:root body #wholesaleHistory .wd-jc.st-received{--st:#2F63D8}
+html:root body #wholesaleHistory .wd-jc[class*="st-"]{border-left-color:var(--st)!important}
+html:root body #wholesaleHistory .wd-jh{align-items:flex-start!important;flex-wrap:nowrap!important}
+html:root body #wholesaleHistory .wd-th{flex:none;width:44px;height:44px;border-radius:10px;overflow:hidden;background:var(--a-line2)}
+html:root body #wholesaleHistory .wd-th img{width:100%;height:100%;object-fit:cover;display:block}
+html:root body #wholesaleHistory .wd-jt{flex:1;min-width:0}
+html:root body #wholesaleHistory .wd-jl{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+html:root body #wholesaleHistory .wd-st{margin-left:auto;font-size:11.5px;font-weight:800;color:#fff;background:var(--st);padding:3px 10px;border-radius:999px}
+html:root body #wholesaleHistory .wd-jh em{margin-left:0!important;align-self:flex-end;white-space:nowrap}
+html:root body #wholesaleHistory .wd-bar{height:6px;border-radius:99px;background:var(--a-line2);margin:8px 0 6px;overflow:hidden}
+html:root body #wholesaleHistory .wd-bar i{display:block;height:100%;border-radius:99px;background:var(--st)}
+
+html:root body #wholesaleHistory .wd-jl{flex-wrap:nowrap!important}
+html:root body #wholesaleHistory .wd-jl b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html:root body #wholesaleHistory .wd-jr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}
+html:root body #wholesaleHistory .wd-jr em{font-style:normal;font-weight:800;font-size:15px;color:var(--a-ink)}
+html:root body #wholesaleHistory .wd-jh>em{display:none}
 </style>
 </head>
 <body>
@@ -4054,7 +4089,7 @@ html[data-theme="dark"] body #jobHistory li.jc select.job-status-select.pickup{-
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.70</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v1.71</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
@@ -5796,7 +5831,7 @@ html[data-theme="dark"] body #jobHistory li.jc select.job-status-select.pickup{-
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=bf6748a4f2",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/lock.js?v=668b584fb5"],app="js/app.js?v=7dbc9e1da5",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
