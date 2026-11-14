@@ -953,6 +953,7 @@ function bahtText(value) {
     bankInLive = true;
     renderBankIn(); renderJobBankInPick(); renderBell(wasLive);
     try { matchPayCharges(); } catch (e) { console.error('pay match', e); }
+    try { matchOwedBankIns(); } catch (e) { console.error('owed match', e); }
   }
   function showBankInBanner(fresh, live) {
     const total = fresh.reduce((a, x) => a + num(x.amount), 0);
@@ -4896,34 +4897,32 @@ function bahtText(value) {
   }
   // เงินเข้าบัญชีวันทิมที่ยังไม่ผูกอะไร ยอดตรงกับ "ใบค้าง" ของลูกค้างานส่ง (ทั้งก้อนหรือบางใบรวมกัน) → ตัดใบนั้นเป็นชำระแล้วอัตโนมัติ
   function matchOwedBankIns() {
+    // ตัดบิลค้างจากเงินเข้าวันทิมอัตโนมัติ เฉพาะกรณีชัดเจนเท่านั้น: ยอดตรงกับ "ใบเดียว" หรือ "ยอดรวมทั้งร้าน" แบบเดียวเท่านั้นทั้งระบบ
+    // และไม่มีเงินเข้าที่ยังไม่ผูกก้อนอื่นยอดเท่ากัน (กันตัดผิดเหมือนเดิม) · ที่ไม่ชัดปล่อยไว้ ไม่เดา
     try {
-      return;   // ปิดแล้ว: ห้ามตัดบิลค้างจากยอดเงินเท่ากันอย่างเดียว (ต้องมี QR ที่ส่งจริง)
-      if (!canBank) return;
-      const since = Date.now() - 14 * 86400000, used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
-      const ins = wantimPoolAll().filter(b => b.account === 'วันทิม' && !b.matchedJobId && !used.has(b.id) && (b.createdAt || 0) >= since && num(b.amount) > 0).reverse();
+      if (!canBank || !can('wholesale')) return;
+      const since = Date.now() - 30 * 86400000, used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
+      const ins = wantimPoolAll().filter(b => b.account === 'วันทิม' && !b.matchedJobId && !used.has(b.id) && (b.createdAt || 0) >= since && num(b.amount) > 0).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
       if (!ins.length) return;
-      const msgs = [];
+      const msgs = [], taken = new Set();
       ins.forEach(b => {
         const amt = num(b.amount);
-        for (const g of owedGroups()) {
-          const ds = g.docs.filter(d => !d.date || (b.createdAt || 0) >= new Date(d.date + 'T00:00:00').getTime() - 86400000).slice(0, 12);
-          let hit = null;
-          for (let m = 1; m < (1 << ds.length) && !hit; m++) {
-            let t = 0, sel = [];
-            for (let i = 0; i < ds.length; i++) if (m & (1 << i)) { t += ds[i].total; sel.push(ds[i]); }
-            if (Math.abs(t - amt) < 0.005) hit = sel;
-          }
-          if (!hit) continue;
-          markDocsPaid(hit);
-          flagBankInOwed(b.id, hit.map(d => d.no).filter(Boolean).join(', ') || g.name);
-          const ids = new Set(hit.map(d => d.id));
-          const all = payCharges(), ch = all.filter(c => c.status !== 'paid' && c.channel === 'owed' && c.docs && c.docs.length && c.docs.every(d => ids.has(d.id)));
-          if (ch.length) { const rec = ch.map(c => Object.assign({}, c, {status: 'paid', paidAt: b.createdAt || Date.now(), bankInId: b.id})); store.set('bs_pay_charges', all.map(c => rec.find(r => r.id === c.id) || c)); rec.forEach(r => cloudSave('payCharges', r)); }
-          msgs.push(g.name + ' ' + money(amt) + ' บาท (' + hit.map(d => d.no).filter(Boolean).join(', ') + ')');
-          break;
-        }
+        if (ins.filter(x => Math.abs(num(x.amount) - amt) < 0.005).length !== 1) return;   // เงินเข้ายอดเท่ากันหลายก้อน → ไม่แน่ใจ
+        const cands = [];
+        owedGroups().forEach(g => {
+          const ds = g.docs.filter(d => d.total > 0 && !taken.has(d.id) && (!d.date || (b.createdAt || 0) >= new Date(d.date + 'T00:00:00').getTime() - 86400000));
+          ds.forEach(d => { if (Math.abs(d.total - amt) < 0.005) cands.push({g, docs: [d]}); });
+          if (ds.length > 1 && Math.abs(ds.reduce((t, d) => t + d.total, 0) - amt) < 0.005) cands.push({g, docs: ds});
+        });
+        const uniq = []; cands.forEach(c => { if (!uniq.some(u => u.g === c.g && u.docs.length === c.docs.length && u.docs.every((d, k) => d.id === c.docs[k].id))) uniq.push(c); });
+        if (uniq.length !== 1) return;   // ตรงหลายแบบ/หลายร้าน → ไม่ตัดเอง
+        const hit = uniq[0].docs, g = uniq[0].g;
+        hit.forEach(d => taken.add(d.id));
+        markDocsPaid(hit);
+        flagBankInOwed(b.id, hit.map(d => d.no).filter(Boolean).join(', ') || g.name);
+        msgs.push(g.name + ' ' + money(amt) + ' บาท (' + hit.map(d => d.no).filter(Boolean).join(', ') + ')');
       });
-      if (msgs.length) { toast('✅ เงินเข้าวันทิมตรงกับบิลค้าง: ' + msgs.join(' · ')); playChime(); }
+      if (msgs.length) { toast('✅ เงินเข้าตรงกับบิลค้าง ตัดให้แล้ว: ' + msgs.join(' · ')); playChime(); try { refreshOwedMirrors(); } catch (e) {} }
     } catch (e) { console.error('matchOwedBankIns', e); }
   }
   /* ---------- ประวัติ QR เรียกเก็บ: รอจ่าย / จ่ายแล้ว / ยกเลิก · เปิด QR เดิมซ้ำ · ยืนยันรับเงินเอง ---------- */
@@ -5103,7 +5102,7 @@ function bahtText(value) {
       }
       const list = store.get('bs_' + (d.k === 'bills' ? 'bills' : 'wholesale'), []), i = list.findIndex(x => x.id === d.id);
       if (i < 0 || list[i].paid) return;
-      list[i] = Object.assign({}, list[i], {paid: true});
+      list[i] = Object.assign({}, list[i], {paid: true, paidAt: Date.now()}, (d.k !== 'bills' && !String(list[i].no || '').trim()) ? {no: whNextNo(todayISO())} : {});   // ใบราคาส่งที่ยังไม่มีเลข WS ออกเลขตอนจ่ายจริง
       store.set('bs_' + (d.k === 'bills' ? 'bills' : 'wholesale'), list); cloudSave(d.k === 'bills' ? 'bills' : 'wholesale', list[i]);
     });
     try { renderDash(); renderHistory(); renderWholesaleHistory(); } catch (e) {}
@@ -9267,7 +9266,7 @@ function bahtText(value) {
     openBankAdd(false);
     if (bankListTab !== 'all' && bankListTab !== dir) { bankListTab = dir; try { localStorage.setItem('bs_bankin_tab', dir); } catch (e3) {} }
     renderBankIn(); renderJobBankInPick(); renderBell(false);
-    if (dir === 'in') { try { matchPayCharges(); } catch (e4) {} }
+    if (dir === 'in') { try { matchPayCharges(); } catch (e4) {} try { matchOwedBankIns(); } catch (e5) {} }
     toast('เพิ่ม' + (dir === 'in' ? 'เงินเข้า' : 'เงินออก') + ' ' + money(amount) + ' บาท แล้ว' + balMsg);
   });
   $('bankInList').addEventListener('click', e => {
