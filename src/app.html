@@ -9195,7 +9195,9 @@ function bahtText(value) {
     try {
       if (!canBank) return;
       const now = Date.now(), sent = kobSentGet(), used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
-      wantimPoolAll().filter(b => !b.matchedJobId && !used.has(b.id) && num(b.amount) > 0 && now - (b.createdAt || 0) > 5 * 60000 && now - (b.createdAt || 0) < 86400000 && !sent['bi-' + b.id]).slice(0, 5).forEach(b => {
+      // แจ้งเฉพาะเงินที่เข้าหลังเปิดระบบนี้ (กันเตือนย้อนหลังรายการเก่าที่จัดการไปแล้ว)
+      let since = 0; try { since = +localStorage.getItem('bs_kob_since') || 0; if (!since) { since = now; localStorage.setItem('bs_kob_since', String(since)); } } catch (e) { since = now; }
+      wantimPoolAll().filter(b => (b.createdAt || 0) >= since && !b.matchedJobId && !used.has(b.id) && num(b.amount) > 0 && now - (b.createdAt || 0) > 5 * 60000 && now - (b.createdAt || 0) < 86400000 && !sent['bi-' + b.id]).slice(0, 5).forEach(b => {
         kobNotify({type: 'confirm', eventId: 'bi-' + b.id, title: 'เงินเข้า ' + (b.account || ''), amount: num(b.amount),
           lines: [new Date(b.createdAt).toLocaleString('th-TH', {dateStyle: 'short', timeStyle: 'short'}), String(b.sender || b.note || b.from || '').slice(0, 60), 'ระบบจับคู่กับบิลไม่ได้ — เปิดแอปเพื่อยืนยัน'].filter(Boolean)});
       });
