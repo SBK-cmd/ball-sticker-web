@@ -11264,10 +11264,29 @@ function bahtText(value) {
     const m = billSummary(w);
     return m.jobs + ' งาน' + (m.hasShip ? ' · ค่าส่ง ' + money(m.shipAmt) : '') + ' · รวม ' + money(m.total) + ' บาท';
   }
+  // ผูกบรรทัดในบิลของร้านนี้กับใบงานให้เอง (ทั้งบิลค้างและที่จ่ายแล้ว): เฉพาะบรรทัดที่ยังไม่มีเลขใบงาน และชื่อรายการตรงกับรายการของใบงานเพียงใบเดียวของร้านนี้เท่านั้น (ไม่แตะราคา/ยอด)
+  function whAutoLink(name) {
+    const nm = String(name || '').trim(), norm = s => String(s || '').replace(/\s+/g, ' ').trim();
+    const jobs = store.get('bs_jobs', []).filter(j => String(j.jName || '').trim() === nm && String(j.no || '').trim());
+    const wl = store.get('bs_wholesale', []); let linked = 0, left = 0; const touched = new Set();
+    wl.forEach((w, wi) => {
+      if ((String(w.buyerName || '').trim() || 'ไม่ระบุชื่อ') !== (nm || 'ไม่ระบุชื่อ')) return;
+      let ch = false;
+      const items = (w.items || []).map(it => {
+        if (!String(it.name || '').trim() || String(it.job || '').trim()) return it;
+        const c = jobs.filter(j => (j.items || []).some(x => norm(x.name) === norm(it.name)));
+        if (c.length === 1) { ch = true; linked++; touched.add(c[0].id); return Object.assign({}, it, {job: String(c[0].no).trim()}); }
+        left++; return it;
+      });
+      if (ch) { wl[wi] = Object.assign({}, w, {items, savedAt: Date.now()}); cloudSave('wholesale', wl[wi]); }
+    });
+    if (linked) { store.set('bs_wholesale', wl); try { jobs.filter(j => touched.has(j.id)).forEach(j => publicJobMirror(j)); refreshOwedMirrors(); } catch (e) {} }
+    return {linked, left};
+  }
   function whDetailHTML(g) {
     let h = '<div class="wd">';
     const hasJbs = store.get('bs_jobs', []).some(j => /^JBS/i.test(String(j.no || '').trim()) && String(j.jName || '').trim() === String(g.name || '').trim());
-    if (hasJbs) h += '<div class="wd-trk"><button class="btn small good" type="button" data-act="wtrack">🔗 ส่งลิงก์ติดตามงาน</button><button class="btn small" type="button" data-act="wtrackcopy">คัดลอกลิงก์</button><button class="btn small" type="button" data-act="wtrackopen">ดูหน้าที่ลูกค้าเห็น</button></div>';
+    if (hasJbs) h += '<div class="wd-trk"><button class="btn small good" type="button" data-act="wtrack">🔗 ส่งลิงก์ติดตามงาน</button><button class="btn small" type="button" data-act="wtrackcopy">คัดลอกลิงก์</button><button class="btn small" type="button" data-act="wtrackopen">ดูหน้าที่ลูกค้าเห็น</button><button class="btn small" type="button" data-act="autolink">🔗 ผูกใบงานให้อัตโนมัติ</button></div>';
     if (!g.open.length) h += '<p class="hint" style="margin:0 0 10px">ไม่มีบิลค้าง งานใหม่ที่คีย์ชื่อร้านนี้จะเปิดบิลใหม่ให้เองและเริ่มนับยอดใหม่</p>';
     g.open.forEach(w => {
       const its = w.items || [], t = wholesaleCalc(w);
@@ -13888,6 +13907,7 @@ function bahtText(value) {
     }
     const act = btn.dataset.act, box = btn.closest('[data-doc]'), id = box ? box.dataset.doc : '';
     const list = store.get('bs_wholesale', []);
+    if (act === 'autolink') { const r = whAutoLink(name); renderWholesaleHistory(); toast(r.linked ? 'ผูกใบงานให้แล้ว ' + r.linked + ' บรรทัด' + (r.left ? ' · เหลือ ' + r.left + ' บรรทัดที่ผูกเองไม่ได้ (ชื่อไม่ตรง/ตรงหลายงาน)' : ' · ครบทุกบรรทัด') : (r.left ? 'ไม่มีบรรทัดที่ผูกได้อัตโนมัติ · ' + r.left + ' บรรทัดต้องเลือกใบงานเอง' : 'ทุกบรรทัดผูกใบงานครบแล้ว')); return; }
     if (act === 'wtrack' || act === 'wtrackcopy' || act === 'wtrackopen') {   // ลิงก์ติดตามงานของร้านส่งนี้ (หน้าเดียวเห็นทุกใบงาน + ยอดค้าง)
       const url = chargeLinkFor(name); if (!url) { toast('ร้านนี้ยังไม่มีใบงานส่ง (JBS)'); return; }
       if (act === 'wtrackopen') {
