@@ -1,0 +1,10 @@
+// วางใน Firebase Console > Firestore > Rules (ในบล็อก match /databases/{database}/documents { ... })
+// ลูกค้า (ล็อกอินไม่ระบุตัวตนอยู่แล้วบนหน้าติดตาม) เขียนได้เฉพาะเอกสารของโทเคนตัวเอง ฟิลด์จำกัด ยอดไม่เกิน 1 ล้าน
+// อ่าน/ลบ: ปรับเงื่อนไขให้ตรงกับที่กฎ bankIn ของคุณใช้กับพนักงาน (ถ้าพนักงานล็อกอินแบบไม่ระบุตัวตนเหมือนกัน ให้ใช้ request.auth != null)
+match /payIntents/{id} {
+  allow create, update: if request.auth != null
+    && id == request.resource.data.t
+    && request.resource.data.keys().hasOnly(['t', 'amount', 'keys', 'at'])
+    && request.resource.data.amount is number && request.resource.data.amount > 0 && request.resource.data.amount < 1000000;
+  allow read, delete: if request.auth != null;
+}

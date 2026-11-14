@@ -4695,7 +4695,7 @@ function bahtText(value) {
     const jno = String(j.no || '').trim();
     // ผูกกับใบราคาส่งได้ 3 ทาง: jobId · เลขเอกสาร/อ้างอิงที่บันทึกในใบงาน (whAdded) · บรรทัดรายการในบิลที่ระบุเลขใบงาน (i.job) — ทางที่ 3 กันกรณี whAdded ว่าง ป้ายจะได้ไม่หาย
     const ws = store.get('bs_wholesale', []).filter(w => w.jobId === j.id || (docs.length && (docs.indexOf(String(w.no || '').trim()) >= 0 || docs.indexOf(String(w.ref || '').trim()) >= 0)) || (w.items || []).some(i => String(i.job || '').trim() === jno && String(i.name || '').trim()));
-    if (ws.length) return ws.every(w => w.paid) ? 'paid' : 'unpaid';
+    if (ws.length) return ws.every(w => whPaidFor(w, jno)) ? 'paid' : 'unpaid';
     let bank = 0; try { bank = jobBankIdsOf(j).length; } catch (e) {}
     if (j.owedPaid || bank) return 'paid';
     return num(j.slipAmount) > 0 ? 'unpaid' : '';
@@ -5162,8 +5162,46 @@ function bahtText(value) {
       onBankInChange();
     }, err => { console.error('bankIn sync error', err); renderBankIn(); });
   }
+  // ---- ลูกค้าเลือกงานที่จะจ่ายบนหน้าติดตาม (payIntents/{token}) → จับคู่กับเงินเข้า แล้วให้เจ้าของกดยืนยัน ----
+  let payIntents = [], intentBusy = false;
+  const INTENT_DONE = 'bs_intent_done';
+  const intentDone = () => { try { return JSON.parse(localStorage.getItem(INTENT_DONE) || '{}'); } catch (e) { return {}; } };
+  function watchPayIntents() {
+    if (!cloudDb || !canBank) return;
+    cloudDb.collection('payIntents').orderBy('at', 'desc').limit(60).onSnapshot(snap => {
+      countReads('payIntents', snap); payIntents = []; snap.forEach(d => payIntents.push(Object.assign({id: d.id}, d.data())));
+      matchPayIntents();
+    }, err => console.error('payIntents sync error', err));
+  }
+  function matchPayIntents() {
+    if (!canBank || intentBusy || !payIntents.length) return;
+    const done = intentDone(), usedBank = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
+    for (const it of payIntents) {
+      const sig = it.id + '|' + it.at;
+      if (done[sig] || Date.now() - (it.at || 0) > 7 * 86400000 || !(num(it.amount) > 0)) continue;
+      const job = store.get('bs_jobs', []).find(j => String(j.trackToken || '') === it.id);
+      if (!job) continue;
+      const g = owedGroups().find(x => x.name === (String(job.jName || '').trim() || 'ไม่ระบุชื่อ'));
+      if (!g) continue;
+      const keys = Array.isArray(it.keys) ? it.keys.map(k => String(k || '')) : null;
+      const sum = round2(g.docs.reduce((t, d) => t + (d.items || []).filter(i => keys == null || keys.indexOf(String(i.j || '')) >= 0).reduce((s, i) => s + num(i.q) * num(i.p), 0), 0));
+      if (Math.abs(sum - num(it.amount)) > 0.011) continue;   // ยอดค้างเปลี่ยนไปแล้ว = ข้อมูลเก่า ไม่จับ
+      const bank = wantimPoolAll().find(b => !usedBank.has(b.id) && !b.matchedJobId && Math.abs(num(b.amount) - num(it.amount)) < 0.005 && (b.createdAt || 0) >= (it.at || 0) - 60000);
+      if (!bank) continue;
+      intentBusy = true;
+      const label = (keys == null ? 'ทุกงานที่ค้าง' : keys.map(k => k || 'รายการอื่น').join(', '));
+      const ok = confirm('เงินเข้า ' + money(num(bank.amount)) + ' บาท ตรงกับที่ลูกค้า ' + (job.jName || '') + ' เลือกจ่ายไว้\nงาน: ' + label + '\n\nยืนยันว่าจ่ายแล้วไหม?');
+      done[sig] = ok ? 'ok' : 'skip'; try { localStorage.setItem(INTENT_DONE, JSON.stringify(done)); } catch (e) {}
+      if (ok) {
+        markJobsPaid(g.name, keys); flagBankInOwed(bank.id, label); toast('✅ ' + (job.jName || 'ลูกค้า') + ' จ่ายแล้ว ' + money(num(bank.amount)) + ' บาท (' + label + ')'); playChime();
+        try { cloudDb.collection('payIntents').doc(it.id).delete().catch(() => {}); } catch (e) {}
+      }
+      intentBusy = false; return;   // ทีละรายการ
+    }
+  }
   function onBankInChange() {
     if (!canBank) return;
+    try { matchPayIntents(); } catch (e) {}
     const list = bankInAll();
     let seen = 0;
     try { seen = +localStorage.getItem(BANKIN_SEEN) || 0; } catch (e) {}
@@ -9233,7 +9271,7 @@ function bahtText(value) {
     const g = {};
     const add = (name, d) => { const k = String(name || '').trim() || 'ไม่ระบุชื่อ'; (g[k] = g[k] || {name: k, docs: [], total: 0}).docs.push(d); };
     // เฉพาะงานส่ง (JBS) = ใบราคาส่ง — บิลหน้าร้านไม่รวม
-    if (can('wholesale')) store.get('bs_wholesale', []).filter(w => !w.paid).forEach(w => add(w.buyerName, {k: 'wholesale', id: w.id, no: w.no || w.ref || 'ใบราคาส่ง', date: w.date || '', total: round2(wholesaleCalc(w).total), items: (w.items || []).filter(i => String(i.name || '').trim()).map(i => { const o = {n: String(i.name).trim().slice(0, 80), q: num(i.qty), p: num(i.price)}; const jb = String(i.job || '').trim(); if (jb) o.j = jb.slice(0, 24); return o; })}));
+    if (can('wholesale')) store.get('bs_wholesale', []).filter(w => !w.paid).forEach(w => add(w.buyerName, {k: 'wholesale', id: w.id, no: w.no || w.ref || 'ใบราคาส่ง', date: w.date || '', total: round2(wholesaleCalc(w).total - whPaidSum(w)), items: (w.items || []).filter(i => String(i.name || '').trim() && !whItemPaid(w, i)).map(i => { const o = {n: String(i.name).trim().slice(0, 80), q: num(i.qty), p: num(i.price)}; const jb = String(i.job || '').trim(); if (jb) o.j = jb.slice(0, 24); return o; })}));
     // งาน JBS ที่คีย์จำนวนเงินไว้แล้ว แต่ยังไม่ได้รวมเข้าใบราคาส่ง และยังไม่ผูกกับเงินเข้าจริง = ยอดที่รอเก็บ
     if (can('wholesale')) store.get('bs_jobs', []).filter(j => /^JBS/i.test(String(j.no || '').trim()) && !j.owedPaid && num(j.slipAmount) > 0 && !jobBankIdsOf(j).length && jobPendingWhItems(j).length)
       .forEach(j => add(j.jName, {k: 'jobs', id: j.id, no: j.no, date: j.date || '', total: round2(num(j.slipAmount)), photo: [].concat(j.donePhotos || [], j.photos || []).find(u => typeof u === 'string' && /^https:\/\//.test(u)) || '', items: (() => { const its = (j.items || []).filter(i => String(i.name || '').trim()).map(i => ({n: (String(i.name).trim() + (String(i.note || '').trim() ? ' (' + String(i.note).trim() + ')' : '')).slice(0, 80), q: num(i.qty), p: 0, j: String(j.no || '').slice(0, 24)})); const nt = String(j.note || '').replace(/\s+/g, ' ').trim(); return its.length ? its : (nt ? [{n: nt.slice(0, 80), q: 0, p: 0}] : []); })()}));
@@ -9273,6 +9311,29 @@ function bahtText(value) {
     const gs = owedGroups(); c.hidden = !can('wholesale');
     $('owedCustCount').textContent = gs.length + ' ราย';
     $('owedTotalAmt').textContent = money(round2(gs.reduce((t, x) => t + x.total, 0))) + ' บาท';
+  }
+  // ---- จ่ายรายงาน: ใบราคาส่งจำว่างานไหนจ่ายแล้ว (paidJobs = เลขใบงาน · '' = รายการที่ไม่ระบุงาน) ----
+  function whKey(i) { return String((i && i.job) || '').trim(); }
+  function whItemPaid(w, i) { return (w.paidJobs || []).indexOf(whKey(i)) >= 0; }
+  function whPaidSum(w) { return round2((w.items || []).filter(i => String(i.name || '').trim() && whItemPaid(w, i)).reduce((t, i) => t + num(i.qty) * num(i.price), 0)); }
+  function whPaidFor(w, jno) { return !!w.paid || (w.paidJobs || []).indexOf(String(jno || '').trim()) >= 0; }
+  // keys = รายการเลขใบงานที่จ่าย (null = ทั้งหมด) · แตะเฉพาะใบราคาส่ง/งานของลูกค้าชื่อนี้ที่ยังค้าง
+  function markJobsPaid(name, keys) {
+    const nm = String(name || '').trim() || 'ไม่ระบุชื่อ', all = keys == null, has = k => all || keys.indexOf(k) >= 0;
+    const wl = store.get('bs_wholesale', []);
+    wl.forEach((w, i) => {
+      if (w.paid || (String(w.buyerName || '').trim() || 'ไม่ระบุชื่อ') !== nm) return;
+      const named = (w.items || []).filter(x => String(x.name || '').trim()), hit = named.filter(x => has(whKey(x)));
+      if (!hit.length) return;
+      const pj = Array.from(new Set((w.paidJobs || []).concat(hit.map(whKey))));
+      const done = named.every(x => pj.indexOf(whKey(x)) >= 0);
+      wl[i] = Object.assign({}, w, done ? {paid: true, paidJobs: pj} : {paidJobs: pj}); cloudSave('wholesale', wl[i]);
+    });
+    store.set('bs_wholesale', wl);
+    const jl = store.get('bs_jobs', []);
+    jl.forEach((j, i) => { if ((String(j.jName || '').trim() || 'ไม่ระบุชื่อ') === nm && !j.owedPaid && num(j.slipAmount) > 0 && !jobBankIdsOf(j).length && has(String(j.no || '').trim())) { jl[i] = Object.assign({}, j, {owedPaid: true, slipPending: false}); cloudSave('jobs', jl[i]); } });
+    store.set('bs_jobs', jl);
+    try { renderDash(); renderHistory(); renderWholesaleHistory(); refreshOwedMirrors(); jl.filter(j => j.trackToken && /^JBS/i.test(String(j.no || ''))).forEach(j => publicJobMirror(j)); } catch (e) {}
   }
   function markDocsPaid(docs) {
     (docs || []).forEach(d => {
@@ -14917,7 +14978,7 @@ function bahtText(value) {
     watchCloud('customers', 'bs_customers', () => { renderCustomerDatalist(); try { renderWholesaleHistory(); } catch (e) {} });
     watchCloud('vendors', 'bs_vendors', renderVendorDatalist);
     if (can('money')) watchCloud('costCfg', 'bs_cost_cfg', () => { renderCost(); try { renderPrice(); } catch (e) {} });
-    watchBankIn();
+    watchBankIn(); watchPayIntents();
     watchBankOut();
     watchLineChats();
     if (can('chat') || canBank) watchCloud('payCharges', 'bs_pay_charges', () => { renderPayHist(); try { matchPayCharges(); } catch (e) {} updatePayHistBadge(); jcRefresh(); const o = document.getElementById('payHistOv'); if (o) { const on = o.querySelector('.ph-tabs .on'); o.remove(); openPayHist(on ? on.dataset.tab : 'pending'); } });

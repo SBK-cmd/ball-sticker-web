@@ -228,7 +228,8 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
   function money(n) { return Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
   // หน้าต่างบิลค้างชำระ: รายการ + ยอดรวม + QR พร้อมเพย์ (วาดจาก payload ที่ร้านสร้าง) · จ่ายแล้ว/ไม่มียอดค้าง = ไม่มีปุ่ม ไม่มีหน้าต่าง
   var payM = null;
-  function openPay(on) { if (payM) payM.classList.toggle('show', !!on); document.body.style.overflow = on ? 'hidden' : ''; }
+  var payRec = null;   // บันทึกว่าลูกค้าเปิดจ่าย/เลือกงานไหน (ให้แอปร้านจับคู่เงินเข้า) — ตั้งโดย setPayModal
+  function openPay(on) { if (payM) payM.classList.toggle('show', !!on); document.body.style.overflow = on ? 'hidden' : ''; if (on && payRec) payRec(); }
   // ---- เลือกงานที่จะจ่าย: สร้าง payload พร้อมเพย์ใหม่จาก payload เดิม (เปลี่ยนเฉพาะยอด tag 54 แล้วคำนวณ CRC ใหม่) ----
   function crc16(s) { var c = 0xFFFF, i, b; for (i = 0; i < s.length; i++) { c ^= s.charCodeAt(i) << 8; for (b = 0; b < 8; b++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; } return ('000' + c.toString(16).toUpperCase()).slice(-4); }
   function tlvParse(s) { var out = [], i = 0, id, len; while (i + 4 <= s.length) { id = s.substr(i, 2); len = parseInt(s.substr(i + 2, 2), 10); if (isNaN(len) || i + 4 + len > s.length) return null; out.push([id, s.substr(i + 4, len)]); i += 4 + len; } return i === s.length ? out : null; }
@@ -277,11 +278,23 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
       } catch (e) { payM.querySelector('.pms').insertAdjacentHTML('beforeend', '<small>แสดง QR ไม่ได้ กรุณาแจ้งร้านทาง LINE @bk25</small>'); }
     }
     drawQr(p.payload);
+    var recT = 0, curSel = null, curAmt = +p.total;   // curSel = รายชื่องานที่เลือก (null = ทั้งหมด)
+    payRec = function () {
+      clearTimeout(recT);
+      recT = setTimeout(function () {
+        try {
+          if (typeof db === 'undefined' || !t || !(curAmt > 0)) return;
+          db.collection('payIntents').doc(t).set({t: t, amount: Math.round(curAmt * 100) / 100, keys: curSel, at: Date.now()}).catch(function () {});
+        } catch (e) {}
+      }, 800);
+    };
     if (grp) {
       var boxes = [].slice.call(payM.querySelectorAll('[data-pg]')), tot = document.getElementById('pmTot'), lbl = document.getElementById('pmLbl'), part = document.getElementById('pmPart'), cvEl = payM.querySelector('.pmq');
       var upd = function () {
         var sel = boxes.filter(function (b) { return b.checked; }), c = 0;
         sel.forEach(function (b) { c += grp[+b.getAttribute('data-pg')].c; });
+        curSel = sel.length === boxes.length ? null : sel.map(function (b) { return grp[+b.getAttribute('data-pg')].k; }); curAmt = sel.length === boxes.length ? +p.total : c / 100;
+        if (sel.length) payRec();
         if (!sel.length) { tot.textContent = '0.00'; lbl.textContent = 'ยังไม่ได้เลือกงาน'; cvEl.style.opacity = '.25'; part.hidden = true; return; }
         cvEl.style.opacity = '';
         if (sel.length === boxes.length) { tot.textContent = money(p.total); lbl.textContent = 'ยอดที่ยังไม่ได้จ่าย'; part.hidden = true; drawQr(p.payload); return; }
