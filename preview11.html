@@ -6060,7 +6060,7 @@ if(document.body)start();else document.addEventListener('DOMContentLoaded',start
     secs.forEach(function(sc,i){body.appendChild(sc);var t=document.createElement('button');t.type='button';t.setAttribute('role','tab');t.textContent=names[i]||('กลุ่ม '+(i+1));t.addEventListener('click',function(){cur=i;try{localStorage.setItem('bs_ts_tab',i)}catch(e){}paint()});tabs.appendChild(t)});
     function paint(){
       var tb=tabs.children,first=-1;
-      secs.forEach(function(sc,i){var n=sc.querySelectorAll('.tax-sheet-item:not([hidden])').length;tb[i].hidden=!n;if(n&&first<0)first=i});
+      secs.forEach(function(sc,i){var n=sc.querySelectorAll('.tax-sheet-item:not([hidden])').length;if(tb[i].hidden!==!n)tb[i].hidden=!n;if(n&&first<0)first=i});
       if(secs[cur]&&tabs.children[cur].hidden)cur=first<0?0:first;
       secs.forEach(function(sc,i){sc.classList.toggle('on',i===cur);tb[i].classList.toggle('on',i===cur);tb[i].setAttribute('aria-selected',i===cur)});
     }
