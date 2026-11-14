@@ -7067,7 +7067,7 @@ function bahtText(value) {
     g.open.forEach(w => {
       const rows = whCardsHTML(w, g);
       h += '<div class="wd-bill flat" data-doc="' + esc(w.id) + '">' + (rows || '<p class="hint">ยังไม่มีรายการ</p>') +
-        '<details class="wd-bd"><summary>บิลต้นทาง ' + esc(w.no || '') + ' · ' + esc(sumLine(w)) + '</summary><div class="wd-sum"><span>' + esc(thDate(w.date)) + (w.chargeRef ? ' · อ้างอิงเก็บเงิน ' + esc(w.chargeRef) : '') + '</span></div>' +
+        '<details class="wd-bd"><summary>รายการที่ยังไม่จ่าย (ยังไม่ออกบิล WS) · ' + esc(sumLine(w)) + '</summary><div class="wd-sum"><span>' + esc(thDate(w.date)) + (w.chargeRef ? ' · อ้างอิงเก็บเงิน ' + esc(w.chargeRef) : '') + '</span></div>' +
         '<div class="wd-btns"><button class="btn small" type="button" data-act="addship">＋ ค่าส่ง</button><button class="btn small" type="button" data-act="open">แก้ไขเต็ม</button><button class="btn small del" type="button" data-act="del">ลบ</button></div></details></div>';
     });
     if (g.open.some(w => (w.items || []).some(i => String(i.name || '').trim()))) h += '<div class="wd-payrow"><span>ยังไม่จ่าย = ยังไม่รวมเป็น WS · ติ๊กใบงานที่ลูกค้าจ่ายแล้ว แล้วกดปุ่ม ระบบสรุปเป็น WS ให้</span><button class="btn small good" type="button" data-act="paysel">จ่ายแล้ว ✓ (สรุป WS)</button></div>';
