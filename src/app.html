@@ -1801,6 +1801,11 @@ body.chg-open{overflow:hidden}
 #jobHistory .jc-cust{font-size:17px;font-weight:800;line-height:1.25;color:var(--ink,#111);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #jobHistory .jc-top .job-status-select{flex:none;align-self:flex-start;width:auto;max-width:112px;font-size:12px;padding:5px 2px 5px 8px;border-radius:999px}
 #jobHistory .jc-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+#jobFiltSt{display:none}
+.jf-chips{display:flex;gap:8px;overflow-x:auto;margin:12px -2px 4px;padding:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.jf-chips::-webkit-scrollbar{display:none}
+.jf-chips button{flex:none;min-height:40px;padding:0 16px;border-radius:999px;border:1px solid #E3E5EA;background:#fff;color:#3D4460;font:500 14px/1 inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
+.jf-chips button em{font-style:normal;color:#8A90A0;margin-left:4px;font-variant-numeric:tabular-nums}
+.jf-chips button.on{background:#161B33;border-color:#161B33;color:#fff;font-weight:600}.jf-chips button.on em{color:#C8CCDA}
 #jobHistory .jc-chip{font-size:12px;line-height:1;padding:6px 9px;border-radius:999px;background:rgba(0,0,0,.05);color:#4b5563}
 #jobHistory .jc-chip.money{background:#e6f6ea;color:#166534}#jobHistory .jc-chip.warn{background:#fff1d6;color:#8a5a00}#jobHistory .jc-chip.tg{background:#eaf1fb;color:#1f4e79}
 #jobHistory .jc-act{display:flex;gap:8px;margin-top:11px;padding-top:10px;border-top:1px solid rgba(0,0,0,.07)}
@@ -2943,6 +2948,7 @@ body.jm-open .fab-newjob{display:none!important}
           <span>เก็บไว้ในเบราว์เซอร์เครื่องนี้ เปิดแก้ไข พิมพ์ซ้ำ และลบได้</span>
         </div>
         <label class="f hist-search"><span>ค้นหา ชื่อลูกค้า · เลขที่ใบงาน · เบอร์ · เลขพัสดุ</span><input class="txt" id="jobHistSearch" type="search" autocomplete="off" placeholder="เช่น JB261109-004 หรือชื่อลูกค้า"></label>
+        <div class="jf-chips" id="jobStChips" role="group" aria-label="กรองตามสถานะ"></div>
         <div class="jf-filt" id="jobFilt"><select id="jobFiltSt" aria-label="กรองตามสถานะ"><option value="">ยังไม่เสร็จสิ้น</option><option value="pending">รอทำ</option><option value="filed">ทำไฟล์แล้ว</option><option value="printed">ผลิตแล้ว</option><option value="shipped">จัดส่งแล้ว</option><option value="pickup">รับหน้าร้าน</option><option value="delivered">เสร็จสิ้น (ลูกค้ารับแล้ว)</option><option value="notrack">ส่งแล้ว · ยังไม่มีเลขพัสดุ</option></select><select id="jobFiltPg" aria-label="กรองตามเพจ"><option value="">ทุกเพจ</option><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop</option></select><select id="jobFiltAcc" aria-label="กรองตามบัญชีรับเงิน" hidden><option value="">ทุกบัญชี</option><option value="กิติพงษ์">บัญชีกิติพงษ์</option><option value="วันทิม">บัญชีวันทิม</option><option value="-">ยังไม่ระบุบัญชี</option></select></div>
         <div id="jobHistory"></div>
       </section>
@@ -10625,12 +10631,13 @@ function bahtText(value) {
   let jdEdit = null;   // {id, sect} การ์ดในหน้าดูใบงานที่กำลังแก้ไข (cust | recv | items)
   // การ์ดรายการงาน: โชว์รายการงาน (สูงสุด 3 บรรทัด) + หมายเหตุถึงฝ่ายผลิต ให้เห็นโดยไม่ต้องกดเปิดดู
   function jobCardWork(j) {
+    // การ์ดทุกใบสูงเท่ากัน: โชว์งานแรก 1 บรรทัด + บรรทัดสรุปอีก 1 บรรทัด (อีก N รายการ · หมายเหตุ) · รายการเต็มดูได้เมื่อแตะที่ใบ
     const its = (j.items || []).filter(i => String(i.name || '').trim());
-    const note = String(j.note || '').trim();
-    if (!its.length && !note) return '';
-    const li = its.slice(0, 3).map((i, n) => '<div class="jw-i"><em>' + (n + 1) + '.</em>' + esc(String(i.name).trim()) + (String(i.qty || '').trim() ? ' <b>× ' + esc(String(i.qty).trim()) + '</b>' : '') + (String(i.note || '').trim() ? ' <small>(' + esc(String(i.note).trim()) + ')</small>' : '') + '</div>').join('');
-    return '<div class="jc-work">' + (its.length ? li + (its.length > 3 ? '<div class="jw-more">+ อีก ' + (its.length - 3) + ' รายการ</div>' : '') : '') +
-      (note ? '<p class="jc-note"><span>หมายเหตุ</span>' + esc(note) + '</p>' : '') + '</div>';
+    const note = String(j.note || '').trim().replace(/\s+/g, ' ');
+    const f = its[0];
+    const l1 = f ? '<div class="jw-i"><em>1.</em>' + esc(String(f.name).trim()) + (String(f.qty || '').trim() ? ' <b>× ' + esc(String(f.qty).trim()) + '</b>' : '') + (String(f.note || '').trim() ? ' <small>(' + esc(String(f.note).trim()) + ')</small>' : '') + '</div>' : '<div class="jw-i"></div>';
+    const l2 = [/^JBS/i.test(String(j.no || '').trim()) ? 'งานส่ง' : '', j.wholesale ? 'ราคาส่ง' : '', its.length > 1 ? 'อีก ' + (its.length - 1) + ' รายการ' : '', note ? 'หมายเหตุ ' + esc(note) : ''].filter(Boolean).join(' · ');
+    return '<div class="jc-work">' + l1 + '<div class="jw-2">' + l2 + '</div></div>';
   }
   function jobDetailHTML(j) {
     const its = (j.items || []).filter(i => (i.name || '').trim());
@@ -10743,6 +10750,18 @@ function bahtText(value) {
     const accOk = j => !fAc || (fAc === '-' ? !String(j.account || '').trim() : j.account === fAc);
     // งานที่ลูกค้ารับแล้ว: ซ่อนจากรายการปกติ (ค้นชื่อลูกค้า / เลือกสถานะ / กด "แสดง" ก็ยังเห็น)
     const isRcv = j => (j.status || 'pending') === 'received' || ((j.status || 'pending') === 'shipped' && jobDelivered(j));
+    {   // ปุ่มกรองสถานะแบบแคปซูล + จำนวน (ตัวเลขนับจากใบงานจริงตามเพจ/บัญชีที่เลือก · ไม่รวมช่องค้นหา)
+      const bar = $('jobStChips');
+      if (bar) {
+        const base = list.filter(j => accOk(j) && (!fPg || (j.page || 'ball') === fPg));
+        const stOf = j => j.status || 'pending';
+        const cnt = {'': base.filter(j => !isRcv(j)).length, delivered: base.filter(isRcv).length, notrack: base.filter(j => stOf(j) === 'shipped' && !j.trackCode).length};
+        ['pending', 'filed', 'printed', 'shipped', 'pickup'].forEach(k => { cnt[k] = base.filter(j => stOf(j) === k && !(k === 'shipped' && isRcv(j))).length; });
+        const defs = [['', 'ที่ค้างอยู่'], ['pending', 'รอทำ'], ['filed', 'ทำไฟล์'], ['printed', 'ผลิต'], ['shipped', 'จัดส่ง'], ['pickup', 'รับหน้าร้าน'], ['delivered', 'เสร็จสิ้น'], ['notrack', 'ไม่มีเลขพัสดุ']];
+        const html = defs.map(d => '<button type="button" data-st="' + d[0] + '"' + (d[0] === fSt ? ' class="on" aria-pressed="true"' : ' aria-pressed="false"') + '>' + d[1] + '<em>' + cnt[d[0]] + '</em></button>').join('');
+        if (bar._k !== html) { bar.innerHTML = html; bar._k = html; }
+      }
+    }
     const hideRcv = !String(q || '').trim() && !fSt && !renderJobHistory._showRcv;
     const hiddenN = hideRcv ? list.filter(j => isRcv(j) && (!fPg || (j.page || 'ball') === fPg)).length : 0;
     const rcvBar = (hiddenN || (renderJobHistory._showRcv && !String(q || '').trim() && !fSt)) ? '<p class="hint rcv-bar">' + (hideRcv ? 'ซ่อนงานเสร็จสิ้น (ลูกค้ารับแล้ว) ' + hiddenN + ' ใบ · ค้นชื่อลูกค้า หรือเลือกตัวกรอง “เสร็จสิ้น” เพื่อดู ' : 'กำลังแสดงงานเสร็จสิ้นด้วย ') + '<button type="button" class="rcv-toggle">' + (hideRcv ? 'แสดง' : 'ซ่อน') + '</button></p>' : '';
@@ -10762,8 +10781,7 @@ function bahtText(value) {
       const chip = (t, c) => '<span class="jc-chip' + (c ? ' ' + c : '') + '">' + t + '</span>';
       // การ์ดโล่ง: ข้อมูลรอง (วันที่ · เพจ · บัญชี · ผู้บันทึก) รวมเป็นบรรทัดเดียวสีจาง · ป้ายเหลือเฉพาะสถานะ/เงื่อนไขที่ต้องเห็น (จำนวนรายการ/รูปดูได้จากในการ์ด)
       const meta = [esc(thDate(j.date)), PAGE_LABEL[j.page] ? esc(PAGE_LABEL[j.page]) : '', (canBank && j.account && !accHidden(j)) ? 'บัญชี ' + esc(j.account) : '', j.createdBy ? 'โดย ' + esc(j.createdBy) : ''].filter(Boolean).join(' · ');
-      const chips = (jobDelivered(j) ? chip('ลูกค้ารับแล้ว · เสร็จสิ้น', 'tg') : '') +
-        (/^JBS/i.test(String(j.no || '').trim()) ? chip('📦 งานส่ง', 'tdel') : '') + (j.wholesale ? chip('ราคาส่ง', 'tg') : '');
+      const chips = (jobDelivered(j) ? chip('ลูกค้ารับแล้ว · เสร็จสิ้น', 'tg') : '');   // งานส่ง/ราคาส่ง ย้ายไปอยู่ในบรรทัดสรุปของการ์ด (jobCardWork) เพื่อให้การ์ดสูงเท่ากัน
       return '<li class="jc st-' + st + (jobOpenIds[j.id] ? ' open' : '') + ((j.prio || 0) > 0 ? ' prio' + j.prio : '') + (/^JBS/i.test(String(j.no || '').trim()) ? ' deliv' : '') + '" data-id="' + esc(j.id) + '">' + ((j.prio || 0) > 0 ? '<div class="jc-fire" aria-hidden="true"></div>' : '') +
       '<div class="jc-top">' + ((j.photos && j.photos[0]) ? '<img class="thumb" src="' + j.photos[0] + '" alt="">' : '<span class="jc-ph" aria-hidden="true">' + esc((cn || '?').replace(/^(คุณ|นาย|นาง|นางสาว|พี่|น้อง)\s*/, '').charAt(0).toUpperCase()) + '</span>') +
       '<div class="jc-main"><div class="jc-no">' + esc(j.no) + dupTag + (j.prio ? ' <span class="chili-tag p' + j.prio + '" title="' + esc(PRIO_LABEL[j.prio]) + '">' + chiliSvg(j.prio) + '<b>' + esc(PRIO_SHORT[j.prio]) + '</b></span>' : '') + '</div><div class="jc-cust">' + esc(cn || 'ไม่ระบุชื่อลูกค้า') + '</div></div>' +
@@ -13975,6 +13993,7 @@ function bahtText(value) {
   $('histSearch').addEventListener('input', renderHistory);
   $('jobHistSearch').addEventListener('input', renderJobHistory);
   ['jobFiltSt', 'jobFiltPg', 'jobFiltAcc'].forEach(i => $(i).addEventListener('change', renderJobHistory));
+  $('jobStChips').addEventListener('click', e => { const b = e.target.closest && e.target.closest('button[data-st]'); if (!b) return; $('jobFiltSt').value = b.dataset.st; renderJobHistory(); });
   if (canBank && $('jobFiltAcc')) {   // เห็นเฉพาะคนที่ดูเรื่องเงินได้ · บัญชีที่ซ่อน (วันทิม) ไม่ขึ้นให้คนที่ไม่ใช่ผู้ดูแล
     $('jobFiltAcc').hidden = false;
     Array.from($('jobFiltAcc').options).forEach(o => { if (HIDDEN_ACCOUNTS.indexOf(o.value) >= 0) o.remove(); });

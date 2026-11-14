@@ -224,3 +224,9 @@ html:root body .tdy-t{padding:0!important}
 html:root body .fold{padding:0!important}
 html:root body .fold{background:#F6F7F9!important}
 html:root body .fold>summary{padding:14px 16px!important}
+
+/* ---------- การ์ดงานสูงเท่ากัน: งานแรก 1 บรรทัด + สรุป 1 บรรทัด (ตัดด้วย ...) · ป้ายชนิดงานจองที่ไว้เสมอ ---------- */
+html:root body #jobHistory li.jc .jw-i{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;min-height:30px;padding:4px 0 4px 20px!important;text-indent:-20px!important}
+html:root body #jobHistory li.jc .jw-i small{display:inline!important;margin:0!important;font-size:13px!important}
+html:root body #jobHistory li.jc .jw-2{min-height:20px;font-size:13px;line-height:1.5;color:var(--a-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:20px}
+html:root body #jobHistory li.jc .jc-chips{min-height:20px}
