@@ -3640,6 +3640,36 @@ html:root body h1{letter-spacing:0!important}
 #jobHistory li.jc .jc-act::after{right:-27px}
 /* แถวพัสดุที่ยังไม่มีเลข: ไม่ต้องกินที่ทุกใบ */
 #jobHistory li.jc .jc-det:has(> .jc-ship:only-child b.none){display:none!important}
+
+/* ---------- แถบสถานะใหม่: ขั้นตอนมีชื่อ 5 ขั้น (รอทำ → ทำไฟล์ → ผลิต → จัดส่ง → รับแล้ว) ----------
+   เส้นเชื่อมเทา + เส้นกรมท่าวิ่งถึงขั้นปัจจุบัน · ขั้นที่ผ่านแล้ว = จุดกรมท่าทึบ · ขั้นปัจจุบัน = จุดเหลืองขอบกรมท่า · ครบ = เขียว
+   ใช้ <i> 5 ตัวเดิมของหลอด ไม่แตะโค้ดแอป */
+#jobHistory li.jc .jc-prog{position:relative;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));gap:0!important;margin:14px 0 0!important;padding:0}
+#jobHistory li.jc .jc-prog::before,#jobHistory li.jc .jc-prog::after{content:"";position:absolute;top:8px;left:10%;height:3px;border-radius:2px;display:block}
+#jobHistory li.jc .jc-prog::before{right:10%;background:var(--a-line)}
+#jobHistory li.jc .jc-prog::after{width:0;background:var(--a-navy)}
+#jobHistory li.jc .jc-prog.s2::after{width:20%}
+#jobHistory li.jc .jc-prog.s3::after{width:40%}
+#jobHistory li.jc .jc-prog.s4::after{width:60%}
+#jobHistory li.jc .jc-prog.s5::after{width:80%}
+#jobHistory li.jc:not(.st-pickup) .jc-prog.done::after{background:var(--a-green)}
+#jobHistory li.jc .jc-prog i,#jobHistory li.jc .jc-prog i.on{position:relative;z-index:1;display:flex!important;flex-direction:column;align-items:center;gap:6px;height:auto!important;background:transparent!important;border-radius:0!important;font-style:normal;text-align:center}
+#jobHistory li.jc .jc-prog i::before{content:"";width:16px;height:16px;border-radius:50%;box-sizing:border-box;background:#fff;border:2px solid #CFD3DB}
+#jobHistory li.jc .jc-prog i::after{font-size:13px;line-height:1.3;color:#8A90A0;font-weight:400;white-space:nowrap}
+#jobHistory li.jc .jc-prog i:nth-child(1)::after{content:"รอทำ"}
+#jobHistory li.jc .jc-prog i:nth-child(2)::after{content:"ทำไฟล์"}
+#jobHistory li.jc .jc-prog i:nth-child(3)::after{content:"ผลิต"}
+#jobHistory li.jc .jc-prog i:nth-child(4)::after{content:"จัดส่ง"}
+#jobHistory li.jc .jc-prog i:nth-child(5)::after{content:"รับแล้ว"}
+#jobHistory li.jc.st-pickup .jc-prog i:nth-child(5)::after{content:"รับหน้าร้าน"}
+#jobHistory li.jc .jc-prog i.on::before{background:var(--a-navy);border-color:var(--a-navy)}
+#jobHistory li.jc .jc-prog i.on::after{color:var(--a-ink2)}
+/* ขั้นปัจจุบัน = ตัวสุดท้ายที่ติด on */
+#jobHistory li.jc .jc-prog.s1 i:nth-child(1)::before,#jobHistory li.jc .jc-prog.s2 i:nth-child(2)::before,#jobHistory li.jc .jc-prog.s3 i:nth-child(3)::before,#jobHistory li.jc .jc-prog.s4 i:nth-child(4)::before,#jobHistory li.jc .jc-prog.s5 i:nth-child(5)::before{background:var(--a-yel);border-color:var(--a-navy)}
+#jobHistory li.jc .jc-prog.s1 i:nth-child(1)::after,#jobHistory li.jc .jc-prog.s2 i:nth-child(2)::after,#jobHistory li.jc .jc-prog.s3 i:nth-child(3)::after,#jobHistory li.jc .jc-prog.s4 i:nth-child(4)::after,#jobHistory li.jc .jc-prog.s5 i:nth-child(5)::after{color:var(--a-ink);font-weight:600}
+/* ครบแล้ว (ลูกค้ารับ/ส่งถึง) = เขียวทั้งแถบ */
+#jobHistory li.jc:not(.st-pickup) .jc-prog.done i::before{background:var(--a-green);border-color:var(--a-green)}
+#jobHistory li.jc:not(.st-pickup) .jc-prog.done i:nth-child(5)::after{color:var(--a-green)}
 </style>
 </head>
 <body>
