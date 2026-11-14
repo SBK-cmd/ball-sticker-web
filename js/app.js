@@ -5776,7 +5776,7 @@ function bahtText(value) {
     const rows = jobPendingWhItems(j); if (!rows.length) return null;
     const wl = store.get('bs_wholesale', []);
     let doc = wl.filter(w => !w.paid && String(w.buyerName || '').trim() === name).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0], isNew = false;
-    if (!doc) { doc = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: false, no: whNextNo(todayISO()), ref: '', date: todayISO(), buyerName: name, items: [], discount: 0, note: ''}; wl.push(doc); isNew = true; }
+    if (!doc) { doc = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: false, no: '', ref: '', date: todayISO(), buyerName: name, items: [], discount: 0, note: ''}; wl.push(doc); isNew = true; }
     const add = jobBillRows(j, rows);
     doc.items = (doc.items || []).filter(i => (i.name || '').trim()).concat(add);
     doc.savedAt = Date.now();
@@ -7004,7 +7004,7 @@ function bahtText(value) {
   function whPendingJobsFor(name) {
     const nm = String(name || '').trim(); if (!nm) return [];
     const cutoff = new Date(Date.now() - 45 * 864e5).toISOString().slice(0, 10);
-    return store.get('bs_jobs', []).filter(j => String(j.jName || '').trim() === nm && String(j.date || '') >= cutoff && (j.items || []).some(i => (i.name || '').trim()))
+    return store.get('bs_jobs', []).filter(j => String(j.jName || '').trim() === nm && String(j.date || '') >= cutoff && ((j.items || []).some(i => (i.name || '').trim()) || (j.wholesale && /^JBS/i.test(String(j.no || '')))))
       .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
   }
   function sumLine(w) {
@@ -7067,18 +7067,19 @@ function bahtText(value) {
     g.open.forEach(w => {
       const rows = whCardsHTML(w, g);
       h += '<div class="wd-bill flat" data-doc="' + esc(w.id) + '">' + (rows || '<p class="hint">ยังไม่มีรายการ</p>') +
-        '<details class="wd-bd"><summary>บิลต้นทาง ' + esc(w.no || '') + ' · ' + esc(sumLine(w)) + '</summary><div class="wd-sum"><span>' + esc(thDate(w.date)) + (w.chargeRef ? ' · อ้างอิงเก็บเงิน ' + esc(w.chargeRef) : '') + '</span></div>' +
+        '<details class="wd-bd"><summary>รายการที่ยังไม่จ่าย (ยังไม่ออกบิล WS) · ' + esc(sumLine(w)) + '</summary><div class="wd-sum"><span>' + esc(thDate(w.date)) + (w.chargeRef ? ' · อ้างอิงเก็บเงิน ' + esc(w.chargeRef) : '') + '</span></div>' +
         '<div class="wd-btns"><button class="btn small" type="button" data-act="addship">＋ ค่าส่ง</button><button class="btn small" type="button" data-act="open">แก้ไขเต็ม</button><button class="btn small del" type="button" data-act="del">ลบ</button></div></details></div>';
     });
     if (g.open.some(w => (w.items || []).some(i => String(i.name || '').trim()))) h += '<div class="wd-payrow"><span>ยังไม่จ่าย = ยังไม่รวมเป็น WS · ติ๊กใบงานที่ลูกค้าจ่ายแล้ว แล้วกดปุ่ม ระบบสรุปเป็น WS ให้</span><button class="btn small good" type="button" data-act="paysel">จ่ายแล้ว ✓ (สรุป WS)</button></div>';
     const pj = whPendingJobsFor(g.name);
-    h += '<div class="wd-h" style="margin-top:12px">งานของร้านนี้ที่คีย์ไว้ <small>เพิ่มเข้าบิลได้แม้ยังไม่มีราคา</small></div>' + (pj.length ? (() => { const cards = pj.map(j => {
+    h += '<div class="wd-h" style="margin-top:12px">งานของร้านนี้ที่คีย์ไว้ <small>เพิ่มเข้าบิลได้แม้ยังไม่มีราคา</small></div>' + (pj.length ? (() => { const hasN = j => (j.items || []).some(i => (i.name || '').trim()); const cards = pj.map(j => {
+      if (!hasN(j)) return '<div class="wd-j"><div class="wd-jm"><b>' + esc(j.no || 'ใบงาน') + '</b><small>' + esc(thDate(j.date)) + ' · ยังไม่มีรายการสินค้า — ใส่รายการในใบงานแล้วจะเข้าบิลให้เอง</small></div></div>';
       const rs = jobPendingWhItems(j), named = (j.items || []).filter(i => (i.name || '').trim()), refs = Object.keys(j.whAdded || {}).map(k => j.whAdded[k] && j.whAdded[k].doc).filter(Boolean);
       const where0 = refs.length ? refs[refs.length - 1] : '', wbill = store.get('bs_wholesale', []).find(x => x.id === where0 || x.no === where0 || x.ref === where0), where = wbill ? (wbill.no || wbill.ref || '') : (/^w\d{8,}$/.test(String(where0)) ? '' : where0);
       const amt = num(j.slipAmount) > 0 ? ' · ยอด ' + money(num(j.slipAmount)) + ' บาท' : '';
       return '<div class="wd-j"><div class="wd-jm"><b>' + esc(j.no || 'ใบงาน') + '</b><small>' + esc(thDate(j.date)) + ' · ' + (rs.length ? rs : named.map(i => ({i}))).map(r => esc(String(r.i.name).trim()) + ' ×' + esc(r.i.qty || 1)).join(', ') + esc(amt) + '</small>' + (rs.length ? (j.owedPaid ? '<small class="wd-in">✓ จ่ายแล้ว</small>' : '') : '<small class="wd-in">✓ อยู่ในบิล ' + esc(where) + ' แล้ว</small>') + '</div>' +
         '<div class="wd-jbs">' + (rs.length ? '<button class="btn small good" type="button" data-act="addjob" data-jid="' + esc(j.id) + '">＋ เพิ่มเข้าบิล</button>' : '<button class="btn small" type="button" data-act="addjob" data-again="1" data-jid="' + esc(j.id) + '">เพิ่มอีกครั้ง</button>') + (rs.length ? '<button class="btn small' + (j.owedPaid ? '' : ' good') + '" type="button" data-act="jobowed" data-jid="' + esc(j.id) + '">' + (j.owedPaid ? 'ยกเลิกจ่าย' : 'จ่ายแล้ว ✓') + '</button>' : '') + '</div></div>';
-    }); const fresh = pj.map((j, i) => jobPendingWhItems(j).length ? cards[i] : '').join(''), inb = pj.map((j, i) => jobPendingWhItems(j).length ? '' : cards[i]).join(''); return (fresh || '<p class="hint" style="margin:6px 0 0">ไม่มีงานที่ยังไม่เข้าบิล</p>') + (inb ? '<details class="wd-inb"><summary>งานที่เข้าบิลแล้ว (' + pj.filter(j => !jobPendingWhItems(j).length).length + ')</summary>' + inb + '</details>' : ''); })() : '<p class="hint" style="margin:6px 0 0">ยังไม่มีงานของร้านนี้ (ย้อนหลัง 45 วัน)</p>');
+    }); const fresh = pj.map((j, i) => (jobPendingWhItems(j).length || !hasN(j)) ? cards[i] : '').join(''), inb = pj.map((j, i) => (jobPendingWhItems(j).length || !hasN(j)) ? '' : cards[i]).join(''); return (fresh || '<p class="hint" style="margin:6px 0 0">ไม่มีงานที่ยังไม่เข้าบิล</p>') + (inb ? '<details class="wd-inb"><summary>งานที่เข้าบิลแล้ว (' + pj.filter(j => !jobPendingWhItems(j).length).length + ')</summary>' + inb + '</details>' : ''); })() : '<p class="hint" style="margin:6px 0 0">ยังไม่มีงานของร้านนี้ (ย้อนหลัง 45 วัน)</p>');
     h += '<div class="wd-h" style="margin-top:14px">ประวัติที่จ่ายแล้ว <small>' + g.paid.length + ' บิล' + (g.paid.length ? ' · รวม ' + money(round2(g.paid.reduce((a, w) => a + wholesaleCalc(w).total, 0))) + ' บาท' : '') + '</small></div>';
     h += g.paid.length ? g.paid.map(w => '<details class="wd-ph"><summary><span><b>' + esc(w.no || 'บิล') + '</b> <span class="wd-ok">จ่ายแล้ว</span> <small>' + esc(thDate(w.paidAt ? new Date(w.paidAt).toISOString().slice(0, 10) : w.date)) + '</small></span><em>' + money(wholesaleCalc(w).total) + ' บาท</em></summary><div class="wd-bill flat" data-doc="' + esc(w.id) + '">' + whCardsHTML(w, g) + '<div class="wd-sum"><span>' + esc(sumLine(w)) + '</span></div><div class="wd-btns"><button class="btn small" type="button" data-act="open">เปิด/พิมพ์</button><button class="btn small" type="button" data-act="togglepaid">ยกเลิกจ่าย</button></div></div></details>').join('') : '<p class="hint" style="margin:6px 0 0">ยังไม่มีประวัติ</p>';
     const others = whCustomers().map(x => x.name).filter(x => x !== g.name).sort((a, b) => a.localeCompare(b, 'th'));
@@ -7094,7 +7095,7 @@ function bahtText(value) {
   function wholesaleOpenDocFor(name, create) {
     const nm = String(name || '').trim(), wl = store.get('bs_wholesale', []);
     let doc = wl.filter(w => !w.paid && String(w.buyerName || '').trim() === nm).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0];
-    if (!doc && create) { doc = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: false, no: whNextNo(todayISO()), ref: '', date: todayISO(), buyerName: nm, items: [], discount: 0, note: ''}; wl.push(doc); store.set('bs_wholesale', wl); cloudSave('wholesale', doc); }
+    if (!doc && create) { doc = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: false, no: '', ref: '', date: todayISO(), buyerName: nm, items: [], discount: 0, note: ''}; wl.push(doc); store.set('bs_wholesale', wl); cloudSave('wholesale', doc); }
     return doc || null;
   }
   function addJobToWholesaleDoc(jobId, docId) {
