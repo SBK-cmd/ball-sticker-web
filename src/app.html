@@ -10734,7 +10734,7 @@ function bahtText(value) {
   }
   function jobDetailHTML(j) {
     const its = (j.items || []).filter(i => (i.name || '').trim());
-    const ed = sect => '<button class="btn small jd-ed" data-act="jdedit" data-sect="' + sect + '" type="button">✏️ แก้ไข</button>';
+    const ed = sect => !canKey ? '' : '<button class="btn small jd-ed" data-act="jdedit" data-sect="' + sect + '" type="button">✏️ แก้ไข</button>';
     const editing = sect => !!jdEdit && jdEdit.id === j.id && jdEdit.sect === sect;
     const fld = (lab, f, v, ta) => '<label class="jd-f"><small>' + lab + '</small>' + (ta ? '<textarea class="txt" data-f="' + f + '" rows="3">' + esc(v || '') + '</textarea>' : '<input class="txt" type="text" data-f="' + f + '" value="' + esc(v || '') + '" autocomplete="off">') + '</label>';
     const edBtns = '<div class="jd-edbtn"><button class="btn small good" data-act="jdsave" type="button">💾 บันทึก</button> <button class="btn small" data-act="jdcancel" type="button">ยกเลิก</button></div>';
@@ -10889,6 +10889,7 @@ function bahtText(value) {
       })() +
       jobCardWork(j) + jobCardDetail(j) +
       (chips ? '<div class="jc-chips">' + chips + '</div>' : '') +
+      (!canKey ? '<div class="jc-act"><button class="jc-b" data-act="view" type="button" aria-label="เปิดดูที่อยู่/ข้อมูลลูกค้า"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span>เปิดดู</span></button></div>' : '') +
       (canKey ? '<div class="jc-act">' +
       '<button class="jc-prio p' + (j.prio || 0) + '" data-act="prio" data-id="' + esc(j.id) + '" type="button" aria-label="ความเร่งด่วน: ' + esc(PRIO_LABEL[j.prio || 0]) + ' (แตะเพื่อเปลี่ยน)">' + chiliSvg(j.prio || 0) + (j.prio ? '<span class="jc-prio-t">' + PRIO_SHORT[j.prio] + '</span>' : '') + '</button>' +
       '<button class="jc-b" data-act="view" type="button" aria-label="เปิดดู"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span>เปิดดู</span></button>' +
@@ -13621,7 +13622,7 @@ function bahtText(value) {
     const id = btn.closest('li').dataset.id;
     if (btn.dataset.act === 'closejd') { jobOpenIds[id] = false; jdEdit = null; renderJobHistory(); return; }
     if (btn.dataset.act === 'view') { jobOpenIds[id] = !jobOpenIds[id]; jdEdit = null; renderJobHistory(); return; }
-    if (btn.dataset.act === 'jdedit') { jdEdit = {id, sect: btn.dataset.sect}; renderJobHistory(); return; }
+    if (btn.dataset.act === 'jdedit') { if (!canKey) return; jdEdit = {id, sect: btn.dataset.sect}; renderJobHistory(); return; }
     if (btn.dataset.act === 'jdcancel') { jdEdit = null; renderJobHistory(); return; }
     if (btn.dataset.act === 'jdsave') { saveJdEdit(id, btn.closest('li')); return; }
     const list = store.get('bs_jobs', []);
