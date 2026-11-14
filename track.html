@@ -68,9 +68,9 @@ details.jc>.jb{padding:2px 16px 16px;border-top:1px solid var(--line)}
 .pms{background:#fff;color:#111;width:min(100%,460px);max-height:calc(100vh - 40px);overflow:auto;border-radius:18px;padding:16px;margin-top:6px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
 .pmt{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:1.1rem}.pmt button{border:0;background:#f3f4f6;border-radius:50%;width:34px;height:34px;font-size:1rem;cursor:pointer}
 .pmd{border:1px solid #e5e7eb;border-radius:12px;padding:8px 10px;margin:6px 0}.pmh{display:flex;align-items:center;gap:8px}.pmh .pmn{flex:1}.pmph{width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb}
-.pmd ul{list-style:none;margin:6px 0 0;padding:0;font-size:.9rem;color:#4b5563}.pmd li{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
+.pmd ul{list-style:none;margin:6px 0 0;padding:0;font-size:.9rem;color:#4b5563}.pmd li{display:flex;justify-content:space-between;gap:10px;padding:2px 0}.pmj{display:block;font-style:normal;font-size:.78rem;color:#6b7280;letter-spacing:.02em}
 .pmsum{display:flex;justify-content:space-between;align-items:center;margin:12px 0 4px;font-size:1.05rem}.pmsum b{font-size:1.5rem}
-.pmq{text-align:center}.pmq canvas{width:240px;max-width:100%;height:auto;border:1px solid #e5e7eb;border-radius:10px}
+.pmsel{margin:12px 0 4px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;background:#f9fafb}.pmsel>b{display:block;font-size:.9rem;margin-bottom:6px}.pmsel label{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:.95rem;border-top:1px solid #eef0f3}.pmsel label:first-of-type{border-top:0}.pmsel input{width:22px;height:22px;accent-color:#111827;flex:none}.pmsel label span{flex:1}.pmsel em{font-style:normal;font-weight:700}#pmPart{display:block;margin:8px 0 4px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 10px;line-height:1.45}#pmPart[hidden]{display:none}.pmq{text-align:center}.pmq canvas{width:240px;max-width:100%;height:auto;border:1px solid #e5e7eb;border-radius:10px}
 .pmq a.sv{display:inline-block;margin-top:8px;padding:8px 14px;border-radius:10px;background:#111827;color:#fff;text-decoration:none;font-weight:600}
 .pms small{display:block;color:#6b7280;margin-top:8px;line-height:1.5;text-align:center}
 
@@ -228,30 +228,84 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
   function money(n) { return Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
   // หน้าต่างบิลค้างชำระ: รายการ + ยอดรวม + QR พร้อมเพย์ (วาดจาก payload ที่ร้านสร้าง) · จ่ายแล้ว/ไม่มียอดค้าง = ไม่มีปุ่ม ไม่มีหน้าต่าง
   var payM = null;
-  function openPay(on) { if (payM) payM.classList.toggle('show', !!on); document.body.style.overflow = on ? 'hidden' : ''; }
+  var payRec = null;   // บันทึกว่าลูกค้าเปิดจ่าย/เลือกงานไหน (ให้แอปร้านจับคู่เงินเข้า) — ตั้งโดย setPayModal
+  function openPay(on) { if (payM) payM.classList.toggle('show', !!on); document.body.style.overflow = on ? 'hidden' : ''; if (on && payRec) payRec(); }
+  // ---- เลือกงานที่จะจ่าย: สร้าง payload พร้อมเพย์ใหม่จาก payload เดิม (เปลี่ยนเฉพาะยอด tag 54 แล้วคำนวณ CRC ใหม่) ----
+  function crc16(s) { var c = 0xFFFF, i, b; for (i = 0; i < s.length; i++) { c ^= s.charCodeAt(i) << 8; for (b = 0; b < 8; b++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; } return ('000' + c.toString(16).toUpperCase()).slice(-4); }
+  function tlvParse(s) { var out = [], i = 0, id, len; while (i + 4 <= s.length) { id = s.substr(i, 2); len = parseInt(s.substr(i + 2, 2), 10); if (isNaN(len) || i + 4 + len > s.length) return null; out.push([id, s.substr(i + 4, len)]); i += 4 + len; } return i === s.length ? out : null; }
+  function payloadWithAmount(base, amt) {
+    var tags = tlvParse(String(base || '')); if (!tags) return '';
+    var body = tags.filter(function (x) { return x[0] !== '63' && x[0] !== '54'; }), a = amt.toFixed(2), at = body.findIndex(function (x) { return x[0] === '58'; });
+    if (at < 0) at = body.length; body.splice(at, 0, ['54', a]);
+    var s = body.map(function (x) { return x[0] + ('0' + x[1].length).slice(-2) + x[1]; }).join('') + '6304';
+    return s + crc16(s);
+  }
+  // กลุ่มงานในบิลค้าง: ใช้ได้เมื่อทุกบรรทัดมีราคา ผลรวมบรรทัด = ยอดรวม ไม่มีมัดจำ และสร้าง payload ยอดเดิมกลับได้เหมือนเดิมเป๊ะ (กันผิดพลาด)
+  function payGroups(p) {
+    if (!p || +p.dep > 0) return null;
+    var map = {}, order = [], cents = 0, ok = true;
+    (p.docs || []).forEach(function (d) { (d.items || []).forEach(function (i) { var c = Math.round((+i.q || 0) * (+i.p || 0) * 100); if (!(c > 0)) { ok = false; return; } var k = String(i.j || ''); if (!(k in map)) { map[k] = 0; order.push(k); } map[k] += c; cents += c; }); });
+    if (!ok || order.filter(function (k) { return k; }).length < 2) return null;
+    if (Math.abs(cents - Math.round(+p.total * 100)) > 1) return null;
+    if (payloadWithAmount(p.payload, +p.total) !== p.payload) return null;
+    return order.map(function (k) { return {k: k, c: map[k]}; });
+  }
   function setPayModal(p) {
     if (!p) { if (payM) { payM.remove(); payM = null; } document.body.style.overflow = ''; return; }
     var was = payM && payM.classList.contains('show');
     if (!payM) { payM = document.createElement('div'); payM.className = 'pm'; document.body.appendChild(payM); payM.addEventListener('click', function (e) { if (e.target === payM || e.target.closest('[data-pmx]')) openPay(false); }); }
     var docs = (p.docs || []).map(function (d) {
-      var its = (d.items || []).map(function (i) { var line = (+i.q || 0) * (+i.p || 0); return '<li><span>' + esc(i.n || '') + (i.q ? ' × ' + esc(i.q) : '') + '</span><span>' + (line > 0 ? money(line) : '') + '</span></li>'; }).join('');
+      var its = (d.items || []).map(function (i) { var line = (+i.q || 0) * (+i.p || 0); return '<li><span>' + esc(i.n || '') + (i.q ? ' × ' + esc(i.q) : '') + (i.j ? '<em class="pmj">' + esc(i.j) + '</em>' : '') + '</span><span>' + (line > 0 ? money(line) : '') + '</span></li>'; }).join('');
       var ph = (typeof d.photo === 'string' && /^https:\/\//.test(d.photo)) ? '<img class="pmph" src="' + esc(d.photo) + '" alt="">' : '';
       return '<div class="pmd"><div class="pmh">' + ph + '<b class="pmn">' + esc(d.no || 'ใบ') + '</b><b>' + money(d.amount) + '</b></div>' + (its ? '<ul>' + its + '</ul>' : '') + '</div>';
     }).join('');
+    var grp = payGroups(p);
     payM.innerHTML = '<div class="pms"><div class="pmt"><b>รายการค้างชำระ</b><button type="button" data-pmx="1" aria-label="ปิด">✕</button></div>' + docs +
       (+p.dep > 0 ? '<div class="pmsum"><span>หักมัดจำที่ชำระแล้ว</span><b>− ' + money(p.dep) + '</b></div>' : '') +
-      '<div class="pmsum"><span>ยอดที่ยังไม่ได้จ่าย</span><b>' + money(p.total) + ' บาท</b></div>' +
+      (grp ? '<div class="pmsel"><b>เลือกงานที่จะจ่ายตอนนี้</b>' + grp.map(function (g, n) { return '<label><input type="checkbox" data-pg="' + n + '" checked><span>' + (g.k ? esc(g.k) : 'รายการอื่น (ไม่ระบุงาน)') + '</span><em>' + money(g.c / 100) + '</em></label>'; }).join('') + '</div>' : '') +
+      '<div class="pmsum"><span id="pmLbl">ยอดที่ยังไม่ได้จ่าย</span><b><span id="pmTot">' + money(p.total) + '</span> บาท</b></div>' +
       '<div class="pmq"><canvas id="payQr" width="480" height="480" aria-label="QR พร้อมเพย์"></canvas><br><a class="sv" id="payQrSave" download="QR-ชำระเงิน.png" href="#">บันทึกรูป QR</a></div>' +
-      '<small>สแกนด้วยแอปธนาคาร · ชื่อบัญชี ' + esc(p.payee || '') + '<br>โอนแล้วร้านจะตรวจยอดให้อัตโนมัติ รายการที่จ่ายแล้วจะหายไปจากหน้านี้ (หากไม่หาย แจ้งร้านทาง LINE @bk25)</small></div>';
-    try {
-      var cv = document.getElementById('payQr');
-      if (cv && window.qrEncode) {
-        var m = window.qrEncode(p.payload), n = m.length, q = 4, sz = cv.width, cell = Math.floor(sz / (n + q * 2)), off = Math.floor((sz - cell * n) / 2), g = cv.getContext('2d');
-        g.fillStyle = '#fff'; g.fillRect(0, 0, sz, sz); g.fillStyle = '#000';
-        for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (m[r][c]) g.fillRect(off + c * cell, off + r * cell, cell, cell);
-        var sv = document.getElementById('payQrSave'); if (sv) sv.href = cv.toDataURL('image/png');
-      }
-    } catch (e) { payM.querySelector('.pms').insertAdjacentHTML('beforeend', '<small>แสดง QR ไม่ได้ กรุณาแจ้งร้านทาง LINE @bk25</small>'); }
+      '<small id="pmPart" hidden></small><small>สแกนด้วยแอปธนาคาร · ชื่อบัญชี ' + esc(p.payee || '') + '<br>โอนแล้วร้านจะตรวจยอดให้อัตโนมัติ รายการที่จ่ายแล้วจะหายไปจากหน้านี้ (หากไม่หาย แจ้งร้านทาง LINE @bk25)</small></div>';
+    function drawQr(payload) {
+      try {
+        var cv = document.getElementById('payQr');
+        if (cv && window.qrEncode) {
+          var m = window.qrEncode(payload), n = m.length, q = 4, sz = cv.width, cell = Math.floor(sz / (n + q * 2)), off = Math.floor((sz - cell * n) / 2), g = cv.getContext('2d');
+          g.fillStyle = '#fff'; g.fillRect(0, 0, sz, sz); g.fillStyle = '#000';
+          for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (m[r][c]) g.fillRect(off + c * cell, off + r * cell, cell, cell);
+          var sv = document.getElementById('payQrSave'); if (sv) sv.href = cv.toDataURL('image/png');
+        }
+      } catch (e) { payM.querySelector('.pms').insertAdjacentHTML('beforeend', '<small>แสดง QR ไม่ได้ กรุณาแจ้งร้านทาง LINE @bk25</small>'); }
+    }
+    drawQr(p.payload);
+    var recT = 0, curSel = null, curAmt = +p.total;   // curSel = รายชื่องานที่เลือก (null = ทั้งหมด)
+    payRec = function () {
+      clearTimeout(recT);
+      recT = setTimeout(function () {
+        try {
+          if (typeof db === 'undefined' || !t || !(curAmt > 0)) return;
+          db.collection('payIntents').doc(t).set({t: t, amount: Math.round(curAmt * 100) / 100, keys: curSel, at: Date.now()}).catch(function () {});
+        } catch (e) {}
+      }, 800);
+    };
+    if (grp) {
+      var boxes = [].slice.call(payM.querySelectorAll('[data-pg]')), tot = document.getElementById('pmTot'), lbl = document.getElementById('pmLbl'), part = document.getElementById('pmPart'), cvEl = payM.querySelector('.pmq');
+      var upd = function () {
+        var sel = boxes.filter(function (b) { return b.checked; }), c = 0;
+        sel.forEach(function (b) { c += grp[+b.getAttribute('data-pg')].c; });
+        curSel = sel.length === boxes.length ? null : sel.map(function (b) { return grp[+b.getAttribute('data-pg')].k; }); curAmt = sel.length === boxes.length ? +p.total : c / 100;
+        if (sel.length) payRec();
+        if (!sel.length) { tot.textContent = '0.00'; lbl.textContent = 'ยังไม่ได้เลือกงาน'; cvEl.style.opacity = '.25'; part.hidden = true; return; }
+        cvEl.style.opacity = '';
+        if (sel.length === boxes.length) { tot.textContent = money(p.total); lbl.textContent = 'ยอดที่ยังไม่ได้จ่าย'; part.hidden = true; drawQr(p.payload); return; }
+        var amt = c / 100, pl = payloadWithAmount(p.payload, amt);
+        if (!pl) { return; }
+        tot.textContent = money(amt); lbl.textContent = 'ยอดที่เลือกจ่าย';
+        part.hidden = false; part.textContent = 'จ่ายเฉพาะ ' + sel.map(function (b) { var k = grp[+b.getAttribute('data-pg')].k; return k || 'รายการอื่น'; }).join(', ') + ' · ร้านจะตรวจยอดด้วยมือ กรุณาส่งสลิปให้ร้านทาง LINE @bk25 เพื่อระบุงานที่จ่าย';
+        drawQr(pl);
+      };
+      boxes.forEach(function (b) { b.addEventListener('change', upd); });
+    }
     if (was) openPay(true);
   }
   var SHORT = ['รับงาน', 'ทำไฟล์', 'ผลิต', 'จัดส่ง', 'รับแล้ว'];
