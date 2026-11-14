@@ -548,13 +548,6 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
       cards.push(jobCard({no: o.no, date: o.date, status: o.status, delivered: o.delivered, items: o.items || [], amt: +o.amt || 0, due: o.due, thumb: o.thumb, boxes: bx, photos: https(o.photos), refs: https(o.refPhotos), payst: o.payst || ''}, false));
     });
     cards.sort(function (a, b2) { return (b2.date > a.date ? 1 : b2.date < a.date ? -1 : 0) || (b2.no > a.no ? 1 : b2.no < a.no ? -1 : 0); });
-    if (!fltInit) {   // เปิดมาครั้งแรก: เลือก "กำลังทำ" + "ยังไม่ได้ชำระ" ให้เลย (ถ้าไม่มีใบที่ตรง ก็ไม่กรอง)
-      fltInit = true;
-      var isD = function (c) { return c.k < 3; }, isU = function (c) { return c.payst === 'unpaid'; };
-      if (cards.some(function (c) { return isD(c) && isU(c); })) flt = {g: 'doing', p: 'unpaid'};
-      else if (cards.some(isU)) flt = {g: '', p: 'unpaid'};
-      else if (cards.some(isD)) flt = {g: 'doing', p: ''};
-    }
     var clogo = /^https:\/\//.test(j.clogo || '') ? '<img class="clogo" src="' + esc(j.clogo) + '" alt="โลโก้ลูกค้า">' : '';
     applyTheme(j.ctheme);
     var hi = '<div class="hi">' + '<div class="hn">' + clogo + (j.cname ? '<div>คุณ <b>' + esc(j.cname) + '</b></div>' : '<div>งานของคุณ</div>') + '</div>' + '<span>' + cards.length + ' ใบงาน</span></div>';
