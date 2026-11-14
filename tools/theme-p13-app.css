@@ -435,3 +435,38 @@ html[data-theme="dark"] body header.top .tabs button.active,html[data-theme="dar
 html[data-theme="dark"] body #payHistNav,html[data-theme="dark"] body .wk-top{background:var(--a-card)!important;color:var(--a-ink)!important;border-color:var(--a-line)!important}
 html[data-theme="dark"] body hr,html[data-theme="dark"] body .shop-foot,html[data-theme="dark"] body footer{border-color:var(--a-line)!important}
 html[data-theme="dark"] body footer *,html[data-theme="dark"] body .shop-foot *{color:var(--a-ink2)}
+
+/* ---------- รอบ 14: เพิ่มน้ำหนัก/ความต่าง ไม่ให้จืดกลืนกัน (พรีวิว) ---------- */
+:root{--a-bg:#E4E7EE;--a-line:#CBD0DC;--a-mute:#4B5470}
+html:root body #jobHistory ul>li.jc{--st:#8A90A0;border:1px solid #D3D8E3!important;box-shadow:inset 6px 0 0 var(--st),0 2px 8px rgba(20,30,70,.10)!important;padding-left:26px!important}
+html:root body #jobHistory li.jc.st-pending{--st:#F5B301}
+html:root body #jobHistory li.jc.st-filed{--st:#3B6FE0}
+html:root body #jobHistory li.jc.st-printed{--st:#8B5CF6}
+html:root body #jobHistory li.jc.st-shipped{--st:#1E9A55}
+html:root body #jobHistory li.jc.st-pickup{--st:#F08A24}
+html:root body #jobHistory li.jc .jc-cust{font-weight:700!important;font-size:17px!important}
+html:root body #jobHistory li.jc .jc-no{font-weight:600!important;color:var(--a-mute)!important;letter-spacing:.02em}
+html:root body #jobHistory li.jc .jc-prog::before{background:linear-gradient(90deg,var(--st) var(--w,10px),#D6DAE5 var(--w,10px))!important;height:10px}
+html:root body #jobHistory li.jc .jc-prog i.on{background:var(--st)!important;border-color:var(--st)!important}
+html:root body #jobHistory li.jc .jc-prog i:not(.on){border-color:#9AA2B8!important}
+html:root body #jobHistory li.jc .jc-prog::after{color:var(--a-ink2)!important;font-weight:500}
+html:root body #jobHistory li.jc .jw-i{background:#F3F5FA;border-radius:12px;padding:10px 40px 10px 12px!important;font-weight:600;color:var(--a-ink)}
+html:root body #jobHistory li.jc.xp .jw-i{padding-right:12px!important}
+html:root body #jobHistory li.jc .jc-chev{filter:none;opacity:.9}
+html:root body #jobHistory li.jc select.job-status-select{font-weight:700!important;border-width:1.5px!important}
+html:root body .jf-chips button{border:1.5px solid #B8BFD0!important;color:var(--a-ink)!important;font-weight:600!important}
+html:root body .jf-chips button.on{background:var(--a-yel)!important;border-color:var(--a-yel)!important;color:#1A1A1A!important}
+html:root body .jf-chips button.on *{color:#1A1A1A!important}
+html:root body #jobHistSearch{border:1.5px solid #B8BFD0!important;background:#fff!important}
+html:root body .tdy{box-shadow:0 4px 14px rgba(20,30,70,.18)!important}
+html:root body .user-chip-btn{border:1.5px solid #B8BFD0!important}
+html[data-theme="dark"]:root{--a-bg:#0F1320;--a-line:#2B3350;--a-mute:#9BA3BC}
+html[data-theme="dark"] body #jobHistory ul>li.jc{border-color:#2B3350!important;box-shadow:inset 6px 0 0 var(--st),0 2px 10px rgba(0,0,0,.4)!important}
+html[data-theme="dark"] body #jobHistory li.jc .jw-i{background:#232B45;color:var(--a-ink)}
+html[data-theme="dark"] body #jobHistory li.jc .jc-prog::before{background:linear-gradient(90deg,var(--st) var(--w,10px),#2B3350 var(--w,10px))!important}
+html[data-theme="dark"] body #jobHistSearch{background:var(--a-card)!important;border-color:#3A4262!important}
+html[data-theme="dark"] body .jf-chips button{border-color:#3A4262!important}
+html:root body #jobHistory li.jc .jw-i,html:root body #jobHistory li.jc .jw-i::marker{list-style:none!important}
+html:root body #jobHistory li.jc .jw-i{display:block!important;overflow:hidden;text-indent:0!important}
+html[data-theme="light"]:root,html:not([data-theme="dark"]):root{--a-bg:#DFE3EC}
+html:not([data-theme="dark"]) body{background:#DFE3EC!important}
