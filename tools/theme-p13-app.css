@@ -280,3 +280,22 @@ html:root body .tax-sheet-item .tsi svg{width:19px;height:19px}
 html:root body .tax-sheet-item span:not(.tsi){min-width:0}
 html:root body .ts-foot{position:static;margin:0;padding:0;background:none}
 html:root body .ts-foot button{min-height:56px;border-radius:22px;font-size:14px}
+
+/* ===== รอบ 3: ใช้มือเดียว — แท็บกลุ่มอยู่ใกล้นิ้วโป้ง เนื้อหาต่ำเตี้ย ไม่ต้องเลื่อน ===== */
+html:root body .tax-sheet{max-height:none;overflow:visible;gap:10px;padding-top:26px!important}
+html:root body .ts-title{display:none}
+html:root body .ts-cols{display:none}
+html:root body .ts-body{min-height:290px}
+html:root body .tax-sheet-sec{display:none!important;padding:8px 6px;box-shadow:0 1px 2px rgba(14,30,91,.06)}
+html:root body .tax-sheet-sec.on{display:block!important}
+html:root body .tax-sheet-h{display:none!important}
+html:root body .ts-grid{display:grid!important;grid-template-columns:repeat(3,1fr);gap:2px}
+html:root body .tax-sheet-item{flex-direction:column!important;justify-content:flex-start!important;align-items:center;text-align:center;gap:6px;min-height:92px!important;padding:10px 4px!important;font-size:13px!important}
+html:root body .tax-sheet-item .tsi{width:52px;height:52px}
+html:root body .tax-sheet-item .tsi svg{width:24px;height:24px}
+html:root body .ts-tabs{display:flex;gap:6px;padding:4px;border-radius:999px;background:#E3E5EA}
+html:root body .ts-tabs button{flex:1;min-height:44px;padding:0 6px;border:0;border-radius:999px;background:transparent;font:600 13px 'Noto Sans Thai',sans-serif;color:var(--a-mute);cursor:pointer;white-space:nowrap}
+html:root body .ts-tabs button[hidden]{display:none}
+html:root body .ts-tabs button.on{background:#fff;color:var(--a-ink);box-shadow:0 1px 3px rgba(14,30,91,.15)}
+html:root body .ts-body{min-height:0}
+html:root body .tax-sheet-sec.on{min-height:306px}

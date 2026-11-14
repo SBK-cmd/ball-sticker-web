@@ -27,9 +27,19 @@
       });
       sec.appendChild(g);
     });
-    var secs=sh.querySelectorAll('.tax-sheet-sec'),c1=document.createElement('div'),c2=document.createElement('div'),cw=document.createElement('div');
-    c1.className=c2.className='ts-col';cw.className='ts-cols';
-    if(secs.length>=4){c1.appendChild(secs[0]);c1.appendChild(secs[1]);c1.appendChild(secs[3]);c2.appendChild(secs[2]);cw.appendChild(c1);cw.appendChild(c2);sh.appendChild(cw)}
+    var secs=Array.prototype.slice.call(sh.querySelectorAll('.tax-sheet-sec')),body=document.createElement('div'),tabs=document.createElement('div');
+    body.className='ts-body';tabs.className='ts-tabs';tabs.setAttribute('role','tablist');
+    var names=['งานประจำวัน','ขาย','เงิน & ภาษี','ร้าน'],cur=0;
+    try{cur=+localStorage.getItem('bs_ts_tab')||0}catch(e){}
+    secs.forEach(function(sc,i){body.appendChild(sc);var t=document.createElement('button');t.type='button';t.setAttribute('role','tab');t.textContent=names[i]||('กลุ่ม '+(i+1));t.addEventListener('click',function(){cur=i;try{localStorage.setItem('bs_ts_tab',i)}catch(e){}paint()});tabs.appendChild(t)});
+    function paint(){
+      var tb=tabs.children,first=-1;
+      secs.forEach(function(sc,i){var n=sc.querySelectorAll('.tax-sheet-item:not([hidden])').length;tb[i].hidden=!n;if(n&&first<0)first=i});
+      if(secs[cur]&&tabs.children[cur].hidden)cur=first<0?0:first;
+      secs.forEach(function(sc,i){sc.classList.toggle('on',i===cur);tb[i].classList.toggle('on',i===cur);tb[i].setAttribute('aria-selected',i===cur)});
+    }
+    sh.appendChild(body);sh.appendChild(tabs);paint();
+    new MutationObserver(paint).observe(sh,{attributes:true,attributeFilter:['hidden'],subtree:true});
     var f=document.createElement('div'); f.className='ts-foot';
     f.innerHTML='<button type="button" class="ts-dark" id="tsDark">'+svg('moon')+'<span>โหมดมืด</span><i class="ts-sw"></i></button><button type="button" class="ts-out" id="tsOut">'+svg('out')+'<span>ออกจากระบบ</span></button>';
     sh.appendChild(f);
