@@ -537,3 +537,13 @@ html:root body #wholesaleHistory .wd-payrow .btn,html:root body #wholesaleHistor
 html:root body #wholesaleHistory .wd-j{flex-wrap:wrap}
 html:root body #wholesaleHistory .wd-jbs{flex-direction:row;width:100%;gap:8px}
 html:root body #wholesaleHistory .wd-jbs .btn{flex:1}
+
+html:root body #wholesaleHistory details.wd-ph{margin:0 0 10px;border:1px solid var(--a-line);border-radius:var(--a-r2);background:var(--a-card);overflow:hidden}
+html:root body #wholesaleHistory .wd-ph>summary{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px;cursor:pointer;list-style:none}
+html:root body #wholesaleHistory .wd-ph>summary::-webkit-details-marker{display:none}
+html:root body #wholesaleHistory .wd-ph>summary em{font-style:normal;font-weight:800}
+html:root body #wholesaleHistory .wd-ph .wd-bill{padding:0 12px 12px;border:0}
+html:root body #wholesaleHistory .wd-ph .wd-jc{border-left-color:var(--a-green)!important}
+
+html:root body #wholesaleHistory .wd-inb{margin:6px 0 10px}
+html:root body #wholesaleHistory .wd-inb>summary{font-size:13px;color:var(--a-mute);cursor:pointer;padding:6px 2px}
