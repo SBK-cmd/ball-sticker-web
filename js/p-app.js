@@ -6483,7 +6483,9 @@ function bahtText(value) {
         const cnt = {'': base.filter(j => !isRcv(j)).length, delivered: base.filter(isRcv).length, notrack: base.filter(j => stOf(j) === 'shipped' && !j.trackCode).length};
         ['pending', 'filed', 'printed', 'shipped', 'pickup'].forEach(k => { cnt[k] = base.filter(j => stOf(j) === k && !(k === 'shipped' && isRcv(j))).length; });
         const defs = [['', 'ที่ค้างอยู่'], ['pending', 'รอทำ'], ['filed', 'ทำไฟล์'], ['printed', 'ผลิต'], ['shipped', 'จัดส่ง'], ['pickup', 'รับหน้าร้าน'], ['delivered', 'เสร็จสิ้น'], ['notrack', 'ไม่มีเลขพัสดุ']];
-        const html = defs.map(d => '<button type="button" data-st="' + d[0] + '"' + (d[0] === fSt ? ' class="on" aria-pressed="true"' : ' aria-pressed="false"') + '>' + d[1] + '<em>' + cnt[d[0]] + '</em></button>').join('');
+        const nF = (fPg ? 1 : 0) + (fAc ? 1 : 0), fOpen = !!($('jobFilt') && $('jobFilt').classList.contains('open'));
+        const more = '<button type="button" class="jf-more' + (nF ? ' has' : '') + '" data-more="1" aria-expanded="' + fOpen + '" aria-controls="jobFilt"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>เพจ/บัญชี' + (nF ? '<em>' + nF + '</em>' : '') + '</button>';
+        const html = more + defs.map(d => '<button type="button" data-st="' + d[0] + '"' + (d[0] === fSt ? ' class="on" aria-pressed="true"' : ' aria-pressed="false"') + '>' + d[1] + '<em>' + cnt[d[0]] + '</em></button>').join('');
         if (bar._k !== html) { bar.innerHTML = html; bar._k = html; }
       }
     }
@@ -9718,7 +9720,8 @@ function bahtText(value) {
   $('histSearch').addEventListener('input', renderHistory);
   $('jobHistSearch').addEventListener('input', renderJobHistory);
   ['jobFiltSt', 'jobFiltPg', 'jobFiltAcc'].forEach(i => $(i).addEventListener('change', renderJobHistory));
-  $('jobStChips').addEventListener('click', e => { const b = e.target.closest && e.target.closest('button[data-st]'); if (!b) return; $('jobFiltSt').value = b.dataset.st; renderJobHistory(); });
+  $('jobStChips').addEventListener('click', e => { const m = e.target.closest && e.target.closest('button[data-more]'); if (m) { $('jobFilt').classList.toggle('open'); renderJobHistory(); return; }
+    const b = e.target.closest && e.target.closest('button[data-st]'); if (!b) return; $('jobFiltSt').value = b.dataset.st; renderJobHistory(); });
   if (canBank && $('jobFiltAcc')) {   // เห็นเฉพาะคนที่ดูเรื่องเงินได้ · บัญชีที่ซ่อน (วันทิม) ไม่ขึ้นให้คนที่ไม่ใช่ผู้ดูแล
     $('jobFiltAcc').hidden = false;
     Array.from($('jobFiltAcc').options).forEach(o => { if (HIDDEN_ACCOUNTS.indexOf(o.value) >= 0) o.remove(); });
