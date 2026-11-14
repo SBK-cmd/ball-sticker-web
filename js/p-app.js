@@ -4954,10 +4954,10 @@ function bahtText(value) {
     const g = {};
     const add = (name, d) => { const k = String(name || '').trim() || 'ไม่ระบุชื่อ'; (g[k] = g[k] || {name: k, docs: [], total: 0}).docs.push(d); };
     // เฉพาะงานส่ง (JBS) = ใบราคาส่ง — บิลหน้าร้านไม่รวม
-    if (can('wholesale')) store.get('bs_wholesale', []).filter(w => !w.paid).forEach(w => add(w.buyerName, {k: 'wholesale', id: w.id, no: w.no || w.ref || 'ใบราคาส่ง', date: w.date || '', total: round2(wholesaleCalc(w).total), items: (w.items || []).filter(i => String(i.name || '').trim()).map(i => ({n: String(i.name).trim().slice(0, 80), q: num(i.qty), p: num(i.price)}))}));
+    if (can('wholesale')) store.get('bs_wholesale', []).filter(w => !w.paid).forEach(w => add(w.buyerName, {k: 'wholesale', id: w.id, no: w.no || w.ref || 'ใบราคาส่ง', date: w.date || '', total: round2(wholesaleCalc(w).total), items: (w.items || []).filter(i => String(i.name || '').trim()).map(i => { const o = {n: String(i.name).trim().slice(0, 80), q: num(i.qty), p: num(i.price)}; const jb = String(i.job || '').trim(); if (jb) o.j = jb.slice(0, 24); return o; })}));
     // งาน JBS ที่คีย์จำนวนเงินไว้แล้ว แต่ยังไม่ได้รวมเข้าใบราคาส่ง และยังไม่ผูกกับเงินเข้าจริง = ยอดที่รอเก็บ
     if (can('wholesale')) store.get('bs_jobs', []).filter(j => /^JBS/i.test(String(j.no || '').trim()) && !j.owedPaid && num(j.slipAmount) > 0 && !jobBankIdsOf(j).length && jobPendingWhItems(j).length)
-      .forEach(j => add(j.jName, {k: 'jobs', id: j.id, no: j.no, date: j.date || '', total: round2(num(j.slipAmount)), photo: [].concat(j.donePhotos || [], j.photos || []).find(u => typeof u === 'string' && /^https:\/\//.test(u)) || '', items: (() => { const its = (j.items || []).filter(i => String(i.name || '').trim()).map(i => ({n: (String(i.name).trim() + (String(i.note || '').trim() ? ' (' + String(i.note).trim() + ')' : '')).slice(0, 80), q: num(i.qty), p: 0})); const nt = String(j.note || '').replace(/\s+/g, ' ').trim(); return its.length ? its : (nt ? [{n: nt.slice(0, 80), q: 0, p: 0}] : []); })()}));
+      .forEach(j => add(j.jName, {k: 'jobs', id: j.id, no: j.no, date: j.date || '', total: round2(num(j.slipAmount)), photo: [].concat(j.donePhotos || [], j.photos || []).find(u => typeof u === 'string' && /^https:\/\//.test(u)) || '', items: (() => { const its = (j.items || []).filter(i => String(i.name || '').trim()).map(i => ({n: (String(i.name).trim() + (String(i.note || '').trim() ? ' (' + String(i.note).trim() + ')' : '')).slice(0, 80), q: num(i.qty), p: 0, j: String(j.no || '').slice(0, 24)})); const nt = String(j.note || '').replace(/\s+/g, ' ').trim(); return its.length ? its : (nt ? [{n: nt.slice(0, 80), q: 0, p: 0}] : []); })()}));
     const out = Object.values(g).filter(x => x.docs.some(d => d.total > 0));
     out.forEach(x => { x.docs.sort((a, b) => String(a.date).localeCompare(String(b.date))); x.total = round2(x.docs.reduce((t, d) => t + d.total, 0)); });
     return out.sort((a, b) => b.total - a.total);
@@ -5026,7 +5026,7 @@ function bahtText(value) {
     const grp = gs.find(x => x.name === name);
     if (!grp) return openOwed('');
     ov.innerHTML = '<div class="pick-box"><b>' + esc(grp.name) + '</b>' +
-      grp.docs.map((d, i) => '<label class="owed-doc"><input type="checkbox" data-i="' + i + '" checked><span>' + esc(d.no) + '<small>' + esc(thDate(d.date)) + '</small></span><b>' + money(d.total) + '</b></label>').join('') +
+      grp.docs.map((d, i) => '<label class="owed-doc"><input type="checkbox" data-i="' + i + '" checked><span>' + esc(d.no) + '<small>' + esc(thDate(d.date)) + (() => { const js = [...new Set((d.items || []).map(x => x.j).filter(Boolean))]; return js.length ? ' · ' + esc(js.join(', ')) : ''; })() + '</small></span><b>' + money(d.total) + '</b></label>').join('') +
       '<div class="owed-sum"><span>ยอดรวมที่เลือก</span><span id="owedSel">0.00</span></div>' +
       '<div class="owed-qr" id="owedQr" hidden><img id="owedQrImg" alt="QR พร้อมเพย์ยอดรวม"></div>' +
       '<label class="f"' + (isSuper ? '' : ' hidden') + '><span>เข้าบัญชี</span><select id="owedAcc"><option value="กิติพงษ์">กิติพงษ์ (' + esc(ppMask(shop.promptpay)) + ')</option><option value="วันทิม">วันทิม (กสิกรไทย)</option></select></label>' +
