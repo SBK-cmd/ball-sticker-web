@@ -3732,6 +3732,36 @@ html:root body #jobHistory li.jc .jc-chips{min-height:20px}
 html:root body .jf-filt select{height:44px!important;min-height:44px!important;font-size:14px!important;font-weight:500!important;border:1px solid #CFD3DB!important;border-radius:999px!important;box-shadow:none!important;padding:0 14px!important;background:#fff!important}
 /* แก้: เมนูล่างล้นขอบขวา (กว้างเกินจอ 12px) */
 @media (max-width:560px){html:root body .bnav,html:root body nav.bnav{width:auto!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important;margin:0!important}}
+
+/* ===== เมนู "เพิ่มเติม" แบบแผงล่าง (อ้างอิง: เมนูอื่น) — preview เท่านั้น ===== */
+html:root body .tax-sheet{left:0!important;right:0!important;bottom:0!important;max-height:86vh;overflow-y:auto;display:flex!important;flex-direction:column;gap:12px;
+  padding:22px 16px calc(18px + env(safe-area-inset-bottom,0px))!important;border-radius:28px 28px 0 0!important;background:var(--a-bg)!important;border:0!important;
+  box-shadow:0 -10px 40px rgba(14,30,91,.18)!important}
+html:root body .tax-sheet[hidden]{display:none!important}
+html:root body .tax-sheet::before{content:""!important;position:absolute;top:8px;left:50%;width:44px;height:5px;margin-left:-22px;border-radius:3px;background:#C4C9D4;padding:0!important}
+html:root body .ts-title{font:600 20px/1.3 'Prompt','Noto Sans Thai',sans-serif;color:var(--a-ink);padding:2px 4px 0}
+html:root body .tax-sheet-sec{display:block!important;background:#fff;border-radius:24px;padding:16px 12px 12px}
+html:root body .tax-sheet-h{font:600 13px/1.3 'Prompt','Noto Sans Thai',sans-serif!important;color:var(--a-mute)!important;margin:0 8px 8px!important;letter-spacing:0}
+html:root body .ts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+html:root body .tax-sheet-item{display:flex!important;flex-direction:column;justify-content:flex-start!important;align-items:center;gap:8px;min-height:96px!important;padding:10px 4px!important;
+  background:transparent!important;border:0!important;border-radius:16px;box-shadow:none!important;font:500 13px/1.3 'Noto Sans Thai',sans-serif!important;color:var(--a-ink)}
+html:root body .tax-sheet-item[hidden]{display:none!important}
+html:root body .tax-sheet-item:nth-of-type(odd):last-of-type{grid-column:auto!important}
+html:root body .tax-sheet-item:active{background:#F4F5F7!important}
+html:root body .tax-sheet-item .tsi{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:#FFF3C4;color:#6b4f00}
+html:root body .tax-sheet-item .tsi svg{width:24px;height:24px}
+html:root body .tax-sheet-item.active{background:#FFF8E1!important;font-weight:600}
+html:root body .tax-sheet-item.active .tsi{background:var(--a-yel);color:#1a1c20}
+html:root body .ts-foot{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+html:root body .ts-foot button{display:flex;align-items:center;gap:10px;min-height:60px;padding:0 16px;border:0;border-radius:24px;font:600 15px 'Noto Sans Thai',sans-serif;cursor:pointer}
+html:root body .ts-foot svg{width:22px;height:22px;flex:none}
+html:root body .ts-dark{background:#fff;color:var(--a-ink)}
+html:root body .ts-sw{margin-left:auto;width:40px;height:24px;border-radius:12px;background:#D5D8DF;position:relative;flex:none}
+html:root body .ts-sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s}
+html:root body .ts-dark.on .ts-sw{background:var(--a-navy)}
+html:root body .ts-dark.on .ts-sw::after{left:18px}
+html:root body .ts-out{background:#FBE4E6;color:var(--a-red);justify-content:center}
+html:root body .ts-foot{position:sticky;bottom:calc(-18px - env(safe-area-inset-bottom,0px));margin:0 -16px -4px;padding:10px 16px calc(18px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(238,239,242,0),var(--a-bg) 28%)}
 </style>
 </head>
 <body>
@@ -5710,6 +5740,46 @@ if(document.body)start();else document.addEventListener('DOMContentLoaded',start
   function run(){if(busy)return;busy=true;try{walk(document.body)}finally{busy=false}}
   var tm;new MutationObserver(function(){clearTimeout(tm);tm=setTimeout(run,60)}).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
   if(document.readyState!=='loading')run();else document.addEventListener('DOMContentLoaded',run);
+})();
+/* PREVIEW เท่านั้น: จัดเมนู "เพิ่มเติม" ใหม่ (แผงล่างสไตล์การ์ดกลุ่ม + โหมดมืด/ออกจากระบบ) */
+(function(){
+  var P={
+    track:'<path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/>',
+    cutq:'<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/>',
+    qr:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
+    hist:'<path d="M7 3h10v18l-2.5-1.5L12 21l-2.5-1.5L7 21V3z"/><path d="M10 8h4M10 12h4"/>',
+    office:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+    moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+    out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/>'
+  };
+  function svg(k){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+P[k]+'</svg>'}
+  var EMO=/^[✀-➿\u{1F300}-\u{1FAFF}☀-⛿\s]+/u;
+  function build(){
+    var sh=document.getElementById('taxSheet'); if(!sh||sh.dataset.p13)return; sh.dataset.p13='1';
+    var t=document.createElement('div'); t.className='ts-title'; t.textContent='เมนูเพิ่มเติม'; sh.insertBefore(t,sh.firstChild);
+    var map={wkBtn2:'qr',payHistBtn:'hist',sheetOffice:'office',sheetCutq:'cutq'};
+    sh.querySelectorAll('.tax-sheet-sec').forEach(function(sec){
+      var g=document.createElement('div'); g.className='ts-grid';
+      Array.prototype.slice.call(sec.querySelectorAll('.tax-sheet-item')).forEach(function(b){
+        var tn=b.childNodes; for(var i=0;i<tn.length;i++){ if(tn[i].nodeType===3){ tn[i].nodeValue=tn[i].nodeValue.replace(EMO,''); break; } }
+        if(!b.querySelector('.tsi')){
+          var k=map[b.id]||(b.dataset.tab==='track'?'track':''); 
+          if(k){var w=document.createElement('span');w.className='tsi';w.innerHTML=svg(k);b.insertBefore(w,b.firstChild)}
+        }
+        g.appendChild(b);
+      });
+      sec.appendChild(g);
+    });
+    var f=document.createElement('div'); f.className='ts-foot';
+    f.innerHTML='<button type="button" class="ts-dark" id="tsDark">'+svg('moon')+'<span>โหมดมืด</span><i class="ts-sw"></i></button><button type="button" class="ts-out" id="tsOut">'+svg('out')+'<span>ออกจากระบบ</span></button>';
+    sh.appendChild(f);
+    function sync(){var a=document.documentElement.getAttribute('data-theme');var d=a==='dark'||(a!=='light'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);f.querySelector('.ts-dark').classList.toggle('on',d)}
+    f.querySelector('#tsDark').addEventListener('click',function(){var b=document.getElementById('themeToggleBtn');if(b)b.click();sync()});
+    f.querySelector('#tsOut').addEventListener('click',function(){var b=document.getElementById('menuLogout');if(b)b.click()});
+    sync(); new MutationObserver(sync).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',build);else build();
+  setTimeout(build,800);
 })();
 </script>
 </body>
