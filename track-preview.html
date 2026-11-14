@@ -459,7 +459,7 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     if (pk) b += pickupBlock(); else if (o.boxes && o.boxes.length) b += '<div class="sec"><h2>📦 ' + (o.boxes.length > 1 ? 'พัสดุ ' + o.boxes.length + ' กล่อง' : 'จัดส่งถึง') + '</h2>' + boxRows(o.boxes, k >= 4) + '</div>';
     if (o.sender) b += '<details class="mini"><summary>ที่อยู่ผู้ส่ง</summary><div class="bxa"><b>' + esc(o.sender.name || '') + '</b> ' + esc(o.sender.addr || '') + '</div></details>';
     b += strip(o.photos || [], 'รูปงานของคุณ', o.no) + strip(o.refs || [], 'รูปอ้างอิง', '');
-    return {no: String(o.no || ''), date: o.date || '', payst: o.payst || '', h: '<details class="jc' + cls(k) + (pr ? ' pr' + pr : '') + '"' + (open ? ' open' : '') + '>' + head + '<div class="jb">' + b + '</div></details>'};
+    return {no: String(o.no || ''), date: o.date || '', payst: o.payst || '', k: k, h: '<details class="jc' + cls(k) + (pr ? ' pr' + pr : '') + '"' + (open ? ' open' : '') + '>' + head + '<div class="jb">' + b + '</div></details>'};
   }
   function recOf(j) {   // ใบหลัก (เอกสารที่ลิงก์ชี้) → โครงเดียวกับใบอื่น
     var isJbs = /^JBS/i.test(String(j.no || '')), k = stIdx(j.status, j.delivered), boxes = [];
@@ -546,8 +546,8 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     var upd = ''; if (j.updatedAt) { var d = new Date(j.updatedAt); upd = '<div class="upd">อัปเดตล่าสุด ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + (d.getFullYear() + 543) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' น.</div>'; }
     box.className = 'card multi';
     if (isJbs) { payHtml = '<div class="secT"><b>ใบงานของคุณ</b><span>ล่าสุดอยู่บน</span></div>'; }   // ยอดค้างอยู่บนบัตรแล้ว · หัวข้อรายการ
-    var cPaid = cards.filter(function (c) { return c.payst === 'paid'; }), cOpen = cards.filter(function (c) { return c.payst !== 'paid'; });
-    var histH = cPaid.length ? '<details class="pmhist"' + (cOpen.length ? '' : ' open') + '><summary>งานที่ชำระแล้ว (' + cPaid.length + ' ใบ)</summary>' + cPaid.map(function (c) { return c.h; }).join('') + '</details>' : '';
+    var cPaid = cards.filter(function (c) { return c.payst === 'paid' && c.k >= 4; }), cOpen = cards.filter(function (c) { return !(c.payst === 'paid' && c.k >= 4); });
+    var histH = cPaid.length ? '<details class="pmhist"' + (cOpen.length ? '' : ' open') + '><summary>งานที่เสร็จสิ้นและชำระแล้ว (' + cPaid.length + ' ใบ)</summary>' + cPaid.map(function (c) { return c.h; }).join('') + '</details>' : '';
     box.innerHTML = hi + payHtml + cOpen.map(function (c) { return c.h; }).join('') + histH + upd;
     payCard = {};   // หัวการ์ดของแต่ละใบงาน (ใช้ซ้ำในหน้าต่างเลือกจ่าย ให้หน้าตาเหมือนการ์ดงาน)
     cards.forEach(function (c) { var m = /^<details class="([^"]*)"[^>]*>(<summary>[\s\S]*?<\/summary>)/.exec(c.h); if (m) payCard[c.no] = {cls: m[1], head: m[2]}; });
