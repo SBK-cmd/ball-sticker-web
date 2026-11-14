@@ -4376,8 +4376,9 @@ function bahtText(value) {
   function permsOf(u) {
     const o = {};
     if (!u || isSuperUser(u) || isOwnerFixed(u)) { PERM_KEYS.forEach(k => { o[k] = true; }); return o; }
-    if (u.perms && typeof u.perms === 'object') { PERM_KEYS.forEach(k => { o[k] = !!u.perms[k]; }); return o; }
-    PERM_KEYS.forEach(k => { o[k] = u.role === 'owner' || STAFF_PERMS.indexOf(k) >= 0; });
+    if (u.perms && typeof u.perms === 'object') PERM_KEYS.forEach(k => { o[k] = !!u.perms[k]; });
+    else PERM_KEYS.forEach(k => { o[k] = u.role === 'owner' || STAFF_PERMS.indexOf(k) >= 0; });
+    if (String(u.username || '').trim().toLowerCase() === 'top') o.track = true;   // TOP สแกนเลขพัสดุหน้ากล่องได้ (เจ้าของสั่ง 14 พ.ย.)
     return o;
   }
   const permSig = u => !u ? 'none' : (isSuperUser(u) ? 'super' : isOwnerFixed(u) ? 'ownerfixed' : PERM_KEYS.filter(k => permsOf(u)[k]).join(','));
