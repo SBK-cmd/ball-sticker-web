@@ -3577,6 +3577,56 @@ html:root body .ds-btn.ds-main{background:var(--a-yel)!important;border-color:va
 html:root body .ds-btn.ds-del{color:var(--a-red)!important;border-color:#E9C3BE!important}
 html:root body .wrap input:not(.txt):not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=color]):not([type=hidden]){border:1px solid #CFD3DB!important;border-radius:var(--a-r1)!important;min-height:44px;padding:8px 12px;font-size:16px;background:#fff;color:var(--a-ink);box-shadow:none!important}
 html:root body .wrap input[type=checkbox]{accent-color:var(--a-navy)}
+
+/* ---------- รอบ 3: การ์ดงาน (ตรวจด้วย taste-skill: ระบบเดียว · สีเดียวต่อบทบาท · ไม่มีกล่องซ้อนกล่อง · ตัวอักษร ≥13px · ที่แตะ ≥44px) ----------
+   ปัญหาเดิม: สถานะซ้ำ 3 ที่ (แถบซ้าย+หลอด+ปุ่มกรมท่า) · กล่องเทาในการ์ด · ตัวเลขน้ำเงิน+ป้ายเหลือง+ส้ม ปนกัน · แถวพัสดุว่างทุกใบ · มุม 18 ชนกับ 12/16 */
+#jobHistory ul>li.jc,#trackHistory ul>li.jc,#wholesaleHistory ul>li.jc{border:1px solid var(--a-line)!important;border-radius:var(--a-r2)!important;box-shadow:none!important;background:#fff!important;padding:16px!important;margin:0 0 12px!important}
+#jobHistory li.jc::before,#jobHistory li.jc::after,#trackHistory li.jc::before,#wholesaleHistory li.jc::before{display:none!important;content:none!important}
+#jobHistory li.jc .jc-fire{display:none!important}
+/* แถวบน: รูป 40 · ชื่อลูกค้าเด่น · เลขใบรอง · สถานะเป็นตัวหนังสือ ไม่ใช่ปุ่มทึบ */
+#jobHistory li.jc .jc-top{gap:12px!important;align-items:center!important}
+#jobHistory li.jc .thumb,#jobHistory li.jc .jc-ph{width:40px!important;height:40px!important;border-radius:var(--a-r1)!important;box-shadow:none!important;border:1px solid var(--a-line2)!important;object-fit:cover}
+#jobHistory li.jc .jc-main{display:flex;flex-direction:column-reverse;gap:2px}
+#jobHistory li.jc .jc-cust{font-size:16px!important;font-weight:600!important;color:var(--a-ink)!important;line-height:1.3!important}
+#jobHistory li.jc .jc-no{font-size:13px!important;font-weight:400!important;color:var(--a-mute)!important;letter-spacing:0!important;font-variant-numeric:tabular-nums}
+#jobHistory li.jc select.job-status-select{min-height:44px!important;padding:0 28px 0 8px!important;border:0!important;border-radius:var(--a-r1)!important;background-color:transparent!important;background-image:none!important;box-shadow:none!important;color:var(--a-ink)!important;font-size:14px!important;font-weight:600!important;margin-left:auto;width:auto!important;text-align:right;-webkit-text-fill-color:currentColor!important;opacity:1!important}
+#jobHistory li.jc select.job-status-select.pending{color:var(--a-mute)!important}
+#jobHistory li.jc select.job-status-select.received,#jobHistory li.jc select.job-status-select.rcvd{color:var(--a-green)!important}
+/* หลอดความคืบหน้า: สีเดียว กรมท่า บาง · แทนแถบสีซ้าย */
+#jobHistory li.jc .jc-prog{margin:12px 0 0!important;gap:4px!important}
+#jobHistory li.jc .jc-prog i{height:4px!important;border-radius:2px!important;background:var(--a-line2)!important}
+#jobHistory li.jc .jc-prog i.on,#jobHistory li.jc .jc-prog.done i{background:var(--a-navy)!important}
+#jobHistory li.jc .jc-prog.done i{background:var(--a-green)!important}
+/* รายการงาน: ไม่มีกล่อง · ตัวเลขจำนวนเป็นหมึกปกติ · หมายเหตุเป็นข้อความธรรมดา */
+#jobHistory li.jc .jc-work{background:transparent!important;border-radius:0!important;padding:12px 0 0!important;margin:0!important;border:0!important}
+#jobHistory li.jc .jw-i{font-size:15px!important;font-weight:400!important;color:var(--a-ink)!important;line-height:1.5!important;padding:2px 0 2px 20px!important}
+#jobHistory li.jc .jw-i em{font-style:normal;color:var(--a-mute);display:inline-block;width:20px}
+#jobHistory li.jc .jw-i b{color:var(--a-ink)!important;font-weight:600!important;font-variant-numeric:tabular-nums}
+#jobHistory li.jc .jw-i small{display:block;margin-left:20px;font-size:13px!important;color:var(--a-mute)!important}
+#jobHistory li.jc .jw-more{font-size:13px!important;color:var(--a-mute)!important;padding:2px 0 0 20px}
+#jobHistory li.jc .jc-note{margin:8px 0 0!important;padding:0!important;background:transparent!important;font-size:14px!important;color:var(--a-ink2)!important;line-height:1.5}
+#jobHistory li.jc .jc-note span{display:inline!important;background:transparent!important;padding:0!important;margin:0 6px 0 0!important;font-size:13px!important;font-weight:500!important;color:var(--a-mute)!important;border-radius:0!important}
+/* พัสดุ/ผู้รับ/ยอด: แบนคั่นด้วยเส้น · ข้อความ "ยังไม่มีเลข" เบาลง */
+#jobHistory li.jc .jc-det{background:transparent!important;border-radius:0!important;padding:12px 0 0!important;margin:12px 0 0!important;border-top:1px solid var(--a-line2)!important}
+#jobHistory li.jc .jc-k{font-size:13px!important;font-weight:500!important;color:var(--a-mute)!important}
+#jobHistory li.jc .jc-ship b{font-size:14px!important;font-weight:500!important;color:var(--a-ink2)!important}
+#jobHistory li.jc .jc-ship b.none{font-weight:400!important;color:var(--a-mute)!important}
+#jobHistory li.jc .jc-det-amt{font-size:16px!important;font-weight:600!important;border-top:1px solid var(--a-line2)!important}
+#jobHistory li.jc .jc-det-amt small{font-size:13px!important;font-weight:500!important}
+/* ป้าย: ข้อความเทาธรรมดา ไม่ใช่ pill สี */
+#jobHistory li.jc .jc-chips{margin-top:10px!important;gap:12px!important}
+#jobHistory li.jc .jc-chip{background:transparent!important;padding:0!important;font-size:13px!important;font-weight:500!important;color:var(--a-mute)!important;border-radius:0!important}
+/* แถวปุ่ม: เส้นคั่นบน · ไอคอนเดียวกันหมด ไม่มีพื้น · ลบเป็นแดงเฉพาะไอคอน */
+#jobHistory li.jc .jc-act{margin-top:12px!important;padding-top:4px!important;border-top:1px solid var(--a-line2)!important;gap:0!important;justify-content:space-between!important}
+#jobHistory li.jc .jc-act .jc-b{min-width:44px!important;min-height:44px!important;padding:0 10px!important;border:0!important;background:transparent!important;color:var(--a-ink2)!important;border-radius:var(--a-r1)!important}
+#jobHistory li.jc .jc-act .jc-b span{display:none!important}
+#jobHistory li.jc .jc-act .jc-b svg{width:20px!important;height:20px!important;stroke-width:1.6}
+#jobHistory li.jc .jc-act .jc-b.del{color:var(--a-red)!important}
+#jobHistory li.jc .jc-act .jc-b:active{background:#ECEEF2!important}
+#jobHistory li.jc .jc-prio{background:transparent!important;color:var(--a-ink2)!important;min-height:44px!important;padding:0 8px 0 0!important;font-size:13px!important}
+#jobHistory li.jc .jc-prio.p1{color:#8A5A00!important}#jobHistory li.jc .jc-prio.p2{color:var(--a-red)!important}
+#jobHistory li.jc .jc-prio .chili{width:24px!important;height:24px!important}
+#jobHistory li.jc .jc-prio-t{font-size:13px!important;font-weight:600!important}
 </style>
 </head>
 <body>
