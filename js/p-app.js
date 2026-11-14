@@ -5056,6 +5056,20 @@ function bahtText(value) {
     store.set('bs_jobs', jl);
     try { renderDash(); renderHistory(); renderWholesaleHistory(); refreshOwedMirrors(); jl.filter(j => j.trackToken && /^JBS/i.test(String(j.no || ''))).forEach(j => publicJobMirror(j)); } catch (e) {}
   }
+  // ยกเลิกจ่ายรายงาน: ถอดเลขใบงานออกจาก paidJobs ของบิลร้านนั้น (บิลที่เคยปิดแล้วกลับมาค้าง โดยงานอื่นในบิลยังคงจ่ายแล้วอยู่)
+  function markJobUnpaid(name, key) {
+    const nm = String(name || '').trim() || 'ไม่ระบุชื่อ', wl = store.get('bs_wholesale', []);
+    wl.forEach((w, i) => {
+      if ((String(w.buyerName || '').trim() || 'ไม่ระบุชื่อ') !== nm) return;
+      const named = (w.items || []).filter(x => String(x.name || '').trim());
+      if (!named.some(x => whKey(x) === key)) return;
+      const base = w.paid ? named.map(whKey) : (w.paidJobs || []);
+      const pj = Array.from(new Set(base)).filter(k => k !== key);
+      wl[i] = Object.assign({}, w, {paid: false, paidJobs: pj}); cloudSave('wholesale', wl[i]);
+    });
+    store.set('bs_wholesale', wl);
+    try { renderDash(); renderHistory(); renderWholesaleHistory(); refreshOwedMirrors(); store.get('bs_jobs', []).filter(j => j.trackToken && /^JBS/i.test(String(j.no || ''))).forEach(j => publicJobMirror(j)); } catch (e) {}
+  }
   function markDocsPaid(docs) {
     (docs || []).forEach(d => {
       if (d.k === 'jobs') {   // ยอดที่คีย์ไว้ในใบงาน (ยังไม่เข้าใบราคาส่ง) → รับแล้ว
@@ -7031,7 +7045,7 @@ function bahtText(value) {
           '<div class="wd-jh">' + (key ? '<span class="wd-th">' + (th ? '<img src="' + esc(th) + '" alt="" loading="lazy">' : '') + '</span>' : '') +
           '<div class="wd-jt"><div class="wd-jl"><b>' + (key ? esc(key) : 'ยังไม่ผูกใบงาน') + '</b>' + (jr ? '<span class="wd-st ' + esc(st) + '">' + esc(JOB_STATUS_LABEL[st] || 'รอทำ') + '</span>' : '') + '</div>' +
           '<small class="wd-jd">' + (key ? esc(jr ? thDate(jr.date) : '') + (nm1 ? ' · ' + esc(nm1) + more : '') : 'บรรทัดเหล่านี้ยังไม่รู้ว่าเป็นของใบงานไหน ลูกค้าจะเห็นเป็น “รายการอื่น”') + '</small>' +
-          '<div class="wd-jr">' + (key ? '<span class="wd-pc ' + (paidJ ? 'ok' : 'no') + '">' + (paidJ ? 'จ่ายแล้ว' : 'ยังไม่ชำระ') + '</span>' : '<span></span>') + '<em>' + (sub > 0 ? money(sub) + ' บาท' : 'รอราคา') + '</em></div></div></div>' +
+          '<div class="wd-jr">' + (key ? '<span class="wd-pc ' + (paidJ ? 'ok' : 'no') + '">' + (paidJ ? 'จ่ายแล้ว' : 'ยังไม่ชำระ') + '</span>' : '<span></span>') + (key ? '<button class="btn small ' + (paidJ ? '' : 'good') + ' wd-jb" type="button" data-act="jobpaid" data-key="' + esc(key) + '" data-paid="' + (paidJ ? '1' : '') + '">' + (paidJ ? 'ยกเลิกจ่าย' : 'จ่ายแล้ว ✓') + '</button>' : '') + '<em>' + (sub > 0 ? money(sub) + ' บาท' : 'รอราคา') + '</em></div></div></div>' +
           (jr ? '<div class="wd-bar"><i style="width:' + pct + '%"></i></div>' : '') +
           ks.map(k => rowHtml(its[k], k, key)).join('') + '</div>';
       }).join('');
@@ -9624,10 +9638,11 @@ function bahtText(value) {
     const name = li.dataset.name;
     if (!btn) {
       if (e.target.closest('input,select,textarea,a,.wd')) return;
-      whOpen[name] = !whOpen[name]; renderWholesaleHistory(); return;
+      whOpen[name] = !whOpen[name]; if (whOpen[name]) { try { const r = whAutoLink(name); if (r.linked) toast('ผูกใบงานให้อัตโนมัติ ' + r.linked + ' บรรทัด'); } catch (er) {} } renderWholesaleHistory(); return;
     }
     const act = btn.dataset.act, box = btn.closest('[data-doc]'), id = box ? box.dataset.doc : '';
     const list = store.get('bs_wholesale', []);
+    if (act === 'jobpaid') { const key = btn.dataset.key || ''; if (!key) return; if (btn.dataset.paid) { markJobUnpaid(name, key); toast('ยกเลิกจ่าย ' + key + ' แล้ว'); } else { markJobsPaid(name, [key]); toast('ใบงาน ' + key + ' จ่ายแล้ว ✓'); } renderWholesaleHistory(); return; }
     if (act === 'autolink') { const r = whAutoLink(name); renderWholesaleHistory(); toast(r.linked ? 'ผูกใบงานให้แล้ว ' + r.linked + ' บรรทัด' + (r.left ? ' · เหลือ ' + r.left + ' บรรทัดที่ผูกเองไม่ได้ (ชื่อไม่ตรง/ตรงหลายงาน)' : ' · ครบทุกบรรทัด') : (r.left ? 'ไม่มีบรรทัดที่ผูกได้อัตโนมัติ · ' + r.left + ' บรรทัดต้องเลือกใบงานเอง' : 'ทุกบรรทัดผูกใบงานครบแล้ว')); return; }
     if (act === 'wtrack' || act === 'wtrackcopy' || act === 'wtrackopen') {   // ลิงก์ติดตามงานของร้านส่งนี้ (หน้าเดียวเห็นทุกใบงาน + ยอดค้าง)
       const url = chargeLinkFor(name); if (!url) { toast('ร้านนี้ยังไม่มีใบงานส่ง (JBS)'); return; }

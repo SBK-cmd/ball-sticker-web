@@ -521,3 +521,7 @@ html:root body #wholesaleHistory .wd-jl b{min-width:0;overflow:hidden;text-overf
 html:root body #wholesaleHistory .wd-jr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}
 html:root body #wholesaleHistory .wd-jr em{font-style:normal;font-weight:800;font-size:15px;color:var(--a-ink)}
 html:root body #wholesaleHistory .wd-jh>em{display:none}
+
+html:root body #wholesaleHistory .wd-jr{flex-wrap:wrap}
+html:root body #wholesaleHistory .wd-jb{padding:6px 12px!important;font-size:13px!important}
+html:root body #wholesaleHistory .wd-jr em{margin-left:auto}
