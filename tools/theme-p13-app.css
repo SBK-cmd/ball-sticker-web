@@ -525,3 +525,15 @@ html:root body #wholesaleHistory .wd-jh>em{display:none}
 html:root body #wholesaleHistory .wd-jr{flex-wrap:wrap}
 html:root body #wholesaleHistory .wd-jb{padding:6px 12px!important;font-size:13px!important}
 html:root body #wholesaleHistory .wd-jr em{margin-left:auto}
+
+html:root body #wholesaleHistory .wd-jk{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--a-ink);cursor:pointer}
+html:root body #wholesaleHistory .wd-jk input{width:22px;height:22px;accent-color:var(--a-navy)}
+html:root body #wholesaleHistory .wd-payrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 12px;padding:10px 12px;border-radius:var(--a-r2);background:var(--a-line2);font-size:13px;color:var(--a-ink2)}
+html:root body #wholesaleHistory .wd-bd{margin:2px 0 10px}
+html:root body #wholesaleHistory .wd-bd summary{font-size:12px;color:var(--a-mute);cursor:pointer;padding:4px 2px}
+html:root body #wholesaleHistory .wd-jbs{display:flex;flex-direction:column;gap:6px}
+html:root body #wholesaleHistory .wd-payrow{flex-direction:column;align-items:stretch}
+html:root body #wholesaleHistory .wd-payrow .btn,html:root body #wholesaleHistory .wd-jbs .btn{white-space:nowrap}
+html:root body #wholesaleHistory .wd-j{flex-wrap:wrap}
+html:root body #wholesaleHistory .wd-jbs{flex-direction:row;width:100%;gap:8px}
+html:root body #wholesaleHistory .wd-jbs .btn{flex:1}
