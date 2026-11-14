@@ -3762,6 +3762,7 @@ body.jm-open .fab-newjob{display:none!important}
         <div class="bankin-foot">
           <button class="btn small" id="bankInNotifyBtn" type="button" data-push-enable>🔔 เปิดแจ้งเตือนเด้งบนมือถือ</button>
           <button class="btn small" type="button" data-push-test hidden>🔔 ส่งแจ้งเตือนทดสอบ</button>
+          <button class="btn small" type="button" id="kobTestBtn" hidden>💬 ทดสอบส่งเข้า Kob Chat</button>
           <span class="hint" id="bankInNotifyHint" style="margin:0"></span>
         </div>
       </section>
@@ -5233,6 +5234,7 @@ function bahtText(value) {
     renderBankIn(); renderJobBankInPick(); renderBell(wasLive);
     try { matchPayCharges(); } catch (e) { console.error('pay match', e); }
     try { matchOwedBankIns(); } catch (e) { console.error('owed match', e); }
+    try { kobNotifyUnmatched(); } catch (e) {}
   }
   function showBankInBanner(fresh, live) {
     const total = fresh.reduce((a, x) => a + num(x.amount), 0);
@@ -5320,6 +5322,7 @@ function bahtText(value) {
     const showBtn = !pushOn; // แสดงเสมอถ้ายังไม่เปิด (กดซ้ำได้ ถ้าถูกปฏิเสธจะบอกวิธีแก้)
     document.querySelectorAll('[data-push-enable]').forEach(b => { b.hidden = !showBtn; });
     document.querySelectorAll('[data-push-test]').forEach(b => { b.hidden = !pushOn; });
+    { const kb = $('kobTestBtn'); if (kb) kb.hidden = !canBank; }
     const st = pushOn ? '✅ เครื่องนี้เปิดแจ้งเตือนเด้งแล้ว'
       : !pushSupported() ? (isIOS && !isStandalone() ? 'iPhone: เพิ่มแอปลงหน้าจอโฮม แล้วเปิดจากไอคอนก่อน' : 'เครื่อง/เบราว์เซอร์นี้ไม่รองรับแจ้งเตือนเด้ง (iPhone ต้อง iOS 16.4 ขึ้นไป)')
       : denied ? '⚠ เครื่องนี้ปิดการแจ้งเตือนของแอปไว้ — ไปที่ การตั้งค่า → การแจ้งเตือน → Ball Sticker → เปิด "อนุญาตการแจ้งเตือน" แล้วกดปุ่มอีกครั้ง'
@@ -9174,6 +9177,30 @@ function bahtText(value) {
       });
     } catch (e) { console.error('stampChargeRef', e); }
   }
+  /* ---------- แจ้งเตือนเจ้าของเข้า Kob Chat ผ่าน Worker (worker/kob-notify-worker.js) — ส่งแล้วไม่รอผล แอปทำงานปกติแม้ Worker ล่ม ---------- */
+  const KOB_URL = 'https://kob-notify.organic-parmesan.workers.dev/notify';
+  const kobSentGet = () => { try { return JSON.parse(localStorage.getItem('bs_kob_sent') || '{}') || {}; } catch (e) { return {}; } };
+  function kobNotify(p) {
+    try {
+      if (!canBank || !p || !p.eventId) return Promise.resolve(false);
+      const sent = kobSentGet(); if (sent[p.eventId]) return Promise.resolve(false);
+      const now = Date.now(); Object.keys(sent).forEach(k => { if (now - sent[k] > 3 * 86400000) delete sent[k]; });
+      return fetch(KOB_URL, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(Object.assign({link: 'https://app.ballsticker.co.th/'}, p))})
+        .then(r => { if (r.ok) { sent[p.eventId] = now; try { localStorage.setItem('bs_kob_sent', JSON.stringify(sent)); } catch (e) {} } return r.ok; })
+        .catch(() => false);   // Worker ยังไม่ติดตั้ง/เน็ตหลุด → ข้าม ลองใหม่รอบหน้า
+    } catch (e) { return Promise.resolve(false); }
+  }
+  // เงินเข้าที่ระบบจับคู่ไม่ได้ (นานเกิน 5 นาที ไม่เกิน 24 ชม.) → ถามเจ้าของครั้งเดียวต่อรายการ
+  function kobNotifyUnmatched() {
+    try {
+      if (!canBank) return;
+      const now = Date.now(), sent = kobSentGet(), used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
+      wantimPoolAll().filter(b => !b.matchedJobId && !used.has(b.id) && num(b.amount) > 0 && now - (b.createdAt || 0) > 5 * 60000 && now - (b.createdAt || 0) < 86400000 && !sent['bi-' + b.id]).slice(0, 5).forEach(b => {
+        kobNotify({type: 'confirm', eventId: 'bi-' + b.id, title: 'เงินเข้า ' + (b.account || ''), amount: num(b.amount),
+          lines: [new Date(b.createdAt).toLocaleString('th-TH', {dateStyle: 'short', timeStyle: 'short'}), String(b.sender || b.note || b.from || '').slice(0, 60), 'ระบบจับคู่กับบิลไม่ได้ — เปิดแอปเพื่อยืนยัน'].filter(Boolean)});
+      });
+    } catch (e) { console.error('kobNotifyUnmatched', e); }
+  }
   // เงินเข้าบัญชีวันทิมที่ยังไม่ผูกอะไร ยอดตรงกับ "ใบค้าง" ของลูกค้างานส่ง (ทั้งก้อนหรือบางใบรวมกัน) → ตัดใบนั้นเป็นชำระแล้วอัตโนมัติ
   function matchOwedBankIns() {
     // ตัดบิลค้างจากเงินเข้าวันทิมอัตโนมัติ เฉพาะกรณีชัดเจนเท่านั้น: ยอดตรงกับ "ใบเดียว" หรือ "ยอดรวมทั้งร้าน" แบบเดียวเท่านั้นทั้งระบบ
@@ -9183,7 +9210,7 @@ function bahtText(value) {
       const since = Date.now() - 30 * 86400000, used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
       const ins = wantimPoolAll().filter(b => b.account === 'วันทิม' && !b.matchedJobId && !used.has(b.id) && (b.createdAt || 0) >= since && num(b.amount) > 0).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
       if (!ins.length) return;
-      const msgs = [], taken = new Set();
+      const msgs = [], taken = new Set(), kobCutList = [];
       ins.forEach(b => {
         const amt = num(b.amount);
         if (ins.filter(x => Math.abs(num(x.amount) - amt) < 0.005).length !== 1) return;   // เงินเข้ายอดเท่ากันหลายก้อน → ไม่แน่ใจ
@@ -9200,8 +9227,10 @@ function bahtText(value) {
         markDocsPaid(hit);
         flagBankInOwed(b.id, hit.map(d => d.no).filter(Boolean).join(', ') || g.name);
         msgs.push(g.name + ' ' + money(amt) + ' บาท (' + hit.map(d => d.no).filter(Boolean).join(', ') + ')');
+        kobCutList.push({type: 'matched', eventId: 'bi-' + b.id, title: g.name, amount: amt, lines: hit.map(d => d.no).filter(Boolean).slice(0, 8)});
       });
       if (msgs.length) { toast('✅ เงินเข้าตรงกับบิลค้าง ตัดให้แล้ว: ' + msgs.join(' · ')); playChime(); try { refreshOwedMirrors(); } catch (e) {} }
+      kobCutList.forEach(k => kobNotify(k));
     } catch (e) { console.error('matchOwedBankIns', e); }
   }
   /* ---------- ประวัติ QR เรียกเก็บ: รอจ่าย / จ่ายแล้ว / ยกเลิก · เปิด QR เดิมซ้ำ · ยืนยันรับเงินเอง ---------- */
@@ -13400,6 +13429,11 @@ function bahtText(value) {
   document.addEventListener('click', () => setTimeout(balanceActions, 50), true);
   document.addEventListener('click', async e => {
     if (e.target.closest('[data-push-enable]')) enablePush();
+    if (e.target.closest('#kobTestBtn')) {
+      toast('กำลังส่งข้อความทดลองเข้า Kob Chat…');
+      kobNotify({type: 'matched', eventId: 'test-' + Date.now(), title: 'ทดสอบระบบ', amount: 1, lines: ['ข้อความทดลองจากแอปบอลสติ๊กเกอร์']})
+        .then(ok => toast(ok ? '✅ ส่งแล้ว ดูใน Kob Chat' : '⚠ ส่งไม่สำเร็จ — Worker kob-notify ยังไม่ได้ติดตั้ง หรือยังไม่ได้เพิ่มบอตเป็นเพื่อน'));
+    }
     const t = e.target.closest('[data-push-test]'); if (!t) return;
     t.disabled = true;
     try {
@@ -13545,7 +13579,7 @@ function bahtText(value) {
     openBankAdd(false);
     if (bankListTab !== 'all' && bankListTab !== dir) { bankListTab = dir; try { localStorage.setItem('bs_bankin_tab', dir); } catch (e3) {} }
     renderBankIn(); renderJobBankInPick(); renderBell(false);
-    if (dir === 'in') { try { matchPayCharges(); } catch (e4) {} try { matchOwedBankIns(); } catch (e5) {} }
+    if (dir === 'in') { try { matchPayCharges(); } catch (e4) {} try { matchOwedBankIns(); } catch (e5) {} try { kobNotifyUnmatched(); } catch (e6) {} }
     toast('เพิ่ม' + (dir === 'in' ? 'เงินเข้า' : 'เงินออก') + ' ' + money(amount) + ' บาท แล้ว' + balMsg);
   });
   $('bankInList').addEventListener('click', e => {

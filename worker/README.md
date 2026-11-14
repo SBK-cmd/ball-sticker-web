@@ -70,3 +70,13 @@ Worker รับข้อความลูกค้าผ่าน webhook เ�
 - ปุ่ม "ตรวจบิล": `GET /bill?id&t` · `POST /bill/save {id,t,rec}` · `POST /bill/skip {id,t}` · หน้า bill-check.html (ตัวที่ 1)
 - Firestore rules ส่วน billInbox: `worker/line-bills/firestore-rules-billInbox.txt` (วางใน `match /databases/{database}/documents { … }`)
 - LINE เก็บไฟล์ไว้ ~7 วัน → ต้องตรวจ/บันทึกภายใน 7 วัน (รูปที่บันทึกแล้วไปอยู่ Cloudinary)
+
+## kob-notify (แจ้งเตือนเจ้าของเข้า Kob Chat)
+ไฟล์ `kob-notify-worker.js` — แอปเรียก `POST /notify` เมื่อระบบตัดบิลจากเงินเข้าให้แล้ว (`matched`) หรือเงินเข้าที่จับคู่ไม่ได้ (`confirm`) · ส่งหาเจ้าของคนเดียว
+ติดตั้ง (ทำเองในแดชบอร์ด ไม่ต้องส่ง token ในแชต):
+1. Workers & Pages → Create → Worker ชื่อ `kob-notify` → วางโค้ดจาก `kob-notify-worker.js` → Deploy
+2. Settings → Variables and Secrets → เพิ่ม **Secret** ชื่อ `KOBCHAT_BOT_TOKEN` ค่า = token ของบอต (ขึ้นต้น `kobbot_`)
+3. (ไม่บังคับ แต่แนะนำ) สร้าง KV แล้วผูกชื่อ `KOB_KV` — กันส่งซ้ำเมื่อหลายเครื่องเปิดแอปพร้อมกัน
+4. เพิ่มบอตเป็นเพื่อนใน Kob Chat ก่อน (ไม่งั้น Kob Chat ตอบ 403)
+5. เปิด `https://kob-notify.<บัญชี>.workers.dev/health` ต้องได้ `{"ok":true,...}` · ในแอปกดปุ่ม "ทดสอบส่งเข้า Kob Chat" (แท็บเงินเข้า)
+ถ้าชื่อ Worker/โดเมนไม่ตรงกับ `KOB_URL` ใน `src/app.html` ให้บอก AI #1 แก้

@@ -211,3 +211,9 @@
 - ตัดบิลค้างจากเงินเข้า SMS (วันทิม) อัตโนมัติ: matchOwedBankIns เปิดใหม่แบบเข้ม (ยอดตรงใบเดียว/ยอดรวมร้านแบบเดียวทั้งระบบ + เงินเข้ายอดนั้นก้อนเดียว · 30 วัน) เรียกคู่ matchPayCharges · markDocsPaid ออกเลข WS ถ้ายังไม่มีเลข · ทดสอบจำลอง 5 กรณีผ่าน (ไม่ชัด=ไม่ตัด) · ยังไม่ทดสอบกับ SMS จริง · รอ "อัพ" → v178
 - v178 ขึ้นของจริง: หน้าตรวจสถานะชำระ + ตัดบิลค้างจากเงินเข้า SMS อัตโนมัติ (เมื่อยอดชัด) + markDocsPaid ออกเลข WS
 - ฝากทีม 2 ทำ Worker kob-notify (แจ้งเตือนเงินเข้า→Kobchat) ใน team/inbox-2.md · เจ้าของสร้างบอตแล้ว · ฝั่งแอปรอ URL/key
+
+## 14 พ.ย. — แจ้งเตือนเจ้าของเข้า Kob Chat (ตัวที่ 1 · พรีวิวเท่านั้น รอ "อัพ" = v179)
+- `worker/kob-notify-worker.js`: POST /notify {type matched|confirm, title, amount, lines, eventId, link}; จำกัด origin ร้าน, dedupe eventId (KV ถ้าผูก), 429 คืน retryAfter, 4xx ไม่ retry, ส่งหาเจ้าของ (KOB_USER_ID หรือคนแรกใน /chats); token เป็น secret ใน Cloudflare เท่านั้น · GET /health เช็ค token
+- แอป (`src/app.html`): `kobNotify`, `kobNotifyUnmatched` (เงินเข้าจับคู่ไม่ได้ 5 นาที–24 ชม., ครั้งเดียวต่อรายการ), `matchOwedBankIns` ส่ง matched, ปุ่ม "ทดสอบส่งเข้า Kob Chat" ใต้รายการเงินเข้า · Worker ล่ม = ข้ามเงียบๆ
+- เทสต์: Worker ด้วย fetch stub (ok/dup/origin/429/403/no token) และฟังก์ชันแอปด้วย stub — **ยังไม่เคยยิง Kob Chat จริง**
+- ค้างที่เจ้าของ: สร้าง Worker `kob-notify` วางโค้ด + ใส่ secret `KOBCHAT_BOT_TOKEN` + Deploy + เพิ่มบอตเป็นเพื่อน แล้วบอก URL (ถ้าไม่ใช่ kob-notify.organic-parmesan.workers.dev ต้องแก้ KOB_URL)
