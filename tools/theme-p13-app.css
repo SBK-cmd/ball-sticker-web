@@ -204,3 +204,23 @@ html:root body .tdy-t .lb{font-size:13px!important;color:#AEB4C6!important;white
   html:root body .wrap{padding-bottom:110px}
   html:root body header.top{background:var(--a-bg)!important;border-bottom:0!important}
 }
+
+/* ---------- รอบ 9: ขนาดการ์ดให้เท่ากันทั้งแอป ----------
+   ตรวจพบ: padding คละ 10/14/16/18/20 · ระยะห่างระหว่างการ์ดคละ 0/12/14/20 · แถวการ์ดตัวเลขสูงไม่เท่ากัน (164 vs 133)
+   กติกาเดียว: การ์ดใหญ่ padding 20 มุม 24 · การ์ดตัวเลขเล็ก padding 16 มุม 20 สูงเท่ากัน · ระยะห่างระหว่างการ์ด 12 */
+html:root body .card,html:root body .acd-card,html:root body .dash-cat-card,html:root body .lock-card,html:root body .fold{padding:20px!important;margin:0 0 12px!important;border-radius:24px!important}
+html:root body .card.history{padding:0!important;background:transparent!important;margin:0 0 12px!important}
+html:root body .card .card,html:root body .ds-comp.card{margin-bottom:0!important}
+html:root body .ds-comp.card{padding:20px!important}
+html:root body .dash-stat-card,html:root body .dash-tile{padding:16px!important;border-radius:20px!important;margin:0!important}
+html:root body .dash-stat-card{min-height:136px}
+html:root body .dash-tile{min-height:88px}
+html:root body #jobHistory ul>li.jc,html:root body #trackHistory ul>li.jc,html:root body #wholesaleHistory ul>li.jc{padding:20px!important;margin:0 0 12px!important;border-radius:24px!important}
+html:root body .tdy{margin:0 0 12px!important}
+html:root body .dash-stat-card{min-height:156px}
+html:root body .tdy{padding:20px!important}
+html:root body .tdy-head{margin:0 0 16px!important}
+html:root body .tdy-t{padding:0!important}
+html:root body .fold{padding:0!important}
+html:root body .fold{background:#F6F7F9!important}
+html:root body .fold>summary{padding:14px 16px!important}
