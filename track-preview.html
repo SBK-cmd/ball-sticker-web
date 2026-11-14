@@ -188,6 +188,7 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
 .h2go:focus-visible{outline:2px solid #fff;outline-offset:2px}
 .h2st{display:flex;max-width:400px;margin:0 auto 16px;background:#fff;border:1px solid var(--line,#e5e7eb);border-radius:12px;padding:9px 4px}
 .hs{flex:1;display:flex;align-items:baseline;justify-content:center;gap:6px}.hs+.hs{border-left:1px solid #eceef2}.hs b{font-size:16px;font-weight:600;line-height:1.2;font-variant-numeric:tabular-nums;color:#111827}.hs span{font-size:12px;color:#6b7280}
+.hs{background:none;border:0;font:inherit;cursor:pointer;padding:0}.hs.on{position:relative;margin:-5px 2px;padding:5px 0;border-radius:9px;background:linear-gradient(180deg,#fff8e1,#ffefc2);box-shadow:inset 0 0 0 1px rgba(245,179,1,.35)}.hs.on b,.hs.on span{color:#8a5a00}.hs.on+.hs,.hs+.hs.on{border-left-color:transparent}.h2st2{margin-top:-8px}.fltEmpty{text-align:center;color:#6b7280;padding:24px 0}
 .hs.hot{position:relative;margin:-5px 2px;padding:5px 0;border-radius:9px;background:linear-gradient(180deg,#fff8e1,#ffefc2);box-shadow:inset 0 0 0 1px rgba(245,179,1,.35)}
 .hs.hot+.hs,.hs+.hs.hot{border-left-color:transparent}
 .hs.hot b{color:#8a5a00}.hs.hot span{color:#8a5a00;font-weight:500}
@@ -228,7 +229,17 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
   function money(n) { return Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
   // หน้าต่างบิลค้างชำระ: รายการ + ยอดรวม + QR พร้อมเพย์ (วาดจาก payload ที่ร้านสร้าง) · จ่ายแล้ว/ไม่มียอดค้าง = ไม่มีปุ่ม ไม่มีหน้าต่าง
   var payM = null;
-  var payCard = {};
+  var payCard = {}, flt = {g: '', p: ''};
+  function applyFlt() {
+    var box0 = document.querySelector('.card'); if (!box0) return;
+    var n = 0; [].forEach.call(box0.querySelectorAll('details.jc'), function (d) { var ok = (!flt.g || d.getAttribute('data-g') === flt.g) && (!flt.p || d.getAttribute('data-p') === flt.p); d.hidden = !ok; if (ok) n++; });
+    [].forEach.call(box0.querySelectorAll('.hs[data-f]'), function (b) { var f = b.getAttribute('data-f'); b.classList.toggle('on', flt[f[0]] === f.slice(2)); });
+    var em = document.getElementById('fltEmpty'); if (em) em.hidden = n > 0;
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.hs[data-f]'); if (!b) return;
+    var f = b.getAttribute('data-f'), k = f[0], v = f.slice(2); flt[k] = flt[k] === v ? '' : v; applyFlt();
+  });
   var payRec = null;   // บันทึกว่าลูกค้าเปิดจ่าย/เลือกงานไหน (ให้แอปร้านจับคู่เงินเข้า) — ตั้งโดย setPayModal
   function openPay(on) { if (payM) payM.classList.toggle('show', !!on); document.body.style.overflow = on ? 'hidden' : ''; if (on && payRec) payRec(); }
   // ---- เลือกงานที่จะจ่าย: สร้าง payload พร้อมเพย์ใหม่จาก payload เดิม (เปลี่ยนเฉพาะยอด tag 54 แล้วคำนวณ CRC ใหม่) ----
@@ -428,12 +439,12 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     }).catch(function () { toast2('อัปโหลดไม่สำเร็จ ลองใหม่อีกครั้ง'); }).then(function () { wm.classList.remove('busy'); });
   }
   function heroHTML(j, others, payOk) {
-    var all = [{no: j.no, status: j.status, delivered: j.delivered, thumb: j.thumb, photos: j.photos, refs: j.refPhotos}].concat(others.map(function (o) { return {no: o.no, status: o.status, delivered: o.delivered, thumb: o.thumb, photos: o.photos, refs: o.refPhotos}; }));
-    var doing = 0, ship = 0, done = 0;
-    all.forEach(function (o) { var k = stIdx(o.status, o.delivered); if (k >= 4) done++; else if (k === 3) ship++; else doing++; });
+    var all = [{no: j.no, status: j.status, delivered: j.delivered, thumb: j.thumb, photos: j.photos, refs: j.refPhotos, payst: j.payst}].concat(others.map(function (o) { return {no: o.no, status: o.status, delivered: o.delivered, thumb: o.thumb, photos: o.photos, refs: o.refPhotos, payst: o.payst}; }));
+    var doing = 0, ship = 0, done = 0, upd0 = 0, paid0 = 0;
+    all.forEach(function (o) { var k = stIdx(o.status, o.delivered); if (k >= 4) done++; else if (k === 3) ship++; else doing++; if (o.payst === 'paid') paid0++; else if (o.payst === 'unpaid') upd0++; });
     var init = String(j.cname || '?').trim().slice(0, 2).toUpperCase();
     var logo = /^https:\/\//.test(j.clogo || '') ? '<img src="' + esc(j.clogo) + '" alt="โลโก้ ' + esc(j.cname || '') + '">' : '<b>' + esc(init) + '</b>';
-    var stat = function (v, l, c) { return '<div class="hs' + (c ? ' ' + c : '') + '"><b>' + v + '</b><span>' + l + '</span></div>'; };
+    var stat = function (v, l, f) { return '<button type="button" class="hs' + (flt.g === f.slice(2) || flt.p === f.slice(2) ? ' on' : '') + '" data-f="' + f + '"><b>' + v + '</b><span>' + l + '</span></button>'; };
     var sf = String(j.shipFrom || '').trim(), full = String(j.cfull || (/บอล\s*สติ/.test(sf) ? '' : sf) || j.cname || 'ลูกค้า').trim();   // ชื่อเต็มจากแอป · ชื่อผู้ส่งที่เป็นชื่อร้านเราไม่ใช้   // ชื่อเต็มร้านลูกค้า (ชื่อผู้ส่งในใบงาน) แทนชื่อย่อ
     var h = '<section class="hero2"><i class="h2sheen" aria-hidden="true"></i>' +
       '<label class="h2wm' + (/^https:\/\//.test(j.clogo || '') ? '' : ' empty') + '" title="เปลี่ยนโลโก้ร้าน">' + (/^https:\/\//.test(j.clogo || '') ? '<img src="' + esc(j.clogo) + '" alt="โลโก้ร้าน">' : '<b>' + esc(init) + '</b><small>ใส่โลโก้</small>') +   // โลโก้ลูกค้าแบบรูปโปรไฟล์ · ลูกค้ากดเปลี่ยนเองได้
@@ -444,7 +455,7 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
       '<div class="h2bot">' + (payOk ? '<div class="h2bal"><small>ยอดค้างชำระ</small><b>' + money(j.pay.total) + '<span>บาท</span></b></div><button type="button" class="h2go" id="payOpen">สแกนจ่าย</button>'
         : '<div class="h2bal"><small>ยอดค้างชำระ</small><b class="ok">ชำระครบแล้ว ✓</b></div>') + '</div>';
     // ตัวเลขสรุปอยู่ใต้บัตร (บัตรขนาดจริง 85.6×54 มม. ใส่ได้แค่ โลโก้ ชื่อ ยอด)
-    return h + '</section><div class="h2st">' + stat(doing, 'กำลังทำ', doing ? 'hot' : '') + stat(ship, 'กำลังส่ง', ship ? 'hot' : '') + stat(done, 'ได้รับแล้ว') + '</div>';
+    return h + '</section><div class="h2st">' + stat(doing, 'กำลังทำ', 'g:doing') + stat(ship, 'กำลังส่ง', 'g:ship') + stat(done, 'ได้รับแล้ว', 'g:done') + '</div><div class="h2st h2st2">' + stat(upd0, 'ยังไม่ได้ชำระ', 'p:unpaid') + stat(paid0, 'ชำระแล้ว', 'p:paid') + '</div>';
   }
   function jobCard(o, open) {
     var pk = o.status === 'pickup', k = stIdx(o.status, o.delivered), sub = (o.items && o.items[0]) ? String(o.items[0].n || '') + (o.items[0].q ? ' × ' + o.items[0].q : '') + (o.items.length > 1 ? ' +' + (o.items.length - 1) + ' รายการ' : '') : '';
@@ -459,7 +470,7 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     if (pk) b += pickupBlock(); else if (o.boxes && o.boxes.length) b += '<div class="sec"><h2>📦 ' + (o.boxes.length > 1 ? 'พัสดุ ' + o.boxes.length + ' กล่อง' : 'จัดส่งถึง') + '</h2>' + boxRows(o.boxes, k >= 4) + '</div>';
     if (o.sender) b += '<details class="mini"><summary>ที่อยู่ผู้ส่ง</summary><div class="bxa"><b>' + esc(o.sender.name || '') + '</b> ' + esc(o.sender.addr || '') + '</div></details>';
     b += strip(o.photos || [], 'รูปงานของคุณ', o.no) + strip(o.refs || [], 'รูปอ้างอิง', '');
-    return {no: String(o.no || ''), date: o.date || '', payst: o.payst || '', k: k, h: '<details class="jc' + cls(k) + (pr ? ' pr' + pr : '') + '"' + (open ? ' open' : '') + '>' + head + '<div class="jb">' + b + '</div></details>'};
+    return {no: String(o.no || ''), date: o.date || '', payst: o.payst || '', k: k, h: '<details class="jc' + cls(k) + (pr ? ' pr' + pr : '') + '" data-g="' + (k >= 4 ? 'done' : k === 3 ? 'ship' : 'doing') + '" data-p="' + (o.payst || '') + '"' + (open ? ' open' : '') + '>' + head + '<div class="jb">' + b + '</div></details>'};
   }
   function recOf(j) {   // ใบหลัก (เอกสารที่ลิงก์ชี้) → โครงเดียวกับใบอื่น
     var isJbs = /^JBS/i.test(String(j.no || '')), k = stIdx(j.status, j.delivered), boxes = [];
@@ -546,9 +557,10 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     var upd = ''; if (j.updatedAt) { var d = new Date(j.updatedAt); upd = '<div class="upd">อัปเดตล่าสุด ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + (d.getFullYear() + 543) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' น.</div>'; }
     box.className = 'card multi';
     if (isJbs) { payHtml = '<div class="secT"><b>ใบงานของคุณ</b><span>ล่าสุดอยู่บน</span></div>'; }   // ยอดค้างอยู่บนบัตรแล้ว · หัวข้อรายการ
-    box.innerHTML = hi + payHtml + cards.map(function (c) { return c.h; }).join('') + upd;
+    box.innerHTML = hi + payHtml + cards.map(function (c) { return c.h; }).join('') + '<div class="fltEmpty" id="fltEmpty" hidden>ไม่มีงานในกลุ่มนี้</div>' + upd;
     payCard = {};   // หัวการ์ดของแต่ละใบงาน (ใช้ซ้ำในหน้าต่างเลือกจ่าย ให้หน้าตาเหมือนการ์ดงาน)
     cards.forEach(function (c) { var m = /^<details class="([^"]*)"[^>]*>(<summary>[\s\S]*?<\/summary>)/.exec(c.h); if (m) payCard[c.no] = {cls: m[1], head: m[2]}; });
+    applyFlt();
     setPayModal(payOk ? j.pay : null);
     loadHubs();
     var po = document.getElementById('payOpen'); if (po) po.onclick = function () { openPay(true); };
