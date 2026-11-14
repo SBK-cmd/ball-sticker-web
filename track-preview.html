@@ -546,9 +546,7 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     var upd = ''; if (j.updatedAt) { var d = new Date(j.updatedAt); upd = '<div class="upd">อัปเดตล่าสุด ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + (d.getFullYear() + 543) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' น.</div>'; }
     box.className = 'card multi';
     if (isJbs) { payHtml = '<div class="secT"><b>ใบงานของคุณ</b><span>ล่าสุดอยู่บน</span></div>'; }   // ยอดค้างอยู่บนบัตรแล้ว · หัวข้อรายการ
-    var cPaid = cards.filter(function (c) { return c.payst === 'paid' && c.k >= 4; }), cOpen = cards.filter(function (c) { return !(c.payst === 'paid' && c.k >= 4); });
-    var histH = cPaid.length ? '<details class="pmhist"' + (cOpen.length ? '' : ' open') + '><summary>งานที่เสร็จสิ้นและชำระแล้ว (' + cPaid.length + ' ใบ)</summary>' + cPaid.map(function (c) { return c.h; }).join('') + '</details>' : '';
-    box.innerHTML = hi + payHtml + cOpen.map(function (c) { return c.h; }).join('') + histH + upd;
+    box.innerHTML = hi + payHtml + cards.map(function (c) { return c.h; }).join('') + upd;
     payCard = {};   // หัวการ์ดของแต่ละใบงาน (ใช้ซ้ำในหน้าต่างเลือกจ่าย ให้หน้าตาเหมือนการ์ดงาน)
     cards.forEach(function (c) { var m = /^<details class="([^"]*)"[^>]*>(<summary>[\s\S]*?<\/summary>)/.exec(c.h); if (m) payCard[c.no] = {cls: m[1], head: m[2]}; });
     setPayModal(payOk ? j.pay : null);
