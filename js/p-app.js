@@ -6992,9 +6992,30 @@ function bahtText(value) {
     if (!g.open.length) h += '<p class="hint" style="margin:0 0 10px">ไม่มีบิลค้าง งานใหม่ที่คีย์ชื่อร้านนี้จะเปิดบิลใหม่ให้เองและเริ่มนับยอดใหม่</p>';
     g.open.forEach(w => {
       const its = w.items || [], t = wholesaleCalc(w);
-      const rows = its.map((i, k) => (i.name || '').trim() ? '<div class="wd-r" data-k="' + k + '"><span class="wd-n">' + esc(i.name) + '<small>× ' + esc(i.qty === '' || i.qty == null ? 1 : i.qty) + (i.job ? ' · ' + esc(i.job) : '') + '</small></span>' +
+      // จัดบรรทัดเป็นการ์ดต่อใบงาน (เหมือนที่ลูกค้าเห็น) · บรรทัดไม่มีเลขใบงาน = การ์ด "ยังไม่ผูกใบงาน" เลือกผูกได้ในช่อง
+      const myJobs = store.get('bs_jobs', []).filter(x => String(x.jName || '').trim() === String(g.name || '').trim() && String(x.no || '').trim()).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+      const grp = {}, order = [];
+      its.forEach((i, k) => { if (!(i.name || '').trim()) return; const key = String(i.job || '').trim(); if (!(key in grp)) { grp[key] = []; order.push(key); } grp[key].push(k); });
+      order.sort((a, b) => (a === '') - (b === ''));   // ไม่ผูกใบงานไว้ท้าย
+      const rowHtml = (i, k, key) => '<div class="wd-r" data-k="' + k + '"><span class="wd-n">' + esc(i.name) + '<small>× ' + esc(i.qty === '' || i.qty == null ? 1 : i.qty) + '</small>' +
+        '</span>' +
         '<input class="num wd-p" type="number" inputmode="decimal" step="any" min="0" placeholder="รอราคา" aria-label="ราคาต่อชิ้น" value="' + (num(i.price) > 0 ? esc(i.price) : '') + '">' +
-        '<b class="wd-t">' + (num(i.price) > 0 ? money(round2(num(i.qty || 1) * num(i.price))) : '–') + '</b></div>' : '').join('');
+        '<b class="wd-t">' + (num(i.price) > 0 ? money(round2(num(i.qty || 1) * num(i.price))) : '–') + '</b>' +
+        (key === '' ? '<select class="wd-asg" aria-label="ผูกกับใบงาน"><option value="">ผูกกับใบงาน…</option>' + myJobs.map(x => '<option value="' + esc(x.no) + '">' + esc(x.no) + ' · ' + esc(thDate(x.date)) + '</option>').join('') + '</select>' : '') + '</div>';
+      const rows = order.map(key => {
+        const ks = grp[key], sub = round2(ks.reduce((a, k) => a + (num(its[k].price) > 0 ? num(its[k].qty || 1) * num(its[k].price) : 0), 0));
+        const jr = key ? myJobs.find(x => String(x.no).trim() === key) : null, paidJ = key && whPaidFor(w, key);
+        const st = jr ? (jr.status || 'pending') : '', stIdx = ['pending', 'filed', 'printed', 'shipped', 'pickup', 'received'].indexOf(st), pct = jr ? Math.max(8, Math.round(((stIdx < 0 ? 0 : (st === 'pickup' ? 3 : stIdx > 4 ? 5 : stIdx)) + 1) / 5.0 * 100)) : 0;
+        const th = jr ? ([].concat(jr.donePhotos || [], jr.photos || []).find(u => typeof u === 'string' && /^https:\/\//.test(u)) || '') : '';
+        const names = ks.map(k => String(its[k].name).trim()).filter(Boolean), nm1 = names[0] || '', more = names.length > 1 ? ' +' + (names.length - 1) + ' รายการ' : '';
+        return '<div class="wd-jc' + (key === '' ? ' none' : '') + (paidJ ? ' paid' : '') + (jr ? ' st-' + esc(st) : '') + '">' +
+          '<div class="wd-jh">' + (key ? '<span class="wd-th">' + (th ? '<img src="' + esc(th) + '" alt="" loading="lazy">' : '') + '</span>' : '') +
+          '<div class="wd-jt"><div class="wd-jl"><b>' + (key ? esc(key) : 'ยังไม่ผูกใบงาน') + '</b>' + (jr ? '<span class="wd-st ' + esc(st) + '">' + esc(JOB_STATUS_LABEL[st] || 'รอทำ') + '</span>' : '') + '</div>' +
+          '<small class="wd-jd">' + (key ? esc(jr ? thDate(jr.date) : '') + (nm1 ? ' · ' + esc(nm1) + more : '') : 'บรรทัดเหล่านี้ยังไม่รู้ว่าเป็นของใบงานไหน ลูกค้าจะเห็นเป็น “รายการอื่น”') + '</small>' +
+          '<div class="wd-jr">' + (key ? '<span class="wd-pc ' + (paidJ ? 'ok' : 'no') + '">' + (paidJ ? 'จ่ายแล้ว' : 'ยังไม่ชำระ') + '</span>' : '<span></span>') + '<em>' + (sub > 0 ? money(sub) + ' บาท' : 'รอราคา') + '</em></div></div></div>' +
+          (jr ? '<div class="wd-bar"><i style="width:' + pct + '%"></i></div>' : '') +
+          ks.map(k => rowHtml(its[k], k, key)).join('') + '</div>';
+      }).join('');
       h += '<div class="wd-bill" data-doc="' + esc(w.id) + '"><div class="wd-h">บิล ' + esc(w.no || '') + ' <small>' + esc(thDate(w.date)) + ' · ใส่ราคาทีหลังได้ ช่องว่าง = รอราคา' + (w.chargeRef ? ' · อ้างอิงเก็บเงิน ' + esc(w.chargeRef) : '') + '</small></div>' + (rows || '<p class="hint">ยังไม่มีรายการ</p>') +
         '<div class="wd-sum"><span>' + esc(sumLine(w)) + '</span></div>' +
         '<div class="wd-btns"><button class="btn small" type="button" data-act="addship">＋ ค่าส่ง</button><button class="btn small good" type="button" data-act="togglepaid">จ่ายแล้ว ✓</button><button class="btn small" type="button" data-act="open">แก้ไขเต็ม</button><button class="btn small del" type="button" data-act="del">ลบ</button></div></div>';
@@ -9559,6 +9580,16 @@ function bahtText(value) {
       try { const url = await uploadPhotoToCloudinary(await squareLogo(f)); if (!url) throw new Error('upload'); setCustField(name, {logo: url, color: ''}); custThemeFor(name, true); renderWholesaleHistory(); toast('ใส่โลโก้ร้าน ' + name + ' แล้ว'); }
       catch (er) { toast('อัปโหลดโลโก้ไม่สำเร็จ ลองใหม่อีกครั้ง'); }
       return;
+    }
+    const asg = e.target.closest('select.wd-asg');
+    if (asg) {   // ผูกบรรทัดในบิลกับใบงาน → หน้าลูกค้า/ยอดงาน/สถานะจ่ายใช้เลขนี้
+      if (!asg.value) return;
+      const id = asg.closest('.wd-bill').dataset.doc, k = +asg.closest('.wd-r').dataset.k, list = store.get('bs_wholesale', []), i = list.findIndex(x => x.id === id); if (i < 0) return;
+      const items = (list[i].items || []).map(x => Object.assign({}, x)); if (!items[k]) return;
+      items[k].job = asg.value;
+      list[i] = Object.assign({}, list[i], {items, savedAt: Date.now()}); store.set('bs_wholesale', list); cloudSave('wholesale', list[i]);
+      try { const j = store.get('bs_jobs', []).find(x => String(x.no || '').trim() === asg.value); if (j) publicJobMirror(j); refreshOwedMirrors(); } catch (er) {}
+      renderWholesaleHistory(); toast('ผูกกับใบงาน ' + asg.value + ' แล้ว'); return;
     }
     const inp = e.target.closest('input.wd-p'); if (!inp) return;
     const id = inp.closest('.wd-bill').dataset.doc, k = +inp.closest('.wd-r').dataset.k, list = store.get('bs_wholesale', []), i = list.findIndex(x => x.id === id); if (i < 0) return;
