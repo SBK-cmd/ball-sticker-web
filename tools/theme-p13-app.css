@@ -470,3 +470,19 @@ html:root body #jobHistory li.jc .jw-i,html:root body #jobHistory li.jc .jw-i::m
 html:root body #jobHistory li.jc .jw-i{display:block!important;overflow:hidden;text-indent:0!important}
 html[data-theme="light"]:root,html:not([data-theme="dark"]):root{--a-bg:#DFE3EC}
 html:not([data-theme="dark"]) body{background:#DFE3EC!important}
+
+/* รอบ 14b: ไล่สีสถานะ เหลือง → เขียว · รับแล้ว = เทา (แถบข้างการ์ดกับปุ่มสถานะใช้สีเดียวกัน) */
+html:root body #jobHistory li.jc.st-pending{--st:#F5B301}
+html:root body #jobHistory li.jc.st-filed{--st:#C4BE1A}
+html:root body #jobHistory li.jc.st-printed{--st:#86BB2A}
+html:root body #jobHistory li.jc.st-shipped{--st:#1E9A55}
+html:root body #jobHistory li.jc.st-pickup{--st:#0F8F6E}
+html:root body #jobHistory li.jc.st-received,html:root body #jobHistory li.jc.st-rcvd{--st:#8A90A0}
+html:root body #jobHistory li.jc select.job-status-select.filed{--pc:#C4BE1A;--pc-bg:#F8F8DA;--pc-b:#DCD878;--pc-t:#5F5C06}
+html:root body #jobHistory li.jc select.job-status-select.printed{--pc:#86BB2A;--pc-bg:#EEF7DA;--pc-b:#C3DE86;--pc-t:#3B6508}
+html:root body #jobHistory li.jc select.job-status-select.shipped{--pc:#1E9A55;--pc-bg:#E3F5EA;--pc-b:#9AD6B2;--pc-t:#14703B}
+html:root body #jobHistory li.jc select.job-status-select.pickup{--pc:#0F8F6E;--pc-bg:#DDF4EC;--pc-b:#8FD6BE;--pc-t:#0A5E48}
+html[data-theme="dark"] body #jobHistory li.jc select.job-status-select.filed{--pc:#D8D23A;--pc-bg:#33320F;--pc-b:#5F5C1A;--pc-t:#E6E27A}
+html[data-theme="dark"] body #jobHistory li.jc select.job-status-select.printed{--pc:#A3D94A;--pc-bg:#24330F;--pc-b:#44601A;--pc-t:#B8E070}
+html[data-theme="dark"] body #jobHistory li.jc select.job-status-select.shipped{--pc:#5FD38A;--pc-bg:#14301F;--pc-b:#24593A;--pc-t:#7FE0A3}
+html[data-theme="dark"] body #jobHistory li.jc select.job-status-select.pickup{--pc:#3FD0A8;--pc-bg:#10332B;--pc-b:#1E6350;--pc-t:#7FE3C6}
