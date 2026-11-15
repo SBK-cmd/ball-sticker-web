@@ -1510,6 +1510,7 @@ function bahtText(value) {
     const url = URL.createObjectURL(f), im = new Image();
     im.onload = () => {
       // ตัดพื้นหลังรอบงาน (พื้นขาว/พื้นสีเดียว/พื้นโปร่งใส) แล้วใช้สัดส่วนของตัวงานจริง
+      custMask = null;
       let bw = im.naturalWidth, bh = im.naturalHeight, note = 'รูป ' + bw + ' × ' + bh + ' px', crop = null;
       try {
         const sc = Math.min(1, 700 / Math.max(bw, bh)), cw = Math.max(1, Math.round(bw * sc)), ch = Math.max(1, Math.round(bh * sc));
@@ -1529,6 +1530,9 @@ function bahtText(value) {
           bw = Math.round((x1 - x0 + 1) / sc); bh = Math.round((y1 - y0 + 1) / sc);
           note = 'ตัดขอบแล้ว ตัวงาน ' + bw + ' × ' + bh + ' px จากรูป ' + im.naturalWidth + ' × ' + im.naturalHeight;
           crop = {cv, x0, y0, w: x1 - x0 + 1, h: y1 - y0 + 1};
+          const mw = x1 - x0 + 1, mh = y1 - y0 + 1, mk = new Uint8Array(mw * mh);
+          for (let yy = 0; yy < mh; yy++) for (let xx = 0; xx < mw; xx++) if (isFg(((y0 + yy) * cw + (x0 + xx)) * 4)) mk[yy * mw + xx] = 1;
+          custMask = {w: mw, h: mh, m: mk, cv, x0, y0};
         }
       } catch (e) {}
       ratio = bh / bw; ratioSrc = note;
@@ -1547,6 +1551,117 @@ function bahtText(value) {
 
 
   let lastLayout = null;
+  let custMask = null;   // ภาพตัวงานที่ตัดขอบแล้ว (mask + canvas) สำหรับเรียงชิดขอบ
+
+  // ---------- เรียงชิดขอบตามรูปทรงจริง (SVGnest, MIT · ไม่ใช้ AI · ไฟล์อยู่ในโฟลเดอร์ nest/) ----------
+  const NEST_FILES = ['pathsegpolyfill', 'matrix', 'domparser', 'clipper', 'parallel', 'geometryutil', 'placementworker', 'svgparser', 'svgnest'];
+  let nestLoaded = null, nestRun = null;
+  function nestLoad() {
+    if (window.SvgNest) return Promise.resolve();
+    if (nestLoaded) return nestLoaded;
+    nestLoaded = NEST_FILES.reduce((p, f) => p.then(() => new Promise((ok, no) => {
+      const s = document.createElement('script'); s.src = 'nest/' + f + '.js?v=1'; s.onload = ok; s.onerror = () => no(new Error('โหลด ' + f + ' ไม่ได้')); document.head.appendChild(s);
+    })), Promise.resolve()).catch(e => { nestLoaded = null; throw e; });
+    return nestLoaded;
+  }
+  function traceContour(mk, w, h) {   // เส้นขอบนอกสุดของก้อนใหญ่สุด (Moore tracing) แล้วลดจุด
+    const W = w + 2, H = h + 2, m = new Uint8Array(W * H);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) m[(y + 1) * W + x + 1] = mk[y * w + x];
+    const lab = new Int32Array(W * H); let best = 0, bestN = 0, id = 0; const st = [];
+    for (let i = 0; i < W * H; i++) if (m[i] && !lab[i]) {
+      id++; let n = 0; st.push(i); lab[i] = id;
+      while (st.length) { const c = st.pop(); n++; const cx = c % W, cy = (c / W) | 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const nx = cx + dx, ny = cy + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; const q = ny * W + nx; if (m[q] && !lab[q]) { lab[q] = id; st.push(q); } } }
+      if (n > bestN) { bestN = n; best = id; }
+    }
+    let s0 = -1; for (let i = 0; i < W * H; i++) if (lab[i] === best) { s0 = i; break; }
+    if (s0 < 0) return null;
+    const DX = [1, 1, 0, -1, -1, -1, 0, 1], DY = [0, 1, 1, 1, 0, -1, -1, -1], isF = (x, y) => x >= 0 && y >= 0 && x < W && y < H && lab[y * W + x] === best;
+    let cx = s0 % W, cy = (s0 / W) | 0; const sx = cx, sy = cy; let bi = 4; const pts = [[cx, cy]]; let guard = 0;
+    do {
+      let moved = false;
+      for (let k = 1; k <= 8; k++) { const di = (bi + k) % 8, nx = cx + DX[di], ny = cy + DY[di];
+        if (isF(nx, ny)) { cx = nx; cy = ny; bi = (di + 4) % 8; pts.push([cx, cy]); moved = true; break; } }
+      if (!moved) break;
+    } while (!(cx === sx && cy === sy) && ++guard < 4 * W * H);
+    // ลดจุด (Douglas-Peucker, 1.2 px) — พิกัดคือกึ่งกลางพิกเซลขอบ จึงถอยออก 0.5 px ภายหลังด้วยการขยายเล็กน้อยไม่ทำ (น้อยกว่า 0.1 มม.)
+    const rdp = (a, eps) => { if (a.length < 3) return a; let dm = 0, ix = 0; const A = a[0], B = a[a.length - 1], dx = B[0] - A[0], dy = B[1] - A[1], L = Math.hypot(dx, dy) || 1;
+      for (let i = 1; i < a.length - 1; i++) { const d = Math.abs(dy * a[i][0] - dx * a[i][1] + B[0] * A[1] - B[1] * A[0]) / L; if (d > dm) { dm = d; ix = i; } }
+      if (dm > eps) { const l = rdp(a.slice(0, ix + 1), eps), r = rdp(a.slice(ix), eps); return l.slice(0, -1).concat(r); } return [A, B]; };
+    const half = Math.floor(pts.length / 2), l = rdp(pts.slice(0, half + 1), 1.2), r = rdp(pts.slice(half).concat([pts[0]]), 1.2);
+    const out = l.slice(0, -1).concat(r.slice(0, -1)).map(p => [p[0] - 1, p[1] - 1]);
+    return out.length >= 3 ? out : null;
+  }
+  function nestSVG(res, sheet) {   // วาดผลเรียง: รูปจริงของลูกค้าในแต่ละชิ้น + เส้นตัด
+    const {W, H, items, pic, pw, ph} = res;
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;background:#fff;border:1px solid var(--line)"><defs><g id="nestPiece"><image href="' + pic + '" x="0" y="0" width="' + pw + '" height="' + ph + '"/></g></defs>' +
+      items.map(t => '<g transform="' + t + '"><use href="#nestPiece"/><path d="' + res.d + '" fill="none" stroke="#e11d48" stroke-width="0.6" vector-effect="non-scaling-stroke"/></g>').join('') + '</svg>';
+  }
+  function nestVerify(polys, W, H, gapMm) {   // ตรวจด้วยโค้ด: อยู่ในแผ่น + ไม่ซ้อน + ช่องไฟอย่างน้อย gap (Clipper, หัวมน)
+    const C = ClipperLib, K = 100; let inside = 0, bad = 0;
+    const sc = polys.map(p => p.map(q => ({X: Math.round(q[0] * K), Y: Math.round(q[1] * K)})));
+    sc.forEach(p => { const xs = p.map(q => q.X), ys = p.map(q => q.Y); if (Math.min(...xs) >= -2 && Math.min(...ys) >= -2 && Math.max(...xs) <= W * K + 2 && Math.max(...ys) <= H * K + 2) inside++; });
+    const bb = sc.map(p => [Math.min(...p.map(q => q.X)), Math.min(...p.map(q => q.Y)), Math.max(...p.map(q => q.X)), Math.max(...p.map(q => q.Y))]);
+    const half = gapMm * K / 2 - 3, buf = sc.map(p => { const o = new C.ClipperOffset(2, 2); o.AddPath(p, C.JoinType.jtRound, C.EndType.etClosedPolygon); const r = []; o.Execute(r, half); return r; });
+    for (let i = 0; i < sc.length; i++) for (let j = i + 1; j < sc.length; j++) {
+      if (bb[i][0] > bb[j][2] + gapMm * K || bb[j][0] > bb[i][2] + gapMm * K || bb[i][1] > bb[j][3] + gapMm * K || bb[j][1] > bb[i][3] + gapMm * K) continue;
+      const c = new C.Clipper(); c.AddPaths(buf[i], C.PolyType.ptSubject, true); c.AddPaths(buf[j], C.PolyType.ptClip, true); const sol = []; c.Execute(C.ClipType.ctIntersection, sol);
+      if (sol.some(s => Math.abs(C.Clipper.Area(s)) > 4)) bad++;
+    }
+    return {n: sc.length, inside, bad};
+  }
+  async function runNest() {
+    const r = lastLayout, msg = $('nestMsg'), btn = $('nestBtn');
+    if (nestRun) { nestRun.stop(); return; }
+    if (!custMask || !(r && r.count > 0)) { msg.textContent = 'ต้องอัปรูปงาน (PNG พื้นโปร่งใสดีที่สุด) และใส่ขนาดให้เรียงได้ก่อน'; return; }
+    msg.textContent = 'กำลังโหลดตัวเรียง...'; btn.disabled = true;
+    try { await nestLoad(); } catch (e) { msg.textContent = 'โหลดตัวเรียงไม่ได้: ' + e.message; btn.disabled = false; return; }
+    btn.disabled = false;
+    const cont = traceContour(custMask.m, custMask.w, custMask.h);
+    if (!cont) { msg.textContent = 'หาเส้นขอบของรูปไม่เจอ'; return; }
+    const kx = r.sw * 10 / custMask.w, ky = r.sh * 10 / custMask.h, GAP = r.gap * 10, Wm = r.aw * 10, Hm = r.ah * 10;
+    const poly = cont.map(p => [p[0] * kx, p[1] * ky]), pwm = r.sw * 10, phm = r.sh * 10;
+    const N = Math.ceil(r.count * 1.12) + 2, cell = Math.max(pwm, phm) + 30, per = 12;
+    let parts = '', offs = [];
+    for (let i = 0; i < N; i++) { const ox = Wm + 60 + (i % per) * cell, oy = 20 + Math.floor(i / per) * cell; offs.push([ox, oy]);
+      parts += '<path id="p' + i + '" d="M ' + poly.map(p => (p[0] + ox).toFixed(2) + ' ' + (p[1] + oy).toFixed(2)).join(' L ') + ' Z"/>'; }
+    const tw = Wm + 60 + per * cell + 20, th = Math.max(Hm, 20 + Math.ceil(N / per) * cell + 20);
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + tw + '" height="' + th + '" viewBox="0 0 ' + tw + ' ' + th + '"><rect id="bin" x="0" y="0" width="' + Wm + '" height="' + Hm + '"/>' + parts + '</svg>';
+    const crc = document.createElement('canvas'); crc.width = custMask.w; crc.height = custMask.h;
+    crc.getContext('2d').drawImage(custMask.cv, custMask.x0, custMask.y0, custMask.w, custMask.h, 0, 0, custMask.w, custMask.h);
+    const pic = crc.toDataURL('image/png');
+    const dStr = 'M ' + poly.map(p => p[0].toFixed(2) + ' ' + p[1].toFixed(2)).join(' L ') + ' Z';
+    const SECS = 150, t0 = Date.now(); let best = null, stopped = false, timer = null;
+    const el = SvgNest.parsesvg(svg); let bin = null; for (const c of el.childNodes) if (c.nodeType === 1 && c.getAttribute('id') === 'bin') bin = c;
+    SvgNest.setbin(bin);
+    SvgNest.config({spacing: GAP + 1, rotations: 4, populationSize: 10, mutationRate: 10, useHoles: false, exploreConcave: false, curveTolerance: 0.3, identical: true});   // +1 มม. ชดเชยมุมแหลม แล้วตรวจช่องไฟจริงทีหลัง
+    const finish = () => {
+      if (timer) clearInterval(timer); nestRun = null; btn.textContent = 'ลองเรียงชิดขอบ (ตามรูปทรงจริง)'; try { SvgNest.stop(); } catch (e) {}
+      if (!best) { msg.textContent = 'ยังไม่ได้ผล ลองใหม่อีกครั้ง'; return; }
+      const holder = document.createElement('div'); holder.innerHTML = best.first;
+      const items = [], polys = [];
+      holder.querySelectorAll('g').forEach(g => { const pth = g.querySelector('path'); if (!pth) return;
+        const id = +pth.id.replace('p', ''), tr = g.getAttribute('transform') || '', m1 = /translate\(([-\d.e]+)[ ,]([-\d.e]+)\)/.exec(tr), m2 = /rotate\(([-\d.e]+)\)/.exec(tr);
+        const tx = m1 ? +m1[1] : 0, ty = m1 ? +m1[2] : 0, rot = m2 ? +m2[1] : 0, o = offs[0], cs = Math.cos(rot * Math.PI / 180), sn = Math.sin(rot * Math.PI / 180);
+        // ชิ้นถูกวางที่ (ox,oy) ก่อนหมุน/ย้าย → ย้ายกลับมา 0,0 แล้วใส่การหมุน/ย้ายของผลเรียง
+        items.push('translate(' + tx + ' ' + ty + ') rotate(' + rot + ') translate(' + (-o[0]) + ' ' + (-o[1]) + ') translate(' + o[0] + ' ' + o[1] + ')');
+        polys.push(poly.map(p => { const X = p[0] + o[0], Y = p[1] + o[1]; return [tx + X * cs - Y * sn, ty + X * sn + Y * cs]; })); });
+      // ภาพ/เส้นของแต่ละชิ้นวาดที่ตำแหน่งเดิม (ox,oy) แล้วใช้ transform ของผลเรียง → ต้องวางรูปที่ (ox,oy)
+      const items2 = items.map((t, i) => t);
+      const ver = nestVerify(polys, Wm, Hm, GAP);
+      const okAll = ver.inside === ver.n && ver.bad === 0, nest = ver.n, grid = r.count;
+      const drawItems = []; holder.querySelectorAll('g').forEach((g, i) => { const pth = g.querySelector('path'); if (!pth) return; const o = offs[0]; drawItems.push(g.getAttribute('transform') + ' translate(' + o[0] + ' ' + o[1] + ')'); });
+      $('nestViz').hidden = false;
+      $('nestViz').innerHTML = nestSVG({W: Wm, H: Hm, items: drawItems, pic, pw: pwm, ph: phm, d: dStr}, r);
+      msg.innerHTML = '<b>ชิดขอบ ' + nest + ' ชิ้น</b> เทียบกริด ' + grid + ' ชิ้น (' + (nest > grid ? 'ได้เพิ่ม ' + (nest - grid) : nest === grid ? 'เท่ากัน' : 'น้อยกว่า ใช้กริดดีกว่า') + ') · ' + (okAll ? 'ตรวจด้วยโค้ดแล้ว: อยู่ในแผ่น ไม่ซ้อน ช่องไฟไม่ต่ำกว่า ' + fmt(r.gap) + ' ซม.' : '<b style="color:#b91c1c">ตรวจไม่ผ่าน (' + (ver.n - ver.inside) + ' ชิ้นล้นแผ่น, ' + ver.bad + ' คู่ชิดเกิน) อย่าใช้ผังนี้</b>') + (stopped ? ' · หยุดเอง' : ' · ใช้เวลา ' + Math.round((Date.now() - t0) / 1000) + ' วิ') + '<br><span style="opacity:.8">เส้นแดง = แนวตัดตามขอบรูป · ยังเป็นการทดลอง ไม่ได้ส่งเข้าใบสั่งงาน/ราคา</span>';
+    };
+    nestRun = {stop: () => { stopped = true; finish(); }};
+    btn.textContent = 'หยุด (ใช้ผลที่ดีที่สุดตอนนี้)';
+    SvgNest.start(() => {}, (list, eff, placed, total) => { best = {first: list[0] ? list[0].outerHTML : '', n: placed}; });
+    timer = setInterval(() => { const s = Math.round((Date.now() - t0) / 1000); msg.textContent = 'กำลังเรียง... ' + s + '/' + SECS + ' วิ' + (best ? ' (ตอนนี้ลงแผ่นแรก ' + (best.first.match(/<path /g) || []).length + ' ชิ้น)' : ''); if (s >= SECS) finish(); }, 1000);
+  }
+  $('nestBtn').addEventListener('click', runNest);
+  function updNestBox() { const r = lastLayout; $('nestBox').hidden = !(custMask && r && r.count > 0); }
 
   function readLayout() {
     const uf = SUNITS[sUnit].f;
@@ -1592,7 +1707,7 @@ function bahtText(value) {
       '</tbody></table>' +
       '<div class="sheet-viz">' + ((r.pw > 0 && r.ph > 0) ? layoutSVG(r, 'p') : '') + '</div>' +
       '<p class="foot-note">คำนวณแบบตารางตามแนวที่กำหนด ไม่สลับแนวหรือเรียงสลับฟันปลา ภาพตัวอย่างไม่ใช่ไฟล์สำหรับพิมพ์</p>';
-    renderPrice(); try { renderQC(); } catch (e) { console.error(e); }
+    renderPrice(); try { renderQC(); } catch (e) { console.error(e); } try { updNestBox(); } catch (e) {}
   }
 
   // ---------- คำนวณด่วน (มือถือ: จอเดียวจบ) — ซิงก์กับช่องเดิม แล้วสรุปผลจากระบบเรียง/คิดราคาเดิม ----------
