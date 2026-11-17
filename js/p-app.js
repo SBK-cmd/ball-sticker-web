@@ -1390,24 +1390,9 @@ function bahtText(value) {
     }
     return {A: A, status: 'high'};
   }
-  function renderTier(r, typedQty) {
-    const box = $('tierBox'); if (!box) return;
-    const show = !!(r && r.sw > 0 && r.sh > 0);
-    box.hidden = !show; if (!show) return;
-    if (!(typedQty > 0)) { $('tierTotal').textContent = '—'; $('tierSub').textContent = ''; $('tierHint').textContent = 'ใส่ "จำนวนที่ลูกค้าสั่ง" เพื่อดูราคาตามเรทเพจ'; return; }
-    const t = tierPrice(r.sw, r.sh, typedQty);
-    const area = 'พื้นที่รวม ' + n2(t.A) + ' ตร.ม. (' + fmt(r.sw) + '×' + fmt(r.sh) + ' ซม. × ' + typedQty.toLocaleString('en-US') + ' ชิ้น)';
-    if (t.status === 'ok') {
-      const pr = Math.round(t.price);
-      const ship = pr < SHIP_FREE_FROM ? SHIP_FEE : 0;
-      $('tierTotal').textContent = baht(pr + ship);
-      $('tierSub').innerHTML = 'ค่าพิมพ์ <b>' + baht(pr) + '</b> + ค่าส่ง <b>' + baht(ship) + '</b> บาท · เฉลี่ยค่าพิมพ์ ' + money(pr / typedQty) + ' บาท/ชิ้น<br>' + area;
-      $('tierHint').textContent = (ship ? 'ค่าพิมพ์ไม่ถึง ' + baht(SHIP_FREE_FROM) + ' บาท จึงบวกค่าส่ง ' + baht(SHIP_FEE) + ' บาท' : 'ค่าพิมพ์ ' + baht(SHIP_FREE_FROM) + ' บาทขึ้นไป ไม่คิดค่าส่ง') + ' · ปัดเป็นบาท · ดูตัวอย่างเท่านั้น ยังไม่ได้ผูกกับใบงาน';
-    } else {
-      $('tierTotal').textContent = '—'; $('tierSub').textContent = area;
-      $('tierHint').textContent = t.status === 'low' ? 'พื้นที่รวมน้อยกว่า 10 ชิ้นที่ 9×9 ซม. (0.081 ตร.ม.) ซึ่งเป็นขั้นต่ำของเรท ไม่เดาราคา ให้ตั้งราคาเอง' : 'พื้นที่รวมเกิน 100 ชิ้นที่ 25×25 ซม. (6.25 ตร.ม.) ซึ่งเป็นขั้นสูงสุดของเรท ไม่เดาราคา ให้ตั้งราคาเอง';
-    }
-  }
+  // สูตรหลักของ "สติ๊กเกอร์ HP พิมพ์เคลือบไดคัท" เพจบอล: ราคาจากพื้นที่ (tierPrice) + กฎค่าส่ง · วัสดุ/เพจอื่นยังใช้เรทแผ่นเดิม
+  const useTierPrice = (pageKey, paper) => pageKey === 'ball' && paper === 'hp';
+  const shipFor = printPrice => printPrice < SHIP_FREE_FROM ? SHIP_FEE : 0;
 
   function renderPrice() {
     if (!$('priceCard')) return;
@@ -1418,7 +1403,6 @@ function bahtText(value) {
     const typedQty = Math.max(0, Math.floor(num($('priceQty').value)));
     const oneSheet = !(typedQty > 0);   // ยังไม่ใส่จำนวนที่ลูกค้าสั่ง → คิดราคาจากจำนวนที่คำนวณได้ (1 แผ่นเต็ม) ไปก่อน
     const qty = oneSheet ? per : typedQty;
-    renderTier(r, typedQty);
     $('pricePerSheet').value = per > 0 ? per.toLocaleString('en-US') : '0';
     const unitWord = rate && rate.unit === 'sqm' ? 'ตรม.' : 'เมตร';
     $('priceRateCap').textContent = rate
@@ -1461,10 +1445,18 @@ function bahtText(value) {
     const partSheetPrice = unitPerSheet * rate.part;
     const fullCost = full * fullSheetPrice;
     const partCost = frac * partSheetPrice;
-    const total = Math.round(fullCost + partCost);
+    const tierOn = useTierPrice(pageKey, $('paper').value);
+    const tier = tierOn ? tierPrice(r.sw, r.sh, qty) : null;
+    if (tierOn && tier.status !== 'ok') {
+      clearPrice();
+      set('priceHint', 'พื้นที่รวม ' + n2(tier.A) + ' ตร.ม. ' + (tier.status === 'low' ? 'น้อยกว่าขั้นต่ำของเรท (10 ชิ้นที่ 9×9 ซม. = 0.081 ตร.ม.)' : 'เกินขั้นสูงสุดของเรท (6.25 ตร.ม.)') + ' · ไม่เดาราคา ให้ตั้งราคาเอง');
+      return;
+    }
+    const total = tierOn ? Math.round(tier.price) : Math.round(fullCost + partCost);
+    const ship = tierOn ? shipFor(total) : 0;
 
     set('priceTotal', baht(total));
-    $('priceSub').innerHTML = 'เฉลี่ย <b>' + money(total / qty) + '</b> บาท/ชิ้น';
+    $('priceSub').innerHTML = 'เฉลี่ย <b>' + money(total / qty) + '</b> บาท/ชิ้น' + (tierOn ? '<div class="price-cost">' + (ship ? '+ ค่าส่ง ' + baht(ship) + ' บาท → รวม <b>' + baht(total + ship) + '</b> บาท' : 'ค่าพิมพ์ ' + baht(SHIP_FREE_FROM) + ' บาทขึ้นไป ไม่คิดค่าส่ง') + '</div>' : '');
     // ต้นทุน/กำไรของงานนี้ (เฉพาะเจ้าของ · เฉพาะ HP PVC เพจบอล) — ใช้ต้นทุนต่อแผ่นจากการ์ด "ต้นทุนจริง"
     if (can('money') && pageKey === 'ball' && $('paper').value === 'hp') try {
       const cr = costCalc(); if (!(cr.mat > 0)) throw 0;   // ยังไม่กรอกต้นทุน → ไม่โชว์
@@ -1472,12 +1464,14 @@ function bahtText(value) {
       $('priceSub').innerHTML += '<div class="price-cost">ต้นทุน ≈ ' + money(jobCost) + ' · กำไร ≈ <b class="' + (profit >= 0 ? 'pos' : 'neg') + '">' + money(profit) + '</b> (' + Math.round(profit / Math.max(1, total) * 100) + '%) <small>ก่อน VAT · ' + (cr.ownerPaid ? 'หลังหักเงินเดือนเจ้าของ' : 'ยังไม่หักเงินเดือนเจ้าของ') + '</small></div>';
     } catch (e) { /* ตอนเปิดแอปครั้งแรก ข้อมูลต้นทุนยังไม่พร้อม */ }
     const lines = [];
-    if (full > 0) lines.push('<li><span>แผ่นเต็ม ' + full.toLocaleString('en-US') + ' แผ่น × ' + money(fullSheetPrice) + '</span><b>' + money(fullCost) + '</b></li>');
-    if (rem > 0) lines.push('<li><span>เศษ ' + rem.toLocaleString('en-US') + ' ชิ้น (' + n2(frac) + ' แผ่น) × ' + money(partSheetPrice) + '</span><b>' + money(partCost) + '</b></li>');
+    if (tierOn) lines.push('<li><span>พื้นที่รวม ' + n2(tier.A) + ' ตร.ม. (' + fmt(r.sw) + '×' + fmt(r.sh) + ' ซม. × ' + qty.toLocaleString('en-US') + ' ชิ้น) · เรทเกรด A ฐาน 9 ซม.</span><b>' + money(total) + '</b></li>');
+    if (tierOn && ship) lines.push('<li><span>ค่าจัดส่ง (ค่าพิมพ์ไม่ถึง ' + baht(SHIP_FREE_FROM) + ')</span><b>' + money(ship) + '</b></li>');
+    if (!tierOn && full > 0) lines.push('<li><span>แผ่นเต็ม ' + full.toLocaleString('en-US') + ' แผ่น × ' + money(fullSheetPrice) + '</span><b>' + money(fullCost) + '</b></li>');
+    if (!tierOn && rem > 0) lines.push('<li><span>เศษ ' + rem.toLocaleString('en-US') + ' ชิ้น (' + n2(frac) + ' แผ่น) × ' + money(partSheetPrice) + '</span><b>' + money(partCost) + '</b></li>');
     $('priceBreak').innerHTML = lines.join('');
     set('priceLabel', oneSheet ? 'ราคา 1 แผ่นเต็ม (' + per.toLocaleString('en-US') + ' ชิ้น)' : 'ราคา ' + qty.toLocaleString('en-US') + ' ชิ้น');
-    set('priceHint', (oneSheet ? 'ยังไม่ได้ใส่จำนวนที่ลูกค้าสั่ง จึงคิดจากจำนวนที่คำนวณได้ 1 แผ่นก่อน · ' : '') +
-      'คิดเงินแผ่นละ ' + fmt(bw) + ' × ' + fmt(bh) + ' ซม. = ' + (rate.unit === 'sqm' ? n2(sqmPerSheet) + ' ตรม.' : n2(mPerSheet) + ' เมตร') + ' · ยอดรวมปัดเป็นบาท');
+    set('priceHint', (oneSheet ? 'ยังไม่ได้ใส่จำนวนที่ลูกค้าสั่ง จึงคิดจากจำนวนที่คำนวณได้ 1 แผ่นก่อน · ' : '') + (tierOn ? 'คิดตามพื้นที่งาน (กรอบสี่เหลี่ยมชิ้นงาน × จำนวน) ตามเรทเกรด A ฐาน 9 ซม. · ยอดรวมปัดเป็นบาท · ยังไม่ผูกกับใบงาน/ใบเสนอราคา' :
+      'คิดเงินแผ่นละ ' + fmt(bw) + ' × ' + fmt(bh) + ' ซม. = ' + (rate.unit === 'sqm' ? n2(sqmPerSheet) + ' ตรม.' : n2(mPerSheet) + ' เมตร') + ' · ยอดรวมปัดเป็นบาท'));
 
     // ช่องปรับราคาต่อชิ้น: ใส่ราคาที่จะให้ลูกค้า แล้วคิดยอดใหม่ = จำนวน × ราคาต่อชิ้น
     const avg = Math.round(total / qty * 100) / 100;
@@ -1754,6 +1748,10 @@ function bahtText(value) {
   function qcPriceFor(q, r) {   // สูตรเดียวกับ renderPrice (เรทตามพื้นที่ เต็มแผ่น/เศษ)
     const pageKey = PRICE_PAGES[$('pricePage').value] ? $('pricePage').value : 'ball', rate = PRICE_PAGES[pageKey].rates[$('paper').value];
     const per = r.count, P = PAPERS[$('paper').value]; if (!rate || !(per > 0) || !P) return null;
+    if (useTierPrice(pageKey, $('paper').value)) {   // สูตรหลัก HP พิมพ์เคลือบไดคัท: ราคาตามพื้นที่ (ไม่รวมค่าส่ง) · นอกช่วงเรท = null
+      const t = tierPrice(r.sw, r.sh, q); if (t.status !== 'ok') return null;
+      const tot = Math.round(t.price); return {total: tot, ship: shipFor(tot), sheets: q / per, cut: Math.ceil(q / per)};
+    }
     const full = Math.floor(q / per), frac = (q - full * per) / per, unit = rate.unit === 'sqm' ? (P.nw * P.nh) / 10000 : P.nh / 100;
     return {total: Math.round(full * unit * rate.full + frac * unit * rate.part), sheets: full + frac, cut: Math.ceil(q / per)};
   }
@@ -1774,7 +1772,7 @@ function bahtText(value) {
     $('qcLeft').textContent = pr && q % per ? (per - q % per).toLocaleString('th-TH') + ' ช่อง' : (pr ? 'เต็มแผ่น' : '—');
     $('qcLbl').textContent = !per ? (r.sw > 0 && r.sh > 0 ? 'ชิ้นใหญ่กว่าแผ่นนี้ · ลองวัสดุอื่น หรือคิดราคาแบบม้วน' : 'ใส่ขนาดสติ๊กเกอร์') : typed > 0 ? 'ราคา ' + q.toLocaleString('th-TH') + ' ชิ้น · ก่อน VAT' : 'ราคา 1 แผ่นเต็ม (' + per.toLocaleString('th-TH') + ' ชิ้น) · ก่อน VAT';
     $('qcPrice').textContent = pr ? pr.total.toLocaleString('th-TH') : '—';
-    $('qcSub').textContent = pr ? 'ชิ้นละ ' + money(pr.total / q) + ' · รวม VAT ' + Math.round(pr.total * 1.07).toLocaleString('th-TH') : (per ? 'วัสดุนี้ยังไม่มีเรทราคา' : ($('warn').hidden ? '' : $('warn').textContent));
+    $('qcSub').textContent = pr ? 'ชิ้นละ ' + money(pr.total / q) + ' · รวม VAT ' + Math.round(pr.total * 1.07).toLocaleString('th-TH') + (pr.ship ? ' · + ค่าส่ง ' + pr.ship + ' = ' + (pr.total + pr.ship).toLocaleString('th-TH') : '') : (per ? (useTierPrice($('pricePage').value, $('paper').value) ? 'ขนาด/จำนวนนี้อยู่นอกช่วงเรท ให้ตั้งราคาเอง' : 'วัสดุนี้ยังไม่มีเรทราคา') : ($('warn').hidden ? '' : $('warn').textContent));
     const pf = $('qcProfit'); pf.hidden = true;
     if (pr && can('money') && $('pricePage').value === 'ball' && $('paper').value === 'hp') try { const cr = costCalc(); if (cr.mat > 0) { const c = pr.sheets * cr.perSheet; pf.hidden = false; pf.textContent = 'ต้นทุน ≈ ' + Math.round(c).toLocaleString('th-TH') + ' · กำไร ≈ ' + Math.round(pr.total - c).toLocaleString('th-TH') + ' (' + Math.round((pr.total - c) / Math.max(1, pr.total) * 100) + '%)'; } } catch (e) {}
     const tip = $('qcTip');
