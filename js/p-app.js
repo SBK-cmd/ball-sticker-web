@@ -9225,6 +9225,7 @@ function bahtText(value) {
       const ex = sr.pre ? splitCustomer(sr.pre) : null;
       if (ex && ex.item) { const k = jobItems.findIndex(x => !x.name.trim()); if (k >= 0) jobItems[k] = {name: ex.item.name, qty: ex.item.qty, note: jobItems[k].note || ''}; else jobItems.push({name: ex.item.name, qty: ex.item.qty, note: ''}); renderJobItems(); }
       ['jName', 'jPhone', 'jAddr', 'jRName', 'jRPhone', 'jRAddr'].forEach(id => $(id).dispatchEvent(new Event('input', {bubbles: true})));
+      $('jName').dispatchEvent(new Event('change', {bubbles: true}));   // ชื่อตรงร้านราคาส่ง → สลับเป็นงานส่ง (JBS) เหมือนพิมพ์เอง
       renderJob(); toast('แยกแบบฝากส่งแล้ว: ผู้ส่ง ' + sr.send.name + ' → ผู้รับ ' + (sr.recv.name || '') + ' ตรวจอีกครั้ง'); return;
     }
     const r = splitCustomer($('jPaste').value);
@@ -9237,6 +9238,7 @@ function bahtText(value) {
     }
     if (r.note) { const cur = $('jobNote').value.trim(); $('jobNote').value = cur ? cur + '\n' + r.note : r.note; }
     ['jName', 'jPhone', 'jAddr', 'jobNote'].forEach(id => $(id).dispatchEvent(new Event('input', {bubbles: true})));
+    $('jName').dispatchEvent(new Event('change', {bubbles: true}));   // ชื่อตรงร้านราคาส่ง → สลับเป็นงานส่ง (JBS) เหมือนพิมพ์เอง
     renderJob(); toast('แยกให้แล้ว ตรวจรายการงาน ชื่อ เบอร์ ที่อยู่ อีกครั้ง');
   });
   $('copy-confirm').addEventListener('click', copyConfirm);
