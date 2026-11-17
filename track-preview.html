@@ -205,11 +205,12 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
 .toast2{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#111;color:#fff;font-size:13.5px;padding:9px 16px;border-radius:999px;z-index:99;box-shadow:0 6px 18px rgba(0,0,0,.3)}
 .secT{display:flex;align-items:baseline;justify-content:space-between;max-width:400px;margin:4px auto 8px;padding:0 2px}.secT b{font-size:15px;font-weight:600;color:#111827}.secT span{font-size:12px;color:#8b93a1}
 .h2st{margin-bottom:20px}
+.lng{display:inline-flex;flex:none;align-items:center;min-height:40px;padding:3px;border-radius:999px;border:1px solid var(--line);background:#fff;color:inherit;font:inherit;cursor:pointer}.lng b{font-size:12px;font-weight:700;letter-spacing:.02em;padding:6px 9px;border-radius:999px;color:var(--mut)}html:not([data-lang=en]) .lng b[data-l=th],html[data-lang=en] .lng b[data-l=en]{background:#111827;color:#fff}body.themed .lng{border-color:rgba(255,255,255,.55)}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="brand"><img src="icon-192.png" alt=""><div><b>บอลสติ๊กเกอร์ พิษณุโลก</b><small>ติดตามสถานะงานของคุณ</small></div><button type="button" class="shr" id="shareBtn" aria-label="แชร์ลิงก์ติดตามสถานะ"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg><span>แชร์</span></button></div>
+  <div class="brand"><img src="icon-192.png" alt=""><div><b>บอลสติ๊กเกอร์ พิษณุโลก</b><small>ติดตามสถานะงานของคุณ</small></div><button type="button" class="shr" id="shareBtn" aria-label="แชร์ลิงก์ติดตามสถานะ"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg><span>แชร์</span></button><button type="button" class="lng" id="langBtn" aria-label="Language"><b data-l="th">TH</b><b data-l="en">EN</b></button></div>
   <div class="card" id="box"><p style="text-align:center;color:var(--mut);margin:20px 0">กำลังโหลดสถานะงาน…</p></div>
   <div class="ct">สอบถามเพิ่มเติม LINE <a href="https://line.me/R/ti/p/@bk25">@bk25</a> · โทร <a href="tel:0935353555">093-535-3555</a><br>จ–ส 09:00–17:00 น. (หยุดวันอาทิตย์)</div>
 </div>
@@ -650,6 +651,102 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     if (navigator.share) navigator.share(data).catch(function (e) { if (e && e.name !== 'AbortError') copy(u); });
     else copy(u);
   });
+})();
+</script>
+<script>
+/* สวิตช์ภาษา TH / EN — แปลเฉพาะข้อความของระบบ (ป้ายสถานะ ปุ่ม หัวข้อ วันที่) ชื่อลูกค้า ชื่องาน ที่อยู่ และข้อความจากขนส่งคงเดิม
+   ทำงานโดยแปลข้อความที่ขึ้นหน้าจอ (ไม่แตะโค้ดวาดหน้าเดิม) · จำภาษาที่เลือกในเครื่อง · เปิดตรง ๆ ด้วย ?lang=en */
+(function () {
+  var EXACT = {
+    'บอลสติ๊กเกอร์ พิษณุโลก': 'Ball Sticker Phitsanulok', 'ติดตามสถานะงานของคุณ': 'Track your order status', 'แชร์': 'Share', 'แชร์ลิงก์ติดตามสถานะ': 'Share tracking link',
+    'กำลังโหลดสถานะงาน…': 'Loading order status…', 'สอบถามเพิ่มเติม LINE': 'Questions? LINE', '· โทร': '· Tel', 'จ–ส 09:00–17:00 น. (หยุดวันอาทิตย์)': 'Mon–Sat 09:00–17:00 (closed Sundays)',
+    'เปิด จ–ส 09:00–17:00 น. (หยุดวันอาทิตย์)': 'Open Mon–Sat 09:00–17:00 (closed Sundays)',
+    'รับงานแล้ว · รอทำ': 'Order received · queued', 'กำลังผลิต': 'In production', 'ผลิตเสร็จแล้ว': 'Production finished', 'จัดส่งแล้ว': 'Shipped', 'ลูกค้ารับแล้ว · เสร็จสิ้น': 'Received · completed',
+    'รับงาน': 'Received', 'ทำไฟล์': 'Artwork', 'ผลิต': 'Printing', 'จัดส่ง': 'Shipping', 'รับแล้ว': 'Delivered', 'รับที่ร้าน': 'Pickup at shop', 'ขั้นตอนงาน': 'Order steps',
+    '✓ ลูกค้ารับพัสดุแล้ว': '✓ Parcel received', 'รอสถานะขนส่ง': 'Awaiting courier status', 'สถานะการจัดส่ง': 'Delivery status', 'ผู้ส่ง': 'From', 'ผู้รับ': 'To',
+    'คัดลอก': 'Copy', 'คัดลอกแล้ว': 'Copied', 'เช็คสถานะพัสดุ': 'Check parcel status', '🔎 เช็คสถานะพัสดุ': '🔎 Check parcel status', 'ยังไม่มีเลขพัสดุ': 'No tracking number yet', 'เลขพัสดุ': 'Tracking no.',
+    'ปกติตามคิว': 'Normal queue', 'ขอด่วนไม่เกิน 2 วัน': 'Rush · within 2 days', 'ขอด่วนส่งวันนี้': 'Rush · ship today', 'ด่วน 2 วัน': 'Rush 2 days', 'ด่วนวันนี้': 'Rush today',
+    'พร้อมรับหน้าร้าน': 'Ready for pickup', 'ยอดเงิน': 'Amount', 'กำหนดส่ง': 'Due date', 'ที่อยู่ผู้ส่ง': 'Sender address', 'รูปงานของคุณ': 'Your artwork photos', 'รูปอ้างอิง': 'Reference images',
+    'จัดส่งถึง': 'Ship to', '📦 จัดส่งถึง': '📦 Ship to', '🏬 รับสินค้าหน้าร้านได้เลย': '🏬 Pick up at our shop', '🗺️ เปิดแผนที่ร้าน': '🗺️ Open shop map',
+    'บาท': 'THB', 'ยอดค้างชำระ': 'Balance due', 'สแกนจ่าย': 'Scan to pay', 'สแกนจ่าย ': 'Scan to pay', 'ยังไม่ได้ชำระ': 'Unpaid', 'ยังไม่ชำระ': 'Unpaid', 'ชำระแล้ว': 'Paid', '✓ ชำระแล้ว': '✓ Paid', 'ชำระครบแล้ว ✓': 'Paid in full ✓',
+    'กำลังทำ': 'In progress', 'กำลังส่ง': 'Shipping', 'ได้รับแล้ว': 'Received', 'ไม่มีงานในกลุ่มนี้': 'No orders in this group', 'ใบงานของคุณ': 'Your orders', 'ล่าสุดอยู่บน': 'Latest on top',
+    'งานของคุณ': 'Your order', 'คุณ': 'Hi', 'รายการค้างชำระ': 'Outstanding items', 'ปิด': 'Close', 'ยอดที่ต้องจ่าย': 'Amount due',
+    'ติ๊กงานที่ต้องการจ่ายตอนนี้ ยอดและ QR จะเปลี่ยนตามที่เลือก': 'Tick the orders you want to pay now — the amount and QR update to match',
+    'หักมัดจำที่ชำระแล้ว': 'Deposit already paid', 'ยอดที่ยังไม่ได้จ่าย': 'Amount still unpaid', 'ยอดที่เลือกจ่าย': 'Selected amount', 'ยังไม่ได้เลือกงาน': 'No orders selected',
+    'รายการอื่น (ไม่ระบุงาน)': 'Other items (no order specified)', 'รายการอื่น': 'Other items', 'บันทึกรูป QR': 'Save QR image',
+    'โอนแล้วร้านจะตรวจยอดและยืนยันให้ รายการที่จ่ายแล้วจะหายไปจากหน้านี้ (หากไม่หาย แจ้งร้านทาง LINE @bk25)': 'After you transfer, we will check the amount and confirm. Paid items will disappear from this page (if they do not, tell us on LINE @bk25).',
+    'แสดง QR ไม่ได้ กรุณาแจ้งร้านทาง LINE @bk25': 'Cannot show the QR. Please contact us on LINE @bk25.',
+    'ลิงก์ไม่ถูกต้อง': 'Invalid link', 'กรุณาเปิดลิงก์ที่ร้านส่งให้ หรือสอบถามร้านทาง LINE': 'Please open the link the shop sent you, or ask us on LINE',
+    'เปิดหน้านี้ไม่ได้ชั่วคราว': 'This page is temporarily unavailable', 'ลองรีเฟรชหรือสอบถามร้านทาง LINE': 'Try refreshing, or ask us on LINE',
+    'ไม่พบงานนี้': 'Order not found', 'ลิงก์อาจถูกยกเลิกหรือไม่ถูกต้อง สอบถามร้านทาง LINE @bk25 ได้เลย': 'The link may have been cancelled or is incorrect. Ask us on LINE @bk25.',
+    'โหลดสถานะไม่สำเร็จ': 'Could not load the status', 'ลองรีเฟรชหน้านี้ หรือสอบถามร้านทาง LINE @bk25': 'Try refreshing this page, or ask us on LINE @bk25',
+    'คัดลอกลิงก์แล้ว': 'Link copied', 'กำลังบันทึก…': 'Saving…', 'บันทึกรูปนี้': 'Save this image', 'ใส่โลโก้': 'Add logo', 'เปลี่ยนโลโก้แล้ว ✓': 'Logo changed ✓',
+    'เลือกไฟล์รูปภาพนะครับ': 'Please choose an image file', 'อัปโหลดไม่สำเร็จ ลองใหม่อีกครั้ง': 'Upload failed — please try again',
+    'โลโก้ร้าน': 'Shop logo', 'โลโก้ลูกค้า': 'Customer logo', 'เปลี่ยนโลโก้ร้าน': 'Change shop logo', 'เลือกไฟล์โลโก้ร้าน': 'Choose logo file', 'รูปขยาย': 'Enlarged photo', 'ปิดรูป': 'Close photo', 'รูปงาน': 'Order photo',
+    'QR พร้อมเพย์': 'PromptPay QR', 'พัสดุเข้าระบบ': 'Parcel registered', 'อยู่ระหว่างขนส่ง': 'In transit', 'อยู่ระหว่างจัดส่ง': 'Out for delivery'
+  };
+  var TH_M = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'],
+      TH_S = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+      EN_M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var DATE_RE = new RegExp('(\\d{1,2}) (' + TH_M.concat(TH_S).map(function (x) { return x.replace(/\./g, '\\.'); }).join('|') + ') (\\d{2,4})', 'g');
+  function dates(t) {   // 17 พฤศจิกายน 2569 / 5 พ.ย. 69 → 17 Nov 2026 / 5 Nov 2026 (พ.ศ. → ค.ศ.)
+    return t.replace(DATE_RE, function (m, d, mo, y) { var i = TH_M.indexOf(mo); if (i < 0) i = TH_S.indexOf(mo); y = +y; y = y < 100 ? y + 1957 : y - 543; return d + ' ' + EN_M[i] + ' ' + y; });
+  }
+  function clock(t) { return t.replace(/(\d{1,2}:\d{2}) น\.?/g, '$1'); }
+  var RULES = [
+    [/^(\d+) ใบงาน(?: · บอลสติ๊กเกอร์)?$/, function (m, n) { return n + (+n === 1 ? ' order' : ' orders') + (/บอลสติ๊กเกอร์/.test(m) ? ' · Ball Sticker' : ''); }],
+    [/^กล่อง (\d+)\/(\d+)$/, 'Box $1/$2'], [/^กล่อง (\d+)$/, 'Box $1'],
+    [/^พัสดุ (\d+) กล่อง$/, function (m, n) { return n + (+n === 1 ? ' parcel' : ' parcels'); }],
+    [/^📍 ดูเส้นทางพัสดุ \((\d+) เหตุการณ์\)/, '📍 View parcel route ($1 events)'],
+    [/^อัปเดตล่าสุด (.+)$/, function (m, r) { return 'Last updated ' + clock(dates(r)); }],
+    [/^อัปเดต (.+)$/, function (m, r) { return 'Updated ' + clock(dates(r)); }],
+    [/^สแกนด้วยแอปธนาคาร · ชื่อบัญชี (.*)$/, 'Scan with your banking app · Account name $1'],
+    [/^จ่ายเฉพาะ (.*?) · โอนยอดนี้แล้วร้านจะตรวจและยืนยันงานที่จ่ายให้ \(ส่งสลิปทาง LINE @bk25 ด้วยก็ได้\)$/, 'Paying only: $1 · After you transfer, we will check and confirm the paid orders (you may also send the slip on LINE @bk25).'],
+    [/^ยอด ([\d,.]+) บาท$/, 'Amount $1 THB'], [/^จ่าย (.+)$/, 'Pay $1'], [/^รูป (\d+)$/, 'Photo $1'], [/^รูป-(\d+)\.jpg$/, 'photo-$1.jpg'],
+    [/^ชำระเงิน\.png$/, 'payment.png']
+  ];
+  function tr(t) {   // ข้อความล้วน → อังกฤษ (ถ้าไม่รู้จักคืนค่าเดิม)
+    var lead = /^\s*/.exec(t)[0], trail = /\s*$/.exec(t)[0], c = t.trim();
+    if (!c || !/[ก-๙]/.test(c)) return t;
+    if (EXACT[c] !== undefined) return lead + EXACT[c] + trail;
+    for (var i = 0; i < RULES.length; i++) { var r = RULES[i]; if (r[0].test(c)) return lead + c.replace(r[0], r[1]) + trail; }
+    if (DATE_RE.test(c)) { DATE_RE.lastIndex = 0; return lead + clock(dates(c)) + trail; }   // เช่น "17 พฤศจิกายน 2569 · 10cm. × 80"
+    return t;
+  }
+  var lang = 'th', busy = false, ATTRS = ['aria-label', 'title', 'alt', 'download'];
+  function doText(n) { if (n._th === undefined) { var v = tr(n.data); if (v !== n.data) { n._th = n.data; n._en = v; busy = true; n.data = v; busy = false; } } else if (n.data !== n._en) { n._th = undefined; doText(n); } }
+  function undoText(n) { if (n._th !== undefined) { busy = true; n.data = n._th; busy = false; n._th = undefined; } }
+  function walk(root, fn, fa) {
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, null), x = w.currentNode, list = [];
+    while (x) { list.push(x); x = w.nextNode(); }
+    list.forEach(function (n) { if (n.nodeType === 3) { if (!n.parentNode || /^(SCRIPT|STYLE)$/.test(n.parentNode.nodeName)) return; fn(n); } else if (n.nodeType === 1) fa(n); });
+  }
+  function attrEn(e) { ATTRS.forEach(function (a) { var v = e.getAttribute && e.getAttribute(a); if (v && /[ก-๙]/.test(v) && !e['_a_' + a]) { var t = tr(v); if (t !== v) { e['_a_' + a] = v; busy = true; e.setAttribute(a, t); busy = false; } } }); }
+  function attrTh(e) { ATTRS.forEach(function (a) { if (e['_a_' + a]) { busy = true; e.setAttribute(a, e['_a_' + a]); busy = false; e['_a_' + a] = null; } }); }
+  var mo = null;
+  function setLang(l, save) {
+    lang = l === 'en' ? 'en' : 'th'; document.documentElement.setAttribute('data-lang', lang); document.documentElement.lang = lang;
+    if (save) { try { localStorage.setItem('bsLang', lang); } catch (e) {} }
+    if (mo) mo.disconnect();
+    if (lang === 'en') { walk(document.body, doText, attrEn); document.title = 'Order tracking · Ball Sticker'; }
+    else { walk(document.body, undoText, attrTh); document.title = 'ติดตามสถานะงาน · บอลสติ๊กเกอร์'; }
+    if (lang === 'en') mo.observe(document.body, {childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS});
+  }
+  mo = new MutationObserver(function (list) {
+    if (busy || lang !== 'en') return;
+    mo.disconnect();
+    list.forEach(function (m) {
+      if (m.type === 'characterData') doText(m.target);
+      else if (m.type === 'attributes') { m.target['_a_' + m.attributeName] = null; attrEn(m.target); }
+      else m.addedNodes.forEach(function (n) { if (n.nodeType === 3) { if (n.parentNode) doText(n); } else if (n.nodeType === 1) walk(n, doText, attrEn); });
+    });
+    mo.observe(document.body, {childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS});
+  });
+  var q = ''; try { q = new URLSearchParams(location.search).get('lang') || ''; } catch (e) {}
+  var saved = ''; try { saved = localStorage.getItem('bsLang') || ''; } catch (e) {}
+  document.getElementById('langBtn').addEventListener('click', function () { setLang(lang === 'en' ? 'th' : 'en', true); });
+  var want = q === 'en' || q === 'th' ? q : saved;
+  if (want === 'en') setLang('en', q === 'en');
 })();
 </script>
 </body>
