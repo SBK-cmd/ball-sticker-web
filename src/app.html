@@ -10932,6 +10932,7 @@ function bahtText(value) {
       (canBank ? '<button class="btn small jd-t" data-act="jobcharge" type="button">💳 เรียกเก็บเงิน</button>' : '') +
       '<button class="btn small jd-t jd-main" data-act="tracklink" type="button">🔗 ส่งลิงก์ติดตาม</button>' +
       '<button class="btn small jd-t" data-act="copyurl" type="button">📋 คัดลอกลิงก์</button>' +
+      '<button class="btn small jd-t" data-act="copylinken" type="button">🌐 ข้อความ English (ลูกค้าต่างชาติ)</button>' +
       (j.trackCode && j.status === 'shipped' ? '<button class="btn small jd-t" data-act="sendtrk" type="button">📤 ส่งเลขพัสดุ</button>' : '') +
       '</div>' +
       '<input type="file" accept="image/*" hidden data-scanjob="' + esc(j.id) + '">' +
@@ -11161,6 +11162,11 @@ function bahtText(value) {
     const nm = raw ? ((NAME_TITLES.indexOf(raw.split(' ')[0]) >= 0 || /^(คุณ|พี่|น้อง)/.test(raw)) ? raw : 'คุณ' + raw) : '';
     return nm ? nm + ' ติดตามงาน ' + (jt.no || '') + ' ที่นี่ค่ะ 👇\n' + url
               : 'ติดตามสถานะงาน ' + (jt.no || '') + ' ของบอลสติ๊กเกอร์ได้ที่นี่ค่ะ 👇\n' + url;
+  }
+  // ลูกค้าต่างชาติ: ข้อความอังกฤษ + ลิงก์เปิดหน้าสถานะเป็น EN ทันที (&lang=en)
+  function trackMsgEn(jt, url) {
+    const nm = firstNameOf(jt.jName);
+    return (nm ? 'Hi ' + nm + ', track' : 'Track') + ' your Ball Sticker order ' + (jt.no || '') + ' here 👇\n' + url + (url.indexOf('?') >= 0 ? '&' : '?') + 'lang=en';
   }
   function ensureTrackLink(id) {   // คืน {rec,url} · ใบยังไม่มีโทเคนจะสร้างให้ แล้วซิงก์ขึ้นคลาวด์ (ทำให้หน้าลูกค้าอัปเดตได้)
     const list = store.get('bs_jobs', []), li = list.findIndex(x => x.id === id); if (li < 0) return null;
@@ -13863,7 +13869,7 @@ function bahtText(value) {
       return;
     }
     if (btn.dataset.act === 'jobcharge') { const jj = list.find(x => x.id === id); if (jj) openWalkInPay({job: jj}); return; }   // เรียกเก็บเงินจากใบงาน (หักมัดจำ)
-    if (btn.dataset.act === 'tracklink' || btn.dataset.act === 'copylink' || btn.dataset.act === 'copyurl' || btn.dataset.act === 'openlink') {   // ลิงก์ติดตามงานของลูกค้า: รหัสสุ่มต่อใบ (สร้างครั้งแรกที่กด) ไม่ต้องล็อกอิน
+    if (btn.dataset.act === 'tracklink' || btn.dataset.act === 'copylink' || btn.dataset.act === 'copyurl' || btn.dataset.act === 'copylinken' || btn.dataset.act === 'openlink') {   // ลิงก์ติดตามงานของลูกค้า: รหัสสุ่มต่อใบ (สร้างครั้งแรกที่กด) ไม่ต้องล็อกอิน
       const li = list.findIndex(x => x.id === id); if (li < 0) return;
       if (!list[li].trackToken) {
         const a = new Uint8Array(12); (window.crypto || window.msCrypto).getRandomValues(a);
@@ -13882,7 +13888,7 @@ function bahtText(value) {
         setTimeout(() => { if (!pop.isConnected) return; const fr = document.createElement('iframe'); fr.title = 'หน้าสถานะงานของลูกค้า'; fr.src = url + '&_=' + Date.now(); fr.addEventListener('load', () => { const l = pop.querySelector('.tp-ld'); if (l) l.remove(); }); pop.querySelector('.tp-box').appendChild(fr); }, 900);   // รอให้ข้อมูลล่าสุดซิงก์ขึ้นหน้าลูกค้าก่อน
         return;
       }
-      const msg = btn.dataset.act === 'copyurl' ? url : trackMsgFor(jt, url);
+      const msg = btn.dataset.act === 'copyurl' ? url : btn.dataset.act === 'copylinken' ? trackMsgEn(jt, url) : trackMsgFor(jt, url);
       (async () => {
         try { if (btn.dataset.act === 'tracklink' && PHONE_SHARE && navigator.share) { await navigator.share({text: msg}); toast('เปิดหน้าส่งข้อความแล้ว เลือก LINE / ข้อความ ส่งให้ลูกค้าได้เลย'); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
         try { await navigator.clipboard.writeText(msg); toast('คัดลอกลิงก์ติดตามงานแล้ว ไปวางส่งให้ลูกค้าได้เลย'); }
