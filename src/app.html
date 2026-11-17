@@ -2865,7 +2865,7 @@ body.jm-open .fab-newjob{display:none!important}
               </div>
               <p class="hint" id="priceHint"></p>
               <div class="tier-box" id="tierBox" hidden>
-                <div class="viz-head"><h3>ราคาตามเรทเพจ <small>(ตามขั้นจำนวน · ฐาน 9 ซม.)</small></h3></div>
+                <div class="viz-head"><h3>ราคาตามเนื้องาน <small>(100 ชิ้น@9 ซม. = 1 ตร.ม. = 999)</small></h3></div>
                 <div class="price-money">
                   <div class="price-total"><span id="tierTotal">—</span><em>บาท</em></div>
                   <div class="price-sub" id="tierSub"></div>
@@ -5663,15 +5663,16 @@ function bahtText(value) {
 
   const n2 = n => (+n).toLocaleString('en-US', {maximumFractionDigits: 2});
 
-  // ราคาตามเรทเพจ (เรทขั้นจำนวนที่ขนาด 9 ซม. ฐานชิ้น 9×9 ซม. = 81 ตร.ซม.) — คิดจากพื้นที่รวมของกรอบสี่เหลี่ยมที่คลุมชิ้นงาน แล้วอ่านราคาจากเส้นโค้งผ่านขั้นราคา (interpolate แบบ log)
-  // นอกช่วงขั้นที่มีเรท (ต่ำกว่า 30 ชิ้น@9 ซม. หรือเกิน 200 ชิ้น@9 ซม.) ไม่เดาราคา ให้เจ้าของตั้งเอง
-  const TIER_REF_CM2 = 81;
-  const TIER_PTS = [[30, 790], [50, 890], [100, 999], [200, 1700]].map(t => ({a: t[0] * TIER_REF_CM2 / 10000, p: t[1]}));
+  // ราคาตามเนื้องาน (ยึด 9 ซม. 100 ชิ้น = 1 ตร.ม. = 999 บาท) — พื้นที่คิดเงิน = กว้าง×สูงของกรอบสี่เหลี่ยมคลุมชิ้นงาน × TIER_K × จำนวน
+  // จุดเรท (ตร.ม., บาท): 1=999, 2=1,700, 3=2,700, 5=3,900, 10=6,900 · ระหว่างจุดอ่านแบบ log · ต่ำกว่า 1 ตร.ม. ใช้เส้นต่อ ราคา=999×ตร.ม.^0.839 (ยังไม่มีราคาขั้นต่ำ เจ้าของยังไม่กำหนด) · เกิน 10 ตร.ม. ไม่เดาราคา
+  const TIER_K = 100 / 81;   // 100 ชิ้นที่ 9×9 ซม. (8,100 ตร.ซม.) = 1 ตร.ม.
+  const TIER_PTS = [[1, 999], [2, 1700], [3, 2700], [5, 3900], [10, 6900]].map(t => ({a: t[0], p: t[1]}));
+  const TIER_EXP = Math.log(6900 / 999) / Math.log(10);   // ≈ 0.839
   function tierPrice(w, h, qty) {
-    const A = qty * w * h / 10000;   // พื้นที่รวม ตร.ม.
+    const A = qty * w * h * TIER_K / 10000;   // พื้นที่คิดเงิน ตร.ม.
     const lo = TIER_PTS[0], hi = TIER_PTS[TIER_PTS.length - 1];
-    if (A < lo.a - 1e-9) return {A: A, status: 'low'};
     if (A > hi.a + 1e-9) return {A: A, status: 'high'};
+    if (A < lo.a - 1e-9) return {A: A, status: 'ok', price: lo.p * Math.pow(A / lo.a, TIER_EXP), extrap: true};
     for (let i = 0; i < TIER_PTS.length - 1; i++) {
       const x = TIER_PTS[i], y = TIER_PTS[i + 1];
       if (A >= x.a - 1e-9 && A <= y.a + 1e-9) {
@@ -5679,7 +5680,7 @@ function bahtText(value) {
         return {A: A, status: 'ok', price: x.p * Math.pow(A / x.a, sl)};
       }
     }
-    return {A: A, status: 'low'};
+    return {A: A, status: 'high'};
   }
   function renderTier(r, typedQty) {
     const box = $('tierBox'); if (!box) return;
@@ -5687,17 +5688,15 @@ function bahtText(value) {
     box.hidden = !show; if (!show) return;
     if (!(typedQty > 0)) { $('tierTotal').textContent = '—'; $('tierSub').textContent = ''; $('tierHint').textContent = 'ใส่ "จำนวนที่ลูกค้าสั่ง" เพื่อดูราคาตามเรทเพจ'; return; }
     const t = tierPrice(r.sw, r.sh, typedQty);
-    const area = n2(t.A) + ' ตร.ม. (' + fmt(r.sw) + '×' + fmt(r.sh) + ' ซม. × ' + typedQty.toLocaleString('en-US') + ' ชิ้น)';
+    const area = 'พื้นที่คิดเงิน ' + n2(t.A) + ' ตร.ม. (' + fmt(r.sw) + '×' + fmt(r.sh) + ' ซม. × ' + typedQty.toLocaleString('en-US') + ' ชิ้น)';
     if (t.status === 'ok') {
       const pr = Math.round(t.price);
       $('tierTotal').textContent = baht(pr);
       $('tierSub').innerHTML = 'เฉลี่ย <b>' + money(pr / typedQty) + '</b> บาท/ชิ้น · ' + area;
-      $('tierHint').textContent = 'ปัดเป็นบาท · ยังไม่รวมค่าส่ง · ดูตัวอย่างเท่านั้น ยังไม่ได้ผูกกับใบงาน';
+      $('tierHint').textContent = (t.extrap ? 'ต่ำกว่า 1 ตร.ม. ใช้เส้นต่อจากเรท (ยังไม่มีราคาขั้นต่ำ) · ' : '') + 'ปัดเป็นบาท · ยังไม่รวมค่าส่ง · ดูตัวอย่างเท่านั้น ยังไม่ได้ผูกกับใบงาน';
     } else {
       $('tierTotal').textContent = '—'; $('tierSub').textContent = area;
-      $('tierHint').textContent = t.status === 'low'
-        ? 'พื้นที่รวมน้อยกว่าขั้นต่ำที่มีเรท (30 ชิ้นที่ 9 ซม. = 0.243 ตร.ม.) ไม่เดาราคา ให้ตั้งราคาเอง'
-        : 'พื้นที่รวมเกินขั้นสูงสุดที่มีเรท (200 ชิ้นที่ 9 ซม. = 1.62 ตร.ม.) ไม่เดาราคา ให้ตั้งราคาเอง';
+      $('tierHint').textContent = 'พื้นที่คิดเงินเกิน 10 ตร.ม. (ขั้นสูงสุดที่มีเรท) ไม่เดาราคา ให้ตั้งราคาเอง';
     }
   }
 
