@@ -1370,6 +1370,44 @@ function bahtText(value) {
 
   const n2 = n => (+n).toLocaleString('en-US', {maximumFractionDigits: 2});
 
+  // ราคาตามเรทเพจ (เรทขั้นจำนวนที่ขนาด 9 ซม. ฐานชิ้น 9×9 ซม. = 81 ตร.ซม.) — คิดจากพื้นที่รวมของกรอบสี่เหลี่ยมที่คลุมชิ้นงาน แล้วอ่านราคาจากเส้นโค้งผ่านขั้นราคา (interpolate แบบ log)
+  // นอกช่วงขั้นที่มีเรท (ต่ำกว่า 30 ชิ้น@9 ซม. หรือเกิน 200 ชิ้น@9 ซม.) ไม่เดาราคา ให้เจ้าของตั้งเอง
+  const TIER_REF_CM2 = 81;
+  const TIER_PTS = [[30, 790], [50, 890], [100, 999], [200, 1700]].map(t => ({a: t[0] * TIER_REF_CM2 / 10000, p: t[1]}));
+  function tierPrice(w, h, qty) {
+    const A = qty * w * h / 10000;   // พื้นที่รวม ตร.ม.
+    const lo = TIER_PTS[0], hi = TIER_PTS[TIER_PTS.length - 1];
+    if (A < lo.a - 1e-9) return {A: A, status: 'low'};
+    if (A > hi.a + 1e-9) return {A: A, status: 'high'};
+    for (let i = 0; i < TIER_PTS.length - 1; i++) {
+      const x = TIER_PTS[i], y = TIER_PTS[i + 1];
+      if (A >= x.a - 1e-9 && A <= y.a + 1e-9) {
+        const sl = Math.log(y.p / x.p) / Math.log(y.a / x.a);
+        return {A: A, status: 'ok', price: x.p * Math.pow(A / x.a, sl)};
+      }
+    }
+    return {A: A, status: 'low'};
+  }
+  function renderTier(r, typedQty) {
+    const box = $('tierBox'); if (!box) return;
+    const show = !!(r && r.sw > 0 && r.sh > 0);
+    box.hidden = !show; if (!show) return;
+    if (!(typedQty > 0)) { $('tierTotal').textContent = '—'; $('tierSub').textContent = ''; $('tierHint').textContent = 'ใส่ "จำนวนที่ลูกค้าสั่ง" เพื่อดูราคาตามเรทเพจ'; return; }
+    const t = tierPrice(r.sw, r.sh, typedQty);
+    const area = n2(t.A) + ' ตร.ม. (' + fmt(r.sw) + '×' + fmt(r.sh) + ' ซม. × ' + typedQty.toLocaleString('en-US') + ' ชิ้น)';
+    if (t.status === 'ok') {
+      const pr = Math.round(t.price);
+      $('tierTotal').textContent = baht(pr);
+      $('tierSub').innerHTML = 'เฉลี่ย <b>' + money(pr / typedQty) + '</b> บาท/ชิ้น · ' + area;
+      $('tierHint').textContent = 'ปัดเป็นบาท · ยังไม่รวมค่าส่ง · ดูตัวอย่างเท่านั้น ยังไม่ได้ผูกกับใบงาน';
+    } else {
+      $('tierTotal').textContent = '—'; $('tierSub').textContent = area;
+      $('tierHint').textContent = t.status === 'low'
+        ? 'พื้นที่รวมน้อยกว่าขั้นต่ำที่มีเรท (30 ชิ้นที่ 9 ซม. = 0.243 ตร.ม.) ไม่เดาราคา ให้ตั้งราคาเอง'
+        : 'พื้นที่รวมเกินขั้นสูงสุดที่มีเรท (200 ชิ้นที่ 9 ซม. = 1.62 ตร.ม.) ไม่เดาราคา ให้ตั้งราคาเอง';
+    }
+  }
+
   function renderPrice() {
     if (!$('priceCard')) return;
     const r = lastLayout || readLayout();
@@ -1379,6 +1417,7 @@ function bahtText(value) {
     const typedQty = Math.max(0, Math.floor(num($('priceQty').value)));
     const oneSheet = !(typedQty > 0);   // ยังไม่ใส่จำนวนที่ลูกค้าสั่ง → คิดราคาจากจำนวนที่คำนวณได้ (1 แผ่นเต็ม) ไปก่อน
     const qty = oneSheet ? per : typedQty;
+    renderTier(r, typedQty);
     $('pricePerSheet').value = per > 0 ? per.toLocaleString('en-US') : '0';
     const unitWord = rate && rate.unit === 'sqm' ? 'ตรม.' : 'เมตร';
     $('priceRateCap').textContent = rate
