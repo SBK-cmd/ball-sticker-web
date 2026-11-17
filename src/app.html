@@ -2865,7 +2865,7 @@ body.jm-open .fab-newjob{display:none!important}
               </div>
               <p class="hint" id="priceHint"></p>
               <div class="tier-box" id="tierBox" hidden>
-                <div class="viz-head"><h3>ราคาตามเนื้องาน <small>(เรทเกรด A · ฐาน 9 ซม.)</small></h3></div>
+                <div class="viz-head"><h3>ราคาตามเนื้องาน <small>(เรทเกรด A · ฐาน 9 ซม. · รวมค่าส่ง)</small></h3></div>
                 <div class="price-money">
                   <div class="price-total"><span id="tierTotal">—</span><em>บาท</em></div>
                   <div class="price-sub" id="tierSub"></div>
@@ -5667,6 +5667,7 @@ function bahtText(value) {
   // จุดเรท (ตร.ซม. รวม, บาท): 9×9 ซม. 10/40/60/80/100 ชิ้น = 300/450/650/850/1,000 · ต่อด้วย 100 ชิ้นของกลุ่มใหญ่ (12×12=1,500, 15×15=2,500, 20×20=4,500, 25×25=5,000) · ระหว่างจุดอ่านแบบ log
   // นอกช่วง (ต่ำกว่า 10 ชิ้น@9 ซม. หรือเกิน 100 ชิ้น@25×25) ไม่เดาราคา · ราคายังไม่รวมค่าส่ง
   const TIER_K = 1;
+  const SHIP_FREE_FROM = 900, SHIP_FEE = 50;   // กฎร้าน: ยอดค่าพิมพ์ไม่ถึง 900 บาท + ค่าจัดส่ง 50 บาท (900 ขึ้นไปไม่คิด)
   const TIER_PTS = [[810, 300], [3240, 450], [4860, 650], [6480, 850], [8100, 1000], [14400, 1500], [22500, 2500], [40000, 4500], [62500, 5000]].map(t => ({a: t[0] / 10000, p: t[1]}));
   function tierPrice(w, h, qty) {
     const A = qty * w * h * TIER_K / 10000;   // พื้นที่คิดเงิน ตร.ม.
@@ -5691,9 +5692,10 @@ function bahtText(value) {
     const area = 'พื้นที่รวม ' + n2(t.A) + ' ตร.ม. (' + fmt(r.sw) + '×' + fmt(r.sh) + ' ซม. × ' + typedQty.toLocaleString('en-US') + ' ชิ้น)';
     if (t.status === 'ok') {
       const pr = Math.round(t.price);
-      $('tierTotal').textContent = baht(pr);
-      $('tierSub').innerHTML = 'เฉลี่ย <b>' + money(pr / typedQty) + '</b> บาท/ชิ้น · ' + area;
-      $('tierHint').textContent = 'ปัดเป็นบาท · ยังไม่รวมค่าส่ง · ดูตัวอย่างเท่านั้น ยังไม่ได้ผูกกับใบงาน';
+      const ship = pr < SHIP_FREE_FROM ? SHIP_FEE : 0;
+      $('tierTotal').textContent = baht(pr + ship);
+      $('tierSub').innerHTML = 'ค่าพิมพ์ <b>' + baht(pr) + '</b> + ค่าส่ง <b>' + baht(ship) + '</b> บาท · เฉลี่ยค่าพิมพ์ ' + money(pr / typedQty) + ' บาท/ชิ้น<br>' + area;
+      $('tierHint').textContent = (ship ? 'ค่าพิมพ์ไม่ถึง ' + baht(SHIP_FREE_FROM) + ' บาท จึงบวกค่าส่ง ' + baht(SHIP_FEE) + ' บาท' : 'ค่าพิมพ์ ' + baht(SHIP_FREE_FROM) + ' บาทขึ้นไป ไม่คิดค่าส่ง') + ' · ปัดเป็นบาท · ดูตัวอย่างเท่านั้น ยังไม่ได้ผูกกับใบงาน';
     } else {
       $('tierTotal').textContent = '—'; $('tierSub').textContent = area;
       $('tierHint').textContent = t.status === 'low' ? 'พื้นที่รวมน้อยกว่า 10 ชิ้นที่ 9×9 ซม. (0.081 ตร.ม.) ซึ่งเป็นขั้นต่ำของเรท ไม่เดาราคา ให้ตั้งราคาเอง' : 'พื้นที่รวมเกิน 100 ชิ้นที่ 25×25 ซม. (6.25 ตร.ม.) ซึ่งเป็นขั้นสูงสุดของเรท ไม่เดาราคา ให้ตั้งราคาเอง';
