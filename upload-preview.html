@@ -267,7 +267,7 @@
   }
   // ---------- LINE (LIFF): เปิดหน้านี้จากริชเมนู @bk25 → รู้ว่า LINE ไหนสั่ง + ส่งการ์ด Flex เข้าแชตได้เอง ----------
   // ตั้ง LIFF_ID หลังสร้าง LIFF app ในช่อง LINE Login (provider เดียวกับ @bk25) · ว่าง = ปิดไว้ หน้าเว็บทำงานแบบเดิม
-  var LIFF_ID = '', lineUser = null;
+  var LIFF_ID = '2012683507-pygpHR8e', lineUser = null;
   function liffReady() {
     if (!LIFF_ID) return Promise.resolve(null);
     return new Promise(function (ok) { var sc = document.createElement('script'); sc.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js'; sc.onload = ok; sc.onerror = function () { ok(); }; document.head.appendChild(sc); })
