@@ -8171,7 +8171,20 @@ function bahtText(value) {
     renderJobItems(); renderJobPhotos(); renderJob(); renderJobEditState();
     openJobModal();
   }
+  // เปิดไฟล์/รูป/สลิปของออเดอร์เว็บทับหน้าเดิม มีปุ่ม ✕ ปิด (เปิดแท็บใหม่แล้วในแอปติดตั้งกดกลับไม่ได้)
+  function openFileView(u) {
+    const isImg = /\.(png|jpe?g|webp|gif|svg|avif)(\?|#|$)/i.test(u) || /\/image\/upload\//.test(u) || /^data:image\//.test(u);
+    const o = document.createElement('div'); o.className = 'fv-ov';
+    o.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,.9);display:flex;flex-direction:column';
+    o.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 10px"><button type="button" data-fvx style="background:#fff;border:0;border-radius:12px;padding:10px 16px;font:600 15px inherit;cursor:pointer">✕ ปิด</button><a href="' + esc(u) + '" target="_blank" rel="noopener" style="color:#fff;font-size:13px;text-decoration:underline">เปิดในแท็บใหม่</a></div>' +
+      '<div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 10px calc(env(safe-area-inset-bottom,0px) + 10px)">' + (isImg ? '<img alt="" src="' + esc(u) + '" style="max-width:100%;max-height:100%;object-fit:contain;background:#fff;border-radius:8px">' : '<iframe src="' + esc(u) + '" style="width:100%;height:100%;border:0;background:#fff;border-radius:8px"></iframe>') + '</div>';
+    const close = () => { o.remove(); document.removeEventListener('keydown', esc2); };
+    const esc2 = ev => { if (ev.key === 'Escape') close(); };
+    o.addEventListener('click', ev => { if (ev.target.closest('[data-fvx]') || ev.target === o) close(); });
+    document.addEventListener('keydown', esc2); document.body.appendChild(o);
+  }
   document.addEventListener('click', e => {
+    const fa = e.target.closest && e.target.closest('#webOrd .wo-act a[href]'); if (fa) { e.preventDefault(); openFileView(fa.getAttribute('href')); return; }
     const t = e.target.closest && e.target.closest('[data-wo],[data-wojob],[data-wohide],[data-woback],[data-wodel],[data-wolink]'); if (!t) return;
     if (t.dataset.wolink) { const u = 'https://www.ballsticker.co.th/track?t=' + t.dataset.wolink; (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('คัดลอกลิงก์ติดตามแล้ว'), () => { try { const ta = document.createElement('textarea'); ta.value = u; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('คัดลอกลิงก์ติดตามแล้ว'); } catch (er) { toast(u); } }); return; }
     if (t.dataset.wo) { webOrdTab = t.dataset.wo; document.querySelectorAll('#webOrdTabs button').forEach(b => b.classList.toggle('on', b === t)); renderWebOrders(); }
