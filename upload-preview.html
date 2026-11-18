@@ -136,6 +136,38 @@
   .bt.pri { background:var(--yel); border-color:var(--yel); } .bt.line { background:#06c755; border-color:#06c755; color:#fff; }
   @media (prefers-reduced-motion: reduce) { .st3d { transition:none; } .spin { animation-duration:2s; } }
   [hidden] { display:none !important; }
+
+  /* ===== UI v2 (แบบ D · ui-ux-pro-max + unslop) — โทนกระดาษอุ่น เงียบ ๆ เหลืองเฉพาะปุ่มหลัก/ที่เลือก ===== */
+  :root { --navy:#18213a; --ink:#18213a; --sub:#4b556f; --line:rgba(24,33,58,.12); --bg:#f6f3ec; --card:#fffdf8; --yel:#f4c200; }
+  .top { background:var(--bg); color:var(--ink); padding-bottom:6px; }
+  .top img { background:transparent; }
+  .steps { gap:4px; flex:1; margin-left:12px; }
+  .steps span { flex:1; font-size:0; height:4px; padding:0; border-radius:2px; background:rgba(24,33,58,.12); }
+  .steps span.on { background:var(--ink); } .steps span.ok { background:rgba(24,33,58,.45); }
+  .card { background:var(--card); border-radius:16px; }
+  .stage { border:1px solid var(--line); background-color:#ecebe3; background-image:linear-gradient(rgba(24,33,58,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(24,33,58,.06) 1px,transparent 1px); background-size:16px 16px; border-radius:20px; }
+  .drop { background:var(--card); border:1.5px dashed rgba(24,33,58,.35); border-radius:20px; }
+  .drop .ic { background:#ebe7dd; }
+  .drop .chips span { background:#ebe7dd; }
+  input, textarea, select { background:var(--card); border:1px solid var(--line); border-radius:12px; min-height:48px; }
+  .row input { min-height:52px; font-size:20px; font-weight:500; }
+  .sz button { min-height:44px; padding:0 16px; border-radius:999px; background:var(--card); border:1px solid var(--line); }
+  .sz button.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .tiers button, .tiers .oth { background:var(--card); border-radius:12px; min-height:60px; position:relative; overflow:hidden; }
+  .tiers button b { font-weight:600; font-size:17px; }
+  .tiers button small { color:var(--sub); }
+  .tiers button.on, .tiers .oth.on { border:2px solid var(--ink); box-shadow:none; }
+  .tiers button.on::before { content:""; position:absolute; left:0; right:0; top:0; height:4px; background:var(--yel); }
+  .bar { background:var(--card); }
+  .bar .tot b { font-weight:600; font-size:26px; }
+  .bar .go { min-height:52px; border-radius:12px; background:var(--yel); }
+  .bar .go:active, .bt:active, .sz button:active, .tiers button:active { transform:scale(.97); }
+  .bar .go, .bt, .sz button, .tiers button { transition:transform 140ms cubic-bezier(.23,1,.32,1); }
+  .bar .back { border-radius:12px; min-height:52px; background:var(--card); }
+  .bt { border-radius:12px; background:var(--card); min-height:48px; }
+  .slip, .oc-img, .sum2 img { border-radius:12px; }
+  .oc-img, .sum2 img { background:#ecebe3; }
+  @media (prefers-reduced-motion: reduce) { .bar .go, .bt, .sz button, .tiers button { transition:none; } }
   @media (max-height:700px) { .drop { min-height:160px; } .stage { min-height:140px; } .tiers button, .tiers .oth { min-height:44px; } }
 </style>
 </head>
