@@ -256,17 +256,20 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
   // กลุ่มงานในบิลค้าง: ใช้ได้เมื่อทุกบรรทัดมีราคา ผลรวมบรรทัด = ยอดรวม ไม่มีมัดจำ และสร้าง payload ยอดเดิมกลับได้เหมือนเดิมเป๊ะ (กันผิดพลาด)
   function payGroups(p) {
     if (!p || +p.dep > 0) return null;
-    var map = {}, order = [], cents = 0, ok = true;
-    (p.docs || []).forEach(function (d) { (d.items || []).forEach(function (i) { var c = Math.round((+i.q || 0) * (+i.p || 0) * 100); if (!(c > 0)) { ok = false; return; } var k = String(i.j || ''); if (!(k in map)) { map[k] = 0; order.push(k); } map[k] += c; cents += c; }); });
     if (payloadWithAmount(p.payload, +p.total) !== p.payload) return null;
-    if (!ok || order.filter(function (k) { return k; }).length < 2 || Math.abs(cents - Math.round(+p.total * 100)) > 1) {
-      // บรรทัดไม่มีราคา (งานที่ร้านคีย์ยอดรวมต่อใบ) → เลือกจ่ายเป็นรายใบงานตามยอดของใบ
-      var ds = (p.docs || []).filter(function (d) { return +d.amount > 0 && String(d.no || ''); }), dc = 0;
-      ds.forEach(function (d) { dc += Math.round(+d.amount * 100); });
-      if (ds.length < 2 || ds.length !== (p.docs || []).length || Math.abs(dc - Math.round(+p.total * 100)) > 1) return null;
-      return ds.map(function (d) { return {k: String(d.no), c: Math.round(+d.amount * 100), doc: true}; });
-    }
-    return order.map(function (k) { return {k: k, c: map[k]}; });
+    var cts = function (v) { return Math.round(v * 100 + 1e-6); };
+    var raw = {}, order = [], add = function (k, v) { if (!(k in raw)) { raw[k] = 0; order.push(k); } raw[k] += v; };
+    (p.docs || []).forEach(function (d) {
+      var its = d.items || [], priced = its.length > 0 && its.every(function (i) { return (+i.q || 0) * (+i.p || 0) > 0; });
+      if (priced) { its.forEach(function (i) { add(String(i.j || ''), (+i.q || 0) * (+i.p || 0)); }); return; }
+      if (!(+d.amount > 0)) return;   // ใบว่าง/ยอด 0 ข้ามได้
+      var js = {}; its.forEach(function (i) { if (i.j) js[String(i.j)] = 1; });
+      var ks = Object.keys(js); add(ks.length === 1 ? ks[0] : String(d.no || ''), +d.amount);   // บรรทัดไม่มีราคา: ใช้ยอดของใบ ผูกกับใบงาน (ถ้ามีใบงานเดียว) หรือเลขใบ
+    });
+    var out = order.map(function (k) { return {k: k, c: cts(raw[k])}; }).filter(function (g) { return g.c > 0; }), sum = 0;
+    out.forEach(function (g) { sum += g.c; });
+    if (out.length < 2 || Math.abs(sum - cts(+p.total)) > 3) return null;
+    return out;
   }
   function setPayModal(p) {
     if (!p) { if (payM) { payM.remove(); payM = null; } document.body.style.overflow = ''; return; }
@@ -281,7 +284,7 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     if (grp) {   // แสดงเป็นการ์ดต่อใบงาน (ติ๊กจ่ายได้ที่หัวการ์ด) — ไม่แยกตามบิล เพื่อไม่ให้สับสนว่ากี่งาน
       docs = grp.map(function (g, n) {
         var its = [];
-        (p.docs || []).forEach(function (d) { (d.items || []).forEach(function (i) { if (g.doc ? String(d.no || '') !== g.k : String(i.j || '') !== g.k) return; var line = (+i.q || 0) * (+i.p || 0); its.push('<li><span>' + esc(i.n || '') + (i.q ? ' × ' + esc(i.q) : '') + '</span><b>' + (line > 0 ? money(line) + ' ฿' : '') + '</b></li>'); }); });
+        (p.docs || []).forEach(function (d) { (d.items || []).forEach(function (i) { if (String(i.j || '') !== g.k && String(d.no || '') !== g.k) return; var line = (+i.q || 0) * (+i.p || 0); its.push('<li><span>' + esc(i.n || '') + (i.q ? ' × ' + esc(i.q) : '') + '</span><b>' + (line > 0 ? money(line) + ' ฿' : '') + '</b></li>'); }); });
         var pc = payCard[g.k];
         if (pc) return '<div class="pmjw"><input type="checkbox" class="pmck" data-pg="' + n + '" checked aria-label="จ่าย ' + esc(g.k) + '"><details class="jc ' + esc(pc.cls.replace(/\bjc\b/, '')) + '">' + pc.head.replace('</b>', '</b><span class="pmamt">ยอด ' + money(g.c / 100) + ' บาท</span>') + '<div class="jb"><ul class="it pmit">' + its.join('') + '</ul><div class="row"><span>ยอดที่ต้องจ่าย</span><b>' + money(g.c / 100) + ' บาท</b></div></div></details></div>';
         return '<div class="pmd pmjob"><label class="pmh"><input type="checkbox" data-pg="' + n + '" checked><b class="pmn">' + (g.k ? esc(g.k) : 'รายการอื่น (ไม่ระบุงาน)') + '</b><b>' + money(g.c / 100) + '</b></label><ul>' + its.join('') + '</ul></div>';

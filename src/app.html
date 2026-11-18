@@ -5556,7 +5556,7 @@ function bahtText(value) {
       (d.items || []).forEach(i => { const c = num(i.q || 1) * num(i.p), k = String(i.j || ''); if (!k || !(c > 0)) { ok = false; return; } if (!(k in m)) { m[k] = 0; ord.push(k); } m[k] += c; });
     });
     if (!ok || !ord.length) return null;
-    const out = ord.map(k => ({k, c: round2(net[k] ? m[k] : m[k] - jobPartOf(k))})).filter(x => x.c > 0.004), tot = round2(out.reduce((t, x) => t + x.c, 0));
+    const out = ord.map(k => ({k, c: Math.round((net[k] ? m[k] : m[k] - jobPartOf(k)) * 100 + 1e-6) / 100})).filter(x => x.c > 0.004), tot = round2(out.reduce((t, x) => t + x.c, 0));
     return Math.abs(tot - g.total) > 0.05 ? null : out;
   }
   // ตัดเงินเข้ารายใบงาน: จ่ายเต็ม → "จ่ายแล้ว" · จ่ายไม่เต็ม → จดยอดรับแล้วลงใบงาน เหลือเท่าไหร่ขึ้นเป็นยอดค้าง
