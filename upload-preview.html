@@ -1022,9 +1022,21 @@
   var el = document.getElementById('promoT'); if (!el) return;
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var M = ['ส่งฟรีเมื่อค่าพิมพ์ครบ 900 บาท', '100 ดวง 9×9 ซม. 999 บาท', 'ไดคัทตามรูป · จ่ายพร้อมเพย์ · ส่งทั่วประเทศ'], i = 0;
+  /* จำนวนคนที่เปิดหน้านี้อยู่จริงตอนนี้ — นับจริงจากเซิร์ฟเวอร์เท่านั้น (ไม่สุ่ม ไม่ปั้น) · ว่าง PRESENCE_URL = ยังไม่เปิดใช้ แถบไม่โชว์ข้อความนี้
+     สัญญากับ Worker (ขอตัวที่ 2): POST {id} → {count} = จำนวน id ที่ส่งมาใน 45 วินาทีล่าสุด (รวมตัวเอง) */
+  var PRESENCE_URL = '', pid = (function () { try { var k = sessionStorage.getItem('bs_pid'); if (!k) { k = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem('bs_pid', k); } return k; } catch (e) { return Math.random().toString(36).slice(2); } })(), live = 0;
+  function ping() {
+    if (!PRESENCE_URL || document.hidden) return;
+    fetch(PRESENCE_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: pid }) })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { var c = j && Math.floor(+j.count); live = c >= 1 && c < 100000 ? c : 0; var k = M.indexOf(PRES); if (live && k < 0) M.push(PRES); if (!live && k >= 0) { M.splice(k, 1); i = 0; } })
+      .catch(function () { live = 0; });
+  }
+  var PRES = { toString: function () { return 'ตอนนี้มีคนเปิดหน้านี้อยู่ ' + live + ' คน'; } };
+  ping(); setInterval(ping, 20000);
   setInterval(function () {
     if (!document.body.contains(el)) return;
-    function next() { i = (i + 1) % M.length; el.textContent = M[i]; el.classList.remove('out'); }
+    function next() { i = (i + 1) % M.length; el.textContent = String(M[i]); el.classList.remove('out'); }
     if (reduce) next(); else { el.classList.add('out'); setTimeout(next, 500); }
   }, 3500);
 })();
