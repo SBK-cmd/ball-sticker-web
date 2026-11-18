@@ -175,6 +175,11 @@
   .bar .go:active, .bt:active, .sz button:active, .tiers button:active { transform:scale(.97); }
   .bar .go, .bt, .sz button, .tiers button { transition:transform 140ms cubic-bezier(.23,1,.32,1); }
   @media (prefers-reduced-motion: reduce) { .bar .go, .bt, .sz button, .tiers button { transition:none; } }
+  .promo { align-self:stretch; display:flex; align-items:center; justify-content:center; gap:10px; min-height:44px; margin:0 0 4px; width:100%; padding:8px 14px; border-radius:10px; background:#D92D20; color:#fff; font:600 15px/1.3 'Prompt',sans-serif; text-align:center; }
+  .promo .pd { flex:none; width:9px; height:9px; border-radius:50%; background:#fff; animation:pp 1.4s ease-in-out infinite; }
+  .promo #promoT { transition:opacity .5s ease; } .promo #promoT.out { opacity:0; }
+  @keyframes pp { 50% { opacity:.25; } }
+  @media (prefers-reduced-motion: reduce) { .promo .pd { animation:none; } .promo #promoT { transition:none; } }
   @media (max-height:700px) { .drop { min-height:160px; } .stage { min-height:140px; } .tiers button, .tiers .oth { min-height:44px; } }
 </style>
 </head>
@@ -190,11 +195,12 @@
   <section class="view" id="v1" aria-label="ออกแบบสติ๊กเกอร์">
     <label class="drop" id="drop" for="file">
       <span class="hero" aria-hidden="true"><i class="s1">★</i><i class="s2">♥</i><i class="s3">◆</i><i class="s4">●</i></span>
+      <span class="promo" id="promo" role="status"><i class="pd"></i><span id="promoT">ส่งฟรีเมื่อค่าพิมพ์ครบ 900 บาท</span></span>
       <span class="hl">สติ๊กเกอร์ไดคัท<br><em>ตามรูปของคุณ</em></span>
       <span class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></span>
       <b>แตะเพื่ออัปโหลดแบบ</b>
       <small>PNG พื้นใสดีที่สุด · หรือพื้นสีเดียว · JPG / PDF ไม่เกิน 20 MB</small>
-      <span class="facts">100 ดวง 9×9 ซม. 1,000 บาท · ส่งฟรีเมื่อค่าพิมพ์ครบ 900 บาท · จ่ายพร้อมเพย์</span>
+      <span class="facts">100 ดวง 9×9 ซม. 999 บาท · ส่งฟรีเมื่อค่าพิมพ์ครบ 900 บาท · จ่ายพร้อมเพย์</span>
     </label>
     <input type="file" id="file" accept="image/png,image/jpeg,image/webp,application/pdf" hidden>
     <div class="prev" id="prev"><div class="ph"><img id="pimg" alt=""></div><div class="meta"><b id="pname"></b></div></div>
@@ -1008,6 +1014,19 @@
       if (!lo.paidAt && age < 24 * 3600e3) { renderPay(lo); show(3); }
       else if (lo.paidAt) localStorage.removeItem('bs_last_order');   // จ่ายแล้ว = เปิดใหม่เริ่มสั่งงานใหม่
     } } catch (e) {}
+})();
+</script>
+<script>
+/* แถบแดงโปรโมชั่น: วนข้อความจริงของร้าน (ราคา/เงื่อนไขส่งฟรี/ช่องทางจ่าย) · ไม่มีเลขสุ่ม ไม่มีตัวเลขยอดขาย */
+(function () {
+  var el = document.getElementById('promoT'); if (!el) return;
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var M = ['ส่งฟรีเมื่อค่าพิมพ์ครบ 900 บาท', '100 ดวง 9×9 ซม. 999 บาท', 'ไดคัทตามรูป · จ่ายพร้อมเพย์ · ส่งทั่วประเทศ'], i = 0;
+  setInterval(function () {
+    if (!document.body.contains(el)) return;
+    function next() { i = (i + 1) % M.length; el.textContent = M[i]; el.classList.remove('out'); }
+    if (reduce) next(); else { el.classList.add('out'); setTimeout(next, 500); }
+  }, 3500);
 })();
 </script>
 </body>
