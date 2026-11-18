@@ -283,7 +283,9 @@
   liffReady();
   var SHIP_FREE_FROM = 900, SHIP_FEE = 50, VAT = 7, PP = {id: '0935353555', name: 'นาย กิติพงษ์ สีทอง'};   // ค่าส่งเหมา · พร้อมเพย์บัญชีกิติพงษ์ (บัญชีที่ส่ง VAT)
   // ยอดชำระ (คิดเป็นสตางค์ กันทศนิยมเพี้ยน): สติ๊กเกอร์ + ค่าส่ง · ใบกำกับ = VAT 7% ของทั้งก้อน
-  function bill(price) { var SHIP = price < SHIP_FREE_FROM ? SHIP_FEE : 0, sub = Math.round(price * 100) + SHIP * 100, vat = $('tx').checked ? Math.round(sub * VAT / 100) : 0; return {price: price, ship: SHIP, sub: sub / 100, vat: vat / 100, total: (sub + vat) / 100}; }
+  // เศษสตางค์ 1–99 สุ่มครั้งเดียวต่อการเปิดหน้า รวมเข้าราคาสติ๊กเกอร์ตั้งแต่ตอนเสนอราคา (ให้หลังร้านรู้ว่าเงินก้อนไหนของออเดอร์ไหน · ลูกค้าไม่เห็นว่าเป็นเศษพิเศษ)
+  var SAT = Math.floor(Math.random() * 99) + 1;
+  function bill(base) { var SHIP = base < SHIP_FREE_FROM ? SHIP_FEE : 0, price = Math.round(base * 100 + SAT) / 100, sub = Math.round(price * 100) + SHIP * 100, vat = $('tx').checked ? Math.round(sub * VAT / 100) : 0; return {price: price, ship: SHIP, sub: sub / 100, vat: vat / 100, total: (sub + vat) / 100}; }
   var esc = function (t) { return String(t).replace(/[&<>"']/g, function (c) { return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]; }); };
   var baht = function (v) { return v.toLocaleString('th-TH', {minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2}); };
   function telNorm(v) { var d = String(v).replace(/\D/g, ''); if (/^66\d{9}$/.test(d)) d = '0' + d.slice(2); return d; }
@@ -799,8 +801,8 @@
         kc.png = await upload(new File([kf.png], tag + '.png', {type: 'image/png'})).catch(function () { return ''; });
         kc.svg = await upload(new File([kf.svg], tag + '.svg', {type: 'image/svg+xml'})).catch(function () { return ''; });
       } catch (e) {} }
-    var w = num($('w').value), h = num($('h').value), p = price(st.qty, w, h), bl = bill(p), sat = Math.floor(Math.random() * 99) + 1, ref = (function () { var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); }; return 'WEB' + String(d.getFullYear() + 543).slice(2) + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + Math.random().toString(36).slice(2, 4).toUpperCase(); })().replace(/^WEB/, isTest ? 'TEST' : 'WEB'), tx = $('tx').checked;
-    bl.sat = sat / 100; bl.total = Math.round(bl.total * 100 + sat) / 100;   // เศษสตางค์ไม่ซ้ำต่อออเดอร์ (ลูกค้าจ่ายเพิ่มไม่ถึง 1 บาท) ให้หลังร้านรู้ว่าเงินก้อนไหนของออเดอร์ไหน
+    var w = num($('w').value), h = num($('h').value), p = price(st.qty, w, h), bl = bill(p), ref = (function () { var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); }; return 'WEB' + String(d.getFullYear() + 543).slice(2) + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + Math.random().toString(36).slice(2, 4).toUpperCase(); })().replace(/^WEB/, isTest ? 'TEST' : 'WEB'), tx = $('tx').checked;
+    bl.sat = SAT / 100;
     var msgFull = (isTest ? '🧪 ทดสอบระบบ (ไม่ได้จ่ายจริง)\n' : '') + '🛒 สั่งสติ๊กเกอร์จากเว็บ\nเลขใบงาน: ' + ref + '\n' +
       'แบบ: ' + st.url + '\n' +
       'ขนาดชิ้นไดคัท ' + w + ' × ' + h + ' ซม. · ' + st.qty.toLocaleString('th-TH') + ' ดวง · PVC เคลือบ ไดคัท' + ($('rmbg').checked ? 'ตามทรง' : 'ตามภาพ (ทั้งแผ่นภาพ)') + '\n' +
@@ -847,7 +849,7 @@
       '<div class="oc-b">' + (img ? '<div class="oc-img"><img src="' + esc(img) + '" alt="สติ๊กเกอร์ที่สั่ง"></div>' : '') +
       '<dl><dt>ขนาด</dt><dd>' + o.w + ' × ' + o.h + ' ซม.</dd><dt>จำนวน</dt><dd>' + Number(o.qty).toLocaleString('th-TH') + ' ดวง</dd><dt>วัสดุ</dt><dd>PVC เคลือบ ไดคัท</dd><dt>จัดส่ง</dt><dd>' + esc(o.name) + ' · ' + esc(o.tel) + '<small>' + esc(o.addr) + '</small></dd></dl></div>' +
       '<div class="oc-sum"><div><span>สติ๊กเกอร์</span><span>' + baht(o.price) + '</span></div><div><span>ค่าส่ง</span><span>' + o.ship + '</span></div>' + (o.vat ? '<div><span>VAT 7%</span><span>' + baht(o.vat) + '</span></div>' : '') +
-      (o.sat ? '<div class="oc-r"><span>เศษสตางค์ระบุออเดอร์</span><span>+' + o.sat.toFixed(2) + '</span></div>' : '') + '<div class="oc-t"><span>ยอดชำระ</span><span>' + baht(o.total) + ' บาท</span></div></div></div>';
+      '<div class="oc-t"><span>ยอดชำระ</span><span>' + baht(o.total) + ' บาท</span></div></div></div>';
   }
   function restartOrder() { try { localStorage.removeItem('bs_last_order'); } catch (e) {} location.href = location.pathname; }
   function renderPay(o) {
@@ -874,7 +876,7 @@
       '<div style="font:600 16px Prompt,sans-serif">สแกนจ่ายพร้อมเพย์</div>' +
       '<div class="qr" style="margin:10px auto">' + qrSvgEl(o.payload) + '</div>' +
       '<div style="font:700 26px Prompt,sans-serif">' + baht(o.total) + ' บาท</div>' +
-      '<div class="note" style="margin:2px 0 8px">' + PP.name + ' · โอนให้ตรงยอดนี้ (รวมเศษสตางค์) เพื่อให้ระบบจำออเดอร์ได้</div>' +
+      '<div class="note" style="margin:2px 0 8px">' + PP.name + ' · กรุณาโอนให้ตรงยอดนี้เป๊ะ ระบบจะตรวจเงินเข้าให้อัตโนมัติ</div>' +
       '<div id="ppT" style="font:700 30px Prompt,sans-serif;color:#18213a;font-variant-numeric:tabular-nums">1:30</div>' +
       '<div id="ppS" class="note" style="min-height:22px" role="status">รอเงินเข้า… ' + '</div>' +
       '<div id="ppB" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px"></div></div>';
