@@ -1274,6 +1274,16 @@ function bahtText(value) {
           if (Math.abs(t - amt) < 0.005) out.push({name: g.name, nos: ds.filter((d, i) => m & (1 << i)).map(d => d.no || 'ไม่มีเลข')});
         }
       });
+      if (!out.length) {   // ไม่มีชุดไหนตรงยอด → หาลูกค้าจากเลขบัญชีผู้โอนที่เคยจับคู่แล้ว แล้วเสนอตัดใบเก่าสุดก่อน (แสดงคำแนะนำเท่านั้น ไม่ตัดให้เอง)
+        const acc = (String(b.text || '').match(/จาก\s*(X-\d+)/) || [])[1]; if (acc) {
+          const jobs = store.get('bs_jobs', []), names = {};
+          bankInAll().forEach(x => { if (x.id !== b.id && x.matchedJobNo && String(x.text || '').indexOf('จาก ' + acc) >= 0) { const j = jobs.find(y => String(y.no || '') === String(x.matchedJobNo)); if (j) names[String(j.jName || '').trim()] = 1; } });
+          const ns = Object.keys(names); if (ns.length === 1) {
+            const g = owedGroups().find(x => x.name === ns[0]);
+            if (g && g.total > amt) { let left = amt; const parts = [];
+              g.docs.filter(d => d.total > 0).forEach(d => { if (left <= 0.004) return; if (left + 0.004 >= d.total) { parts.push((d.no || 'ไม่มีเลข') + ' เต็ม ' + d.total.toFixed(2)); left = round2(left - d.total); } else { parts.push((d.no || 'ไม่มีเลข') + ' บางส่วน ' + left.toFixed(2) + ' (ค้างต่อ ' + round2(d.total - left).toFixed(2) + ')'); left = 0; } });
+              return [{name: g.name, nos: parts, fifo: true}]; } } }
+      }
       return out.slice(0, 3);
     } catch (e) { return []; }
   }
@@ -1294,7 +1304,7 @@ function bahtText(value) {
         '<span class="bell-main"><b>เงินเข้า ' + money(num(x.amount)) + ' บาท</b>' +
         '<small>บัญชี' + esc(x.account || '-') + ' · ' + esc(bankInWhen(x, true)) + '</small>' +
         '<small>' + (x.matchedJobNo ? 'ผูกกับใบงาน ' + esc(x.matchedJobNo) : 'ยังไม่ผูกใบงาน') + '</small>' +
-        (x.matchedJobNo || x.owedPaid ? '' : suggestOwedFor(x).map(sg => '<small>💡 อาจเป็น ' + esc(sg.name) + ' · ' + esc(sg.nos.join(' + ')) + '</small>').join('')) + '</span>' +
+        (x.matchedJobNo || x.owedPaid ? '' : suggestOwedFor(x).map(sg => '<small>💡 ' + (sg.fifo ? 'ไม่ตรงใบไหน · ตัดเก่าสุดก่อน ' : 'อาจเป็น ') + esc(sg.name) + ' · ' + esc(sg.nos.join(' + ')) + '</small>').join('')) + '</span>' +
         (isNew ? '<span class="bell-dot" aria-label="ใหม่"></span>' : '') + '</button>';
     }).join('') : '<p class="empty" style="margin:8px 4px">ยังไม่มีการแจ้งเตือน</p>';
   }

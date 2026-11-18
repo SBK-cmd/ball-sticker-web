@@ -258,9 +258,14 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     if (!p || +p.dep > 0) return null;
     var map = {}, order = [], cents = 0, ok = true;
     (p.docs || []).forEach(function (d) { (d.items || []).forEach(function (i) { var c = Math.round((+i.q || 0) * (+i.p || 0) * 100); if (!(c > 0)) { ok = false; return; } var k = String(i.j || ''); if (!(k in map)) { map[k] = 0; order.push(k); } map[k] += c; cents += c; }); });
-    if (!ok || order.filter(function (k) { return k; }).length < 2) return null;
-    if (Math.abs(cents - Math.round(+p.total * 100)) > 1) return null;
     if (payloadWithAmount(p.payload, +p.total) !== p.payload) return null;
+    if (!ok || order.filter(function (k) { return k; }).length < 2 || Math.abs(cents - Math.round(+p.total * 100)) > 1) {
+      // บรรทัดไม่มีราคา (งานที่ร้านคีย์ยอดรวมต่อใบ) → เลือกจ่ายเป็นรายใบงานตามยอดของใบ
+      var ds = (p.docs || []).filter(function (d) { return +d.amount > 0 && String(d.no || ''); }), dc = 0;
+      ds.forEach(function (d) { dc += Math.round(+d.amount * 100); });
+      if (ds.length < 2 || ds.length !== (p.docs || []).length || Math.abs(dc - Math.round(+p.total * 100)) > 1) return null;
+      return ds.map(function (d) { return {k: String(d.no), c: Math.round(+d.amount * 100), doc: true}; });
+    }
     return order.map(function (k) { return {k: k, c: map[k]}; });
   }
   function setPayModal(p) {
@@ -276,7 +281,7 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     if (grp) {   // แสดงเป็นการ์ดต่อใบงาน (ติ๊กจ่ายได้ที่หัวการ์ด) — ไม่แยกตามบิล เพื่อไม่ให้สับสนว่ากี่งาน
       docs = grp.map(function (g, n) {
         var its = [];
-        (p.docs || []).forEach(function (d) { (d.items || []).forEach(function (i) { if (String(i.j || '') !== g.k) return; var line = (+i.q || 0) * (+i.p || 0); its.push('<li><span>' + esc(i.n || '') + (i.q ? ' × ' + esc(i.q) : '') + '</span><b>' + (line > 0 ? money(line) + ' ฿' : '') + '</b></li>'); }); });
+        (p.docs || []).forEach(function (d) { (d.items || []).forEach(function (i) { if (g.doc ? String(d.no || '') !== g.k : String(i.j || '') !== g.k) return; var line = (+i.q || 0) * (+i.p || 0); its.push('<li><span>' + esc(i.n || '') + (i.q ? ' × ' + esc(i.q) : '') + '</span><b>' + (line > 0 ? money(line) + ' ฿' : '') + '</b></li>'); }); });
         var pc = payCard[g.k];
         if (pc) return '<div class="pmjw"><input type="checkbox" class="pmck" data-pg="' + n + '" checked aria-label="จ่าย ' + esc(g.k) + '"><details class="jc ' + esc(pc.cls.replace(/\bjc\b/, '')) + '">' + pc.head.replace('</b>', '</b><span class="pmamt">ยอด ' + money(g.c / 100) + ' บาท</span>') + '<div class="jb"><ul class="it pmit">' + its.join('') + '</ul><div class="row"><span>ยอดที่ต้องจ่าย</span><b>' + money(g.c / 100) + ' บาท</b></div></div></details></div>';
         return '<div class="pmd pmjob"><label class="pmh"><input type="checkbox" data-pg="' + n + '" checked><b class="pmn">' + (g.k ? esc(g.k) : 'รายการอื่น (ไม่ระบุงาน)') + '</b><b>' + money(g.c / 100) + '</b></label><ul>' + its.join('') + '</ul></div>';
@@ -619,7 +624,7 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     var col = /^#?[0-9a-f]{6}$/i.test(smp) ? (smp[0] === '#' ? smp : '#' + smp) : '#d32f2f';
     var sp = new URLSearchParams(location.search), simg = function (k) { var v = sp.get(k) || ''; return /^https:\/\//.test(v) ? v : ''; };
     show({no: 'JBS000000-003', cname: sp.get('name') || 'ตัวอย่าง', status: 'pending', date: '2026-11-13', ctheme: col, clogo: simg('logo'), thumb: simg('p0'), items: [{n: 'สติ๊กเกอร์ตัวอย่าง 120 ชิ้น', q: '1'}], payst: 'unpaid', amt: 0,
-      pay: null, others: [{no: 'JBS000000-002', thumb: simg('p1'), status: 'printed', date: '2026-11-07', items: [{n: 'สติ๊กเกอร์ตัวอย่าง 60 ชิ้น', q: '1'}], payst: 'paid'}, {no: 'JBS000000-001', thumb: simg('p2'), status: 'shipped', delivered: true, date: '2026-11-04', items: [{n: 'สติ๊กเกอร์ตัวอย่าง 60 ชิ้น', q: '1'}], payst: 'paid'}], updatedAt: Date.now()});
+      pay: sp.get('pay') ? (function () { var f = function (i, v) { return i + ('0' + v.length).slice(-2) + v; }, b = f('00', '01') + f('01', '11') + f('29', f('00', 'A000000677010111') + f('01', '0066935353555')) + f('58', 'TH') + f('53', '764'), tg = '6304', base = b + tg + crc16(b + tg), docs = [['JBS000000-003', 592.92, 'สติ๊กเกอร์ตัวอย่าง 120 ชิ้น'], ['JBS000000-002', 2276.36, 'สติ๊กเกอร์ตัวอย่าง 60 ชิ้น'], ['JBS000000-001', 779.00, 'ป้ายตัวอย่าง']], tot = 3648.28; return {total: tot, payee: 'ตัวอย่าง', payload: payloadWithAmount(base, tot), docs: docs.map(function (d) { return {no: d[0], amount: d[1], items: [{n: d[2], q: 1, p: 0, j: d[0]}]}; })}; })() : null, others: [{no: 'JBS000000-002', thumb: simg('p1'), status: 'printed', date: '2026-11-07', items: [{n: 'สติ๊กเกอร์ตัวอย่าง 60 ชิ้น', q: '1'}], payst: 'paid'}, {no: 'JBS000000-001', thumb: simg('p2'), status: 'shipped', delivered: true, date: '2026-11-04', items: [{n: 'สติ๊กเกอร์ตัวอย่าง 60 ชิ้น', q: '1'}], payst: 'paid'}], updatedAt: Date.now()});
     return;
   }
   var t = (new URLSearchParams(location.search).get('t') || '').trim();
