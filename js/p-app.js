@@ -1276,6 +1276,43 @@ function bahtText(value) {
     const out = ord.map(k => ({k, c: Math.round((net[k] ? m[k] : m[k] - jobPartOf(k)) * 100 + 1e-6) / 100})).filter(x => x.c > 0.004), tot = round2(out.reduce((t, x) => t + x.c, 0));
     return Math.abs(tot - g.total) > 0.05 ? null : out;
   }
+  // ยอดที่รับแล้วเกินยอดใบงาน (เช่น แก้ราคาใบงานลงหลังรับเงินแล้ว) → เสนอย้ายส่วนเกินไปตัดใบงานค้างที่เก่าสุดของลูกค้าเดียวกัน
+  function overpayPlan(name) {
+    const nm = String(name || '').trim() || 'ไม่ระบุชื่อ', tot = {};
+    store.get('bs_wholesale', []).forEach(w => {
+      if (w.paid || (String(w.buyerName || '').trim() || 'ไม่ระบุชื่อ') !== nm) return;
+      (w.items || []).forEach(i => { const k = String(i.job || '').trim(); if (!k || i.jtot) return; tot[k] = (tot[k] || 0) + num(i.qty === '' || i.qty == null ? 1 : i.qty) * num(i.price); });
+    });
+    Object.keys(tot).forEach(k => { tot[k] = round2(tot[k]); });
+    const part = {}; Object.keys(tot).forEach(k => { part[k] = jobPartOf(k); });
+    const plan = [];
+    Object.keys(tot).sort().forEach(k => {
+      let over = round2(part[k] - tot[k]); if (!(over > 0.004)) return;
+      Object.keys(tot).sort().forEach(t => {
+        if (!(over > 0.004) || t === k) return;
+        const room = round2(tot[t] - part[t]); if (!(room > 0.004)) return;
+        const mv = Math.min(over, room); plan.push({from: k, to: t, amt: round2(mv), fromTotal: tot[k], toFull: Math.abs(mv - room) < 0.005});
+        part[t] = round2(part[t] + mv); over = round2(over - mv);
+      });
+      if (over > 0.004) plan.push({from: k, to: '', amt: over, fromTotal: tot[k]});   // ไม่มีงานค้างให้ตัดต่อ = เครดิตค้างอยู่
+    });
+    return plan;
+  }
+  function applyOverpay(name, plan) {
+    const jl = store.get('bs_jobs', []), at = Date.now(), fulls = [], byNo = k => jl.findIndex(x => String(x.no || '').trim() === k);
+    plan.forEach(pl => {
+      const fi = byNo(pl.from); if (fi < 0) return;
+      let cut = pl.amt; const log = (jl[fi].payLog || []).map(x => Object.assign({}, x)), bi = (log[log.length - 1] || {}).bi || '';
+      for (let n = log.length - 1; n >= 0 && cut > 0.004; n--) { const take = Math.min(num(log[n].amt), cut); log[n].amt = round2(num(log[n].amt) - take); cut = round2(cut - take); }
+      jl[fi] = Object.assign({}, jl[fi], {payLog: log.filter(x => num(x.amt) > 0.004)});
+      if (round2(jobPartOfLog(log)) >= pl.fromTotal - 0.004 && fulls.indexOf(pl.from) < 0) fulls.push(pl.from);
+      store.set('bs_jobs', jl); cloudSave('jobs', jl[fi]);
+      const ti = pl.to ? byNo(pl.to) : -1;
+      if (ti >= 0) { jl[ti] = Object.assign({}, jl[ti], {payLog: (jl[ti].payLog || []).concat([{amt: pl.amt, bi, at}])}); store.set('bs_jobs', jl); cloudSave('jobs', jl[ti]); if (pl.toFull && fulls.indexOf(pl.to) < 0) fulls.push(pl.to); }
+    });
+    if (fulls.length) markJobsPaid(name, fulls);
+  }
+  const jobPartOfLog = log => (log || []).reduce((t, x) => t + num(x.amt), 0);
   // กล่องยืนยันของแอปเอง (confirm() ของเบราว์เซอร์อาจถูกบล็อกเงียบๆ ในบางเครื่อง/แอปติดตั้ง)
   function appConfirm(title, lines, okText) {
     return new Promise(res => {
@@ -7443,7 +7480,8 @@ function bahtText(value) {
       };
       const sortedJ = jobs.slice().sort((a, b) => String(b.no).localeCompare(String(a.no)));
       const paidJ = sortedJ.filter(j => jobPayStateOf(j) === 'paid'), openJ = sortedJ.filter(j => jobPayStateOf(j) !== 'paid');
-      const rows = openJ.map(rowOf).join('') + (paidJ.length ? '<details class="wd-paidfold" data-ovk="' + esc(nm + '|__paid') + '"' + (whJobOpen[nm + '|__paid'] ? ' open' : '') + ' style="border-top:1px solid #eee"><summary style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 4px;cursor:pointer;list-style:none;font-weight:700;color:#1b6b34"><span>✓ ชำระแล้ว ' + paidJ.length + ' งาน</span><span class="wd-pfl" style="font-weight:600">ดู ▾</span></summary><div style="opacity:.9">' + paidJ.map(rowOf).join('') + '</div></details>' : '');
+      const opl = overpayPlan(nm), opBanner = opl.length ? '<div class="wd-op" style="margin:8px 0;padding:10px 12px;border-radius:10px;background:#fff4d6;color:#6b4a00;font-size:13px">⚠ ' + opl.map(x => esc(x.from) + ' รับเงินเกินยอดใบงาน ' + money(x.amt) + (x.to ? ' → ตัดต่อ ' + esc(x.to) : ' (ยังไม่มีงานค้างให้ตัดต่อ)')).join(' · ') + '<div style="margin-top:6px"><button class="btn small" type="button" data-act="settleover" data-name="' + esc(nm) + '">ปิดใบงานที่จ่ายครบ + ตัดเงินเกินต่อ</button></div></div>' : '';
+      const rows = opBanner + openJ.map(rowOf).join('') + (paidJ.length ? '<details class="wd-paidfold" data-ovk="' + esc(nm + '|__paid') + '"' + (whJobOpen[nm + '|__paid'] ? ' open' : '') + ' style="border-top:1px solid #eee"><summary style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 4px;cursor:pointer;list-style:none;font-weight:700;color:#1b6b34"><span>✓ ชำระแล้ว ' + paidJ.length + ' งาน</span><span class="wd-pfl" style="font-weight:600">ดู ▾</span></summary><div style="opacity:.9">' + paidJ.map(rowOf).join('') + '</div></details>' : '');
       // รายการที่ยังไม่ผูกใบงาน (ผูกได้จากช่องเลือก)
       let loose = ''; g.open.forEach(w => { const its = w.items || [], ks = []; its.forEach((i, k) => { if (String(i.name || '').trim() && !String(i.job || '').trim()) ks.push(k); }); if (ks.length) loose += '<div class="wd-bill flat" data-doc="' + esc(w.id) + '">' + ks.map(k => whRowHtml(its[k], k, '', myJobs)).join('') + '</div>'; });
       const looseHtml = loose ? '<details class="wd-ovj" data-ovk="' + esc(nm + '|') + '"' + (whJobOpen[nm + '|'] ? ' open' : '') + ' style="border-top:1px solid #eee"><summary style="padding:10px 0;cursor:pointer"><b>รายการอื่น (ยังไม่ผูกใบงาน)</b> <small style="color:#999">แตะเพื่อดู/ผูกใบงาน ▾</small></summary><div class="wd-ovb">' + loose + '</div></details>' : '';
@@ -10105,6 +10143,11 @@ function bahtText(value) {
       jl[ji] = Object.assign({}, jl[ji], {owedPaid: !jl[ji].owedPaid, slipPending: false}); store.set('bs_jobs', jl); cloudSave('jobs', jl[ji]);
       try { publicJobMirror(jl[ji]); refreshOwedMirrors(); } catch (er) {}
       renderWholesaleHistory(); toast(jl[ji].owedPaid ? 'ใบงาน ' + jl[ji].no + ' จ่ายแล้ว ✓' : 'ยกเลิกจ่าย ' + jl[ji].no); return;
+    }
+    if (act === 'settleover') {
+      const nmv = btn.dataset.name || '', pl = overpayPlan(nmv); if (!pl.length) { toast('ไม่มียอดเกินแล้ว'); renderWholesaleHistory(); return; }
+      appConfirm('ปิดใบงานที่จ่ายครบ · ตัดเงินเกินต่อ', pl.map(x => x.from + ' → จ่ายครบ ' + money(x.fromTotal) + ' · เงินเกิน ' + money(x.amt) + (x.to ? ' ตัดเข้า ' + x.to : ' (เก็บเป็นเครดิต)')), 'ยืนยัน').then(ok => { if (!ok) return; applyOverpay(nmv, pl); toast('จัดยอดเรียบร้อย'); renderWholesaleHistory(); try { renderOwedCard(); } catch (e) {} });
+      return;
     }
     if (act === 'billsync') {
       const key = btn.dataset.key || '', jj = store.get('bs_jobs', []).find(x => String(x.no || '').trim() === key); if (!jj) return;
