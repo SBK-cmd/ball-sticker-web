@@ -196,6 +196,15 @@
   .bar { padding-top:8px; padding-bottom:calc(8px + env(safe-area-inset-bottom)); } .bar .tot b { font-size:24px; line-height:1.15; }
   .tiers button, .tiers .oth { min-height:52px; } .tiers button b { font-size:16px; }
   #ctl .lbl small { font-size:11.5px; }
+  /* ปุ่มบนเวทีให้ชัด ไม่เบลอ */
+  .st-top .fn, .st-top .sw, .chipbtn { background:#fff; border:1px solid var(--line); box-shadow:none; }
+  .st-top { top:10px; } .stage { padding:56px 12px 34px; }
+  .chipbtn { min-height:32px; padding:4px 12px; text-decoration:none; font-weight:500; }
+  .chipbtn.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+  .st-top .fn { display:none; } .st-top { justify-content:space-between; top:8px; } .stage { padding:46px 12px 28px; max-height:min(42vh,320px); }
+  .scale { bottom:6px; }
+  #ctl > div:first-child > .lbl { display:none; }   /* ข้อกำหนดขนาดขั้นต่ำมีข้อความเตือนเมื่อผิดอยู่แล้ว (#szerr) */
+  .tiers button, .tiers .oth { min-height:48px; } .tiers button b { font-size:15.5px; line-height:1.25; }
   @media (max-height:700px) { .drop { min-height:160px; } .stage { min-height:140px; } .tiers button, .tiers .oth { min-height:44px; } }
 </style>
 </head>
@@ -530,8 +539,9 @@
   function fitStage() {
     var g = st.geo; if (!g || !$('w')) return;
     var w = num($('w').value), h = num($('h').value); if (!(w > 0 && h > 0)) return;
-    var stg = $('stage'), box = Math.min((stg.clientWidth || 340) - 24, 400), boxH = Math.max(90, (stg.clientHeight || 300) - 92), base = box * 0.92 / 15, ppc = base;
+    var stg = $('stage'), box = Math.min((stg.clientWidth || 340) - 24, 400), boxH = Math.max(90, (stg.clientHeight || 300) - 74), base = box * 0.92 / 15, ppc = base;
     var cw = w * g.W / g.ow, ch = h * (g.H + g.T) / g.oh;
+    ppc = Math.min(base * 3, box * 0.84 / cw, boxH / ch);   // ขยายให้ดวงเล็กเห็นชัด (เต็มเวที) · ไม้บรรทัด 5 ซม. คิดตามสเกลนี้เสมอ
     if (cw * ppc > box) ppc = box / cw; if (ch * ppc > boxH) ppc = boxH / ch;
     $('st3d').style.width = (cw * ppc).toFixed(1) + 'px';
     document.querySelector('.shadow').style.width = Math.max(40, cw * ppc * 0.85).toFixed(0) + 'px';
