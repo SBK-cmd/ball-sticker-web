@@ -63,10 +63,15 @@
   .ctl { display:grid; grid-template-columns:minmax(0,1fr); gap:10px; flex:none; }
   .ctl > div { min-width:0; }
   .row { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); gap:6px; align-items:center; }
-  .row .x { color:var(--sub); }
-  .sz { display:flex; gap:6px; overflow-x:auto; margin-top:6px; padding-bottom:2px; scrollbar-width:none; }
+  .row .x { color:var(--sub); padding-top:20px; }
+  .dim { display:block; position:relative; }
+  .dim span { display:block; font:600 12.5px 'Prompt',sans-serif; color:var(--sub); margin:0 0 3px 4px; }
+  .dim i { position:absolute; right:12px; bottom:11px; font:400 13px 'Noto Sans Thai',sans-serif; color:var(--sub); font-style:normal; pointer-events:none; }
+  .dim input { width:100%; padding-right:34px; }
+  .szhint { font:400 12px 'Noto Sans Thai',sans-serif; color:var(--sub); margin:10px 0 4px 2px; }
+  .sz { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 8px; }
   .sz::-webkit-scrollbar { display:none; }
-  .sz button { flex:none; font:inherit; font-size:13px; padding:4px 12px; min-height:36px; border-radius:8px; border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer; }
+  .sz button { flex:none; font:inherit; font-size:13px; padding:4px 14px; min-height:36px; border-radius:8px; border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer; }
   .sz button.on { background:var(--navy); color:#fff; border-color:var(--navy); }
   .tiers { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
   .tiers button, .tiers .oth { font:inherit; border:1px solid var(--line); background:#fff; border-radius:8px; padding:6px 4px; cursor:pointer; text-align:center; color:var(--ink); min-height:50px; display:grid; align-content:center; }
@@ -162,11 +167,12 @@
     <div class="ctl card" id="ctl">
       <div>
         <p class="lbl">ขนาด (ซม.) <small>รวมขอบขาว 2 มม. · ด้านยาว 7 ซม. ขึ้นไป</small></p>
-        <div class="row">
-          <input id="w" type="number" inputmode="decimal" step="0.1" min="1" value="9" aria-label="กว้าง ซม.">
+        <div class="row dims">
+          <label class="dim"><span>กว้าง</span><input id="w" type="number" inputmode="decimal" step="0.1" min="1" value="9" aria-label="กว้าง ซม."><i>ซม.</i></label>
           <span class="x">×</span>
-          <input id="h" type="number" inputmode="decimal" step="0.1" min="1" value="9" aria-label="สูง ซม.">
+          <label class="dim"><span>สูง</span><input id="h" type="number" inputmode="decimal" step="0.1" min="1" value="9" aria-label="สูง ซม."><i>ซม.</i></label>
         </div>
+        <p class="szhint">ขนาดยอดนิยม (ด้านยาว)</p>
         <div class="sz" id="sizes" role="group" aria-label="ขนาดยอดนิยม"></div>
         <div class="err" id="szerr" hidden></div>
         <p class="note fsz" id="fsize" hidden></p>
