@@ -319,6 +319,7 @@
   function price(n, w, h) {
     var A = n * w * h, P = TIER_PTS;
     if (A > 0 && A < P[0][0]) return P[0][1];   // งานเล็กกว่าจุดแรกของตาราง = คิดขั้นต่ำเท่าจุดแรก (300) · ข้อสมมติ รอเจ้าของร้านยืนยัน
+    if (A > P[P.length - 1][0]) return Math.round(P[P.length - 1][1] * A / P[P.length - 1][0]);   // เกินจุดสุดท้ายของตาราง = คิดตามอัตราต่อ ตร.ซม. ของจุดสุดท้าย (5,000 ÷ 62,500 = 0.08 บาท/ตร.ซม. = 800 บาท/ตร.ม.)
     if (!(A >= P[0][0] && A <= P[P.length - 1][0])) return null;
     for (var i = 1; i < P.length; i++) if (A <= P[i][0]) { var a0 = P[i - 1], a1 = P[i], t = (Math.log(A) - Math.log(a0[0])) / (Math.log(a1[0]) - Math.log(a0[0])); return Math.round(Math.exp(Math.log(a0[1]) + t * (Math.log(a1[1]) - Math.log(a0[1])))); }
     return null;
