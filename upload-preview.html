@@ -721,6 +721,9 @@
       var opts = []; rows.forEach(function (r) { r[2].forEach(function (t) { opts.push([t, r[1], r[0]]); }); });
       sel.innerHTML = (opts.length > 1 ? '<option value="">เลือกตำบล (' + opts.length + ')</option>' : '') + opts.map(function (o) { return '<option value="' + esc(o.join('|')) + '">' + esc(o[0] + ' · ' + o[1] + ' · ' + o[2]) + '</option>'; }).join('');
       sel.disabled = false; showAddr();
+      if (opts.length > 1 && document.activeElement === $('cZip')) {   // ใส่รหัสครบ 5 หลัก → เด้งรายการตำบล/อำเภอให้เลือกเลย
+        setTimeout(function () { try { sel.focus(); if (sel.showPicker) sel.showPicker(); } catch (e) {} }, 60);
+      }
     });
   });
   ['cTam', 'cAddr', 'mTam', 'mAmp', 'mProv'].forEach(function (id) { $(id).addEventListener(id === 'cTam' ? 'change' : 'input', showAddr); });
