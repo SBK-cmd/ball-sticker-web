@@ -8937,7 +8937,7 @@ function bahtText(value) {
     if (!currentJobId && window.innerWidth < 900) setTimeout(() => { const n = $('jName'); if (n && document.body.classList.contains('jm-open')) n.focus({preventScroll: true}); }, 250);
     const f = $('jobFormTop'); if (f) f.scrollTop = 0;
   }
-  function closeJobModal() { document.body.classList.remove('jm-open'); }
+  function closeJobModal() { document.body.classList.remove('jm-open', 'jd-overlay'); }
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('jm-open')) closeJobModal(); });
   document.addEventListener('click', e => {
     if (!document.body.classList.contains('jm-open')) return;
@@ -9047,7 +9047,7 @@ function bahtText(value) {
   }
 
   function showTab(name) {
-    closeJobModal();
+    closeJobModal(); document.body.classList.remove('jd-overlay');
     if (!can(name)) name = firstAllowedTab(); // กันเข้าตรงๆ ผ่านปุ่มที่ซ่อนไว้ หรือโค้ดส่วนอื่นที่สั่งเปิดหน้า
     ['calc', 'vat', 'confirm', 'design', 'bill', 'wholesale', 'quote', 'track', 'chat', 'purchase', 'dash', 'report', 'autopost', 'pagechat', 'floor', 'cutq', 'money', 'cost', 'lekha'].forEach(n => {
       $('panel-' + n).classList.toggle('active', n === name);
@@ -9702,7 +9702,7 @@ function bahtText(value) {
       const id = li.dataset.id; jobOpenIds[id] = !jobOpenIds[id]; renderJobHistory(); return;
     }
     const id = btn.closest('li').dataset.id;
-    if (btn.dataset.act === 'closejd') { jobOpenIds[id] = false; jdEdit = null; renderJobHistory(); return; }
+    if (btn.dataset.act === 'closejd') { jobOpenIds[id] = false; jdEdit = null; document.body.classList.remove('jd-overlay'); renderJobHistory(); return; }
     if (btn.dataset.act === 'view') { jobOpenIds[id] = !jobOpenIds[id]; jdEdit = null; renderJobHistory(); return; }
     if (btn.dataset.act === 'jdedit') { if (!canKey) return; jdEdit = {id, sect: btn.dataset.sect}; renderJobHistory(); return; }
     if (btn.dataset.act === 'jdcancel') { jdEdit = null; renderJobHistory(); return; }
@@ -9991,9 +9991,14 @@ function bahtText(value) {
     const t = e.target.closest && e.target.closest('.wd-jno,[data-wjact]'); if (!t || !t.dataset.jid) return;
     e.preventDefault(); e.stopPropagation();
     const act = t.dataset.wjact || 'view', jid = t.dataset.jid; jdEdit = null; renderJobHistory._showRcv = true; try { ['jobHistSearch', 'jobFiltSt'].forEach(i => { if ($(i)) $(i).value = ''; }); } catch (er) {}   // งานที่ส่งแล้วถูกซ่อนในหน้าใบงาน → เปิดให้เห็นก่อน
-    if (act === 'view') { goJobFromBell(jid); return; }
-    showTab('confirm'); try { renderJobHistory(); } catch (er) {}
-    const li = document.querySelector('#jobHistory li[data-id="' + (window.CSS && CSS.escape ? CSS.escape(jid) : jid) + '"]'), bt = li && li.querySelector('button[data-act="' + act + '"]');
+    const liOf = () => document.querySelector('#jobHistory li[data-id="' + (window.CSS && CSS.escape ? CSS.escape(jid) : jid) + '"]');
+    if (act === 'view') { closeBell(); jobOpenIds[jid] = true; renderJobHistory(); document.body.classList.add('jd-overlay'); if (!liOf()) { document.body.classList.remove('jd-overlay'); toast('ไม่พบใบงานนี้'); } return; }
+    if (act === 'open') {   // ฟอร์มแก้ไขใบงานเด้งทับหน้าเดิม (ไม่เปลี่ยนหน้า)
+      const jb = store.get('bs_jobs', []).find(x => x.id === jid); if (!jb) { toast('ไม่พบใบงานนี้'); return; }
+      currentJobId = jid; applyJob(jb); renderJobEditState(); document.body.classList.add('jd-overlay'); openJobModal(); toast('เปิดใบ ' + jb.no + ' แล้ว แก้ไขได้เลย'); return;
+    }
+    try { renderJobHistory(); } catch (er) {}   // ลิงก์/เปิดลิงก์: ทำในหน้าเดิม
+    const li = liOf(), bt = li && li.querySelector('button[data-act="' + act + '"]');
     if (bt) bt.click(); else toast('ไม่พบใบงานในหน้าใบงาน (อาจถูกกรองอยู่)');
   }, true);
   $('wholesaleHistory').addEventListener('toggle', e => { const d = e.target; if (d && d.classList && d.classList.contains('wd-ovj')) whJobOpen[d.dataset.ovk] = d.open; }, true);   // จำว่าใบงานไหนเปิดอยู่ ไม่ให้พับหลังแก้ราคา
