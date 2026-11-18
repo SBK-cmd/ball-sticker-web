@@ -96,7 +96,7 @@
   .link { background:none; border:0; color:var(--navy); text-decoration:underline; font:inherit; font-size:12.5px; padding:0; cursor:pointer; }
   .warn { color:#8a5a00; background:#fff4d6; border-radius:10px; padding:6px 10px; font-size:12.5px; }
   .sum2 { display:flex; gap:10px; align-items:center; }
-  .sum2 img { width:48px; height:48px; object-fit:contain; border-radius:10px; background:#cdd4e0; padding:4px; flex:none; }
+  .sum2 img { width:64px; height:64px; object-fit:contain; border-radius:12px; background:#EEF0F3; padding:6px; flex:none; filter:drop-shadow(0 1px 2px rgba(20,35,75,.3)); }
   .sum2 div { min-width:0; font-size:13px; color:var(--sub); } .sum2 b { color:var(--ink); font:600 15px 'Prompt',sans-serif; display:block; }
   /* แถบล่าง */
   .bar { flex:none; background:#fff; border-top:1px solid var(--line); padding:10px max(12px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)); display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:10px; align-items:center; }
@@ -829,7 +829,9 @@
     $('next').disabled = !ok || !st.file;
     $('send').disabled = !ok || st.busy;
     var im = $('pimg').getAttribute('src');
-    $('sum2').innerHTML = (im ? '<img src="' + im + '" alt="">' : '') + '<div><b>' + (w || '?') + ' × ' + (h || '?') + ' ซม. × ' + st.qty.toLocaleString('th-TH') + ' ดวง</b>' + (bl ? 'สติ๊กเกอร์ ' + baht(bl.price) + ' + ค่าส่ง ' + bl.ship + (bl.vat ? ' + VAT ' + baht(bl.vat) : '') : '') + ' · <button type="button" class="link" data-go="1">แก้</button></div>';
+    var cvT = $('cv3d'), dieT = '';   // รูปเล็กสรุปออเดอร์ = รูปที่ไดคัทแล้ว (ขอบขาว พื้นใส) ไม่ใช่รูปต้นฉบับ
+    try { if (cvT && cvT.width > 1 && cvT.height > 1 && st.file) { var tk = 160 / Math.max(cvT.width, cvT.height), tc = document.createElement('canvas'); tc.width = Math.max(1, Math.round(cvT.width * tk)); tc.height = Math.max(1, Math.round(cvT.height * tk)); tc.getContext('2d').drawImage(cvT, 0, 0, tc.width, tc.height); dieT = tc.toDataURL('image/png'); } } catch (e) { dieT = ''; }
+    $('sum2').innerHTML = ((dieT || im) ? '<img src="' + (dieT || im) + '" alt="">' : '') + '<div><b>' + (w || '?') + ' × ' + (h || '?') + ' ซม. × ' + st.qty.toLocaleString('th-TH') + ' ดวง</b>' + (bl ? 'สติ๊กเกอร์ ' + baht(bl.price) + ' + ค่าส่ง ' + bl.ship + (bl.vat ? ' + VAT ' + baht(bl.vat) : '') : '') + ' · <button type="button" class="link" data-go="1">แก้</button></div>';
   }
 
   // ---------- ส่งแบบ ----------
