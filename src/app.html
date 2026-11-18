@@ -11647,7 +11647,8 @@ function bahtText(value) {
       else if (num(j.slipAmount) > 0) ev = 'มียอด ' + money(num(j.slipAmount)) + ' บาท แต่ยังไม่พบการจ่าย';
       else ev = 'ไม่พบหลักฐานการจ่าย/การค้าง';
       const unsure = !ps;
-      const st = ps === 'paid' ? '<b class="wd-ok">จ่ายแล้ว</b>' : ps === 'unpaid' ? '<b style="color:#c2261f">ยังไม่จ่าย</b>' : '<b style="color:#b45309">ต้องยืนยัน</b>';
+      let partTxt = ''; try { const pt = jobPartOf(jno); if (ps === 'unpaid' && pt > 0) { const og = owedGroups().find(x => x.name === (nm || 'ไม่ระบุชื่อ')), ln = og && jobLinesOf(og), me = ln && ln.find(x => x.k === jno); partTxt = 'จ่ายบางส่วน · รับแล้ว ' + money(pt) + (me ? ' · เหลือ ' + money(me.c) : '') + ' บาท'; } } catch (e) {}
+      const st = partTxt ? '<b style="color:#b45309">' + esc(partTxt) + '</b>' : ps === 'paid' ? '<b class="wd-ok">จ่ายแล้ว</b>' : ps === 'unpaid' ? '<b style="color:#c2261f">ยังไม่จ่าย</b>' : '<b style="color:#b45309">ต้องยืนยัน</b>';
       return '<div class="wd-j" style="' + (unsure ? 'border-left:3px solid #f59e0b' : '') + '"><div class="wd-jm"><b>' + esc(jno) + '</b> ' + st + '<small>' + esc(thDate(j.date)) + ' · ' + esc(ev) + '</small></div>' +
         '<div class="wd-jbs">' + (ps !== 'paid' ? '<button class="btn small good" type="button" data-act="payset" data-v="paid" data-jid="' + esc(j.id) + '">จ่ายแล้ว</button>' : '') + (ps !== 'unpaid' ? '<button class="btn small" type="button" data-act="payset" data-v="unpaid" data-jid="' + esc(j.id) + '">ยังไม่จ่าย</button>' : '') + '</div></div>';
     }).join('');
