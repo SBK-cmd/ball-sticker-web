@@ -2,8 +2,9 @@
 /*PURE_START*/
 const num = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
 const fmt = n => String(+(+n).toFixed(2));
-const money = n => (+n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-const round2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+// ปัดสตางค์แบบครึ่งขึ้น (542.925 → 542.93) ให้ทุกจุดในแอปและหน้าลูกค้าได้เลขตรงกัน — ไม่ใช้ปัดเลขฐานสองที่ทำ 542.925 กลายเป็น 542.92
+const round2 = n => Math.round(n * 100 + (n >= 0 ? 1e-6 : -1e-6)) / 100;
+const money = n => { const v = +n; return (isFinite(v) ? round2(v) : v).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); };
 
 function computeLayout(sw, sh, gap, m, pw, ph) {
   const aw = pw - 2 * m, ah = ph - 2 * m, E = 1e-9;
