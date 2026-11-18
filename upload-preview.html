@@ -1002,7 +1002,7 @@
     function cancelOrd(why) { if (done || o.cancelled) return; o.cancelled = true; patchOrder(o.ref, {deleted: true, cancelReason: why}).catch(function () {}); }   // ไม่จ่าย = ลบออเดอร์ (ลบแบบซ่อน หลังร้านเก็บไว้กู้ได้ถ้าเงินเข้าทีหลัง)
     function reopenOrd() { if (!o.cancelled) return; o.cancelled = false; patchOrder(o.ref, {deleted: false, cancelReason: ''}).catch(function () {}); }
     function close() { stop(); cancelOrd('cancel'); ov.remove(); }
-    function success(test) { if (done) return; done = true; stop(); if (test) patchOrder(o.ref, {pendingPay: false, deleted: false, testPaid: true}).catch(function () {}); o.paidAt = Date.now(); o.paidOk = !test; o.testPaid = !!test; saveLast(o); ov.remove(); renderDone(o); show(4); }
+    function success(test) { if (done) return; done = true; stop(); if (test) patchOrder(o.ref, {pendingPay: false, deleted: false, testPaid: true}).catch(function () {}); o.paidAt = Date.now(); o.paidOk = !test; o.testPaid = !!test; saveLast(o); ov.remove(); renderDone(o); show(4); var lg = $('lineGo'); if (lg) setTimeout(function () { lg.click(); }, 600); }   // เงินเข้าตรงยอด → เด้งไป LINE ส่งออเดอร์ให้ร้านอัตโนมัติ (ปุ่มในหน้าเสร็จยังกดซ้ำได้)
     function manualSend() {   // ตรวจสถานะอัตโนมัติไม่ได้: ลูกค้ายืนยันว่าโอนแล้ว → ส่งให้ร้านตรวจยอดกับ SMS ธนาคารเอง
       if (done) return; var mb = ov.querySelector('#ppM'); if (mb) { mb.disabled = true; mb.textContent = 'กำลังส่ง…'; }
       patchOrder(o.ref, {pendingPay: false, deleted: false, cancelReason: '', manualCheck: true}).then(function () {
@@ -1011,10 +1011,10 @@
     }
     function addManual() { if (!ov.querySelector('#ppM')) { var mb = btn('โอนแล้ว ส่งให้ร้านตรวจ', manualSend, 'go'); mb.id = 'ppM'; B().insertBefore(mb, B().firstChild); } }
     function checkNow() { if (done) return; getOrderPaid(o.ref).then(function (r) {
-      if (done) return; if (r.err) { blocked = true; S().textContent = ''; addManual(); return; }
+      if (done) return; if (r.err) { blocked = true; return; }
       blocked = false; if (r.paid) success(false); }); }
     function start() {
-      reopenOrd(); left = PAY_SECS; B().innerHTML = ''; S().textContent = ''; T().style.color = '#18213a';
+      reopenOrd(); left = PAY_SECS; B().innerHTML = ''; S().textContent = 'รอยอดเงินเข้า…'; T().style.color = '#18213a';
       var adm = isAdmin ? btn('ทดลองจ่าย (ทดสอบ)', function () { success(true); }) : null; if (adm) B().appendChild(adm);
       B().appendChild(btn('ยกเลิก', close));
       T().textContent = '1:30'; var pb0 = ov.querySelector('#ppBar'); if (pb0) pb0.style.transform = 'scaleX(1)'; clearInterval(timer); clearInterval(poll);
