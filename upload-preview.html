@@ -205,6 +205,16 @@
   .scale { bottom:6px; }
   #ctl > div:first-child > .lbl { display:none; }   /* ข้อกำหนดขนาดขั้นต่ำมีข้อความเตือนเมื่อผิดอยู่แล้ว (#szerr) */
   .tiers button, .tiers .oth { min-height:48px; } .tiers button b { font-size:15.5px; line-height:1.25; }
+  .ppc { background:#fff; border-radius:20px; width:100%; max-width:380px; max-height:96vh; overflow:auto; padding:16px; display:grid; gap:12px; text-align:center; }
+  .pph { display:flex; align-items:center; gap:10px; text-align:left; padding-bottom:12px; border-bottom:1px solid var(--line); }
+  .pph img { width:40px; height:40px; border-radius:50%; flex:none; } .pph b { font:600 15px 'Prompt',sans-serif; display:block; } .pph small { color:var(--sub); font-size:12.5px; }
+  .ppa small { display:block; color:var(--sub); font-size:12.5px; } .ppa b { font:700 34px/1.15 'Prompt',sans-serif; font-variant-numeric:tabular-nums; color:var(--navy); } .ppa b i { font:500 16px 'Prompt',sans-serif; font-style:normal; color:var(--ink); }
+  .ppq { justify-self:center; padding:12px; border:1px solid var(--line); border-radius:16px; background:#fff; } .ppq .qr { width:min(208px,52vw); } .ppq .qr svg { display:block; width:100%; height:auto; }
+  .ppn { background:#F4F5F7; border-radius:12px; padding:10px 12px; display:grid; gap:2px; } .ppn span { color:var(--sub); font-size:12.5px; } .ppn b { font:600 16px 'Prompt',sans-serif; } .ppn small { color:var(--sub); font-size:12px; line-height:1.4; }
+  .ppbar { height:6px; border-radius:3px; background:#E3E5EA; overflow:hidden; } .ppbar i { display:block; height:100%; width:100%; background:var(--navy); transform-origin:left; transition:transform 1s linear; }
+  .ppr { display:flex; justify-content:space-between; align-items:baseline; margin-top:6px; } .ppr span { color:var(--sub); font-size:13px; text-align:left; } .ppr b { font:700 22px 'Prompt',sans-serif; font-variant-numeric:tabular-nums; }
+  .ppb { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; } .ppf { color:var(--sub); font-size:12px; line-height:1.4; }
+  @media (max-height:740px) { .ppq .qr { width:168px; } .ppa b { font-size:30px; } .ppn small { display:none; } }
   @media (max-height:700px) { .drop { min-height:160px; } .stage { min-height:140px; } .tiers button, .tiers .oth { min-height:44px; } }
 </style>
 </head>
@@ -964,14 +974,14 @@
   function openPayPop(o) {
     var ov = document.createElement('div'); ov.className = 'paypop';
     ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(10,16,34,.6);display:flex;align-items:center;justify-content:center;padding:14px';
-    ov.innerHTML = '<div role="dialog" aria-modal="true" aria-label="ชำระเงิน" style="background:#fff;border-radius:20px;width:100%;max-width:380px;max-height:96vh;overflow:auto;padding:18px 16px;text-align:center">' +
-      '<div style="font:600 16px Prompt,sans-serif">สแกนจ่ายพร้อมเพย์</div>' +
-      '<div class="qr" style="margin:10px auto">' + qrSvgEl(o.payload) + '</div>' +
-      '<div style="font:700 26px Prompt,sans-serif">' + baht(o.total) + ' บาท</div>' +
-      '<div class="note" style="margin:2px 0 8px">' + PP.name + ' · กรุณาโอนให้ตรงยอดนี้เป๊ะ ระบบจะตรวจเงินเข้าให้อัตโนมัติ</div>' +
-      '<div id="ppT" style="font:700 30px Prompt,sans-serif;color:#18213a;font-variant-numeric:tabular-nums">1:30</div>' +
-      '<div id="ppS" class="note" style="min-height:22px" role="status">รอเงินเข้า… ' + '</div>' +
-      '<div id="ppB" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px"></div></div>';
+    ov.innerHTML = '<div class="ppc" role="dialog" aria-modal="true" aria-label="ชำระเงิน">' +
+      '<div class="pph"><img src="icon-192.png" alt=""><div><b>บอลสติ๊กเกอร์ พิษณุโลก</b><small>ชำระเงินด้วยพร้อมเพย์ · ใบงาน ' + esc(o.ref) + '</small></div></div>' +
+      '<div class="ppa"><small>ยอดที่ต้องโอน</small><b>' + baht(o.total) + ' <i>บาท</i></b><small>โอนให้ตรงยอดนี้เป๊ะ (รวมเศษสตางค์) ระบบถึงจะจับคู่ให้</small></div>' +
+      '<div class="ppq"><div class="qr">' + qrSvgEl(o.payload) + '</div></div>' +
+      '<div class="ppn"><span>ชื่อบัญชีผู้รับ</span><b>' + esc(PP.name) + '</b><small>แอปธนาคารจะแสดงชื่อนี้หลังสแกน ตรวจให้ตรงก่อนกดยืนยัน</small></div>' +
+      '<div class="pps"><div class="ppbar"><i id="ppBar"></i></div><div class="ppr"><span id="ppS" role="status">รอเงินเข้า…</span><b id="ppT">1:30</b></div></div>' +
+      '<div id="ppB" class="ppb"></div>' +
+      '<div class="ppf">ระบบตรวจเงินเข้าให้อัตโนมัติ · มีปัญหาทัก LINE ' + esc(LINE_OA) + ' แจ้งเลขใบงาน</div></div>';
     document.body.appendChild(ov);
     var left = PAY_SECS, timer = null, poll = null, done = false, blocked = false;
     var T = function () { return ov.querySelector('#ppT'); }, S = function () { return ov.querySelector('#ppS'); }, B = function () { return ov.querySelector('#ppB'); };
@@ -995,8 +1005,8 @@
       reopenOrd(); left = PAY_SECS; B().innerHTML = ''; S().textContent = 'รอเงินเข้า…'; T().style.color = '#18213a';
       var adm = isAdmin ? btn('ทดลองจ่าย (ทดสอบ)', function () { success(true); }) : null; if (adm) B().appendChild(adm);
       B().appendChild(btn('ยกเลิก', close));
-      T().textContent = '1:30'; clearInterval(timer); clearInterval(poll);
-      timer = setInterval(function () { left--; var m = Math.floor(left / 60), sc = left % 60; T().textContent = m + ':' + (sc < 10 ? '0' : '') + sc; if (left <= 0) timeout(); }, 1000);
+      T().textContent = '1:30'; var pb0 = ov.querySelector('#ppBar'); if (pb0) pb0.style.transform = 'scaleX(1)'; clearInterval(timer); clearInterval(poll);
+      timer = setInterval(function () { left--; var m = Math.floor(left / 60), sc = left % 60; T().textContent = m + ':' + (sc < 10 ? '0' : '') + sc; var pb = ov.querySelector('#ppBar'); if (pb) pb.style.transform = 'scaleX(' + Math.max(0, left / PAY_SECS) + ')'; if (left <= 0) timeout(); }, 1000);
       poll = setInterval(checkNow, 3000); checkNow();
     }
     function timeout() {
