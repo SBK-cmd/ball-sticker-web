@@ -136,6 +136,45 @@
   .bt.pri { background:var(--yel); border-color:var(--yel); } .bt.line { background:#06c755; border-color:#06c755; color:#fff; }
   @media (prefers-reduced-motion: reduce) { .st3d { transition:none; } .spin { animation-duration:2s; } }
   [hidden] { display:none !important; }
+
+  /* ===== UI ตามแอปหลังร้าน (p13): พื้นเทาอ่อน การ์ดขาวเส้นบาง ไม่มีเงา · ชิปกรมเมื่อเลือก · ช่องจำนวนสีเทาอ่อน · เหลืองเฉพาะปุ่มหลัก · แถบราคากรม ตัวเลขเหลือง ===== */
+  :root { --navy:#0E1E5B; --ink:#161B33; --sub:#5B6275; --line:#E3E5EA; --bg:#F4F5F7; --card:#fff; --yel:#F5B301; }
+  html,body,.app { background:var(--bg); }
+  .top { background:#fff; color:var(--ink); border-bottom:1px solid var(--line); padding-bottom:8px; }
+  .top img { width:32px; height:32px; background:transparent; }
+  .top .bn { font-weight:600; }
+  .steps span { background:#EEF0F3; color:var(--sub); font-size:12.5px; padding:5px 10px; }
+  .steps span.on { background:var(--navy); color:#fff; } .steps span.ok { background:#E3E8F6; color:var(--navy); }
+  .card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px; }
+  .lbl { color:var(--ink); font:600 15px 'Prompt',sans-serif; }
+  .lbl small { color:var(--sub); }
+  .drop { background:#fff; border:1.5px dashed #C9CDD6; border-radius:16px; padding:28px 16px; min-height:280px; }
+  .drop .hero { display:none; }
+  .drop .hl { font:600 22px/1.3 'Prompt',sans-serif; color:var(--ink); } .drop .hl em { font-style:normal; color:var(--navy); }
+  .drop .ic { width:auto; height:48px; padding:0 20px; border-radius:12px; background:var(--yel); color:var(--ink); display:flex; align-items:center; gap:8px; margin-top:6px; }
+  .drop .ic::after { content:"อัปโหลดแบบ"; font:600 16px 'Prompt',sans-serif; color:var(--ink); }
+  .drop b { display:none; } .drop small, .drop .facts { color:var(--sub); } .drop .facts { text-wrap:balance; max-width:32ch; }
+  .drop.on { border-color:var(--navy); background:#EEF2FB; }
+  .stage { border:1px solid var(--line); border-radius:16px; background-color:#fff; background-image:linear-gradient(rgba(14,30,91,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(14,30,91,.05) 1px,transparent 1px); background-size:16px 16px; }
+  input, textarea, select { background:#fff; border:1px solid #CFD3DB; border-radius:12px; min-height:48px; }
+  input:focus-visible { outline:2px solid var(--navy); outline-offset:1px; }
+  .row input { min-height:52px; font-size:20px; font-weight:600; }
+  .sz button { min-height:44px; padding:0 16px; border-radius:999px; background:#fff; border:1px solid var(--line); }
+  .sz button.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+  .tiers { gap:8px; }
+  .tiers button, .tiers .oth { background:#F0F1F4; border:1px solid transparent; border-radius:12px; min-height:64px; }
+  .tiers button b { font-weight:600; font-size:17px; } .tiers button small { color:var(--sub); }
+  .tiers button.on { background:var(--navy); border-color:var(--navy); box-shadow:none; color:#fff; } .tiers button.on small { color:#C9D2F0; }
+  .tiers .oth.on { background:#fff; border:2px solid var(--navy); box-shadow:none; }
+  .bar { background:var(--navy); border-top:0; color:#fff; }
+  .bar .tot small { color:#B9C2E2; } .bar .tot b { color:var(--yel); font-weight:700; font-size:26px; }
+  .bar .go { min-height:52px; border-radius:12px; background:var(--yel); color:var(--ink); font-weight:600; }
+  .bar .go:disabled { background:rgba(255,255,255,.18); color:rgba(255,255,255,.7); opacity:1; }
+  .bar .back { border-radius:12px; min-height:52px; background:rgba(255,255,255,.12); border:0; color:#fff; }
+  .bt { border-radius:12px; min-height:48px; border:1px solid #CFD3DB; } .bt.pri { background:var(--yel); border-color:var(--yel); }
+  .bar .go:active, .bt:active, .sz button:active, .tiers button:active { transform:scale(.97); }
+  .bar .go, .bt, .sz button, .tiers button { transition:transform 140ms cubic-bezier(.23,1,.32,1); }
+  @media (prefers-reduced-motion: reduce) { .bar .go, .bt, .sz button, .tiers button { transition:none; } }
   @media (max-height:700px) { .drop { min-height:160px; } .stage { min-height:140px; } .tiers button, .tiers .oth { min-height:44px; } }
 </style>
 </head>
@@ -150,6 +189,8 @@
   <!-- ขั้น 1: อัปรูป ขนาด จำนวน ราคา -->
   <section class="view" id="v1" aria-label="ออกแบบสติ๊กเกอร์">
     <label class="drop" id="drop" for="file">
+      <span class="hero" aria-hidden="true"><i class="s1">★</i><i class="s2">♥</i><i class="s3">◆</i><i class="s4">●</i></span>
+      <span class="hl">สติ๊กเกอร์ไดคัท<br><em>ตามรูปของคุณ</em></span>
       <span class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></span>
       <b>แตะเพื่ออัปโหลดแบบ</b>
       <small>PNG พื้นใสดีที่สุด · หรือพื้นสีเดียว · JPG / PDF ไม่เกิน 20 MB</small>
