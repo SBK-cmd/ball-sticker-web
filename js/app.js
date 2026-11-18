@@ -3717,7 +3717,7 @@ function bahtText(value) {
       }, e => { console.warn('logoReq', e); });
     } catch (e) { console.warn(e); }
   }
-  const WEBORD_ON = /พรีวิว/.test((document.getElementById('buildVer') || {}).textContent || '');   // การ์ด "ออเดอร์จากเว็บ" แสดงเฉพาะรุ่นพรีวิว (เปิดของจริง: ตั้งเป็น true)
+  const WEBORD_ON = true;   // การ์ด "ออเดอร์จากเว็บ" แสดงเฉพาะรุ่นพรีวิว (เปิดของจริง: ตั้งเป็น true)
   let woDelArmed = null, woDelTimer = null;
   const woDone = x => x.status === 'job' || x.status === 'hide';
   // ออเดอร์เว็บถือว่า "ทำแล้ว" เมื่อบันทึกใบงานที่มีเลขออเดอร์ในหมายเหตุจริงๆ (เปิดฟอร์มแล้วปิดไม่บันทึก = ยังรอ)

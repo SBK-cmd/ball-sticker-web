@@ -6,7 +6,7 @@
 <title>สั่งสติ๊กเกอร์จากแบบของคุณ · บอลสติ๊กเกอร์</title>
 <meta name="description" content="มีแบบแล้ว อัปโหลดได้เลย เลือกขนาดและจำนวน เห็นราคาทันที ไดคัทตามรูป ส่งทั่วประเทศ">
 <meta property="og:title" content="สั่งสติ๊กเกอร์จากแบบของคุณ · บอลสติ๊กเกอร์">
-<meta property="og:description" content="อัปโหลดแบบ เลือกขนาด เห็นราคาทันที · 100 ดวง 999 บาท">
+<meta property="og:description" content="อัปโหลดแบบ เลือกขนาด เห็นราคาทันที · 100 ดวง 9×9 ซม. 1,000 บาท">
 <meta property="og:image" content="https://www.ballsticker.co.th/icon-512.png">
 <link rel="icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -147,7 +147,7 @@
       <span class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></span>
       <b>แตะเพื่ออัปโหลดแบบ</b>
       <small>PNG พื้นใสดีที่สุด · หรือพื้นสีเดียว · JPG / PDF ไม่เกิน 20 MB</small>
-      <span class="facts">100 ดวง 999 บาท* · ส่งทั่วประเทศ 60 บาท · จ่ายพร้อมเพย์</span>
+      <span class="facts">100 ดวง 9×9 ซม. 1,000 บาท · ส่งฟรีเมื่อค่าพิมพ์ครบ 900 บาท · จ่ายพร้อมเพย์</span>
     </label>
     <input type="file" id="file" accept="image/png,image/jpeg,image/webp,application/pdf" hidden>
     <div class="prev" id="prev"><div class="ph"><img id="pimg" alt=""></div><div class="meta"><b id="pname"></b></div></div>
@@ -226,7 +226,7 @@
 
 <div class="bar" id="bar">
   <button type="button" class="back" id="back" hidden aria-label="ย้อนกลับ">‹</button>
-  <div class="tot"><small id="totLbl">100 ดวง · 9 × 9 ซม.</small><b id="tot">999 บาท</b></div>
+  <div class="tot"><small id="totLbl">100 ดวง · 9 × 9 ซม.</small><b id="tot">1,000 บาท</b></div>
   <span style="display:flex;gap:6px"><button type="button" id="testSend" hidden>ทดสอบ</button><button type="button" class="go" id="next" disabled>ถัดไป</button><button type="button" class="go" id="send" hidden>ยืนยันสั่ง</button><button type="button" class="go" id="paid" hidden disabled>ส่งสลิป</button></span>
 </div>
 </div>
@@ -280,9 +280,9 @@
     return {type: 'flex', altText: 'ออเดอร์ ' + o.ref + ' · ' + baht(o.total) + ' บาท', contents: b};
   }
   liffReady();
-  var SHIP = 60, VAT = 7, PP = {id: '0935353555', name: 'นาย กิติพงษ์ สีทอง'};   // ค่าส่งเหมา · พร้อมเพย์บัญชีกิติพงษ์ (บัญชีที่ส่ง VAT)
+  var SHIP_FREE_FROM = 900, SHIP_FEE = 50, VAT = 7, PP = {id: '0935353555', name: 'นาย กิติพงษ์ สีทอง'};   // ค่าส่งเหมา · พร้อมเพย์บัญชีกิติพงษ์ (บัญชีที่ส่ง VAT)
   // ยอดชำระ (คิดเป็นสตางค์ กันทศนิยมเพี้ยน): สติ๊กเกอร์ + ค่าส่ง · ใบกำกับ = VAT 7% ของทั้งก้อน
-  function bill(price) { var sub = Math.round(price * 100) + SHIP * 100, vat = $('tx').checked ? Math.round(sub * VAT / 100) : 0; return {price: price, ship: SHIP, sub: sub / 100, vat: vat / 100, total: (sub + vat) / 100}; }
+  function bill(price) { var SHIP = price < SHIP_FREE_FROM ? SHIP_FEE : 0, sub = Math.round(price * 100) + SHIP * 100, vat = $('tx').checked ? Math.round(sub * VAT / 100) : 0; return {price: price, ship: SHIP, sub: sub / 100, vat: vat / 100, total: (sub + vat) / 100}; }
   var esc = function (t) { return String(t).replace(/[&<>"']/g, function (c) { return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]; }); };
   var baht = function (v) { return v.toLocaleString('th-TH', {minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2}); };
   function telNorm(v) { var d = String(v).replace(/\D/g, ''); if (/^66\d{9}$/.test(d)) d = '0' + d.slice(2); return d; }
@@ -305,7 +305,14 @@
   var num = function (v) { var x = parseFloat(String(v).replace(/,/g, '')); return isFinite(x) ? x : 0; };
   var fmt = function (n) { return Math.round(n).toLocaleString('th-TH'); };
   var nice = function (p) { return p < 100 ? Math.ceil(p) : Math.round(p / 10) * 10 - 1; };
-  function price(n, w, h) { if (n === 100 && w === 9 && h === 9) return 999; return nice(A0 + A1 * n * (w + GAP) * (h + GAP)); }
+  // สูตรราคาใหม่ (18 พ.ย.) = เรทเกรด A ยึด 9 ซม. · ราคา = interpolate แบบ log-log ตาม "พื้นที่กรอบรวม" (กว้าง×สูง×จำนวน ตร.ซม.) · นอกช่วง = null (ให้ร้านประเมิน)
+  var TIER_PTS = [[810, 300], [3240, 450], [4860, 650], [6480, 850], [8100, 1000], [14400, 1500], [22500, 2500], [40000, 4500], [62500, 5000]];
+  function price(n, w, h) {
+    var A = n * w * h, P = TIER_PTS;
+    if (!(A >= P[0][0] && A <= P[P.length - 1][0])) return null;
+    for (var i = 1; i < P.length; i++) if (A <= P[i][0]) { var a0 = P[i - 1], a1 = P[i], t = (Math.log(A) - Math.log(a0[0])) / (Math.log(a1[0]) - Math.log(a0[0])); return Math.round(Math.exp(Math.log(a0[1]) + t * (Math.log(a1[1]) - Math.log(a0[1])))); }
+    return null;
+  }
   function perSheet(w, h) { var g = function (L, s) { return s > L ? 0 : Math.floor((L + GAP) / (s + GAP)); }; var a = g(121, w) * g(81, h), b = g(121, h) * g(81, w); return a >= b ? {n: a, cx: g(121, w), pw: w, ph: h} : {n: b, cx: g(121, h), pw: h, ph: w}; }
   var TIERS = [10, 20, 30, 50, 100], MINQ = 10, SIZES = [7, 8, 10, 12, 15, 20, 40, 70].map(function (v) { return [v, v]; }), MINL = 7;   // ไดคัทได้ตั้งแต่ด้านยาว 7 ซม. · หน้าม้วนพิมพ์ได้ 124 ซม.
   var st = {file: null, ratio: 0, qty: 100, url: '', busy: false};
@@ -706,10 +713,11 @@
     if (srcImg && w >= 1 && w !== lastCm) buildSticker(); else fitStage();
     document.querySelectorAll('#sizes button').forEach(function (b) { var s = SIZES[+b.dataset.i]; b.classList.toggle('on', st.ratio ? s[0] === Math.max(w, h) : (s[0] === w && s[1] === h)); b.textContent = st.ratio ? 'ยาว ' + s[0] : s[0] + '×' + s[1]; });
     var custom = $('qty').value !== '' || TIERS.indexOf(st.qty) < 0, qOk = st.qty >= MINQ;
-    document.querySelectorAll('#tiers button').forEach(function (b) { var q = +b.dataset.q; b.classList.toggle('on', !custom && q === st.qty); b.querySelector('small').textContent = ok ? '฿' + fmt(price(q, w, h)) : '—'; });
+    document.querySelectorAll('#tiers button').forEach(function (b) { var q = +b.dataset.q; b.classList.toggle('on', !custom && q === st.qty); var pq = ok ? price(q, w, h) : null; b.querySelector('small').textContent = pq != null ? '฿' + fmt(pq) : '—'; });
     $('othBox').classList.toggle('on', custom); $('qerr').hidden = qOk;
     ok = ok && qOk;
     var p = ok ? price(st.qty, w, h) : 0;
+    var qe = $('qerr'); if (ok && p === null) { ok = false; qe.textContent = 'ขนาด/จำนวนนี้ให้ร้านประเมินราคา ทัก LINE ' + LINE_OA + ' ได้เลย'; qe.hidden = false; } else if (!qOk) { qe.textContent = 'สั่งขั้นต่ำ 10 ดวง'; }
     var bl = ok ? bill(p) : null;
     $('tot').textContent = bl ? baht(bl.total) + ' บาท' : '—';
     $('sumNote').innerHTML = bl ? 'สติ๊กเกอร์ ' + baht(bl.price) + ' + ค่าส่ง ' + bl.ship + (bl.vat ? ' + VAT 7% ' + baht(bl.vat) : '') + ' = <b>ชำระ ' + baht(bl.total) + ' บาท</b>' : '';
