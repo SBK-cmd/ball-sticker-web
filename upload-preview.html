@@ -935,24 +935,9 @@
     var lineUrl = 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA) + '/?' + encodeURIComponent(lineMsg);
     $('v4').innerHTML = orderCardHTML(o) + '<div class="done"><h2>✓ ได้รับออเดอร์แล้ว ขอบคุณครับ</h2>' +
       '<p class="note">' + (o.testPaid ? 'ทดสอบระบบ ไม่ได้จ่ายเงินจริง' : 'ร้านได้รับเงินแล้ว จะตรวจไฟล์แล้วเริ่มทำงาน') + '</p>' +
-      '<div class="btns"><button type="button" class="bt line" id="lineGo">ติดตามพัสดุทาง LINE</button><button type="button" class="bt" id="fbGo" style="margin-top:8px">ส่งทางเพจ Facebook</button><button type="button" class="bt" id="newOrd" style="margin-top:8px">+ เริ่มสั่งงานใหม่</button></div></div>';
+      '<div class="btns"><button type="button" class="bt line" id="lineGo">ติดตามพัสดุทาง LINE</button><button type="button" class="bt" id="newOrd" style="margin-top:8px">+ เริ่มสั่งงานใหม่</button></div></div>';
     var cardData = {ref: o.ref, test: o.test, size: o.w + ' × ' + o.h + ' ซม.', qty: Number(o.qty).toLocaleString('th-TH'), name: o.name, tel: o.tel, addr: o.addr, price: baht(o.price), ship: String(o.ship), vat: o.vat ? baht(o.vat) : '', total: baht(o.total), payload: o.payload, payee: PP.name, track: o.track, img: o.localImg || o.img || ''};
     $('newOrd').onclick = restartOrder;
-    $('fbGo').onclick = function () {   // ส่งการ์ดออเดอร์ (รูป) เข้า Messenger: มือถือ = เมนูแชร์เลือก Messenger · ที่อื่น = คัดลอกรูปไว้ให้วางในแชตเพจ
-      var b = this, t0 = b.textContent, say = function (m) { b.textContent = m; setTimeout(function () { b.textContent = t0; }, 6000); }, page = function () { window.open('https://m.me/108503502205863', '_blank'); };
-      b.disabled = true; b.innerHTML = SPIN;
-      orderCardBlob(o).then(function (blob) {
-        b.disabled = false; b.textContent = t0;
-        var file = blob ? new File([blob], o.ref + '.png', {type: 'image/png'}) : null;
-        if (file && navigator.canShare && navigator.canShare({files: [file]})) {
-          return navigator.share({files: [file], text: lineMsg}).catch(function () {});
-        }
-        if (file && navigator.clipboard && window.ClipboardItem) {
-          return navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(function () { say('คัดลอกการ์ดแล้ว วางในแชตเพจได้เลย'); page(); }, function () { try { navigator.clipboard.writeText(lineMsg); } catch (e) {} say('คัดลอกข้อความแล้ว วางในแชตเพจได้เลย'); page(); });
-        }
-        try { navigator.clipboard.writeText(lineMsg); } catch (e) {} say('คัดลอกข้อความแล้ว วางในแชตเพจได้เลย'); page();
-      });
-    };
     $('lineGo').onclick = function () {   // ใน LINE (LIFF): ส่งการ์ดออเดอร์เข้าแชตร้านแล้วปิดหน้า · นอก LINE: เปิดแชต @bk25 พร้อมข้อความออเดอร์ (มีลิงก์ติดตามงาน)
       var b = this;
       if (window.liff && lineUser && liff.isInClient()) {
