@@ -674,6 +674,7 @@
   }
   // รูปการ์ดออเดอร์ (ส่งเข้า LINE ได้ทั้งรูป): หัวเลขใบงาน · รูปงาน · ขนาด/จำนวน/ผู้รับ · ยอด · QR พร้อมเพย์ · ลิงก์ติดตาม
   function orderCardBlob(o) {
+    o = Object.assign({}, o, {size: o.size || (o.w + ' × ' + o.h + ' ซม.'), payee: o.payee || PP.name, qty: Number(o.qty).toLocaleString('th-TH')});
     return new Promise(function (done) {
       var W = 1080, P = 56, cv = document.createElement('canvas'), g = cv.getContext('2d'), m = qrEncode(o.payload), n = m.length, cell = Math.floor(360 / (n + 8)), qs = cell * (n + 8);
       var H = 1800 + (o.vat ? 56 : 0) + (o.test ? 60 : 0); cv.width = W; cv.height = H;
@@ -697,9 +698,10 @@
         line('สติ๊กเกอร์', o.price); line('ค่าส่ง', o.ship); if (o.vat) line('VAT 7%', o.vat); y += 10; line('ยอดชำระ', o.total + ' บาท', true);
         g.fillStyle = '#e3e7ef'; g.fillRect(x, y - 30, R - x, 2); y += 20;
         var qx = x, qy = y; g.fillStyle = '#fff'; g.fillRect(qx, qy, qs, qs); g.fillStyle = '#000';
-        for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (m[r][c]) g.fillRect(qx + (c + 4) * cell, qy + (r + 4) * cell, cell, cell);
+        if (o.paidAt) { g.fillStyle = '#e7f6ec'; g.fillRect(qx, qy, qs, qs); g.fillStyle = '#1f8a4c'; F('600', Math.round(qs * 0.6), 'Prompt'); g.textAlign = 'center'; g.fillText('✓', qx + qs / 2, qy + qs * 0.7); g.textAlign = 'left'; }   // จ่ายแล้ว = ไม่แสดง QR ให้สแกนซ้ำ
+        else for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (m[r][c]) g.fillRect(qx + (c + 4) * cell, qy + (r + 4) * cell, cell, cell);
         g.strokeStyle = '#e3e7ef'; g.lineWidth = 2; rr(qx, qy, qs, qs, 16); g.stroke();
-        var px = qx + qs + 36; F('600', 32, 'Prompt'); g.fillStyle = '#1b2333'; g.fillText('สแกนจ่ายพร้อมเพย์', px, qy + 60);
+        var px = qx + qs + 36; F('600', 32, 'Prompt'); g.fillStyle = '#1b2333'; g.fillText(o.paidAt ? 'ชำระเงินแล้ว' : 'สแกนจ่ายพร้อมเพย์', px, qy + 60);
         F('400', 26); g.fillStyle = '#5a6580'; g.fillText(o.payee, px, qy + 104); F('600', 44, 'Prompt'); g.fillStyle = '#1b2333'; g.fillText(o.total + ' บาท', px, qy + 166);
         F('400', 24); g.fillStyle = '#5a6580'; g.fillText(o.paidAt ? (o.testPaid ? 'ทดสอบ ไม่ได้จ่ายจริง' : 'ชำระเงินแล้ว ✓') : 'โอนให้ตรงยอด ระบบตรวจเงินเข้าอัตโนมัติ', px, qy + 214); g.fillText('ติดต่อ 093-535-3555', px, qy + 252);
         y = qy + qs + 64; F('500', 26); g.fillStyle = '#2f5bd3'; g.fillText('📦 ติดตามงาน: ' + fit(o.track.replace('https://', ''), R - x - 220), x, y);
