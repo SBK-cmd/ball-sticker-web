@@ -469,7 +469,7 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
   function jobCard(o, open) {
     var pk = o.status === 'pickup', k = stIdx(o.status, o.delivered), sub = (o.items && o.items[0]) ? String(o.items[0].n || '') + (o.items[0].q ? ' × ' + o.items[0].q : '') + (o.items.length > 1 ? ' +' + (o.items.length - 1) + ' รายการ' : '') : '';
     var pr = (+o.prio > 0 && k < 4) ? Math.min(2, +o.prio) : 0;
-    var pay = o.payst === 'paid' ? '<span class="pst ok">✓ ชำระแล้ว</span>' : o.payst === 'unpaid' ? '<span class="pst no">ยังไม่ชำระ</span>' : '';
+    var pay = o.payst === 'paid' ? '<span class="pst ok">✓ ชำระแล้ว</span>' : o.payst === 'unpaid' ? ((window.__part && +window.__part[o.no] > 0) ? '<span class="pst no" style="background:#fff4d6;color:#8a5a00">จ่ายบางส่วน · รับแล้ว ' + fmt(window.__part[o.no]) + '</span>' : '<span class="pst no">ยังไม่ชำระ</span>') : '';
     var head = '<summary>' + (pr ? '<span class="jc-fire" aria-hidden="true"></span>' : '') + (o.thumb ? '<img class="jt" src="' + esc(o.thumb) + '" alt="" loading="lazy">' : '<span class="jt jt0" aria-hidden="true">' + esc(String(o.no || '').slice(-3)) + '</span>') + '<span class="jn"><b>' + esc(o.no) + '</b>' + pay + (pr ? '<span class="chili-tag p' + pr + '">' + chiliSvg(pr) + '<b>' + PRIO_SHORT[pr] + '</b></span>' : '') + ((o.date || sub) ? '<small>' + esc([thDate(o.date), sub].filter(Boolean).join(' · ')) + '</small>' : '') + '</span><span class="js' + (k === 4 ? ' rcv' : k === 3 ? ' done' : '') + '">' + esc(pk ? 'พร้อมรับหน้าร้าน' : STEPS[k][1]) + '</span>' +
       '<span class="pb" aria-hidden="true">' + SHORT.map(function (s, n) { return '<i class="' + (n <= k ? 'on' : '') + '"></i>'; }).join('') + '</span></summary>';
     var b = stepper(k, pk);
@@ -551,6 +551,7 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     var isJbs = /^JBS/i.test(String(j.no || ''));
     var payOk = j.pay && +j.pay.total > 0 && typeof j.pay.payload === 'string' && /^000201/.test(j.pay.payload);
     var others = (isJbs && Array.isArray(j.others)) ? j.others.filter(function (o) { return o && o.no; }) : [];
+    window.__part = (j.pay && j.pay.part) || {};   // ยอดที่รับแล้วรายใบงาน (จ่ายบางส่วน) ต้องตั้งก่อนวาดการ์ด
     var cards = [jobCard(recOf(j), !others.length)];   // มีใบเดียว = เปิดให้เลย · หลายใบ = พับไว้ กดดูทีละใบ
     others.forEach(function (o) {
       var bx = (o.receiver || o.trackCode) ? [{from: o.shipFrom || '', name: o.receiver ? o.receiver.name : '', addr: o.receiver ? o.receiver.addr : '', trackCode: o.trackCode || '', carrier: o.carrier || '', trackUrl: o.trackUrl || '', st: o.shipSt || null}] : [];
