@@ -258,15 +258,15 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     if (!p || +p.dep > 0) return null;
     if (payloadWithAmount(p.payload, +p.total) !== p.payload) return null;
     var cts = function (v) { return Math.round(v * 100 + 1e-6); };
-    var raw = {}, order = [], add = function (k, v) { if (!(k in raw)) { raw[k] = 0; order.push(k); } raw[k] += v; };
+    var raw = {}, gross = {}, order = [], add = function (k, v) { if (!(k in raw)) { raw[k] = 0; order.push(k); } raw[k] += v; };
     (p.docs || []).forEach(function (d) {
       var its = d.items || [], priced = its.length > 0 && its.every(function (i) { return (+i.q || 0) * (+i.p || 0) > 0; });
-      if (priced) { its.forEach(function (i) { add(String(i.j || ''), (+i.q || 0) * (+i.p || 0)); }); return; }
+      if (priced) { its.forEach(function (i) { var k = String(i.j || ''); add(k, (+i.q || 0) * (+i.p || 0)); gross[k] = 1; }); return; }
       if (!(+d.amount > 0)) return;   // ใบว่าง/ยอด 0 ข้ามได้
       var js = {}; its.forEach(function (i) { if (i.j) js[String(i.j)] = 1; });
       var ks = Object.keys(js); add(ks.length === 1 ? ks[0] : String(d.no || ''), +d.amount);   // บรรทัดไม่มีราคา: ใช้ยอดของใบ ผูกกับใบงาน (ถ้ามีใบงานเดียว) หรือเลขใบ
     });
-    var out = order.map(function (k) { return {k: k, c: cts(raw[k])}; }).filter(function (g) { return g.c > 0; }), sum = 0;
+    var out = order.map(function (k) { return {k: k, c: cts(raw[k]) - (gross[k] && p.part && +p.part[k] > 0 ? cts(+p.part[k]) : 0)}; }).filter(function (g) { return g.c > 0; }), sum = 0;
     out.forEach(function (g) { sum += g.c; });
     if (out.length < 2 || Math.abs(sum - cts(+p.total)) > 3) return null;
     return out;

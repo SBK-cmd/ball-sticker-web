@@ -376,6 +376,7 @@ function bahtText(value) {
       if (isJbs && Array.isArray(rec.recvMore)) { const bx = rec.recvMore.filter(r => r && String((r.name || '') + (r.addr || '')).trim()).slice(0, 10).map(r => { const code = String(r.code || '').replace(/\s+/g, '').slice(0, 40), car = String(r.carrier || '') || (((store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(code))) || {}).carrier || ''); return {name: String(r.name || '').replace(/\s+/g, ' ').trim().slice(0, 80), addr: String(r.addr || '').replace(/\s+/g, ' ').trim().slice(0, 300), note: String(r.note || '').replace(/\s+/g, ' ').trim().slice(0, 120), trackCode: code, carrier: car, trackUrl: code && car ? trackingLink(car, code) : '', from: shipFromOf(rec, store.get('bs_tracking', []).find(t => normCode(t.code) === normCode(code))), st: shipStOf(code) || null}; }); if (bx.length) doc.boxes = bx; }   // ส่งหลายกล่อง (ไม่ส่งเบอร์โทร)
       // ยอดค้างรวมของลูกค้า (ใบราคาส่งที่ยังไม่จ่าย) + payload พร้อมเพย์ ให้ลูกค้าสแกนจ่ายเองจากหน้าติดตาม
       if (isJbs) { const ow = owedGroups().find(x => x.name === (String(rec.jName || '').trim() || 'ไม่ระบุชื่อ')); if (ow && ow.total > 0) doc.pay = {total: ow.total, payee: payAcct('วันทิม').name || '', ref: payRef(Date.now()), payload: promptPayPayload(payAcct('วันทิม').id, ow.total),   // งาน JBS เข้าบัญชีวันทิมทั้งหมด
+      part: (() => { const o = {}; ow.docs.forEach(d => (d.items || []).forEach(i => { const k = String(i.j || ''); if (k && !(k in o)) { const v = jobPartOf(k); if (v > 0) o[k] = v; } })); return o; })(),
       docs: ow.docs.slice(0, 30).map(d => { const o = {no: d.no, amount: d.total, items: (d.items || []).slice(0, 20)}; if (d.photo) o.photo = d.photo; return o; })}; }
       if (!doc.pay) {   // ยอดเรียกเก็บของใบงานนี้ (ปุ่ม 💳 เรียกเก็บเงิน · หักมัดจำแล้ว) → ให้ลูกค้าสแกนจ่ายจากหน้าติดตาม
         const jc = payCharges().find(x => x.status !== 'paid' && x.by !== 'auto' && x.channel === 'walkin' && (x.docs || []).some(d => d.k === 'jobs' && d.id === rec.id) && Date.now() - (x.createdAt || 0) < 7 * 86400000);
@@ -1306,7 +1307,7 @@ function bahtText(value) {
             const g = owedGroups().find(x => x.name === ns[0]);
             if (g && g.total > amt) { const lines = jobLinesOf(g); if (lines && lines.length > 1) { let left = amt; const parts = [];
               lines.forEach(d => { if (left <= 0.004) return; if (left + 0.004 >= d.c) { parts.push({no: d.k, amt: d.c, full: true}); left = round2(left - d.c); } else { parts.push({no: d.k, amt: left, full: false, rest: round2(d.c - left)}); left = 0; } });
-              return [{name: g.name, nos: parts.map(x => x.no + (x.full ? ' เต็ม ' + x.amt.toFixed(2) : ' บางส่วน ' + x.amt.toFixed(2) + ' (เหลือ ' + x.rest.toFixed(2) + ')')), fifo: true, parts, bi: b.id}]; } } } }
+              return [{name: g.name, nos: parts.map(x => x.no + (x.full ? ' เต็ม ' + x.amt.toFixed(2) : ' บางส่วน ' + x.amt.toFixed(2) + ' (เหลือ ' + x.rest.toFixed(2) + ')')), fifo: true, parts, bi: b.id, lines, amt}]; } } } }
       }
       return out.slice(0, 3);
     } catch (e) { return []; }
@@ -1328,7 +1329,7 @@ function bahtText(value) {
         '<span class="bell-main"><b>เงินเข้า ' + money(num(x.amount)) + ' บาท</b>' +
         '<small>บัญชี' + esc(x.account || '-') + ' · ' + esc(bankInWhen(x, true)) + '</small>' +
         '<small>' + (x.matchedJobNo ? 'ผูกกับใบงาน ' + esc(x.matchedJobNo) : 'ยังไม่ผูกใบงาน') + '</small>' +
-        (x.matchedJobNo || x.owedPaid ? '' : suggestOwedFor(x).map(sg => '<small>💡 ' + (sg.fifo ? 'ไม่ตรงใบไหน · ตัดเก่าสุดก่อน ' : 'อาจเป็น ') + esc(sg.name) + ' · ' + esc(sg.nos.join(' + ')) + '</small>' + (sg.fifo ? '<button type="button" class="btn small" data-alloc="' + esc(JSON.stringify({n: sg.name, bi: sg.bi, p: sg.parts.map(q => [q.no, q.amt, q.full ? 1 : 0])})) + '">ตัดตามนี้</button>' : '')).join('')) + '</span>' +
+        (x.matchedJobNo || x.owedPaid ? '' : suggestOwedFor(x).map(sg => '<small>💡 ' + (sg.fifo ? 'ไม่ตรงใบไหน · ตัดเก่าสุดก่อน ' : 'อาจเป็น ') + esc(sg.name) + ' · ' + esc(sg.nos.join(' + ')) + '</small>' + (sg.fifo ? '<button type="button" class="btn small" data-alloc="' + esc(JSON.stringify({n: sg.name, bi: sg.bi, p: sg.parts.map(q => [q.no, q.amt, q.full ? 1 : 0])})) + '">ตัดตามนี้ (เก่าสุดก่อน)</button>' + sg.lines.map(l => { const a = Math.min(sg.amt, l.c), full = sg.amt + 0.004 >= l.c; return '<button type="button" class="btn small" data-alloc="' + esc(JSON.stringify({n: sg.name, bi: sg.bi, p: [[l.k, a, full ? 1 : 0]]})) + '">ตัดเข้า ' + esc(l.k) + ' (ค้าง ' + l.c.toFixed(2) + ')</button>'; }).join('') : '')).join('')) + '</span>' +
         (isNew ? '<span class="bell-dot" aria-label="ใหม่"></span>' : '') + '</button>';
     }).join('') : '<p class="empty" style="margin:8px 4px">ยังไม่มีการแจ้งเตือน</p>';
   }
@@ -5288,6 +5289,13 @@ function bahtText(value) {
     const j = store.get('bs_jobs', []).find(x => String(x.no || '').trim() === k);
     return j && !j.owedPaid ? round2((j.payLog || []).reduce((t, x) => t + num(x.amt), 0)) : 0;
   }
+  // ประวัติการรับเงินรายใบงาน (จ่ายบางส่วน/จ่ายครบ) แสดงใต้ใบงาน
+  function jobPayHistHtml(jno) {
+    const k = String(jno || '').trim(); if (!k) return '';
+    const j = store.get('bs_jobs', []).find(x => String(x.no || '').trim() === k), lg = j && j.payLog;
+    if (!lg || !lg.length) return '';
+    return '<small class="wd-jd" style="display:block;margin-top:4px">ประวัติรับเงิน: ' + lg.map(x => thDate(new Date(x.at || 0).toISOString().slice(0, 10)) + ' ' + money(num(x.amt)) + ' บาท').join(' · ') + '</small>';
+  }
   function whPaidFor(w, jno) { return !!w.paid || (w.paidJobs || []).indexOf(String(jno || '').trim()) >= 0; }
   // keys = เลขใบงานที่จ่าย ('' = รายการที่ไม่ระบุงาน · null = ทั้งหมด) · ยังไม่จ่าย = ไม่รวมเป็น WS · พอจ่ายจึงย้ายบรรทัดของใบงานที่จ่ายไปสรุปเป็นใบ WS ใหม่ (จ่ายแล้ว) เตรียมออกใบเสร็จ
   // บิลเดิมที่ไม่เหลือรายการจะถูกลบ · ส่วนลดย้ายตามไปเฉพาะเมื่อย้ายบรรทัดหมดทั้งบิล · คืนเลข WS ที่สร้าง ('' ถ้าไม่มีบรรทัดให้ย้าย)
@@ -7321,7 +7329,7 @@ function bahtText(value) {
           '<div class="wd-jh">' + (key ? '<span class="wd-th">' + (th ? '<img src="' + esc(th) + '" alt="" loading="lazy">' : '') + '</span>' : '') +
           '<div class="wd-jt"><div class="wd-jl"><b>' + (key ? esc(key) : 'ยังไม่ผูกใบงาน') + '</b>' + (jr ? '<span class="wd-st ' + esc(st) + '">' + esc(JOB_STATUS_LABEL[st] || 'รอทำ') + '</span>' : '') + '</div>' +
           '<small class="wd-jd">' + (key ? esc(jr ? thDate(jr.date) : '') + (nm1 ? ' · ' + esc(nm1) + more : '') : 'บรรทัดเหล่านี้ยังไม่รู้ว่าเป็นของใบงานไหน ลูกค้าจะเห็นเป็น “รายการอื่น”') + '</small>' +
-          '<div class="wd-jr">' + (key ? '<span class="wd-pc ' + (paidJ ? 'ok' : 'no') + '">' + (paidJ ? 'จ่ายแล้ว' : jobPartOf(key) > 0 ? 'จ่ายบางส่วน' : 'ยังไม่ชำระ') + '</span>' : '<span></span>') + (w.paid ? '' : key ? (paidJ ? '<button class="btn small wd-jb" type="button" data-act="jobpaid" data-key="' + esc(key) + '" data-paid="1">ยกเลิกจ่าย</button>' : '<label class="wd-jk"><input type="checkbox" class="wd-ck" data-key="' + esc(key) + '" data-sub="' + sub + '"> จ่ายแล้ว</label>') : '<label class="wd-jk"><input type="checkbox" class="wd-ck" data-key="" data-sub="' + sub + '"> จ่ายแล้ว</label>') + '<em>' + (sub > 0 ? (!paidJ && key && jobPartOf(key) > 0 ? 'จ่ายแล้ว ' + money(jobPartOf(key)) + ' · เหลือ ' + money(round2(sub - jobPartOf(key))) + ' บาท' : money(sub) + ' บาท') : 'รอราคา') + '</em></div></div></div>' +
+          '<div class="wd-jr">' + (key ? '<span class="wd-pc ' + (paidJ ? 'ok' : 'no') + '">' + (paidJ ? 'จ่ายแล้ว' : jobPartOf(key) > 0 ? 'จ่ายบางส่วน' : 'ยังไม่ชำระ') + '</span>' : '<span></span>') + (w.paid ? '' : key ? (paidJ ? '<button class="btn small wd-jb" type="button" data-act="jobpaid" data-key="' + esc(key) + '" data-paid="1">ยกเลิกจ่าย</button>' : '<label class="wd-jk"><input type="checkbox" class="wd-ck" data-key="' + esc(key) + '" data-sub="' + sub + '"> จ่ายแล้ว</label>') : '<label class="wd-jk"><input type="checkbox" class="wd-ck" data-key="" data-sub="' + sub + '"> จ่ายแล้ว</label>') + '<em>' + (sub > 0 ? (!paidJ && key && jobPartOf(key) > 0 ? 'จ่ายแล้ว ' + money(jobPartOf(key)) + ' · เหลือ ' + money(round2(sub - jobPartOf(key))) + ' บาท' : money(sub) + ' บาท') : 'รอราคา') + '</em></div>' + jobPayHistHtml(key) + '</div></div>' +
           (jr ? '<div class="wd-bar"><i style="width:' + pct + '%"></i></div>' : '') +
           ks.map(k => rowHtml(its[k], k, key)).join('') + '</div>';
       }).join('');
