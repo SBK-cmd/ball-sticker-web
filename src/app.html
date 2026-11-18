@@ -8094,7 +8094,7 @@ function bahtText(value) {
         const l = []; snap.forEach(d => l.push(Object.assign({id: d.id}, d.data())));
         const first = !watchWebOrders._known, known = watchWebOrders._known || (watchWebOrders._known = {}); let ev = '';
         l.forEach(x => { const sig = x.slip ? 's' : 'n'; if (!first && !x.deleted) { if (!(x.id in known)) ev = '🛒 ออเดอร์เว็บใหม่ ' + ((x.cust || {}).name || x.ref || '') + (x.total ? ' ฿' + money(x.total) : ''); else if (known[x.id] === 'n' && sig === 's') ev = '🧾 ลูกค้า ' + ((x.cust || {}).name || x.ref || '') + ' แนบสลิปแล้ว'; } known[x.id] = sig; });
-        webOrd = l; renderWebOrders(); try { renderBell(!!ev); } catch (e) {} if (ev) toast(ev);
+        webOrd = l; renderWebOrders(); try { renderBell(!!ev); } catch (e) {} if (ev) toast(ev); checkWebPaid();
       }, e => { console.warn('webOrders', e); });
     } catch (e) { console.warn(e); }
   }
@@ -8136,15 +8136,30 @@ function bahtText(value) {
       return {hit: hits[0], st: same.length ? 'dup' : (x.sat ? 'ok' : 'guess')};
     } catch (e) { return null; }
   }
-  const woPaidOk = x => { const m = woBankMatch(x); return !!(m && m.st === 'ok'); };
+  const woPaidOk = x => { if (x.paidVerified) return true; const m = woBankMatch(x); return !!(m && m.st === 'ok'); };
   function woBankTag(x) {
     const m = woBankMatch(x);
+    if (!m && x.paidVerified) return '<i class="wo-tag ok">✅ เงินเข้าแล้ว ยืนยันจากธนาคาร</i>';
     if (!m) return canBank && !woDone(x) ? '<i class="wo-tag wn">⏳ ยังไม่พบเงินเข้า ฿' + money(x.payAmt || x.total || 0) + (x.slip ? ' · สลิปยังไม่ใช่หลักฐาน' : '') + '</i>' : '';
     const w = esc(bankInWhenShort(m.hit));
     return m.st === 'ok' ? '<i class="wo-tag ok">✅ เงินเข้าแล้ว ยืนยันจากธนาคาร ' + w + '</i>'
       : m.st === 'dup' ? '<i class="wo-tag">⚠️ ยอดซ้ำกับออเดอร์อื่น ตรวจเอง ' + w + '</i>'
       : '<i class="wo-tag ok">💰 เงินเข้าตรงยอด (เดา) ' + w + '</i>';
   }
+  // เงินเข้าตรงยอด (มีเศษสตางค์ไม่ซ้ำ) → เขียน paidVerified ลงออเดอร์ ให้หน้า shop ของลูกค้ารู้ว่าจ่ายแล้ว (ทำเมื่อแอปเปิดอยู่)
+  function checkWebPaid() {
+    try {
+      if (!canBank || !cloudDb) return;
+      webOrd.forEach(x => {
+        if (x.deleted || x.paidVerified || !x.sat || x._pvSent) return;
+        const m = woBankMatch(x); if (!m || m.st !== 'ok') return;
+        x._pvSent = true;
+        markWebOrder(x.id, {paidVerified: true, paidVerifiedAt: Date.now(), paidBankInId: m.hit.id || ''});
+        toast('💰 เงินเข้าแล้ว ออเดอร์ ' + ((x.cust || {}).name || x.ref || '') + ' ฿' + money(x.payAmt || x.total || 0));
+      });
+    } catch (e) { console.warn(e); }
+  }
+  setInterval(checkWebPaid, 5000);
   function renderWebOrders() {
     const card = $('webOrdCard'), box = $('webOrd'); if (!card || !box) return;
     const shown = webOrd.filter(x => !x.deleted), nNew = shown.filter(x => !woDone(x)).length;

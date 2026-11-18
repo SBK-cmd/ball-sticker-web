@@ -273,7 +273,7 @@
   function orderFlex(o) {   // การ์ด Flex หน้าตาเดียวกับการ์ดสรุปออเดอร์
     var row = function (k, v) { return {type: 'box', layout: 'baseline', contents: [{type: 'text', text: k, size: 'sm', color: '#5d6782', flex: 2}, {type: 'text', text: String(v), size: 'sm', color: '#18213a', flex: 5, wrap: true}]}; };
     var amt = function (k, v, big) { return {type: 'box', layout: 'horizontal', contents: [{type: 'text', text: k, size: big ? 'md' : 'sm', color: big ? '#18213a' : '#5d6782', weight: big ? 'bold' : 'regular'}, {type: 'text', text: v, size: big ? 'md' : 'sm', align: 'end', color: '#18213a', weight: big ? 'bold' : 'regular'}]}; };
-    var body = [{type: 'box', layout: 'horizontal', contents: [{type: 'text', text: 'เลขใบงาน ' + o.ref, size: 'sm', weight: 'bold', color: '#18213a', flex: 3}, {type: 'text', text: o.paidAt ? 'ส่งสลิปแล้ว รอตรวจยอด' : 'รอชำระ', size: 'xs', align: 'end', color: '#8a6200', flex: 2}]},
+    var body = [{type: 'box', layout: 'horizontal', contents: [{type: 'text', text: 'เลขใบงาน ' + o.ref, size: 'sm', weight: 'bold', color: '#18213a', flex: 3}, {type: 'text', text: o.paidAt ? (o.testPaid ? 'ทดสอบ ไม่ได้จ่ายจริง' : 'ชำระแล้ว') : 'รอชำระ', size: 'xs', align: 'end', color: '#8a6200', flex: 2}]},
       {type: 'separator', margin: 'md'}, {type: 'box', layout: 'vertical', margin: 'md', spacing: 'xs', contents: [row('ขนาด', o.w + ' × ' + o.h + ' ซม.'), row('จำนวน', Number(o.qty).toLocaleString('th-TH') + ' ดวง'), row('วัสดุ', 'PVC เคลือบ ไดคัท'), row('จัดส่ง', o.name + ' · ' + o.tel)]},
       {type: 'separator', margin: 'md'}, {type: 'box', layout: 'vertical', margin: 'md', spacing: 'xs', contents: [amt('สติ๊กเกอร์', baht(o.price)), amt('ค่าส่ง', String(o.ship))].concat(o.vat ? [amt('VAT 7%', baht(o.vat))] : []).concat([amt('ยอดชำระ', baht(o.total) + ' บาท', true)])}];
     var b = {type: 'bubble', body: {type: 'box', layout: 'vertical', contents: body}, footer: {type: 'box', layout: 'vertical', contents: [{type: 'button', style: 'primary', color: '#f5c400', action: {type: 'uri', label: 'ติดตามงาน', uri: o.track}}]}};
@@ -829,7 +829,7 @@
       'ยอดชำระ ' + baht(bl.total) + ' บาท (รวมค่าส่ง' + (bl.vat ? ' + VAT · ขอใบกำกับ' : '') + ')\n' +
       'ผู้รับ: ' + $('cName').value.trim() + ' · ' + telFmt(telNorm($('cTel').value)) + '\n' +
       'ติดตามงาน: ' + trackUrl + '\n' +
-      'แนบสลิปการโอนด้านล่างครับ 🙏' : msgFull + '\nติดตามงาน: ' + trackUrl;
+      'ชำระเงินในหน้าเว็บครับ 🙏' : msgFull + '\nติดตามงาน: ' + trackUrl;
     var lineUrl = 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA) + '/?' + encodeURIComponent(msg);
     st.busy = false; busyBtn(btn, false, 'ยืนยันสั่ง'); $('back').disabled = false;
     var o = {ref: ref, sat: bl.sat, test: isTest, saved: !!saved, w: w, h: h, qty: st.qty, price: bl.price, ship: bl.ship, vat: bl.vat, total: bl.total, payload: promptPayPayload(PP.id, bl.total),
@@ -843,35 +843,65 @@
   // การ์ดสรุปออเดอร์ (หน้าตาเดียวกับรูปที่ส่งเข้า LINE)
   function orderCardHTML(o) {
     var img = o.localImg || o.img;
-    return '<div class="card ocard"><div class="oc-h"><span>เลขใบงาน <b>' + o.ref + '</b></span><span class="oc-st">' + (o.paidAt ? 'ส่งสลิปแล้ว · รอร้านตรวจยอด' : o.test ? 'ทดสอบ' : 'รอชำระเงิน') + '</span></div>' +
+    return '<div class="card ocard"><div class="oc-h"><span>เลขใบงาน <b>' + o.ref + '</b></span><span class="oc-st">' + (o.paidAt ? (o.testPaid ? 'ทดสอบ · ไม่ได้จ่ายจริง' : 'ชำระแล้ว ✓') : o.test ? 'ทดสอบ' : 'รอชำระเงิน') + '</span></div>' +
       '<div class="oc-b">' + (img ? '<div class="oc-img"><img src="' + esc(img) + '" alt="สติ๊กเกอร์ที่สั่ง"></div>' : '') +
       '<dl><dt>ขนาด</dt><dd>' + o.w + ' × ' + o.h + ' ซม.</dd><dt>จำนวน</dt><dd>' + Number(o.qty).toLocaleString('th-TH') + ' ดวง</dd><dt>วัสดุ</dt><dd>PVC เคลือบ ไดคัท</dd><dt>จัดส่ง</dt><dd>' + esc(o.name) + ' · ' + esc(o.tel) + '<small>' + esc(o.addr) + '</small></dd></dl></div>' +
       '<div class="oc-sum"><div><span>สติ๊กเกอร์</span><span>' + baht(o.price) + '</span></div><div><span>ค่าส่ง</span><span>' + o.ship + '</span></div>' + (o.vat ? '<div><span>VAT 7%</span><span>' + baht(o.vat) + '</span></div>' : '') +
       (o.sat ? '<div class="oc-r"><span>เศษสตางค์ระบุออเดอร์</span><span>+' + o.sat.toFixed(2) + '</span></div>' : '') + '<div class="oc-t"><span>ยอดชำระ</span><span>' + baht(o.total) + ' บาท</span></div></div></div>';
   }
+  function restartOrder() { try { localStorage.removeItem('bs_last_order'); } catch (e) {} location.href = location.pathname; }
   function renderPay(o) {
     slipFile = null;
     $('v3').innerHTML = orderCardHTML(o) +
-      '<div class="card pay"><b style="font:600 16px Prompt,sans-serif">สแกนจ่ายพร้อมเพย์</b><div class="qr">' + qrSvgEl(o.payload) + '</div>' +
-      '<span class="amt">' + baht(o.total) + ' บาท</span><span class="note">' + PP.name + ' · กดค้างที่ QR เพื่อบันทึกรูป</span></div>' +
-      '<label class="slip" id="slipBox" for="slipIn"><span class="ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 11-8.6 8.6a5 5 0 0 1-7-7L13.5 4.4a3.3 3.3 0 0 1 4.7 4.7l-8.2 8.1a1.7 1.7 0 0 1-2.3-2.3l7.5-7.5"/></svg></span><span><b>แนบสลิปการโอน</b><small>ต้องแนบสลิปก่อนไปขั้นต่อไป</small></span></label>' +
-      '<input type="file" id="slipIn" accept="image/*" hidden><div class="err" id="perr" hidden></div>' +
-      '<p class="note" style="text-align:center">ติดปัญหา โทร 093-535-3555 · LINE ' + LINE_OA + ' แจ้งเลข ' + o.ref + '</p>';
+      '<div class="card" style="text-align:center"><b style="font:600 16px Prompt,sans-serif">ขั้นต่อไป: ชำระเงิน</b><p class="note" style="margin:6px 0 0">กด "ชำระเงิน" เพื่อเปิดคิวอาร์ มีเวลา 1 นาที 30 วินาที ระบบจะตรวจเงินเข้าบัญชีร้านโดยอัตโนมัติ ออเดอร์จะส่งเมื่อเงินเข้าจริงเท่านั้น</p></div>' +
+      '<p class="note" style="text-align:center">ติดปัญหา โทร 093-535-3555 · LINE ' + LINE_OA + ' แจ้งเลข ' + o.ref + '</p><p style="text-align:center"><button type="button" id="newOrd3" style="background:none;border:0;text-decoration:underline;font:inherit;color:inherit;cursor:pointer">เริ่มสั่งงานใหม่</button></p>';
+    $('newOrd3').onclick = restartOrder;
     $('tot').textContent = baht(o.total) + ' บาท'; $('totLbl').textContent = 'ยอดที่ต้องโอน';
-    $('paid').innerHTML = o.test ? 'ข้าม (ทดสอบ)' : 'ส่งสลิป'; $('paid').disabled = !o.test;
-    $('slipIn').addEventListener('change', function () {
-      var f = this.files && this.files[0]; if (!f) return; slipFile = f;
-      var box = $('slipBox'); box.classList.add('on'); box.innerHTML = '<img src="' + URL.createObjectURL(f) + '" alt="สลิป"><span><b>แนบสลิปแล้ว ✓</b><small>แตะเพื่อเปลี่ยนรูป</small></span>';
-      $('paid').disabled = false; $('paid').innerHTML = 'ส่งสลิป';
-    });
-    $('paid').onclick = async function () {
-      if (!slipFile && !o.test) return;
-      var btn = this; st.busy = true; busyBtn(btn, true);
-      try {
-        if (slipFile) { o.slip = await upload(slipFile); await patchOrder(o.ref, {slip: o.slip, slipAt: Date.now()}); }
-        o.paidAt = Date.now(); saveLast(o); st.busy = false; busyBtn(btn, false, 'ส่งสลิป'); renderDone(o); show(4);
-      } catch (e) { st.busy = false; busyBtn(btn, false, 'ส่งสลิป'); $('perr').hidden = false; $('perr').textContent = 'ส่งสลิปไม่สำเร็จ ลองอีกครั้ง หรือส่งสลิปทาง LINE ' + LINE_OA; }
-    };
+    $('paid').disabled = false; $('paid').innerHTML = 'ชำระเงิน';
+    $('paid').onclick = function () { openPayPop(o); };
+  }
+  // ป๊อปอัปจ่ายเงิน: QR + นับถอยหลัง 90 วินาที · เช็คสถานะออเดอร์ทุก 3 วิ (หลังร้านยืนยันเงินเข้าจริงแล้วเขียน paidVerified) · ปุ่ม "ทดลองจ่าย" เฉพาะโหมดแอดมิน (?admin=1)
+  var PAY_SECS = 90;
+  function getOrderPaid(id) {
+    return fbToken().then(function (tok) {
+      return fetchT('https://firestore.googleapis.com/v1/projects/' + FB.project + '/databases/(default)/documents/webOrders/' + encodeURIComponent(id), {headers: {Authorization: 'Bearer ' + tok}}, 8000);
+    }).then(function (r) { if (!r.ok) return {err: r.status}; return r.json().then(function (d) { var f = (d && d.fields) || {}; return {paid: !!(f.paidVerified && f.paidVerified.booleanValue)}; }); }).catch(function () { return {err: 'net'}; });
+  }
+  function openPayPop(o) {
+    var ov = document.createElement('div'); ov.className = 'paypop';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(10,16,34,.6);display:flex;align-items:center;justify-content:center;padding:14px';
+    ov.innerHTML = '<div role="dialog" aria-modal="true" aria-label="ชำระเงิน" style="background:#fff;border-radius:20px;width:100%;max-width:380px;max-height:96vh;overflow:auto;padding:18px 16px;text-align:center">' +
+      '<div style="font:600 16px Prompt,sans-serif">สแกนจ่ายพร้อมเพย์</div>' +
+      '<div class="qr" style="margin:10px auto">' + qrSvgEl(o.payload) + '</div>' +
+      '<div style="font:700 26px Prompt,sans-serif">' + baht(o.total) + ' บาท</div>' +
+      '<div class="note" style="margin:2px 0 8px">' + PP.name + ' · โอนให้ตรงยอดนี้ (รวมเศษสตางค์) เพื่อให้ระบบจำออเดอร์ได้</div>' +
+      '<div id="ppT" style="font:700 30px Prompt,sans-serif;color:#18213a;font-variant-numeric:tabular-nums">1:30</div>' +
+      '<div id="ppS" class="note" style="min-height:22px" role="status">รอเงินเข้า… ' + '</div>' +
+      '<div id="ppB" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px"></div></div>';
+    document.body.appendChild(ov);
+    var left = PAY_SECS, timer = null, poll = null, done = false, blocked = false;
+    var T = function () { return ov.querySelector('#ppT'); }, S = function () { return ov.querySelector('#ppS'); }, B = function () { return ov.querySelector('#ppB'); };
+    function btn(txt, fn, cls) { var b = document.createElement('button'); b.type = 'button'; b.textContent = txt; b.className = cls || 'bt'; b.style.cssText = 'padding:10px 16px;border-radius:12px;border:1px solid #cfd6e6;background:#fff;font:600 14px inherit;cursor:pointer'; if (cls === 'go') b.style.cssText += ';background:#f4c200;border-color:#f4c200'; b.onclick = fn; return b; }
+    function stop() { clearInterval(timer); clearInterval(poll); }
+    function close() { stop(); ov.remove(); }
+    function success(test) { if (done) return; done = true; stop(); o.paidAt = Date.now(); o.paidOk = !test; o.testPaid = !!test; saveLast(o); ov.remove(); renderDone(o); show(4); }
+    function checkNow() { if (done) return; getOrderPaid(o.ref).then(function (r) {
+      if (done) return; if (r.err) { blocked = true; S().textContent = 'รอเงินเข้า… (ตรวจสถานะอัตโนมัติไม่ได้ชั่วคราว ร้านจะตรวจให้)'; return; }
+      blocked = false; if (r.paid) success(false); }); }
+    function start() {
+      left = PAY_SECS; B().innerHTML = ''; S().textContent = 'รอเงินเข้า…'; T().style.color = '#18213a';
+      var adm = isAdmin ? btn('ทดลองจ่าย (ทดสอบ)', function () { success(true); }) : null; if (adm) B().appendChild(adm);
+      B().appendChild(btn('ยกเลิก', close));
+      T().textContent = '1:30'; clearInterval(timer); clearInterval(poll);
+      timer = setInterval(function () { left--; var m = Math.floor(left / 60), sc = left % 60; T().textContent = m + ':' + (sc < 10 ? '0' : '') + sc; if (left <= 0) timeout(); }, 1000);
+      poll = setInterval(checkNow, 3000); checkNow();
+    }
+    function timeout() {
+      stop(); T().textContent = '0:00'; T().style.color = '#b42318';
+      S().innerHTML = blocked ? 'หมดเวลา ระบบตรวจอัตโนมัติไม่ได้ · ถ้าโอนแล้วแจ้งร้านทาง LINE ' + LINE_OA + ' เลข ' + o.ref : 'ยังไม่พบเงินเข้ายอด ' + baht(o.total) + ' บาท<br>ถ้าเพิ่งโอน รอสักครู่แล้วกด "ตรวจอีกครั้ง"';
+      B().innerHTML = ''; B().appendChild(btn('ตรวจอีกครั้ง', start, 'go')); B().appendChild(btn('ปิด', close));
+    }
+    start();
   }
   function patchOrder(id, data) {   // แนบสลิปเข้าออเดอร์ในระบบหลังร้าน
     return fbToken().then(function (tok) {
@@ -882,12 +912,13 @@
 
   // ---------- ขั้น 4: เสร็จ ----------
   function renderDone(o) {
-    var lineMsg = o.msg.replace('แนบสลิปการโอนด้านล่างครับ 🙏', o.slip ? 'แนบสลิปทางเว็บแล้ว ✓' : 'แนบสลิปด้านล่างครับ 🙏');
+    var lineMsg = o.msg.replace('ชำระเงินในหน้าเว็บครับ 🙏', o.testPaid ? '(ทดสอบ)' : 'ชำระเงินแล้ว ✓');
     var lineUrl = 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA) + '/?' + encodeURIComponent(lineMsg);
     $('v4').innerHTML = orderCardHTML(o) + '<div class="done"><h2>✓ ได้รับออเดอร์แล้ว ขอบคุณครับ</h2>' +
-      '<p class="note">' + (o.slip ? 'ได้รับสลิปแล้ว ร้านจะตรวจยอดเงินเข้าและตรวจไฟล์ แล้วเริ่มทำงาน' : 'ร้านจะตรวจไฟล์และเริ่มทำงานเมื่อได้รับยอดเงิน') + '</p>' +
-      '<div class="btns"><button type="button" class="bt line" id="lineGo">ติดตามพัสดุทาง LINE</button></div></div>';
+      '<p class="note">' + (o.testPaid ? 'ทดสอบระบบ ไม่ได้จ่ายเงินจริง' : 'ร้านได้รับเงินแล้ว จะตรวจไฟล์แล้วเริ่มทำงาน') + '</p>' +
+      '<div class="btns"><button type="button" class="bt line" id="lineGo">ติดตามพัสดุทาง LINE</button><button type="button" class="bt" id="newOrd" style="margin-top:8px">+ เริ่มสั่งงานใหม่</button></div></div>';
     var cardData = {ref: o.ref, test: o.test, size: o.w + ' × ' + o.h + ' ซม.', qty: Number(o.qty).toLocaleString('th-TH'), name: o.name, tel: o.tel, addr: o.addr, price: baht(o.price), ship: String(o.ship), vat: o.vat ? baht(o.vat) : '', total: baht(o.total), payload: o.payload, payee: PP.name, track: o.track, img: o.localImg || o.img || ''};
+    $('newOrd').onclick = restartOrder;
     $('lineGo').onclick = function () {   // ใน LINE (LIFF): ส่งการ์ดออเดอร์เข้าแชตร้านแล้วปิดหน้า · นอก LINE: เปิดแชต @bk25 พร้อมข้อความออเดอร์ (มีลิงก์ติดตามงาน)
       var b = this;
       if (window.liff && lineUser && liff.isInClient()) {
