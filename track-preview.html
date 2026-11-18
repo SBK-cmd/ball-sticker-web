@@ -448,7 +448,6 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     }).catch(function () { toast2('อัปโหลดไม่สำเร็จ ลองใหม่อีกครั้ง'); }).then(function () { wm.classList.remove('busy'); });
   }
   function heroHTML(j, others, payOk) {
-    window.__part = (j.pay && j.pay.part) || {};   // ยอดที่รับแล้วรายใบงาน (จ่ายบางส่วน)
     var all = [{no: j.no, status: j.status, delivered: j.delivered, thumb: j.thumb, photos: j.photos, refs: j.refPhotos, payst: j.payst}].concat(others.map(function (o) { return {no: o.no, status: o.status, delivered: o.delivered, thumb: o.thumb, photos: o.photos, refs: o.refPhotos, payst: o.payst}; }));
     var doing = 0, ship = 0, done = 0, upd0 = 0, paid0 = 0;
     all.forEach(function (o) { var k = stIdx(o.status, o.delivered); if (k >= 4) done++; else if (k === 3) ship++; else doing++; if (o.payst === 'paid') paid0++; else if (o.payst === 'unpaid') upd0++; });
@@ -552,6 +551,7 @@ body.hashero.themed .shr,body.hashero .shr{background:#fff;color:inherit;border-
     var isJbs = /^JBS/i.test(String(j.no || ''));
     var payOk = j.pay && +j.pay.total > 0 && typeof j.pay.payload === 'string' && /^000201/.test(j.pay.payload);
     var others = (isJbs && Array.isArray(j.others)) ? j.others.filter(function (o) { return o && o.no; }) : [];
+    window.__part = (j.pay && j.pay.part) || {};   // ยอดที่รับแล้วรายใบงาน (จ่ายบางส่วน) ต้องตั้งก่อนวาดการ์ด
     var cards = [jobCard(recOf(j), !others.length)];   // มีใบเดียว = เปิดให้เลย · หลายใบ = พับไว้ กดดูทีละใบ
     others.forEach(function (o) {
       var bx = (o.receiver || o.trackCode) ? [{from: o.shipFrom || '', name: o.receiver ? o.receiver.name : '', addr: o.receiver ? o.receiver.addr : '', trackCode: o.trackCode || '', carrier: o.carrier || '', trackUrl: o.trackUrl || '', st: o.shipSt || null}] : [];
