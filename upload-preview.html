@@ -233,7 +233,7 @@
 
 <div class="bar" id="bar">
   <button type="button" class="back" id="back" hidden aria-label="ย้อนกลับ">‹</button>
-  <div class="tot"><small id="totLbl">100 ดวง · 9 × 9 ซม.</small><b id="tot">1,000 บาท</b></div>
+  <div class="tot"><small id="totLbl">100 ดวง · 9 × 9 ซม.</small><b id="tot">1,000 บาท</b><small id="perPc" hidden></small></div>
   <span style="display:flex;gap:6px"><button type="button" id="testSend" hidden>ทดสอบ</button><button type="button" class="go" id="next" disabled>ถัดไป</button><button type="button" class="go" id="send" hidden>ยืนยันสั่ง</button><button type="button" class="go" id="paid" hidden disabled>ส่งสลิป</button></span>
 </div>
 </div>
@@ -745,6 +745,7 @@
     var bl = ok ? bill(p) : null;
     $('tot').textContent = bl ? baht(bl.total) + ' บาท' : '—';
     $('sumNote').innerHTML = bl ? 'สติ๊กเกอร์ ' + baht(bl.price) + ' + ค่าส่ง ' + bl.ship + (bl.vat ? ' + VAT 7% ' + baht(bl.vat) : '') + ' = <b>ชำระ ' + baht(bl.total) + ' บาท</b>' : '';
+    $('perPc').hidden = !(bl && st.qty > 0); if (bl && st.qty > 0) $('perPc').textContent = 'ตกดวงละ ' + (bl.price / st.qty).toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' บาท (ไม่รวมค่าส่ง)';
     $('totLbl').textContent = st.qty.toLocaleString('th-TH') + ' ดวง · ' + (w || '?') + '×' + (h || '?') + ' ซม. · รวมส่ง' + ($('tx').checked ? '+VAT' : '');
     qualityWarn(w, h);
     st.ok = ok;
@@ -870,7 +871,7 @@
       '<div class="card" style="text-align:center"><b style="font:600 16px Prompt,sans-serif">ขั้นต่อไป: ชำระเงิน</b><p class="note" style="margin:6px 0 0">กด "ชำระเงิน" เพื่อเปิดคิวอาร์ มีเวลา 1 นาที 30 วินาที ระบบจะตรวจเงินเข้าบัญชีร้านโดยอัตโนมัติ ออเดอร์จะส่งเมื่อเงินเข้าจริงเท่านั้น</p></div>' +
       '<p class="note" style="text-align:center">ติดปัญหา โทร 093-535-3555 · LINE ' + LINE_OA + ' แจ้งเลข ' + o.ref + '</p><p style="text-align:center"><button type="button" id="newOrd3" style="background:none;border:0;text-decoration:underline;font:inherit;color:inherit;cursor:pointer">เริ่มสั่งงานใหม่</button></p>';
     $('newOrd3').onclick = restartOrder;
-    $('tot').textContent = baht(o.total) + ' บาท'; $('totLbl').textContent = 'ยอดที่ต้องโอน';
+    $('tot').textContent = baht(o.total) + ' บาท'; $('totLbl').textContent = 'ยอดที่ต้องโอน'; $('perPc').hidden = true;
     $('paid').disabled = false; $('paid').innerHTML = 'ชำระเงิน';
     $('paid').onclick = function () { openPayPop(o); };
   }
