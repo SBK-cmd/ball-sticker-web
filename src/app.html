@@ -5535,7 +5535,7 @@ function bahtText(value) {
     return v;
   }
   // ออเดอร์เว็บที่ยังไม่ทำ (ใช้ในกระดิ่ง) · webOrd ประกาศถัดลงไป เลยห่อ try กันเรียกก่อนประกาศ
-  const webBell = () => { try { return webOrd.filter(x => !x.deleted && !woDone(x) && Date.now() - (x.createdAt || 0) < 30 * 864e5); } catch (e) { return []; } };
+  const webBell = () => { try { return webOrd.filter(x => !x.deleted && !(x.pendingPay && !x.paidVerified) && !woDone(x) && Date.now() - (x.createdAt || 0) < 30 * 864e5); } catch (e) { return []; } };
   function renderBell(ring) {
     const btn = $('bellBtn'); if (!btn) return;
     btn.hidden = !(canBank || can('confirm')); if (btn.hidden) return;
@@ -8093,7 +8093,7 @@ function bahtText(value) {
       webOrdUnsub = cloudDb.collection('webOrders').orderBy('createdAt', 'desc').limit(40).onSnapshot(snap => { countReads('webOrders', snap);
         const l = []; snap.forEach(d => l.push(Object.assign({id: d.id}, d.data())));
         const first = !watchWebOrders._known, known = watchWebOrders._known || (watchWebOrders._known = {}); let ev = '';
-        l.forEach(x => { const sig = x.slip ? 's' : 'n'; if (!first && !x.deleted) { if (!(x.id in known)) ev = '🛒 ออเดอร์เว็บใหม่ ' + ((x.cust || {}).name || x.ref || '') + (x.total ? ' ฿' + money(x.total) : ''); else if (known[x.id] === 'n' && sig === 's') ev = '🧾 ลูกค้า ' + ((x.cust || {}).name || x.ref || '') + ' แนบสลิปแล้ว'; } known[x.id] = sig; });
+        l.forEach(x => { if (x.pendingPay && !x.paidVerified) return; const sig = x.slip ? 's' : 'n'; if (!first && !x.deleted) { if (!(x.id in known)) ev = '🛒 ออเดอร์เว็บใหม่ ' + ((x.cust || {}).name || x.ref || '') + (x.total ? ' ฿' + money(x.total) : ''); else if (known[x.id] === 'n' && sig === 's') ev = '🧾 ลูกค้า ' + ((x.cust || {}).name || x.ref || '') + ' แนบสลิปแล้ว'; } known[x.id] = sig; });
         webOrd = l; renderWebOrders(); try { renderBell(!!ev); } catch (e) {} if (ev) toast(ev); checkWebPaid();
       }, e => { console.warn('webOrders', e); });
     } catch (e) { console.warn(e); }
@@ -8151,18 +8151,19 @@ function bahtText(value) {
     try {
       if (!canBank || !cloudDb) return;
       webOrd.forEach(x => {
-        if (x.deleted || x.paidVerified || !x.sat || x._pvSent) return;
+        const late = x.deleted && (x.cancelReason === 'timeout' || x.cancelReason === 'cancel');
+        if ((x.deleted && !late) || x.paidVerified || !x.sat || x._pvSent) return;
         const m = woBankMatch(x); if (!m || m.st !== 'ok') return;
         x._pvSent = true;
-        markWebOrder(x.id, {paidVerified: true, paidVerifiedAt: Date.now(), paidBankInId: m.hit.id || ''});
-        toast('💰 เงินเข้าแล้ว ออเดอร์ ' + ((x.cust || {}).name || x.ref || '') + ' ฿' + money(x.payAmt || x.total || 0));
+        markWebOrder(x.id, {paidVerified: true, paidVerifiedAt: Date.now(), paidBankInId: m.hit.id || '', ...(late ? {deleted: false, cancelReason: '', lateRestored: true} : {})});
+        toast((late ? '💰 เงินเข้าหลังหมดเวลา กู้ออเดอร์คืนแล้ว · ' : '💰 เงินเข้าแล้ว ออเดอร์ ') + '' + ((x.cust || {}).name || x.ref || '') + ' ฿' + money(x.payAmt || x.total || 0));
       });
     } catch (e) { console.warn(e); }
   }
   setInterval(checkWebPaid, 5000);
   function renderWebOrders() {
     const card = $('webOrdCard'), box = $('webOrd'); if (!card || !box) return;
-    const shown = webOrd.filter(x => !x.deleted), nNew = shown.filter(x => !woDone(x)).length;
+    const shown = webOrd.filter(x => !x.deleted && !(x.pendingPay && !x.paidVerified)), nNew = shown.filter(x => !woDone(x)).length;
     card.hidden = !shown.length || !WEBORD_ON;   // เจ้าของสั่ง 14 พ.ย.: ของจริงซ่อนการ์ดออเดอร์เว็บไว้ก่อน ทำต่อในพรีวิว
     $('webOrdN').textContent = nNew ? '(' + nNew + ' ออเดอร์ใหม่)' : '';
     const list = shown.filter(x => webOrdTab === 'done' ? woDone(x) : !woDone(x));

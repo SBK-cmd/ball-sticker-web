@@ -830,7 +830,7 @@
       ($('cNote').value.trim() ? '\nหมายเหตุ: ' + $('cNote').value.trim() : '') +
       (Object.keys(utm).length ? '\n[ที่มา ' + (utm.utm_source || '') + ' ' + (utm.utm_campaign || '') + ' ' + (utm.utm_content || '') + ']' : '');
     var L0 = perSheet(w, h), ap = addrParts(), tk = newTrackToken(), trackUrl = TRACK_URL + tk, today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
-    var saved = await saveOrderCloud(ref, {ref: ref, sat: bl.sat, payAmt: bl.total, createdAt: Date.now(), status: 'new', src: 'shop', test: isTest, trackToken: tk, lineUid: lineUser ? lineUser.uid : '', lineName: lineUser ? lineUser.name : '', w: w, h: h, qty: st.qty, price: bl.price, ship: bl.ship, vat: bl.vat, total: bl.total,
+    var saved = await saveOrderCloud(ref, {ref: ref, pendingPay: true, sat: bl.sat, payAmt: bl.total, createdAt: Date.now(), status: 'new', src: 'shop', test: isTest, trackToken: tk, lineUid: lineUser ? lineUser.uid : '', lineName: lineUser ? lineUser.name : '', w: w, h: h, qty: st.qty, price: bl.price, ship: bl.ship, vat: bl.vat, total: bl.total,
       perSheet: L0.n || 0, sheets: L0.n ? Math.round(st.qty / L0.n * 100) / 100 : 0, dpi: kc.dpi || 0,
       files: {orig: st.url || '', png: kc.png || '', svg: kc.svg || ''},
       cust: {name: $('cName').value.trim(), tel: telFmt(telNorm($('cTel').value)), line: $('cLine').value.trim(), addr: addrFull(), zip: ap.zip || '', prov: ap.prov || ''},
@@ -898,13 +898,15 @@
     var T = function () { return ov.querySelector('#ppT'); }, S = function () { return ov.querySelector('#ppS'); }, B = function () { return ov.querySelector('#ppB'); };
     function btn(txt, fn, cls) { var b = document.createElement('button'); b.type = 'button'; b.textContent = txt; b.className = cls || 'bt'; b.style.cssText = 'padding:10px 16px;border-radius:12px;border:1px solid #cfd6e6;background:#fff;font:600 14px inherit;cursor:pointer'; if (cls === 'go') b.style.cssText += ';background:#f4c200;border-color:#f4c200'; b.onclick = fn; return b; }
     function stop() { clearInterval(timer); clearInterval(poll); }
-    function close() { stop(); ov.remove(); }
-    function success(test) { if (done) return; done = true; stop(); o.paidAt = Date.now(); o.paidOk = !test; o.testPaid = !!test; saveLast(o); ov.remove(); renderDone(o); show(4); }
+    function cancelOrd(why) { if (done || o.cancelled) return; o.cancelled = true; patchOrder(o.ref, {deleted: true, cancelReason: why}).catch(function () {}); }   // ไม่จ่าย = ลบออเดอร์ (ลบแบบซ่อน หลังร้านเก็บไว้กู้ได้ถ้าเงินเข้าทีหลัง)
+    function reopenOrd() { if (!o.cancelled) return; o.cancelled = false; patchOrder(o.ref, {deleted: false, cancelReason: ''}).catch(function () {}); }
+    function close() { stop(); cancelOrd('cancel'); ov.remove(); }
+    function success(test) { if (done) return; done = true; stop(); if (test) patchOrder(o.ref, {pendingPay: false, deleted: false, testPaid: true}).catch(function () {}); o.paidAt = Date.now(); o.paidOk = !test; o.testPaid = !!test; saveLast(o); ov.remove(); renderDone(o); show(4); }
     function checkNow() { if (done) return; getOrderPaid(o.ref).then(function (r) {
       if (done) return; if (r.err) { blocked = true; S().textContent = 'รอเงินเข้า… (ตรวจสถานะอัตโนมัติไม่ได้ชั่วคราว ร้านจะตรวจให้)'; return; }
       blocked = false; if (r.paid) success(false); }); }
     function start() {
-      left = PAY_SECS; B().innerHTML = ''; S().textContent = 'รอเงินเข้า…'; T().style.color = '#18213a';
+      reopenOrd(); left = PAY_SECS; B().innerHTML = ''; S().textContent = 'รอเงินเข้า…'; T().style.color = '#18213a';
       var adm = isAdmin ? btn('ทดลองจ่าย (ทดสอบ)', function () { success(true); }) : null; if (adm) B().appendChild(adm);
       B().appendChild(btn('ยกเลิก', close));
       T().textContent = '1:30'; clearInterval(timer); clearInterval(poll);
@@ -912,8 +914,8 @@
       poll = setInterval(checkNow, 3000); checkNow();
     }
     function timeout() {
-      stop(); T().textContent = '0:00'; T().style.color = '#b42318';
-      S().innerHTML = blocked ? 'หมดเวลา ระบบตรวจอัตโนมัติไม่ได้ · ถ้าโอนแล้วแจ้งร้านทาง LINE ' + LINE_OA + ' เลข ' + o.ref : 'ยังไม่พบเงินเข้ายอด ' + baht(o.total) + ' บาท<br>ถ้าเพิ่งโอน รอสักครู่แล้วกด "ตรวจอีกครั้ง"';
+      stop(); cancelOrd('timeout'); T().textContent = '0:00'; T().style.color = '#b42318';
+      S().innerHTML = blocked ? 'หมดเวลา ระบบตรวจอัตโนมัติไม่ได้ · ถ้าโอนแล้วแจ้งร้านทาง LINE ' + LINE_OA + ' เลข ' + o.ref : 'ยังไม่พบเงินเข้ายอด ' + baht(o.total) + ' บาท<br>ออเดอร์ถูกยกเลิกแล้ว ถ้าเพิ่งโอน กด "ตรวจอีกครั้ง" ระบบจะกู้ออเดอร์คืนให้';
       B().innerHTML = ''; B().appendChild(btn('ตรวจอีกครั้ง', start, 'go')); B().appendChild(btn('ปิด', close));
     }
     start();
