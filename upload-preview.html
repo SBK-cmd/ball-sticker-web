@@ -741,11 +741,6 @@
   }
 
   // ---------- ส่งแบบ ----------
-  async function upload(f) {
-    var fd = new FormData(); fd.append('file', f, (f.name || 'file')); fd.append('upload_preset', PRESET); fd.append('folder', 'web-orders');
-    var r = await fetch('https://api.cloudinary.com/v1_1/' + CLOUD + '/auto/upload', {method: 'POST', body: fd});
-    var j = await r.json(); if (!j.secure_url) throw new Error('upload'); return j.secure_url;
-  }
   // ---------- ขั้นตอน (หน้าจอเดียวต่อขั้น) ----------
   var step = 1, SPIN = '<span class="spin" role="status" aria-label="กำลังดำเนินการ"></span>';
   function show(n) {
@@ -761,9 +756,31 @@
   document.addEventListener('click', function (e) { var g = e.target.closest && e.target.closest('[data-go]'); if (g && !st.busy) show(+g.dataset.go); });
   function busyBtn(btn, on, label) { btn.disabled = on; btn.innerHTML = on ? SPIN : label; }
 
+  function fetchT(url, opt, ms) {   // กันค้างหมุนไม่รู้จบ
+    var ac = new AbortController(), t = setTimeout(function () { ac.abort(); }, ms || 30000);
+    opt = opt || {}; opt.signal = ac.signal;
+    return fetch(url, opt).finally(function () { clearTimeout(t); });
+  }
+  function shrinkImg(f) {   // ย่อรูปสลิปใหญ่ก่อนส่ง · เปิดไม่ได้ (เช่น HEIC) ส่งไฟล์เดิม
+    return new Promise(function (res) {
+      if (!f || !/^image\//.test(f.type || '') || f.size < 600 * 1024) return res(f);
+      var u = URL.createObjectURL(f), im = new Image();
+      im.onload = function () {
+        try {
+          var k = Math.min(1, 1600 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas');
+          c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+          c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+          c.toBlob(function (b) { URL.revokeObjectURL(u); res(b && b.size < f.size ? new File([b], 'slip.jpg', {type: 'image/jpeg'}) : f); }, 'image/jpeg', 0.85);
+        } catch (e) { res(f); }
+      };
+      im.onerror = function () { URL.revokeObjectURL(u); res(f); };
+      im.src = u;
+    });
+  }
   async function upload(f) {
+    f = await shrinkImg(f);
     var fd = new FormData(); fd.append('file', f, (f.name || 'file')); fd.append('upload_preset', PRESET); fd.append('folder', 'web-orders');
-    var r = await fetch('https://api.cloudinary.com/v1_1/' + CLOUD + '/auto/upload', {method: 'POST', body: fd});
+    var r = await fetchT('https://api.cloudinary.com/v1_1/' + CLOUD + '/auto/upload', {method: 'POST', body: fd}, 45000);
     var j = await r.json(); if (!j.secure_url) throw new Error('upload'); return j.secure_url;
   }
   $('send').addEventListener('click', async function () {
@@ -859,7 +876,7 @@
   function patchOrder(id, data) {   // แนบสลิปเข้าออเดอร์ในระบบหลังร้าน
     return fbToken().then(function (tok) {
       var q = Object.keys(data).map(function (k) { return 'updateMask.fieldPaths=' + k; }).join('&');
-      return fetch('https://firestore.googleapis.com/v1/projects/' + FB.project + '/databases/(default)/documents/webOrders/' + encodeURIComponent(id) + '?' + q, {method: 'PATCH', headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + tok}, body: JSON.stringify({fields: fsVal(data).mapValue.fields})});
+      return fetchT('https://firestore.googleapis.com/v1/projects/' + FB.project + '/databases/(default)/documents/webOrders/' + encodeURIComponent(id) + '?' + q, {method: 'PATCH', headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + tok}, body: JSON.stringify({fields: fsVal(data).mapValue.fields})});
     }).then(function (r) { if (!r.ok) throw new Error('patch ' + r.status); });
   }
 
