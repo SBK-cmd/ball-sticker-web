@@ -5989,6 +5989,38 @@ function bahtText(value) {
     }
     return rows.map(r => ({name: String(r.i.name).trim() + ((r.i.note || '').trim() ? ' (' + String(r.i.note).trim() + ')' : ''), qty: r.i.qty, price: num(jobUnitPrice(j, r.i)), job: j.no, ji: r.idx, juid: r.i.uid || undefined}));
   }
+  // ใบงานคือต้นทางของราคา: หาแถวในใบงานที่ตรงกับแถวในบิลราคาส่ง (juid → ลำดับ → ชื่อขึ้นต้นเหมือนกัน)
+  function jobItemForBillRow(row, j) {
+    const its = j.items || [];
+    if (row.juid) { const f = its.find(x => x.uid === row.juid); if (f) return f; }
+    if (row.ji != null && its[row.ji] && String(its[row.ji].name || '').trim()) return its[row.ji];
+    const nm = String(row.name || '').replace(/\s*\(.*\)\s*$/, '').trim().toLowerCase();
+    if (!nm) return null;
+    const hit = its.filter(x => { const n = String(x.name || '').trim().toLowerCase(); return n && (n === nm || n.indexOf(nm) === 0 || nm.indexOf(n) === 0); });
+    return hit.length === 1 ? hit[0] : null;
+  }
+  // รายการในบิลที่ยังไม่ชำระ ซึ่งราคา ไม่ตรงกับใบงาน → [{doc, k, row, want}]
+  function billJobMismatch(j) {
+    const no = String(j.no || '').trim(), out = [];
+    if (!no) return out;
+    store.get('bs_wholesale', []).forEach(w => {
+      if (w.paid) return;
+      (w.items || []).forEach((row, k) => {
+        if (String(row.job || '').trim() !== no || row.jtot) return;
+        const it = jobItemForBillRow(row, j); if (!it) return;
+        const want = jobUnitPrice(j, it); if (want === '' || !(num(want) > 0)) return;
+        if (round2(num(row.price)) !== round2(num(want))) out.push({doc: w.id, k, row, want: round2(num(want))});
+      });
+    });
+    return out;
+  }
+  function syncJobToBills(j) {
+    const mm = billJobMismatch(j); if (!mm.length) return 0;
+    const wl = store.get('bs_wholesale', []), touched = {};
+    mm.forEach(m => { const wi = wl.findIndex(w => w.id === m.doc); if (wi < 0) return; wl[wi] = Object.assign({}, wl[wi], {items: (wl[wi].items || []).map((r, k) => k === m.k ? Object.assign({}, r, {price: m.want}) : r), savedAt: Date.now()}); touched[wi] = 1; });
+    store.set('bs_wholesale', wl); Object.keys(touched).forEach(i => cloudSave('wholesale', wl[i]));
+    return mm.length;
+  }
   // แก้ราคาในบิลราคาส่ง → แก้ใบคอนเฟิร์มงาน (ใบงาน) ที่เป็นต้นทางให้ตรงกัน
   function syncPriceToJob(item, newPrice) {
     if (!item || !item.job) return false;
@@ -6742,7 +6774,7 @@ function bahtText(value) {
       ? '<div class="jd-editing"><span class="jd-k">ฝากส่งถึง · กำลังแก้ไข</span>' + fld('ผู้รับ', 'name', (j.recv || {}).name) + fld('เบอร์', 'phone', (j.recv || {}).phone) + fld('ที่อยู่', 'addr', (j.recv || {}).addr, true) + edBtns + '</div>'
       : '';
     const itemsBlock = editing('items')
-      ? '<div class="jd-editing"><span class="jd-k">รายการงาน · กำลังแก้ไข</span>' + its.map(i => '<div class="jd-irow" data-idx="' + (j.items || []).indexOf(i) + '"><input class="txt" type="text" data-f="name" value="' + esc(i.name) + '" aria-label="ชื่อรายการ" autocomplete="off"><input class="txt" type="text" inputmode="decimal" data-f="qty" value="' + esc(i.qty == null ? '' : i.qty) + '" aria-label="จำนวน" autocomplete="off">' + (canBank ? '<input class="txt" type="text" inputmode="decimal" data-f="price" value="' + esc(i.price == null ? '' : i.price) + '" placeholder="ราคา/หน่วย" aria-label="ราคาต่อหน่วย" autocomplete="off">' : '') + '</div>').join('') + (its.some(i => (j.whAdded || {})[jobItemKey(i, (j.items || []).indexOf(i))]) ? '<small class="jd-warn">รายการที่ใส่ใบราคาส่งแล้ว ใบราคาส่งจะไม่เปลี่ยนตาม ต้องแก้ในใบราคาส่งเอง</small>' : '') + edBtns + '</div>'
+      ? '<div class="jd-editing"><span class="jd-k">รายการงาน · กำลังแก้ไข</span>' + its.map(i => '<div class="jd-irow" data-idx="' + (j.items || []).indexOf(i) + '"><input class="txt" type="text" data-f="name" value="' + esc(i.name) + '" aria-label="ชื่อรายการ" autocomplete="off"><input class="txt" type="text" inputmode="decimal" data-f="qty" value="' + esc(i.qty == null ? '' : i.qty) + '" aria-label="จำนวน" autocomplete="off">' + (canBank ? '<input class="txt" type="text" inputmode="decimal" data-f="price" value="' + esc(i.price == null ? '' : i.price) + '" placeholder="ราคา/หน่วย" aria-label="ราคาต่อหน่วย" autocomplete="off">' : '') + '</div>').join('') + (its.some(i => (j.whAdded || {})[jobItemKey(i, (j.items || []).indexOf(i))]) ? '<small class="jd-warn">รายการที่ใส่ใบราคาส่งแล้ว ราคาในใบราคาส่ง (ที่ยังไม่ชำระ) จะเปลี่ยนตามเมื่อกดบันทึก</small>' : '') + edBtns + '</div>'
       : '';
     const cust = [j.jName, j.jPhone ? '<a href="tel:' + esc(String(j.jPhone).replace(/[^\d+]/g, '')) + '">' + esc(j.jPhone) + '</a>' : ''].filter(Boolean).join(' · ');
     return '<div class="jd"><div class="jd-head"><b>' + esc(j.no || 'ใบงาน') + '</b><button class="btn small" data-act="closejd" type="button">✕ ปิด</button></div>' +
@@ -6804,6 +6836,7 @@ function bahtText(value) {
     }
     j.savedAt = Date.now();
     store.set('bs_jobs', list); cloudSave('jobs', j);
+    let billSynced = 0; if (sect === 'items') { try { billSynced = syncJobToBills(j); } catch (e) {} }
     let synced = 0;
     if (sect === 'cust' || sect === 'recv') {
       const newCust = String(j.jName || '').trim(), newRecv = String((j.recv || {}).name || '').trim();
@@ -6823,7 +6856,7 @@ function bahtText(value) {
     if (sect === 'items') linkBankIn(j, prevBankInIds);
     try { publicJobMirror(j); } catch (e) {}   // หน้าติดตามของลูกค้า (ชื่อ ผู้รับ รายการ ราคา) อัปเดตตาม
     jdEdit = null; renderJobHistory(); try { if (isTrackPanelActive()) renderTrackingHistory(); } catch (e) {}
-    toast('บันทึกแล้ว' + (synced ? ' · อัปเดตรายการพัสดุ ' + synced + ' รายการ' : '') + (/^JBS/i.test(String(j.no || '').trim()) ? ' · หน้าติดตามลูกค้าอัปเดตตามแล้ว' : ''));
+    toast('บันทึกแล้ว' + (billSynced ? ' · ปรับราคาในใบราคาส่ง ' + billSynced + ' รายการตามใบงาน' : '') + (synced ? ' · อัปเดตรายการพัสดุ ' + synced + ' รายการ' : '') + (/^JBS/i.test(String(j.no || '').trim()) ? ' · หน้าติดตามลูกค้าอัปเดตตามแล้ว' : ''));
   }
   function renderJobHistory(soft) {   // soft=true: เรียกจากซิงก์คลาวด์ — ถ้าหน้าตาไม่เปลี่ยนจะไม่วาดใหม่ (กันกะพริบ) · เรียกจากการกดของผู้ใช้ = วาดใหม่เสมอ
     try { setTimeout(hubRefreshJobs, 300); } catch (e) {}
@@ -7397,6 +7430,8 @@ function bahtText(value) {
         const paidJ = g.open.some(w => whPaidFor(w, no) && (w.items || []).some(i => String(i.job || '').trim() === no));
         if (!has && j) { const named = (j.items || []).filter(i => String(i.name || '').trim()); b += '<div class="wd-j" style="padding:6px 0"><small>' + (named.length ? named.map(i => esc(String(i.name).trim()) + ' ×' + esc(i.qty || 1)).join(', ') : 'ยังไม่มีรายการสินค้า') + (num(j.slipAmount) > 0 ? ' · ยอด ' + money(num(j.slipAmount)) + ' บาท' : '') + '</small></div>' + (jobPendingWhItems(j).length ? '<div class="wd-jbs"><button class="btn small good" type="button" data-act="addjob" data-jid="' + esc(j.id) + '">＋ เพิ่มเข้าบิล</button></div>' : ''); }
         if (has) b += paidJ ? '<div class="wd-jbs"><button class="btn small wd-jb" type="button" data-act="jobpaid" data-key="' + esc(no) + '" data-paid="1">ยกเลิกจ่าย</button></div>' : '<label class="wd-jk"><input type="checkbox" class="wd-ck" data-key="' + esc(no) + '" data-sub="' + round2(sub) + '"> จ่ายแล้ว (ติ๊กแล้วกดออกใบเสร็จด้านล่าง)</label>';
+        const mm = j ? billJobMismatch(j) : [];
+        if (mm.length) b += '<div class="wd-mm" style="margin:8px 0;padding:8px 10px;border-radius:10px;background:#fff4d6;color:#6b4a00;font-size:13px">⚠ ราคาในบิลไม่ตรงใบงาน ' + mm.length + ' รายการ: ' + mm.map(m => esc(String(m.row.name || '').slice(0, 24)) + ' บิล ' + money(m.row.price) + ' → ใบงาน ' + money(m.want)).join(' · ') + '<div style="margin-top:6px"><button class="btn small" type="button" data-act="billsync" data-key="' + esc(no) + '">ปรับราคาในบิลให้ตรงใบงาน</button></div></div>';
         return b + jobPayHistHtml(no);
       };
       const rowOf = j => {
@@ -10070,6 +10105,12 @@ function bahtText(value) {
       jl[ji] = Object.assign({}, jl[ji], {owedPaid: !jl[ji].owedPaid, slipPending: false}); store.set('bs_jobs', jl); cloudSave('jobs', jl[ji]);
       try { publicJobMirror(jl[ji]); refreshOwedMirrors(); } catch (er) {}
       renderWholesaleHistory(); toast(jl[ji].owedPaid ? 'ใบงาน ' + jl[ji].no + ' จ่ายแล้ว ✓' : 'ยกเลิกจ่าย ' + jl[ji].no); return;
+    }
+    if (act === 'billsync') {
+      const key = btn.dataset.key || '', jj = store.get('bs_jobs', []).find(x => String(x.no || '').trim() === key); if (!jj) return;
+      const mm = billJobMismatch(jj); if (!mm.length) { toast('ราคาตรงกันแล้ว'); renderWholesaleHistory(); return; }
+      appConfirm('ปรับราคาในบิลให้ตรงใบงาน ' + key, mm.map(m => String(m.row.name || '') + ': ' + money(m.row.price) + ' → ' + money(m.want)), 'ปรับราคา').then(ok => { if (!ok) return; const n = syncJobToBills(jj); toast('ปรับราคาในบิล ' + n + ' รายการแล้ว'); renderWholesaleHistory(); try { renderOwedCard(); } catch (e) {} });
+      return;
     }
     if (act === 'jobpaid') { const key = btn.dataset.key || ''; if (!key) return; if (btn.dataset.paid) { markJobUnpaid(name, key); toast('ยกเลิกจ่าย ' + key + ' แล้ว'); } else { markJobsPaid(name, [key]); toast('ใบงาน ' + key + ' จ่ายแล้ว ✓'); } renderWholesaleHistory(); return; }
     if (act === 'autolink') { const r = whAutoLink(name); renderWholesaleHistory(); toast(r.linked ? 'ผูกใบงานให้แล้ว ' + r.linked + ' บรรทัด' + (r.left ? ' · เหลือ ' + r.left + ' บรรทัดที่ผูกเองไม่ได้ (ชื่อไม่ตรง/ตรงหลายงาน)' : ' · ครบทุกบรรทัด') : (r.left ? 'ไม่มีบรรทัดที่ผูกได้อัตโนมัติ · ' + r.left + ' บรรทัดต้องเลือกใบงานเอง' : 'ทุกบรรทัดผูกใบงานครบแล้ว')); return; }
