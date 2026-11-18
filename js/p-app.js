@@ -3834,13 +3834,25 @@ function bahtText(value) {
     const note = String(rec.note || ''); if (!/(WEB|TEST)\d{6}-/.test(note)) return;
     webOrd.forEach(x => { if (!woDone(x) && x.ref && note.indexOf(x.ref) >= 0) markWebOrder(x.id, {status: 'job', jobNo: rec.no || '', jobAt: Date.now()}); });
   }
-  // เงินเข้าธนาคารที่ยอดตรงกับออเดอร์เว็บ (ภายใน 7 วันหลังสั่ง · ยังไม่ผูกใบงาน) → ป้ายช่วยยืนยันว่าลูกค้าโอนแล้ว
-  function woBankTag(x) {
+  // เงินเข้าธนาคารที่ยอดตรงกับออเดอร์เว็บ (ภายใน 7 วันหลังสั่ง · ยังไม่ผูกใบงาน)
+  // ออเดอร์ใหม่มี x.sat = เศษสตางค์ที่ระบบสร้างให้ไม่ซ้ำ → ยอดตรงเป๊ะ = ยืนยันว่าจ่ายแล้ว · ออเดอร์เก่าไม่มีเศษ = แค่ "ยอดตรง" (เดา)
+  function woBankMatch(x) {
     try {
-      if (!canBank || !(+x.total > 0)) return '';
-      const hit = bankInAll().find(b => !b.matchedJobNo && !b.owedPaid && Math.abs(num(b.amount) - num(x.total)) < 0.005 && (b.createdAt || 0) >= (x.createdAt || 0) - 36e5 && (b.createdAt || 0) <= (x.createdAt || 0) + 7 * 864e5);
-      return hit ? '<i class="wo-tag ok">💰 เงินเข้าตรงยอด ' + esc(bankInWhenShort(hit)) + '</i>' : '';
-    } catch (e) { return ''; }
+      const amt = num(x.payAmt || x.total); if (!canBank || !(amt > 0)) return null;
+      const win = (b, o) => (b.createdAt || 0) >= (o.createdAt || 0) - 36e5 && (b.createdAt || 0) <= (o.createdAt || 0) + 7 * 864e5;
+      const hits = bankInAll().filter(b => !b.owedPaid && (!b.matchedJobNo || String(b.matchedJobNo) === String(x.ref || '')) && Math.abs(num(b.amount) - amt) < 0.005 && win(b, x));
+      if (!hits.length) return null;
+      const same = webOrd.filter(o => !o.deleted && o.id !== x.id && Math.abs(num(o.payAmt || o.total) - amt) < 0.005 && win(hits[0], o));
+      return {hit: hits[0], st: same.length ? 'dup' : (x.sat ? 'ok' : 'guess')};
+    } catch (e) { return null; }
+  }
+  const woPaidOk = x => { const m = woBankMatch(x); return !!(m && m.st === 'ok'); };
+  function woBankTag(x) {
+    const m = woBankMatch(x); if (!m) return '';
+    const w = esc(bankInWhenShort(m.hit));
+    return m.st === 'ok' ? '<i class="wo-tag ok">✅ เงินเข้าแล้ว ยืนยันจากธนาคาร ' + w + '</i>'
+      : m.st === 'dup' ? '<i class="wo-tag">⚠️ ยอดซ้ำกับออเดอร์อื่น ตรวจเอง ' + w + '</i>'
+      : '<i class="wo-tag ok">💰 เงินเข้าตรงยอด (เดา) ' + w + '</i>';
   }
   function renderWebOrders() {
     const card = $('webOrdCard'), box = $('webOrd'); if (!card || !box) return;
@@ -3876,7 +3888,7 @@ function bahtText(value) {
     $('jobNote').value = ['เว็บ ' + (x.ref || x.id) + ' · ยอดชำระ ' + money(x.total || 0) + (x.vat ? ' (รวม VAT ' + money(x.vat) + ')' : ''),
       f.orig ? 'ไฟล์ลูกค้า ' + f.orig : '', f.png ? 'ไฟล์ตรง ' + f.png : '', f.svg ? 'Kiss Cut ' + f.svg : '',
       t ? 'ใบกำกับ: ' + t.name + ' · ' + t.id + ' · ' + (t.br || 'สำนักงานใหญ่') + ' · ' + (t.addr || c.addr || '') : '', x.note ? 'ลูกค้าแจ้ง: ' + x.note : ''].filter(Boolean).join('\n');
-    $('jobSlipAmount').value = x.total ? String(x.total) : '';
+    $('jobSlipAmount').value = (x.payAmt || x.total) ? String(x.payAmt || x.total) : '';
     if (f.png || f.orig) jobPhotos = [f.png || f.orig];
     renderJobItems(); renderJobPhotos(); renderJob(); renderJobEditState();
     openJobModal();
