@@ -5534,17 +5534,20 @@ function bahtText(value) {
     if (!v) { v = Date.now(); try { localStorage.setItem(BELL_SEEN, String(v)); } catch (e) {} }
     return v;
   }
+  // ออเดอร์เว็บที่ยังไม่ทำ (ใช้ในกระดิ่ง) · webOrd ประกาศถัดลงไป เลยห่อ try กันเรียกก่อนประกาศ
+  const webBell = () => { try { return webOrd.filter(x => !x.deleted && !woDone(x) && Date.now() - (x.createdAt || 0) < 30 * 864e5); } catch (e) { return []; } };
   function renderBell(ring) {
     const btn = $('bellBtn'); if (!btn) return;
     btn.hidden = !(canBank || can('confirm')); if (btn.hidden) return;
     if ($('bellAll')) $('bellAll').hidden = !canBank; // ปุ่มไปการ์ดเงินเข้า เฉพาะคนที่มีสิทธิ์เงินเข้า-ออก
     const seen = bellSeen();
-    const unread = (canBank ? bankInAll().filter(x => (x.createdAt || 0) > seen).length : 0) + notifUnread(seen);
+    const unread = (canBank ? bankInAll().filter(x => (x.createdAt || 0) > seen).length : 0) + notifUnread(seen) + webBell().filter(x => (x.createdAt || 0) > seen).length;
     $('bellBadge').hidden = !unread;
     $('bellBadge').textContent = unread > 9 ? '9+' : String(unread);
     btn.setAttribute('aria-label', unread ? 'การแจ้งเตือน มีรายการใหม่ ' + unread + ' รายการ' : 'การแจ้งเตือน');
     if (ring && unread) { btn.classList.remove('ring'); void btn.offsetWidth; btn.classList.add('ring'); }
     if (!$('bellPanel').hidden) renderBellList();
+    try { renderWebOrders(); } catch (e) {}   // ป้าย "เงินเข้าตรงยอด" อัปเดตตามเงินเข้า
   }
   let bellOpenSeen = 0;   // ค่าที่ใช้ไฮไลต์ "ใหม่" ระหว่างที่แผงเปิดอยู่
   function renderBellBal() {
@@ -5657,10 +5660,12 @@ function bahtText(value) {
     const items = [];
     if (canBank) bankInAll().slice(0, 15).forEach(x => items.push({t: x.createdAt || 0, kind: 'bank', x}));
     notifAll().slice(0, 30).forEach(n => items.push({t: n.at || 0, kind: 'job', x: n}));
+    webBell().slice(0, 10).forEach(x => items.push({t: x.createdAt || 0, kind: 'web', x}));
     items.sort((a, b) => b.t - a.t);
     const rows = items.slice(0, 25);
     $('bellList').innerHTML = rows.length ? rows.map(it => {
       if (it.kind === 'job') return notifItemHTML(it.x);
+      if (it.kind === 'web') { const w = it.x, c = w.cust || {}; return '<button type="button" class="bell-item' + ((w.createdAt || 0) > bellOpenSeen ? ' unread' : '') + '" data-woopen="1"><span class="bell-ic" aria-hidden="true">🛒</span><span class="bell-main"><b>ออเดอร์เว็บ ' + esc(c.name || w.ref || '') + (w.total ? ' · ฿' + money(w.total) : '') + '</b><small>' + esc(w.ref || '') + (w.test ? ' · 🧪ทดสอบ' : '') + ' · ' + (w.slip ? 'แนบสลิปแล้ว ✓' : 'ยังไม่แนบสลิป') + '</small></span></button>'; }
       const x = it.x;
       const isNew = (x.createdAt || 0) > bellOpenSeen;
       return '<button type="button" class="bell-item' + (isNew ? ' unread' : '') + '" data-bid="' + esc(x.id) + '">' +
@@ -5676,7 +5681,7 @@ function bahtText(value) {
     bellOpenSeen = bellSeen();
     renderBellList();
     $('bellPanel').hidden = false; $('bellBtn').setAttribute('aria-expanded', 'true');
-    const newest = Math.max(canBank && bankInAll().length ? (bankInAll()[0].createdAt || 0) : 0, notifAll().length ? (notifAll()[0].at || 0) : 0);
+    const newest = Math.max(webBell().length ? webBell()[0].createdAt || 0 : 0, canBank && bankInAll().length ? (bankInAll()[0].createdAt || 0) : 0, notifAll().length ? (notifAll()[0].at || 0) : 0);
     if (newest > bellOpenSeen) { try { localStorage.setItem(BELL_SEEN, String(newest)); } catch (e) {} }
     $('bellBadge').hidden = true;
   }
@@ -8086,7 +8091,10 @@ function bahtText(value) {
     if (!cloudDb || webOrdUnsub) return;
     try {
       webOrdUnsub = cloudDb.collection('webOrders').orderBy('createdAt', 'desc').limit(40).onSnapshot(snap => { countReads('webOrders', snap);
-        const l = []; snap.forEach(d => l.push(Object.assign({id: d.id}, d.data()))); webOrd = l; renderWebOrders();
+        const l = []; snap.forEach(d => l.push(Object.assign({id: d.id}, d.data())));
+        const first = !watchWebOrders._known, known = watchWebOrders._known || (watchWebOrders._known = {}); let ev = '';
+        l.forEach(x => { const sig = x.slip ? 's' : 'n'; if (!first && !x.deleted) { if (!(x.id in known)) ev = '🛒 ออเดอร์เว็บใหม่ ' + ((x.cust || {}).name || x.ref || '') + (x.total ? ' ฿' + money(x.total) : ''); else if (known[x.id] === 'n' && sig === 's') ev = '🧾 ลูกค้า ' + ((x.cust || {}).name || x.ref || '') + ' แนบสลิปแล้ว'; } known[x.id] = sig; });
+        webOrd = l; renderWebOrders(); try { renderBell(!!ev); } catch (e) {} if (ev) toast(ev);
       }, e => { console.warn('webOrders', e); });
     } catch (e) { console.warn(e); }
   }
@@ -8116,6 +8124,14 @@ function bahtText(value) {
     const note = String(rec.note || ''); if (!/(WEB|TEST)\d{6}-/.test(note)) return;
     webOrd.forEach(x => { if (!woDone(x) && x.ref && note.indexOf(x.ref) >= 0) markWebOrder(x.id, {status: 'job', jobNo: rec.no || '', jobAt: Date.now()}); });
   }
+  // เงินเข้าธนาคารที่ยอดตรงกับออเดอร์เว็บ (ภายใน 7 วันหลังสั่ง · ยังไม่ผูกใบงาน) → ป้ายช่วยยืนยันว่าลูกค้าโอนแล้ว
+  function woBankTag(x) {
+    try {
+      if (!canBank || !(+x.total > 0)) return '';
+      const hit = bankInAll().find(b => !b.matchedJobNo && !b.owedPaid && Math.abs(num(b.amount) - num(x.total)) < 0.005 && (b.createdAt || 0) >= (x.createdAt || 0) - 36e5 && (b.createdAt || 0) <= (x.createdAt || 0) + 7 * 864e5);
+      return hit ? '<i class="wo-tag ok">💰 เงินเข้าตรงยอด ' + esc(bankInWhenShort(hit)) + '</i>' : '';
+    } catch (e) { return ''; }
+  }
   function renderWebOrders() {
     const card = $('webOrdCard'), box = $('webOrd'); if (!card || !box) return;
     const shown = webOrd.filter(x => !x.deleted), nNew = shown.filter(x => !woDone(x)).length;
@@ -8128,8 +8144,8 @@ function bahtText(value) {
         '<div class="wo-m"><b>' + esc(c.name || 'ไม่ทราบชื่อ') + '</b><span class="wo-ref">' + esc(x.ref || x.id) + ' · ' + esc(new Date(x.createdAt || 0).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + '</span>' +
         '<span>' + esc(x.w ? x.w + ' × ' + x.h + ' ซม. · ' + Number(x.qty || 0).toLocaleString('th-TH') + ' ดวง' : 'ไม่มีรายละเอียด') + (x.perSheet ? ' · แผ่นละ ' + x.perSheet + ' (≈' + x.sheets + ' แผ่น)' : '') + '</span>' +
         '<span>' + esc(c.tel || '') + (x.lineName ? ' · LINE ' + esc(x.lineName) : '') + '</span><span class="wo-amt">' + (x.total ? '฿' + money(x.total) : '') + '</span>' +
-        '<span>' + (x.test ? '<i class="wo-tag">🧪 ทดสอบ</i>' : '') + (x.tax ? '<i class="wo-tag tx">ใบกำกับ</i>' : '') + (x.slip ? '<i class="wo-tag ok">แนบสลิปแล้ว</i>' : '') + (x.status === 'job' ? '<i class="wo-tag ok">ใบงาน ' + esc(x.jobNo || '') + '</i>' : x.status === 'hide' ? '<i class="wo-tag">ซ่อนแล้ว</i>' : (x.slip ? '' : '<i class="wo-tag">ยังไม่แนบสลิป</i>')) + '</span></div>' +
-        '<div class="wo-act">' + (woDone(x) ? '' : '<button type="button" class="btn small good" data-wojob="' + esc(x.id) + '">สร้างใบงาน</button>') +
+        '<span>' + (x.test ? '<i class="wo-tag">🧪 ทดสอบ</i>' : '') + (x.tax ? '<i class="wo-tag tx">ใบกำกับ</i>' : '') + (x.slip ? '<i class="wo-tag ok">แนบสลิปแล้ว</i>' : '') + woBankTag(x) + (x.status === 'job' ? '<i class="wo-tag ok">ใบงาน ' + esc(x.jobNo || '') + '</i>' : x.status === 'hide' ? '<i class="wo-tag">ซ่อนแล้ว</i>' : (x.slip ? '' : '<i class="wo-tag">ยังไม่แนบสลิป</i>')) + '</span></div>' +
+        '<div class="wo-act">' + (x.trackToken ? '<button type="button" class="btn small" data-wolink="' + esc(x.trackToken) + '">คัดลอกลิงก์ติดตาม</button>' : '') + (woDone(x) ? '' : '<button type="button" class="btn small good" data-wojob="' + esc(x.id) + '">สร้างใบงาน</button>') +
         (f.orig ? '<a href="' + esc(f.orig) + '" target="_blank" rel="noopener">ไฟล์ลูกค้า</a>' : '') + (f.png ? '<a href="' + esc(f.png) + '" target="_blank" rel="noopener">ไฟล์ตรง</a>' : '') + (f.svg ? '<a href="' + esc(f.svg) + '" target="_blank" rel="noopener">เส้น Kiss Cut</a>' : '') +
         (x.slip ? '<a href="' + esc(x.slip) + '" target="_blank" rel="noopener">ดูสลิป</a>' : '') +
         (woDone(x) ? '<button type="button" class="btn small" data-woback="' + esc(x.id) + '">คืนไปรอสร้าง</button>' : '<button type="button" class="btn small" data-wohide="' + esc(x.id) + '">ซ่อน</button>') + '<button type="button" class="btn small danger" data-wodel="' + esc(x.id) + '">' + (x.test || /^TEST/.test(x.ref || x.id) ? 'ลบ (ทดสอบ)' : 'ลบ') + '</button>' + '</div></div>';
@@ -8156,7 +8172,8 @@ function bahtText(value) {
     openJobModal();
   }
   document.addEventListener('click', e => {
-    const t = e.target.closest && e.target.closest('[data-wo],[data-wojob],[data-wohide],[data-woback],[data-wodel]'); if (!t) return;
+    const t = e.target.closest && e.target.closest('[data-wo],[data-wojob],[data-wohide],[data-woback],[data-wodel],[data-wolink]'); if (!t) return;
+    if (t.dataset.wolink) { const u = 'https://www.ballsticker.co.th/track?t=' + t.dataset.wolink; (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('คัดลอกลิงก์ติดตามแล้ว'), () => { try { const ta = document.createElement('textarea'); ta.value = u; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('คัดลอกลิงก์ติดตามแล้ว'); } catch (er) { toast(u); } }); return; }
     if (t.dataset.wo) { webOrdTab = t.dataset.wo; document.querySelectorAll('#webOrdTabs button').forEach(b => b.classList.toggle('on', b === t)); renderWebOrders(); }
     else if (t.dataset.wojob) webOrderToJob(t.dataset.wojob);
     else if (t.dataset.woback) markWebOrder(t.dataset.woback, {status: 'new', jobNo: '', jobAt: 0});
@@ -13781,6 +13798,7 @@ function bahtText(value) {
     const al = e.target.closest('[data-alloc]');
     if (al) { (async () => { try { const o = JSON.parse(al.dataset.alloc), parts = o.p.map(q => ({no: q[0], amt: q[1], full: !!q[2]})); if (await appConfirm('ตัดเงิน ' + parts.reduce((t, x) => t + x.amt, 0).toFixed(2) + ' บาท ของ ' + o.n, parts.map(x => x.no + (x.full ? ' · จ่ายครบ' : ' · จ่ายบางส่วน ' + x.amt.toFixed(2))), 'ยืนยันตัดเงิน')) { allocOwed(o.n, o.bi, parts); toast('ตัดเงินแล้ว'); } } catch (er) { toast('ตัดไม่สำเร็จ'); } })(); return; }
     const jb = e.target.closest('[data-jid]'); if (jb) { goJobFromBell(jb.dataset.jid); return; }
+    if (e.target.closest('[data-woopen]')) { closeBell(); showTab('confirm'); setTimeout(() => { const c = $('webOrdCard'); if (c) c.scrollIntoView({behavior: 'smooth', block: 'start'}); }, 80); return; }
     if (e.target.closest('[data-bid]')) goBankInCard();
   });
   document.addEventListener('click', e => { if (!e.target.closest('#bellPanel') && !e.target.closest('#bellBtn')) closeBell(); });
