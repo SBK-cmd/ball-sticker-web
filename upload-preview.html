@@ -687,7 +687,7 @@
         var x = P + 24, y = y0 + 64, R = W - P - 24;
         if (o.test) { g.fillStyle = '#fff6cf'; rr(x, y - 40, R - x, 48, 12); g.fill(); F('600', 24, 'Prompt'); g.fillStyle = '#6b5200'; g.fillText('🧪 ออเดอร์ทดสอบ ไม่ได้จ่ายจริง', x + 16, y - 7); y += 60; }
         F('400', 26); g.fillStyle = '#5a6580'; g.fillText('เลขใบงาน', x, y); F('600', 34, 'Prompt'); g.fillStyle = '#1b2333'; g.fillText(o.ref, x + 130, y + 2);
-        var st = o.test ? 'ทดสอบ' : 'รอชำระเงิน'; F('600', 24, 'Prompt'); var sw = g.measureText(st).width + 36; g.fillStyle = '#fff6cf'; rr(R - sw, y - 32, sw, 46, 23); g.fill(); g.fillStyle = '#6b5200'; g.fillText(st, R - sw + 18, y);
+        var st = o.paidAt ? (o.testPaid ? 'ทดสอบ · ไม่ได้จ่ายจริง' : 'ชำระแล้ว ✓') : (o.test ? 'ทดสอบ' : 'รอชำระเงิน'); F('600', 24, 'Prompt'); var sw = g.measureText(st).width + 36; g.fillStyle = '#fff6cf'; rr(R - sw, y - 32, sw, 46, 23); g.fill(); g.fillStyle = '#6b5200'; g.fillText(st, R - sw + 18, y);
         y += 40; var ib = 260; g.fillStyle = '#cdd4e0'; rr(x, y, ib, ib, 24); g.fill();
         if (img) { var k = Math.min((ib - 36) / img.width, (ib - 36) / img.height), iw = img.width * k, ih = img.height * k; g.save(); g.shadowColor = 'rgba(20,35,75,.35)'; g.shadowBlur = 10; g.shadowOffsetY = 4; g.drawImage(img, x + (ib - iw) / 2, y + (ib - ih) / 2, iw, ih); g.restore(); }
         var tx = x + ib + 36, ty = y + 44, row = function (k2, v, small) { F('400', 26); g.fillStyle = '#5a6580'; g.fillText(k2, tx, ty); F(small ? '400' : '500', small ? 23 : 28); g.fillStyle = '#1b2333'; g.fillText(fit(v, R - tx - 120), tx + 120, ty); ty += small ? 40 : 54; };
@@ -701,7 +701,7 @@
         g.strokeStyle = '#e3e7ef'; g.lineWidth = 2; rr(qx, qy, qs, qs, 16); g.stroke();
         var px = qx + qs + 36; F('600', 32, 'Prompt'); g.fillStyle = '#1b2333'; g.fillText('สแกนจ่ายพร้อมเพย์', px, qy + 60);
         F('400', 26); g.fillStyle = '#5a6580'; g.fillText(o.payee, px, qy + 104); F('600', 44, 'Prompt'); g.fillStyle = '#1b2333'; g.fillText(o.total + ' บาท', px, qy + 166);
-        F('400', 24); g.fillStyle = '#5a6580'; g.fillText('โอนแล้วส่งสลิปใน LINE @bk25', px, qy + 214); g.fillText('ติดต่อ 093-535-3555', px, qy + 252);
+        F('400', 24); g.fillStyle = '#5a6580'; g.fillText(o.paidAt ? (o.testPaid ? 'ทดสอบ ไม่ได้จ่ายจริง' : 'ชำระเงินแล้ว ✓') : 'โอนให้ตรงยอด ระบบตรวจเงินเข้าอัตโนมัติ', px, qy + 214); g.fillText('ติดต่อ 093-535-3555', px, qy + 252);
         y = qy + qs + 64; F('500', 26); g.fillStyle = '#2f5bd3'; g.fillText('📦 ติดตามงาน: ' + fit(o.track.replace('https://', ''), R - x - 220), x, y);
         var endY = y + 60, out = document.createElement('canvas'); out.width = W; out.height = endY + 40; var og = out.getContext('2d');
         og.drawImage(cv, 0, 0); og.fillStyle = '#14234b'; og.fillRect(0, endY, W, 40); og.fillStyle = '#fff'; og.beginPath(); og.moveTo(P - 16, endY - 40); og.lineTo(W - P + 16, endY - 40); og.lineTo(W - P + 16, endY - 32); og.arcTo(W - P + 16, endY, W - P - 16, endY, 32); og.lineTo(P + 16, endY); og.arcTo(P - 16, endY, P - 16, endY - 32, 32); og.closePath(); og.fill();
@@ -934,9 +934,20 @@
       '<div class="btns"><button type="button" class="bt line" id="lineGo">ติดตามพัสดุทาง LINE</button><button type="button" class="bt" id="fbGo" style="margin-top:8px">ส่งทางเพจ Facebook</button><button type="button" class="bt" id="newOrd" style="margin-top:8px">+ เริ่มสั่งงานใหม่</button></div></div>';
     var cardData = {ref: o.ref, test: o.test, size: o.w + ' × ' + o.h + ' ซม.', qty: Number(o.qty).toLocaleString('th-TH'), name: o.name, tel: o.tel, addr: o.addr, price: baht(o.price), ship: String(o.ship), vat: o.vat ? baht(o.vat) : '', total: baht(o.total), payload: o.payload, payee: PP.name, track: o.track, img: o.localImg || o.img || ''};
     $('newOrd').onclick = restartOrder;
-    $('fbGo').onclick = function () {   // Messenger ใส่ข้อความล่วงหน้าไม่ได้ → คัดลอกข้อความให้ แล้วเปิดแชตเพจ ให้กดวาง
-      var b = this, go = function (ok) { b.textContent = ok ? 'คัดลอกข้อความแล้ว วางในแชตเพจได้เลย' : 'ส่งทางเพจ Facebook'; window.open('https://m.me/108503502205863', '_blank'); };
-      try { navigator.clipboard.writeText(lineMsg).then(function () { go(true); }, function () { go(false); }); } catch (e) { go(false); }
+    $('fbGo').onclick = function () {   // ส่งการ์ดออเดอร์ (รูป) เข้า Messenger: มือถือ = เมนูแชร์เลือก Messenger · ที่อื่น = คัดลอกรูปไว้ให้วางในแชตเพจ
+      var b = this, t0 = b.textContent, say = function (m) { b.textContent = m; setTimeout(function () { b.textContent = t0; }, 6000); }, page = function () { window.open('https://m.me/108503502205863', '_blank'); };
+      b.disabled = true; b.innerHTML = SPIN;
+      orderCardBlob(o).then(function (blob) {
+        b.disabled = false; b.textContent = t0;
+        var file = blob ? new File([blob], o.ref + '.png', {type: 'image/png'}) : null;
+        if (file && navigator.canShare && navigator.canShare({files: [file]})) {
+          return navigator.share({files: [file], text: lineMsg}).catch(function () {});
+        }
+        if (file && navigator.clipboard && window.ClipboardItem) {
+          return navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(function () { say('คัดลอกการ์ดแล้ว วางในแชตเพจได้เลย'); page(); }, function () { try { navigator.clipboard.writeText(lineMsg); } catch (e) {} say('คัดลอกข้อความแล้ว วางในแชตเพจได้เลย'); page(); });
+        }
+        try { navigator.clipboard.writeText(lineMsg); } catch (e) {} say('คัดลอกข้อความแล้ว วางในแชตเพจได้เลย'); page();
+      });
     };
     $('lineGo').onclick = function () {   // ใน LINE (LIFF): ส่งการ์ดออเดอร์เข้าแชตร้านแล้วปิดหน้า · นอก LINE: เปิดแชต @bk25 พร้อมข้อความออเดอร์ (มีลิงก์ติดตามงาน)
       var b = this;
