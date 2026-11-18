@@ -216,7 +216,7 @@
   .ppr { display:flex; justify-content:space-between; align-items:baseline; margin-top:6px; } .ppr:has(#ppS:empty) { justify-content:center; } #ppS:empty { display:none; } .ppr span { color:var(--sub); font-size:13px; text-align:left; } .ppr b { font:700 22px 'Prompt',sans-serif; font-variant-numeric:tabular-nums; }
   .ppb { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; } .ppf { color:var(--sub); font-size:12px; line-height:1.4; }
   @media (max-height:740px) { .ppq .qr { width:168px; } .ppa b { font-size:38px; } .ppn small { display:none; } }
-  @media (max-height:740px) { .ppc { gap:8px; padding:12px; } .pph { padding-bottom:8px; } .pph img { width:32px; height:32px; } .ppf, .ppa small:last-child { display:none; } .ppa b { font-size:30px; } .tqr .qr { width:150px; } .tqpp { height:28px; } .tqb { gap:5px; padding:8px 12px 6px; } .tqt em { font-size:15px; } .tqt b { font-size:13.5px; line-height:1.3; } .tqt small, .tqf { display:none; } }
+  @media (max-height:740px) { .ppc { gap:8px; padding:12px; } .pph { padding-bottom:8px; } .pph img { width:32px; height:32px; } .ppf { display:none; } .ppa b { font-size:30px; } .tqr .qr { width:150px; } .tqpp { height:28px; } .tqb { gap:5px; padding:8px 12px 6px; } .tqt em { font-size:15px; } .tqt b { font-size:13.5px; line-height:1.3; } .tqt small, .tqf { display:none; } }
   .tqr { justify-self:center; width:min(264px,100%); border:1px solid var(--line); border-radius:16px; overflow:hidden; background:#fff; }
   .tqi { display:block; width:100%; height:auto; }
   .tqb { padding:10px 14px 8px; display:grid; gap:8px; justify-items:center; }
@@ -990,7 +990,7 @@
         '<div class="qr">' + qrSvgEl(o.payload) + '<img class="qic" src="tqr-icon.png" alt=""></div>' +
         '<div class="tqt"><em>สแกน QR เพื่อจ่าย</em><b>ชื่อ: ' + esc(PP.name) + '</b><b>บัญชี: ' + esc(PP.acct) + '</b><small>เลขที่อ้างอิง: ' + esc(o.ref) + '</small></div></div>' +
         '<div class="tqf">รับเงินได้จากทุกธนาคาร</div></div>' +
-      '<div class="ppa"><small>ยอดที่ต้องโอน</small><b>' + baht(o.total) + ' <i>บาท</i></b></div>' +
+      '<div class="ppa"><small>ยอดที่ต้องโอน</small><b>' + baht(o.total) + ' <i>บาท</i></b><small>โอนตามจำนวนที่ขึ้นหน้าจอ</small></div>' +
       '<div class="pps"><div class="ppbar"><i id="ppBar"></i></div><div class="ppr"><span id="ppS" role="status"></span><b id="ppT">1:30</b></div></div>' +
       '<div id="ppB" class="ppb"></div>' +
       '</div>';
@@ -1011,7 +1011,7 @@
     }
     function addManual() { if (!ov.querySelector('#ppM')) { var mb = btn('โอนแล้ว ส่งให้ร้านตรวจ', manualSend, 'go'); mb.id = 'ppM'; B().insertBefore(mb, B().firstChild); } }
     function checkNow() { if (done) return; getOrderPaid(o.ref).then(function (r) {
-      if (done) return; if (r.err) { blocked = true; S().textContent = 'ตรวจสถานะอัตโนมัติไม่ได้ชั่วคราว · ถ้าโอนแล้วกดปุ่มด้านล่าง ร้านจะตรวจยอดให้'; addManual(); return; }
+      if (done) return; if (r.err) { blocked = true; S().textContent = ''; addManual(); return; }
       blocked = false; if (r.paid) success(false); }); }
     function start() {
       reopenOrd(); left = PAY_SECS; B().innerHTML = ''; S().textContent = ''; T().style.color = '#18213a';
