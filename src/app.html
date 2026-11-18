@@ -11655,10 +11655,29 @@ function bahtText(value) {
     const need = jobs.filter(j => !jobPayStateOf(j)).length;
     return '<details class="wd-bd" style="margin-top:12px"' + (need ? ' open' : '') + '><summary>ตรวจสถานะชำระ · ' + jobs.length + ' ใบงาน' + (need ? ' · <b style="color:#b45309">' + need + ' ใบต้องยืนยัน</b>' : ' · ครบ') + '</summary>' + rows + '</details>';
   }
+  // ภาพรวมใบงานค้างของร้าน — หน้าตาและตัวเลขเดียวกับที่ลูกค้าเห็นในหน้าติดตาม (ทุกใบงาน รวมที่ยังไม่เข้าบิล และหักที่จ่ายบางส่วนแล้ว)
+  function whOverviewHTML(g) {
+    try {
+      const nm = String(g.name || '').trim() || 'ไม่ระบุชื่อ', og = owedGroups().find(x => x.name === nm), ln = og ? (jobLinesOf(og) || []) : [];
+      const jobs = store.get('bs_jobs', []).filter(j => /^JBS/i.test(String(j.no || '').trim()) && (String(j.jName || '').trim() || 'ไม่ระบุชื่อ') === nm);
+      if (!jobs.length && !ln.length) return '';
+      const owe = {}; ln.forEach(l => { owe[l.k] = l.c; });
+      const rows = jobs.slice().sort((a, b) => String(b.no).localeCompare(String(a.no))).map(j => {
+        const no = String(j.no || '').trim(), ps = jobPayStateOf(j), pt = jobPartOf(no), rest = owe[no];
+        const chip = ps === 'paid' ? '<span class="wd-pc ok">ชำระแล้ว</span>' : pt > 0 ? '<span class="wd-pc no" style="background:#fff4d6;color:#8a5a00">จ่ายบางส่วน</span>' : '<span class="wd-pc no">ยังไม่ชำระ</span>';
+        const amt = ps === 'paid' ? '' : rest > 0 ? '<b>' + money(rest) + ' บาท</b>' + (pt > 0 ? '<small style="display:block;color:#8a5a00">รับแล้ว ' + money(pt) + '</small>' : '') : '';
+        const st = j.status || 'pending';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #eee"><div><b>' + esc(no) + '</b> ' + chip + '<small style="display:block;color:#666">' + esc(thDate(j.date)) + ' · ' + esc(JOB_STATUS_LABEL[st] || 'รอทำ') + '</small></div><div style="text-align:right">' + amt + '</div></div>';
+      }).join('');
+      const tot = og ? round2(og.total) : 0;
+      return '<div class="wd-ov" style="background:#fff;border:1px solid #e6e6e6;border-radius:14px;padding:12px 14px;margin:0 0 12px"><div style="display:flex;justify-content:space-between;align-items:baseline"><b>ยอดค้างชำระ (เหมือนที่ลูกค้าเห็น)</b><b style="font-size:20px;color:' + (tot > 0 ? '#c2261f' : '#1a7f37') + '">' + (tot > 0 ? money(tot) + ' บาท' : 'ไม่มียอดค้าง') + '</b></div>' + rows + '</div>';
+    } catch (e) { return ''; }
+  }
   function whDetailHTML(g) {
     let h = '<div class="wd">';
     const hasJbs = store.get('bs_jobs', []).some(j => /^JBS/i.test(String(j.no || '').trim()) && String(j.jName || '').trim() === String(g.name || '').trim());
     if (hasJbs) h += '<div class="wd-trk"><button class="btn small good" type="button" data-act="wtrack">🔗 ส่งลิงก์ติดตามงาน</button><button class="btn small" type="button" data-act="wtrackcopy">คัดลอกลิงก์</button><button class="btn small" type="button" data-act="wtrackopen">ดูหน้าที่ลูกค้าเห็น</button><button class="btn small" type="button" data-act="autolink">🔗 ผูกใบงานให้อัตโนมัติ</button></div>';
+    h += whOverviewHTML(g) + '<details class="wd-bd" style="margin-top:4px"><summary>รายละเอียดบิล · ใส่ราคา · ประวัติที่จ่ายแล้ว</summary>';
     if (!g.open.length) h += '<p class="hint" style="margin:0 0 10px">ไม่มีบิลค้าง งานใหม่ที่คีย์ชื่อร้านนี้จะเปิดบิลใหม่ให้เองและเริ่มนับยอดใหม่</p>';
     g.open.forEach(w => {
       const rows = whCardsHTML(w, g);
@@ -11686,7 +11705,7 @@ function bahtText(value) {
       '<div class="wd-set-r"><button class="btn small" type="button" data-act="logo">' + (shopLogo(g.name) ? 'เปลี่ยนโลโก้ร้าน' : 'ใส่โลโก้ร้าน') + '</button>' + (shopLogo(g.name) ? '<button class="btn small" type="button" data-act="logodel">เอาโลโก้ออก</button>' : '') + '<input type="file" accept="image/*" data-logo-in="1" hidden></div>' +
       (others.length ? '<div class="wd-set-r"><select data-merge-to="1" aria-label="รวมกับร้าน"><option value="">ร้านเดียวกับ… (เลือกเพื่อรวม)</option>' + others.map(o => '<option value="' + esc(o) + '">' + esc(o) + '</option>').join('') + '</select><button class="btn small" type="button" data-act="merge">รวมร้าน</button></div>' +
         '<p class="hint" style="margin:0">รวมร้าน = ย้ายบิล ใบงาน และประวัติทั้งหมดของ “' + esc(g.name) + '” ไปอยู่ใต้ชื่อร้านที่เลือก แล้วการ์ดนี้จะหายไป</p>' : '') + '</div>';
-    return h + '</div>';
+    return h + '</details></div>';
   }
   // บิลค้างล่าสุดของร้าน (ถ้าไม่มี สร้างบิลใหม่ให้)
   function wholesaleOpenDocFor(name, create) {
