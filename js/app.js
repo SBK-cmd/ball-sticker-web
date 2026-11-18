@@ -7393,7 +7393,8 @@ function bahtText(value) {
     let h = '<div class="wd">';
     const hasJbs = store.get('bs_jobs', []).some(j => /^JBS/i.test(String(j.no || '').trim()) && String(j.jName || '').trim() === String(g.name || '').trim());
     if (hasJbs) h += '<div class="wd-trk"><button class="btn small good" type="button" data-act="wtrack">🔗 ส่งลิงก์ติดตามงาน</button><button class="btn small" type="button" data-act="wtrackcopy">คัดลอกลิงก์</button><button class="btn small" type="button" data-act="wtrackopen">ดูหน้าที่ลูกค้าเห็น</button><button class="btn small" type="button" data-act="autolink">🔗 ผูกใบงานให้อัตโนมัติ</button></div>';
-    h += whOverviewHTML(g) + '<details class="wd-bd" style="margin-top:4px"><summary>รายละเอียดบิล · ใส่ราคา · ประวัติที่จ่ายแล้ว</summary>';
+    let cntTxt = ''; try { const og = owedGroups().find(x => x.name === (String(g.name || '').trim() || 'ไม่ระบุชื่อ')), ln = og ? (jobLinesOf(og) || []) : [], inb = new Set(); g.open.forEach(w => (w.items || []).forEach(i => { if (String(i.name || '').trim() && String(i.job || '').trim()) inb.add(String(i.job).trim()); })); const nIn = ln.filter(l => inb.has(l.k)).length; cntTxt = ln.length ? ' · ค้าง ' + ln.length + ' ใบงาน (อยู่ในบิล ' + nIn + ' · ยังไม่เข้าบิล ' + (ln.length - nIn) + ')' : ''; } catch (e) {}
+    h += whOverviewHTML(g) + '<details class="wd-bd" style="margin-top:4px"><summary>รายละเอียดบิล · ใส่ราคา · ประวัติที่จ่ายแล้ว' + cntTxt + '</summary>';
     if (!g.open.length) h += '<p class="hint" style="margin:0 0 10px">ไม่มีบิลค้าง งานใหม่ที่คีย์ชื่อร้านนี้จะเปิดบิลใหม่ให้เองและเริ่มนับยอดใหม่</p>';
     g.open.forEach(w => {
       const rows = whCardsHTML(w, g);
