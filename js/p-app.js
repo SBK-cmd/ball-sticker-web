@@ -3870,7 +3870,17 @@ function bahtText(value) {
       });
     } catch (e) { console.warn(e); }
   }
-  setInterval(checkWebPaid, 5000);
+  // ออเดอร์ shop ที่ซ่อนอยู่ (ยังไม่จ่าย/หมดเวลา/ยกเลิก) เกิน 1 วัน ไม่มีเงินเข้า → ลบทิ้งจากระบบ (ทำเมื่อแอปเปิดอยู่ · เช็คทุก 10 นาที · ไม่แตะออเดอร์ที่จ่ายแล้ว/สร้างใบงานแล้ว/มีสลิปแนบ)
+  let woCleanAt = 0;
+  function cleanupWebOrders() {
+    try {
+      if (!cloudDb || Date.now() - woCleanAt < 6e5 || !webOrd.length) return; woCleanAt = Date.now();
+      const old = webOrd.filter(x => x.id && !x.paidVerified && !x.slip && x.status !== 'job' && x.status !== 'hide' && (x.pendingPay || x.cancelReason === 'timeout' || x.cancelReason === 'cancel') && Date.now() - (x.createdAt || Date.now()) > 864e5).slice(0, 20);
+      old.forEach(x => { cloudDb.collection('webOrders').doc(x.id).delete().catch(e => console.warn('webOrders cleanup', e)); });
+      if (old.length) { const ids = old.map(x => x.id); webOrd = webOrd.filter(x => ids.indexOf(x.id) < 0); renderWebOrders(); }
+    } catch (e) { console.warn(e); }
+  }
+  setInterval(() => { checkWebPaid(); cleanupWebOrders(); }, 5000);
   function renderWebOrders() {
     const card = $('webOrdCard'), box = $('webOrd'); if (!card || !box) return;
     const shown = webOrd.filter(x => !x.deleted && !(x.pendingPay && !x.paidVerified)), nNew = shown.filter(x => !woDone(x)).length;
