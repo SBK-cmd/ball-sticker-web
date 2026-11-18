@@ -208,6 +208,7 @@
   .ppc { background:#fff; border-radius:20px; width:100%; max-width:380px; max-height:96vh; overflow:auto; padding:16px; display:grid; gap:12px; text-align:center; }
   .pph { display:flex; align-items:center; gap:10px; text-align:left; padding-bottom:12px; border-bottom:1px solid var(--line); }
   .pph img { width:40px; height:40px; border-radius:50%; flex:none; } .pph b { font:600 15px 'Prompt',sans-serif; display:block; } .pph small { color:var(--sub); font-size:12.5px; }
+  .ppa { margin-top:-2px; }
   .ppa small { display:block; color:var(--sub); font-size:12.5px; } .ppa b { font:700 34px/1.15 'Prompt',sans-serif; font-variant-numeric:tabular-nums; color:var(--navy); } .ppa b i { font:500 16px 'Prompt',sans-serif; font-style:normal; color:var(--ink); }
   .ppq { justify-self:center; padding:12px; border:1px solid var(--line); border-radius:16px; background:#fff; } .ppq .qr { width:min(208px,52vw); } .ppq .qr svg { display:block; width:100%; height:auto; }
   .ppn { background:#F4F5F7; border-radius:12px; padding:10px 12px; display:grid; gap:2px; } .ppn span { color:var(--sub); font-size:12.5px; } .ppn b { font:600 16px 'Prompt',sans-serif; } .ppn small { color:var(--sub); font-size:12px; line-height:1.4; }
@@ -984,12 +985,12 @@
     ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(10,16,34,.6);display:flex;align-items:center;justify-content:center;padding:14px';
     ov.innerHTML = '<div class="ppc" role="dialog" aria-modal="true" aria-label="ชำระเงิน">' +
       '<div class="pph"><img src="icon-192.png" alt=""><div><b>บอลสติ๊กเกอร์ พิษณุโลก</b><small>ชำระเงินด้วยพร้อมเพย์ · ใบงาน ' + esc(o.ref) + '</small></div></div>' +
-      '<div class="ppa"><small>ยอดที่ต้องโอน</small><b>' + baht(o.total) + ' <i>บาท</i></b><small>โอนให้ตรงยอดนี้เป๊ะ (รวมเศษสตางค์) ระบบถึงจะจับคู่ให้</small></div>' +
       '<div class="tqr"><img class="tqi" src="tqr-head.png" alt="Thai QR Payment"><div class="tqb">' +
         '<img class="tqpp" src="tqr-pp.png" alt="พร้อมเพย์ PromptPay">' +
         '<div class="qr">' + qrSvgEl(o.payload) + '<img class="qic" src="tqr-icon.png" alt=""></div>' +
         '<div class="tqt"><em>สแกน QR เพื่อจ่าย</em><b>ชื่อ: ' + esc(PP.name) + '</b><b>บัญชี: ' + esc(PP.acct) + '</b><small>เลขที่อ้างอิง: ' + esc(o.ref) + '</small></div></div>' +
         '<div class="tqf">รับเงินได้จากทุกธนาคาร</div></div>' +
+      '<div class="ppa"><small>ยอดที่ต้องโอน</small><b>' + baht(o.total) + ' <i>บาท</i></b><small>โอนให้ตรงยอดนี้เป๊ะ (รวมเศษสตางค์) ระบบถึงจะจับคู่ให้</small></div>' +
       '<div class="pps"><div class="ppbar"><i id="ppBar"></i></div><div class="ppr"><span id="ppS" role="status">รอเงินเข้า…</span><b id="ppT">1:30</b></div></div>' +
       '<div id="ppB" class="ppb"></div>' +
       '<div class="ppf">ระบบตรวจเงินเข้าให้อัตโนมัติ · มีปัญหาทัก LINE ' + esc(LINE_OA) + ' แจ้งเลขใบงาน</div></div>';
