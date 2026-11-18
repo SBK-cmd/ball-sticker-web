@@ -252,13 +252,23 @@
   function newTrackToken() { var a = new Uint8Array(12); crypto.getRandomValues(a); return Array.from(a, function (b) { return (b % 36).toString(36); }).join('') + Date.now().toString(36).slice(-4); }   // แบบเดียวกับแอป
   var TRACK_URL = 'https://www.ballsticker.co.th/track.html?t=';
   var fbTok = null;   // บัญชีไม่ระบุตัวตน ใช้ซ้ำทั้งบันทึกออเดอร์และแนบสลิป (หมดอายุ 1 ชม.)
+  var fbUid = null;
   function fbToken() {
     if (fbTok && Date.now() - fbTok.at < 50 * 60e3) return Promise.resolve(fbTok.t);
-    return fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + FB.key, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({returnSecureToken: true})})
-      .then(function (r) { return r.json(); }).then(function (a) { if (!a.idToken) throw new Error('auth'); fbTok = {t: a.idToken, at: Date.now()}; return a.idToken; });
+    var saved = null; try { saved = JSON.parse(localStorage.getItem('bs_fb') || 'null'); } catch (e) {}
+    var refresh = (saved && saved.rt) ? fetch('https://securetoken.googleapis.com/v1/token?key=' + FB.key, {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(saved.rt)})
+      .then(function (r) { return r.json(); }).then(function (a) { if (!a.id_token) throw new Error('refresh'); return {idToken: a.id_token, refreshToken: a.refresh_token || saved.rt, localId: a.user_id}; }) : Promise.reject(new Error('none'));
+    return refresh.catch(function () {   // ใช้บัญชีเดิมไม่ได้ → สมัครบัญชีไม่ระบุตัวตนใหม่ (แล้วจำไว้ใช้ซ้ำ)
+      return fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + FB.key, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({returnSecureToken: true})}).then(function (r) { return r.json(); });
+    }).then(function (a) {
+      if (!a.idToken) throw new Error('auth');
+      fbTok = {t: a.idToken, at: Date.now()}; fbUid = a.localId || fbUid;
+      try { localStorage.setItem('bs_fb', JSON.stringify({rt: a.refreshToken, uid: fbUid})); } catch (e) {}
+      return a.idToken;
+    });
   }
   function saveOrderCloud(id, data, pub) {
-    var go = fbToken().then(function (tok) { var a = {idToken: tok};
+    var go = fbToken().then(function (tok) { var a = {idToken: tok}; if (fbUid) data.ownerUid = fbUid;
         var put = function (col, docId, d) { return fetch('https://firestore.googleapis.com/v1/projects/' + FB.project + '/databases/(default)/documents/' + col + '?documentId=' + encodeURIComponent(docId), {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + a.idToken}, body: JSON.stringify({fields: fsVal(d).mapValue.fields})}); };
         return put('webOrders', id, data).then(function (r) { if (!r.ok) throw new Error('fs ' + r.status);
           return pub ? put('publicJobs', data.trackToken, pub).then(function () { return true; }, function () { return true; }) : true; });   // หน้าติดตามงานเริ่มต้น (แอปบันทึกใบงานแล้วจะเขียนทับด้วยข้อมูลจริง)
@@ -279,7 +289,7 @@
   function orderFlex(o) {   // การ์ด Flex หน้าตาเดียวกับการ์ดสรุปออเดอร์
     var row = function (k, v) { return {type: 'box', layout: 'baseline', contents: [{type: 'text', text: k, size: 'sm', color: '#5d6782', flex: 2}, {type: 'text', text: String(v), size: 'sm', color: '#18213a', flex: 5, wrap: true}]}; };
     var amt = function (k, v, big) { return {type: 'box', layout: 'horizontal', contents: [{type: 'text', text: k, size: big ? 'md' : 'sm', color: big ? '#18213a' : '#5d6782', weight: big ? 'bold' : 'regular'}, {type: 'text', text: v, size: big ? 'md' : 'sm', align: 'end', color: '#18213a', weight: big ? 'bold' : 'regular'}]}; };
-    var body = [{type: 'box', layout: 'horizontal', contents: [{type: 'text', text: 'เลขใบงาน ' + o.ref, size: 'sm', weight: 'bold', color: '#18213a', flex: 3}, {type: 'text', text: o.paidAt ? (o.testPaid ? 'ทดสอบ ไม่ได้จ่ายจริง' : 'ชำระแล้ว') : 'รอชำระ', size: 'xs', align: 'end', color: '#8a6200', flex: 2}]},
+    var body = [{type: 'box', layout: 'horizontal', contents: [{type: 'text', text: 'เลขใบงาน ' + o.ref, size: 'sm', weight: 'bold', color: '#18213a', flex: 3}, {type: 'text', text: o.paidAt ? (o.testPaid ? 'ทดสอบ ไม่ได้จ่ายจริง' : o.manual ? 'รอร้านตรวจยอด' : 'ชำระแล้ว') : 'รอชำระ', size: 'xs', align: 'end', color: '#8a6200', flex: 2}]},
       {type: 'separator', margin: 'md'}, {type: 'box', layout: 'vertical', margin: 'md', spacing: 'xs', contents: [row('ขนาด', o.w + ' × ' + o.h + ' ซม.'), row('จำนวน', Number(o.qty).toLocaleString('th-TH') + ' ดวง'), row('วัสดุ', 'PVC เคลือบ ไดคัท'), row('จัดส่ง', o.name + ' · ' + o.tel)]},
       {type: 'separator', margin: 'md'}, {type: 'box', layout: 'vertical', margin: 'md', spacing: 'xs', contents: [amt('สติ๊กเกอร์', baht(o.price)), amt('ค่าส่ง', String(o.ship))].concat(o.vat ? [amt('VAT 7%', baht(o.vat))] : []).concat([amt('ยอดชำระ', baht(o.total) + ' บาท', true)])}];
     var b = {type: 'bubble', body: {type: 'box', layout: 'vertical', contents: body}, footer: {type: 'box', layout: 'vertical', contents: [{type: 'button', style: 'primary', color: '#f5c400', action: {type: 'uri', label: 'ติดตามงาน', uri: o.track}}]}};
@@ -688,7 +698,7 @@
         var x = P + 24, y = y0 + 64, R = W - P - 24;
         if (o.test) { g.fillStyle = '#fff6cf'; rr(x, y - 40, R - x, 48, 12); g.fill(); F('600', 24, 'Prompt'); g.fillStyle = '#6b5200'; g.fillText('🧪 ออเดอร์ทดสอบ ไม่ได้จ่ายจริง', x + 16, y - 7); y += 60; }
         F('400', 26); g.fillStyle = '#5a6580'; g.fillText('เลขใบงาน', x, y); F('600', 34, 'Prompt'); g.fillStyle = '#1b2333'; g.fillText(o.ref, x + 130, y + 2);
-        var st = o.paidAt ? (o.testPaid ? 'ทดสอบ · ไม่ได้จ่ายจริง' : 'ชำระแล้ว ✓') : (o.test ? 'ทดสอบ' : 'รอชำระเงิน'); F('600', 24, 'Prompt'); var sw = g.measureText(st).width + 36; g.fillStyle = '#fff6cf'; rr(R - sw, y - 32, sw, 46, 23); g.fill(); g.fillStyle = '#6b5200'; g.fillText(st, R - sw + 18, y);
+        var st = o.paidAt ? (o.testPaid ? 'ทดสอบ · ไม่ได้จ่ายจริง' : o.manual ? 'รอร้านตรวจยอด' : 'ชำระแล้ว ✓') : (o.test ? 'ทดสอบ' : 'รอชำระเงิน'); F('600', 24, 'Prompt'); var sw = g.measureText(st).width + 36; g.fillStyle = '#fff6cf'; rr(R - sw, y - 32, sw, 46, 23); g.fill(); g.fillStyle = '#6b5200'; g.fillText(st, R - sw + 18, y);
         y += 40; var ib = 260; g.fillStyle = '#cdd4e0'; rr(x, y, ib, ib, 24); g.fill();
         if (img) { var k = Math.min((ib - 36) / img.width, (ib - 36) / img.height), iw = img.width * k, ih = img.height * k; g.save(); g.shadowColor = 'rgba(20,35,75,.35)'; g.shadowBlur = 10; g.shadowOffsetY = 4; g.drawImage(img, x + (ib - iw) / 2, y + (ib - ih) / 2, iw, ih); g.restore(); }
         var tx = x + ib + 36, ty = y + 44, row = function (k2, v, small) { F('400', 26); g.fillStyle = '#5a6580'; g.fillText(k2, tx, ty); F(small ? '400' : '500', small ? 23 : 28); g.fillStyle = '#1b2333'; g.fillText(fit(v, R - tx - 120), tx + 120, ty); ty += small ? 40 : 54; };
@@ -701,9 +711,9 @@
         if (o.paidAt) { g.fillStyle = '#e7f6ec'; g.fillRect(qx, qy, qs, qs); g.fillStyle = '#1f8a4c'; F('600', Math.round(qs * 0.6), 'Prompt'); g.textAlign = 'center'; g.fillText('✓', qx + qs / 2, qy + qs * 0.7); g.textAlign = 'left'; }   // จ่ายแล้ว = ไม่แสดง QR ให้สแกนซ้ำ
         else for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (m[r][c]) g.fillRect(qx + (c + 4) * cell, qy + (r + 4) * cell, cell, cell);
         g.strokeStyle = '#e3e7ef'; g.lineWidth = 2; rr(qx, qy, qs, qs, 16); g.stroke();
-        var px = qx + qs + 36; F('600', 32, 'Prompt'); g.fillStyle = '#1b2333'; g.fillText(o.paidAt ? 'ชำระเงินแล้ว' : 'สแกนจ่ายพร้อมเพย์', px, qy + 60);
+        var px = qx + qs + 36; F('600', 32, 'Prompt'); g.fillStyle = '#1b2333'; g.fillText(o.paidAt ? (o.manual ? 'ส่งให้ร้านตรวจยอดแล้ว' : 'ชำระเงินแล้ว') : 'สแกนจ่ายพร้อมเพย์', px, qy + 60);
         F('400', 26); g.fillStyle = '#5a6580'; g.fillText(o.payee, px, qy + 104); F('600', 44, 'Prompt'); g.fillStyle = '#1b2333'; g.fillText(o.total + ' บาท', px, qy + 166);
-        F('400', 24); g.fillStyle = '#5a6580'; g.fillText(o.paidAt ? (o.testPaid ? 'ทดสอบ ไม่ได้จ่ายจริง' : 'ชำระเงินแล้ว ✓') : 'โอนให้ตรงยอด ระบบตรวจเงินเข้าอัตโนมัติ', px, qy + 214); g.fillText('ติดต่อ 093-535-3555', px, qy + 252);
+        F('400', 24); g.fillStyle = '#5a6580'; g.fillText(o.paidAt ? (o.testPaid ? 'ทดสอบ ไม่ได้จ่ายจริง' : o.manual ? 'ร้านจะตรวจเงินเข้าให้' : 'ชำระเงินแล้ว ✓') : 'โอนให้ตรงยอด ระบบตรวจเงินเข้าอัตโนมัติ', px, qy + 214); g.fillText('ติดต่อ 093-535-3555', px, qy + 252);
         y = qy + qs + 64; F('500', 26); g.fillStyle = '#2f5bd3'; g.fillText('📦 ติดตามงาน: ' + fit(o.track.replace('https://', ''), R - x - 220), x, y);
         var endY = y + 60, out = document.createElement('canvas'); out.width = W; out.height = endY + 40; var og = out.getContext('2d');
         og.drawImage(cv, 0, 0); og.fillStyle = '#14234b'; og.fillRect(0, endY, W, 40); og.fillStyle = '#fff'; og.beginPath(); og.moveTo(P - 16, endY - 40); og.lineTo(W - P + 16, endY - 40); og.lineTo(W - P + 16, endY - 32); og.arcTo(W - P + 16, endY, W - P - 16, endY, 32); og.lineTo(P + 16, endY); og.arcTo(P - 16, endY, P - 16, endY - 32, 32); og.closePath(); og.fill();
@@ -860,7 +870,7 @@
   // การ์ดสรุปออเดอร์ (หน้าตาเดียวกับรูปที่ส่งเข้า LINE)
   function orderCardHTML(o) {
     var img = o.localImg || o.img;
-    return '<div class="card ocard"><div class="oc-h"><span>เลขใบงาน <b>' + o.ref + '</b></span><span class="oc-st">' + (o.paidAt ? (o.testPaid ? 'ทดสอบ · ไม่ได้จ่ายจริง' : 'ชำระแล้ว ✓') : o.test ? 'ทดสอบ' : 'รอชำระเงิน') + '</span></div>' +
+    return '<div class="card ocard"><div class="oc-h"><span>เลขใบงาน <b>' + o.ref + '</b></span><span class="oc-st">' + (o.paidAt ? (o.testPaid ? 'ทดสอบ · ไม่ได้จ่ายจริง' : o.manual ? 'รอร้านตรวจยอด' : 'ชำระแล้ว ✓') : o.test ? 'ทดสอบ' : 'รอชำระเงิน') + '</span></div>' +
       '<div class="oc-b">' + (img ? '<div class="oc-img"><img src="' + esc(img) + '" alt="สติ๊กเกอร์ที่สั่ง"></div>' : '') +
       '<dl><dt>ขนาด</dt><dd>' + o.w + ' × ' + o.h + ' ซม.</dd><dt>จำนวน</dt><dd>' + Number(o.qty).toLocaleString('th-TH') + ' ดวง</dd><dt>วัสดุ</dt><dd>PVC เคลือบ ไดคัท</dd><dt>จัดส่ง</dt><dd>' + esc(o.name) + ' · ' + esc(o.tel) + '<small>' + esc(o.addr) + '</small></dd></dl></div>' +
       '<div class="oc-sum"><div><span>สติ๊กเกอร์</span><span>' + baht(o.price) + '</span></div><div><span>ค่าส่ง</span><span>' + o.ship + '</span></div>' + (o.vat ? '<div><span>VAT 7%</span><span>' + baht(o.vat) + '</span></div>' : '') +
@@ -904,8 +914,15 @@
     function reopenOrd() { if (!o.cancelled) return; o.cancelled = false; patchOrder(o.ref, {deleted: false, cancelReason: ''}).catch(function () {}); }
     function close() { stop(); cancelOrd('cancel'); ov.remove(); }
     function success(test) { if (done) return; done = true; stop(); if (test) patchOrder(o.ref, {pendingPay: false, deleted: false, testPaid: true}).catch(function () {}); o.paidAt = Date.now(); o.paidOk = !test; o.testPaid = !!test; saveLast(o); ov.remove(); renderDone(o); show(4); }
+    function manualSend() {   // ตรวจสถานะอัตโนมัติไม่ได้: ลูกค้ายืนยันว่าโอนแล้ว → ส่งให้ร้านตรวจยอดกับ SMS ธนาคารเอง
+      if (done) return; var mb = ov.querySelector('#ppM'); if (mb) { mb.disabled = true; mb.textContent = 'กำลังส่ง…'; }
+      patchOrder(o.ref, {pendingPay: false, deleted: false, cancelReason: '', manualCheck: true}).then(function () {
+        done = true; stop(); o.cancelled = false; o.paidAt = Date.now(); o.manual = true; saveLast(o); ov.remove(); renderDone(o); show(4);
+      }).catch(function () { if (mb) { mb.disabled = false; mb.textContent = 'โอนแล้ว ส่งให้ร้านตรวจ'; } S().textContent = 'ส่งไม่สำเร็จ ลองอีกครั้ง หรือแจ้งร้านทาง LINE ' + LINE_OA; });
+    }
+    function addManual() { if (!ov.querySelector('#ppM')) { var mb = btn('โอนแล้ว ส่งให้ร้านตรวจ', manualSend, 'go'); mb.id = 'ppM'; B().insertBefore(mb, B().firstChild); } }
     function checkNow() { if (done) return; getOrderPaid(o.ref).then(function (r) {
-      if (done) return; if (r.err) { blocked = true; S().textContent = 'รอเงินเข้า… (ตรวจสถานะอัตโนมัติไม่ได้ชั่วคราว ร้านจะตรวจให้)'; return; }
+      if (done) return; if (r.err) { blocked = true; S().textContent = 'ตรวจสถานะอัตโนมัติไม่ได้ชั่วคราว · ถ้าโอนแล้วกดปุ่มด้านล่าง ร้านจะตรวจยอดให้'; addManual(); return; }
       blocked = false; if (r.paid) success(false); }); }
     function start() {
       reopenOrd(); left = PAY_SECS; B().innerHTML = ''; S().textContent = 'รอเงินเข้า…'; T().style.color = '#18213a';
@@ -917,8 +934,8 @@
     }
     function timeout() {
       stop(); cancelOrd('timeout'); T().textContent = '0:00'; T().style.color = '#b42318';
-      S().innerHTML = blocked ? 'หมดเวลา ระบบตรวจอัตโนมัติไม่ได้ · ถ้าโอนแล้วแจ้งร้านทาง LINE ' + LINE_OA + ' เลข ' + o.ref : 'ยังไม่พบเงินเข้ายอด ' + baht(o.total) + ' บาท<br>ออเดอร์ถูกยกเลิกแล้ว ถ้าเพิ่งโอน กด "ตรวจอีกครั้ง" ระบบจะกู้ออเดอร์คืนให้';
-      B().innerHTML = ''; B().appendChild(btn('ตรวจอีกครั้ง', start, 'go')); B().appendChild(btn('ปิด', close));
+      S().innerHTML = blocked ? 'หมดเวลา ระบบตรวจอัตโนมัติไม่ได้ · ถ้าโอนแล้วกด "โอนแล้ว ส่งให้ร้านตรวจ" (หรือแจ้งร้านทาง LINE ' + LINE_OA + ' เลข ' + o.ref + ')' : 'ยังไม่พบเงินเข้ายอด ' + baht(o.total) + ' บาท<br>ออเดอร์ถูกยกเลิกแล้ว ถ้าเพิ่งโอน กด "ตรวจอีกครั้ง" ระบบจะกู้ออเดอร์คืนให้';
+      B().innerHTML = ''; if (blocked) addManual(); B().appendChild(btn('ตรวจอีกครั้ง', start, blocked ? '' : 'go')); B().appendChild(btn('ปิด', close));
     }
     start();
   }
@@ -931,10 +948,10 @@
 
   // ---------- ขั้น 4: เสร็จ ----------
   function renderDone(o) {
-    var lineMsg = o.msg.replace('ชำระเงินในหน้าเว็บครับ 🙏', o.testPaid ? '(ทดสอบ)' : 'ชำระเงินแล้ว ✓');
+    var lineMsg = o.msg.replace('ชำระเงินในหน้าเว็บครับ 🙏', o.testPaid ? '(ทดสอบ)' : o.manual ? 'โอนแล้ว รอร้านตรวจยอด' : 'ชำระเงินแล้ว ✓');
     var lineUrl = 'https://line.me/R/oaMessage/' + encodeURIComponent(LINE_OA) + '/?' + encodeURIComponent(lineMsg);
     $('v4').innerHTML = orderCardHTML(o) + '<div class="done"><h2>✓ ได้รับออเดอร์แล้ว ขอบคุณครับ</h2>' +
-      '<p class="note">' + (o.testPaid ? 'ทดสอบระบบ ไม่ได้จ่ายเงินจริง' : 'ร้านได้รับเงินแล้ว จะตรวจไฟล์แล้วเริ่มทำงาน') + '</p>' +
+      '<p class="note">' + (o.testPaid ? 'ทดสอบระบบ ไม่ได้จ่ายเงินจริง' : o.manual ? 'ร้านจะตรวจเงินเข้ายอด ' + baht(o.total) + ' บาท แล้วเริ่มทำงานให้ครับ' : 'ร้านได้รับเงินแล้ว จะตรวจไฟล์แล้วเริ่มทำงาน') + '</p>' +
       '<div class="btns"><button type="button" class="bt line" id="lineGo">ติดตามพัสดุทาง LINE</button><button type="button" class="bt" id="newOrd" style="margin-top:8px">+ เริ่มสั่งงานใหม่</button></div></div>';
     var cardData = {ref: o.ref, test: o.test, size: o.w + ' × ' + o.h + ' ซม.', qty: Number(o.qty).toLocaleString('th-TH'), name: o.name, tel: o.tel, addr: o.addr, price: baht(o.price), ship: String(o.ship), vat: o.vat ? baht(o.vat) : '', total: baht(o.total), payload: o.payload, payee: PP.name, track: o.track, img: o.localImg || o.img || ''};
     $('newOrd').onclick = restartOrder;
