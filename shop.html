@@ -325,16 +325,8 @@
   var fmt = function (n) { return Math.round(n).toLocaleString('th-TH'); };
   var nice = function (p) { return p < 100 ? Math.ceil(p) : Math.round(p / 10) * 10 - 1; };
   // สูตรราคาใหม่ (18 พ.ย.) = เรทเกรด A ยึด 9 ซม. · ราคา = interpolate แบบ log-log ตาม "พื้นที่กรอบรวม" (กว้าง×สูง×จำนวน ตร.ซม.) · นอกช่วง = null (ให้ร้านประเมิน)
-  var TIER_PTS = [[810, 300], [1620, 350], [3240, 480], [4860, 610], [6480, 735], [8100, 860], [10000, 1000], [20000, 1700], [30000, 2400], [40000, 3000], [50000, 3500], [100000, 6000]];   // เรทเจ้าของ 18 พ.ย.: ต่อ ตร.ม. 1=1000 · 2=850 · 3=800 · 4=750 · 5=700 · 10=600 (จุดต่ำกว่า 1 ตร.ม. = ข้อเสนอของผม รอยืนยัน)
-  var OVER_PER_CM2 = 600 / 10000;   // เกิน 10 ตร.ม. คิด 600 บาท/ตร.ม. = 0.06 บาท/ตร.ซม.
-  function price(n, w, h) {
-    var A = n * w * h, P = TIER_PTS;
-    if (A > 0 && A < P[0][0]) return P[0][1];   // งานเล็กกว่าจุดแรกของตาราง = คิดขั้นต่ำเท่าจุดแรก (300) · ข้อสมมติ รอเจ้าของร้านยืนยัน
-    if (A > P[P.length - 1][0]) return Math.round(P[P.length - 1][1] + (A - P[P.length - 1][0]) * OVER_PER_CM2);   // เกินตาราง: 6,000 + ส่วนที่เกินคิด 600 บาท/ตร.ม. (ต่อเนื่อง ไม่กระโดด)
-    if (!(A >= P[0][0] && A <= P[P.length - 1][0])) return null;
-    for (var i = 1; i < P.length; i++) if (A <= P[i][0]) { var a0 = P[i - 1], a1 = P[i], t = (Math.log(A) - Math.log(a0[0])) / (Math.log(a1[0]) - Math.log(a0[0])); return Math.round(Math.exp(Math.log(a0[1]) + t * (Math.log(a1[1]) - Math.log(a0[1])))); }
-    return null;
-  }
+  // ราคา: สูตรเดิมของร้าน (กลับมาใช้ตามเจ้าของสั่ง 18 พ.ย.) · 9×9 ซม. 100 ดวง = 999 (ราคาหลักหน้าเพจ) ที่เหลือ 390 + 0.0681 × พื้นที่รวมช่องไฟ
+  function price(n, w, h) { if (!(n > 0 && w > 0 && h > 0)) return null; if (n === 100 && w === 9 && h === 9) return 999; return nice(A0 + A1 * n * (w + GAP) * (h + GAP)); }
   function perSheet(w, h) { var g = function (L, s) { return s > L ? 0 : Math.floor((L + GAP) / (s + GAP)); }; var a = g(121, w) * g(81, h), b = g(121, h) * g(81, w); return a >= b ? {n: a, cx: g(121, w), pw: w, ph: h} : {n: b, cx: g(121, h), pw: h, ph: w}; }
   var TIERS = [10, 20, 30, 50, 100], MINQ = 10, SIZES = [7, 8, 10, 12, 15, 20, 40, 70].map(function (v) { return [v, v]; }), MINL = 7;   // ไดคัทได้ตั้งแต่ด้านยาว 7 ซม. · หน้าม้วนพิมพ์ได้ 124 ซม.
   var st = {file: null, ratio: 0, qty: 100, url: '', busy: false};
