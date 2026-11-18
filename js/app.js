@@ -1245,7 +1245,7 @@ function bahtText(value) {
     return v;
   }
   // ออเดอร์เว็บที่ยังไม่ทำ (ใช้ในกระดิ่ง) · webOrd ประกาศถัดลงไป เลยห่อ try กันเรียกก่อนประกาศ
-  const webBell = () => { try { return webOrd.filter(x => !x.deleted && !woDone(x) && Date.now() - (x.createdAt || 0) < 30 * 864e5); } catch (e) { return []; } };
+  const webBell = () => { try { return webOrd.filter(x => !x.deleted && !(x.pendingPay && !x.paidVerified) && !woDone(x) && Date.now() - (x.createdAt || 0) < 30 * 864e5); } catch (e) { return []; } };
   function renderBell(ring) {
     const btn = $('bellBtn'); if (!btn) return;
     btn.hidden = !(canBank || can('confirm')); if (btn.hidden) return;
@@ -3803,8 +3803,8 @@ function bahtText(value) {
       webOrdUnsub = cloudDb.collection('webOrders').orderBy('createdAt', 'desc').limit(40).onSnapshot(snap => { countReads('webOrders', snap);
         const l = []; snap.forEach(d => l.push(Object.assign({id: d.id}, d.data())));
         const first = !watchWebOrders._known, known = watchWebOrders._known || (watchWebOrders._known = {}); let ev = '';
-        l.forEach(x => { const sig = x.slip ? 's' : 'n'; if (!first && !x.deleted) { if (!(x.id in known)) ev = '🛒 ออเดอร์เว็บใหม่ ' + ((x.cust || {}).name || x.ref || '') + (x.total ? ' ฿' + money(x.total) : ''); else if (known[x.id] === 'n' && sig === 's') ev = '🧾 ลูกค้า ' + ((x.cust || {}).name || x.ref || '') + ' แนบสลิปแล้ว'; } known[x.id] = sig; });
-        webOrd = l; renderWebOrders(); try { renderBell(!!ev); } catch (e) {} if (ev) toast(ev);
+        l.forEach(x => { if (x.pendingPay && !x.paidVerified) return; const sig = x.slip ? 's' : 'n'; if (!first && !x.deleted) { if (!(x.id in known)) ev = '🛒 ออเดอร์เว็บใหม่ ' + ((x.cust || {}).name || x.ref || '') + (x.total ? ' ฿' + money(x.total) : ''); else if (known[x.id] === 'n' && sig === 's') ev = '🧾 ลูกค้า ' + ((x.cust || {}).name || x.ref || '') + ' แนบสลิปแล้ว'; } known[x.id] = sig; });
+        webOrd = l; renderWebOrders(); try { renderBell(!!ev); } catch (e) {} if (ev) toast(ev); checkWebPaid();
       }, e => { console.warn('webOrders', e); });
     } catch (e) { console.warn(e); }
   }
@@ -3846,17 +3846,44 @@ function bahtText(value) {
       return {hit: hits[0], st: same.length ? 'dup' : (x.sat ? 'ok' : 'guess')};
     } catch (e) { return null; }
   }
-  const woPaidOk = x => { const m = woBankMatch(x); return !!(m && m.st === 'ok'); };
+  const woPaidOk = x => { if (x.paidVerified) return true; const m = woBankMatch(x); return !!(m && m.st === 'ok'); };
   function woBankTag(x) {
-    const m = woBankMatch(x); if (!m) return '';
+    const m = woBankMatch(x);
+    if (!m && x.paidVerified) return '<i class="wo-tag ok">✅ เงินเข้าแล้ว ยืนยันจากธนาคาร</i>';
+    if (!m) return canBank && !woDone(x) ? '<i class="wo-tag wn">⏳ ยังไม่พบเงินเข้า ฿' + money(x.payAmt || x.total || 0) + (x.slip ? ' · สลิปยังไม่ใช่หลักฐาน' : '') + '</i>' : '';
     const w = esc(bankInWhenShort(m.hit));
     return m.st === 'ok' ? '<i class="wo-tag ok">✅ เงินเข้าแล้ว ยืนยันจากธนาคาร ' + w + '</i>'
       : m.st === 'dup' ? '<i class="wo-tag">⚠️ ยอดซ้ำกับออเดอร์อื่น ตรวจเอง ' + w + '</i>'
       : '<i class="wo-tag ok">💰 เงินเข้าตรงยอด (เดา) ' + w + '</i>';
   }
+  // เงินเข้าตรงยอด (มีเศษสตางค์ไม่ซ้ำ) → เขียน paidVerified ลงออเดอร์ ให้หน้า shop ของลูกค้ารู้ว่าจ่ายแล้ว (ทำเมื่อแอปเปิดอยู่)
+  function checkWebPaid() {
+    try {
+      if (!canBank || !cloudDb) return;
+      webOrd.forEach(x => {
+        const late = x.deleted && (x.cancelReason === 'timeout' || x.cancelReason === 'cancel');
+        if ((x.deleted && !late) || x.paidVerified || !x.sat || x._pvSent) return;
+        const m = woBankMatch(x); if (!m || m.st !== 'ok') return;
+        x._pvSent = true;
+        markWebOrder(x.id, {paidVerified: true, paidVerifiedAt: Date.now(), paidBankInId: m.hit.id || '', ...(late ? {deleted: false, cancelReason: '', lateRestored: true} : {})});
+        toast((late ? '💰 เงินเข้าหลังหมดเวลา กู้ออเดอร์คืนแล้ว · ' : '💰 เงินเข้าแล้ว ออเดอร์ ') + '' + ((x.cust || {}).name || x.ref || '') + ' ฿' + money(x.payAmt || x.total || 0));
+      });
+    } catch (e) { console.warn(e); }
+  }
+  // ออเดอร์ shop ที่ซ่อนอยู่ (ยังไม่จ่าย/หมดเวลา/ยกเลิก) เกิน 1 วัน ไม่มีเงินเข้า → ลบทิ้งจากระบบ (ทำเมื่อแอปเปิดอยู่ · เช็คทุก 10 นาที · ไม่แตะออเดอร์ที่จ่ายแล้ว/สร้างใบงานแล้ว/มีสลิปแนบ)
+  let woCleanAt = 0;
+  function cleanupWebOrders() {
+    try {
+      if (!cloudDb || Date.now() - woCleanAt < 6e5 || !webOrd.length) return; woCleanAt = Date.now();
+      const old = webOrd.filter(x => x.id && !x.paidVerified && !x.slip && x.status !== 'job' && x.status !== 'hide' && (x.pendingPay || x.cancelReason === 'timeout' || x.cancelReason === 'cancel') && Date.now() - (x.createdAt || Date.now()) > 864e5).slice(0, 20);
+      old.forEach(x => { cloudDb.collection('webOrders').doc(x.id).delete().catch(e => console.warn('webOrders cleanup', e)); });
+      if (old.length) { const ids = old.map(x => x.id); webOrd = webOrd.filter(x => ids.indexOf(x.id) < 0); renderWebOrders(); }
+    } catch (e) { console.warn(e); }
+  }
+  setInterval(() => { checkWebPaid(); cleanupWebOrders(); }, 5000);
   function renderWebOrders() {
     const card = $('webOrdCard'), box = $('webOrd'); if (!card || !box) return;
-    const shown = webOrd.filter(x => !x.deleted), nNew = shown.filter(x => !woDone(x)).length;
+    const shown = webOrd.filter(x => !x.deleted && !(x.pendingPay && !x.paidVerified)), nNew = shown.filter(x => !woDone(x)).length;
     card.hidden = !shown.length || !WEBORD_ON;   // เจ้าของสั่ง 14 พ.ย.: ของจริงซ่อนการ์ดออเดอร์เว็บไว้ก่อน ทำต่อในพรีวิว
     $('webOrdN').textContent = nNew ? '(' + nNew + ' ออเดอร์ใหม่)' : '';
     const list = shown.filter(x => webOrdTab === 'done' ? woDone(x) : !woDone(x));
@@ -3866,7 +3893,7 @@ function bahtText(value) {
         '<div class="wo-m"><b>' + esc(c.name || 'ไม่ทราบชื่อ') + '</b><span class="wo-ref">' + esc(x.ref || x.id) + ' · ' + esc(new Date(x.createdAt || 0).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + '</span>' +
         '<span>' + esc(x.w ? x.w + ' × ' + x.h + ' ซม. · ' + Number(x.qty || 0).toLocaleString('th-TH') + ' ดวง' : 'ไม่มีรายละเอียด') + (x.perSheet ? ' · แผ่นละ ' + x.perSheet + ' (≈' + x.sheets + ' แผ่น)' : '') + '</span>' +
         '<span>' + esc(c.tel || '') + (x.lineName ? ' · LINE ' + esc(x.lineName) : '') + '</span><span class="wo-amt">' + (x.total ? '฿' + money(x.total) : '') + '</span>' +
-        '<span>' + (x.test ? '<i class="wo-tag">🧪 ทดสอบ</i>' : '') + (x.tax ? '<i class="wo-tag tx">ใบกำกับ</i>' : '') + (x.slip ? '<i class="wo-tag ok">แนบสลิปแล้ว</i>' : '') + woBankTag(x) + (x.status === 'job' ? '<i class="wo-tag ok">ใบงาน ' + esc(x.jobNo || '') + '</i>' : x.status === 'hide' ? '<i class="wo-tag">ซ่อนแล้ว</i>' : (x.slip ? '' : '<i class="wo-tag">ยังไม่แนบสลิป</i>')) + '</span></div>' +
+        '<span>' + (x.test ? '<i class="wo-tag">🧪 ทดสอบ</i>' : '') + (x.tax ? '<i class="wo-tag tx">ใบกำกับ</i>' : '') + (x.slip ? '<i class="wo-tag">มีสลิปแนบ (ยังไม่ยืนยัน)</i>' : '') + woBankTag(x) + (x.status === 'job' ? '<i class="wo-tag ok">ใบงาน ' + esc(x.jobNo || '') + '</i>' : x.status === 'hide' ? '<i class="wo-tag">ซ่อนแล้ว</i>' : (x.slip ? '' : '<i class="wo-tag">ยังไม่แนบสลิป</i>')) + '</span></div>' +
         '<div class="wo-act">' + (x.trackToken ? '<button type="button" class="btn small" data-wolink="' + esc(x.trackToken) + '">คัดลอกลิงก์ติดตาม</button>' : '') + (woDone(x) ? '' : '<button type="button" class="btn small good" data-wojob="' + esc(x.id) + '">สร้างใบงาน</button>') +
         (f.orig ? '<a href="' + esc(f.orig) + '" target="_blank" rel="noopener">ไฟล์ลูกค้า</a>' : '') + (f.png ? '<a href="' + esc(f.png) + '" target="_blank" rel="noopener">ไฟล์ตรง</a>' : '') + (f.svg ? '<a href="' + esc(f.svg) + '" target="_blank" rel="noopener">เส้น Kiss Cut</a>' : '') +
         (x.slip ? '<a href="' + esc(x.slip) + '" target="_blank" rel="noopener">ดูสลิป</a>' : '') +
@@ -3910,7 +3937,11 @@ function bahtText(value) {
     const t = e.target.closest && e.target.closest('[data-wo],[data-wojob],[data-wohide],[data-woback],[data-wodel],[data-wolink]'); if (!t) return;
     if (t.dataset.wolink) { const u = 'https://www.ballsticker.co.th/track?t=' + t.dataset.wolink; (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('คัดลอกลิงก์ติดตามแล้ว'), () => { try { const ta = document.createElement('textarea'); ta.value = u; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('คัดลอกลิงก์ติดตามแล้ว'); } catch (er) { toast(u); } }); return; }
     if (t.dataset.wo) { webOrdTab = t.dataset.wo; document.querySelectorAll('#webOrdTabs button').forEach(b => b.classList.toggle('on', b === t)); renderWebOrders(); }
-    else if (t.dataset.wojob) webOrderToJob(t.dataset.wojob);
+    else if (t.dataset.wojob) {
+      const wx = webOrd.find(b => b.id === t.dataset.wojob);
+      if (wx && canBank && !woPaidOk(wx)) appConfirm('ยังไม่พบเงินเข้าตรงยอด', ['ออเดอร์นี้ยอด ฿' + money(wx.payAmt || wx.total || 0) + ' ยังไม่เจอเงินเข้าในธนาคาร', 'สลิปที่ลูกค้าแนบยังไม่ใช่หลักฐานว่าจ่ายแล้ว'], 'สร้างใบงานต่อ').then(ok => { if (ok) webOrderToJob(wx.id); });
+      else webOrderToJob(t.dataset.wojob);
+    }
     else if (t.dataset.woback) markWebOrder(t.dataset.woback, {status: 'new', jobNo: '', jobAt: 0});
     else if (t.dataset.wodel) {   // กด 2 ครั้งเพื่อลบ (ไม่ใช้ confirm: บางเบราว์เซอร์/LINE บล็อกกล่องยืนยัน)
       const id = t.dataset.wodel, o = webOrd.find(x => x.id === id) || {};
