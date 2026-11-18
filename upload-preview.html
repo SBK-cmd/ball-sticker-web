@@ -175,10 +175,6 @@
   .bar .go:active, .bt:active, .sz button:active, .tiers button:active { transform:scale(.97); }
   .bar .go, .bt, .sz button, .tiers button { transition:transform 140ms cubic-bezier(.23,1,.32,1); }
   @media (prefers-reduced-motion: reduce) { .bar .go, .bt, .sz button, .tiers button { transition:none; } }
-  .sold { display:inline-flex; align-items:center; gap:8px; font:500 14px 'Prompt',sans-serif; color:var(--ink); background:#EEF0F3; border-radius:999px; padding:6px 14px; opacity:1; transition:opacity .7s ease; }
-  .sold b { font-weight:600; font-variant-numeric:tabular-nums; min-width:5.2ch; text-align:right; color:var(--navy); }
-  .sold .dot { width:8px; height:8px; border-radius:50%; background:#157F3B; }
-  .sold.fade { opacity:0; }
   @media (max-height:700px) { .drop { min-height:160px; } .stage { min-height:140px; } .tiers button, .tiers .oth { min-height:44px; } }
 </style>
 </head>
@@ -194,7 +190,6 @@
   <section class="view" id="v1" aria-label="ออกแบบสติ๊กเกอร์">
     <label class="drop" id="drop" for="file">
       <span class="hero" aria-hidden="true"><i class="s1">★</i><i class="s2">♥</i><i class="s3">◆</i><i class="s4">●</i></span>
-      <span class="sold" id="sold" role="text" aria-label="ขายแล้ว 15,329 ชิ้น"><i class="dot"></i>ขายแล้ว <b id="soldN">15,329</b> ชิ้น</span>
       <span class="hl">สติ๊กเกอร์ไดคัท<br><em>ตามรูปของคุณ</em></span>
       <span class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></span>
       <b>แตะเพื่ออัปโหลดแบบ</b>
@@ -1013,25 +1008,6 @@
       if (!lo.paidAt && age < 24 * 3600e3) { renderPay(lo); show(3); }
       else if (lo.paidAt) localStorage.removeItem('bs_last_order');   // จ่ายแล้ว = เปิดใหม่เริ่มสั่งงานใหม่
     } } catch (e) {}
-})();
-</script>
-<script>
-/* ขายแล้ว 15,329 — เลขวิ่งขึ้น ค้าง แล้วค่อยๆ จางหาย วนซ้ำ (ตัวเลขที่เจ้าของแจ้ง 18 พ.ย. 69 · ไม่ใช่ข้อมูลสดจากระบบ) */
-(function () {
-  var box = document.getElementById('sold'), n = document.getElementById('soldN'); if (!box || !n) return;
-  var T = 15329, reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduce) { n.textContent = T.toLocaleString('en-US'); return; }
-  function run() {
-    var t0 = null; box.classList.remove('fade');
-    function step(ts) {
-      if (!document.body.contains(box)) return;
-      if (t0 === null) t0 = ts; var p = Math.min(1, (ts - t0) / 2200), e = 1 - Math.pow(1 - p, 3);
-      n.textContent = Math.round(T * e).toLocaleString('en-US');
-      if (p < 1) requestAnimationFrame(step); else setTimeout(function () { box.classList.add('fade'); setTimeout(run, 1100); }, 1800);
-    }
-    requestAnimationFrame(step);
-  }
-  run();
 })();
 </script>
 </body>
