@@ -7246,7 +7246,8 @@ function bahtText(value) {
     const q = $('whHistSearch') ? $('whHistSearch').value : '';
     let gs = whCustomers();
     if (!gs.length) { $('wholesaleHistory').innerHTML = notice + '<p class="empty">ยังไม่มีร้านราคาส่ง พิมพ์ชื่อร้านที่ช่องด้านบนแล้วกด “＋ เพิ่มร้าน”</p>'; return; }
-    const owed = g => round2(g.open.reduce((a, w) => a + wholesaleCalc(w).total, 0));
+    const owedMap = {}; try { owedGroups().forEach(x => { owedMap[x.name] = x.total; }); } catch (e) {}   // ยอดค้างเดียวกับที่ลูกค้าเห็นในหน้าติดตาม (รวมงานที่ยังไม่เข้าบิล และหักที่จ่ายบางส่วนแล้ว)
+    const owed = g => (g.name in owedMap) ? round2(owedMap[g.name]) : round2(g.open.reduce((a, w) => a + wholesaleCalc(w).total, 0));
     gs = gs.filter(g => matchesSearch(g.name, q)).sort((a, b) => ((owed(b) > 0) - (owed(a) > 0)) || (b.last - a.last));
     if (!gs.length) { $('wholesaleHistory').innerHTML = notice + '<p class="empty">ไม่พบร้านชื่อ “' + esc(q) + '”</p>'; return; }
     const IC_RC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>';
