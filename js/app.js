@@ -5325,7 +5325,7 @@ function bahtText(value) {
       const nw = Object.assign({}, w, {items: rest, savedAt: Date.now()}); cloudSave('wholesale', nw); return nw;
     }).filter(Boolean);
     if (moved.length) {
-      newNo = whNextNo(todayISO());
+      newNo = '';   // เจ้าของร้านสั่ง 18 พ.ย.: ไม่ออกเลข WS ให้อัตโนมัติ — ออกเองด้วยมือเมื่อจะใช้
       const keysUsed = Array.from(new Set(moved.map(whKey)));
       const doc = {id: 'w' + Date.now() + Math.floor(Math.random() * 1000), savedAt: Date.now(), createdBy: currentUser ? currentUser.name : '', paid: true, paidAt: Date.now(), no: newNo, ref: '', date: todayISO(), buyerName: nm, items: moved, discount: disc, note: 'สรุปจากใบงาน ' + keysUsed.map(k => k || 'รายการอื่น').join(', ')};
       wl.push(doc); cloudSave('wholesale', doc);
@@ -5362,7 +5362,7 @@ function bahtText(value) {
       }
       const list = store.get('bs_' + (d.k === 'bills' ? 'bills' : 'wholesale'), []), i = list.findIndex(x => x.id === d.id);
       if (i < 0 || list[i].paid) return;
-      list[i] = Object.assign({}, list[i], {paid: true, paidAt: Date.now()}, (d.k !== 'bills' && !String(list[i].no || '').trim()) ? {no: whNextNo(todayISO())} : {});   // ใบราคาส่งที่ยังไม่มีเลข WS ออกเลขตอนจ่ายจริง
+      list[i] = Object.assign({}, list[i], {paid: true, paidAt: Date.now()});   // ไม่ออกเลข WS อัตโนมัติตอนจ่าย (ออกเองด้วยมือ)
       store.set('bs_' + (d.k === 'bills' ? 'bills' : 'wholesale'), list); cloudSave(d.k === 'bills' ? 'bills' : 'wholesale', list[i]);
     });
     try { renderDash(); renderHistory(); renderWholesaleHistory(); } catch (e) {}
