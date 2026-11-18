@@ -1263,6 +1263,30 @@ function bahtText(value) {
     el.innerHTML = rows.map(r => '<div><span>คงเหลือ บัญชี' + esc(r.a) + ' <small>(' + esc(bankBalWhen(r.b)) + ')</small></span><b>' + money(num(r.b.balance)) + ' บาท</b></div>').join('');
   }
   // แนะนำว่าเงินเข้าก้อนนี้น่าจะจ่ายงาน/ใบไหน: หาชุดใบค้างของลูกค้ารายเดียวกันที่ยอดรวมเท่ากับยอดเงินเข้าพอดี (ถึง 14 ใบต่อราย) · เป็นคำแนะนำเฉยๆ ไม่ตัดบิลให้
+  // ยอดค้างรายใบงานของลูกค้า (เรียงเก่าสุดก่อน) — ใช้ได้เมื่อทุกบรรทัดรู้ว่าเป็นของใบงานไหน และราคารวมตรงยอดค้าง
+  function jobLinesOf(g) {
+    const m = {}, net = {}, ord = []; let ok = true;
+    g.docs.forEach(d => {
+      if (d.k === 'jobs') { const k = String(d.no || ''); if (!(k in m)) { m[k] = 0; ord.push(k); } m[k] += round2(d.total); net[k] = 1; return; }
+      (d.items || []).forEach(i => { const c = Math.round(num(i.q || 1) * num(i.p) * 100) / 100, k = String(i.j || ''); if (!k || !(c > 0)) { ok = false; return; } if (!(k in m)) { m[k] = 0; ord.push(k); } m[k] = round2(m[k] + c); });
+    });
+    if (!ok || !ord.length) return null;
+    const out = ord.map(k => ({k, c: net[k] ? m[k] : round2(m[k] - jobPartOf(k))})).filter(x => x.c > 0.004), tot = round2(out.reduce((t, x) => t + x.c, 0));
+    return Math.abs(tot - g.total) > 0.05 ? null : out;
+  }
+  // ตัดเงินเข้ารายใบงาน: จ่ายเต็ม → "จ่ายแล้ว" · จ่ายไม่เต็ม → จดยอดรับแล้วลงใบงาน เหลือเท่าไหร่ขึ้นเป็นยอดค้าง
+  function allocOwed(name, biId, parts) {
+    const jl = store.get('bs_jobs', []), at = Date.now(), fulls = [];
+    parts.forEach(p => {
+      const i = jl.findIndex(x => String(x.no || '').trim() === p.no); if (i < 0) return;
+      jl[i] = Object.assign({}, jl[i], {payLog: (jl[i].payLog || []).concat([{amt: round2(p.amt), bi: biId, at}]), slipPending: false});
+      if (p.full) fulls.push(p.no);
+      store.set('bs_jobs', jl); cloudSave('jobs', jl[i]);
+    });
+    if (fulls.length) markJobsPaid(name, fulls);   // ย้ายบรรทัดเป็นบิลจ่ายแล้ว + ตั้ง owedPaid ให้ใบงานที่ผูกยอดไว้
+    flagBankInOwed(biId, parts.map(p => p.no + (p.full ? '' : ' (บางส่วน)')).join(' + '));
+    try { const jl2 = store.get('bs_jobs', []); parts.forEach(p => { const j = jl2.find(x => String(x.no || '').trim() === p.no); if (j && j.trackToken) publicJobMirror(j); }); refreshOwedMirrors(); renderWholesaleHistory(); renderBell(false); } catch (e) {}
+  }
   function suggestOwedFor(b) {
     try {
       const amt = round2(num(b.amount)); if (!(amt > 0) || !can('wholesale')) return [];
@@ -1274,15 +1298,15 @@ function bahtText(value) {
           if (Math.abs(t - amt) < 0.005) out.push({name: g.name, nos: ds.filter((d, i) => m & (1 << i)).map(d => d.no || 'ไม่มีเลข')});
         }
       });
-      if (!out.length) {   // ไม่มีชุดไหนตรงยอด → หาลูกค้าจากเลขบัญชีผู้โอนที่เคยจับคู่แล้ว แล้วเสนอตัดใบเก่าสุดก่อน (แสดงคำแนะนำเท่านั้น ไม่ตัดให้เอง)
+      if (!out.length) {   // ไม่มีชุดไหนตรงยอด → หาลูกค้าจากเลขบัญชีผู้โอนที่เคยจับคู่แล้ว แล้วเสนอตัดรายใบงานเก่าสุดก่อน (ยังไม่ตัดจนกว่าจะกดยืนยัน)
         const acc = (String(b.text || '').match(/จาก\s*(X-\d+)/) || [])[1]; if (acc) {
           const jobs = store.get('bs_jobs', []), names = {};
           bankInAll().forEach(x => { if (x.id !== b.id && x.matchedJobNo && String(x.text || '').indexOf('จาก ' + acc) >= 0) { const j = jobs.find(y => String(y.no || '') === String(x.matchedJobNo)); if (j) names[String(j.jName || '').trim()] = 1; } });
           const ns = Object.keys(names); if (ns.length === 1) {
             const g = owedGroups().find(x => x.name === ns[0]);
-            if (g && g.total > amt) { let left = amt; const parts = [];
-              g.docs.filter(d => d.total > 0).forEach(d => { if (left <= 0.004) return; if (left + 0.004 >= d.total) { parts.push((d.no || 'ไม่มีเลข') + ' เต็ม ' + d.total.toFixed(2)); left = round2(left - d.total); } else { parts.push((d.no || 'ไม่มีเลข') + ' บางส่วน ' + left.toFixed(2) + ' (ค้างต่อ ' + round2(d.total - left).toFixed(2) + ')'); left = 0; } });
-              return [{name: g.name, nos: parts, fifo: true}]; } } }
+            if (g && g.total > amt) { const lines = jobLinesOf(g); if (lines && lines.length > 1) { let left = amt; const parts = [];
+              lines.forEach(d => { if (left <= 0.004) return; if (left + 0.004 >= d.c) { parts.push({no: d.k, amt: d.c, full: true}); left = round2(left - d.c); } else { parts.push({no: d.k, amt: left, full: false, rest: round2(d.c - left)}); left = 0; } });
+              return [{name: g.name, nos: parts.map(x => x.no + (x.full ? ' เต็ม ' + x.amt.toFixed(2) : ' บางส่วน ' + x.amt.toFixed(2) + ' (เหลือ ' + x.rest.toFixed(2) + ')')), fifo: true, parts, bi: b.id}]; } } } }
       }
       return out.slice(0, 3);
     } catch (e) { return []; }
@@ -1304,7 +1328,7 @@ function bahtText(value) {
         '<span class="bell-main"><b>เงินเข้า ' + money(num(x.amount)) + ' บาท</b>' +
         '<small>บัญชี' + esc(x.account || '-') + ' · ' + esc(bankInWhen(x, true)) + '</small>' +
         '<small>' + (x.matchedJobNo ? 'ผูกกับใบงาน ' + esc(x.matchedJobNo) : 'ยังไม่ผูกใบงาน') + '</small>' +
-        (x.matchedJobNo || x.owedPaid ? '' : suggestOwedFor(x).map(sg => '<small>💡 ' + (sg.fifo ? 'ไม่ตรงใบไหน · ตัดเก่าสุดก่อน ' : 'อาจเป็น ') + esc(sg.name) + ' · ' + esc(sg.nos.join(' + ')) + '</small>').join('')) + '</span>' +
+        (x.matchedJobNo || x.owedPaid ? '' : suggestOwedFor(x).map(sg => '<small>💡 ' + (sg.fifo ? 'ไม่ตรงใบไหน · ตัดเก่าสุดก่อน ' : 'อาจเป็น ') + esc(sg.name) + ' · ' + esc(sg.nos.join(' + ')) + '</small>' + (sg.fifo ? '<button type="button" class="btn small" data-alloc="' + esc(JSON.stringify({n: sg.name, bi: sg.bi, p: sg.parts.map(q => [q.no, q.amt, q.full ? 1 : 0])})) + '">ตัดตามนี้</button>' : '')).join('')) + '</span>' +
         (isNew ? '<span class="bell-dot" aria-label="ใหม่"></span>' : '') + '</button>';
     }).join('') : '<p class="empty" style="margin:8px 4px">ยังไม่มีการแจ้งเตือน</p>';
   }
@@ -5213,10 +5237,10 @@ function bahtText(value) {
     const g = {};
     const add = (name, d) => { const k = String(name || '').trim() || 'ไม่ระบุชื่อ'; (g[k] = g[k] || {name: k, docs: [], total: 0}).docs.push(d); };
     // เฉพาะงานส่ง (JBS) = ใบราคาส่ง — บิลหน้าร้านไม่รวม
-    if (can('wholesale')) store.get('bs_wholesale', []).filter(w => !w.paid).forEach(w => add(w.buyerName, {k: 'wholesale', id: w.id, no: w.no || w.ref || 'ใบราคาส่ง', date: w.date || '', total: round2(wholesaleCalc(w).total - whPaidSum(w)), items: (w.items || []).filter(i => String(i.name || '').trim() && !whItemPaid(w, i)).map(i => { const o = {n: String(i.name).trim().slice(0, 80), q: num(i.qty), p: num(i.price)}; const jb = String(i.job || '').trim(); if (jb) o.j = jb.slice(0, 24); return o; })}));
+    if (can('wholesale')) store.get('bs_wholesale', []).filter(w => !w.paid).forEach(w => add(w.buyerName, {k: 'wholesale', id: w.id, no: w.no || w.ref || 'ใบราคาส่ง', date: w.date || '', total: round2(wholesaleCalc(w).total - whPaidSum(w) - Array.from(new Set((w.items || []).filter(i => String(i.name || '').trim() && !whItemPaid(w, i)).map(i => String(i.job || '').trim()).filter(Boolean))).reduce((t, k) => t + jobPartOf(k), 0)), items: (w.items || []).filter(i => String(i.name || '').trim() && !whItemPaid(w, i)).map(i => { const o = {n: String(i.name).trim().slice(0, 80), q: num(i.qty), p: num(i.price)}; const jb = String(i.job || '').trim(); if (jb) o.j = jb.slice(0, 24); return o; })}));
     // งาน JBS ที่คีย์จำนวนเงินไว้แล้ว แต่ยังไม่ได้รวมเข้าใบราคาส่ง และยังไม่ผูกกับเงินเข้าจริง = ยอดที่รอเก็บ
     if (can('wholesale')) store.get('bs_jobs', []).filter(j => /^JBS/i.test(String(j.no || '').trim()) && !j.owedPaid && num(j.slipAmount) > 0 && !jobBankIdsOf(j).length && jobPendingWhItems(j).length)
-      .forEach(j => add(j.jName, {k: 'jobs', id: j.id, no: j.no, date: j.date || '', total: round2(num(j.slipAmount)), photo: [].concat(j.donePhotos || [], j.photos || []).find(u => typeof u === 'string' && /^https:\/\//.test(u)) || '', items: (() => { const its = (j.items || []).filter(i => String(i.name || '').trim()).map(i => ({n: (String(i.name).trim() + (String(i.note || '').trim() ? ' (' + String(i.note).trim() + ')' : '')).slice(0, 80), q: num(i.qty), p: 0, j: String(j.no || '').slice(0, 24)})); const nt = String(j.note || '').replace(/\s+/g, ' ').trim(); return its.length ? its : (nt ? [{n: nt.slice(0, 80), q: 0, p: 0}] : []); })()}));
+      .forEach(j => add(j.jName, {k: 'jobs', id: j.id, no: j.no, date: j.date || '', total: round2(num(j.slipAmount) - jobPartOf(j.no)), photo: [].concat(j.donePhotos || [], j.photos || []).find(u => typeof u === 'string' && /^https:\/\//.test(u)) || '', items: (() => { const its = (j.items || []).filter(i => String(i.name || '').trim()).map(i => ({n: (String(i.name).trim() + (String(i.note || '').trim() ? ' (' + String(i.note).trim() + ')' : '')).slice(0, 80), q: num(i.qty), p: 0, j: String(j.no || '').slice(0, 24)})); const nt = String(j.note || '').replace(/\s+/g, ' ').trim(); return its.length ? its : (nt ? [{n: nt.slice(0, 80), q: 0, p: 0}] : []); })()}));
     const out = Object.values(g).filter(x => x.docs.some(d => d.total > 0));
     out.forEach(x => { x.docs.sort((a, b) => String(a.date).localeCompare(String(b.date))); x.total = round2(x.docs.reduce((t, d) => t + d.total, 0)); });
     return out.sort((a, b) => b.total - a.total);
@@ -5258,6 +5282,12 @@ function bahtText(value) {
   function whKey(i) { return String((i && i.job) || '').trim(); }
   function whItemPaid(w, i) { return (w.paidJobs || []).indexOf(whKey(i)) >= 0; }
   function whPaidSum(w) { return round2((w.items || []).filter(i => String(i.name || '').trim() && whItemPaid(w, i)).reduce((t, i) => t + num(i.qty) * num(i.price), 0)); }
+  // จ่ายบางส่วนต่อใบงาน: บันทึกเป็น payLog [{amt, bi, at}] บนใบงาน · ครบเมื่อไหร่ค่อยสรุปเป็น "จ่ายแล้ว"
+  function jobPartOf(jno) {
+    const k = String(jno || '').trim(); if (!k) return 0;
+    const j = store.get('bs_jobs', []).find(x => String(x.no || '').trim() === k);
+    return j && !j.owedPaid ? round2((j.payLog || []).reduce((t, x) => t + num(x.amt), 0)) : 0;
+  }
   function whPaidFor(w, jno) { return !!w.paid || (w.paidJobs || []).indexOf(String(jno || '').trim()) >= 0; }
   // keys = เลขใบงานที่จ่าย ('' = รายการที่ไม่ระบุงาน · null = ทั้งหมด) · ยังไม่จ่าย = ไม่รวมเป็น WS · พอจ่ายจึงย้ายบรรทัดของใบงานที่จ่ายไปสรุปเป็นใบ WS ใหม่ (จ่ายแล้ว) เตรียมออกใบเสร็จ
   // บิลเดิมที่ไม่เหลือรายการจะถูกลบ · ส่วนลดย้ายตามไปเฉพาะเมื่อย้ายบรรทัดหมดทั้งบิล · คืนเลข WS ที่สร้าง ('' ถ้าไม่มีบรรทัดให้ย้าย)
@@ -7290,7 +7320,7 @@ function bahtText(value) {
           '<div class="wd-jh">' + (key ? '<span class="wd-th">' + (th ? '<img src="' + esc(th) + '" alt="" loading="lazy">' : '') + '</span>' : '') +
           '<div class="wd-jt"><div class="wd-jl"><b>' + (key ? esc(key) : 'ยังไม่ผูกใบงาน') + '</b>' + (jr ? '<span class="wd-st ' + esc(st) + '">' + esc(JOB_STATUS_LABEL[st] || 'รอทำ') + '</span>' : '') + '</div>' +
           '<small class="wd-jd">' + (key ? esc(jr ? thDate(jr.date) : '') + (nm1 ? ' · ' + esc(nm1) + more : '') : 'บรรทัดเหล่านี้ยังไม่รู้ว่าเป็นของใบงานไหน ลูกค้าจะเห็นเป็น “รายการอื่น”') + '</small>' +
-          '<div class="wd-jr">' + (key ? '<span class="wd-pc ' + (paidJ ? 'ok' : 'no') + '">' + (paidJ ? 'จ่ายแล้ว' : 'ยังไม่ชำระ') + '</span>' : '<span></span>') + (w.paid ? '' : key ? (paidJ ? '<button class="btn small wd-jb" type="button" data-act="jobpaid" data-key="' + esc(key) + '" data-paid="1">ยกเลิกจ่าย</button>' : '<label class="wd-jk"><input type="checkbox" class="wd-ck" data-key="' + esc(key) + '" data-sub="' + sub + '"> จ่ายแล้ว</label>') : '<label class="wd-jk"><input type="checkbox" class="wd-ck" data-key="" data-sub="' + sub + '"> จ่ายแล้ว</label>') + '<em>' + (sub > 0 ? money(sub) + ' บาท' : 'รอราคา') + '</em></div></div></div>' +
+          '<div class="wd-jr">' + (key ? '<span class="wd-pc ' + (paidJ ? 'ok' : 'no') + '">' + (paidJ ? 'จ่ายแล้ว' : jobPartOf(key) > 0 ? 'จ่ายบางส่วน' : 'ยังไม่ชำระ') + '</span>' : '<span></span>') + (w.paid ? '' : key ? (paidJ ? '<button class="btn small wd-jb" type="button" data-act="jobpaid" data-key="' + esc(key) + '" data-paid="1">ยกเลิกจ่าย</button>' : '<label class="wd-jk"><input type="checkbox" class="wd-ck" data-key="' + esc(key) + '" data-sub="' + sub + '"> จ่ายแล้ว</label>') : '<label class="wd-jk"><input type="checkbox" class="wd-ck" data-key="" data-sub="' + sub + '"> จ่ายแล้ว</label>') + '<em>' + (sub > 0 ? (!paidJ && key && jobPartOf(key) > 0 ? 'จ่ายแล้ว ' + money(jobPartOf(key)) + ' · เหลือ ' + money(round2(sub - jobPartOf(key))) + ' บาท' : money(sub) + ' บาท') : 'รอราคา') + '</em></div></div></div>' +
           (jr ? '<div class="wd-bar"><i style="width:' + pct + '%"></i></div>' : '') +
           ks.map(k => rowHtml(its[k], k, key)).join('') + '</div>';
       }).join('');
@@ -9320,6 +9350,8 @@ function bahtText(value) {
   $('bellBtn').addEventListener('click', e => { e.stopPropagation(); if ($('bellPanel').hidden) openBell(); else closeBell(); });
   $('bellAll').addEventListener('click', goBankInCard);
   $('bellList').addEventListener('click', e => {
+    const al = e.target.closest('[data-alloc]');
+    if (al) { try { const o = JSON.parse(al.dataset.alloc), parts = o.p.map(q => ({no: q[0], amt: q[1], full: !!q[2]})); if (confirm('ตัดเงิน ' + parts.reduce((t, x) => t + x.amt, 0).toFixed(2) + ' บาท ของ ' + o.n + '\n' + parts.map(x => x.no + (x.full ? ' จ่ายครบ' : ' จ่ายบางส่วน ' + x.amt.toFixed(2))).join('\n') + '\n\nยืนยัน?')) { allocOwed(o.n, o.bi, parts); toast('ตัดเงินแล้ว'); } } catch (er) { toast('ตัดไม่สำเร็จ'); } return; }
     const jb = e.target.closest('[data-jid]'); if (jb) { goJobFromBell(jb.dataset.jid); return; }
     if (e.target.closest('[data-bid]')) goBankInCard();
   });
