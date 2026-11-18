@@ -1,0 +1,10 @@
+// ===== webOrders: ให้หน้า shop อ่าน "ออเดอร์ของตัวเอง" ได้ (18 พ.ย. 69 · AI#2) =====
+// วางบล็อกนี้ใน Firebase console → Firestore → Rules ภายใน  match /databases/{database}/documents { ... }  แล้วกด Publish
+// เป็นการ "เพิ่มสิทธิ์" อย่างเดียว ไม่ไปลดสิทธิ์เดิม (กฎ Firestore รวมแบบ OR)
+// - get ได้เฉพาะเอกสารที่ ownerUid ตรงกับบัญชีไม่ระบุตัวตนที่สร้างออเดอร์นั้น → คนอื่นเดาเลข WEB... ก็อ่านชื่อ/เบอร์/ที่อยู่ลูกค้าไม่ได้
+// - ไม่เปิด list และไม่แตะคอลเลกชันอื่น
+// - ต้องคู่กับหน้า shop ที่ใส่ ownerUid ตอนสร้างออเดอร์ และใช้บัญชีไม่ระบุตัวตนเดิมซ้ำ (เก็บ refreshToken) — งานของ AI#1
+match /webOrders/{ref} {
+  allow get: if request.auth != null
+             && resource.data.get('ownerUid', '') == request.auth.uid;
+}
