@@ -5553,10 +5553,10 @@ function bahtText(value) {
     const m = {}, net = {}, ord = []; let ok = true;
     g.docs.forEach(d => {
       if (d.k === 'jobs') { const k = String(d.no || ''); if (!(k in m)) { m[k] = 0; ord.push(k); } m[k] += round2(d.total); net[k] = 1; return; }
-      (d.items || []).forEach(i => { const c = Math.round(num(i.q || 1) * num(i.p) * 100) / 100, k = String(i.j || ''); if (!k || !(c > 0)) { ok = false; return; } if (!(k in m)) { m[k] = 0; ord.push(k); } m[k] = round2(m[k] + c); });
+      (d.items || []).forEach(i => { const c = num(i.q || 1) * num(i.p), k = String(i.j || ''); if (!k || !(c > 0)) { ok = false; return; } if (!(k in m)) { m[k] = 0; ord.push(k); } m[k] += c; });
     });
     if (!ok || !ord.length) return null;
-    const out = ord.map(k => ({k, c: net[k] ? m[k] : round2(m[k] - jobPartOf(k))})).filter(x => x.c > 0.004), tot = round2(out.reduce((t, x) => t + x.c, 0));
+    const out = ord.map(k => ({k, c: round2(net[k] ? m[k] : m[k] - jobPartOf(k))})).filter(x => x.c > 0.004), tot = round2(out.reduce((t, x) => t + x.c, 0));
     return Math.abs(tot - g.total) > 0.05 ? null : out;
   }
   // ตัดเงินเข้ารายใบงาน: จ่ายเต็ม → "จ่ายแล้ว" · จ่ายไม่เต็ม → จดยอดรับแล้วลงใบงาน เหลือเท่าไหร่ขึ้นเป็นยอดค้าง
@@ -5586,7 +5586,7 @@ function bahtText(value) {
       if (!out.length) {   // ไม่มีชุดไหนตรงยอด → หาลูกค้าจากเลขบัญชีผู้โอนที่เคยจับคู่แล้ว แล้วเสนอตัดรายใบงานเก่าสุดก่อน (ยังไม่ตัดจนกว่าจะกดยืนยัน)
         const acc = (String(b.text || '').match(/จาก\s*(X-\d+)/) || [])[1]; if (acc) {
           const jobs = store.get('bs_jobs', []), names = {};
-          bankInAll().forEach(x => { if (x.id !== b.id && x.matchedJobNo && String(x.text || '').indexOf('จาก ' + acc) >= 0) { const j = jobs.find(y => String(y.no || '') === String(x.matchedJobNo)); if (j) names[String(j.jName || '').trim()] = 1; } });
+          bankInAll().forEach(x => { if (x.id !== b.id && x.matchedJobNo && String(x.text || '').indexOf('จาก ' + acc) >= 0) { const lb = String(x.matchedJobNo).trim(), j = jobs.find(y => String(y.no || '') === lb), w = store.get('bs_wholesale', []).find(y => String(y.no || '').trim() === lb || String(y.ref || '').trim() === lb), nm = j ? String(j.jName || '').trim() : w ? String(w.buyerName || '').trim() : lb; if (nm) names[nm] = 1; } });   // label ที่จับคู่ไว้อาจเป็นเลขใบงาน · เลขบิล · หรือชื่อลูกค้า (เงินเข้ายอดค้างรวม)
           const ns = Object.keys(names); if (ns.length === 1) {
             const g = owedGroups().find(x => x.name === ns[0]);
             if (g && g.total > amt) { const lines = jobLinesOf(g); if (lines && lines.length > 1) { let left = amt; const parts = [];
