@@ -142,6 +142,23 @@ img{max-width:100%;display:block}a{color:inherit}h1,h2,h3,h4{margin:0;font-weigh
 .cmap iframe{width:100%;height:320px;border:1px solid var(--line);border-radius:var(--r);display:block;margin-top:18px}
 .ctas.cen{justify-content:center;margin-top:20px}.btn.bd{border-color:var(--line)}.qr.cen{justify-content:center;margin-top:22px}
 @media(min-width:820px){.cg{grid-template-columns:repeat(2,1fr)}.cc.wide{grid-column:1/-1}.more4{grid-template-columns:repeat(4,1fr)}.top .wrap{min-height:64px}.sub .wrap{justify-content:center}.sub a.des{margin-left:8px}}
+
+/* ปรับรายละเอียด (18 พ.ย.): กดแล้วตอบสนอง · hover เฉพาะเมาส์ · พื้นที่กด ≥40px · หัวข้อไม่ตัดคำเหลื่อม · เลื่อนแล้วไม่ถูกแถบบนบัง */
+:root{--ease-out:cubic-bezier(.23,1,.32,1)}
+a,button,summary{-webkit-tap-highlight-color:rgba(255,195,0,.3);touch-action:manipulation}
+html{scroll-padding-top:72px}
+h1,h2,h3{text-wrap:balance}
+.btn,.tile,.soc,.lang button,.sub a,.mbar a{transition:transform 160ms var(--ease-out),background-color 160ms var(--ease-out),border-color 160ms var(--ease-out),color 160ms var(--ease-out)}
+.btn:active,.tile:active,.soc:active{transform:scale(.97)}
+.mbar a:active{transform:scale(.95)}
+.soc{width:40px;height:40px}
+.sub a{min-height:42px;display:inline-flex;align-items:center}
+.lang button{min-height:40px}
+.faq summary{min-height:44px;align-items:center}
+.btn.dk:focus-visible,.sub a.des:focus-visible{outline-color:var(--y)}
+.cl2 a,.cp a{display:inline-block;padding:10px 0}.cl2{gap:0}
+@media(hover:none){.btn.dk:hover{background:var(--ink)}.btn.lt:hover{background:#fff}.tile:hover{border-color:var(--line)}.menu a:hover,.bc a:hover{color:var(--muted)}}
+@media(prefers-reduced-motion:reduce){.btn,.tile,.soc,.lang button,.sub a,.mbar a{transition:none}.btn:active,.tile:active,.soc:active,.mbar a:active{transform:none}}
 </style>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "สั่งอย่างไร", "acceptedAnswer": {"@type": "Answer", "text": "กดเริ่มออกแบบ ใส่รูปหรือข้อความ เลือกวัสดุและขนาด แล้วกดสั่งงาน ร้านจะรับแบบทางแชท หรือทักแชทส่งไฟล์มาก็ได้"}}, {"@type": "Question", "name": "ไม่มีไฟล์งานทำได้ไหม", "acceptedAnswer": {"@type": "Answer", "text": "ได้ ส่งโลโก้ รูป หรือไอเดียคร่าวๆ มา ร้านช่วยจัดแบบให้ดูก่อนพิมพ์"}}, {"@type": "Question", "name": "ราคาเท่าไร", "acceptedAnswer": {"@type": "Answer", "text": "ราคาขึ้นกับวัสดุ ขนาด และจำนวน ส่งรายละเอียดมาทางแชท ร้านประเมินและแจ้งราคาให้"}}, {"@type": "Question", "name": "ชำระเงินอย่างไร", "acceptedAnswer": {"@type": "Answer", "text": "ชำระด้วย QR พร้อมเพย์ตามยอดที่ร้านส่งให้ หลังยืนยันแบบแล้ว"}}, {"@type": "Question", "name": "ส่งทั่วประเทศไหม", "acceptedAnswer": {"@type": "Answer", "text": "ส่งทั่วประเทศ ร้านส่งเลขพัสดุให้ในแชท"}}]}</script>
 </head>
