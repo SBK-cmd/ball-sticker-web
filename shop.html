@@ -58,6 +58,7 @@
   .scale .sb em { font-style:normal; }
   #bgnote { position:absolute; left:12px; right:12px; bottom:28px; margin:0; font-size:11.5px; text-align:center; color:var(--sub); }
   .sw { display:flex; align-items:center; gap:6px; font-size:12.5px; background:rgba(255,255,255,.7); border-radius:999px; padding:3px 10px; color:var(--ink); } .sw input { width:16px; min-height:16px; margin:0; }
+  .chipbtn.on { background:var(--navy); color:#fff; text-decoration:none; }
   .chipbtn { font:inherit; font-size:12.5px; background:rgba(255,255,255,.85); border:0; border-radius:999px; padding:4px 10px; cursor:pointer; color:var(--navy); text-decoration:underline; }
   .ctl { display:grid; grid-template-columns:minmax(0,1fr); gap:10px; flex:none; }
   .ctl > div { min-width:0; }
@@ -152,7 +153,7 @@
     <input type="file" id="file" accept="image/png,image/jpeg,image/webp,application/pdf" hidden>
     <div class="prev" id="prev"><div class="ph"><img id="pimg" alt=""></div><div class="meta"><b id="pname"></b></div></div>
     <div class="stage" id="stage" hidden aria-label="ตัวอย่างสติ๊กเกอร์ 3 มิติ ลากเพื่อหมุน">
-      <div class="st-top"><span class="fn" id="pinfo"></span><button type="button" class="chipbtn" id="pchange">เปลี่ยนรูป</button><label class="sw"><input type="checkbox" id="rmbg" checked> ลบพื้น</label></div>
+      <div class="st-top"><span class="fn" id="pinfo"></span><button type="button" class="chipbtn" id="pchange">เปลี่ยนรูป</button><span class="sw" id="cutsw"><button type="button" class="chipbtn on" data-cut="shape">ตามทรง</button><button type="button" class="chipbtn" data-cut="image">ตามภาพ</button></span><input type="checkbox" id="rmbg" checked hidden></div>
       <div class="st3d" id="st3d"><canvas id="cv3d"></canvas><div class="gloss" id="gloss"></div></div><div class="shadow" aria-hidden="true"></div>
       <p class="note" id="bgnote" hidden></p>
       <div class="scale"><span id="sdim"></span><span class="sb"><i id="sbar"></i><em id="sbarT"></em></span></div>
@@ -365,11 +366,16 @@
       for (i = 0; i < ih; i++) { edgeN += 2; edgeOk += near(i * iw, bg, 48) + near(i * iw + iw - 1, bg, 48); }
       if (same && edgeOk / edgeN < 0.92) same = false;
       bgSkip = !same;
+      var pd = function (a, b) { var o = a * 4, o2 = b * 4, dr = px[o] - px[o2], dg = px[o + 1] - px[o2 + 1], db = px[o + 2] - px[o2 + 2]; return Math.sqrt(dr * dr + dg * dg + db * db); };
+      var grad = false;   // พื้นหลังไล่เฉด (มุมสีไม่เท่ากัน): ลบแบบไล่ตามสีข้างเคียง เมื่อเลือก "ตามทรง" เอง หรือขอบรูปเรียบสม่ำเสมอ (ไม่ใช่รูปถ่าย)
+      if (!same) { var sm = 0, sn = 0, bd = []; for (i = 0; i < iw; i++) bd.push(i); for (i = 1; i < ih; i++) bd.push(i * iw + iw - 1); for (i = iw - 2; i >= 0; i--) bd.push(n - iw + i); for (i = ih - 2; i > 0; i--) bd.push(i * iw);
+        for (i = 1; i < bd.length; i++) { sn++; if (pd(bd[i], bd[i - 1]) < 10) sm++; }
+        if (cutForce || sm / sn >= 0.97) { grad = true; same = true; bgSkip = false; } }
       if (same) {
         var lum = function (o) { return 0.299 * px[o] + 0.587 * px[o + 1] + 0.114 * px[o + 2]; }, dark = lum(0) < 60, TF = dark ? 30 : 48;   // พื้นดำ: ลบเฉพาะที่ดำจริง กันกินเส้นขอบดำของงาน
-        var seen = new Uint8Array(n), q = [], push = function (k) { if (!seen[k] && near(k, bg, TF)) { seen[k] = 1; q.push(k); } };
+        var seen = new Uint8Array(n), q = [], push = function (k, f) { if (seen[k]) return; var ok = grad ? (f >= 0 ? pd(k, f) <= 14 : cs.some(function (c) { return near(k, c, 70); })) : near(k, bg, TF); if (ok) { seen[k] = 1; q.push(k); } };
         for (i = 0; i < iw; i++) { push(i); push(n - iw + i); } for (i = 0; i < ih; i++) { push(i * iw); push(i * iw + iw - 1); }
-        while (q.length) { var k = q.pop(), x = k % iw; px[k * 4 + 3] = 0; if (x > 0) push(k - 1); if (x < iw - 1) push(k + 1); if (k >= iw) push(k - iw); if (k < n - iw) push(k + iw); }
+        while (q.length) { var k = q.pop(), x = k % iw; px[k * 4 + 3] = 0; if (x > 0) push(k - 1, k); if (x < iw - 1) push(k + 1, k); if (k >= iw) push(k - iw, k); if (k < n - iw) push(k + iw, k); }
         // เก็บเศษที่หลงเหลือ: เส้นบางๆ (กรอบ/เส้นขอบรูป) และจุดเล็กๆ ที่ไม่ใช่ตัวงาน
         var lab = new Int32Array(n), thin = Math.max(3, Math.round(Math.max(iw, ih) * 0.008)), id = 0;
         for (i = 0; i < n; i++) {
@@ -382,7 +388,7 @@
         }
         // เกลี่ยขอบ 2 ชั้น: พิกเซลขอบที่ปนสีพื้น → โปร่งบางส่วน + ถอดสีพื้นออก (กันคราบดำ/จุดขาวรอบงาน)
         var rimN = 0, rimDark = 0;
-        for (var pass = 0; pass < 2; pass++) {
+        for (var pass = 0; pass < (grad ? 0 : 2); pass++) {
           var edgeList = [];
           for (i = 0; i < n; i++) { if (px[i * 4 + 3] !== 255) continue; var xi = i % iw;
             if ((xi > 0 && px[(i - 1) * 4 + 3] < 255) || (xi < iw - 1 && px[(i + 1) * 4 + 3] < 255) || (i >= iw && px[(i - iw) * 4 + 3] < 255) || (i < n - iw && px[(i + iw) * 4 + 3] < 255)) edgeList.push(i); }
@@ -504,6 +510,10 @@
     function loop(ts) { if (!drag && !reduce && !stg.hidden) { var k = (ts - idle) / 1000; rx += ((-8 + Math.sin(k * 0.9) * 6) - rx) * 0.04; ry += ((14 + Math.sin(k * 0.6) * 18) - ry) * 0.04; apply(); } requestAnimationFrame(loop); }
     apply(); requestAnimationFrame(loop);
   })();
+  var cutForce = false;
+  ['pointerdown', 'mousedown', 'touchstart'].forEach(function (t) { document.querySelector('.st-top').addEventListener(t, function (e) { e.stopPropagation(); }); });   // แถบปุ่มอยู่ในเวที 3 มิติที่จับการลาก (pointer capture) → กันไม่ให้คลิกปุ่มถูกกลืน
+  $('cutsw').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; var shape = b.dataset.cut === 'shape'; cutForce = shape; $('rmbg').checked = shape;
+    document.querySelectorAll('#cutsw button').forEach(function (x) { x.classList.toggle('on', x === b); }); $('rmbg').dispatchEvent(new Event('change')); });
   $('rmbg').addEventListener('change', function () { var L = Math.max(num($('w').value), num($('h').value)) || 9; buildSticker(); setLong(L); applyFileSize(false); render(); });
   // ---------- ขนาดจริงจากไฟล์ ----------
   // PNG: ก้อน pHYs (พิกเซลต่อเมตร) · JPEG: JFIF density · PDF: TrimBox/MediaBox (pt) → ซม.
@@ -775,7 +785,7 @@
     var w = num($('w').value), h = num($('h').value), p = price(st.qty, w, h), bl = bill(p), ref = (function () { var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); }; return 'WEB' + String(d.getFullYear() + 543).slice(2) + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + Math.random().toString(36).slice(2, 4).toUpperCase(); })().replace(/^WEB/, isTest ? 'TEST' : 'WEB'), tx = $('tx').checked;
     var msgFull = (isTest ? '🧪 ทดสอบระบบ (ไม่ได้จ่ายจริง)\n' : '') + '🛒 สั่งสติ๊กเกอร์จากเว็บ\nเลขใบงาน: ' + ref + '\n' +
       'แบบ: ' + st.url + '\n' +
-      'ขนาดชิ้นไดคัท ' + w + ' × ' + h + ' ซม. · ' + st.qty.toLocaleString('th-TH') + ' ดวง · PVC เคลือบ ไดคัท\n' +
+      'ขนาดชิ้นไดคัท ' + w + ' × ' + h + ' ซม. · ' + st.qty.toLocaleString('th-TH') + ' ดวง · PVC เคลือบ ไดคัท' + ($('rmbg').checked ? 'ตามทรง' : 'ตามภาพ (ทั้งแผ่นภาพ)') + '\n' +
       (srcImg ? 'ตัวงาน ' + artCm(w, h).w + ' × ' + artCm(w, h).h + ' ซม. + ขอบขาว 2 มม. · ≈' + Math.round(printDpi(w, h)) + ' dpi' + (st.fileCm && st.fileCm.dpi ? ' · ไฟล์ระบุ ' + st.fileCm.aw + '×' + st.fileCm.ah + ' ซม. @' + st.fileCm.dpi + 'dpi' : '') + '\n' : (st.fileCm && st.fileCm.src === 'pdf' ? 'PDF หน้า ' + st.fileCm.w + ' × ' + st.fileCm.h + ' ซม.\n' : '')) +
       (function () { var L = perSheet(w, h); return L.n ? 'เรียง: แผ่นละ ' + L.n + ' ดวง · ใช้ ≈' + (st.qty / L.n).toFixed(2) + ' แผ่น\n' : 'เรียง: ชิ้นใหญ่กว่าแผ่น พิมพ์ม้วน\n'; })() +
       (kc.png ? 'ไฟล์ตรง+ขอบขาว (' + kc.px + ' px ≈' + kc.dpi + ' dpi): ' + kc.png + '\n' : '') +

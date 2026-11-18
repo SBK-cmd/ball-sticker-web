@@ -1262,6 +1262,21 @@ function bahtText(value) {
     el.hidden = !rows.length;
     el.innerHTML = rows.map(r => '<div><span>คงเหลือ บัญชี' + esc(r.a) + ' <small>(' + esc(bankBalWhen(r.b)) + ')</small></span><b>' + money(num(r.b.balance)) + ' บาท</b></div>').join('');
   }
+  // แนะนำว่าเงินเข้าก้อนนี้น่าจะจ่ายงาน/ใบไหน: หาชุดใบค้างของลูกค้ารายเดียวกันที่ยอดรวมเท่ากับยอดเงินเข้าพอดี (ถึง 14 ใบต่อราย) · เป็นคำแนะนำเฉยๆ ไม่ตัดบิลให้
+  function suggestOwedFor(b) {
+    try {
+      const amt = round2(num(b.amount)); if (!(amt > 0) || !can('wholesale')) return [];
+      const out = [];
+      owedGroups().forEach(g => {
+        const ds = g.docs.filter(d => d.total > 0).slice(0, 14), n = ds.length;
+        for (let m = 1; m < (1 << n) && out.length < 6; m++) {
+          let t = 0; for (let i = 0; i < n; i++) if (m & (1 << i)) t += ds[i].total;
+          if (Math.abs(t - amt) < 0.005) out.push({name: g.name, nos: ds.filter((d, i) => m & (1 << i)).map(d => d.no || 'ไม่มีเลข')});
+        }
+      });
+      return out.slice(0, 3);
+    } catch (e) { return []; }
+  }
   function renderBellList() {
     renderBellBal();
     try { const bp = $('bellPerm'); if (bp) { bp.hidden = !!pushOn; if (!pushOn) renderBankInNotifyState(); } } catch (e) {}
@@ -1278,7 +1293,8 @@ function bahtText(value) {
         '<span class="bell-ic" aria-hidden="true">💰</span>' +
         '<span class="bell-main"><b>เงินเข้า ' + money(num(x.amount)) + ' บาท</b>' +
         '<small>บัญชี' + esc(x.account || '-') + ' · ' + esc(bankInWhen(x, true)) + '</small>' +
-        '<small>' + (x.matchedJobNo ? 'ผูกกับใบงาน ' + esc(x.matchedJobNo) : 'ยังไม่ผูกใบงาน') + '</small></span>' +
+        '<small>' + (x.matchedJobNo ? 'ผูกกับใบงาน ' + esc(x.matchedJobNo) : 'ยังไม่ผูกใบงาน') + '</small>' +
+        (x.matchedJobNo || x.owedPaid ? '' : suggestOwedFor(x).map(sg => '<small>💡 อาจเป็น ' + esc(sg.name) + ' · ' + esc(sg.nos.join(' + ')) + '</small>').join('')) + '</span>' +
         (isNew ? '<span class="bell-dot" aria-label="ใหม่"></span>' : '') + '</button>';
     }).join('') : '<p class="empty" style="margin:8px 4px">ยังไม่มีการแจ้งเตือน</p>';
   }
