@@ -137,36 +137,54 @@
   @media (prefers-reduced-motion: reduce) { .st3d { transition:none; } .spin { animation-duration:2s; } }
   [hidden] { display:none !important; }
 
-  /* ===== UI v2 (แบบ D · ui-ux-pro-max + unslop) — โทนกระดาษอุ่น เงียบ ๆ เหลืองเฉพาะปุ่มหลัก/ที่เลือก ===== */
-  :root { --navy:#18213a; --ink:#18213a; --sub:#4b556f; --line:rgba(24,33,58,.12); --bg:#f6f3ec; --card:#fffdf8; --yel:#f4c200; }
-  .top { background:var(--bg); color:var(--ink); padding-bottom:6px; }
-  .top img { background:transparent; }
-  .steps { gap:4px; flex:1; margin-left:12px; }
-  .steps span { flex:1; font-size:0; height:4px; padding:0; border-radius:2px; background:rgba(24,33,58,.12); }
-  .steps span.on { background:var(--ink); } .steps span.ok { background:rgba(24,33,58,.45); }
-  .card { background:var(--card); border-radius:16px; }
-  .stage { border:1px solid var(--line); background-color:#ecebe3; background-image:linear-gradient(rgba(24,33,58,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(24,33,58,.06) 1px,transparent 1px); background-size:16px 16px; border-radius:20px; }
-  .drop { background:var(--card); border:1.5px dashed rgba(24,33,58,.35); border-radius:20px; }
-  .drop .ic { background:#ebe7dd; }
-  .drop .chips span { background:#ebe7dd; }
-  input, textarea, select { background:var(--card); border:1px solid var(--line); border-radius:12px; min-height:48px; }
-  .row input { min-height:52px; font-size:20px; font-weight:500; }
-  .sz button { min-height:44px; padding:0 16px; border-radius:999px; background:var(--card); border:1px solid var(--line); }
-  .sz button.on { background:var(--ink); color:#fff; border-color:var(--ink); }
-  .tiers button, .tiers .oth { background:var(--card); border-radius:12px; min-height:60px; position:relative; overflow:hidden; }
-  .tiers button b { font-weight:600; font-size:17px; }
-  .tiers button small { color:var(--sub); }
-  .tiers button.on, .tiers .oth.on { border:2px solid var(--ink); box-shadow:none; }
-  .tiers button.on::before { content:""; position:absolute; left:0; right:0; top:0; height:4px; background:var(--yel); }
-  .bar { background:var(--card); }
-  .bar .tot b { font-weight:600; font-size:26px; }
-  .bar .go { min-height:52px; border-radius:12px; background:var(--yel); }
+  /* ===== UI v3 — ร้านสติ๊กเกอร์: สีสด เหลือง-น้ำเงิน ป้ายสติ๊กเกอร์ขอบขาว ไดคัท ===== */
+  :root { --navy:#14234b; --ink:#14234b; --sub:#4a557a; --line:#d9deec; --bg:#fff8dc; --card:#fff; --yel:#ffc800; }
+  html,body,.app { background:var(--bg); }
+  .top { background:var(--navy); color:#fff; padding-bottom:10px; }
+  .top img { background:#fff; width:32px; height:32px; }
+  .steps { flex:none; margin-left:auto; gap:4px; }
+  .steps span { flex:none; font-size:12px; height:auto; padding:4px 10px; border-radius:999px; background:rgba(255,255,255,.14); color:rgba(255,255,255,.8); }
+  .steps span.on { background:var(--yel); color:var(--navy); } .steps span.ok { background:rgba(255,200,0,.3); color:#fff; }
+  .view { background-image:radial-gradient(rgba(20,35,75,.09) 1.2px, transparent 1.3px); background-size:18px 18px; }
+  /* ป้ายสติ๊กเกอร์: ขอบขาวหนา + เงา เหมือนสติ๊กเกอร์แปะ */
+  .card { background:#fff; border:0; border-radius:22px; box-shadow:0 0 0 5px #fff, 0 6px 16px rgba(20,35,75,.22); margin:5px; }
+  .lbl { font:600 15px 'Prompt',sans-serif; color:var(--navy); }
+  /* ช่องอัปโหลด = สติ๊กเกอร์เหลืองใหญ่ */
+  .drop { position:relative; overflow:hidden; background:var(--yel); border:0; border-radius:28px; box-shadow:0 0 0 6px #fff, 0 10px 22px rgba(20,35,75,.28); margin:6px; transform:rotate(-1.2deg); min-height:300px; }
+  .drop .hero { position:absolute; inset:0; pointer-events:none; }
+  .drop .hero i { position:absolute; font-style:normal; font-weight:700; line-height:1; background:#fff; color:var(--navy); border-radius:50%; display:grid; place-items:center; box-shadow:0 4px 10px rgba(20,35,75,.3); }
+  .hero .s1 { width:54px; height:54px; font-size:30px; left:14px; top:14px; transform:rotate(-14deg); }
+  .hero .s2 { width:44px; height:44px; font-size:24px; right:18px; top:20px; color:#e8344f; transform:rotate(12deg); }
+  .hero .s3 { width:38px; height:38px; font-size:20px; left:22px; bottom:16px; color:#1a73e8; border-radius:10px; transform:rotate(18deg); }
+  .hero .s4 { width:34px; height:34px; font-size:16px; right:26px; bottom:22px; color:#06c755; transform:rotate(-8deg); }
+  .drop .hl { position:relative; font:700 28px/1.15 'Prompt',sans-serif; color:var(--navy); }
+  .drop .hl em { font-style:normal; background:var(--navy); color:var(--yel); padding:0 10px; border-radius:10px; display:inline-block; margin-top:4px; }
+  .drop .ic { position:relative; width:auto; height:56px; padding:0 22px; border-radius:999px; background:var(--navy); color:#fff; display:flex; align-items:center; gap:8px; box-shadow:0 4px 0 rgba(0,0,0,.25); margin-top:10px; }
+  .drop .ic::after { content:"อัปโหลดแบบ"; font:600 17px 'Prompt',sans-serif; }
+  .drop b { display:none; }
+  .drop small { color:var(--navy); font-weight:500; }
+  .drop .facts { text-wrap:balance; max-width:30ch; position:relative; color:var(--navy); background:rgba(255,255,255,.6); border-radius:12px; padding:6px 12px; }
+  .stage { border:0; border-radius:22px; margin:5px; box-shadow:0 0 0 5px #fff, 0 6px 16px rgba(20,35,75,.22); background-color:#e9edf7; background-image:linear-gradient(rgba(20,35,75,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(20,35,75,.07) 1px,transparent 1px); background-size:16px 16px; }
+  input, textarea, select { background:#fff; border:2px solid var(--line); border-radius:14px; min-height:48px; }
+  input:focus { border-color:var(--navy); }
+  .row input { min-height:54px; font-size:22px; font-weight:600; }
+  .sz button { min-height:44px; padding:0 16px; border-radius:999px; background:#fff; border:2px solid var(--line); font-weight:500; }
+  .sz button.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+  .tiers button, .tiers .oth { background:#fff; border:2px solid var(--line); border-radius:16px; min-height:64px; }
+  .tiers button b { font-weight:700; font-size:17px; }
+  .tiers button small { color:var(--sub); font-weight:500; }
+  .tiers button.on { background:var(--yel); border-color:var(--navy); box-shadow:0 3px 0 var(--navy); }
+  .tiers button.on small { color:var(--navy); }
+  .bar { background:var(--navy); border-top:0; color:#fff; }
+  .bar .tot small { color:rgba(255,255,255,.75); }
+  .bar .tot b { font-weight:700; font-size:26px; color:var(--yel); }
+  .bar .go { min-height:54px; border-radius:999px; background:var(--yel); color:var(--navy); font-weight:700; font-size:18px; box-shadow:0 4px 0 rgba(0,0,0,.3); }
+  .bar .go:disabled { background:rgba(255,255,255,.25); color:rgba(255,255,255,.7); opacity:1; box-shadow:none; }
+  .bar .back { border-radius:999px; min-height:54px; background:rgba(255,255,255,.14); border:0; color:#fff; }
+  .bt { border-radius:999px; min-height:48px; border:2px solid var(--navy); } .bt.pri { border-color:var(--navy); box-shadow:0 3px 0 var(--navy); }
   .bar .go:active, .bt:active, .sz button:active, .tiers button:active { transform:scale(.97); }
   .bar .go, .bt, .sz button, .tiers button { transition:transform 140ms cubic-bezier(.23,1,.32,1); }
-  .bar .back { border-radius:12px; min-height:52px; background:var(--card); }
-  .bt { border-radius:12px; background:var(--card); min-height:48px; }
-  .slip, .oc-img, .sum2 img { border-radius:12px; }
-  .oc-img, .sum2 img { background:#ecebe3; }
+  .slip, .oc-img, .sum2 img { border-radius:14px; }
   @media (prefers-reduced-motion: reduce) { .bar .go, .bt, .sz button, .tiers button { transition:none; } }
   @media (max-height:700px) { .drop { min-height:160px; } .stage { min-height:140px; } .tiers button, .tiers .oth { min-height:44px; } }
 </style>
@@ -182,6 +200,8 @@
   <!-- ขั้น 1: อัปรูป ขนาด จำนวน ราคา -->
   <section class="view" id="v1" aria-label="ออกแบบสติ๊กเกอร์">
     <label class="drop" id="drop" for="file">
+      <span class="hero" aria-hidden="true"><i class="s1">★</i><i class="s2">♥</i><i class="s3">◆</i><i class="s4">●</i></span>
+      <span class="hl">สติ๊กเกอร์ไดคัท<br><em>ตามรูปของคุณ</em></span>
       <span class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></span>
       <b>แตะเพื่ออัปโหลดแบบ</b>
       <small>PNG พื้นใสดีที่สุด · หรือพื้นสีเดียว · JPG / PDF ไม่เกิน 20 MB</small>
