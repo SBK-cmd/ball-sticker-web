@@ -3848,7 +3848,8 @@ function bahtText(value) {
   }
   const woPaidOk = x => { const m = woBankMatch(x); return !!(m && m.st === 'ok'); };
   function woBankTag(x) {
-    const m = woBankMatch(x); if (!m) return '';
+    const m = woBankMatch(x);
+    if (!m) return canBank && !woDone(x) ? '<i class="wo-tag wn">⏳ ยังไม่พบเงินเข้า ฿' + money(x.payAmt || x.total || 0) + (x.slip ? ' · สลิปยังไม่ใช่หลักฐาน' : '') + '</i>' : '';
     const w = esc(bankInWhenShort(m.hit));
     return m.st === 'ok' ? '<i class="wo-tag ok">✅ เงินเข้าแล้ว ยืนยันจากธนาคาร ' + w + '</i>'
       : m.st === 'dup' ? '<i class="wo-tag">⚠️ ยอดซ้ำกับออเดอร์อื่น ตรวจเอง ' + w + '</i>'
@@ -3866,7 +3867,7 @@ function bahtText(value) {
         '<div class="wo-m"><b>' + esc(c.name || 'ไม่ทราบชื่อ') + '</b><span class="wo-ref">' + esc(x.ref || x.id) + ' · ' + esc(new Date(x.createdAt || 0).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + '</span>' +
         '<span>' + esc(x.w ? x.w + ' × ' + x.h + ' ซม. · ' + Number(x.qty || 0).toLocaleString('th-TH') + ' ดวง' : 'ไม่มีรายละเอียด') + (x.perSheet ? ' · แผ่นละ ' + x.perSheet + ' (≈' + x.sheets + ' แผ่น)' : '') + '</span>' +
         '<span>' + esc(c.tel || '') + (x.lineName ? ' · LINE ' + esc(x.lineName) : '') + '</span><span class="wo-amt">' + (x.total ? '฿' + money(x.total) : '') + '</span>' +
-        '<span>' + (x.test ? '<i class="wo-tag">🧪 ทดสอบ</i>' : '') + (x.tax ? '<i class="wo-tag tx">ใบกำกับ</i>' : '') + (x.slip ? '<i class="wo-tag ok">แนบสลิปแล้ว</i>' : '') + woBankTag(x) + (x.status === 'job' ? '<i class="wo-tag ok">ใบงาน ' + esc(x.jobNo || '') + '</i>' : x.status === 'hide' ? '<i class="wo-tag">ซ่อนแล้ว</i>' : (x.slip ? '' : '<i class="wo-tag">ยังไม่แนบสลิป</i>')) + '</span></div>' +
+        '<span>' + (x.test ? '<i class="wo-tag">🧪 ทดสอบ</i>' : '') + (x.tax ? '<i class="wo-tag tx">ใบกำกับ</i>' : '') + (x.slip ? '<i class="wo-tag">มีสลิปแนบ (ยังไม่ยืนยัน)</i>' : '') + woBankTag(x) + (x.status === 'job' ? '<i class="wo-tag ok">ใบงาน ' + esc(x.jobNo || '') + '</i>' : x.status === 'hide' ? '<i class="wo-tag">ซ่อนแล้ว</i>' : (x.slip ? '' : '<i class="wo-tag">ยังไม่แนบสลิป</i>')) + '</span></div>' +
         '<div class="wo-act">' + (x.trackToken ? '<button type="button" class="btn small" data-wolink="' + esc(x.trackToken) + '">คัดลอกลิงก์ติดตาม</button>' : '') + (woDone(x) ? '' : '<button type="button" class="btn small good" data-wojob="' + esc(x.id) + '">สร้างใบงาน</button>') +
         (f.orig ? '<a href="' + esc(f.orig) + '" target="_blank" rel="noopener">ไฟล์ลูกค้า</a>' : '') + (f.png ? '<a href="' + esc(f.png) + '" target="_blank" rel="noopener">ไฟล์ตรง</a>' : '') + (f.svg ? '<a href="' + esc(f.svg) + '" target="_blank" rel="noopener">เส้น Kiss Cut</a>' : '') +
         (x.slip ? '<a href="' + esc(x.slip) + '" target="_blank" rel="noopener">ดูสลิป</a>' : '') +
@@ -3910,7 +3911,11 @@ function bahtText(value) {
     const t = e.target.closest && e.target.closest('[data-wo],[data-wojob],[data-wohide],[data-woback],[data-wodel],[data-wolink]'); if (!t) return;
     if (t.dataset.wolink) { const u = 'https://www.ballsticker.co.th/track?t=' + t.dataset.wolink; (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('คัดลอกลิงก์ติดตามแล้ว'), () => { try { const ta = document.createElement('textarea'); ta.value = u; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('คัดลอกลิงก์ติดตามแล้ว'); } catch (er) { toast(u); } }); return; }
     if (t.dataset.wo) { webOrdTab = t.dataset.wo; document.querySelectorAll('#webOrdTabs button').forEach(b => b.classList.toggle('on', b === t)); renderWebOrders(); }
-    else if (t.dataset.wojob) webOrderToJob(t.dataset.wojob);
+    else if (t.dataset.wojob) {
+      const wx = webOrd.find(b => b.id === t.dataset.wojob);
+      if (wx && canBank && !woPaidOk(wx)) appConfirm('ยังไม่พบเงินเข้าตรงยอด', ['ออเดอร์นี้ยอด ฿' + money(wx.payAmt || wx.total || 0) + ' ยังไม่เจอเงินเข้าในธนาคาร', 'สลิปที่ลูกค้าแนบยังไม่ใช่หลักฐานว่าจ่ายแล้ว'], 'สร้างใบงานต่อ').then(ok => { if (ok) webOrderToJob(wx.id); });
+      else webOrderToJob(t.dataset.wojob);
+    }
     else if (t.dataset.woback) markWebOrder(t.dataset.woback, {status: 'new', jobNo: '', jobAt: 0});
     else if (t.dataset.wodel) {   // กด 2 ครั้งเพื่อลบ (ไม่ใช้ confirm: บางเบราว์เซอร์/LINE บล็อกกล่องยืนยัน)
       const id = t.dataset.wodel, o = webOrd.find(x => x.id === id) || {};
