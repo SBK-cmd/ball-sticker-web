@@ -11687,7 +11687,7 @@ function bahtText(value) {
         '<details class="wd-bd"><summary>ค้างจ่าย · ' + esc(sumLine(w)) + '</summary><div class="wd-sum"><span>' + esc(thDate(w.date)) + (w.chargeRef ? ' · อ้างอิงเก็บเงิน ' + esc(w.chargeRef) : '') + '</span></div>' +
         '<div class="wd-btns"><button class="btn small" type="button" data-act="addship">＋ ค่าส่ง</button><button class="btn small" type="button" data-act="open">แก้ไขเต็ม</button><button class="btn small del" type="button" data-act="del">ลบ</button></div></details></div>';
     });
-    if (g.open.some(w => (w.items || []).some(i => String(i.name || '').trim()))) h += '<div class="wd-payrow"><span>ติ๊กใบงานที่ลูกค้าจ่ายแล้ว แล้วกดปุ่มด้านล่าง</span><button class="btn small good" type="button" data-act="paysel">จ่ายแล้ว ✓</button></div>';
+    if (g.open.some(w => (w.items || []).some(i => String(i.name || '').trim()))) h += '<div class="wd-payrow"><span>ติ๊กใบงานที่ลูกค้าจ่ายแล้ว แล้วกดออกใบเสร็จ</span><button class="btn small good" type="button" data-act="paysel">ออกใบเสร็จ ✓</button></div>';
     const pj = whPendingJobsFor(g.name);
     h += '<div class="wd-h" style="margin-top:12px">งานของร้านนี้ที่คีย์ไว้ <small>เพิ่มเข้าบิลได้แม้ยังไม่มีราคา</small></div>' + (pj.length ? (() => { const hasN = j => (j.items || []).some(i => (i.name || '').trim()); const cards = pj.map(j => {
       if (!hasN(j)) return '<div class="wd-j"><div class="wd-jm"><b>' + esc(j.no || 'ใบงาน') + '</b><small>' + esc(thDate(j.date)) + ' · ยังไม่มีรายการสินค้า — ใส่รายการในใบงานแล้วจะเข้าบิลให้เอง</small></div></div>';
@@ -14293,7 +14293,15 @@ function bahtText(value) {
     if (act === 'paysel') {
       const keys = Array.from(li.querySelectorAll('input.wd-ck:checked')).map(x => x.dataset.key || '');
       if (!keys.length) { toast('ติ๊กใบงานที่ลูกค้าจ่ายแล้วก่อน'); return; }
-      const no = markJobsPaid(name, keys); renderWholesaleHistory(); toast(no ? 'จ่ายแล้ว ✓ สรุปเป็นใบ ' + no : 'จ่ายแล้ว ✓'); return;
+      // ติ๊กจ่ายแล้ว → ออกใบเสร็จ: เก็บรายการของใบงานที่ติ๊กก่อน แล้วตั้งสถานะจ่ายแล้ว แล้วเปิดใบเสร็จ/ใบกำกับภาษีใส่ข้อมูลให้ (ไม่ออกเลข WS)
+      const nmk = String(name || '').trim() || 'ไม่ระบุชื่อ', recItems = [];
+      list.forEach(w => { if (w.paid || (String(w.buyerName || '').trim() || 'ไม่ระบุชื่อ') !== nmk) return; (w.items || []).forEach(i => { if (String(i.name || '').trim() && keys.indexOf(whKey(i)) >= 0 && num(i.price) > 0) recItems.push({name: String(i.name).trim(), qty: i.qty === '' || i.qty == null ? 1 : i.qty, price: i.price}); }); });
+      const jb = store.get('bs_jobs', []).find(j => /^JBS/i.test(String(j.no || '')) && String(j.jName || '').trim() === nmk && keys.indexOf(String(j.no || '').trim()) >= 0), cr = custRec(nmk) || {};
+      markJobsPaid(name, keys); renderWholesaleHistory();
+      if (!recItems.length) { toast('ตั้งสถานะจ่ายแล้ว ✓ (งานที่ติ๊กยังไม่มีราคา เลยยังไม่เปิดใบเสร็จ)'); return; }
+      $('cName').value = nmk; $('cPhone').value = (jb && jb.jPhone) || cr.phone || ''; $('cAddr').value = (jb && jb.jAddr) || cr.addr || '';
+      items = recItems; syncVat(); renderItems(); renderBill(); showTab('bill'); openBillEdit(null, 'ออกใบเสร็จ ' + nmk + ' (' + keys.filter(Boolean).join(', ') + ')');
+      toast('ตั้งสถานะจ่ายแล้ว ✓ และเปิดใบเสร็จให้แล้ว ตรวจแล้วกดบันทึก'); return;
     }
     if (act === 'payset') {   // ยืนยันสถานะชำระรายใบงานจากหน้าตรวจสถานะ
       const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === btn.dataset.jid); if (ji < 0) return;
