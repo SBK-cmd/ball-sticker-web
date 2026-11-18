@@ -1275,6 +1275,17 @@ function bahtText(value) {
     const out = ord.map(k => ({k, c: Math.round((net[k] ? m[k] : m[k] - jobPartOf(k)) * 100 + 1e-6) / 100})).filter(x => x.c > 0.004), tot = round2(out.reduce((t, x) => t + x.c, 0));
     return Math.abs(tot - g.total) > 0.05 ? null : out;
   }
+  // กล่องยืนยันของแอปเอง (confirm() ของเบราว์เซอร์อาจถูกบล็อกเงียบๆ ในบางเครื่อง/แอปติดตั้ง)
+  function appConfirm(title, lines, okText) {
+    return new Promise(res => {
+      const ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px';
+      ov.innerHTML = '<div role="dialog" aria-modal="true" style="background:#fff;border-radius:16px;max-width:380px;width:100%;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.25)"><b style="display:block;font-size:16px;margin-bottom:8px">' + esc(title) + '</b>' + (lines || []).map(l => '<div style="font-size:14px;padding:3px 0;color:#333">' + esc(l) + '</div>').join('') + '<div style="display:flex;gap:10px;margin-top:16px"><button type="button" data-n style="flex:1;min-height:44px;border-radius:12px;border:1px solid #ccc;background:#fff;font-size:15px">ยกเลิก</button><button type="button" data-y style="flex:1;min-height:44px;border-radius:12px;border:0;background:#f5b400;font-weight:700;font-size:15px">' + esc(okText || 'ตกลง') + '</button></div></div>';
+      const done = v => { ov.remove(); res(v); };
+      ov.addEventListener('click', e => { if (e.target === ov || e.target.closest('[data-n]')) done(false); else if (e.target.closest('[data-y]')) done(true); });
+      document.body.appendChild(ov);
+    });
+  }
   // ตัดเงินเข้ารายใบงาน: จ่ายเต็ม → "จ่ายแล้ว" · จ่ายไม่เต็ม → จดยอดรับแล้วลงใบงาน เหลือเท่าไหร่ขึ้นเป็นยอดค้าง
   function allocOwed(name, biId, parts) {
     const jl = store.get('bs_jobs', []), at = Date.now(), fulls = [];
@@ -9360,7 +9371,7 @@ function bahtText(value) {
   $('bellAll').addEventListener('click', goBankInCard);
   $('bellList').addEventListener('click', e => {
     const al = e.target.closest('[data-alloc]');
-    if (al) { try { const o = JSON.parse(al.dataset.alloc), parts = o.p.map(q => ({no: q[0], amt: q[1], full: !!q[2]})); if (confirm('ตัดเงิน ' + parts.reduce((t, x) => t + x.amt, 0).toFixed(2) + ' บาท ของ ' + o.n + '\n' + parts.map(x => x.no + (x.full ? ' จ่ายครบ' : ' จ่ายบางส่วน ' + x.amt.toFixed(2))).join('\n') + '\n\nยืนยัน?')) { allocOwed(o.n, o.bi, parts); toast('ตัดเงินแล้ว'); } } catch (er) { toast('ตัดไม่สำเร็จ'); } return; }
+    if (al) { (async () => { try { const o = JSON.parse(al.dataset.alloc), parts = o.p.map(q => ({no: q[0], amt: q[1], full: !!q[2]})); if (await appConfirm('ตัดเงิน ' + parts.reduce((t, x) => t + x.amt, 0).toFixed(2) + ' บาท ของ ' + o.n, parts.map(x => x.no + (x.full ? ' · จ่ายครบ' : ' · จ่ายบางส่วน ' + x.amt.toFixed(2))), 'ยืนยันตัดเงิน')) { allocOwed(o.n, o.bi, parts); toast('ตัดเงินแล้ว'); } } catch (er) { toast('ตัดไม่สำเร็จ'); } })(); return; }
     const jb = e.target.closest('[data-jid]'); if (jb) { goJobFromBell(jb.dataset.jid); return; }
     if (e.target.closest('[data-bid]')) goBankInCard();
   });
