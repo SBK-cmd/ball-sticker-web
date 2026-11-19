@@ -47,6 +47,18 @@
   .airow { display:flex; gap:8px; } .airow[hidden] { display:none; }
   .aibtn { flex:1; min-height:48px; border-radius:12px; border:1.5px solid var(--navy); background:#fff; color:var(--navy); font:600 15px 'Prompt',sans-serif; cursor:pointer; }
   .aibtn:disabled { opacity:.6; } .aiundo { min-height:48px; padding:0 14px; border-radius:12px; border:1px solid var(--line); background:#fff; color:var(--sub); font:500 14px 'Prompt',sans-serif; cursor:pointer; } .aiundo[hidden] { display:none; }
+  .ed { position:fixed; inset:0; z-index:60; background:#0e1330; display:flex; flex-direction:column; } .ed[hidden] { display:none; }
+  .ed-top { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; color:#fff; font:600 16px 'Prompt',sans-serif; }
+  .ed-x { background:none; border:0; color:#cfd6ee; font:500 15px 'Prompt',sans-serif; padding:6px 4px; }
+  .ed-box { flex:1; min-height:0; overflow:auto; display:grid; place-items:center; background:#fff; background-image:linear-gradient(45deg,#e4e7ee 25%,transparent 25%,transparent 75%,#e4e7ee 75%),linear-gradient(45deg,#e4e7ee 25%,transparent 25%,transparent 75%,#e4e7ee 75%); background-size:20px 20px; background-position:0 0,10px 10px; }
+  .ed-box canvas { display:block; touch-action:none; cursor:crosshair; margin:auto; }
+  .ed-box.pan canvas { touch-action:auto; cursor:grab; }
+  .ed-tools { padding:10px 12px calc(12px + env(safe-area-inset-bottom)); background:#fff; display:grid; gap:8px; }
+  .ed-row { display:flex; gap:8px; align-items:center; } .ed-row button { flex:1; min-height:44px; border-radius:10px; border:1px solid var(--line); background:#fff; font:600 15px 'Prompt',sans-serif; color:var(--ink); }
+  .ed-row button.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+  .ed-row label { flex:1; display:flex; align-items:center; gap:10px; font:500 14px 'Prompt',sans-serif; color:var(--sub); } .ed-row input[type=range] { flex:1; }
+  .ed-z { display:flex; align-items:center; gap:6px; } .ed-z button { flex:none; width:44px; } .ed-z em { font-style:normal; min-width:28px; text-align:center; font:600 14px 'Prompt',sans-serif; }
+  .ed-ok { min-height:52px; border-radius:12px; border:0; background:#f5b301; color:#111a3f; font:700 18px 'Prompt',sans-serif; }
   .sample[hidden] { display:none; }
   .sample img { width:44px; height:auto; flex:none; filter:drop-shadow(0 1px 2px rgba(0,0,0,.25)); }
   .sample span { display:grid; gap:1px; flex:1; min-width:0; } .sample b { font:600 14px 'Prompt',sans-serif; } .sample small { color:var(--sub); font-size:12px; }
@@ -268,7 +280,16 @@
       <div class="scale"><span id="sdim"></span><span class="sb"><i id="sbar"></i><em id="sbarT"></em></span></div>
     </div>
     <div id="sampnote" class="sampbox" hidden><label class="bigup" for="file"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>อัปโหลดรูปของคุณ</label><small>นี่คือตัวอย่างสติ๊กเกอร์ร้านเรา · อัปรูปของคุณเพื่อดูตัวอย่างและสั่งทำ</small></div>
-    <div class="airow" id="airow" hidden><button type="button" class="aibtn" id="aibtn"><span id="aibtnT">✂ ลบพื้นหลังอัตโนมัติ (AI ฟรี)</span></button><button type="button" class="aiundo" id="aiundo" hidden>ใช้รูปเดิม</button></div>
+    <div class="ed" id="ed" hidden role="dialog" aria-label="ลบพื้นหลังเอง">
+      <div class="ed-top"><b>ลบพื้นหลังเอง</b><button type="button" id="edX" class="ed-x">ยกเลิก</button></div>
+      <div class="ed-box" id="edBox"><canvas id="edCv"></canvas></div>
+      <div class="ed-tools">
+        <div class="ed-row"><button type="button" class="on" data-m="erase">ลบ</button><button type="button" data-m="restore">คืนภาพ</button><button type="button" data-m="pan">เลื่อน/ซูม</button><button type="button" id="edUndo">ย้อน</button></div>
+        <div class="ed-row"><label>ขนาดแปรง<input type="range" id="edSz" min="6" max="80" value="28"></label><span class="ed-z"><button type="button" id="edZ1">−</button><em id="edZt">1×</em><button type="button" id="edZ2">+</button></span></div>
+        <button type="button" class="ed-ok" id="edOk">ใช้รูปนี้</button>
+      </div>
+    </div>
+    <div class="airow" id="airow" hidden><button type="button" class="aibtn" id="aibtn"><span id="aibtnT">✂ ลบพื้นหลังอัตโนมัติ (AI ฟรี)</span></button><button type="button" class="aiundo" id="aiundo" hidden>ใช้รูปเดิม</button><button type="button" class="aiundo aied" id="edbtn">✎ ลบเอง</button></div>
     <div class="warn" id="qwarn" hidden></div>
     <div class="ctl card" id="ctl">
       <div>
@@ -507,6 +528,58 @@
   }
   $('aibtn').addEventListener('click', aiRemoveBg);
   $('aiundo').addEventListener('click', function () { if (ai.orig) { var f = ai.orig; ai.orig = null; useFile(f, false, true); } });
+
+  // ---------- ลบพื้นหลังเอง: แปรงลบ/คืนภาพ บนรูปที่ AI ตัดแล้ว (หรือรูปเดิม) ----------
+  var ed = {mode: 'erase', zoom: 1, wc: null, oc: null, undo: [], last: null, fit: 1};
+  function edLayout() {
+    var box = $('edBox'), cv = $('edCv'), w = ed.wc.width, h = ed.wc.height;
+    ed.fit = Math.min((box.clientWidth - 8) / w, (box.clientHeight - 8) / h);
+    cv.style.width = Math.round(w * ed.fit * ed.zoom) + 'px'; cv.style.height = Math.round(h * ed.fit * ed.zoom) + 'px'; $('edZt').textContent = ed.zoom + '×';
+  }
+  function edDraw() { var cv = $('edCv'), x = cv.getContext('2d'); x.clearRect(0, 0, cv.width, cv.height); x.drawImage(ed.wc, 0, 0); }
+  function edPush() { var x = ed.wc.getContext('2d'); ed.undo.push(x.getImageData(0, 0, ed.wc.width, ed.wc.height)); if (ed.undo.length > 12) ed.undo.shift(); }
+  function edStamp(px, py) {
+    var r = Math.max(2, num($('edSz').value)) / ed.fit / ed.zoom / 2 * (ed.wc.width / $('edCv').width * ed.fit * ed.zoom);
+    var x = ed.wc.getContext('2d'); x.save(); x.beginPath(); x.arc(px, py, r, 0, 6.2832); 
+    if (ed.mode === 'erase') { x.globalCompositeOperation = 'destination-out'; x.fill(); }
+    else { x.clip(); x.drawImage(ed.oc, 0, 0, ed.wc.width, ed.wc.height); }
+    x.restore();
+  }
+  function edPt(e) { var cv = $('edCv'), b = cv.getBoundingClientRect(); return [(e.clientX - b.left) * cv.width / b.width, (e.clientY - b.top) * cv.height / b.height]; }
+  function edStroke(e) {
+    var p = edPt(e), l = ed.last || p, dx = p[0] - l[0], dy = p[1] - l[1], d = Math.sqrt(dx * dx + dy * dy), step = Math.max(1, num($('edSz').value) / 6 * ed.wc.width / $('edCv').getBoundingClientRect().width), n = Math.max(1, Math.ceil(d / step)), i;
+    for (i = 1; i <= n; i++) edStamp(l[0] + dx * i / n, l[1] + dy * i / n);
+    ed.last = p; edDraw();
+  }
+  async function edOpen() {
+    if (!srcImg || st.sample) return;
+    var sc = Math.min(1, 2000 / Math.max(srcImg.naturalWidth, srcImg.naturalHeight)), W = Math.round(srcImg.naturalWidth * sc), H = Math.round(srcImg.naturalHeight * sc);
+    ed.wc = document.createElement('canvas'); ed.wc.width = W; ed.wc.height = H; ed.wc.getContext('2d').drawImage(srcImg, 0, 0, W, H);
+    ed.oc = document.createElement('canvas'); ed.oc.width = W; ed.oc.height = H;
+    var base = srcImg;
+    if (ai.orig) { try { var u = URL.createObjectURL(ai.orig); base = await new Promise(function (ok, no) { var im = new Image(); im.onload = function () { ok(im); }; im.onerror = no; im.src = u; }); } catch (e) { base = srcImg; } }
+    ed.oc.getContext('2d').drawImage(base, 0, 0, W, H);
+    var cv = $('edCv'); cv.width = W; cv.height = H; ed.undo = []; ed.zoom = 1; ed.mode = 'erase'; ed.last = null;
+    Array.prototype.forEach.call(document.querySelectorAll('.ed-row [data-m]'), function (b) { b.classList.toggle('on', b.dataset.m === 'erase'); }); $('edBox').classList.remove('pan');
+    $('ed').hidden = false; document.body.style.overflow = 'hidden'; edLayout(); edDraw();
+  }
+  function edClose() { $('ed').hidden = true; document.body.style.overflow = ''; ed.wc = ed.oc = null; ed.undo = []; }
+  $('edbtn').addEventListener('click', edOpen);
+  $('edX').addEventListener('click', edClose);
+  $('edUndo').addEventListener('click', function () { var s0 = ed.undo.pop(); if (s0) { ed.wc.getContext('2d').putImageData(s0, 0, 0); edDraw(); } });
+  Array.prototype.forEach.call(document.querySelectorAll('.ed-row [data-m]'), function (b) { b.addEventListener('click', function () { ed.mode = b.dataset.m; Array.prototype.forEach.call(document.querySelectorAll('.ed-row [data-m]'), function (o) { o.classList.toggle('on', o === b); }); $('edBox').classList.toggle('pan', ed.mode === 'pan'); }); });
+  $('edZ1').addEventListener('click', function () { ed.zoom = Math.max(1, ed.zoom - 1); edLayout(); });
+  $('edZ2').addEventListener('click', function () { ed.zoom = Math.min(5, ed.zoom + 1); edLayout(); });
+  window.addEventListener('resize', function () { if (!$('ed').hidden) edLayout(); });
+  var edCv = $('edCv'), edDown = false;
+  edCv.addEventListener('pointerdown', function (e) { if (ed.mode === 'pan') return; e.preventDefault(); edDown = true; ed.last = null; edPush(); try { edCv.setPointerCapture(e.pointerId); } catch (_) {} edStroke(e); });
+  edCv.addEventListener('pointermove', function (e) { if (edDown) { e.preventDefault(); edStroke(e); } });
+  ['pointerup', 'pointercancel'].forEach(function (t) { edCv.addEventListener(t, function () { edDown = false; ed.last = null; }); });
+  $('edOk').addEventListener('click', async function () {
+    var blob = await new Promise(function (r) { ed.wc.toBlob(r, 'image/png'); }), nm = (st.file && st.file.name || 'image').replace(/-ตัดพื้น(-แก้)?\.png$|\.[^.]+$/, '');
+    if (!ai.orig) ai.orig = st.file;
+    edClose(); useFile(new File([blob], nm + '-ตัดพื้น-แก้.png', {type: 'image/png'}), false, true);
+  });
   function loadSample() { if (!st.file) $('sample').click(); }
   function useFile(f, isSample, keepAi) {
     var w = $('qwarn'); w.hidden = true; setSampleUI(!!isSample);
