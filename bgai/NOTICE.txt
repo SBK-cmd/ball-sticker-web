@@ -1,0 +1,1 @@
+# U2-Net (u2netp) — Apache-2.0, https://github.com/xuebinqin/U-2-Net · weights จาก rembg v0.0.0 · onnxruntime-web 1.20.1 MIT
