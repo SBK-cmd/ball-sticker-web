@@ -39,6 +39,11 @@
   .drop .facts { font-size:13px; color:var(--sub); margin-top:4px; max-width:34ch; }
   .drop b { font:600 19px 'Prompt',sans-serif; }
   .drop small { color:var(--sub); font-size:13px; max-width:30ch; }
+  .sample { display:flex; align-items:center; gap:10px; width:100%; text-align:left; background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px 12px; cursor:pointer; font:inherit; color:inherit; }
+  .sample[hidden] { display:none; }
+  .sample img { width:44px; height:auto; flex:none; filter:drop-shadow(0 1px 2px rgba(0,0,0,.25)); }
+  .sample span { display:grid; gap:1px; flex:1; min-width:0; } .sample b { font:600 14px 'Prompt',sans-serif; } .sample small { color:var(--sub); font-size:12px; }
+  .sample i { font-style:normal; font-size:22px; color:var(--sub); } .sample:active { background:#f1f3f7; }
   .drop .chips { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:6px; }
   .drop .chips span { font-size:12.5px; padding:3px 10px; border-radius:999px; background:#eef1f6; color:var(--ink); }
   .prev { display:none !important; }
@@ -246,6 +251,7 @@
       <small>PNG พื้นใสดีที่สุด · หรือพื้นสีเดียว · JPG / PDF ไม่เกิน 20 MB</small>
       <span class="facts">100 ดวง 9×9 ซม. 999 บาท · ส่งฟรีเมื่อค่าพิมพ์ครบ 900 บาท · จ่ายพร้อมเพย์</span>
     </label>
+    <button type="button" class="sample" id="sample"><img src="sample-shop-sticker.png" alt="" width="44" height="38"><span><b>ลองดูตัวอย่าง</b><small>สติ๊กเกอร์ร้านบอล ไดคัทตามทรง</small></span><i aria-hidden="true">›</i></button>
     <input type="file" id="file" accept="image/png,image/jpeg,image/webp,application/pdf" hidden>
     <div class="prev" id="prev"><div class="ph"><img id="pimg" alt=""></div><div class="meta"><b id="pname"></b></div></div>
     <div class="stage" id="stage" hidden aria-label="ตัวอย่างสติ๊กเกอร์ 3 มิติ ลากเพื่อหมุน">
@@ -254,6 +260,7 @@
       <p class="note" id="bgnote" hidden></p>
       <div class="scale"><span id="sdim"></span><span class="sb"><i id="sbar"></i><em id="sbarT"></em></span></div>
     </div>
+    <p class="note" id="sampnote" hidden style="text-align:center;font-weight:600;color:var(--navy)">ตัวอย่างสติ๊กเกอร์ร้านเรา · แตะ “อัปโหลดรูปของคุณ” เพื่อสั่งทำจริง</p>
     <div class="warn" id="qwarn" hidden></div>
     <div class="ctl card" id="ctl">
       <div>
@@ -434,8 +441,14 @@
   ['dragleave', 'drop'].forEach(function (t) { drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.remove('on'); }); });
   drop.addEventListener('drop', function (e) { var f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) useFile(f); });
   $('file').addEventListener('change', function () { var f = this.files && this.files[0]; if (f) useFile(f); });
-  function useFile(f) {
-    var w = $('qwarn'); w.hidden = true;
+  function setSampleUI(on) { st.sample = on; $('sample').hidden = true; $('sampnote').hidden = !on; $('pchange').textContent = on ? 'อัปโหลดรูปของคุณ' : 'เปลี่ยนรูป'; }
+  $('sample').addEventListener('click', function () {
+    fetch('sample-shop-sticker.png').then(function (r) { return r.blob(); }).then(function (b) {
+      var f = new File([b], 'สติ๊กเกอร์ร้านบอล.png', { type: 'image/png' }); useFile(f, true);
+    }).catch(function () { var w = $('qwarn'); w.hidden = false; w.textContent = 'โหลดตัวอย่างไม่สำเร็จ ลองอีกครั้ง'; });
+  });
+  function useFile(f, isSample) {
+    var w = $('qwarn'); w.hidden = true; setSampleUI(!!isSample);
     if (f.size > 20 * 1024 * 1024) { w.hidden = false; w.textContent = 'ไฟล์ใหญ่เกิน 20 MB ส่งทาง LINE @bk25 แทนได้'; return; }
     st.file = f; st.url = '';
     $('pname').textContent = f.name; drop.hidden = true; drop.querySelector('b').textContent = 'แตะเพื่ออัปโหลดแบบ';
@@ -445,7 +458,7 @@
     img.onload = function () {
       $('pimg').src = url; st.ratio = img.naturalWidth / img.naturalHeight; srcImg = img; buildSticker(); setLong(Math.max(num($('w').value), num($('h').value)) || 9);
       readDpi(f).then(function (dpi) { if (srcImg !== img) return; st.fileDpi = dpi; applyFileSize(true); });
-      $('pinfo').textContent = f.name;
+      $('pinfo').textContent = isSample ? 'ตัวอย่าง · อัปโหลดรูปของคุณเพื่อสั่งทำ' : f.name;
       render();
     };
     img.src = url;
@@ -845,7 +858,7 @@
     $('totLbl').textContent = st.qty.toLocaleString('th-TH') + ' ดวง · ' + (w || '?') + '×' + (h || '?') + ' ซม. · รวมส่ง' + ($('tx').checked ? '+VAT' : '');
     qualityWarn(w, h);
     st.ok = ok;
-    $('next').disabled = !ok || !st.file;
+    $('next').disabled = !ok || !st.file || st.sample;
     $('send').disabled = !ok || st.busy;
     var im = $('pimg').getAttribute('src');
     var cvT = $('cv3d'), dieT = '';   // รูปเล็กสรุปออเดอร์ = รูปที่ไดคัทแล้ว (ขอบขาว พื้นใส) ไม่ใช่รูปต้นฉบับ
@@ -864,7 +877,7 @@
     $('bar').hidden = n === 4; $('v' + n).scrollTop = 0;
     if (n === 1) setTimeout(fitStage, 0);
   }
-  $('next').addEventListener('click', function () { if (st.file && st.ok) show(2); });
+  $('next').addEventListener('click', function () { if (st.file && st.ok && !st.sample) show(2); });
   $('back').addEventListener('click', function () { if (!st.busy) show(1); });
   document.addEventListener('click', function (e) { var g = e.target.closest && e.target.closest('[data-go]'); if (g && !st.busy) show(+g.dataset.go); });
   function busyBtn(btn, on, label) { btn.disabled = on; btn.innerHTML = on ? SPIN : label; }

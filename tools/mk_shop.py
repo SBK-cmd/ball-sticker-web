@@ -12,7 +12,7 @@ CLOSED = os.path.exists(os.path.join(ROOT, 'shop.closed'))
 html = open(os.path.join(ROOT, 'shop-closed.html' if CLOSED else 'shop.html'), encoding='utf8').read()
 html = html.replace('<title>', '<link rel="canonical" href="https://shop.ballsticker.co.th/">\n<title>', 1)
 open(os.path.join(OUT, 'index.html'), 'w', encoding='utf8').write(html)
-for f in ['icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'favicon.ico', 'thai-zip.json', 'tqr-head.png', 'tqr-pp.png', 'tqr-icon.png']:
+for f in ['icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'favicon.ico', 'thai-zip.json', 'tqr-head.png', 'tqr-pp.png', 'tqr-icon.png', 'sample-shop-sticker.png']:
     if os.path.exists(os.path.join(ROOT, f)): shutil.copy2(os.path.join(ROOT, f), os.path.join(OUT, f))
 open(os.path.join(OUT, 'robots.txt'), 'w').write('User-agent: *\nDisallow: /\n' if CLOSED else 'User-agent: *\nAllow: /\n')
 open(os.path.join(OUT, '_redirects'), 'w').write('/upload /  301\n/order /  301\n')
