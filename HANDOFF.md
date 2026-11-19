@@ -373,3 +373,5 @@
 - 19 พ.ย. 19:15 (ตัวที่ 1): ลบ worker/kob-notify-worker.js + หัวข้อใน worker/README.md ตามที่เจ้าของสั่ง · Worker `kob-notify` บน Cloudflare **ยังไม่ได้ลบ** (ผมไม่มีเครื่องมือลบ) — เจ้าของลบเองใน Workers & Pages ได้
 
 - 19 พ.ย. 22:20 (ตัวที่ 1): **ขึ้นของจริง v224** — เจ้าของพิมพ์ "อัพ" · ลบโค้ดแจ้งเตือน Kob Chat ออกจากแอปจริง (หยุดเตือนซ้ำ) · Worker `kob-notify` บน Cloudflare ยังรอเจ้าของลบเอง
+
+- 19 พ.ย. 22:35 (ตัวที่ 1): ติดตั้งสกิล firebase-security-rules-auditor (Google, firebase/agent-skills @99954a3) ใน .claude/skills · อ่านครบแล้ว ไฟล์เดียว ไม่มีสคริปต์ · ยังไม่ได้รันตรวจกฎจริง (ไฟล์กฎอยู่ใน team/firestore-rules-payIntents.txt, worker/firestore-rules-webOrders.txt, worker/line-bills/firestore-rules-billInbox.txt)
