@@ -2171,6 +2171,48 @@ body.jm-open .fab-newjob{display:none!important}
 .live-scan .ls-msg{padding:14px 20px;text-align:center;font-size:16px;line-height:1.5}
 .live-scan .ls-bot{padding:6px 16px calc(18px + env(safe-area-inset-bottom));text-align:center}
 .trk-box{display:block;width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid var(--line);margin-top:8px;cursor:zoom-in}
+
+/* ---- จอร้าน (เต็มจอ ธีมมืด) ---- */
+#wallOv{position:fixed;inset:0;z-index:1200;background:#0b0e14;color:#e8ecf4;overflow:auto;font-family:inherit}
+#wallOv[hidden]{display:none}
+#wallOv .wl-wrap{max-width:1080px;margin:0 auto;padding:18px 16px 28px;display:grid;gap:12px;font-variant-numeric:tabular-nums}
+#wallOv .wl-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#wallOv .wl-live{display:inline-flex;align-items:center;gap:6px;font:700 11px/1 inherit;letter-spacing:.08em;color:#ff6b8a;border:1px solid #3a1c29;background:#1d0f17;padding:5px 9px;border-radius:6px}
+#wallOv .wl-live i{width:7px;height:7px;border-radius:50%;background:#ff3d6b;animation:wlp 1.6s ease-in-out infinite}
+@keyframes wlp{50%{opacity:.35}}
+#wallOv .wl-brand{letter-spacing:.14em;font-size:13px;color:#8b94a7}
+#wallOv .wl-date{margin-left:auto;color:#8b94a7;font-size:14px}
+#wallOv .wl-clock{font-size:34px;font-weight:700;letter-spacing:.02em}
+#wallOv .wl-x{background:#161b26;color:#8b94a7;border:1px solid #232a38;border-radius:8px;width:36px;height:36px;cursor:pointer}
+#wallOv .wl-x:hover{color:#fff}
+#wallOv .wl-hero,#wallOv .wl-card{background:#121722;border:1px solid #1f2634;border-radius:16px;padding:16px 18px}
+#wallOv .wl-hero{text-align:center;padding:22px 18px}
+#wallOv .wl-lbl,#wallOv .wl-card small,#wallOv .wl-adg em{display:block;color:#8b94a7;font-size:13px;font-style:normal;margin-bottom:4px}
+#wallOv .wl-big{font-size:clamp(44px,12vw,88px);font-weight:800;line-height:1.05;color:#b6ff3b;letter-spacing:-.01em}
+#wallOv .wl-sub{color:#aab3c5;font-size:15px;margin-top:6px}
+#wallOv .wl-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+#wallOv .wl-pair>div{background:#0e121b;border:1px solid #1b2230;border-radius:12px;padding:10px 12px}
+#wallOv .wl-pair small{display:block;color:#8b94a7;font-size:12px}
+#wallOv .wl-pair b{font-size:22px;color:#58c8ff}
+#wallOv .wl-row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+#wallOv .wl-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#wallOv .wl-card b{display:block;font-size:clamp(34px,8vw,56px);font-weight:800;line-height:1.1}
+#wallOv .wl-row2 .wl-card b{font-size:clamp(26px,6vw,40px)}
+#wallOv .wl-card em{display:block;font-style:normal;color:#8b94a7;font-size:12px;margin-top:2px}
+#wallOv .c-cyan{color:#35d0ff}#wallOv .c-lime{color:#b6ff3b}#wallOv .c-amber{color:#ffb020}
+#wallOv .wl-bars{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
+#wallOv .wl-bars>div{text-align:center}
+#wallOv .wl-bars b{font-size:34px;color:#e8ecf4}
+#wallOv .wl-bars .wlb{height:6px;border-radius:3px;background:#1b2230;margin:6px 0 4px;overflow:hidden}
+#wallOv .wl-bars .wlb i{display:block;height:100%;border-radius:3px}
+#wallOv .wl-bars span{font-size:12px;color:#8b94a7}
+#wallOv .wl-adg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:6px}
+#wallOv .wl-adg b{font-size:clamp(22px,5vw,34px);font-weight:800}
+#wallOv .wl-adg span{display:block;color:#8b94a7;font-size:12px;margin-top:2px}
+#wallOv #wlAdsTag{margin-left:6px;color:#ffb020}
+#wallOv .wl-note{margin:8px 0 0;font-size:12px;color:#8b94a7}
+#wallOv .wl-foot{margin:4px 0 0;font-size:12px;color:#5d667a;text-align:center}
+@media(max-width:640px){#wallOv .wl-adg{grid-template-columns:1fr 1fr}#wallOv .wl-clock{font-size:26px}}
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap">
 <style id="bs-theme-p4">
@@ -4149,6 +4191,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
     <section id="panel-dash" class="panel" role="tabpanel" aria-labelledby="tab-dash">
       <div class="page-head">
         <h1>สรุปยอดขาย</h1>
+        <button type="button" class="btn small no-print" id="wallOpen" style="margin-top:6px">🖥 เปิดจอร้าน (เต็มจอ)</button>
         <p>รวมยอดขายและภาษีขายจากบิล/ใบกำกับภาษีที่บันทึกไว้ในเครื่องนี้ (และในคลาวด์ ถ้าเชื่อมต่อไว้)</p>
       </div>
 
@@ -4624,6 +4667,39 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
 
 <div class="toast no-print" aria-live="polite"><span id="toast" hidden></span></div>
 
+
+<div class="no-print" id="wallOv" hidden role="dialog" aria-modal="true" aria-label="จอร้าน">
+  <div class="wl-wrap">
+    <div class="wl-top"><span class="wl-live"><i></i>LIVE</span><b class="wl-brand">BALL STICKER</b><span class="wl-date" id="wlDate"></span><span class="wl-clock" id="wlClock"></span><button type="button" class="wl-x" id="wlClose" aria-label="ปิดจอร้าน">✕</button></div>
+    <div class="wl-hero">
+      <div class="wl-lbl">ยอดขายวันนี้</div>
+      <div class="wl-big" id="wlSales">฿0</div>
+      <div class="wl-sub"><span id="wlOrders">0</span> บิล · <span id="wlCmp"></span></div>
+      <div class="wl-pair"><div><small>ยอดขายเดือนนี้</small><b id="wlMonth">฿0</b></div><div><small>คาดสิ้นเดือน (เฉลี่ยรายวัน)</small><b id="wlProj">฿0</b></div></div>
+    </div>
+    <div class="wl-row3">
+      <div class="wl-card"><small>งานที่เหลือ</small><b class="c-cyan" id="wlOpen">0</b></div>
+      <div class="wl-card"><small>ส่งวันนี้ (กล่อง)</small><b class="c-lime" id="wlBoxes">0</b></div>
+      <div class="wl-card"><small>งานด่วน / เลยกำหนด</small><b class="c-amber" id="wlHot">0</b></div>
+    </div>
+    <div class="wl-card wl-pipe"><small>สายการผลิต (งานที่ยังไม่ส่ง)</small><div class="wl-bars" id="wlPipe"></div></div>
+    <div class="wl-row2">
+      <div class="wl-card"><small>เงินเข้าวันนี้</small><b class="c-lime" id="wlIn">฿0</b><em id="wlInN"></em></div>
+      <div class="wl-card"><small>เงินออกวันนี้</small><b class="c-amber" id="wlOut">฿0</b><em id="wlOutN"></em></div>
+    </div>
+    <div class="wl-card wl-ads"><small>โฆษณา Meta <span id="wlAdsTag"></span></small>
+      <div class="wl-adg">
+        <div><em>ROAS วันนี้</em><b class="c-lime" id="wlRoas">-</b><span id="wlRoas7"></span></div>
+        <div><em>ค่าแอดวันนี้</em><b id="wlSpend">-</b></div>
+        <div><em>แชตจากแอด</em><b id="wlChats">-</b></div>
+        <div><em>ค่าแอด / แชต</em><b id="wlCpc">-</b></div>
+      </div>
+      <p class="wl-note" id="wlAdsNote"></p>
+    </div>
+    <p class="wl-foot">ตัวเลขมาจากบิล/ใบงาน/พัสดุ/SMS ธนาคารที่บันทึกในแอป · อัปเดตอัตโนมัติ · ROAS = ยอดขายวันนี้ ÷ ค่าแอดวันนี้ · กด Esc เพื่อปิด</p>
+  </div>
+</div>
+
 <div class="overlay no-print" id="tinOverlay" style="z-index:1100" hidden role="dialog" aria-modal="true" aria-labelledby="tinTitle">
   <div class="ov-card" style="max-width:760px">
     <div class="ov-head"><div><h2 id="tinTitle">ค้นหาข้อมูลธุรกิจ จากฐานข้อมูลกรมสรรพากร</h2><p class="ov-file" id="tinMode"></p></div><button class="btn small" id="tinClose" type="button">ปิด</button></div>
@@ -4732,7 +4808,7 @@ html body input[type=file]::file-selector-button{min-height:44px;margin-right:12
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=b4fe407a56",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=5a33185905",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

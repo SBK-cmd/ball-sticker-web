@@ -10417,6 +10417,98 @@ function bahtText(value) {
   });
 
 
+  /* ---------------- จอร้าน (เต็มจอ ธีมมืด) — ใช้ข้อมูลในแอป + ค่าแอดจาก Worker fb-ads ---------------- */
+  const WALL_ADS_URL = 'https://fb-ads.organic-parmesan.workers.dev/ads?days=8';
+  let wallOn = false, wallAds = null, wallAdsAt = 0, wallClockT = 0, wallDataT = 0;
+  function wallBankToday(today) {
+    const ins = (store.get('bs_bank_in', []) || []).filter(x => x && x.createdAt && num(x.amount) > 0 && !accHidden(x));
+    const outs = (store.get('bs_bank_out', []) || []).filter(x => x && x.createdAt && num(x.amount) > 0 && !accHidden(x));
+    const used = {}, xf = {};
+    outs.slice().sort((a, b) => a.createdAt - b.createdAt).forEach(o => {
+      const m = ins.find(i => !used[i.id] && i.account && o.account && i.account !== o.account && Math.abs(num(i.amount) - num(o.amount)) < 0.005 && Math.abs(i.createdAt - o.createdAt) <= MONEY_XFER_MS);
+      if (m) { used[m.id] = 1; xf[m.id] = 1; xf[o.id] = 1; }
+    });
+    const isT = x => localISO(new Date(x.createdAt)) === today && !xf[x.id];
+    const a = ins.filter(isT), b = outs.filter(isT);
+    return {inT: round2(a.reduce((t, x) => t + num(x.amount), 0)), nIn: a.length, outT: round2(b.reduce((t, x) => t + num(x.amount), 0)), nOut: b.length};
+  }
+  async function wallLoadAds() {
+    if (Date.now() - wallAdsAt < 600000 && wallAds) return;
+    wallAdsAt = Date.now();
+    try {
+      if (location.protocol !== 'https:' || window.__BS_DEMO) {   // โหมดตัวอย่าง: ไม่เรียกของจริง
+        wallAds = {demo: true, days: [{date: todayISO(), spend: 954.87, chats: 15}]}; return;
+      }
+      const r = await fetch(WALL_ADS_URL); if (!r.ok) throw new Error('http ' + r.status);
+      wallAds = await r.json();
+    } catch (e) { wallAds = {error: true}; }
+  }
+  function renderWall() {
+    if (!wallOn) return;
+    const today = todayISO(), bills = store.get('bs_bills', []) || [], jobs = store.get('bs_jobs', []) || [];
+    const d = new Date(today + 'T00:00:00'); d.setDate(d.getDate() - 1); const yest = localISO(d);
+    const tot = b => billCalc(b).total;
+    const sToday = bills.filter(b => b.date === today).reduce((a, b) => a + tot(b), 0), nToday = bills.filter(b => b.date === today).length;
+    const sYest = bills.filter(b => b.date === yest).reduce((a, b) => a + tot(b), 0);
+    const mk = monthKey(today), sMonth = bills.filter(b => monthKey(b.date) === mk).reduce((a, b) => a + tot(b), 0);
+    const dim = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(), dom = +today.slice(8, 10);
+    $('wlSales').textContent = '฿' + Math.round(sToday).toLocaleString('en-US');
+    $('wlOrders').textContent = String(nToday);
+    const cmp = $('wlCmp');
+    cmp.textContent = sYest > 0 ? ((sToday >= sYest ? '▲ +' : '▼ ') + money(Math.abs((sToday - sYest) / sYest * 100)) + '% จากเมื่อวาน') : 'ยังไม่มียอดเมื่อวานเทียบ';
+    $('wlMonth').textContent = '฿' + Math.round(sMonth).toLocaleString('en-US');
+    $('wlProj').textContent = '฿' + Math.round(sMonth / Math.max(1, dom) * dim).toLocaleString('en-US');
+    const open = jobs.filter(j => ['shipped', 'pickup', 'received'].indexOf(j.status || 'pending') < 0);
+    const cnt = k => open.filter(j => (j.status || 'pending') === k).length;
+    const hot = open.filter(j => j.due && j.due <= today).length;
+    $('wlOpen').textContent = String(open.length); $('wlHot').textContent = String(hot);
+    $('wlBoxes').textContent = String(boxesTodayList(today, jobs).length);
+    const mx = Math.max(1, cnt('pending'), cnt('filed'), cnt('printed'));
+    $('wlPipe').innerHTML = [['pending', 'รอทำ', '#ffb020'], ['filed', 'ทำไฟล์แล้ว', '#35d0ff'], ['printed', 'ผลิตแล้ว', '#b6ff3b']].map(x => '<div><b>' + cnt(x[0]) + '</b><div class="wlb"><i style="width:' + Math.round(cnt(x[0]) / mx * 100) + '%;background:' + x[2] + '"></i></div><span>' + x[1] + '</span></div>').join('');
+    const bk = wallBankToday(today);
+    $('wlIn').textContent = '฿' + Math.round(bk.inT).toLocaleString('en-US'); $('wlInN').textContent = bk.nIn + ' รายการ (ไม่นับโอนระหว่างบัญชี)';
+    $('wlOut').textContent = '฿' + Math.round(bk.outT).toLocaleString('en-US'); $('wlOutN').textContent = bk.nOut + ' รายการ';
+    // โฆษณา
+    const A = wallAds, tag = $('wlAdsTag'), note = $('wlAdsNote');
+    ['wlRoas', 'wlSpend', 'wlChats', 'wlCpc'].forEach(id => { $(id).textContent = '-'; }); $('wlRoas7').textContent = '';
+    if (!A) { tag.textContent = ''; note.textContent = 'กำลังโหลดค่าแอด…'; }
+    else if (A.error) { tag.textContent = ''; note.textContent = 'ดึงค่าแอดจาก Meta ไม่ได้ในตอนนี้ (ตัวเลขอื่นยังใช้ได้)'; }
+    else {
+      const days = A.days || [], t = days.find(x => x.date === today) || {spend: 0, chats: 0};
+      tag.textContent = A.demo ? '(ตัวอย่าง ไม่ใช่ข้อมูลจริง)' : '';
+      $('wlSpend').textContent = '฿' + Math.round(t.spend).toLocaleString('en-US');
+      $('wlChats').textContent = String(t.chats);
+      $('wlCpc').textContent = t.chats > 0 ? '฿' + Math.round(t.spend / t.chats).toLocaleString('en-US') : '-';
+      $('wlRoas').textContent = t.spend > 0 ? (sToday / t.spend).toFixed(2) + 'x' : '-';
+      const last7 = days.filter(x => x.date <= today).slice(-7), sp7 = last7.reduce((a, x) => a + x.spend, 0);
+      const from = last7.length ? last7[0].date : today, rev7 = bills.filter(b => b.date >= from && b.date <= today).reduce((a, b) => a + tot(b), 0);
+      if (sp7 > 0 && !A.demo) $('wlRoas7').textContent = '7 วัน ' + (rev7 / sp7).toFixed(2) + 'x';
+      note.textContent = A.demo ? 'โหมดตัวอย่าง: ยังไม่ได้ดึงค่าแอดจริง' : 'ค่าแอด/แชตจาก Meta (นับ "ผู้ติดต่อผ่านข้อความ" ตาม Ads Manager) · ยอดขายมาจากบิลที่บันทึกในแอป';
+    }
+  }
+  function wallClock() {
+    const n = new Date(); $('wlClock').textContent = n.toLocaleTimeString('en-GB'); $('wlDate').textContent = n.toLocaleDateString('th-TH', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'});
+  }
+  function wallOpen() {
+    wallOn = true; $('wallOv').hidden = false; document.body.style.overflow = 'hidden';
+    wallClock(); renderWall(); wallLoadAds().then(renderWall);
+    clearInterval(wallClockT); clearInterval(wallDataT);
+    wallClockT = setInterval(wallClock, 1000);
+    wallDataT = setInterval(() => { renderWall(); wallLoadAds().then(renderWall); }, 30000);
+    try { const el = $('wallOv'); if (el.requestFullscreen && !document.fullscreenElement) el.requestFullscreen().catch(() => {}); } catch (e) {}
+  }
+  function wallClose() {
+    wallOn = false; $('wallOv').hidden = true; document.body.style.overflow = '';
+    clearInterval(wallClockT); clearInterval(wallDataT);
+    try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
+    if (location.hash === '#wall') history.replaceState(null, '', location.pathname + location.search);
+  }
+  $('wallOpen').addEventListener('click', wallOpen);
+  $('wlClose').addEventListener('click', wallClose);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && wallOn) wallClose(); });
+  window.addEventListener('hashchange', () => { if (location.hash === '#wall' && currentUser && !wallOn) wallOpen(); });
+  setTimeout(() => { if (location.hash === '#wall' && currentUser && !wallOn) wallOpen(); }, 900);
+
   /* ---- ค้นหาข้อมูลธุรกิจจากเลขประจำตัวผู้เสียภาษี (ตัวกลาง Cloudflare Worker ของ AI#2 — ยังไม่มี: ใส่ URL ที่ TIN_API_URL แล้วใช้งานจริงได้) ----
      สัญญา: GET {TIN_API_URL}?id=13หลัก → {results:[{taxId, name, branch:'สำนักงานใหญ่'|'สาขา', branchNo:'00000', address}]} */
   const TIN_API_URL = '';
