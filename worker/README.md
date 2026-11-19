@@ -80,3 +80,15 @@ Worker รับข้อความลูกค้าผ่าน webhook เ�
 4. เพิ่มบอตเป็นเพื่อนใน Kob Chat ก่อน (ไม่งั้น Kob Chat ตอบ 403)
 5. เปิด `https://kob-notify.<บัญชี>.workers.dev/health` ต้องได้ `{"ok":true,...}` · ในแอปกดปุ่ม "ทดสอบส่งเข้า Kob Chat" (แท็บเงินเข้า)
 ถ้าชื่อ Worker/โดเมนไม่ตรงกับ `KOB_URL` ใน `src/app.html` ให้บอก AI #1 แก้
+
+## ตัวดึงค่าโฆษณา Meta (`fb-ads-worker.js`) — แดชบอร์ด ROAS / ค่าแอด / แชตจากแอด
+GET `/ads?days=14` → `{days:[{date,spend,chats,impressions,clicks}]}` · ROAS แอปคำนวณเองจากยอดขายจริง
+ทดสอบแล้วแค่แบบจำลอง (parse + CORS) ยังไม่ได้ทดสอบกับ Meta จริง
+
+### Meta (เจ้าของทำ)
+1. business.facebook.com → Business settings → Users → **System users** → Add (บทบาท Admin หรือ Employee) 
+2. Add assets → Ad accounts → เลือกบัญชีโฆษณา → สิทธิ์ **View performance**
+3. Generate token → เลือกแอป Meta ที่มีอยู่ → ติ๊กสิทธิ์ **ads_read** อย่างเดียว → เลือกไม่หมดอายุ ถ้ามีตัวเลือก → คัดลอกโทเคน (ห้ามส่งในแชต)
+4. เลขบัญชีโฆษณา: Ads Manager มุมซ้ายบน (ตัวเลขล้วน)
+### Cloudflare (เจ้าของทำ)
+Workers & Pages → Create → Worker ชื่อ **fb-ads** → วางโค้ด → Secret `ADS_TOKEN`, `AD_ACCOUNT` → ทดสอบ `/ads?days=3` ต้องได้ JSON
