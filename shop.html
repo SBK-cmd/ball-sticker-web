@@ -427,7 +427,7 @@
   function price(n, w, h) { if (!(n > 0 && w > 0 && h > 0)) return null; if (n === 100 && w === 9 && h === 9) return 999; return nice(A0 + A1 * n * (w + GAP) * (h + GAP)); }
   function perSheet(w, h) { var g = function (L, s) { return s > L ? 0 : Math.floor((L + GAP) / (s + GAP)); }; var a = g(121, w) * g(81, h), b = g(121, h) * g(81, w); return a >= b ? {n: a, cx: g(121, w), pw: w, ph: h} : {n: b, cx: g(121, h), pw: h, ph: w}; }
   var TIERS = [10, 20, 30, 50, 100], MINQ = 10, SIZES = [7, 8, 10, 12, 15, 20, 40, 70].map(function (v) { return [v, v]; }), MINL = 7;   // ไดคัทได้ตั้งแต่ด้านยาว 7 ซม. · หน้าม้วนพิมพ์ได้ 124 ซม.
-  var st = {file: null, ratio: 0, qty: 100, url: '', busy: false};
+  var st = {file: null, ratio: 0, qty: 10, url: '', busy: false};
   // ภาพการเรียง/จำนวนต่อแผ่น เห็นเฉพาะแอดมิน: เปิดหน้านี้ด้วย ?admin=1 ครั้งเดียว เครื่องนั้นจะจำไว้ (ลูกค้าทั่วไปไม่เห็น)
   var testMode = false;
   var isAdmin = false; try { var qp = new URLSearchParams(location.search); if (qp.get('admin') === '1') localStorage.setItem('bs_upl_admin', '1'); if (qp.get('admin') === '0') localStorage.removeItem('bs_upl_admin'); isAdmin = localStorage.getItem('bs_upl_admin') === '1'; } catch (e) {}
