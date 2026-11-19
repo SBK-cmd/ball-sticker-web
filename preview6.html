@@ -2212,6 +2212,29 @@ body.jm-open .fab-newjob{display:none!important}
 #wallOv #wlAdsTag{margin-left:6px;color:#ffb020}
 #wallOv .wl-note{margin:8px 0 0;font-size:12px;color:#8b94a7}
 #wallOv .wl-foot{margin:4px 0 0;font-size:12px;color:#5d667a;text-align:center}
+#wallOv .wl-big{text-shadow:0 0 28px rgba(182,255,59,.35)}
+#wallOv .wl-split{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;text-align:left}
+#wallOv .wl-split small{display:flex;justify-content:space-between;font-size:13px;margin:0 0 2px}
+#wallOv .wl-split b{font-size:22px;color:#e8ecf4}#wallOv .wl-split b em{font-size:12px;color:#8b94a7;font-style:normal;margin-left:6px}
+#wallOv .wl-dots{display:grid;grid-template-columns:repeat(20,1fr);gap:2px;margin-top:6px}
+#wallOv .wl-dots i{height:7px;border-radius:1px;background:#1b2230}
+#wallOv .wl-pipeg{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:6px}
+#wallOv .wl-pipeg>div{text-align:center}
+#wallOv .wl-pipeg b{font-size:28px;line-height:1.2}
+#wallOv .wl-stk{display:flex;flex-direction:column-reverse;gap:2px;height:56px;margin:6px 0 4px;justify-content:flex-start}
+#wallOv .wl-stk i{display:block;height:3px;border-radius:1px}
+#wallOv .wl-pipeg span{font-size:12px;color:#8b94a7}
+#wallOv .wl-cnt{float:right;font-size:18px;font-weight:800;color:#b6ff3b}
+#wallOv .wl-list{display:grid;gap:6px;margin-top:6px}
+#wallOv .wl-list div{display:flex;gap:10px;align-items:center;background:#0e121b;border:1px solid #1b2230;border-radius:8px;padding:7px 10px;font-size:14px}
+#wallOv .wl-list b{font-size:14px;font-weight:700;letter-spacing:.02em}
+#wallOv .wl-list span{color:#8b94a7;font-size:12px;margin-left:auto;white-space:nowrap}
+#wallOv .wl-list p{margin:0;color:#5d667a;font-size:13px}
+#wallOv .wl-bot .wl-card{padding:14px 16px}
+#wallOv .wl-kv{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:6px;font-size:14px;color:#aab3c5}
+#wallOv .wl-kv b{display:inline;font-size:clamp(20px,4vw,28px);font-weight:800;color:#e8ecf4;line-height:1.1}
+#wallOv .wl-kv em{display:inline;margin:0;font-size:12px}
+@media(max-width:640px){#wallOv .wl-bot{grid-template-columns:1fr}#wallOv .wl-split{grid-template-columns:1fr}}
 @media(max-width:640px){#wallOv .wl-adg{grid-template-columns:1fr 1fr}#wallOv .wl-clock{font-size:26px}}
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap">
@@ -4443,6 +4466,7 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
       <div class="wl-lbl">ยอดขายวันนี้</div>
       <div class="wl-big" id="wlSales">฿0</div>
       <div class="wl-sub"><span id="wlOrders">0</span> บิล · <span id="wlCmp"></span></div>
+      <div class="wl-split" id="wlSplit"></div>
       <div class="wl-pair"><div><small>ยอดขายเดือนนี้</small><b id="wlMonth">฿0</b></div><div><small>คาดสิ้นเดือน (เฉลี่ยรายวัน)</small><b id="wlProj">฿0</b></div></div>
     </div>
     <div class="wl-row3">
@@ -4450,20 +4474,26 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
       <div class="wl-card"><small>ส่งวันนี้ (กล่อง)</small><b class="c-lime" id="wlBoxes">0</b></div>
       <div class="wl-card"><small>งานด่วน / เลยกำหนด</small><b class="c-amber" id="wlHot">0</b></div>
     </div>
-    <div class="wl-card wl-pipe"><small>สายการผลิต (งานที่ยังไม่ส่ง)</small><div class="wl-bars" id="wlPipe"></div></div>
-    <div class="wl-row2">
-      <div class="wl-card"><small>เงินเข้าวันนี้</small><b class="c-lime" id="wlIn">฿0</b><em id="wlInN"></em></div>
-      <div class="wl-card"><small>เงินออกวันนี้</small><b class="c-amber" id="wlOut">฿0</b><em id="wlOutN"></em></div>
-    </div>
-    <div class="wl-card wl-ads"><small>โฆษณา Meta <span id="wlAdsTag"></span></small>
-      <div class="wl-adg">
-        <div><em>ROAS วันนี้</em><b class="c-lime" id="wlRoas">-</b><span id="wlRoas7"></span></div>
-        <div><em>ค่าแอดวันนี้</em><b id="wlSpend">-</b></div>
-        <div><em>แชตจากแอด</em><b id="wlChats">-</b></div>
-        <div><em>ค่าแอด / แชต</em><b id="wlCpc">-</b></div>
+    <div class="wl-card wl-pipe"><small>สายการผลิต</small><div class="wl-pipeg" id="wlPipe"></div></div>
+    <div class="wl-card"><small>ขนส่งรับวันนี้ <span class="wl-cnt" id="wlBoxN">0</span></small><div class="wl-list" id="wlBoxList"></div></div>
+    <div class="wl-row3 wl-bot">
+      <div class="wl-card wl-ads"><small>โฆษณาวันนี้ <span id="wlAdsTag"></span></small>
+        <div class="wl-kv"><span>ROAS วันนี้</span><b class="c-lime" id="wlRoas">-</b></div>
+        <div class="wl-kv"><span id="wlRoas7"></span><span></span></div>
+        <div class="wl-kv"><span>แชตจากแอด</span><b id="wlChats">-</b></div>
+        <div class="wl-kv"><span>ค่าแอด / แชต</span><b id="wlCpc">-</b></div>
       </div>
-      <p class="wl-note" id="wlAdsNote"></p>
+      <div class="wl-card"><small>ค่าใช้จ่ายวันนี้</small>
+        <div class="wl-kv"><span>ค่าแอด</span><b id="wlSpend">-</b></div>
+        <div class="wl-kv"><span>เงินออก</span><b class="c-amber" id="wlOut">฿0</b></div>
+        <div class="wl-kv"><span></span><em id="wlOutN"></em></div>
+      </div>
+      <div class="wl-card"><small>เงินเข้าวันนี้</small>
+        <div class="wl-kv"><span>ยอดเข้า</span><b class="c-lime" id="wlIn">฿0</b></div>
+        <div class="wl-kv"><span></span><em id="wlInN"></em></div>
+      </div>
     </div>
+    <p class="wl-note" id="wlAdsNote"></p>
     <p class="wl-foot">ตัวเลขมาจากบิล/ใบงาน/พัสดุ/SMS ธนาคารที่บันทึกในแอป · อัปเดตอัตโนมัติ · ROAS = ยอดขายวันนี้ ÷ ค่าแอดวันนี้ · กด Esc เพื่อปิด</p>
   </div>
 </div>
@@ -4576,7 +4606,7 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=5a33185905",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=14c5ae426f",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

@@ -10463,8 +10463,17 @@ function bahtText(value) {
     const hot = open.filter(j => j.due && j.due <= today).length;
     $('wlOpen').textContent = String(open.length); $('wlHot').textContent = String(hot);
     $('wlBoxes').textContent = String(boxesTodayList(today, jobs).length);
-    const mx = Math.max(1, cnt('pending'), cnt('filed'), cnt('printed'));
-    $('wlPipe').innerHTML = [['pending', 'รอทำ', '#ffb020'], ['filed', 'ทำไฟล์แล้ว', '#35d0ff'], ['printed', 'ผลิตแล้ว', '#b6ff3b']].map(x => '<div><b>' + cnt(x[0]) + '</b><div class="wlb"><i style="width:' + Math.round(cnt(x[0]) / mx * 100) + '%;background:' + x[2] + '"></i></div><span>' + x[1] + '</span></div>').join('');
+    const dots = (n, tot, col) => { const f = tot > 0 ? Math.round(n / tot * 20) : 0; let h = ''; for (let k = 0; k < 20; k++) h += '<i' + (k < f ? ' style="background:' + col + '"' : '') + '></i>'; return h; };
+    const bt = bills.filter(b => b.date === today), paidS = bt.filter(b => b.paid).reduce((a, b) => a + tot(b), 0), unpS = sToday - paidS;
+    const pc = v => sToday > 0 ? Math.round(v / sToday * 100) : 0;
+    $('wlSplit').innerHTML = [['ชำระแล้ว', paidS, bt.filter(b => b.paid).length, '#b6ff3b'], ['รอชำระ', unpS, bt.filter(b => !b.paid).length, '#ffb020']].map(x =>
+      '<div><small><span>' + x[0] + '</span><span>' + pc(x[1]) + '%</span></small><b>฿' + Math.round(x[1]).toLocaleString('en-US') + '<em>' + x[2] + ' บิล</em></b><div class="wl-dots">' + dots(x[1], sToday, x[3]) + '</div></div>').join('');
+    const boxes = boxesTodayList(today, jobs), pick = jobs.filter(j => j.status === 'pickup').length;
+    const stages = [['pending', 'รอทำ', cnt('pending'), '#ffb020'], ['filed', 'ทำไฟล์แล้ว', cnt('filed'), '#35d0ff'], ['printed', 'ผลิตแล้ว', cnt('printed'), '#b6ff3b'], ['box', 'ส่งวันนี้', boxes.length, '#c58bff'], ['pick', 'รอรับหน้าร้าน', pick, '#ff7aa8']];
+    const mx = Math.max(1, ...stages.map(x => x[2]));
+    $('wlPipe').innerHTML = stages.map(x => { const n = Math.max(x[2] ? 1 : 0, Math.round(x[2] / mx * 14)); let bars = ''; for (let k = 0; k < n; k++) bars += '<i style="background:' + x[3] + '"></i>'; return '<div><b style="color:' + x[3] + '">' + x[2] + '</b><div class="wl-stk">' + bars + '</div><span>' + x[1] + '</span></div>'; }).join('');
+    $('wlBoxN').textContent = String(boxes.length);
+    $('wlBoxList').innerHTML = boxes.length ? boxes.slice(0, 6).map(x => { const t = x.t || {}, at = t.boxAt || t.savedAt || (x.job && x.job.shippedAt) || 0; return '<div><b>' + esc(x.code || '') + '</b><span>' + esc(t.carrier || '') + '</span><span>' + (at ? new Date(at).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'}) : '') + '</span></div>'; }).join('') + (boxes.length > 6 ? '<p>และอีก ' + (boxes.length - 6) + ' กล่อง</p>' : '') : '<p>ยังไม่มีกล่องที่บันทึกวันนี้</p>';
     const bk = wallBankToday(today);
     $('wlIn').textContent = '฿' + Math.round(bk.inT).toLocaleString('en-US'); $('wlInN').textContent = bk.nIn + ' รายการ (ไม่นับโอนระหว่างบัญชี)';
     $('wlOut').textContent = '฿' + Math.round(bk.outT).toLocaleString('en-US'); $('wlOutN').textContent = bk.nOut + ' รายการ';
