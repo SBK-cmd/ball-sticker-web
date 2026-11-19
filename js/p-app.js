@@ -850,6 +850,8 @@ function bahtText(value) {
   let bankInTimer = null, audioCtx = null;
   const pad2 = n => String(n).padStart(2, '0');
   const localISO = d => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  // ตัวเลือก 'เลือกยอดจากเงินเข้า' ในใบงาน: รวมเงินเข้าบัญชีวันทิมด้วย (เฉพาะเงินเข้า ไม่รวมเงินออก/ยอดคงเหลือ)
+  const bankInPick = () => (store.get('bs_bank_in', []) || []).filter(x => x && num(x.amount) > 0).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   const bankInAll = () => (store.get('bs_bank_in', []) || []).filter(x => !accHidden(x)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   function bankInWhen(x, withDate) {
     const d = new Date(x.createdAt || 0);
@@ -1218,8 +1220,8 @@ function bahtText(value) {
   }
   function renderJobBankInPick() {
     const box = $('jobBankInPick'); if (!box) return;
-    box.hidden = !canBank || (!cloudDb && !bankInAll().length); if (box.hidden) return;
-    const all = bankInAll();
+    box.hidden = !canBank || (!cloudDb && !bankInPick().length); if (box.hidden) return;
+    const all = bankInPick();
     const linked = jobBankInIds.map(id => all.find(x => x.id === id)).filter(Boolean);
     const total = linked.reduce((a, x) => a + num(x.amount), 0);
     $('jobBankInSel').textContent = !linked.length ? '' : linked.length === 1
@@ -9745,11 +9747,11 @@ function bahtText(value) {
   $('jobBankInList').addEventListener('click', e => {
     if (e.target.closest('[data-bkdone]')) { $('jobBankInList').hidden = true; $('jobBankInBtn').setAttribute('aria-expanded', 'false'); return; }
     const b = e.target.closest('[data-bid]'); if (!b) return;
-    const x = bankInAll().find(r => r.id === b.dataset.bid); if (!x) return;
+    const x = bankInPick().find(r => r.id === b.dataset.bid); if (!x) return;
     const k = jobBankInIds.indexOf(x.id);
     if (k >= 0) jobBankInIds.splice(k, 1); else jobBankInIds.push(x.id);
     // จำนวนเงินตามสลิป = ผลรวมของยอดที่เลือก, บัญชีตามยอดแรก
-    const sel = jobBankInIds.map(id => bankInAll().find(r => r.id === id)).filter(Boolean);
+    const sel = jobBankInIds.map(id => bankInPick().find(r => r.id === id)).filter(Boolean);
     if (sel.length) {
       const total = Math.round(sel.reduce((a, r) => a + num(r.amount), 0) * 100) / 100;
       $('jobSlipAmount').value = total; $('jobSlipPending').checked = false;   // ผูกกับเงินเข้าจริงแล้ว = รับแล้ว
