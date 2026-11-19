@@ -371,3 +371,5 @@
 - 19 พ.ย. 19:05 (ตัวที่ 1): ลบโค้ดแจ้งเตือน Kob Chat ออกจากแอปทั้งหมด (kobNotify, kobNotifyUnmatched, ปุ่มทดสอบ) ตามที่เจ้าของสั่ง เพราะเตือนซ้ำข้ามเครื่อง · preview เท่านั้น · ไฟล์ worker/kob-notify-worker.js และ Worker บน Cloudflare ยังอยู่ (ไม่มีใครเรียกแล้ว)
 
 - 19 พ.ย. 19:15 (ตัวที่ 1): ลบ worker/kob-notify-worker.js + หัวข้อใน worker/README.md ตามที่เจ้าของสั่ง · Worker `kob-notify` บน Cloudflare **ยังไม่ได้ลบ** (ผมไม่มีเครื่องมือลบ) — เจ้าของลบเองใน Workers & Pages ได้
+
+- 19 พ.ย. 22:20 (ตัวที่ 1): **ขึ้นของจริง v224** — เจ้าของพิมพ์ "อัพ" · ลบโค้ดแจ้งเตือน Kob Chat ออกจากแอปจริง (หยุดเตือนซ้ำ) · Worker `kob-notify` บน Cloudflare ยังรอเจ้าของลบเอง
