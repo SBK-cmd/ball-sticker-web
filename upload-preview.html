@@ -249,6 +249,32 @@
   .tqt { display:grid; gap:1px; } .tqt em { font:600 18px 'Prompt',sans-serif; font-style:normal; color:#4CC3B0; } .tqt b { font:400 15px/1.4 'Prompt',sans-serif; color:#4a4f5a; } .tqt small { font-size:12.5px; color:#a9aeb8; }
   .tqf { border-top:2px solid #22a45d; padding:8px 12px; font-size:12.5px; color:#8b919c; }
   @media (max-height:700px) { .drop { min-height:160px; } .stage { min-height:140px; } .tiers button, .tiers .oth { min-height:44px; } }
+
+  /* ขั้น 1 แบบการ์ดตัวเลือก (19 พ.ย. 69): เวทีตัวอย่างใหญ่ + แถบสลับใต้ภาพ + การ์ดขนาด/จำนวน แยกใบ */
+  #v1 #stage { flex:none; height:min(340px,46vh); min-height:290px; max-height:none; padding:52px 12px 66px; border:0; border-radius:22px; background:#e8ecf4; box-shadow:0 6px 20px rgba(20,35,75,.07); }
+  #v1 #stage .st-top { top:auto; bottom:0; left:0; right:0; padding:10px 12px; background:#fff; border-top:1px solid var(--line); border-radius:0 0 22px 22px; }
+  #v1 #stage .st-top .fn { display:none; }
+  #v1 #stage .chipbtn { font:600 14px 'Prompt',sans-serif; min-height:40px; padding:0 16px; text-decoration:none; background:#eef0f5; color:var(--ink); }
+  #v1 #stage .sw { background:#eef0f5; padding:4px; gap:2px; } #v1 #stage .sw .chipbtn { background:transparent; min-height:36px; }
+  #v1 #stage .sw .chipbtn.on { background:var(--yel); color:var(--ink); }
+  #v1 #stage .scale { top:12px; bottom:auto; left:12px; right:auto; } #v1 #stage .scale .sb { display:none; }
+  #v1 #stage #sdim { background:#fff; border-radius:999px; padding:6px 14px; font:700 14px 'Prompt',sans-serif; box-shadow:0 1px 3px rgba(20,35,75,.12); }
+  #v1 #stage::after { content:'ลากเพื่อหมุน ดูได้รอบด้าน'; position:absolute; left:50%; bottom:58px; transform:translateX(-50%); background:#fff; border:1px solid var(--line); border-radius:999px; padding:6px 16px; font:500 13px 'Prompt',sans-serif; color:var(--sub); white-space:nowrap; pointer-events:none; }
+  #v1 #bgnote { position:static; text-align:left; background:#fff7df; border:1px solid #f1d98f; border-radius:14px; padding:10px 14px; font-size:13px; color:#5a4a10; margin:0; } #v1 #bgnote[hidden] { display:none; }
+  #v1 #stage .shadow { margin-top:2px; }
+  .dl { margin:0; padding:0 6px; text-align:center; font:600 13.5px/1.4 'Noto Sans Thai',sans-serif; color:var(--ok); } #stage[hidden] ~ .dl { display:none; }
+  #v1 #ctl.card { background:none; border:0; padding:0; gap:12px; }
+  #v1 #ctl > div { background:#fff; border:1px solid var(--line); border-radius:20px; padding:16px; }
+  #v1 #ctl .lbl { font:700 18px 'Prompt',sans-serif; color:var(--ink); margin:0 0 12px; align-items:center; } #v1 #ctl .lbl small { font:400 12.5px 'Noto Sans Thai',sans-serif; color:var(--sub); max-width:20ch; }
+  #v1 .sz button { background:#eef0f5; border:0; border-radius:999px; min-height:44px; padding:0 18px; font:600 15px 'Prompt',sans-serif; color:var(--ink); }
+  #v1 .sz button.on { background:var(--yel); color:var(--ink); }
+  #v1 .tiers { background:#eef0f5; padding:6px; border-radius:18px; gap:6px; }
+  #v1 .tiers button { background:transparent; border:0; border-radius:14px; min-height:62px; color:var(--ink); }
+  #v1 .tiers button small { color:var(--sub); }
+  #v1 .tiers button.on { background:var(--yel); color:var(--ink); box-shadow:0 2px 6px rgba(20,35,75,.15); } #v1 .tiers button.on small { color:#3b3a2c; }
+  #v1 .tiers .oth { background:transparent; border:0; border-radius:14px; } #v1 .tiers .oth.on { background:#fff; border:2px solid var(--yel); }
+  #v1 .aibtn, #v1 .aiundo { border-radius:14px; }
+  #v1 > .airow, #v1 > .dl, #v1 > #bgnote, #v1 > #ctl, #v1 > .warn, #v1 > .sampbox, #v1 > #stage, #v1 > .sample { flex:none; } #v1 #ctl > div { flex:none; }
 </style>
 </head>
 <body>
@@ -276,7 +302,6 @@
     <div class="stage" id="stage" hidden aria-label="ตัวอย่างสติ๊กเกอร์ 3 มิติ ลากเพื่อหมุน">
       <div class="st-top"><span class="fn" id="pinfo"></span><button type="button" class="chipbtn" id="pchange">เปลี่ยนรูป</button><span class="sw" id="cutsw"><button type="button" class="chipbtn on" data-cut="shape">ตามทรง</button><button type="button" class="chipbtn" data-cut="image">ตามภาพ</button></span><input type="checkbox" id="rmbg" checked hidden></div>
       <div class="st3d" id="st3d"><canvas id="cv3d"></canvas><div class="gloss" id="gloss"></div></div><div class="shadow" aria-hidden="true"></div>
-      <p class="note" id="bgnote" hidden></p>
       <div class="scale"><span id="sdim"></span><span class="sb"><i id="sbar"></i><em id="sbarT"></em></span></div>
     </div>
     <div id="sampnote" class="sampbox" hidden><label class="bigup" for="file"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>อัปโหลดรูปของคุณ</label><small>นี่คือตัวอย่างสติ๊กเกอร์ร้านเรา · อัปรูปของคุณเพื่อดูตัวอย่างและสั่งทำ</small></div>
@@ -290,6 +315,8 @@
       </div>
     </div>
     <div class="airow" id="airow" hidden><button type="button" class="aibtn" id="aibtn"><span id="aibtnT">✂ ลบพื้นหลังอัตโนมัติ (AI ฟรี)</span></button><button type="button" class="aiundo" id="aiundo" hidden>ใช้รูปเดิม</button><button type="button" class="aiundo aied" id="edbtn">✎ ลบเอง</button></div>
+    <p class="note" id="bgnote" hidden></p>
+    <p class="dl" id="dl">ส่งฟรีเมื่อค่าพิมพ์ครบ 900 บาท · จ่ายพร้อมเพย์ QR</p>
     <div class="warn" id="qwarn" hidden></div>
     <div class="ctl card" id="ctl">
       <div>
@@ -707,7 +734,7 @@
   function fitStage() {
     var g = st.geo; if (!g || !$('w')) return;
     var w = num($('w').value), h = num($('h').value); if (!(w > 0 && h > 0)) return;
-    var stg = $('stage'), box = Math.min((stg.clientWidth || 340) - 24, 400), boxH = Math.max(90, (stg.clientHeight || 300) - 74), base = box * 0.92 / 15, ppc = base;
+    var stg = $('stage'), box = Math.min((stg.clientWidth || 340) - 24, 400), boxH = Math.max(90, (stg.clientHeight || 300) - 128), base = box * 0.92 / 15, ppc = base;
     var cw = w * g.W / g.ow, ch = h * (g.H + g.T) / g.oh;
     ppc = Math.min(base * 3, box * 0.84 / cw, boxH / ch);   // ขยายให้ดวงเล็กเห็นชัด (เต็มเวที) · ไม้บรรทัด 5 ซม. คิดตามสเกลนี้เสมอ
     if (cw * ppc > box) ppc = box / cw; if (ch * ppc > boxH) ppc = boxH / ch;
