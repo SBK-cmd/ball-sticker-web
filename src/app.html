@@ -5284,7 +5284,8 @@ function bahtText(value) {
   const localISO = d => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
   // ตัวเลือก 'เลือกยอดจากเงินเข้า' ในใบงาน: รวมเงินเข้าบัญชีวันทิมด้วย (เฉพาะเงินเข้า ไม่รวมเงินออก/ยอดคงเหลือ)
   const bankInPick = () => (store.get('bs_bank_in', []) || []).filter(x => x && num(x.amount) > 0).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-  const bankInAll = () => (store.get('bs_bank_in', []) || []).filter(x => !accHidden(x)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  // เงินเข้าเห็นครบทุกบัญชี (รวมวันทิม) — เงินออก/ยอดคงเหลือของวันทิมยังซ่อนจากพนักงาน
+  const bankInAll = () => (store.get('bs_bank_in', []) || []).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   function bankInWhen(x, withDate) {
     const d = new Date(x.createdAt || 0);
     const hm = pad2(d.getHours()) + ':' + pad2(d.getMinutes());
@@ -5597,7 +5598,7 @@ function bahtText(value) {
       (showHidden ? 'ซ่อนบัญชี' + hiddenAcc.join(', ') : '👁 แสดงบัญชี' + hiddenAcc.join(', ')) + '</button></div>' : '');
     const accF = x => bankAccTab === 'all' || x.account === bankAccTab;
     const listF = list.filter(accF), outsF = outs.filter(accF);
-    $('bankAccSeg').innerHTML = '<button type="button" data-ba="all" aria-pressed="' + (bankAccTab === 'all') + '">ทุกบัญชี</button>' + VISIBLE_ACCOUNTS.map(a => '<button type="button" data-ba="' + esc(a) + '" aria-pressed="' + (bankAccTab === a) + '">' + esc(a) + '</button>').join('');
+    $('bankAccSeg').innerHTML = '<button type="button" data-ba="all" aria-pressed="' + (bankAccTab === 'all') + '">ทุกบัญชี</button>' + ACCOUNTS.map(a => '<button type="button" data-ba="' + esc(a) + '" aria-pressed="' + (bankAccTab === a) + '">' + esc(a) + '</button>').join('');
     document.querySelectorAll('#bankListSeg button').forEach(b => {
       const k = b.dataset.bk, n = k === 'in' ? listF.length : k === 'out' ? outsF.length : listF.length + outsF.length;
       b.setAttribute('aria-pressed', String(k === bankListTab));
