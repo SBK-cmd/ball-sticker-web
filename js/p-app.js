@@ -5293,6 +5293,14 @@ function bahtText(value) {
   /* ---------- แจ้งเตือนเจ้าของเข้า Kob Chat ผ่าน Worker (worker/kob-notify-worker.js) — ส่งแล้วไม่รอผล แอปทำงานปกติแม้ Worker ล่ม ---------- */
   const KOB_URL = 'https://kob-notify.organic-parmesan.workers.dev/notify';
   const kobSentGet = () => { try { return JSON.parse(localStorage.getItem('bs_kob_sent') || '{}') || {}; } catch (e) { return {}; } };
+  // จำว่าแจ้งเรื่องเงินเข้านี้แล้ว "ในฐานข้อมูลกลาง" — เดิมจำแค่ในเครื่อง ทำให้เปิดแอปอีกเครื่องแล้วเตือนซ้ำ
+  function kobMarkSent(id) {
+    try {
+      const list = store.get('bs_bank_in', []) || [], i = list.findIndex(x => x.id === id); if (i < 0) return;
+      const at = Date.now(); list[i] = Object.assign({}, list[i], {kobAt: at}); store.set('bs_bank_in', list);
+      cloudSave('bankIn', {id, kobAt: at});
+    } catch (e) {}
+  }
   function kobNotify(p) {
     try {
       if (!canBank || !p || !p.eventId) return Promise.resolve(false);
@@ -5310,9 +5318,9 @@ function bahtText(value) {
       const now = Date.now(), sent = kobSentGet(), used = new Set(payCharges().map(x => x.bankInId).filter(Boolean));
       // แจ้งเฉพาะเงินที่เข้าหลังเปิดระบบนี้ (กันเตือนย้อนหลังรายการเก่าที่จัดการไปแล้ว)
       let since = 0; try { since = +localStorage.getItem('bs_kob_since') || 0; if (!since) { since = now; localStorage.setItem('bs_kob_since', String(since)); } } catch (e) { since = now; }
-      wantimPoolAll().filter(b => (b.createdAt || 0) >= since && !b.matchedJobId && !used.has(b.id) && num(b.amount) > 0 && now - (b.createdAt || 0) > 5 * 60000 && now - (b.createdAt || 0) < 86400000 && !sent['bi-' + b.id]).slice(0, 5).forEach(b => {
+      wantimPoolAll().filter(b => (b.createdAt || 0) >= since && !b.matchedJobId && !used.has(b.id) && num(b.amount) > 0 && now - (b.createdAt || 0) > 5 * 60000 && now - (b.createdAt || 0) < 86400000 && !b.kobAt && !sent['bi-' + b.id]).slice(0, 5).forEach(b => {
         kobNotify({type: 'confirm', eventId: 'bi-' + b.id, title: 'เงินเข้า ' + (b.account || ''), amount: num(b.amount),
-          lines: [new Date(b.createdAt).toLocaleString('th-TH', {dateStyle: 'short', timeStyle: 'short'}), String(b.sender || b.note || b.from || '').slice(0, 60), 'ระบบจับคู่กับบิลไม่ได้ — เปิดแอปเพื่อยืนยัน'].filter(Boolean)});
+          lines: [new Date(b.createdAt).toLocaleString('th-TH', {dateStyle: 'short', timeStyle: 'short'}), String(b.sender || b.note || b.from || '').slice(0, 60), 'ระบบจับคู่กับบิลไม่ได้ — เปิดแอปเพื่อยืนยัน'].filter(Boolean)}).then(ok => { if (ok) kobMarkSent(b.id); });
       });
     } catch (e) { console.error('kobNotifyUnmatched', e); }
   }
