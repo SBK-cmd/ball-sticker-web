@@ -10,7 +10,7 @@
  */
 const ALLOW = ['https://app.ballsticker.co.th', 'https://ballsticker.co.th', 'https://www.ballsticker.co.th', 'https://sbk-cmd.github.io'];
 const TZ_MS = 7 * 3600000, CACHE_S = 600;
-const CHAT_TYPES = ['onsite_conversion.messaging_conversation_started_7d', 'onsite_conversion.total_messaging_connection'];
+const CHAT_TYPES = ['onsite_conversion.total_messaging_connection']; // = คอลัมน์ "ผู้ติดต่อผ่านการส่งข้อความ" ใน Ads Manager (ตรวจเทียบ 17-18 พ.ย. 69 ตรงทั้ง 2 วัน)
 
 function cors(origin) {
   const o = ALLOW.indexOf(origin) >= 0 ? origin : ALLOW[0];
