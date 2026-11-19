@@ -40,6 +40,10 @@
   .drop b { font:600 19px 'Prompt',sans-serif; }
   .drop small { color:var(--sub); font-size:13px; max-width:30ch; }
   .sample { display:flex; align-items:center; gap:10px; width:100%; text-align:left; background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px 12px; cursor:pointer; font:inherit; color:inherit; }
+  .sampbox { display:grid; gap:6px; justify-items:center; text-align:center; } .sampbox[hidden] { display:none; }
+  .bigup { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; min-height:64px; border-radius:14px; background:#f5b301; color:#111a3f; font:700 22px 'Prompt',sans-serif; cursor:pointer; box-shadow:0 2px 0 #c58f00; -webkit-tap-highlight-color:transparent; }
+  .bigup:active { transform:translateY(1px); box-shadow:none; }
+  .sampbox small { color:var(--sub); font-size:12.5px; }
   .sample[hidden] { display:none; }
   .sample img { width:44px; height:auto; flex:none; filter:drop-shadow(0 1px 2px rgba(0,0,0,.25)); }
   .sample span { display:grid; gap:1px; flex:1; min-width:0; } .sample b { font:600 14px 'Prompt',sans-serif; } .sample small { color:var(--sub); font-size:12px; }
@@ -260,7 +264,7 @@
       <p class="note" id="bgnote" hidden></p>
       <div class="scale"><span id="sdim"></span><span class="sb"><i id="sbar"></i><em id="sbarT"></em></span></div>
     </div>
-    <p class="note" id="sampnote" hidden style="text-align:center;font-weight:600;color:var(--navy)">ตัวอย่างสติ๊กเกอร์ร้านเรา · แตะ “อัปโหลดรูปของคุณ” เพื่อสั่งทำจริง</p>
+    <div id="sampnote" class="sampbox" hidden><label class="bigup" for="file"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>อัปโหลดรูปของคุณ</label><small>นี่คือตัวอย่างสติ๊กเกอร์ร้านเรา · อัปรูปของคุณเพื่อดูตัวอย่างและสั่งทำ</small></div>
     <div class="warn" id="qwarn" hidden></div>
     <div class="ctl card" id="ctl">
       <div>
@@ -436,6 +440,7 @@
   // ---------- รูป ----------
   function pick() { $('file').click(); }
   $('pchange').addEventListener('click', pick);
+  setTimeout(function () { try { if (!st.file && !/[?&]nosample/.test(location.search)) loadSample(); } catch (e) {} }, 0);
   var drop = $('drop');
   ['dragenter', 'dragover'].forEach(function (t) { drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add('on'); }); });
   ['dragleave', 'drop'].forEach(function (t) { drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.remove('on'); }); });
@@ -447,6 +452,7 @@
       var f = new File([b], 'สติ๊กเกอร์ร้านบอล.png', { type: 'image/png' }); useFile(f, true);
     }).catch(function () { var w = $('qwarn'); w.hidden = false; w.textContent = 'โหลดตัวอย่างไม่สำเร็จ ลองอีกครั้ง'; });
   });
+  function loadSample() { if (!st.file) $('sample').click(); }
   function useFile(f, isSample) {
     var w = $('qwarn'); w.hidden = true; setSampleUI(!!isSample);
     if (f.size > 20 * 1024 * 1024) { w.hidden = false; w.textContent = 'ไฟล์ใหญ่เกิน 20 MB ส่งทาง LINE @bk25 แทนได้'; return; }
