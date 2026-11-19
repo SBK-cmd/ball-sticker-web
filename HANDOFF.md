@@ -375,3 +375,5 @@
 - 19 พ.ย. 22:20 (ตัวที่ 1): **ขึ้นของจริง v224** — เจ้าของพิมพ์ "อัพ" · ลบโค้ดแจ้งเตือน Kob Chat ออกจากแอปจริง (หยุดเตือนซ้ำ) · Worker `kob-notify` บน Cloudflare ยังรอเจ้าของลบเอง
 
 - 19 พ.ย. 22:35 (ตัวที่ 1): ติดตั้งสกิล firebase-security-rules-auditor (Google, firebase/agent-skills @99954a3) ใน .claude/skills · อ่านครบแล้ว ไฟล์เดียว ไม่มีสคริปต์ · ยังไม่ได้รันตรวจกฎจริง (ไฟล์กฎอยู่ใน team/firestore-rules-payIntents.txt, worker/firestore-rules-webOrders.txt, worker/line-bills/firestore-rules-billInbox.txt)
+
+- 19 พ.ย. 22:40 (ตัวที่ 1): ติดตั้งสกิล hallmark (Nutlope, ดีไซน์หน้าเว็บใหม่) ใน .claude/skills ตามที่เจ้าของสั่ง · ตรวจแล้ว: มี node scripts, ไม่ได้รัน install-hook, ไม่ตั้ง TOGETHER_API_KEY · ใช้กับ "หน้าใหม่" เท่านั้น ห้ามใช้ทับดีไซน์หน้าร้าน/แอปเดิมถ้าเจ้าของไม่ได้สั่ง · ซ้ำบทบาทกับ design-taste-frontend
