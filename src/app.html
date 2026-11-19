@@ -2233,6 +2233,7 @@ body.jm-open .fab-newjob{display:none!important}
 #wallOv .wl-bot .wl-card{padding:14px 16px}
 #wallOv .wl-kv{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:6px;font-size:14px;color:#aab3c5}
 #wallOv .wl-kv b{display:inline;font-size:clamp(20px,4vw,28px);font-weight:800;color:#e8ecf4;line-height:1.1}
+#wallOv .wl-mo{border-top:1px solid #1f2634;padding-top:8px;margin-top:10px}
 #wallOv .wl-kv em{display:inline;margin:0;font-size:12px}
 @media(max-width:640px){#wallOv .wl-bot{grid-template-columns:1fr}#wallOv .wl-split{grid-template-columns:1fr}}
 @media(max-width:640px){#wallOv .wl-adg{grid-template-columns:1fr 1fr}#wallOv .wl-clock{font-size:26px}}
@@ -4302,6 +4303,9 @@ body.jm-open .fab-newjob{display:none!important}
         <div class="wl-kv"><span id="wlRoas7"></span><span></span></div>
         <div class="wl-kv"><span>แชตจากแอด</span><b id="wlChats">-</b></div>
         <div class="wl-kv"><span>ค่าแอด / แชต</span><b id="wlCpc">-</b></div>
+        <div class="wl-kv wl-mo"><span>ค่าแอดทั้งเดือน</span><b id="wlSpendM">-</b></div>
+        <div class="wl-kv"><span>แชตทั้งเดือน</span><b id="wlChatsM">-</b></div>
+        <div class="wl-kv"><span>ROAS ทั้งเดือน</span><b class="c-lime" id="wlRoasM">-</b></div>
       </div>
       <div class="wl-card"><small>ค่าใช้จ่ายวันนี้</small>
         <div class="wl-kv"><span>ค่าแอด</span><b id="wlSpend">-</b></div>
@@ -14846,7 +14850,7 @@ function bahtText(value) {
 
 
   /* ---------------- จอร้าน (เต็มจอ ธีมมืด) — ใช้ข้อมูลในแอป + ค่าแอดจาก Worker fb-ads ---------------- */
-  const WALL_ADS_URL = 'https://fb-ads.organic-parmesan.workers.dev/ads?days=8';
+  const WALL_ADS_URL = () => 'https://fb-ads.organic-parmesan.workers.dev/ads?days=' + Math.min(60, Math.max(8, +todayISO().slice(8, 10)));
   let wallOn = false, wallAds = null, wallAdsAt = 0, wallClockT = 0, wallDataT = 0;
   function wallBankToday(today) {
     const ins = (store.get('bs_bank_in', []) || []).filter(x => x && x.createdAt && num(x.amount) > 0 && !accHidden(x));
@@ -14865,9 +14869,9 @@ function bahtText(value) {
     wallAdsAt = Date.now();
     try {
       if (location.protocol !== 'https:' || window.__BS_DEMO) {   // โหมดตัวอย่าง: ไม่เรียกของจริง
-        wallAds = {demo: true, days: [{date: todayISO(), spend: 954.87, chats: 15}]}; return;
+        wallAds = {demo: true, days: Array.from({length: +todayISO().slice(8, 10)}, (_, i) => ({date: todayISO().slice(0, 8) + String(i + 1).padStart(2, '0'), spend: 900 + (i % 5) * 20, chats: 14 + (i % 4)}))}; return;
       }
-      const r = await fetch(WALL_ADS_URL); if (!r.ok) throw new Error('http ' + r.status);
+      const r = await fetch(WALL_ADS_URL()); if (!r.ok) throw new Error('http ' + r.status);
       wallAds = await r.json();
     } catch (e) { wallAds = {error: true}; }
   }
@@ -14907,7 +14911,7 @@ function bahtText(value) {
     $('wlOut').textContent = '฿' + Math.round(bk.outT).toLocaleString('en-US'); $('wlOutN').textContent = bk.nOut + ' รายการ';
     // โฆษณา
     const A = wallAds, tag = $('wlAdsTag'), note = $('wlAdsNote');
-    ['wlRoas', 'wlSpend', 'wlChats', 'wlCpc'].forEach(id => { $(id).textContent = '-'; }); $('wlRoas7').textContent = '';
+    ['wlRoas', 'wlSpend', 'wlChats', 'wlCpc', 'wlSpendM', 'wlChatsM', 'wlRoasM'].forEach(id => { $(id).textContent = '-'; }); $('wlRoas7').textContent = '';
     if (!A) { tag.textContent = ''; note.textContent = 'กำลังโหลดค่าแอด…'; }
     else if (A.error) { tag.textContent = ''; note.textContent = 'ดึงค่าแอดจาก Meta ไม่ได้ในตอนนี้ (ตัวเลขอื่นยังใช้ได้)'; }
     else {
@@ -14919,6 +14923,9 @@ function bahtText(value) {
       $('wlRoas').textContent = t.spend > 0 ? (sToday / t.spend).toFixed(2) + 'x' : '-';
       const last7 = days.filter(x => x.date <= today).slice(-7), sp7 = last7.reduce((a, x) => a + x.spend, 0);
       const from = last7.length ? last7[0].date : today, rev7 = bills.filter(b => b.date >= from && b.date <= today).reduce((a, b) => a + tot(b), 0);
+      const md = days.filter(x => monthKey(x.date) === mk), spM = md.reduce((a, x) => a + x.spend, 0), chM = md.reduce((a, x) => a + x.chats, 0);
+      $('wlSpendM').textContent = '฿' + Math.round(spM).toLocaleString('en-US'); $('wlChatsM').textContent = String(chM);
+      $('wlRoasM').textContent = spM > 0 ? (sMonth / spM).toFixed(2) + 'x' : '-';
       if (sp7 > 0 && !A.demo) $('wlRoas7').textContent = '7 วัน ' + (rev7 / sp7).toFixed(2) + 'x';
       note.textContent = A.demo ? 'โหมดตัวอย่าง: ยังไม่ได้ดึงค่าแอดจริง' : 'ค่าแอด/แชตจาก Meta (นับ "ผู้ติดต่อผ่านข้อความ" ตาม Ads Manager) · ยอดขายมาจากบิลที่บันทึกในแอป';
     }
