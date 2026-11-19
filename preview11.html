@@ -4740,7 +4740,7 @@ html:root body #wholesaleHistory .wd-inb>summary{font-size:13px;color:var(--a-mu
               <p class="hint" style="margin:-6px 0 0">เพจและบัญชีไม่พิมพ์ลงบิล</p>
               <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="cName" type="text" autocomplete="off"></label>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="cPhone" type="tel" autocomplete="off"></label>
-              <label class="f"><span>เลขประจำตัวผู้เสียภาษีลูกค้า (ถ้ามี)</span><input class="txt" id="cTax" type="text" inputmode="numeric" autocomplete="off"></label>
+              <label class="f"><span>เลขประจำตัวผู้เสียภาษีลูกค้า (ถ้ามี)</span><input class="txt" id="cTax" type="text" inputmode="numeric" autocomplete="off"><button type="button" class="btn small tin-btn" data-tin="bill">🔍 ค้นหาข้อมูลจากฐานข้อมูลกรมสรรพากร</button></label>
               <label class="f"><span>ที่อยู่ลูกค้า</span><textarea id="cAddr"></textarea></label>
             </div>
             <details class="shop" id="shopSettings">
@@ -4972,7 +4972,7 @@ html:root body #wholesaleHistory .wd-inb>summary{font-size:13px;color:var(--a-mu
               </label>
               <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="qName" type="text" autocomplete="off"></label>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="qPhone" type="tel" autocomplete="off"></label>
-              <label class="f"><span>เลขประจำตัวผู้เสียภาษีลูกค้า (ถ้ามี)</span><input class="txt" id="qTax" type="text" inputmode="numeric" autocomplete="off"></label>
+              <label class="f"><span>เลขประจำตัวผู้เสียภาษีลูกค้า (ถ้ามี)</span><input class="txt" id="qTax" type="text" inputmode="numeric" autocomplete="off"><button type="button" class="btn small tin-btn" data-tin="quote">🔍 ค้นหาข้อมูลจากฐานข้อมูลกรมสรรพากร</button></label>
               <label class="f"><span>ที่อยู่ลูกค้า</span><textarea id="qAddr"></textarea></label>
             </div>
           </div>
@@ -5792,6 +5792,19 @@ html:root body #wholesaleHistory .wd-inb>summary{font-size:13px;color:var(--a-mu
 
 <div class="toast no-print" aria-live="polite"><span id="toast" hidden></span></div>
 
+<div class="overlay no-print" id="tinOverlay" style="z-index:1100" hidden role="dialog" aria-modal="true" aria-labelledby="tinTitle">
+  <div class="ov-card" style="max-width:760px">
+    <div class="ov-head"><div><h2 id="tinTitle">ค้นหาข้อมูลธุรกิจ จากฐานข้อมูลกรมสรรพากร</h2><p class="ov-file" id="tinMode"></p></div><button class="btn small" id="tinClose" type="button">ปิด</button></div>
+    <form id="tinForm" class="row2" style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin:8px 0">
+      <label class="f"><span>ค้นหา (เลขประจำตัวผู้เสียภาษี 13 หลัก)</span><input class="txt" id="tinQ" type="text" inputmode="numeric" maxlength="17" autocomplete="off" placeholder="เช่น 0105560000000"></label>
+      <button class="btn primary" type="submit" id="tinGo">ค้นหา</button>
+    </form>
+    <p class="hint" id="tinMsg" role="status"></p>
+    <div id="tinRes"></div>
+    <p class="hint">ข้อมูลจากทะเบียนอาจไม่ล่าสุด กรุณาตรวจชื่อและที่อยู่กับลูกค้าก่อนออกบิล · ใช้กับเลขนิติบุคคล/ผู้ประกอบการเท่านั้น</p>
+  </div>
+</div>
+
 <div class="overlay no-print" id="pdfOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="ovTitle">
   <div class="ov-card">
     <div class="ov-head">
@@ -5887,7 +5900,7 @@ html:root body #wholesaleHistory .wd-inb>summary{font-size:13px;color:var(--a-mu
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?r=2&v=c41c4a767d",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?r=2&v=b4fe407a56",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

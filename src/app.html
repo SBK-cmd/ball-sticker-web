@@ -3160,7 +3160,7 @@ body.jm-open .fab-newjob{display:none!important}
               <p class="hint" style="margin:-6px 0 0">เพจและบัญชีไม่พิมพ์ลงบิล</p>
               <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="cName" type="text" autocomplete="off"></label>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="cPhone" type="tel" autocomplete="off"></label>
-              <label class="f"><span>เลขประจำตัวผู้เสียภาษีลูกค้า (ถ้ามี)</span><input class="txt" id="cTax" type="text" inputmode="numeric" autocomplete="off"></label>
+              <label class="f"><span>เลขประจำตัวผู้เสียภาษีลูกค้า (ถ้ามี)</span><input class="txt" id="cTax" type="text" inputmode="numeric" autocomplete="off"><button type="button" class="btn small tin-btn" data-tin="bill">🔍 ค้นหาข้อมูลจากฐานข้อมูลกรมสรรพากร</button></label>
               <label class="f"><span>ที่อยู่ลูกค้า</span><textarea id="cAddr"></textarea></label>
             </div>
             <details class="shop" id="shopSettings">
@@ -3392,7 +3392,7 @@ body.jm-open .fab-newjob{display:none!important}
               </label>
               <label class="f"><span>ชื่อลูกค้า</span><input class="txt" id="qName" type="text" autocomplete="off"></label>
               <label class="f"><span>เบอร์โทรลูกค้า</span><input class="txt" id="qPhone" type="tel" autocomplete="off"></label>
-              <label class="f"><span>เลขประจำตัวผู้เสียภาษีลูกค้า (ถ้ามี)</span><input class="txt" id="qTax" type="text" inputmode="numeric" autocomplete="off"></label>
+              <label class="f"><span>เลขประจำตัวผู้เสียภาษีลูกค้า (ถ้ามี)</span><input class="txt" id="qTax" type="text" inputmode="numeric" autocomplete="off"><button type="button" class="btn small tin-btn" data-tin="quote">🔍 ค้นหาข้อมูลจากฐานข้อมูลกรมสรรพากร</button></label>
               <label class="f"><span>ที่อยู่ลูกค้า</span><textarea id="qAddr"></textarea></label>
             </div>
           </div>
@@ -4211,6 +4211,19 @@ body.jm-open .fab-newjob{display:none!important}
 </div>
 
 <div class="toast no-print" aria-live="polite"><span id="toast" hidden></span></div>
+
+<div class="overlay no-print" id="tinOverlay" style="z-index:1100" hidden role="dialog" aria-modal="true" aria-labelledby="tinTitle">
+  <div class="ov-card" style="max-width:760px">
+    <div class="ov-head"><div><h2 id="tinTitle">ค้นหาข้อมูลธุรกิจ จากฐานข้อมูลกรมสรรพากร</h2><p class="ov-file" id="tinMode"></p></div><button class="btn small" id="tinClose" type="button">ปิด</button></div>
+    <form id="tinForm" class="row2" style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin:8px 0">
+      <label class="f"><span>ค้นหา (เลขประจำตัวผู้เสียภาษี 13 หลัก)</span><input class="txt" id="tinQ" type="text" inputmode="numeric" maxlength="17" autocomplete="off" placeholder="เช่น 0105560000000"></label>
+      <button class="btn primary" type="submit" id="tinGo">ค้นหา</button>
+    </form>
+    <p class="hint" id="tinMsg" role="status"></p>
+    <div id="tinRes"></div>
+    <p class="hint">ข้อมูลจากทะเบียนอาจไม่ล่าสุด กรุณาตรวจชื่อและที่อยู่กับลูกค้าก่อนออกบิล · ใช้กับเลขนิติบุคคล/ผู้ประกอบการเท่านั้น</p>
+  </div>
+</div>
 
 <div class="overlay no-print" id="pdfOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="ovTitle">
   <div class="ov-card">
@@ -14724,6 +14737,56 @@ function bahtText(value) {
       renderWholesaleHistory(); toast('ลบใบราคาส่งแล้ว');
     }
   });
+
+
+  /* ---- ค้นหาข้อมูลธุรกิจจากเลขประจำตัวผู้เสียภาษี (ตัวกลาง Cloudflare Worker ของ AI#2 — ยังไม่มี: ใส่ URL ที่ TIN_API_URL แล้วใช้งานจริงได้) ----
+     สัญญา: GET {TIN_API_URL}?id=13หลัก → {results:[{taxId, name, branch:'สำนักงานใหญ่'|'สาขา', branchNo:'00000', address}]} */
+  const TIN_API_URL = '';
+  let tinTarget = 'bill';
+  const tinValid = id => { if (!/^\d{13}$/.test(id)) return false; let a = 0; for (let i = 0; i < 12; i++) a += (13 - i) * +id[i]; return (11 - a % 11) % 10 === +id[12]; };
+  async function tinFetch(id) {
+    if (TIN_API_URL) {
+      const r = await fetch(TIN_API_URL + '?id=' + id); if (!r.ok) throw new Error('http ' + r.status);
+      const j = await r.json(); return j.results || [];
+    }
+    // โหมดทดลอง: ยังไม่ต่อฐานข้อมูลจริง — ให้เฉพาะข้อมูลร้านตัวเอง (จากตั้งค่าร้าน) เพื่อดูหน้าตา
+    if (id === String(shop.taxId).replace(/\D/g, '')) return [{taxId: id, name: String(shop.promptpayName || shop.name), branch: 'สำนักงานใหญ่', branchNo: '00000', address: shop.address}];
+    return null;
+  }
+  function tinOpen(target) {
+    tinTarget = target; $('tinQ').value = ($(target === 'quote' ? 'qTax' : 'cTax').value || '').replace(/\D/g, ''); $('tinRes').innerHTML = ''; $('tinMsg').textContent = '';
+    $('tinMode').textContent = TIN_API_URL ? '' : 'โหมดทดลอง: ยังไม่ได้ต่อฐานข้อมูลกรมสรรพากรจริง (ค้นได้เฉพาะเลขของร้านเอง)';
+    $('tinOverlay').hidden = false; $('tinQ').focus(); if (tinValid($('tinQ').value)) $('tinForm').requestSubmit();
+  }
+  $('tinForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = $('tinQ').value.replace(/\D/g, ''), msg = $('tinMsg'); $('tinRes').innerHTML = '';
+    if (!/^\d{13}$/.test(id)) { msg.textContent = 'กรอกเลข 13 หลักให้ครบ'; return; }
+    if (!tinValid(id)) { msg.textContent = 'เลขนี้ไม่ผ่านการตรวจหลักสุดท้าย (ตรวจว่าพิมพ์ผิดหรือไม่)'; return; }
+    msg.textContent = 'กำลังค้นหา…'; $('tinGo').disabled = true;
+    try {
+      const list = await tinFetch(id);
+      if (list === null) msg.textContent = 'ยังไม่ได้ต่อฐานข้อมูลกรมสรรพากร จึงค้นเลขนี้ไม่ได้ในตอนนี้ กรอกข้อมูลลูกค้าเองไปก่อน';
+      else if (!list.length) msg.textContent = 'ไม่พบข้อมูลเลขนี้';
+      else {
+        msg.textContent = 'พบทั้งหมด ' + list.length + ' รายการ';
+        $('tinRes').innerHTML = '<div class="tbl-wrap"><table class="lines"><thead><tr><th>เลขผู้เสียภาษี</th><th>ชื่อ</th><th>สาขา</th><th>เลขที่</th><th>ที่อยู่</th><th></th></tr></thead><tbody>' +
+          list.map((r, i) => '<tr><td>' + esc(r.taxId) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.branch || '') + '</td><td>' + esc(r.branchNo || '') + '</td><td>' + esc(r.address || '') + '</td><td><button type="button" class="btn small primary" data-tin-pick="' + i + '">เลือก</button></td></tr>').join('') + '</tbody></table></div>';
+        $('tinRes')._list = list;
+      }
+    } catch (err) { msg.textContent = 'ค้นหาไม่สำเร็จ ลองอีกครั้ง หรือกรอกข้อมูลเอง'; }
+    $('tinGo').disabled = false;
+  });
+  $('tinRes').addEventListener('click', e => {
+    const b = e.target.closest('[data-tin-pick]'); if (!b) return;
+    const r = $('tinRes')._list[+b.dataset.tinPick], q = tinTarget === 'quote', f = (a, b2) => $(q ? a : b2);
+    const br = /สาขา/.test(r.branch || '') && !/ใหญ่/.test(r.branch || '') ? ' (สาขา ' + (r.branchNo || '') + ')' : (r.branch ? ' (' + r.branch + ')' : '');
+    f('qName', 'cName').value = String(r.name || '') + br; f('qTax', 'cTax').value = r.taxId; f('qAddr', 'cAddr').value = r.address || '';
+    ['qName', 'qTax', 'qAddr', 'cName', 'cTax', 'cAddr'].forEach(id => { if ($(id) && ((q && id[0] === 'q') || (!q && id[0] === 'c'))) $(id).dispatchEvent(new Event('input', {bubbles: true})); });
+    $('tinOverlay').hidden = true; toast('เติมข้อมูลลูกค้าแล้ว ตรวจชื่อและที่อยู่อีกครั้ง');
+  });
+  $('tinClose').addEventListener('click', () => { $('tinOverlay').hidden = true; });
+  document.addEventListener('click', e => { const b = e.target.closest('.tin-btn'); if (b) tinOpen(b.dataset.tin); });
 
   /* ---------------- events: ใบเสนอราคา (แยกต่างหากจากบิล ไม่แตะ items/bs_bills/billCalc ใดๆ) ---------------- */
   $('quoteItems').addEventListener('input', e => {

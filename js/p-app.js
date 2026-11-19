@@ -10416,6 +10416,56 @@ function bahtText(value) {
     }
   });
 
+
+  /* ---- ค้นหาข้อมูลธุรกิจจากเลขประจำตัวผู้เสียภาษี (ตัวกลาง Cloudflare Worker ของ AI#2 — ยังไม่มี: ใส่ URL ที่ TIN_API_URL แล้วใช้งานจริงได้) ----
+     สัญญา: GET {TIN_API_URL}?id=13หลัก → {results:[{taxId, name, branch:'สำนักงานใหญ่'|'สาขา', branchNo:'00000', address}]} */
+  const TIN_API_URL = '';
+  let tinTarget = 'bill';
+  const tinValid = id => { if (!/^\d{13}$/.test(id)) return false; let a = 0; for (let i = 0; i < 12; i++) a += (13 - i) * +id[i]; return (11 - a % 11) % 10 === +id[12]; };
+  async function tinFetch(id) {
+    if (TIN_API_URL) {
+      const r = await fetch(TIN_API_URL + '?id=' + id); if (!r.ok) throw new Error('http ' + r.status);
+      const j = await r.json(); return j.results || [];
+    }
+    // โหมดทดลอง: ยังไม่ต่อฐานข้อมูลจริง — ให้เฉพาะข้อมูลร้านตัวเอง (จากตั้งค่าร้าน) เพื่อดูหน้าตา
+    if (id === String(shop.taxId).replace(/\D/g, '')) return [{taxId: id, name: String(shop.promptpayName || shop.name), branch: 'สำนักงานใหญ่', branchNo: '00000', address: shop.address}];
+    return null;
+  }
+  function tinOpen(target) {
+    tinTarget = target; $('tinQ').value = ($(target === 'quote' ? 'qTax' : 'cTax').value || '').replace(/\D/g, ''); $('tinRes').innerHTML = ''; $('tinMsg').textContent = '';
+    $('tinMode').textContent = TIN_API_URL ? '' : 'โหมดทดลอง: ยังไม่ได้ต่อฐานข้อมูลกรมสรรพากรจริง (ค้นได้เฉพาะเลขของร้านเอง)';
+    $('tinOverlay').hidden = false; $('tinQ').focus(); if (tinValid($('tinQ').value)) $('tinForm').requestSubmit();
+  }
+  $('tinForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = $('tinQ').value.replace(/\D/g, ''), msg = $('tinMsg'); $('tinRes').innerHTML = '';
+    if (!/^\d{13}$/.test(id)) { msg.textContent = 'กรอกเลข 13 หลักให้ครบ'; return; }
+    if (!tinValid(id)) { msg.textContent = 'เลขนี้ไม่ผ่านการตรวจหลักสุดท้าย (ตรวจว่าพิมพ์ผิดหรือไม่)'; return; }
+    msg.textContent = 'กำลังค้นหา…'; $('tinGo').disabled = true;
+    try {
+      const list = await tinFetch(id);
+      if (list === null) msg.textContent = 'ยังไม่ได้ต่อฐานข้อมูลกรมสรรพากร จึงค้นเลขนี้ไม่ได้ในตอนนี้ กรอกข้อมูลลูกค้าเองไปก่อน';
+      else if (!list.length) msg.textContent = 'ไม่พบข้อมูลเลขนี้';
+      else {
+        msg.textContent = 'พบทั้งหมด ' + list.length + ' รายการ';
+        $('tinRes').innerHTML = '<div class="tbl-wrap"><table class="lines"><thead><tr><th>เลขผู้เสียภาษี</th><th>ชื่อ</th><th>สาขา</th><th>เลขที่</th><th>ที่อยู่</th><th></th></tr></thead><tbody>' +
+          list.map((r, i) => '<tr><td>' + esc(r.taxId) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.branch || '') + '</td><td>' + esc(r.branchNo || '') + '</td><td>' + esc(r.address || '') + '</td><td><button type="button" class="btn small primary" data-tin-pick="' + i + '">เลือก</button></td></tr>').join('') + '</tbody></table></div>';
+        $('tinRes')._list = list;
+      }
+    } catch (err) { msg.textContent = 'ค้นหาไม่สำเร็จ ลองอีกครั้ง หรือกรอกข้อมูลเอง'; }
+    $('tinGo').disabled = false;
+  });
+  $('tinRes').addEventListener('click', e => {
+    const b = e.target.closest('[data-tin-pick]'); if (!b) return;
+    const r = $('tinRes')._list[+b.dataset.tinPick], q = tinTarget === 'quote', f = (a, b2) => $(q ? a : b2);
+    const br = /สาขา/.test(r.branch || '') && !/ใหญ่/.test(r.branch || '') ? ' (สาขา ' + (r.branchNo || '') + ')' : (r.branch ? ' (' + r.branch + ')' : '');
+    f('qName', 'cName').value = String(r.name || '') + br; f('qTax', 'cTax').value = r.taxId; f('qAddr', 'cAddr').value = r.address || '';
+    ['qName', 'qTax', 'qAddr', 'cName', 'cTax', 'cAddr'].forEach(id => { if ($(id) && ((q && id[0] === 'q') || (!q && id[0] === 'c'))) $(id).dispatchEvent(new Event('input', {bubbles: true})); });
+    $('tinOverlay').hidden = true; toast('เติมข้อมูลลูกค้าแล้ว ตรวจชื่อและที่อยู่อีกครั้ง');
+  });
+  $('tinClose').addEventListener('click', () => { $('tinOverlay').hidden = true; });
+  document.addEventListener('click', e => { const b = e.target.closest('.tin-btn'); if (b) tinOpen(b.dataset.tin); });
+
   /* ---------------- events: ใบเสนอราคา (แยกต่างหากจากบิล ไม่แตะ items/bs_bills/billCalc ใดๆ) ---------------- */
   $('quoteItems').addEventListener('input', e => {
     const row = e.target.closest('.item'); if (!row) return;
