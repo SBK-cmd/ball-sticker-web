@@ -1515,6 +1515,11 @@ tr{break-inside:avoid}
 .words b{font-weight:700}
 .note{margin-top:16px;font-size:13px;white-space:pre-wrap}
 .sign{display:flex;justify-content:space-between;gap:20px;margin-top:44px;font-size:13px}
+.qpay{display:flex;gap:14px;align-items:stretch;margin:12px 0 4px;page-break-inside:avoid}
+.qpay .qp-plan{flex:1;min-width:0}.qpay h3{margin:0 0 6px;font-size:13px}
+.qpay .qp-acct{flex:none;display:flex;gap:10px;align-items:center;border:1px solid #cfd8e6;border-radius:8px;padding:8px 10px;background:#f8fafc}
+.qpay .qp-qr{width:92px;height:92px}.qpay .qp-qr svg{width:100%;height:100%;display:block}
+.qpay .qp-txt{font-size:11.5px;line-height:1.5;max-width:150px}.qpay .qp-s{margin-top:3px;font-weight:600}
 .sign-col{width:74mm;max-width:44%;text-align:center}
 .sign-line{border-bottom:1px solid #10233f;height:22px;position:relative}
 .sign-label{margin-top:8px;font-weight:600}
@@ -3346,6 +3351,11 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
                 <label class="f"><span>สำนักงานใหญ่ / สาขา (แสดงต่อท้ายเลขผู้เสียภาษี)</span><input class="txt" id="sBranch" type="text" placeholder="เช่น สำนักงานใหญ่ หรือ สาขา 00001"></label>
                 <label class="f"><span>ที่อยู่ร้าน</span><textarea id="sAddr"></textarea></label>
                 <label class="f"><span>เบอร์โทรร้าน</span><input class="txt" id="sPhone" type="text"></label>
+                <label class="f"><span>ธนาคารรับเงิน (แสดงบนใบเสนอราคา)</span><input class="txt" id="sBank" type="text" placeholder="เช่น กสิกรไทย"></label>
+                <label class="f"><span>ชื่อบัญชี</span><input class="txt" id="sBankHolder" type="text"></label>
+                <label class="f"><span>เลขบัญชี</span><input class="txt" id="sBankNo" type="text" inputmode="numeric" placeholder="xxx-x-xxxxx-x"></label>
+                <label class="f"><span>ชื่อผู้เสนอราคา (ใต้ลายเซ็น)</span><input class="txt" id="sSignName" type="text"></label>
+                <label class="f"><span>ตำแหน่งผู้เสนอราคา</span><input class="txt" id="sSignRole" type="text"></label>
               </div>
             </details>
           </div>
@@ -3589,7 +3599,16 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
                 </label>
                 <label class="f" id="quoteVatRateWrap" hidden><span>อัตรา VAT (%)</span><input class="txt" id="quoteVatRate" type="number" inputmode="decimal" step="any" min="0" value="7"></label>
               </div>
-              <label class="f"><span>หมายเหตุ</span><textarea id="quoteNote" placeholder="เช่น เงื่อนไขการชำระเงิน ระยะเวลาผลิต"></textarea></label>
+              <label class="f"><span>เงื่อนไขการชำระเงิน (แบ่งงวดตาม %)</span>
+                <select id="quotePayMode"><option value="none">ไม่แสดง</option><option value="full">ชำระเต็มจำนวน 100%</option><option value="d50">มัดจำ 50% · ที่เหลือก่อนจัดส่ง 50%</option><option value="d70">มัดจำ 70% · คอนเฟิร์มพร้อมผลิต 30%</option><option value="custom">กำหนดเอง (ใส่ % ต่องวด)</option></select>
+              </label>
+              <div id="quotePayCustom" hidden><div id="quotePayRows"></div><button class="btn small" id="quotePayAdd" type="button">＋ เพิ่มงวด</button></div>
+              <p class="hint" id="quotePayHint" hidden></p>
+              <div class="row2" id="quotePayOpts" hidden>
+                <label class="f"><span>แสดงบัญชีและ QR พร้อมเพย์</span><select id="quotePayQr"><option value="1">แสดง</option><option value="0">ไม่แสดง</option></select></label>
+                <label class="f"><span>QR คิดยอด</span><select id="quotePayQrAmt"><option value="first">งวดที่ 1</option><option value="full">ยอดเต็ม</option></select></label>
+              </div>
+              <label class="f"><span>หมายเหตุ</span><textarea id="quoteNote" placeholder="เช่น ระยะเวลาผลิต เงื่อนไขอื่นๆ"></textarea></label>
             </div>
             <div class="actions">
               <button class="btn primary" id="print-quote" type="button">
@@ -4468,7 +4487,7 @@ input[type=file]::file-selector-button{min-height:36px;border-radius:10px;border
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=d6967c34a3",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=c41c4a767d",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
