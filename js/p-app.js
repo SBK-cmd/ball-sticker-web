@@ -10448,9 +10448,13 @@ function bahtText(value) {
     const today = todayISO(), bills = store.get('bs_bills', []) || [], jobs = store.get('bs_jobs', []) || [];
     const d = new Date(today + 'T00:00:00'); d.setDate(d.getDate() - 1); const yest = localISO(d);
     const tot = b => billCalc(b).total;
-    const sToday = bills.filter(b => b.date === today).reduce((a, b) => a + tot(b), 0), nToday = bills.filter(b => b.date === today).length;
+    // เงินเข้า SMS ที่จับคู่กับใบงานแล้ว (วันนี้/เดือนนี้) นับเป็นยอดขายด้วย — ใบงานจับคู่เงินไม่ได้สร้างบิล
+    const linked = new Set(); jobs.forEach(j => jobBankIdsOf(j).forEach(id => linked.add(id)));
+    const mIns = (store.get('bs_bank_in', []) || []).filter(x => x && x.createdAt && linked.has(x.id) && num(x.amount) > 0 && !accHidden(x) && localISO(new Date(x.createdAt)) === today);
+    const mSum = round2(mIns.reduce((a, x) => a + num(x.amount), 0));
+    const sToday = bills.filter(b => b.date === today).reduce((a, b) => a + tot(b), 0) + mSum, nToday = bills.filter(b => b.date === today).length + mIns.length;
     const sYest = bills.filter(b => b.date === yest).reduce((a, b) => a + tot(b), 0);
-    const mk = monthKey(today), sMonth = bills.filter(b => monthKey(b.date) === mk).reduce((a, b) => a + tot(b), 0);
+    const mk = monthKey(today), sMonth = bills.filter(b => monthKey(b.date) === mk).reduce((a, b) => a + tot(b), 0) + round2((store.get('bs_bank_in', []) || []).filter(x => x && x.createdAt && linked.has(x.id) && num(x.amount) > 0 && !accHidden(x) && monthKey(localISO(new Date(x.createdAt))) === mk).reduce((a, x) => a + num(x.amount), 0));
     const dim = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(), dom = +today.slice(8, 10);
     $('wlSales').textContent = '฿' + Math.round(sToday).toLocaleString('en-US');
     $('wlOrders').textContent = String(nToday);
@@ -10464,9 +10468,9 @@ function bahtText(value) {
     $('wlOpen').textContent = String(open.length); $('wlHot').textContent = String(hot);
     $('wlBoxes').textContent = String(boxesTodayList(today, jobs).length);
     const dots = (n, tot, col) => { const f = tot > 0 ? Math.round(n / tot * 20) : 0; let h = ''; for (let k = 0; k < 20; k++) h += '<i' + (k < f ? ' style="background:' + col + '"' : '') + '></i>'; return h; };
-    const bt = bills.filter(b => b.date === today), paidS = bt.filter(b => b.paid).reduce((a, b) => a + tot(b), 0), unpS = sToday - paidS;
+    const bt = bills.filter(b => b.date === today), paidS = bt.filter(b => b.paid).reduce((a, b) => a + tot(b), 0) + mSum, unpS = sToday - paidS;
     const pc = v => sToday > 0 ? Math.round(v / sToday * 100) : 0;
-    $('wlSplit').innerHTML = [['ชำระแล้ว', paidS, bt.filter(b => b.paid).length, '#b6ff3b'], ['รอชำระ', unpS, bt.filter(b => !b.paid).length, '#ffb020']].map(x =>
+    $('wlSplit').innerHTML = [['ชำระแล้ว', paidS, bt.filter(b => b.paid).length + mIns.length, '#b6ff3b'], ['รอชำระ', unpS, bt.filter(b => !b.paid).length, '#ffb020']].map(x =>
       '<div><small><span>' + x[0] + '</span><span>' + pc(x[1]) + '%</span></small><b>฿' + Math.round(x[1]).toLocaleString('en-US') + '<em>' + x[2] + ' บิล</em></b><div class="wl-dots">' + dots(x[1], sToday, x[3]) + '</div></div>').join('');
     const boxes = boxesTodayList(today, jobs), pick = jobs.filter(j => j.status === 'pickup').length;
     const stages = [['pending', 'รอทำ', cnt('pending'), '#ffb020'], ['filed', 'ทำไฟล์แล้ว', cnt('filed'), '#35d0ff'], ['printed', 'ผลิตแล้ว', cnt('printed'), '#b6ff3b'], ['box', 'ส่งวันนี้', boxes.length, '#c58bff'], ['pick', 'รอรับหน้าร้าน', pick, '#ff7aa8']];
