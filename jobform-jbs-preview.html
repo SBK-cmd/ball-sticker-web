@@ -228,10 +228,10 @@ textarea.in{min-height:76px;resize:vertical}
 .rc .rh{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-weight:600;color:var(--vio-d)}
 .rc .rh button{border:0;background:none;color:var(--mute);min-width:44px;min-height:44px}
 .rc .pr{margin-top:6px}
-.priceopt{font-size:13px;color:var(--ink2)}
+.priceopt{font-size:13px;font-weight:400;color:var(--ink2)}
 .nopr{background:var(--gold-t);color:#7a5600;border-radius:10px;padding:6px 10px;font-size:13.5px;margin-top:8px;font-weight:500}
-.it3{display:grid;grid-template-columns:1fr 84px 104px 44px;gap:8px;align-items:end;margin-bottom:10px}
-@container (max-width:560px){.it3{grid-template-columns:1fr 1fr 44px}.it3 .d{grid-column:1/-1}.it3 .p{grid-column:1/3}}
+.it3{display:grid;grid-template-columns:1fr 84px 92px 128px 44px;gap:8px;align-items:end;margin-bottom:10px}
+@container (max-width:560px){.it3{grid-template-columns:1fr 1fr 44px}.it3 .d{grid-column:1/-1}.it3 .q{grid-column:1}.it3 .u{grid-column:2}.it3 .p{grid-column:1/3}.it3 .del{grid-column:3;grid-row:3}}
 .it3 .lbl{margin-bottom:4px}.it3 .del{width:44px;height:48px;border:0;background:transparent;color:var(--mute)}
 .hero .hd h3 .num.v{background:#fff}
 </style></head><body>
@@ -244,11 +244,11 @@ var $=function(s){return document.querySelector(s)},$$=function(s){return Array.
 var IC={cam:'<svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',ck:'<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg>'};
 var CUST=[{"n": "ร้านเอบีซีสติ๊กเกอร์", "p": "081-111-2222", "a": "45 ถ.อินทรวิชิต ต.ในเมือง อ.เมือง จ.พิษณุโลก 65000", "debt": 4250, "jobs": 3}, {"n": "คุณวิชัย ปริ้นท์", "p": "089-333-4444", "a": "7/2 ม.3 ต.วังทอง อ.วังทอง จ.พิษณุโลก 65130", "debt": 0, "jobs": 0}, {"n": "ร้านดอกไม้สายฝน", "p": "086-555-6666", "a": "12 ถ.สิงหวัฒน์ ต.ในเมือง อ.เมือง จ.พิษณุโลก 65000", "debt": 1890, "jobs": 1}];
 var PRIO=['ปกติ','งานด่วน ต้องจบวันนี้'];
-var S={d:'auto',cust:-1,q:'',ship:0,paste:'',recv:[],prio:0,due:'',items:[{d:'สติ๊กเกอร์ PVC 5 ซม.',q:'500',p:''}],note:'',photos:[]};
+var S={d:'auto',cust:-1,q:'',ship:0,paste:'',recv:[],prio:0,due:'',items:[{d:'สติ๊กเกอร์ PVC 5 ซม.',q:'500',u:'ชิ้น',p:''}],note:'',photos:[]};
 function num(v){var n=parseFloat(String(v).replace(/,/g,''));return isFinite(n)?n:0}
 function money(n){return n.toLocaleString('th-TH',{minimumFractionDigits:(n%1?2:0),maximumFractionDigits:2})}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]})}
-function lineTot(i){return num(i.q)*num(i.p)}
+function lineTot(i){return num(i.p)}
 function total(){return S.items.reduce(function(s,i){return s+lineTot(i)},0)}
 function noPrice(){return S.items.filter(function(i){return !num(i.p)}).length}
 function parseOne(t){var ph=/(0\d{1,2}[-\s]?\d{3}[-\s]?\d{4})/.exec(t),phone=ph?ph[1].trim():'',rest=ph?t.replace(ph[1],'¦'):t,parts=rest.split('¦'),b=(parts[0]||'').trim(),a=(parts[1]||'').trim(),name='',addr='';
@@ -264,7 +264,8 @@ function custHtml(){
  var q=S.q.trim();var list=CUST.map(function(c,i){return {c:c,i:i}}).filter(function(o){return !q||o.c.n.indexOf(q)>=0});
  return '<label class="lbl" for="cq">พิมพ์ชื่อร้าน หรือเลือกจากรายชื่อลูกค้าราคาส่ง</label><input class="in" id="cq" autocomplete="off" placeholder="พิมพ์ชื่อร้าน" value="'+esc(S.q)+'" style="margin-bottom:10px"><div class="cs">'+
   (list.length?list.map(function(o){return '<button type="button" class="cb" data-c="'+o.i+'"><span><b>'+esc(o.c.n)+'</b><small>'+o.c.p+'</small></span><span class="debt">'+(o.c.debt?money(o.c.debt)+' บาท<small>ค้าง '+o.c.jobs+' งาน</small>':'<small>ไม่มียอดค้าง</small>')+'</span></button>'}).join(''):'<div class="nopr">ไม่พบร้านนี้ในรายชื่อราคาส่ง</div>')+'</div>'}
-function itemsHtml(){return S.items.map(function(it,i){return '<div class="it3" data-i="'+i+'"><div class="d"><label class="lbl">ชื่องาน / สเปก</label><input class="in" data-it="d" value="'+esc(it.d)+'" placeholder="เช่น สติ๊กเกอร์ PVC 5 ซม."></div><div><label class="lbl">จำนวน</label><input class="in" data-it="q" inputmode="numeric" value="'+esc(it.q)+'"></div><div class="p"><label class="lbl">ราคา/ชิ้น <span class="priceopt">(ใส่ทีหลังได้)</span></label><input class="in" data-it="p" inputmode="decimal" value="'+esc(it.p)+'" placeholder="บาท"></div><button class="del" type="button" data-delit="'+i+'" aria-label="ลบบรรทัดนี้">'+IC.x+'</button></div>'}).join('')}
+var UNITS=['ชิ้น','ใบ','แผ่น','ดวง','ชุด','เซ็ต','ม้วน','แพ็ค','เมตร'];
+function itemsHtml(){return S.items.map(function(it,i){return '<div class="it3" data-i="'+i+'"><div class="d"><label class="lbl">ชื่องาน / สเปก</label><input class="in" data-it="d" value="'+esc(it.d)+'" placeholder="เช่น สติ๊กเกอร์ PVC 5 ซม."></div><div class="q"><label class="lbl">จำนวน</label><input class="in" data-it="q" inputmode="numeric" value="'+esc(it.q)+'" placeholder="100"></div><div class="u"><label class="lbl">หน่วย</label><select class="in" data-it="u" aria-label="หน่วย">'+UNITS.map(function(u){return '<option'+(it.u===u?' selected':'')+'>'+u+'</option>'}).join('')+'</select></div><div class="p"><label class="lbl">ราคา (บาท) <span class="priceopt">ใส่ทีหลังได้</span></label><input class="in" data-it="p" inputmode="decimal" value="'+esc(it.p)+'" placeholder="ราคารวมของรายการนี้"></div><button class="del" type="button" data-delit="'+i+'" aria-label="ลบบรรทัดนี้">'+IC.x+'</button></div>'}).join('')}
 function recvHtml(){
  var seg='<div class="seg" id="ship"><button type="button" data-s="0" aria-pressed="'+(S.ship===0)+'">ส่งให้ลูกค้าตามที่อยู่เดิม</button><button type="button" data-s="1" aria-pressed="'+(S.ship===1)+'">ฝากส่งให้ผู้รับปลายทาง</button></div>';
  if(S.ship===0){var c=S.cust>=0?CUST[S.cust]:null;return seg+'<div class="hlp" style="margin-top:10px">'+(c?'ส่งไปที่ '+esc(c.n)+' · '+esc(c.a):'เลือกลูกค้าก่อน ระบบจะใช้ที่อยู่ของร้านนี้')+'</div>'}
@@ -273,7 +274,7 @@ function recList(){if(!S.recv.length)return '<div class="nopr">ยังไม�
  return S.recv.map(function(r,i){return '<div class="rc" data-r="'+i+'"><div class="rh"><span>ผู้รับคนที่ '+(i+1)+'</span><button type="button" data-rdel="'+i+'" aria-label="ลบผู้รับ">'+IC.x+'</button></div><div class="pr"><span class="tag t-name">ชื่อ</span><input class="in" data-rf="name" value="'+esc(r.name)+'"></div><div class="pr"><span class="tag t-tel">เบอร์โทร</span><input class="in" data-rf="phone" inputmode="tel" value="'+esc(r.phone)+'"></div><div class="pr"><span class="tag t-addr">ที่อยู่</span><textarea class="in" data-rf="addr" rows="3">'+esc(r.addr)+'</textarea></div></div>'}).join('')+'<button class="btn mt" type="button" data-radd="1">'+IC.plus+'เพิ่มผู้รับอีกคน (ส่งหลายที่อยู่)</button>'}
 function view(){
  var c1='<section class="hero v"><div class="hd"><h3><span class="num">1</span>ลูกค้าราคาส่ง</h3><p>เลือกร้านประจำ ระบบใส่เบอร์ ที่อยู่ และยอดค้างให้เอง งานนี้เข้าบิลค้างของร้านนี้</p></div><div class="bd" id="c1">'+custHtml()+'</div></section>';
- var c2='<section class="hero v"><div class="hd"><h3><span class="num">2</span>สั่งทำอะไร</h3><p>ใส่ชื่องานและจำนวน ราคาใส่ตอนนี้หรือทีหลังก็ได้</p></div><div class="bd"><div id="items">'+itemsHtml()+'</div><button class="btn" type="button" id="addit">'+IC.plus+'เพิ่มอีกแบบ</button><div id="sumbox"></div><div class="mt"><label class="photo"><input class="sr" id="photoIn" type="file" accept="image/*" multiple>'+IC.cam+'<span>แนบรูปงาน / แบบที่ลูกค้าส่งมา</span><small>แตะเพื่อถ่ายรูปหรือเลือกรูป เลือกได้หลายรูป</small></label><div class="thumbs" id="thumbs"></div></div></div></section>';
+ var c2='<section class="hero v"><div class="hd"><h3><span class="num">2</span>สั่งทำอะไร</h3><p>ใส่ชื่องาน จำนวน หน่วย และราคาเป็นจำนวนเงินของรายการนั้น ราคาใส่ทีหลังได้</p></div><div class="bd"><div id="items">'+itemsHtml()+'</div><button class="btn" type="button" id="addit">'+IC.plus+'เพิ่มอีกแบบ</button><div id="sumbox"></div><div class="mt"><label class="photo"><input class="sr" id="photoIn" type="file" accept="image/*" multiple>'+IC.cam+'<span>แนบรูปงาน / แบบที่ลูกค้าส่งมา</span><small>แตะเพื่อถ่ายรูปหรือเลือกรูป เลือกได้หลายรูป</small></label><div class="thumbs" id="thumbs"></div></div></div></section>';
  var c3='<section class="hero v"><div class="hd"><h3><span class="num">3</span>ส่งไปที่ไหน</h3><p>ระบบสร้างลิงก์ติดตามพัสดุให้หลังบันทึก</p></div><div class="bd" id="c3">'+recvHtml()+'</div></section>';
  var c4='<section class="hero v"><div class="hd"><h3><span class="num">4</span>ต้องการเมื่อไหร่</h3></div><div class="bd"><div class="two" id="prio">'+PRIO.map(function(p,i){return '<button type="button" class="op2 c'+i+'" data-p="'+i+'" aria-pressed="'+(S.prio===i)+'"><span class="ck">'+IC.ck+'</span><b>'+p+'</b></button>'}).join('')+'</div><div class="duebox"><label class="lbl" for="due">ต้องการวันที่ (ไม่บังคับ)</label><div class="duewrap"><input class="duein2" id="due" type="date"><button type="button" class="duex" data-clr="1" aria-label="ล้างวันที่">'+IC.x+'</button></div><div id="duetxt" class="duetxt"></div></div></div></section>';
  var note='<section class="notebox"><h3>ฝากบอกฝ่ายผลิต</h3><p>ฝ่ายผลิตจะเห็นข้อความนี้บนใบงาน เช่น สีต้องตรงปก ไดคัทตามขอบภาพ (ไม่บังคับ)</p><label class="sr" for="note">ข้อความถึงฝ่ายผลิต</label><textarea id="note" placeholder="พิมพ์สิ่งที่ฝ่ายผลิตต้องรู้ตรงนี้"></textarea></section>';
@@ -301,7 +302,7 @@ document.addEventListener('click',function(e){var b=e.target.closest('button');i
  if(b.hasAttribute('data-s')){S.ship=+b.getAttribute('data-s');re('#c3',recvHtml());fill();return}
  if(b.hasAttribute('data-radd')){S.recv.push({name:'',phone:'',addr:''});re('#rlist',recList());return}
  if(b.hasAttribute('data-rdel')){S.recv.splice(+b.getAttribute('data-rdel'),1);re('#rlist',recList());return}
- if(b.id==='addit'){S.items.push({d:'',q:'',p:''});re('#items',itemsHtml());sync();return}
+ if(b.id==='addit'){S.items.push({d:'',q:'',u:'ชิ้น',p:''});re('#items',itemsHtml());sync();return}
  if(b.hasAttribute('data-delit')){if(S.items.length>1)S.items.splice(+b.getAttribute('data-delit'),1);re('#items',itemsHtml());sync();return}
  if(b.hasAttribute('data-clr')){S.due='';$('#due').value='';sync();return}
  if(b.hasAttribute('data-p')){S.prio=+b.getAttribute('data-p');$$('#prio button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});return}
