@@ -206,11 +206,11 @@ textarea.in{min-height:76px;resize:vertical}
   function paid(){return S.pays.reduce(function(s,p){return s+num(p.a)},0)}
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]})}
   function parse(t){
-    var ph=/(0\d[-\s]?\d{3,4}[-\s]?\d{4})/.exec(t), phone=ph?ph[1].trim():'', rest=t;
+    var ph=/(0\d{1,2}[-\s]?\d{3}[-\s]?\d{4})/.exec(t), phone=ph?ph[1].trim():'', rest=t;
     if(ph) rest=t.replace(ph[1],'¦');
     var parts=rest.split('¦'), before=(parts[0]||'').trim(), after=(parts[1]||'').trim();
     var name='',addr='';
-    if(ph){name=before; addr=after;}
+    if(ph){if(/^\d/.test(before)&&after&&!/\d/.test(after)){name=after;addr=before;}else{name=before;addr=after;}}
     else{var m=/^(\D{2,30}?)\s+(\d.*)$/.exec(t.trim()); if(m){name=m[1].trim();addr=m[2].trim();}else{name=t.trim();}}
     if(ph&&!name&&after){var m2=/^(\D{2,30}?)\s+(\d.*)$/.exec(after);if(m2){name=m2[1];addr=m2[2];}}
     return {name:name,phone:phone,addr:addr};
