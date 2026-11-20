@@ -263,12 +263,12 @@ var BANKS=[
  {id:'b5',t:'17:30',a:4250,from:'ร้านเอบีซีสติ๊กเกอร์',acc:'กิติพงษ์',late:''},
  {id:'b6',t:'00:03',a:2,from:'',acc:'กิติพงษ์',late:'เข้าระบบ 08:12'}];
 var JOBS=[
- {id:'j1',no:'JB261120-004',cust:'คุณสมหญิง ใจดี',a:999,m:'โอน'},
- {id:'j2',no:'JB261120-002',cust:'คุณวิชัย ปริ้นท์',a:1200,m:'โอน'},
- {id:'j3',no:'JB261119-007',cust:'ร้านดอกไม้สายฝน',a:350,m:'โอน'},
- {id:'j4',no:'JBS261119-001',cust:'ร้านเอบีซีสติ๊กเกอร์',a:2000,m:'โอน'},
- {id:'j5',no:'JBS261118-003',cust:'ร้านเอบีซีสติ๊กเกอร์',a:2250,m:'โอน'},
- {id:'j6',no:'JB261120-006',cust:'คุณมะลิ',a:300,m:'เงินสด'}];
+ {id:'j1',no:'JB261120-004',cust:'คุณสมหญิง ใจดี',a:999},
+ {id:'j2',no:'JB261120-002',cust:'คุณวิชัย ปริ้นท์',a:1200},
+ {id:'j3',no:'JB261119-007',cust:'ร้านดอกไม้สายฝน',a:350},
+ {id:'j4',no:'JBS261119-001',cust:'ร้านเอบีซีสติ๊กเกอร์',a:2000},
+ {id:'j5',no:'JBS261118-003',cust:'ร้านเอบีซีสติ๊กเกอร์',a:2250},
+ {id:'j6',no:'JB261120-006',cust:'คุณมะลิ',a:300}];
 
 var S={d:'auto',tab:'wait',pane:'bank',howOpen:true,selB:[],selJ:[],done:[],ign:[]};
 function money(n){return n.toLocaleString('th-TH',{minimumFractionDigits:(n%1?2:0),maximumFractionDigits:2})}
@@ -278,44 +278,46 @@ function nm(a,b){var x=core(a),y=core(b);return !!x&&!!y&&(x.indexOf(y)>=0||y.in
 function B(id){return BANKS.filter(function(x){return x.id===id})[0]}
 function J(id){return JOBS.filter(function(x){return x.id===id})[0]}
 function usedB(){var u={};S.done.forEach(function(d){d.b.forEach(function(i){u[i]=1})});S.ign.forEach(function(i){u[i]=1});return u}
-function usedJ(){var u={};S.done.forEach(function(d){d.j.forEach(function(i){u[i]=1})});return u}
+function got(id){return S.done.reduce(function(s,d){return s+((d.alloc&&d.alloc[id])||0)},0)}
+function rem(j){return Math.max(0,j.a-got(j.id))}
+function usedJ(){var u={};JOBS.forEach(function(j){if(rem(j)<0.005)u[j.id]=1});return u}
 function freeB(){var u=usedB();return BANKS.filter(function(b){return !u[b.id]})}
 function freeJ(){var u=usedJ();return JOBS.filter(function(j){return !u[j.id]})}
-function sum(ids,f){return ids.reduce(function(s,i){return s+f(i).a},0)}
+function sum(ids,f){return ids.reduce(function(s,i){var x=f(i);return s+(x.no?rem(x):x.a)},0)}
 function suggestions(){
- var out=[],fb=freeB(),fj=freeJ().filter(function(j){return j.m==='โอน'}),keys={};
+ var out=[],fb=freeB(),fj=freeJ(),keys={};
  fj.forEach(function(j){var k=core(j.cust);(keys[k]=keys[k]||[]).push(j)});
  Object.keys(keys).forEach(function(k){var js=keys[k],bs=fb.filter(function(b){return nm(b.from,k)});
-  if(!bs.length)return;var sb=bs.reduce(function(s,b){return s+b.a},0),sj=js.reduce(function(s,j){return s+j.a},0);
+  if(!bs.length)return;var sb=bs.reduce(function(s,b){return s+b.a},0),sj=js.reduce(function(s,j){return s+rem(j)},0);
   if(Math.abs(sb-sj)<0.005)out.push({b:bs.map(function(b){return b.id}),j:js.map(function(j){return j.id}),why:'ชื่อตรง ยอดรวมเท่ากัน'})});
  return out}
 function relB(b){var js=S.selJ.map(J);var tg=[];if(!js.length)return{s:0,tg:tg};var s=0;
  if(js.some(function(j){return nm(b.from,j.cust)})){s+=2;tg.push(['g','ชื่อตรง'])}
- var sj=js.reduce(function(a,j){return a+j.a},0);if(Math.abs(b.a-sj)<0.005){s+=3;tg.push(['g','ยอดตรง'])}return{s:s,tg:tg}}
+ var sj=js.reduce(function(a,j){return a+rem(j)},0);if(Math.abs(b.a-sj)<0.005){s+=3;tg.push(['g','ยอดตรง'])}return{s:s,tg:tg}}
 function relJ(j){var bs=S.selB.map(B);var tg=[];if(!bs.length)return{s:0,tg:tg};var s=0;
  if(bs.some(function(b){return nm(b.from,j.cust)})){s+=2;tg.push(['g','ชื่อตรง'])}
- var sb=bs.reduce(function(a,b){return a+b.a},0);if(Math.abs(sb-j.a)<0.005){s+=3;tg.push(['g','ยอดตรง'])}return{s:s,tg:tg}}
+ var sb=bs.reduce(function(a,b){return a+b.a},0);if(Math.abs(sb-rem(j))<0.005){s+=3;tg.push(['g',got(j.id)>0?'ยอดตรงกับยอดค้าง':'ยอดตรง'])}return{s:s,tg:tg}}
 function bankCard(b){var on=S.selB.indexOf(b.id)>=0,r=relB(b);
  return '<button type="button" class="mi'+(r.s?' hint':'')+'" data-sb="'+b.id+'" aria-pressed="'+on+'"><span class="bx">'+IC.ck+'</span><span class="mm"><b>'+(b.from||'ไม่ทราบชื่อผู้โอน')+'</b><small>วันนี้ '+b.t+' น. · '+b.acc+(b.late?' · <span class="tg y">'+b.late+'</span>':'')+'</small>'+r.tg.map(function(t){return '<span class="tg '+t[0]+'">'+t[1]+'</span>'}).join('')+'</span><span class="amt">'+money(b.a)+' บาท</span></button>'}
 function jobCard(j){var on=S.selJ.indexOf(j.id)>=0,r=relJ(j);
- return '<button type="button" class="mi'+(r.s?' hint':'')+'" data-sj="'+j.id+'" aria-pressed="'+on+'"><span class="bx">'+IC.ck+'</span><span class="mm"><b>'+j.no+'</b><small>'+esc(j.cust)+' · แอดมินคีย์ว่ารับ ('+j.m+')</small>'+r.tg.map(function(t){return '<span class="tg '+t[0]+'">'+t[1]+'</span>'}).join('')+'</span><span class="amt">'+money(j.a)+' บาท</span></button>'}
+ return '<button type="button" class="mi'+(r.s?' hint':'')+'" data-sj="'+j.id+'" aria-pressed="'+on+'"><span class="bx">'+IC.ck+'</span><span class="mm"><b>'+j.no+'</b><small>'+esc(j.cust)+' · ราคางาน '+money(j.a)+' บาท'+(got(j.id)>0?' · <span class="tg y">จับคู่แล้ว '+money(got(j.id))+'</span>':'')+'</small>'+r.tg.map(function(t){return '<span class="tg '+t[0]+'">'+t[1]+'</span>'}).join('')+'</span><span class="amt">'+money(rem(j))+' บาท'+(got(j.id)>0?'<small>ค้างอีก</small>':'')+'</span></button>'}
 function bankCol(){var l=freeB().slice().sort(function(a,b){return relB(b).s-relB(a).s});
  return l.length?l.map(function(b){var c=bankCard(b);if(!b.from&&!b.late)return c;return c+(b.id==='b6'?'<div class="act2"><button type="button" data-ign="'+b.id+'">ไม่ใช่เงินของงาน (เช่น โอนทดสอบ)</button></div>':'')}).join(''):'<div class="empty">เงินเข้าจับคู่ครบแล้ว</div>'}
 function jobCol(){var l=freeJ().slice().sort(function(a,b){return relJ(b).s-relJ(a).s});
- return l.length?l.map(function(j){return jobCard(j)+(j.m==='เงินสด'?'<div class="act2"><button type="button" data-cash="'+j.id+'">ยืนยันว่าเป็นเงินสด (ไม่มีเงินเข้าบัญชี)</button></div>':'')}).join(''):'<div class="empty">ไม่มีใบงานรอตรวจเงิน</div>'}
+ return l.length?l.map(function(j){return jobCard(j)+(j.id==='j6'?'<div class="act2"><button type="button" data-cash="'+j.id+'">ยืนยันว่าเป็นเงินสด (ไม่มีเงินเข้าบัญชี)</button></div>':'')}).join(''):'<div class="empty">ไม่มีใบงานรอตรวจเงิน</div>'}
 function sugHtml(){var sg=suggestions();if(!sg.length)return '';
  return '<div class="sug"><h3>ระบบเสนอให้ '+sg.length+' ชุด (ตรวจแล้วกดยืนยัน)</h3>'+sg.map(function(g,i){
   return '<div class="sg"><div class="ln"><span><b>เงินเข้า</b> '+g.b.map(function(id){var b=B(id);return money(b.a)}).join(' + ')+'</span><b>'+money(sum(g.b,B))+' บาท</b></div><div class="ln"><span><b>ใบงาน</b> '+g.j.map(function(id){return J(id).no}).join(', ')+'</span><b>'+money(sum(g.j,J))+' บาท</b></div><small style="color:var(--mute)">'+g.why+' · '+esc(J(g.j[0]).cust)+'</small><button type="button" class="btn pri" data-sg="'+i+'">ยืนยันจับคู่ชุดนี้</button></div>'}).join('')+'</div>'}
 function summary(){var sb=sum(S.selB,B),sj=sum(S.selJ,J),has=S.selB.length&&S.selJ.length,ok=has&&Math.abs(sb-sj)<0.005,d=sb-sj;
  var st=!S.selB.length&&!S.selJ.length?['','ติ๊กเงินเข้าและใบงานที่เป็นเรื่องเดียวกัน']:(!has?['','เลือกอีกฝั่งให้ครบ']:(ok?['ok','ยอดตรงกัน '+money(sb)+' บาท กดยืนยันได้']:['bad',(d<0?'เงินเข้ายังขาด ':'เงินเข้าเกิน ')+money(Math.abs(d))+' บาท ยืนยันไม่ได้']));
- return '<div class="sbar" id="sbar"><div class="rw"><span>เงินเข้าที่เลือก <b>'+money(sb)+'</b></span><span>ใบงานที่เลือก <b>'+money(sj)+'</b></span></div><div class="st '+st[0]+'">'+st[1]+'</div><div class="row"><button type="button" class="btn pri" style="flex:1" data-confirm="1"'+(ok?'':' disabled')+'>ยืนยันจับคู่</button><button type="button" class="btn" data-clear="1"'+((S.selB.length||S.selJ.length)?'':' disabled')+'>ล้างที่เลือก</button></div></div>'}
+ return '<div class="sbar" id="sbar"><div class="rw"><span>เงินเข้าที่เลือก <b>'+money(sb)+'</b></span><span>ใบงานที่เลือก <b>'+money(sj)+'</b></span></div><div class="st '+st[0]+'">'+st[1]+'</div><div class="row"><button type="button" class="btn pri" style="flex:1" data-confirm="1"'+(ok?'':' disabled')+'>ยืนยันจับคู่</button>'+(has&&!ok&&d<0&&S.selJ.length===1?'<button type="button" class="btn" data-dep="1" style="flex:1 1 100%">จ่ายไม่ครบ ยืนยันเป็นมัดจำ (ค้างอีก '+money(-d)+')</button>':'')+'<button type="button" class="btn" data-clear="1"'+((S.selB.length||S.selJ.length)?'':' disabled')+'>ล้างที่เลือก</button></div></div>'}
 function waitView(){
  return sugHtml()+'<div class="seg2 mob" id="pane"><button type="button" data-pane="bank" aria-pressed="'+(S.pane==='bank')+'">เงินเข้า ('+freeB().length+')</button><button type="button" data-pane="job" aria-pressed="'+(S.pane==='job')+'">ใบงานรอตรวจ ('+freeJ().length+')</button></div>'+
  '<div class="cols"><div class="col" style="display:'+(S.pane==='bank'?'block':'none')+'"><h2 class="dsk">เงินเข้าที่ยังไม่จับคู่ <span class="hlp">เรียงจากเวลาใน SMS</span></h2>'+bankCol()+'</div><div class="col" style="display:'+(S.pane==='job'?'block':'none')+'"><h2 class="dsk">ใบงานรอตรวจเงิน</h2>'+jobCol()+'</div></div>'+summary()}
-function doneView(){return S.done.length?S.done.map(function(d,i){return '<div class="dn"><span class="mm"><b>'+d.j.map(function(id){return J(id).no}).join(', ')+'</b><small>เงินเข้า '+d.b.map(function(id){return money(B(id).a)}).join(' + ')+' = '+money(sum(d.b,B))+' บาท'+(d.cash?' (เงินสด)':'')+'</small></span><button type="button" data-undo="'+i+'">ยกเลิกจับคู่</button></div>'}).join(''):'<div class="empty">ยังไม่มีรายการที่จับคู่ในรอบนี้</div>'}
+function doneView(){return S.done.length?S.done.map(function(d,i){return '<div class="dn"><span class="mm"><b>'+d.j.map(function(id){return J(id).no}).join(', ')+'</b><small>เงินเข้า '+d.b.map(function(id){return money(B(id).a)}).join(' + ')+' = '+money(sum(d.b,B))+' บาท'+(d.cash?' (เงินสด)':'')+(d.dep?' · มัดจำ':'')+'</small></span><button type="button" data-undo="'+i+'">ยกเลิกจับคู่</button></div>'}).join(''):'<div class="empty">ยังไม่มีรายการที่จับคู่ในรอบนี้</div>'}
 function view(){var nw=freeB().length,nj=freeJ().length;
  return '<div class="hd2"><h1>จับคู่เงินเข้า</h1><span class="pill'+(nj||nw?'':' ok')+'">'+(nj||nw?'รอตรวจ ใบงาน '+nj+' · เงินเข้า '+nw:'ตรวจครบแล้ว')+'</span></div>'+
- '<div class="how" id="how">'+(S.howOpen?'<button type="button" class="hx" data-how="0">ซ่อน</button><b>วิธีใช้</b><ol><li>ดูรายการเงินเข้าทางซ้าย กับใบงานที่รอตรวจทางขวา (บนมือถือสลับแท็บ)</li><li>ติ๊กเงินเข้าและใบงานที่เป็นเรื่องเดียวกัน ติ๊กได้หลายรายการทั้งสองฝั่ง ฝั่งตรงข้ามจะเด้งอันที่ตรงขึ้นบน</li><li>ยอดรวมสองฝั่งเท่ากันทุกบาท ปุ่ม “ยืนยันจับคู่” จึงจะกดได้</li></ol>':'<button type="button" class="hx" data-how="1" style="float:none">วิธีใช้</button>')+'</div>'+
+ '<div class="how" id="how">'+(S.howOpen?'<button type="button" class="hx" data-how="0">ซ่อน</button><b>วิธีใช้</b><ol><li>ดูรายการเงินเข้าทางซ้าย กับใบงานที่รอตรวจทางขวา (บนมือถือสลับแท็บ)</li><li>ติ๊กเงินเข้าและใบงานที่เป็นเรื่องเดียวกัน ติ๊กได้หลายรายการทั้งสองฝั่ง ฝั่งตรงข้ามจะเด้งอันที่ตรงขึ้นบน</li><li>ยอดรวมสองฝั่งเท่ากันทุกบาท ปุ่ม “ยืนยันจับคู่” จึงจะกดได้ (ส่วนใหญ่ลูกค้าจ่ายครบก่อนคีย์งาน ใช้แบบนี้)</li><li>กรณีพิเศษ ลูกค้าจ่ายไม่ครบ: เลือกเงินที่เข้า กับใบงาน แล้วกด “ยืนยันเป็นมัดจำ” ใบงานจะค้างอยู่ รอเงินส่วนที่เหลือ</li></ol>':'<button type="button" class="hx" data-how="1" style="float:none">วิธีใช้</button>')+'</div>'+
  '<div class="seg2" id="tabs"><button type="button" data-tab="wait" aria-pressed="'+(S.tab==='wait')+'">รอจับคู่</button><button type="button" data-tab="done" aria-pressed="'+(S.tab==='done')+'">จับคู่แล้ว ('+S.done.length+')</button></div>'+(S.tab==='wait'?waitView():doneView())}
 function fit(){var dev=$('#dev');dev.classList.toggle('phone',S.d==='phone');dev.style.zoom='';if(S.d==='pc'){dev.style.width='1120px';var s=Math.min(1,(document.documentElement.clientWidth-24)/1120);dev.style.zoom=s<1?String(s):''}else dev.style.width='100%'}
 function toast(t){var e=document.createElement('div');e.textContent=t;e.setAttribute('role','status');e.style.cssText='position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:#0F1B3D;color:#fff;border-radius:12px;padding:12px 16px;z-index:50;font-size:14.5px;max-width:88vw';document.body.appendChild(e);setTimeout(function(){e.remove()},2600)}
@@ -329,10 +331,11 @@ document.addEventListener('click',function(e){var b=e.target.closest('button');i
  if(b.hasAttribute('data-sb')){tog(S.selB,g('data-sb'));render();return}
  if(b.hasAttribute('data-sj')){tog(S.selJ,g('data-sj'));render();return}
  if(b.hasAttribute('data-clear')){S.selB=[];S.selJ=[];render();return}
- if(b.hasAttribute('data-confirm')){S.done.push({b:S.selB.slice(),j:S.selJ.slice()});S.selB=[];S.selJ=[];render();toast('จับคู่แล้ว ใบงานออกบิลได้เมื่อสถานะเป็น "ผลิตแล้ว"');return}
- if(b.hasAttribute('data-sg')){var sg=suggestions()[+g('data-sg')];S.done.push({b:sg.b,j:sg.j});S.selB=[];S.selJ=[];render();toast('จับคู่แล้ว');return}
+ if(b.hasAttribute('data-confirm')){var al={};S.selJ.forEach(function(id){al[id]=rem(J(id))});S.done.push({b:S.selB.slice(),j:S.selJ.slice(),alloc:al});S.selB=[];S.selJ=[];render();toast('จับคู่ครบแล้ว');return}
+ if(b.hasAttribute('data-dep')){var sb=sum(S.selB,B),id=S.selJ[0],al2={};al2[id]=sb;S.done.push({b:S.selB.slice(),j:[id],alloc:al2,dep:true});S.selB=[];S.selJ=[];render();toast('บันทึกเป็นมัดจำแล้ว ใบงานยังค้างอยู่ในรายการ');return}
+ if(b.hasAttribute('data-sg')){var sg=suggestions()[+g('data-sg')];var al3={};sg.j.forEach(function(id){al3[id]=rem(J(id))});S.done.push({b:sg.b,j:sg.j,alloc:al3});S.selB=[];S.selJ=[];render();toast('จับคู่แล้ว');return}
  if(b.hasAttribute('data-ign')){S.ign.push(g('data-ign'));S.selB=S.selB.filter(function(i){return i!==g('data-ign')});render();toast('ทำเครื่องหมายว่าไม่ใช่เงินของงานแล้ว');return}
- if(b.hasAttribute('data-cash')){S.done.push({b:[],j:[g('data-cash')],cash:true});render();toast('ยืนยันเป็นเงินสดแล้ว');return}
+ if(b.hasAttribute('data-cash')){var al4={};al4[g('data-cash')]=rem(J(g('data-cash')));S.done.push({b:[],j:[g('data-cash')],cash:true,alloc:al4});render();toast('ยืนยันเป็นเงินสดแล้ว');return}
  if(b.hasAttribute('data-undo')){S.done.splice(+g('data-undo'),1);render();return}});
 window.addEventListener('resize',fit);render();
 })();
