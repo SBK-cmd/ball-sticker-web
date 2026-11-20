@@ -98,6 +98,7 @@ textarea.in{min-height:76px;resize:vertical}
 .state[data-s=dep]{background:var(--gold-t);color:#7a5600}.state[data-s=full]{background:var(--ok-t);color:var(--ok)}
 .pay{display:grid;grid-template-columns:120px 1fr 40px;gap:8px;align-items:end;margin-bottom:10px}
 @container (max-width:560px){.pay{grid-template-columns:1fr 40px}.pay .b{grid-column:1/-1;order:3}.pay .del{order:2}}
+.amt{display:flex;align-items:center;background:var(--bg)}
 .pay.bad select{border-color:var(--bad);background:var(--bad-t)}
 .pay .del{width:40px;height:48px;border:0;background:transparent;color:var(--mute)}
 .pay select{min-height:48px;border:1.5px solid var(--field);border-radius:var(--r-field);padding:0 10px;width:100%;background:#fff}
@@ -192,7 +193,7 @@ textarea.in{min-height:76px;resize:vertical}
     paste:'คุณสมชาย ใจดี 081-234-5678 12/3 ม.4 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140',
     name:'',phone:'',addr:'',
     items:[{d:'สติ๊กเกอร์ 9 ซม.',q:'100',p:'999'}],
-    pays:[{a:'500',b:'b1'},{a:'499',b:''}], note:'', photos:[], jobNo:'JB261120-004', saved:false };
+    recv:'999', pays:[{a:'',b:'b1'},{a:'',b:'b2'}], note:'', photos:[], jobNo:'JB261120-004', saved:false };
   var ABOUT={
     A:'ทุกอย่างอยู่หน้าเดียว แบ่งเป็นการ์ด 1 ถึง 4 มีแถบล่างติดจอแสดงยอดรวมกับปุ่มบันทึก บน PC มีตัวอย่างข้อความที่ลูกค้าจะได้รับอยู่ด้านขวา เหมาะกับคนที่อยากเห็นครบในจอเดียว',
     B:'ถามทีละเรื่อง 4 ขั้น: ลูกค้า → งานและราคา → ส่งเมื่อไหร่ → เงินและส่งยืนยัน แต่ละจอสั้น ไม่ต้องเลื่อนยาว เหมาะกับมือถือและพนักงานใหม่',
@@ -203,7 +204,11 @@ textarea.in{min-height:76px;resize:vertical}
   function num(v){var n=parseFloat(String(v).replace(/,/g,''));return isFinite(n)?n:0}
   function money(n){return n.toLocaleString('th-TH',{minimumFractionDigits:(n%1?2:0),maximumFractionDigits:2})}
   function total(){return S.items.reduce(function(s,i){return s+num(i.p)},0)}
-  function paid(){return S.pays.reduce(function(s,p){return s+num(p.a)},0)}
+  function bankAmt(id){var b=BANK.filter(function(x){return x.id===id})[0];return b?b.a:0}
+  function rowAmt(p){return p.b==='cash'?num(p.a):(p.b?bankAmt(p.b):0)}
+  function matched(){return S.pays.reduce(function(s,p){return s+rowAmt(p)},0)}
+  function paid(){return num(S.recv)}
+  function mismatch(){var r=paid(),m=matched();return (r>0||m>0)&&Math.abs(m-r)>0.005}
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]})}
   function parse(t){
     var ph=/(0\d{1,2}[-\s]?\d{3}[-\s]?\d{4})/.exec(t), phone=ph?ph[1].trim():'', rest=t;
@@ -220,7 +225,7 @@ textarea.in{min-height:76px;resize:vertical}
     var p=[];
     if(!S.name.trim())p.push('ชื่อลูกค้า');
     if(!S.items.length||S.items.some(function(i){return !i.d.trim()||!num(i.q)||!num(i.p)}))p.push('รายละเอียด จำนวน และราคารวมของงานให้ครบทุกบรรทัด');
-    if(S.pays.some(function(x){return num(x.a)>0&&!x.b}))p.push('จับคู่ยอดเงินกับรายการเงินเข้า');
+    if(mismatch())p.push('ยอดที่จับคู่ ('+money(matched())+') ต้องเท่ากับยอดที่รับ ('+money(paid())+')');
     if(paid()>total()+0.005)p.push('ยอดรับเกินราคางาน');
     return p;
   }
@@ -273,18 +278,19 @@ textarea.in{min-height:76px;resize:vertical}
   function moneyBody(){
     return '<div class="mstat"><div class="mbox"><span>ราคางาน</span><b class="o-total"></b></div><div class="mbox"><span>รับแล้ว</span><b class="o-paid"></b></div><div class="mbox left"><span>เหลือ</span><b class="o-left"></b></div></div>'+
       '<div style="margin-bottom:10px">สถานะเงิน: <span class="state o-state"></span></div>'+
+      '<div class="recv"><label class="lbl" for="recv">ยอดที่ลูกค้าจ่ายมา (บาท)</label><input class="in" id="recv" inputmode="decimal" value="'+esc(S.recv)+'" placeholder="เช่น 1000"><span class="hlp">ใส่ยอดรวมที่รับ แล้วเลือกรายการเงินเข้าให้ครบจนยอดจับคู่เท่ากับยอดนี้ (จะโอนกี่รอบก็ได้)</span></div>'+
       '<div id="pays">'+paysHtml()+'</div>'+
-      '<div class="row"><button class="btn" type="button" id="addpay">'+IC.plus+'เพิ่มยอดที่โอนเข้า</button><button class="btn" type="button" id="splitpay">แบ่งเป็นมัดจำ + ส่วนที่เหลือ</button></div>'+
-      '<span class="hlp">ลูกค้าโอนหลายรอบ ใส่ทีละยอด ทุกยอดต้องเลือกรายการเงินเข้าที่ตรงกัน (ระบบกันไม่ให้เลือกซ้ำ) ถ้ารับเงินสดเลือก "รับเงินสด"</span><div id="mmsg"></div>';
+      '<div class="row"><button class="btn" type="button" id="addpay">'+IC.plus+'เพิ่มรายการเงินเข้า</button></div>'+
+      '<div class="mchk" id="mchk"></div><div id="mmsg"></div>';
   }
   function paysHtml(){
-    var used={};S.pays.forEach(function(p){if(p.b)used[p.b]=1});
+    var used={};S.pays.forEach(function(p){if(p.b&&p.b!=='cash')used[p.b]=1});
     return S.pays.map(function(p,i){
-      var bad=num(p.a)>0&&!p.b;
       var opts='<option value="">เลือกรายการเงินเข้า…</option><option value="cash"'+(p.b==='cash'?' selected':'')+'>รับเงินสด (ไม่มีรายการเข้าบัญชี)</option>'+BANK.map(function(b){
         var dis=used[b.id]&&p.b!==b.id;
-        return '<option value="'+b.id+'"'+(p.b===b.id?' selected':'')+(dis?' disabled':'')+'>'+b.t+' · '+money(b.a)+' บาท · '+b.acc+' · จาก '+b.f+'</option>'}).join('');
-      return '<div class="pay'+(bad?' bad':'')+'" data-i="'+i+'"><div><label class="lbl">ยอดที่โอน (บาท)</label><input class="in" data-pay="a" inputmode="decimal" value="'+esc(p.a)+'"></div><div class="b"><label class="lbl">จับคู่กับเงินเข้า</label><select data-pay="b">'+opts+'</select></div><button class="del" type="button" data-delpay="'+i+'" aria-label="ลบยอดนี้">'+IC.x+'</button></div>'}).join('');
+        return '<option value="'+b.id+'"'+(p.b===b.id?' selected':'')+(dis?' disabled':'')+'>'+b.t+' · '+money(b.a)+' บาท · '+b.acc+' · จาก '+b.f+(dis?' (ใช้แล้ว)':'')+'</option>'}).join('');
+      var amt=p.b==='cash'?'<div><label class="lbl">ยอดเงินสด (บาท)</label><input class="in" data-pay="a" inputmode="decimal" value="'+esc(p.a)+'"></div>':'<div><span class="lbl">ยอดจากรายการนี้</span><div class="in amt">'+(p.b?money(bankAmt(p.b))+' บาท':'ยังไม่เลือก')+'</div></div>';
+      return '<div class="pay'+(!p.b?' bad':'')+'" data-i="'+i+'">'+amt+'<div class="b"><label class="lbl">จับคู่กับเงินเข้า</label><select data-pay="b">'+opts+'</select></div><button class="del" type="button" data-delpay="'+i+'" aria-label="ลบรายการนี้">'+IC.x+'</button></div>'}).join('');
   }
   function msgBox(){return '<div class="msg" id="msgbox"></div>'}
   function sendBtns(){
@@ -319,7 +325,7 @@ textarea.in{min-height:76px;resize:vertical}
     if(n===1)return !!S.name.trim();
     if(n===2)return S.items.every(function(i){return i.d.trim()&&num(i.q)&&num(i.p)});
     if(n===3)return true;
-    return S.pays.every(function(p){return !(num(p.a)>0&&!p.b)});
+    return !mismatch();
   }
   function vC(){
     var doc='<div class="doc"><h2><span>ใบคอนเฟิร์มงาน</span>'+jobno().split('<span class="hlp">')[0]+'</h2>'+
@@ -348,11 +354,13 @@ textarea.in{min-height:76px;resize:vertical}
     $$('.o-paid').forEach(function(e){e.textContent=money(p)+' บาท'});
     $$('.o-left').forEach(function(e){e.textContent=money(l)+' บาท';e.parentNode.classList.toggle('zero',l<=0.005&&p>0)});
     $$('.o-state').forEach(function(e){e.textContent=st[1];e.setAttribute('data-s',st[0])});
-    var mm=$('#mmsg');
-    if(mm){var bad=S.pays.filter(function(x){return num(x.a)>0&&!x.b}).length;
-      mm.innerHTML=bad?'<div class="warn">ยังมี '+bad+' ยอดที่ไม่ได้จับคู่กับเงินเข้า เลือกรายการเงินเข้าให้ตรงก่อนบันทึก</div>':(p>0?'<div class="okmsg">จับคู่ครบแล้ว รับ '+money(p)+' บาท'+(l>0?' เหลืออีก '+money(l)+' บาท':' ครบตามราคางาน')+'</div>':'')}
+    var mc=$('#mchk');
+    if(mc){var m=matched(),r=paid(),bad=S.pays.filter(function(x){return !x.b}).length;
+      var cls=(r>0&&!bad&&!mismatch())?'okmsg':'warn';
+      mc.innerHTML='<div class="'+cls+'" style="margin-top:10px"><b>จับคู่แล้ว '+money(m)+' จาก '+money(r)+' บาท</b>'+
+        (bad?' · มี '+bad+' แถวที่ยังไม่ได้เลือกรายการเงินเข้า':(r<=0?' · ยังไม่ได้ใส่ยอดที่รับ':(mismatch()?(m<r?' · ยังขาด '+money(r-m)+' บาท บันทึกใบงานไม่ได้':' · เกินยอดที่รับ '+money(m-r)+' บาท บันทึกใบงานไม่ได้'):' · ตรงกันพอดี')))+'</div>'}
     var mb=$('#msgbox');if(mb)mb.textContent=msgText();
-    $$('.pay').forEach(function(r){var p_=S.pays[+r.getAttribute('data-i')];r.classList.toggle('bad',!!p_&&num(p_.a)>0&&!p_.b)});
+    
     $$('.pr').forEach(function(r){var k=r.getAttribute('data-k');r.setAttribute('data-ok',S[k]&&S[k].trim()?'1':'0')});
     var bb=$('#billBtn');if(bb){var ok=S.status>=2;bb.disabled=!ok;$('#billHlp').textContent=ok?'งานผลิตแล้ว ออกบิลได้ ระบบดึงรายการและเงินที่รับไปให้':'ปุ่มนี้เปิดเมื่อสถานะงานเป็น "ผลิตแล้ว" ขึ้นไป'}
     var pb=$('#pbox');if(pb){var pr=problems();pb.innerHTML=pr.length?'<div class="warn">ยังขาด: '+pr.join(' · ')+'</div>':'<div class="okmsg">ข้อมูลครบ กดบันทึกได้</div>'}
@@ -387,12 +395,13 @@ textarea.in{min-height:76px;resize:vertical}
     if(t.id==='note'){S.note=t.value;return}
     if(t.id==='due'){S.due=t.value;sync();return}
     var it=t.closest('.it');if(it&&t.hasAttribute('data-it')){S.items[+it.getAttribute('data-i')][t.getAttribute('data-it')]=t.value;sync();return}
-    var py=t.closest('.pay');if(py&&t.getAttribute('data-pay')==='a'){S.pays[+py.getAttribute('data-i')].a=t.value;sync();return}
+    var py=t.closest('.pay');if(t.id==='recv'){S.recv=t.value;sync();return}
+    if(py&&t.getAttribute('data-pay')==='a'){S.pays[+py.getAttribute('data-i')].a=t.value;sync();return}
   });
   document.addEventListener('change',function(e){
     var t=e.target;
     if(t.id==='photoIn'){S.photos=S.photos.concat(Array.prototype.slice.call(t.files).map(function(f){return URL.createObjectURL(f)}));thumbs();toast('แนบรูปแล้ว '+S.photos.length+' รูป');return}
-    var py=t.closest('.pay');if(py&&t.getAttribute('data-pay')==='b'){S.pays[+py.getAttribute('data-i')].b=t.value;rerenderLists()}
+    var py=t.closest('.pay');if(py&&t.getAttribute('data-pay')==='b'){S.pays[+py.getAttribute('data-i')].b=t.value;if(t.value==='cash'&&!S.pays[+py.getAttribute('data-i')].a)S.pays[+py.getAttribute('data-i')].a='';rerenderLists()}
   });
   document.addEventListener('click',function(e){
     var b=e.target.closest('button');if(!b)return;
@@ -401,8 +410,7 @@ textarea.in{min-height:76px;resize:vertical}
     if(b.id==='addit'){S.items.push({d:'',q:'',p:''});rerenderLists();return}
     if(b.hasAttribute('data-delit')){if(S.items.length>1)S.items.splice(+b.getAttribute('data-delit'),1);rerenderLists();return}
     if(b.id==='addpay'){S.pays.push({a:'',b:''});rerenderLists();return}
-    if(b.id==='splitpay'){var t=total();S.pays=[{a:String(Math.round(t/2)),b:''},{a:String(t-Math.round(t/2)),b:''}];rerenderLists();toast('แบ่งเป็น 2 ยอดแล้ว เลือกเงินเข้าให้ตรงทั้งสองยอด');return}
-    if(b.hasAttribute('data-delpay')){S.pays.splice(+b.getAttribute('data-delpay'),1);if(!S.pays.length)S.pays.push({a:'',b:''});rerenderLists();return}
+    if(b.hasAttribute('data-delpay')){S.pays.splice(+b.getAttribute('data-delpay'),1);rerenderLists();return}
     if(b.hasAttribute('data-p')){S.prio=+b.getAttribute('data-p');$$('#prio button').forEach(function(x){x.setAttribute('aria-pressed',+x.getAttribute('data-p')===S.prio)});return}
     if(b.hasAttribute('data-dd')){var d=new Date();d.setDate(d.getDate()+(+b.getAttribute('data-dd')));S.due=d.toISOString().slice(0,10);$('#due').value=S.due;sync();return}
     if(b.hasAttribute('data-st')){S.status=+b.getAttribute('data-st');$$('#st button').forEach(function(x){x.setAttribute('aria-pressed',+x.getAttribute('data-st')===S.status)});sync();return}
