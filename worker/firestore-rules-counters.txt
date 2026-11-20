@@ -1,0 +1,29 @@
+// ===== counters: ตัวนับใบงานกลาง (21 พ.ย. 69 · AI#2) =====
+// วางบล็อกนี้ใน Firebase console → Firestore → Rules ภายใน  match /databases/{database}/documents { ... }  แล้ว Publish
+// ใช้กับ counters/job_<prefix> เช่น job_JB261121 เก็บ {n:int, at:int} · เขียนด้วย runTransaction จากแอปหลังร้าน
+//
+// ข้อจำกัดที่ต้องรู้: แอปหลังร้าน (app.html) ล็อกอิน Firebase แบบ anonymous เหมือนหน้า shop
+//   รหัสผ่านหลังร้านเป็นระบบของแอปเอง (bs_meta/users) ไม่ใช่ Firebase Auth
+//   → rules แยก "หลังร้าน vs shop" ไม่ได้ ทั้งคู่เป็น anonymous เหมือนกัน
+//   จึงล็อกที่ "รูปทรงเอกสาร + เลขขึ้นอย่างเดียว" แทน: anonymous ทำได้แค่เพิ่มเลข ตั้งมั่ว/ลบไม่ได้
+//   กันเลขซ้ำข้ามเครื่องได้จริง · เสี่ยงแค่คนนอกยิงให้เลขกระโดด (เกิดช่วงขาด ไม่ซ้ำ ไม่พัง)
+// ทางแก้ให้สะอาดกว่านี้ในอนาคต: Worker ออก Firebase custom token ให้เฉพาะหลังร้าน (claim bo:true)
+//   แล้วเปลี่ยนกฎเป็น request.auth.token.bo == true — เป็นงานแยก ยังไม่ทำตอนนี้
+match /counters/{id} {
+  allow get: if request.auth != null;
+  // สร้างตัวนับใหม่: id ต้องเป็น job_* · มีแค่ n,at · n เป็น int 1..1000000
+  allow create: if request.auth != null
+    && id.matches('job_[A-Za-z0-9_]+')
+    && request.resource.data.keys().hasOnly(['n','at'])
+    && request.resource.data.n is int
+    && request.resource.data.n >= 1 && request.resource.data.n <= 1000000
+    && request.resource.data.at is int;
+  // เพิ่มเลข: มีแค่ n,at · n ต้อง "มากกว่าเดิมเท่านั้น" (กันถอยหลัง/กันซ้ำ) · เพดาน 1,000,000
+  allow update: if request.auth != null
+    && request.resource.data.keys().hasOnly(['n','at'])
+    && request.resource.data.n is int
+    && request.resource.data.n > resource.data.n
+    && request.resource.data.n <= 1000000
+    && request.resource.data.at is int;
+  // ไม่เปิด list, ไม่เปิด delete
+}
