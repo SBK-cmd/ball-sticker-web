@@ -5351,11 +5351,21 @@ function bahtText(value) {
   const pad2 = n => String(n).padStart(2, '0');
   const localISO = d => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
   // ตัวเลือก 'เลือกยอดจากเงินเข้า' ในใบงาน: รวมเงินเข้าบัญชีวันทิมด้วย (เฉพาะเงินเข้า ไม่รวมเงินออก/ยอดคงเหลือ)
-  const bankInPick = () => (store.get('bs_bank_in', []) || []).filter(x => x && num(x.amount) > 0).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  // เวลาโอนจริง: อ่านจาก smsTime "dd/mm/yy hh:mm" (ปี พ.ศ. 2 หลัก) — ไม่มี/อ่านไม่ได้ → ใช้เวลาที่ข้อมูลเข้าระบบ (createdAt)
+  function bankTs(x) {
+    const m = x && typeof x.smsTime === 'string' && x.smsTime.match(/^\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{2})/);
+    if (m) {
+      let y = +m[3]; if (y < 100) y += 2500; if (y > 2400) y -= 543;
+      const t = new Date(y, +m[2] - 1, +m[1], +m[4], +m[5]).getTime();
+      if (isFinite(t) && +m[2] >= 1 && +m[2] <= 12) return t;
+    }
+    return (x && x.createdAt) || 0;
+  }
+  const bankInPick = () => (store.get('bs_bank_in', []) || []).filter(x => x && num(x.amount) > 0).sort((a, b) => bankTs(b) - bankTs(a));
   // เงินเข้าเห็นครบทุกบัญชี (รวมวันทิม) — เงินออก/ยอดคงเหลือของวันทิมยังซ่อนจากพนักงาน
-  const bankInAll = () => (store.get('bs_bank_in', []) || []).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const bankInAll = () => (store.get('bs_bank_in', []) || []).sort((a, b) => bankTs(b) - bankTs(a));
   function bankInWhen(x, withDate) {
-    const d = new Date(x.createdAt || 0);
+    const d = new Date(bankTs(x));
     const hm = pad2(d.getHours()) + ':' + pad2(d.getMinutes());
     if (!withDate) return hm;
     const k = localISO(d);
@@ -5570,7 +5580,7 @@ function bahtText(value) {
     const accs = VISIBLE_ACCOUNTS.slice();
     if (accs.indexOf(acdTab) < 0) acdTab = accs[0];
     const ins = bankInAll(), outs = bankOutAll(), today = todayISO(), curM = today.slice(0, 7);
-    const dOf = x => localISO(new Date(x.createdAt || 0)), sum = a => a.reduce((t, x) => t + num(x.amount), 0);
+    const dOf = x => localISO(new Date(bankTs(x))), sum = a => a.reduce((t, x) => t + num(x.amount), 0);
     const sg = (n, pos) => (n > 0 ? (pos ? '+' : '−') : '') + money(n);
     // เดือนที่เลือกได้: ตั้งแต่เดือนแรกที่มีรายการ ถึงเดือนปัจจุบัน
     const all = ins.concat(outs).filter(x => accs.indexOf(x.account) >= 0).map(x => dOf(x).slice(0, 7)).filter(Boolean).concat([curM]).sort();
@@ -5595,7 +5605,7 @@ function bahtText(value) {
         return (hi ? '<rect class="ci" x="' + (x + g).toFixed(1) + '" y="' + (H - hi) + '" width="' + (bw / 2 - g).toFixed(1) + '" height="' + hi + '" rx="1.5"/>' : '') +
                (ho ? '<rect class="co" x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - ho) + '" width="' + (bw / 2 - g).toFixed(1) + '" height="' + ho + '" rx="1.5"/>' : '');
       }).join('');
-      const recent = miM.map(x => ({t: x.createdAt || 0, in: true, x})).concat(moM.map(x => ({t: x.createdAt || 0, in: false, x}))).sort((p, q) => q.t - p.t).slice(0, 5);
+      const recent = miM.map(x => ({t: bankTs(x), in: true, x})).concat(moM.map(x => ({t: x.createdAt || 0, in: false, x}))).sort((p, q) => q.t - p.t).slice(0, 5);
       const rows = recent.length ? recent.map(r => '<li><span class="t">' + esc(bankInWhen(r.x, true)) + '</span><span class="n">' + esc(r.in ? (r.x.matchedJobNo ? 'ใบงาน ' + r.x.matchedJobNo : (r.x.from ? 'จาก ' + r.x.from : 'เงินเข้า')) : (r.x.to || r.x.note || r.x.from || 'เงินออก')) + '</span><b class="' + (r.in ? 'i' : 'o') + '">' + (r.in ? '+' : '−') + money(num(r.x.amount)) + '</b></li>').join('') : '<li class="none">ไม่มีรายการในเดือนนี้</li>';
       let extra = '';
       if (a === 'วันทิม' && isCur) {
@@ -5633,12 +5643,12 @@ function bahtText(value) {
     const card = $('dashBankInCard'); if (!card) return;
     card.hidden = !canBank; if (!canBank) return;
     const list = bankInAll(), outs = bankOutAll();
-    const latest = Math.max(list.length ? list[0].createdAt || 0 : 0, outs.length ? outs[0].createdAt || 0 : 0);
+    const latest = Math.max(list.length ? bankTs(list[0]) : 0, outs.length ? bankTs(outs[0]) : 0);
     $('bankInCap').textContent = latest ? 'ล่าสุด ' + bankInWhen({createdAt: latest}, true) : (cloudDb ? 'ยังไม่มีรายการ — ตั้งค่ามือถือให้ส่ง SMS มาก่อน' : 'ต้องต่อคลาวด์ก่อน');
     const today = todayISO(), month = today.slice(0, 7);
     const sum = arr => arr.reduce((s, x) => s + num(x.amount), 0);
-    const onDay = arr => arr.filter(x => localISO(new Date(x.createdAt || 0)) === today);
-    const inMonth = arr => arr.filter(x => localISO(new Date(x.createdAt || 0)).slice(0, 7) === month);
+    const onDay = arr => arr.filter(x => localISO(new Date(bankTs(x))) === today);
+    const inMonth = arr => arr.filter(x => localISO(new Date(bankTs(x))).slice(0, 7) === month);
     const ICO_IN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>';
     const ICO_OUT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>';
     let showHidden = false;
@@ -5711,7 +5721,7 @@ function bahtText(value) {
   // วันเวลาแบบสั้นสำหรับรายการเลือกยอด: วันนี้ 11:50 / เมื่อวาน 11:52 / 12 ต.ค. 09:10
   const TH_MON_S = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
   function bankInWhenShort(x) {
-    const d = new Date(x.createdAt || 0), hm = pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+    const d = new Date(bankTs(x)), hm = pad2(d.getHours()) + ':' + pad2(d.getMinutes());
     const k = localISO(d), y = localISO(new Date(Date.now() - 86400000));
     if (k === todayISO()) return 'วันนี้ ' + hm;
     if (k === y) return 'เมื่อวาน ' + hm;
