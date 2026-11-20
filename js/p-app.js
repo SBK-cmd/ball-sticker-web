@@ -3859,6 +3859,32 @@ function bahtText(value) {
     Object.assign(x, patch); renderBillBox();
     try { if (cloudDb) cloudDb.collection('billInbox').doc(id).set(patch, {merge: true}); } catch (e) { console.warn(e); }
   }
+  // ---------- ร่างจาก AI (MCP) ----------
+  // Worker mcp-shop เขียนร่างลงคอลเลกชัน mcpDrafts (status 'draft') · แอปแก้ได้เฉพาะ status/decidedAt · ยอมรับ = คัดลอกข้อความไปใช้เอง (v1 ยังไม่สร้างใบเสนอราคา/ใบงานจริงให้อัตโนมัติ)
+  let mcpDrafts = [], mcpDraftUnsub = null;
+  const MCP_KIND_TH = {quote: 'ใบเสนอราคา', job: 'ใบงาน', reply: 'ตอบลูกค้า', note: 'บันทึก'};
+  function watchMcpDrafts() {
+    if (!cloudDb || mcpDraftUnsub || !isSuper) return;
+    try {
+      mcpDraftUnsub = cloudDb.collection('mcpDrafts').orderBy('createdAt', 'desc').limit(30).onSnapshot(snap => { countReads('mcpDrafts', snap);
+        const l = []; snap.forEach(d => l.push(Object.assign({id: d.id}, d.data()))); mcpDrafts = l; renderMcpDrafts();
+      }, e => { console.warn('mcpDrafts', e); });
+    } catch (e) { console.warn(e); }
+  }
+  function renderMcpDrafts() {
+    const card = $('mcpDraftCard'), box = $('mcpDraftList'); if (!card || !box) return;
+    const list = mcpDrafts.filter(x => x.status === 'draft');
+    card.hidden = !isSuper || !list.length;
+    $('mcpDraftN').textContent = list.length ? '(' + list.length + ' ร่างรอตัดสินใจ)' : '';
+    box.innerHTML = list.map(x => '<div class="md-it"><div><span class="md-k">' + esc(MCP_KIND_TH[x.kind] || x.kind || '') + '</span><b>' + esc(x.title || '') + '</b></div><pre>' + esc(x.body || '') + '</pre>' +
+      '<div class="md-t">' + esc(new Date(x.createdAt || 0).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + '</div>' +
+      '<div class="md-act"><button type="button" class="btn small good" data-mdok="' + esc(x.id) + '">ยอมรับ + คัดลอกข้อความ</button><button type="button" class="btn small" data-mdno="' + esc(x.id) + '">ทิ้ง</button></div></div>').join('');
+  }
+  function decideMcpDraft(id, status) {
+    const x = mcpDrafts.find(d => d.id === id); if (!x) return;
+    x.status = status; renderMcpDrafts();
+    try { if (cloudDb) cloudDb.collection('mcpDrafts').doc(id).set({status, decidedAt: Date.now()}, {merge: true}); } catch (e) { console.warn(e); }
+  }
   // ---------- ออเดอร์จากเว็บ shop.ballsticker.co.th (หน้าเว็บเขียน Firestore 'webOrders' เอง ด้วยบัญชีไม่ระบุตัวตน) ----------
   let webOrd = [], webOrdTab = 'new', webOrdUnsub = null;
   function watchWebOrders() {
@@ -10850,6 +10876,13 @@ function bahtText(value) {
   ['purchVendorTax', 'purchVat', 'purchAmount', 'purchDate', 'purchVendor', 'purchVendorAddr', 'purchInvoiceNo', 'purchVendorBranch'].forEach(id => { const el = $(id); if (el) { const fn = () => { if (id === 'purchDate') { $('purchClaimMonth').dataset.v = ''; } try { renderPurchTaxBox(); } catch (e) {} checkPurchaseFields(); }; el.addEventListener('input', fn); el.addEventListener('change', fn); } });
   $('purchClaim').addEventListener('change', () => { renderPurchTaxBox(); checkPurchaseFields(); });
   $('purchEvid').addEventListener('change', () => { renderPurchTaxBox(); checkPurchaseFields(); });
+  $('mcpDraftList').addEventListener('click', async e => {
+    const ok = e.target.closest('[data-mdok]'), no = e.target.closest('[data-mdno]');
+    if (ok) { const x = mcpDrafts.find(d => d.id === ok.dataset.mdok); if (!x) return;
+      let copied = false; try { await navigator.clipboard.writeText((x.title ? x.title + '\n' : '') + (x.body || '')); copied = true; } catch (er) {}
+      decideMcpDraft(x.id, 'accepted'); toast(copied ? 'คัดลอกข้อความแล้ว' : 'ยอมรับแล้ว (คัดลอกอัตโนมัติไม่ได้ เปิดดูในประวัติ)'); return; }
+    if (no) { decideMcpDraft(no.dataset.mdno, 'rejected'); toast('ทิ้งร่างแล้ว'); }
+  });
   $('billBox').addEventListener('click', async e => {
     const sb = e.target.closest('[data-bbscan]'), db = e.target.closest('[data-bbdone]');
     if (db) { db.dataset.bbdone.split(',').forEach(id => markBillBox(id, {status: 'done', doneAt: Date.now()})); toast('ย้ายไป “บันทึกแล้ว”'); return; }
@@ -11574,6 +11607,7 @@ function bahtText(value) {
     watchCloud('quotes', 'bs_quotes', renderQuoteHistory);
     watchCloud('purchases', 'bs_purchases', () => { renderPurchHistory(); renderVendorDatalist(); });
     try { watchBillBox(); } catch (e) {}
+    try { watchMcpDrafts(); } catch (e) {}
     try { watchWebOrders(); } catch (e) {}
     try { watchLogoReq(); } catch (e) {}
     watchCloud('customers', 'bs_customers', () => { renderCustomerDatalist(); try { renderWholesaleHistory(); } catch (e) {} });

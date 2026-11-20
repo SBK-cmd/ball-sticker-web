@@ -1,0 +1,9 @@
+    // ร่างจาก AI (Worker mcp-shop เขียนด้วย Service Account ไม่ผ่าน rules)
+    // แอป: อ่านได้ · แก้ได้เฉพาะ status / decidedAt (ยอมรับ/ทิ้ง) · สร้าง/ลบจากแอปไม่ได้
+    match /mcpDrafts/{id} {
+      allow read: if request.auth != null;
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'decidedAt'])
+        && request.resource.data.status in ['accepted', 'rejected'];
+      allow create, delete: if false;
+    }

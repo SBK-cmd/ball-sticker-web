@@ -851,6 +851,7 @@ button.status-pill:active{filter:brightness(0.9)}
 .wo-act{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}.wo-act .btn,.wo-act a{min-height:38px}.wo-act a{display:inline-flex;align-items:center;padding:0 12px;border-radius:10px;border:1px solid #d8dde8;color:#1b2333;text-decoration:none;font-size:13px}
 .bb-tabs{display:flex;gap:6px;margin:0 0 10px}.bb-tabs button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #d8dde8;background:#fff;font:inherit;font-size:14px;cursor:pointer}.bb-tabs button.on{background:#14234b;color:#fff;border-color:#14234b}
 .bb-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.md-list{display:grid;gap:10px}.md-it{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff;display:grid;gap:8px}.md-it b{font-size:15px}.md-it .md-k{display:inline-block;margin-right:6px;padding:0 8px;border-radius:99px;background:#eef2ff;color:#3346a8;font-size:11.5px;font-weight:600}.md-it pre{margin:0;white-space:pre-wrap;word-break:break-word;font:inherit;font-size:14px;color:#2c3550}.md-it .md-t{color:#6b7494;font-size:12px}.md-act{display:flex;gap:8px;flex-wrap:wrap}
 .bb-it{border:1px solid var(--line);border-radius:14px;overflow:hidden;display:grid;background:#fff}
 .bb-it img{width:100%;aspect-ratio:3/4;object-fit:cover;background:#f2f4f8;display:block}
 .bb-grp{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;background:#f2f4f8}.bb-grp img{aspect-ratio:1}.bb-grp .bb-more{display:grid;place-items:center;font-weight:700;color:#556080;aspect-ratio:1}
@@ -4251,6 +4252,13 @@ html body .page-head h1{letter-spacing:-.02em}
         <div class="bb-tabs" role="tablist"><button type="button" class="on" data-bb="new">รอบันทึก</button><button type="button" data-bb="done">บันทึกแล้ว</button></div>
         <div id="billBox" class="bb-list"></div>
       </section>
+      <section class="card no-print" id="mcpDraftCard" aria-labelledby="mcpd-h" hidden>
+        <div class="viz-head">
+          <h2 id="mcpd-h">ร่างจาก AI <small id="mcpDraftN"></small></h2>
+          <span>AI สร้างร่างไว้ให้ ยังไม่มีผลจริงจนกว่าคุณกดยอมรับ</span>
+        </div>
+        <div id="mcpDraftList" class="md-list"></div>
+      </section>
 
       <section class="card history no-print" aria-labelledby="purchhist-h">
         <div class="viz-head">
@@ -4893,7 +4901,7 @@ html body .page-head h1{letter-spacing:-.02em}
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=f8c5b2c8ed",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=4134241a4d",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

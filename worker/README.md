@@ -82,3 +82,17 @@ GET `/ads?days=14` → `{days:[{date,spend,chats,impressions,clicks}]}` · ROAS 
 4. เลขบัญชีโฆษณา: Ads Manager มุมซ้ายบน (ตัวเลขล้วน)
 ### Cloudflare (เจ้าของทำ)
 Workers & Pages → Create → Worker ชื่อ **fb-ads** → วางโค้ด → Secret `ADS_TOKEN`, `AD_ACCOUNT` → ทดสอบ `/ads?days=3` ต้องได้ JSON
+
+## mcp-shop — MCP ของแอปหลังร้าน (ให้ AI ดูข้อมูลร้าน + สร้างร่าง)
+ไฟล์ `mcp-shop-worker.js` · ทดสอบ: `node worker/mcp-shop-worker.test.mjs` (ใช้ข้อมูลจำลอง ไม่แตะของจริง)
+
+**ทำอะไรได้:** `list_jobs`, `get_job`, `list_bills`, `bank_in_summary` (ยอดรวมคำนวณด้วยโค้ด ไม่รวมบัญชีวันทิม), `ads_summary`, `create_draft`, `list_drafts`
+**ทำไม่ได้โดยตั้งใจ:** แก้/ลบข้อมูล, โอนเงิน, ขึ้นเว็บจริง · ร่างทุกอันเขียนลงคอลเลกชัน `mcpDrafts` เท่านั้น แล้วเจ้าของกด "ยอมรับ/ทิ้ง" ในแอป (การ์ด "ร่างจาก AI")
+**ความเป็นส่วนตัว:** ตัดรูป/ข้อความยาวออก ปิดเบอร์โทรเหลือ 4 ตัวท้าย (เปิดเต็มด้วย `SHOW_PHONE=1`)
+
+ติดตั้ง (เจ้าของทำเอง ค่าลับห้ามส่งในแชต):
+1. Cloudflare → Workers & Pages → สร้าง Worker ชื่อ `ball-mcp-shop` → วางโค้ดจาก `mcp-shop-worker.js` → Deploy
+2. Settings → Variables and Secrets → เพิ่ม **Secret** `MCP_KEY` (สุ่มยาว ≥ 32 ตัว) และ `FIRESTORE_SA_JSON` (service account สิทธิ์ Cloud Datastore User ตัวเดียวกับ Worker บิล LINE)
+3. Firebase Console → Firestore → Rules → เพิ่มกฎจาก `firestore-rules-mcpDrafts.txt` (ไม่เพิ่ม = การ์ดร่างในแอปยอมรับ/ทิ้งไม่ได้)
+4. ต่อกับ Claude: Customize → Connectors → Add custom connector → ใส่ URL `https://ball-mcp-shop.<บัญชี>.workers.dev/mcp/<MCP_KEY>`
+   (รหัสอยู่ใน URL เหมือนรหัสผ่าน อย่าแชร์ ถ้าหลุดให้เปลี่ยน `MCP_KEY` แล้วต่อใหม่)
