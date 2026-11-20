@@ -779,6 +779,18 @@ details.cloud-mini div{margin-top:4px;line-height:1.5}
 .sheet .job-photo-grid img{object-fit:cover;border-radius:10px;border:1px solid #c9d2de;display:block}
 
 /* ---------------- สถานะงาน (ใบคอนเฟิร์มงาน) ---------------- */
+/* ===== ฟอร์ม JB แบบ C (เรียบ: ลูกค้า → งาน → ต้องการเมื่อไหร่) ===== */
+.jf .jf-intro,.jf .job-status-row,.jf #jobMoneyFold,.jf .due-quick,.jf .jf-actions .jf-more,.jf .jf-actions .jf-more-h,.jf .actions-note,.jf-actions~.actions-note,.jf .prio-chips button[data-p="1"],.jf #jobGoWh{display:none!important}
+.jf .jf-hero{background:#0E1E5B;border-radius:16px;padding:14px;margin:0 0 14px;color:#fff}
+.jf .jf-hero .f>span{color:#fff!important;font-weight:700;font-size:15px;opacity:1!important}
+.jf .jf-hero textarea{min-height:130px!important;height:130px;font-size:16px;border:2px solid #F5B301;border-radius:12px;background:#fff;color:#0F1B3D;width:100%;padding:12px}
+.jf .jf-hero .btn{width:100%;min-height:48px;margin-top:10px;font-size:16px;font-weight:800}
+.jf .prio-chips{grid-template-columns:repeat(2,minmax(0,1fr))}
+.jf .prio-chips button[data-p="2"].on{border-color:#c2410c;background:#c2410c;color:#fff}
+.jf .prio-chips button[data-p="2"].on .pc-s{color:#ffedd5}
+.jf #jobDue{min-height:48px!important;max-width:240px;background:#FFF4CC!important;border:2px solid #F5B301!important;border-radius:12px;font-weight:700;color:#0F1B3D}
+.jf .jf-sum{display:flex;justify-content:space-between;align-items:center;margin:10px 0 0;padding:12px 14px;border-radius:12px;background:#eef3ff;color:#0F1B3D;font-weight:800;font-size:16px}
+.jf.jf-deliv #jobMoneyFold{display:none!important}
 .job-status-row{display:flex;align-items:center;gap:8px;margin:-6px 0 14px}
 .status-pill{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;padding:4px 12px;border-radius:999px}
 button.status-pill{border:0;cursor:pointer;font-family:inherit;transition:filter .15s}
@@ -3345,13 +3357,13 @@ html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!importa
               <span class="status-pill" id="jobStatusBadge"></span>
             </div>
             <p class="jf-intro no-print">กรอกแค่ 3 ขั้น <b>ใครสั่ง → สั่งทำอะไร → ต้องการเมื่อไหร่</b> แล้วกด <b>บันทึกใบงาน</b> (ปุ่มเหลืองด้านล่าง) · ช่องที่เขียนว่า “ถ้ามี” ข้ามได้</p>
-            <details class="fold jf-paste"><summary>📋 ทางลัด: มีข้อความจากแชตลูกค้า? วางให้ระบบกรอกให้</summary>
-              <label class="f"><span>วางข้อความทั้งก้อน (งาน + ชื่อ เบอร์ ที่อยู่) แล้วกดปุ่มด้านล่าง</span><textarea id="jPaste" placeholder="วางข้อความทั้งก้อน เช่น&#10;7cm 140ชิ้น&#10;แบบละ70ชิ้น&#10;นาย สมชาย ใจดี&#10;081-234-5678&#10;99 หมู่ 1 ต.ในเมือง อ.เมือง จ.พิษณุโลก 65000"></textarea></label>
-              <button class="btn small" id="jSplit" type="button">แยกงาน / ชื่อ / เบอร์ / ที่อยู่ อัตโนมัติ</button>
-            </details>
             <section class="jf-sec">
               <div class="jf-h"><i>1</i>ใครสั่ง?<small class="jf-hs">ข้อมูลลูกค้า</small></div>
               <div class="fields">
+              <div class="jf-hero">
+                <label class="f"><span>วางข้อความจากแชตลูกค้าที่นี่ ระบบแยกชื่อ เบอร์ ที่อยู่ให้</span><textarea id="jPaste" placeholder="วางข้อความทั้งก้อน เช่น&#10;นาย สมชาย ใจดี&#10;081-234-5678&#10;99 หมู่ 1 ต.ในเมือง อ.เมือง จ.พิษณุโลก 65000"></textarea></label>
+                <button class="btn good" id="jSplit" type="button">แยก ชื่อ / เบอร์ / ที่อยู่ ให้อัตโนมัติ</button>
+              </div>
               <label class="f"><span>ชื่อลูกค้า / ชื่อร้าน</span><input class="txt" id="jName" type="text" autocomplete="off" placeholder="เช่น คุณสมชาย หรือ ร้านเอบีซี"></label>
               <div id="jNameChips" class="vchips no-print" aria-label="ชื่อที่เคยคีย์ไว้"></div>
               <label class="f"><span>เบอร์โทร <small class="jf-opt">(ถ้ามี)</small></span><input class="txt" id="jPhone" type="tel" autocomplete="off" placeholder="เช่น 0812345678"></label>
@@ -3369,6 +3381,7 @@ html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!importa
             <div class="item-head job" aria-hidden="true"><span>ชื่องาน / สเปก</span><span>จำนวน</span><span>หมายเหตุ</span><span></span></div>
             <div id="jobItems"></div>
             <button class="btn small" id="add-jobitem" type="button">＋ เพิ่มอีกแบบ</button>
+            <div class="jf-sum" id="jobSum"><span>รวมทั้งหมด</span><b>0 บาท</b></div>
             <p class="hint">งานหลายแบบ กด “เพิ่มอีกแบบ” ทีละบรรทัด</p>
               <div class="fields">
               <label class="f"><span>ฝากบอกฝ่ายผลิต <small class="jf-opt">(ถ้ามี)</small></span><textarea id="jobNote" placeholder="เช่น สีที่ต้องตรงปก ไดคัทตามขอบภาพ ส่งไฟล์งานแนบแล้ว"></textarea></label>
@@ -3391,7 +3404,7 @@ html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!importa
                 <div class="prio-chips no-print" id="jobPrioChips" role="radiogroup" aria-label="ความเร่งด่วน">
                   <button type="button" role="radio" data-p="0">ปกติ<span class="pc-s">ตามคิว</span></button>
                   <button type="button" role="radio" data-p="1">ด่วน<span class="pc-s">ไม่เกิน 2 วัน</span></button>
-                  <button type="button" role="radio" data-p="2">ด่วนวันนี้<span class="pc-s">ภายในวันนี้</span></button>
+                  <button type="button" role="radio" data-p="2">งานด่วน<span class="pc-s">ต้องจบวันนี้</span></button>
                 </div>
                 <select class="txt jf-sr" id="jobPrio" aria-hidden="true" tabindex="-1"><option value="0">🌶 ปกติตามคิว</option><option value="1">🌶 ขอด่วนไม่เกิน 2 วัน</option><option value="2">🌶 ขอด่วนส่งวันนี้</option></select>
               </div>
@@ -3441,7 +3454,7 @@ html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!importa
             <details class="fold" id="jobMetaFold"><summary>🧾 เลขที่ใบ / วันที่สั่ง / เพจ <span class="fold-sub" id="jobMetaSum"></span></summary>
               <div class="fields">
               <div class="row2">
-                <label class="f"><span>เลขที่ใบคอนเฟิร์มงาน</span><input class="txt" id="jobNo" type="text" autocomplete="off"></label>
+                <label class="f"><span>เลขที่ใบคอนเฟิร์มงาน</span><input class="txt" id="jobNo" type="text" autocomplete="off" placeholder="ออกเลขตอนกดบันทึก"></label>
                 <label class="f"><span>วันที่สั่งงาน</span><input class="txt" id="jobDate" type="date"></label>
               </div>
               <div class="row2">
@@ -4732,7 +4745,7 @@ html body .btab-fab-circle,html body .btab-fab .btab-fab-circle{border:0!importa
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=84ea3c817f",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=dba27d7e65",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}
