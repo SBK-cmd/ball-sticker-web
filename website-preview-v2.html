@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#111315">
+<title>BALL STICKER | Soft Modern Studio — Preview V2.2</title>
+<meta name="description" content="ต้นแบบการออกแบบเว็บไซต์ บอลสติ๊กเกอร์ พิษณุโลก โทน Modern Racing ข้อมูลและผลงานจริงของร้าน">
+<link rel="icon" href="https://www.ballsticker.co.th/icon-192.png">
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap');
+:root{--night:#111315;--night2:#1e2226;--ink:#181b1e;--muted:#717982;--yellow:#ffdb35;--yellow2:#ffed8a;--cream:#f7f6f1;--white:#fff;--line:#dddeda;--round:22px;--display:'Kanit',sans-serif;--body:'Prompt',sans-serif}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:90px}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--body);font-size:15px;-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit}
+button,a{touch-action:manipulation}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+button{cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #f3b900;outline-offset:3px}
+.container{max-width:1300px;margin:auto;padding:0 44px}
+.display{font-family:var(--display)}
+.eyebrow{font:600 12px/1.5 var(--body);letter-spacing:.18em;text-transform:uppercase;display:inline-flex;align-items:center;gap:10px}
+.eyebrow:before{content:"";height:2px;width:24px;background:currentColor}
+.arrow{font-size:21px;line-height:1;display:inline-block;transition:transform .2s}
+a:hover .arrow,button:hover .arrow{transform:translate(4px,-3px)}
+/* NAV */
+.topline{background:#050607;color:#b6bac0;padding:9px 0;font-size:11px;letter-spacing:.035em}
+.topline .container{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.topline strong{color:var(--yellow);font-weight:600}
+.topline a{color:#fff}
+.header{position:sticky;top:0;z-index:50;background:rgba(15,17,19,.96);backdrop-filter:blur(16px);border-bottom:1px solid #303336;color:#fff}
+.header-inner{min-height:78px;display:flex;gap:30px;align-items:center}
+.identity{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.identity img{height:46px;width:46px;object-fit:contain;border-radius:50%;background:#fff}
+.identity-name{font:800 21px/1 var(--display);letter-spacing:-.04em}
+.identity-name span{color:var(--yellow)}
+.identity small{display:block;color:#bfc1c4;font-size:10px;letter-spacing:.08em;margin-top:6px}
+.links{display:flex;align-items:center;justify-content:center;gap:27px;margin-left:auto}
+.links a{font:400 12px var(--body);color:#d9dcdf;transition:color .2s;white-space:nowrap}
+.links a:hover{color:var(--yellow)}
+.nav-cta{display:inline-flex;gap:15px;align-items:center;justify-content:center;padding:14px 21px;background:var(--yellow);color:#101214;border-radius:9px;font:700 12px var(--body);white-space:nowrap}
+.mobile-toggle{display:none;color:#fff;background:none;border:1px solid #474c50;padding:10px 12px;border-radius:8px;font-size:22px;line-height:1}
+/* HERO */
+.hero{background:var(--night);color:#fff;position:relative;overflow:hidden}
+.hero:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 89% 44%,#4d401d 0%,transparent 34%),linear-gradient(90deg,#111315 0%,#11131500 80%);opacity:.55;pointer-events:none}
+.hero-layout{min-height:640px;display:grid;grid-template-columns:52% 48%;align-items:center;position:relative}
+.hero-copy{position:relative;z-index:2;padding:68px 0 82px}
+.hero-copy .eyebrow{color:var(--yellow);margin-bottom:26px}
+.hero h1{margin:0;font:800 clamp(48px,5.65vw,84px)/.99 var(--display);letter-spacing:-.035em}
+.hero h1 .outline{-webkit-text-stroke:1.5px #f8f7f1;color:transparent}
+.hero h1 .highlight{color:var(--yellow);display:inline-block}
+.hero-summary{margin:28px 0 34px;color:#c0c5c8;line-height:1.95;max-width:510px;font-size:15px}
+.actions{display:flex;gap:12px;flex-wrap:wrap}
+.big-btn{min-height:54px;padding:14px 24px;display:inline-flex;align-items:center;justify-content:space-between;gap:24px;font:700 13px var(--body);border-radius:8px;border:1px solid transparent;transition:transform .2s}
+.big-btn:hover{transform:translateY(-3px)}
+.big-btn.primary{background:var(--yellow);color:#171819}
+.big-btn.ghost{background:transparent;border-color:#686b70;color:#fff}
+.big-btn.dark{background:var(--night);color:#fff}
+.hero-features{display:flex;flex-wrap:wrap;gap:10px;margin-top:42px}
+.hero-features span{padding:8px 12px;border:1px solid #41454a;color:#d4d7d8;border-radius:100px;font-size:11px}
+.hero-visual{min-width:0;height:600px;position:relative;isolation:isolate}
+.hero-ring{position:absolute;left:7%;top:7%;width:88%;aspect-ratio:1;border:1px solid #70622e;border-radius:50%;box-shadow:0 0 0 54px #e2c3320d,0 0 0 108px #e2c33208}
+.hero-orbit{position:absolute;right:3%;top:4%;font:800 136px/.8 var(--display);color:#ffffff09;letter-spacing:-.1em;transform:rotate(-90deg);transform-origin:right top}
+.hero-img{position:absolute;object-fit:cover;box-shadow:0 22px 48px #0009;border:8px solid #f9f8f0;background:#fff;filter:saturate(1.1)}
+.hero-img.main{width:64%;height:54%;right:11%;top:17%;transform:rotate(7deg);border-radius:20px;z-index:2}
+.hero-img.left{width:43%;height:38%;left:2%;top:39%;transform:rotate(-12deg);border-radius:110px 18px 18px 110px;z-index:3}
+.hero-img.mini{width:39%;height:30%;right:0;bottom:5%;transform:rotate(12deg);border-radius:22px;z-index:4}
+.hero-stamp{position:absolute;z-index:5;width:108px;height:108px;left:20%;top:10%;background:var(--yellow);border-radius:50%;display:grid;place-items:center;text-align:center;font:800 16px/1.15 var(--display);color:#161819;transform:rotate(-13deg);box-shadow:0 14px 28px #0006}
+.hero-bottom{position:absolute;bottom:20px;right:36px;z-index:3;font:400 11px var(--body);color:#9ca3a7;letter-spacing:.13em}
+/* BANDS */
+.ticker{background:var(--yellow);overflow:hidden;padding:17px 0}
+.ticker-track{white-space:nowrap;display:flex;gap:28px;justify-content:center;align-items:center;font:700 clamp(14px,1.55vw,20px) var(--display);letter-spacing:.02em;color:#1a1a18}
+.ticker-track i{font-style:normal;font-size:21px;opacity:.5}
+.section-pad{padding:96px 0}
+.section-head{display:flex;align-items:end;justify-content:space-between;gap:28px;margin-bottom:38px}
+.section-head .eyebrow{color:#796517;margin-bottom:13px}
+.section-head h2{font:800 clamp(34px,4.3vw,59px)/1.06 var(--display);letter-spacing:-.045em;margin:0}
+.section-head p{max-width:350px;line-height:1.85;color:#777d82;margin:0}
+.section-head.dark .eyebrow{color:var(--yellow)}
+.section-head.dark h2{color:#fff}
+.section-head.dark p{color:#adb5bc}
+/* SERVICES BENTO */
+.services-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
+.service{grid-column:span 4;min-height:300px;border:1px solid #e1e1dc;position:relative;overflow:hidden;border-radius:19px;background:#fff;padding:30px;display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s}
+.service:hover{transform:translateY(-5px);box-shadow:0 18px 42px #17191b18}
+.service:nth-child(1){grid-column:span 7;background:#24282e;color:#fff;min-height:348px}
+.service:nth-child(2){grid-column:span 5;background:#ffdf48;min-height:348px}
+.service:nth-child(3){grid-column:span 4}
+.service:nth-child(4){grid-column:span 4;background:#e7eef1}
+.service:nth-child(5){grid-column:span 4;background:#e9e8e2}
+.service:nth-child(6){grid-column:span 12;min-height:180px;background:#fff;color:#17191b;display:flex;flex-direction:row;align-items:center;justify-content:space-between}
+.service-no{font:500 12px var(--body);opacity:.65}
+.service-text{position:relative;z-index:2;max-width:55%;margin-top:auto}
+.service h3{font:700 clamp(24px,2.5vw,34px)/1.1 var(--display);letter-spacing:-.03em;margin:0 0 10px}
+.service p{font:400 12px/1.85 var(--body);opacity:.75;margin:0 0 18px}
+.service-link{display:inline-flex;align-items:center;gap:10px;font:600 12px var(--body);padding-bottom:5px;border-bottom:1px solid currentColor;background:none;color:inherit;border-top:none;border-right:none;border-left:none;width:max-content}
+.service-art{position:absolute;width:51%;height:87%;right:-3%;bottom:-10%;transform:rotate(9deg);object-fit:cover;border:8px solid #f7f5ed;border-radius:18px;box-shadow:0 10px 30px #0004}
+.service:nth-child(2) .service-art{right:-5%;height:65%;bottom:5%;width:51%;transform:rotate(-8deg)}
+.service:nth-child(n+3) .service-art{width:48%;height:57%;right:-5%;bottom:11%;transform:rotate(8deg);border-width:6px}
+.service:nth-child(6) .service-art{width:220px;height:160px;position:static;transform:rotate(4deg);margin-right:35px}
+.service:nth-child(6) .service-text{margin:0;max-width:70%}
+/* PORTFOLIO */
+.portfolio{background:#16191c;color:#fff}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:27px}
+.filter{padding:10px 17px;border:1px solid #43494f;background:transparent;color:#d5d9dc;border-radius:100px;font-size:12px;transition:all .2s}
+.filter.active,.filter:hover{background:var(--yellow);border-color:var(--yellow);color:#131414}
+.works{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
+.work{grid-column:span 3;position:relative;min-width:0;border:1px solid #383f44;border-radius:14px;overflow:hidden;background:#30353a;cursor:pointer;text-align:left;padding:0;color:#fff;aspect-ratio:1/.96}
+.work:nth-child(1),.work:nth-child(6){grid-column:span 6;aspect-ratio:1.9/1}
+.work:nth-child(4),.work:nth-child(9){grid-column:span 3}
+.work img{width:100%;height:100%;object-fit:cover;transition:transform .5s}
+.work:hover img{transform:scale(1.09)}
+.work:after{content:"";position:absolute;inset:32% 0 0;background:linear-gradient(transparent,#0b0c0edd);pointer-events:none}
+.work-caption{position:absolute;z-index:2;bottom:17px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:end;gap:8px}
+.work-caption b{font:600 17px/1.2 var(--display);display:block}
+.work-caption small{font-size:11px;color:#d3d8dc}
+.work-caption i{font-style:normal;font-size:24px;background:#ffda2e;color:#111;width:35px;height:35px;display:grid;place-items:center;border-radius:50%;flex-shrink:0}
+.portfolio-more{text-align:center;margin-top:32px}
+.portfolio-more p{font-size:12px;color:#a7b0b8;margin:0 0 16px}
+/* HOW */
+.process-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid #cfd2d2;border-bottom:1px solid #cfd2d2}
+.process-step{padding:31px 24px 32px 0;position:relative;min-height:230px}
+.process-step+ .process-step{padding-left:24px;border-left:1px solid #cfd2d2}
+.process-num{font:800 53px/1 var(--display);color:#e2b914}
+.process-step h3{margin:18px 0 8px;font:700 19px var(--display)}
+.process-step p{margin:0;font:400 12px/1.85 var(--body);color:#707781}
+.process-arrow{position:absolute;right:19px;top:45px;font-size:25px;color:#aaa}
+/* QUOTE */
+.quote-zone{background:#f2d342;padding:98px 0;position:relative;overflow:hidden}
+.quote-zone:before{content:"BALL STICKER";position:absolute;bottom:-67px;left:-30px;white-space:nowrap;font:800 clamp(100px,16vw,260px)/1 var(--display);color:#1111110b;letter-spacing:-.06em;pointer-events:none}
+.quote-layout{display:grid;grid-template-columns:43% 57%;position:relative;gap:30px}
+.quote-info{padding:20px 22px 20px 0}
+.quote-info .eyebrow{color:#2b2a1d}
+.quote-info h2{font:800 clamp(43px,4.6vw,67px)/1.05 var(--display);letter-spacing:-.05em;margin:20px 0}
+.quote-info h2 em{font-style:normal;text-decoration:underline;text-decoration-thickness:5px;text-underline-offset:8px}
+.quote-info p{max-width:340px;line-height:1.95;color:#49412a}
+.quote-details{margin-top:50px;border-top:1px solid #8b793c;padding-top:24px}
+.quote-details div{display:flex;gap:15px;margin-bottom:13px;font:500 13px var(--body)}
+.quote-details div span{background:#111;color:#fff;height:25px;width:25px;display:grid;place-items:center;border-radius:6px;font-size:12px}
+.quote-card{background:#15181c;padding:38px 40px;color:#fff;border-radius:20px;box-shadow:0 35px 60px #6e541536}
+.quote-card-head{display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:24px}
+.quote-card-head h3{font:700 27px var(--display);margin:0}
+.quote-card-head span{font-size:11px;color:#a8b0b5}
+.quote-form{display:grid;gap:16px}
+.form-two{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.field label{display:block;font:500 12px var(--body);color:#e4e5e6;margin-bottom:8px}
+.field input,.field textarea,.field select{width:100%;background:#272c31;border:1px solid #474d53;color:#fff;border-radius:8px;min-height:48px;padding:11px 13px;outline:none}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--yellow)}
+.field textarea{height:95px;resize:vertical}
+.field input::placeholder,.field textarea::placeholder{color:#919ba5}
+.quote-form .big-btn{border:0;margin-top:3px;width:100%}
+.quote-hint{color:#8f9ca3;font-size:10px;line-height:1.6;margin:0}
+.sent-preview{display:none;background:#24292d;border:1px solid #c2a830;border-radius:10px;padding:14px}
+.sent-preview.show{display:block}
+.sent-preview strong{color:var(--yellow);display:block;margin-bottom:6px}
+.sent-preview pre{white-space:pre-wrap;word-break:break-word;color:#fff;font:12px/1.7 var(--body);margin:0 0 12px}
+.sent-preview button{background:#ffdb35;border:0;border-radius:7px;padding:9px 13px;font:600 12px var(--body)}
+/* TRUST AND CONTACT */
+.trust-bar{background:#fff}
+.trust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.trust-item{padding:20px 28px;border-right:1px solid #e5e5df}
+.trust-item:last-child{border:0}
+.trust-item span{font-size:34px;line-height:1;color:#c6a000}
+.trust-item h3{font:700 21px var(--display);margin:15px 0 5px}
+.trust-item p{font-size:12px;color:#798089;line-height:1.8}
+.footer{background:#0c0e0f;color:#fff;padding:75px 0 32px}
+.footer-grid{display:grid;grid-template-columns:1.55fr 1fr 1fr;gap:48px}
+.footer h3{font:700 17px var(--display);margin:0 0 20px}
+.footer p,.footer a{font-size:12px;color:#adb5bd;line-height:2}
+.footer a:hover{color:var(--yellow)}
+.footer .identity{margin-bottom:20px}
+.footer .identity small{line-height:1.4}
+.footer ul{list-style:none;padding:0;margin:0}
+.footer hr{border:0;border-top:1px solid #34383b;margin:48px 0 24px}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;gap:16px;color:#7e8992;font-size:11px}
+.footer-bottom span{color:var(--yellow)}
+/* overlays */
+.float-line{position:fixed;bottom:20px;right:22px;z-index:40;border-radius:100px;background:#05c65b;color:#fff;box-shadow:0 12px 27px #052d1866;padding:14px 21px;font:700 12px var(--body);display:flex;align-items:center;gap:8px}
+.preview-flag{position:fixed;bottom:20px;left:20px;z-index:39;padding:10px 13px;background:#ffdb35;color:#171819;border-radius:8px;font:700 10px var(--body);box-shadow:0 5px 20px #0003}
+.lightbox{border:0;background:transparent;padding:20px;max-width:min(840px,96vw);max-height:95vh}
+.lightbox::backdrop{background:#060708e8}
+.lightbox-inner{background:#181c1f;border-radius:16px;padding:15px;max-height:90vh;overflow:auto;color:white}
+.lightbox img{width:100%;max-height:70vh;object-fit:contain;border-radius:10px;background:#2a2e32}
+.lightbox-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 5px 2px}
+.lightbox h3{font:700 20px var(--display);margin:0}
+.close-lightbox{border:0;border-radius:8px;background:var(--yellow);font-size:20px;width:39px;height:39px}
+.toast{position:fixed;z-index:100;bottom:85px;left:50%;transform:translateX(-50%);background:#fff;color:#111;padding:13px 20px;border-radius:9px;box-shadow:0 7px 30px #0005;font-size:12px;display:none;text-align:center}
+.toast.show{display:block}
+[hidden]{display:none!important}
+@media(max-width:1100px){
+  .container{padding:0 26px}.links{gap:13px}
+  .hero-layout{grid-template-columns:53% 47%}
+  .hero-img.main{right:7%}.service{padding:22px}
+  .quote-layout{grid-template-columns:42% 58%}
+}
+@media(max-width:820px){
+  .topline .container{justify-content:center}.topline .desktop-note{display:none}
+  .header-inner{min-height:72px}.mobile-toggle{display:block;margin-left:auto}
+  .links{display:none;position:absolute;top:72px;left:0;right:0;background:#181b1e;padding:18px 26px 26px;border-bottom:1px solid #393b40;flex-direction:column;align-items:stretch;gap:0;box-shadow:0 20px 20px #0004}
+  .links.open{display:flex}.links a{padding:13px 4px;font-size:14px;border-bottom:1px solid #34393b}
+  .header .nav-cta{display:none}
+  .hero-layout{grid-template-columns:1fr;min-height:0}
+  .hero-copy{padding:60px 0 30px}
+  .hero-visual{height:470px;margin:0 -10px}
+  .hero-img.main{width:50%;height:58%;right:15%;top:9%}
+  .hero-img.left{width:39%;height:45%;left:11%;top:31%}
+  .hero-img.mini{width:33%;height:37%;right:13%;bottom:4%}
+  .hero-stamp{left:20%;top:4%}
+  .hero-bottom{display:none}
+  .service:nth-child(n){grid-column:span 6;min-height:320px}
+  .service:nth-child(6){grid-column:span 12;min-height:170px}
+  .service-text{max-width:65%}
+  .service:nth-child(2) .service-text{max-width:57%}
+  .work{grid-column:span 4}
+  .work:nth-child(1),.work:nth-child(6){grid-column:span 8;aspect-ratio:1.6}
+  .process-grid{grid-template-columns:repeat(2,1fr)}
+  .process-step:nth-child(3){border-left:0;padding-left:0;border-top:1px solid #cfd2d2}
+  .process-step:nth-child(4){border-top:1px solid #cfd2d2}
+  .quote-layout{grid-template-columns:1fr;gap:20px}
+  .quote-info{padding:0 0 8px}
+  .quote-info h2{max-width:none}
+  .quote-details{margin-top:20px}
+}
+@media(max-width:560px){
+ .container{padding:0 19px}
+ .topline{font-size:10px;text-align:center}
+ .identity img{height:40px;width:40px}
+ .identity-name{font-size:18px}
+ .hero h1{font-size:clamp(43px,11.5vw,65px)}
+ .hero-copy{padding:43px 0 16px}
+ .hero-summary{margin:22px 0 27px}
+ .hero-visual{height:345px}
+ .hero-img.main{right:10%;top:11%;width:60%;height:56%}
+ .hero-img.left{left:2%;top:38%;width:43%;height:43%}
+ .hero-img.mini{right:2%;bottom:2%;width:38%;height:34%}
+ .hero-stamp{width:82px;height:82px;font-size:13px;top:6%;left:14%}
+ .hero-ring{width:94%;left:3%}
+ .hero-features{margin-top:25px}
+ .ticker{padding:13px 0}
+ .ticker-track{font-size:13px;gap:12px;overflow:hidden;justify-content:flex-start;padding-left:15px}
+ .section-pad{padding:65px 0}
+ .section-head{display:block;margin-bottom:25px}
+ .section-head h2{font-size:38px}
+ .section-head p{margin-top:15px}
+ .services-grid{gap:12px}
+ .service:nth-child(n){grid-column:span 12;min-height:290px}
+ .service:nth-child(6){min-height:170px}
+ .service .service-art{height:72%;width:48%}
+ .service:nth-child(6) .service-art{width:110px;height:110px;margin-right:0}
+ .service:nth-child(6) .service-text{max-width:60%}
+ .work,.work:nth-child(1),.work:nth-child(6),.work:nth-child(4),.work:nth-child(9){grid-column:span 6;aspect-ratio:1/1.15}
+ .works{gap:9px}
+ .work-caption{left:11px;right:11px;bottom:10px}
+ .work-caption b{font-size:13px}
+ .work-caption small{font-size:9px}
+ .work-caption i{height:28px;width:28px;font-size:18px}
+ .filters{gap:6px}
+ .filter{font-size:11px;padding:8px 11px}
+ .process-step{padding:26px 16px 28px 0;min-height:240px}
+ .process-step+.process-step{padding-left:16px}
+ .process-num{font-size:42px}
+ .process-step h3{font-size:17px}
+ .process-arrow{display:none}
+ .quote-zone{padding:68px 0}
+ .quote-info h2{font-size:45px}
+ .quote-card{padding:24px 19px}
+ .quote-card-head h3{font-size:23px}
+ .form-two{grid-template-columns:1fr}
+ .trust-grid{grid-template-columns:1fr;gap:0}
+ .trust-item{border-right:0;border-bottom:1px solid #e5e5df;padding:15px 0}
+ .footer{padding-top:60px}
+ .footer-grid{grid-template-columns:1fr;gap:32px}
+ .footer-bottom{flex-direction:column;align-items:start}
+ .float-line{bottom:16px;right:13px;padding:13px 17px}
+ .preview-flag{bottom:14px;left:10px;font-size:9px;padding:10px 9px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important;animation:none!important}}
+
+
+/* AUTHENTIC STORE CONTACT / V2.1 */
+.store-contact{background:#eceeea;padding:94px 0;color:#15191c}
+.store-contact-head{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:30px}
+.store-contact-head .eyebrow{color:#816918}
+.store-contact-head h2{font:800 clamp(37px,4.4vw,62px)/1.08 var(--display);letter-spacing:-.05em;margin:13px 0 0}
+.store-contact-head p{color:#606b70;font-size:13px;line-height:1.8;max-width:340px}
+.contact-layout{display:grid;grid-template-columns:1.08fr .92fr;gap:17px}
+.contact-main{background:#14181c;color:#fff;padding:36px;border-radius:20px}
+.contact-title{color:var(--yellow);font:600 13px var(--body);margin:0 0 10px}
+.contact-main h3{font:700 29px var(--display);margin:0 0 8px;letter-spacing:-.03em}
+.contact-address{color:#c0c6ca;line-height:1.85;margin:0 0 27px;font-size:14px}
+.contact-methods{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.contact-method{border:1px solid #3b434b;border-radius:12px;padding:16px 17px;min-height:96px;display:flex;flex-direction:column;justify-content:space-between;gap:10px;transition:border-color .2s,background .2s}
+.contact-method:hover{background:#21272c;border-color:#ffdb35}
+.contact-method small{color:#a5b0b8;font-size:11px}
+.contact-method strong{font:600 14px var(--body);color:#fff;word-break:break-word}
+.contact-method .yellow{color:var(--yellow)}
+.contact-cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.contact-cta a{padding:13px 17px;border-radius:9px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:10px}
+.contact-cta .line-contact{background:#06c755;color:#fff}
+.contact-cta .facebook-contact{background:#2f70ef;color:#fff}
+.contact-cta .map-contact{border:1px solid #6a737b;color:#fff}
+.contact-map-card{background:#fff;border-radius:20px;padding:15px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.contact-map{height:320px;position:relative;background:#e0e2e4;border-radius:12px;overflow:hidden}
+.contact-map iframe{height:100%;width:100%;border:0}
+.contact-map-footer{display:flex;align-items:center;gap:15px;padding:3px 7px 7px}
+.contact-map-footer img{width:86px;height:86px;flex-shrink:0;padding:5px;border-radius:9px;border:1px solid #e5e5e5;object-fit:contain}
+.contact-map-footer strong{font:700 18px var(--display);display:block}
+.contact-map-footer p{font-size:11px;margin:4px 0 8px;color:#6e757a;line-height:1.5}
+.contact-map-footer a{font-size:12px;color:#252d31;font-weight:700;border-bottom:1px solid #b79a22}
+.contact-source{font-size:11px;color:#788187;margin-top:18px}
+@media(max-width:900px){.contact-layout{grid-template-columns:1fr}.contact-map{height:320px}}
+@media(max-width:580px){.store-contact{padding:65px 0}.store-contact-head{display:block}.store-contact-head p{margin-top:15px}.contact-main{padding:23px 20px}.contact-main h3{font-size:25px}.contact-methods{grid-template-columns:1fr;gap:9px}.contact-method{min-height:76px}.contact-cta a{flex:1;justify-content:center}.contact-map{height:260px}.contact-map-footer img{width:73px;height:73px}.contact-map-footer strong{font-size:17px}}
+
+
+/* BST CALM STUDIO PALETTE V2.2 START */
+/* Softer colors: warm ivory, stone, slate and restrained golden accents. Layout and functionality unchanged. */
+:root{
+  --night:#35434a;
+  --night2:#46545b;
+  --ink:#293438;
+  --muted:#67737a;
+  --yellow:#e7cc79;
+  --yellow2:#f3e7b7;
+  --cream:#f8f7f2;
+  --white:#fffdfa;
+  --line:#e1e3dc;
+}
+html{background:#f8f7f2}
+body{background:var(--cream);color:var(--ink)}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline-color:#a68336}
+.topline{background:#e5dfcd;color:#4d5a5f;border-bottom:1px solid #d7d2c3}
+.topline strong{color:#795e20}
+.topline a{color:#293438}
+.header{background:rgba(251,250,246,.96);border-bottom:1px solid #e2e4df;color:#293438;box-shadow:0 4px 18px #37464a08}
+.identity-name{color:#2d383d}
+.identity-name span{color:#9b7b30}
+.identity small{color:#6c787e}
+.links a{color:#4a565d}
+.links a:hover{color:#8a6926}
+.nav-cta{background:#e9d184;color:#2f352f;box-shadow:none}
+.nav-cta:hover{background:#e4c46d}
+.mobile-toggle{color:#3b484e;border-color:#c8cbc6}
+.hero{background:#e9e8df;color:#28363d;border-bottom:1px solid #d6d9d3}
+.hero:before{background:radial-gradient(circle at 84% 34%,#dacd9b70,transparent 46%),linear-gradient(115deg,#f4f1e8 0%,#e6eae6 95%);opacity:1}
+.hero-copy .eyebrow{color:#8e743b}
+.hero h1{color:#30414a}
+.hero h1 .outline{-webkit-text-stroke:1.3px #5f7379;color:transparent}
+.hero h1 .highlight{color:#9b7931}
+.hero-summary{color:#59696e}
+.big-btn.primary{background:#e7c875;color:#24343a;box-shadow:0 8px 24px #987d2c19}
+.big-btn.primary:hover{background:#e2bf61}
+.big-btn.ghost{border-color:#9da8a7;color:#3d4c52;background:#ffffff5e}
+.hero-features span{border-color:#c6ccc8;color:#49585d;background:#ffffff66}
+.hero-ring{border-color:#bbb290;box-shadow:0 0 0 54px #d6c89f22,0 0 0 108px #d1c4a511}
+.hero-orbit{color:#6070780c}
+.hero-img{border-color:#f9f7f0;box-shadow:0 18px 45px #56606635;filter:saturate(.87)}
+.hero-stamp{background:#d8bc6d;color:#273438;box-shadow:0 10px 24px #545a5636}
+.hero-bottom{color:#707f83}
+.ticker{background:#dfd5b4;border-top:1px solid #d5cba9;border-bottom:1px solid #d5cba9}
+.ticker-track{color:#39474b}
+.ticker-track i{opacity:.45}
+.section-head .eyebrow{color:#96783c}
+.section-head h2{color:#28383e}
+.section-head p{color:#647278}
+.service{border-color:#e1e3de;background:#fffefb;box-shadow:0 3px 12px #57656508}
+.service:nth-child(1){background:#48575d;color:#fffdfa}
+.service:nth-child(2){background:#ece1bd;color:#293438}
+.service:nth-child(4){background:#e5edeb}
+.service:nth-child(5){background:#eeede5}
+.service:nth-child(6){background:#fffefb;color:#293438}
+.service .service-art{filter:saturate(.86);border-color:#fcfaf4;box-shadow:0 8px 25px #35404523}
+.service:hover{box-shadow:0 14px 32px #394b5018}
+.portfolio{background:#35454e;color:#f8f9f6}
+.section-head.dark .eyebrow{color:#e9d391}
+.section-head.dark h2{color:#f6f7f4}
+.section-head.dark p{color:#c0cbd0}
+.filter{border-color:#748189;background:#ffffff08;color:#f1f3f2}
+.filter.active,.filter:hover{border-color:#ead48c;background:#ead48c;color:#2b3b42}
+.work{background:#536269;border-color:#647178}
+.work img{filter:saturate(.9)}
+.work:hover{border-color:#e8d69c}
+.work-caption i{background:#e9d18a;color:#2c373e}
+.portfolio-more p{color:#ced5d5}
+.process-num{color:#b79a56}
+.process-step p{color:#637177}
+.quote-zone{background:#ece4d0;color:#2b393e}
+.quote-zone:before{color:#6870680d}
+.quote-info .eyebrow{color:#856a31}
+.quote-info p{color:#5f665f}
+.quote-info h2{color:#34434a}
+.quote-details{border-color:#c5b58f}
+.quote-details div span{background:#536268;color:#fff}
+.quote-card{background:#fffefa;color:#2e3a40;box-shadow:0 19px 48px #625e4621;border:1px solid #e8e4d7}
+.quote-card-head h3{color:#2b3b40}
+.quote-card-head span{color:#647276}
+.field label{color:#435156}
+.field input,.field textarea,.field select{background:#f5f5f0;border:1px solid #ced3cf;color:#2e3b41}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:#ae985d}
+.field input::placeholder,.field textarea::placeholder{color:#7e8a8b}
+.quote-hint{color:#6f7d7f}
+.sent-preview{background:#f4f1e7;border-color:#d3ba7e;color:#344047}
+.sent-preview strong{color:#85681d}
+.sent-preview pre{color:#334047}
+.sent-preview button{background:#e7cc79;color:#2d383d}
+.trust-bar{background:#fbfaf6}
+.trust-item span{color:#b49a5c}
+.trust-item h3{color:#2c3b40}
+.trust-item p{color:#617075}
+.store-contact{background:#eef0ec;color:#2a383d}
+.store-contact-head .eyebrow{color:#94783e}
+.store-contact-head p{color:#647178}
+.contact-main{background:#465760;color:#fffefa}
+.contact-title{color:#eed69b}
+.contact-address{color:#d5dbdd}
+.contact-method{border-color:#70818a;background:#ffffff08}
+.contact-method:hover{background:#ffffff13;border-color:#e8ce8a}
+.contact-method small{color:#d8dfdf}
+.contact-method .yellow{color:#f1db9d}
+.contact-cta .map-contact{border-color:#a9b4b6}
+.contact-map-card{background:#fffefa}
+.contact-map-footer a{border-color:#b9a16d}
+.footer{background:#35454e;color:#f1f2ed}
+.footer p,.footer a{color:#d7dddf}
+.footer a:hover{color:#eddbab}
+.footer .identity-name{color:#f7f7f1}
+.footer .identity-name span{color:#eed99e}
+.footer .identity small{color:#d1d9dd}
+.footer hr{border-color:#617078}
+.footer-bottom{color:#ced6d8}
+.footer-bottom span{color:#eed89a}
+.preview-flag{background:#e7cf8b;color:#39454a;box-shadow:0 4px 14px #52606728}
+.lightbox-inner{background:#4a5961}
+.close-lightbox{background:#e7cc79;color:#29373e}
+.toast{background:#fffef8;color:#344048}
+@media(max-width:820px){
+ .links{background:#fcfaf5;border-bottom-color:#dfe2db;box-shadow:0 16px 24px #2d3b431a}
+ .links a{color:#34454d;border-bottom-color:#e6e8e0}
+}
+/* BST CALM STUDIO PALETTE V2.2 END */
+
+</style>
+</head>
+<body>
+<div class="topline"><div class="container"><span>บริการทำสติ๊กเกอร์สั่งทำ <strong>พิษณุโลก</strong> · จัดส่งทั่วประเทศ</span><span class="desktop-note">ตรวจแบบก่อนพิมพ์ทุกงาน &nbsp; ✦ &nbsp; สอบถามราคาได้ทาง LINE</span></div></div>
+<header class="header"><div class="container header-inner">
+<a class="identity" href="#home" aria-label="กลับหน้าแรก BALL STICKER"><img src="https://www.ballsticker.co.th/icon-192.png" alt="โลโก้ บอลสติ๊กเกอร์"><div><div class="identity-name">BALL<span>STICKER</span></div><small>สติ๊กเกอร์สั่งทำ · พิษณุโลก</small></div></a>
+<nav class="links" id="navLinks" aria-label="เมนูหลัก"><a href="#services">บริการของเรา</a><a href="#portfolio">ผลงานจริง</a><a href="#how">วิธีสั่งงาน</a><a href="#quote">ขอราคา</a><a href="#store-contact">ติดต่อเรา</a></nav>
+<a class="nav-cta" href="https://lin.ee/5WdXssc" target="_blank" rel="noopener">สั่งงานทาง LINE <span class="arrow">↗</span></a>
+<button class="mobile-toggle" type="button" id="menuToggle" aria-label="เปิดเมนู" aria-expanded="false" aria-controls="navLinks">☰</button>
+</div></header>
+<main>
+<section class="hero" id="home"><div class="container hero-layout">
+<div class="hero-copy">
+<div class="eyebrow">PRINT IT. STICK IT. MAKE IT YOURS.</div>
+<h1>สติ๊กเกอร์<br><span class="outline">ดีไซน์เด่น</span><br><span class="highlight">แบรนด์ดูโปร</span></h1>
+<p class="hero-summary">เปลี่ยนไอเดียให้เป็นสติ๊กเกอร์ที่ใช่สำหรับคุณ ตั้งแต่โลโก้ร้าน ฉลากสินค้า ไปจนถึงไดคัทสุดเท่ เลือกขนาดและจำนวนตามต้องการ พร้อมให้ตรวจแบบก่อนพิมพ์</p>
+<div class="actions"><a class="big-btn primary" href="#quote">ขอราคาสติกเกอร์ <span class="arrow">↗</span></a><a class="big-btn ghost" href="#portfolio">ชมผลงานจริง <span class="arrow">↓</span></a></div>
+<div class="hero-features"><span>✓ ไดคัทตามรูป</span><span>✓ สั่งทำตามขนาด</span><span>✓ ส่งทั่วประเทศ</span></div>
+</div>
+<div class="hero-visual" aria-label="ภาพคอลลาจตัวอย่างสติ๊กเกอร์ที่ร้านผลิตจริง">
+<div class="hero-ring"></div><div class="hero-orbit">BST</div>
+<img class="hero-img main" alt="ตัวอย่างงานสติ๊กเกอร์บอลสติ๊กเกอร์" src="https://www.ballsticker.co.th/work/w05.webp">
+<img class="hero-img left" alt="สติ๊กเกอร์แบบโลโก้วงกลม" src="https://www.ballsticker.co.th/work/w03.webp">
+<img class="hero-img mini" alt="ตัวอย่างงานไดคัทตามรูป" src="https://www.ballsticker.co.th/work/w08.webp">
+<div class="hero-stamp">MADE<br>TO<br>STICK!</div>
+</div><div class="hero-bottom">CUSTOM PRINT STUDIO — THAILAND</div>
+</div></section>
+<div class="ticker" aria-label="บริการของร้าน"><div class="ticker-track"><span>ออกแบบ</span><i>✳</i><span>พิมพ์สติ๊กเกอร์</span><i>✳</i><span>ไดคัทตามรูป</span><i>✳</i><span>ฉลากสินค้า</span><i>✳</i><span>งาน UV</span><i>✳</i><span>ส่งทั่วประเทศ</span></div></div>
+<section class="section-pad" id="services"><div class="container">
+<div class="section-head"><div><div class="eyebrow">WHAT WE MAKE</div><h2>งานสติ๊กเกอร์<br>สำหรับทุกไอเดีย<span style="color:#d9ab04">.</span></h2></div><p>ไม่ว่าจะเป็นแบรนด์เล็กหรือร้านค้าที่มีเอกลักษณ์ เลือกชนิดงานให้เข้ากับสิ่งที่คุณต้องการ แล้วส่งรายละเอียดมาคุยราคาได้เลย</p></div>
+<div class="services-grid">
+<article class="service"><span class="service-no">SERVICES / 01</span><div class="service-text"><h3>สติ๊กเกอร์ไดคัท</h3><p>ตัดตามขอบโลโก้และรูปทรงอิสระ งานเฉพาะตัวสำหรับร้านและแบรนด์ของคุณ</p><button class="service-link" type="button" data-service="ไดคัทตามรูป">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน สติ๊กเกอร์ไดคัท" src="https://www.ballsticker.co.th/work/w05.webp"></article>
+<article class="service"><span class="service-no">SERVICES / 02</span><div class="service-text"><h3>ฉลากสินค้า</h3><p>วงกลม สี่เหลี่ยม ติดขวด กล่อง หรือบรรจุภัณฑ์ทุกประเภท</p><button class="service-link" type="button" data-service="วงกลม / สี่เหลี่ยม">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน ฉลากสินค้า" src="https://www.ballsticker.co.th/work/w03.webp"></article>
+<article class="service"><span class="service-no">SERVICES / 03</span><div class="service-text"><h3>โฮโลแกรม</h3><p>สะท้อนสีรุ้งเพิ่มความพิเศษให้แพ็กเกจและฉลากสินค้า</p><button class="service-link" type="button" data-service="โฮโลแกรม">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน โฮโลแกรม" src="https://www.ballsticker.co.th/work/w02.webp"></article>
+<article class="service"><span class="service-no">SERVICES / 04</span><div class="service-text"><h3>สติ๊กเกอร์ใส</h3><p>พื้นใส ดูคลีน เหมาะกับกระจก ขวดแก้ว และบรรจุภัณฑ์</p><button class="service-link" type="button" data-service="สติ๊กเกอร์ใส">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน สติ๊กเกอร์ใส" src="https://www.ballsticker.co.th/work/w07.webp"></article>
+<article class="service"><span class="service-no">SERVICES / 05</span><div class="service-text"><h3>งานพิมพ์ UV</h3><p>งานสีสดบนวัสดุหลากหลาย เลือกสเปกตามการใช้งาน</p><button class="service-link" type="button" data-service="งานพิมพ์ UV">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน งานพิมพ์ UV" src="https://www.ballsticker.co.th/work/w10.webp"></article>
+<article class="service"><span class="service-no">SERVICES / 06</span><div class="service-text"><h3>สติ๊กเกอร์แผ่น</h3><p>พิมพ์หลายดวงไว้บนแผ่นเดียว สะดวกลอกใช้งานและจัดเก็บ</p><button class="service-link" type="button" data-service="สติ๊กเกอร์แผ่น">ขอราคางานนี้ <span class="arrow">↗</span></button></div><img class="service-art" loading="lazy" alt="ตัวอย่างงาน สติ๊กเกอร์แผ่น" src="https://www.ballsticker.co.th/work/w12.webp"></article>
+</div></div></section>
+<section class="section-pad portfolio" id="portfolio"><div class="container">
+<div class="section-head dark"><div><div class="eyebrow">OUR REAL WORK</div><h2>ของจริง<br>งานจริง ไม่ใช่แค่ภาพฝัน<span style="color:var(--yellow)">.</span></h2></div><p>รวมผลงานที่ร้านผลิตให้ลูกค้า ดูสไตล์งานและไอเดียสำหรับงานของคุณได้ที่นี่</p></div>
+<div class="filters" role="group" aria-label="ตัวกรองผลงาน">
+<button class="filter active" data-filter="all" type="button" aria-pressed="true">ทั้งหมด</button>
+<button class="filter" data-filter="logo" type="button" aria-pressed="false">โลโก้ร้าน</button>
+<button class="filter" data-filter="diecut" type="button" aria-pressed="false">ไดคัท / การ์ตูน</button>
+<button class="filter" data-filter="label" type="button" aria-pressed="false">ฉลากสินค้า / อื่น ๆ</button>
+</div>
+<div class="works" id="worksGrid"><button class="work" type="button" data-cat="logo" data-index="0" aria-label="ดูผลงาน ไข่แดง หัวยอด"><img loading="lazy" src="https://www.ballsticker.co.th/work/w01.webp" alt="ผลงานจริง ไข่แดง หัวยอด"><span class="work-caption"><span><b>ไข่แดง หัวยอด</b><small>ไดคัท</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="diecut" data-index="1" aria-label="ดูผลงาน แดกดื่น ของดีหมู่ 6"><img loading="lazy" src="https://www.ballsticker.co.th/work/w02.webp" alt="ผลงานจริง แดกดื่น ของดีหมู่ 6"><span class="work-caption"><span><b>แดกดื่น ของดีหมู่ 6</b><small>ลายการ์ตูน</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="logo" data-index="2" aria-label="ดูผลงาน Chiang Miang / Suriyo Story"><img loading="lazy" src="https://www.ballsticker.co.th/work/w03.webp" alt="ผลงานจริง Chiang Miang / Suriyo Story"><span class="work-caption"><span><b>Chiang Miang / Suriyo Story</b><small>โลโก้วงกลม</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="label" data-index="3" aria-label="ดูผลงาน อาหารปลา กระสอบขาว"><img loading="lazy" src="https://www.ballsticker.co.th/work/w04.webp" alt="ผลงานจริง อาหารปลา กระสอบขาว"><span class="work-caption"><span><b>อาหารปลา กระสอบขาว</b><small>ฉลากสินค้า</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="diecut" data-index="4" aria-label="ดูผลงาน ขอมาจัดให้ ไม่เคยขัด"><img loading="lazy" src="https://www.ballsticker.co.th/work/w05.webp" alt="ผลงานจริง ขอมาจัดให้ ไม่เคยขัด"><span class="work-caption"><span><b>ขอมาจัดให้ ไม่เคยขัด</b><small>สติ๊กเกอร์ไดคัท</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="logo" data-index="5" aria-label="ดูผลงาน NHT Audio"><img loading="lazy" src="https://www.ballsticker.co.th/work/w06.webp" alt="ผลงานจริง NHT Audio"><span class="work-caption"><span><b>NHT Audio</b><small>โลโก้ร้านเครื่องเสียง</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="diecut" data-index="6" aria-label="ดูผลงาน KAKA ตอนเดียว"><img loading="lazy" src="https://www.ballsticker.co.th/work/w07.webp" alt="ผลงานจริง KAKA ตอนเดียว"><span class="work-caption"><span><b>KAKA ตอนเดียว</b><small>งานรถยนต์</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="diecut" data-index="7" aria-label="ดูผลงาน Rabbit Adventure Trip"><img loading="lazy" src="https://www.ballsticker.co.th/work/w08.webp" alt="ผลงานจริง Rabbit Adventure Trip"><span class="work-caption"><span><b>Rabbit Adventure Trip</b><small>ไดคัทตามรูป</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="logo" data-index="8" aria-label="ดูผลงาน LEO รถพยาบาล"><img loading="lazy" src="https://www.ballsticker.co.th/work/w09.webp" alt="ผลงานจริง LEO รถพยาบาล"><span class="work-caption"><span><b>LEO รถพยาบาล</b><small>โลโก้ธุรกิจ</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="label" data-index="9" aria-label="ดูผลงาน BANK EV"><img loading="lazy" src="https://www.ballsticker.co.th/work/w10.webp" alt="ผลงานจริง BANK EV"><span class="work-caption"><span><b>BANK EV</b><small>สติ๊กเกอร์ร้านค้า</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="logo" data-index="10" aria-label="ดูผลงาน Sure Auto Tire"><img loading="lazy" src="https://www.ballsticker.co.th/work/w11.webp" alt="ผลงานจริง Sure Auto Tire"><span class="work-caption"><span><b>Sure Auto Tire</b><small>ร้านยางรถยนต์</small></span><i>↗</i></span></button>
+<button class="work" type="button" data-cat="diecut" data-index="11" aria-label="ดูผลงาน อาร์ท บ้านสวน"><img loading="lazy" src="https://www.ballsticker.co.th/work/w12.webp" alt="ผลงานจริง อาร์ท บ้านสวน"><span class="work-caption"><span><b>อาร์ท บ้านสวน</b><small>ไดคัท 2 แบบ</small></span><i>↗</i></span></button></div>
+<div class="portfolio-more"><p>แตะรูปเพื่อดูผลงานขนาดใหญ่</p><a class="big-btn primary" href="#quote">อยากได้งานแบบนี้ ขอราคา <span class="arrow">↗</span></a></div>
+</div></section>
+<section class="section-pad" id="how"><div class="container">
+<div class="section-head"><div><div class="eyebrow">HOW TO ORDER</div><h2>จากไอเดียในหัว<br>สู่สติ๊กเกอร์ในมือ<span style="color:#d9ab04">.</span></h2></div><p>สั่งง่ายผ่านแชท ไม่ต้องเดินทางมาเอง ส่งรายละเอียดงานให้ร้านประเมินและตรวจแบบได้สะดวก</p></div>
+<div class="process-grid">
+<article class="process-step"><div class="process-num">01</div><span class="process-arrow">↗</span><h3>ส่งไอเดียของคุณ</h3><p>ทัก LINE ส่งรูป โลโก้ หรือบอกแบบที่อยากได้ พร้อมขนาดและจำนวน</p></article>
+<article class="process-step"><div class="process-num">02</div><span class="process-arrow">↗</span><h3>รับราคาและตรวจแบบ</h3><p>ร้านแจ้งราคาและจัดรายละเอียดแบบให้ตรวจสอบก่อนเริ่มพิมพ์</p></article>
+<article class="process-step"><div class="process-num">03</div><span class="process-arrow">↗</span><h3>ชำระเงิน</h3><p>ยืนยันแบบและชำระตามช่องทางที่ร้านแจ้งในแชท</p></article>
+<article class="process-step"><div class="process-num">04</div><h3>ผลิตและจัดส่ง</h3><p>ร้านผลิตงานตามรายละเอียดที่ตกลง และแจ้งข้อมูลจัดส่ง</p></article>
+</div></div></section>
+<section class="quote-zone" id="quote"><div class="container quote-layout">
+<div class="quote-info"><div class="eyebrow">READY TO PRINT?</div><h2>มีแบบแล้ว?<br><em>มาคุยราคากัน</em></h2><p>เพียงบอกชนิดสติ๊กเกอร์ ขนาด และจำนวนที่ต้องการ เราจะช่วยประเมินงานที่เหมาะกับคุณ</p>
+<div class="quote-details"><div><span>✓</span> ยังไม่มีไฟล์งานก็คุยรายละเอียดก่อนได้</div><div><span>✓</span> ขอราคาและส่งไฟล์ทาง LINE</div><div><span>✓</span> สั่งงานจากที่ไหนก็ได้ ส่งทั่วไทย</div></div>
+</div>
+<div class="quote-card"><div class="quote-card-head"><div><h3>รายละเอียดงานของคุณ</h3><span>กรอกเพื่อเตรียมข้อความส่งเข้าร้านทาง LINE</span></div><span style="color:#ffdb35;font-weight:700">↗</span></div>
+<form class="quote-form" id="quoteForm">
+<div class="field"><label for="qType">ประเภทสติ๊กเกอร์</label><select id="qType" name="type" required>
+<option value="ไดคัทตามรูป">ไดคัทตามรูป</option><option value="วงกลม / สี่เหลี่ยม">วงกลม / สี่เหลี่ยม</option><option value="โฮโลแกรม">โฮโลแกรม</option><option value="สติ๊กเกอร์ใส">สติ๊กเกอร์ใส</option><option value="งานพิมพ์ UV">งานพิมพ์ UV</option><option value="สติ๊กเกอร์แผ่น">สติ๊กเกอร์แผ่น</option><option value="ยังไม่แน่ใจ ให้ร้านแนะนำ">ยังไม่แน่ใจ ให้ร้านแนะนำ</option>
+</select></div>
+<div class="form-two"><div class="field"><label for="qW">กว้าง (ซม.)</label><input id="qW" type="number" min="0.1" step="any" placeholder="เช่น 8" inputmode="decimal"></div><div class="field"><label for="qH">สูง (ซม.)</label><input id="qH" type="number" min="0.1" step="any" placeholder="เช่น 8" inputmode="decimal"></div></div>
+<div class="field"><label for="qQty">จำนวนดวง / จำนวนแผ่น</label><input id="qQty" type="text" placeholder="เช่น 200 ดวง" maxlength="90"></div>
+<div class="field"><label for="qNote">เพิ่มเติม / ใช้ติดกับอะไร</label><textarea id="qNote" placeholder="เช่น ติดขวดน้ำ ต้องการกันน้ำ มีไฟล์โลโก้อยู่แล้ว" maxlength="800"></textarea></div>
+<button type="submit" class="big-btn primary">เตรียมข้อความและเปิด LINE <span class="arrow">↗</span></button>
+<p class="quote-hint">เมื่อกด ระบบจะเตรียมข้อความให้คัดลอกและเปิด LINE ของร้าน กรุณาวางข้อความในแชทเพื่อส่งรายละเอียด</p>
+<div id="quoteResult" class="sent-preview" aria-live="polite"><strong>ข้อความสำหรับส่งร้าน</strong><pre id="quoteText"></pre><button type="button" id="copyQuote">คัดลอกข้อความอีกครั้ง ↗</button></div>
+</form>
+</div></div></section>
+<section class="section-pad trust-bar"><div class="container trust-grid">
+<div class="trust-item"><span>✳</span><h3>ตรวจแบบก่อนพิมพ์</h3><p>ตรวจสอบรายละเอียดของงานก่อนเริ่มผลิต</p></div>
+<div class="trust-item"><span>↗</span><h3>จัดส่งทั่วประเทศ</h3><p>สั่งทางออนไลน์จากพื้นที่ไหนก็ได้</p></div>
+<div class="trust-item"><span>▣</span><h3>เอกสารภาษี</h3><p>ติดต่อร้านเพื่อขอใบเสร็จและใบกำกับภาษี</p></div>
+</div></section>
+</main>
+
+<section class="store-contact" id="store-contact" aria-label="ข้อมูลติดต่อบอลสติ๊กเกอร์">
+<div class="container">
+<div class="store-contact-head">
+<div><div class="eyebrow">VISIT / CONTACT OUR STUDIO</div><h2>มาคุยงานกัน<br>ติดต่อร้านได้เลย<span style="color:#c6a51e">.</span></h2></div>
+<p>ช่องทางติดต่อและตำแหน่งร้านจากเว็บไซต์ BALL STICKER เดิม ใช้สำหรับสอบถามราคา ส่งไฟล์งาน และเดินทางมาที่ร้าน</p>
+</div>
+<div class="contact-layout">
+<div class="contact-main">
+<p class="contact-title">BALL STICKER · PHITSANULOK</p>
+<h3>บอลสติ๊กเกอร์ พิษณุโลก</h3>
+<p class="contact-address">8 หมู่ 19 ต.บางระกำ อ.บางระกำ<br>จ.พิษณุโลก 65140</p>
+<div class="contact-methods">
+<a class="contact-method" href="tel:0935353555"><small>โทรศัพท์หลัก ↗</small><strong>093-535-3555</strong></a>
+<a class="contact-method" href="tel:0966697495"><small>โทรศัพท์เพิ่มเติม ↗</small><strong>096-669-7495</strong></a>
+<a class="contact-method" href="https://lin.ee/5WdXssc" target="_blank" rel="noopener"><small>LINE Official ↗</small><strong class="yellow">@bk25</strong></a>
+<a class="contact-method" href="mailto:info@ballsticker.co.th"><small>อีเมล ↗</small><strong>info@ballsticker.co.th</strong></a>
+</div>
+<div class="contact-cta">
+<a class="line-contact" href="https://lin.ee/5WdXssc" target="_blank" rel="noopener">LINE สอบถามราคา ↗</a>
+<a class="facebook-contact" href="https://www.facebook.com/share/1CHNqRvwvv/" target="_blank" rel="noopener">เพจ Facebook ↗</a>
+<a class="map-contact" href="https://maps.app.goo.gl/d8F8hY2ko8PbT1Hv8" target="_blank" rel="noopener">นำทางร้าน ↗</a>
+</div>
+</div>
+<div class="contact-map-card">
+<div class="contact-map"><iframe title="แผนที่ร้านบอลสติ๊กเกอร์ พิษณุโลก" src="https://www.google.com/maps?q=%E0%B8%9A%E0%B8%AD%E0%B8%A5%E0%B8%AA%E0%B8%95%E0%B8%B4%E0%B9%8A%E0%B8%81%E0%B9%80%E0%B8%81%E0%B8%AD%E0%B8%A3%E0%B9%8C%20%E0%B8%9E%E0%B8%B4%E0%B8%A9%E0%B8%93%E0%B8%B8%E0%B9%82%E0%B8%A5%E0%B8%81%20%E0%B8%9A%E0%B8%B2%E0%B8%87%E0%B8%A3%E0%B8%B0%E0%B8%81%E0%B8%B3&hl=th&z=16&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe></div>
+<div class="contact-map-footer">
+<img src="https://www.ballsticker.co.th/line-qr.png" alt="คิวอาร์โค้ด LINE ร้านบอลสติ๊กเกอร์ @bk25" loading="lazy" width="86" height="86">
+<div><strong>LINE @bk25</strong><p>สแกนเพื่อเพิ่มเพื่อนร้าน หรือกดเปิดแชทโดยตรง</p><a href="https://lin.ee/5WdXssc" target="_blank" rel="noopener">เปิด LINE เพิ่มเพื่อน ↗</a></div>
+</div>
+</div>
+</div>
+<p class="contact-source">ข้อมูลติดต่ออ้างอิงจากเว็บไซต์ทางการของร้าน · <a href="https://www.ballsticker.co.th/" target="_blank" rel="noopener" style="text-decoration:underline">www.ballsticker.co.th</a></p>
+</div>
+</section>
+
+<footer class="footer" id="contact"><div class="container">
+<div class="footer-grid"><div><a class="identity" href="#home"><img src="https://www.ballsticker.co.th/icon-192.png" alt=""><div><div class="identity-name">BALL<span>STICKER</span></div><small>รับทำสติ๊กเกอร์สั่งทำ พิษณุโลก</small></div></a><p>8 หมู่ 19 ต.บางระกำ อ.บางระกำ<br>จ.พิษณุโลก 65140</p><p>โทร <a href="tel:0935353555">093-535-3555</a> · <a href="tel:0966697495">096-669-7495</a><br>อีเมล <a href="mailto:info@ballsticker.co.th">info@ballsticker.co.th</a></p></div>
+<div><h3>สำรวจเว็บไซต์</h3><ul><li><a href="#services">ประเภทสติ๊กเกอร์</a></li><li><a href="#portfolio">ผลงานจริง</a></li><li><a href="#how">วิธีสั่งงาน</a></li><li><a href="#quote">ขอราคางาน</a></li><li><a href="https://www.ballsticker.co.th/privacy.html">นโยบายความเป็นส่วนตัว</a></li></ul></div>
+<div><h3>ติดต่อ / ติดตามงาน</h3><ul><li><a href="https://lin.ee/5WdXssc" target="_blank" rel="noopener">LINE: @bk25 ↗</a></li><li><a href="https://m.me/108503502205863" target="_blank" rel="noopener">Facebook Messenger ↗</a></li><li><a href="https://maps.app.goo.gl/d8F8hY2ko8PbT1Hv8" target="_blank" rel="noopener">Google Maps ↗</a></li><li><a href="https://ball-sticker-tracking.nutty-hill-4377.chatgpt.site/" target="_blank" rel="noopener">ติดตามงานสติ๊กเกอร์ ↗</a></li></ul></div></div>
+<hr><div class="footer-bottom"><div>© 2026 BALL STICKER · พิษณุโลก</div><div>DESIGNED TO <span>STAND OUT.</span></div></div>
+</div></footer>
+<a class="float-line" href="https://lin.ee/5WdXssc" target="_blank" rel="noopener" aria-label="ติดต่อผ่าน LINE">✉ &nbsp; ทัก LINE สั่งงาน <span class="arrow">↗</span></a>
+<div class="preview-flag">PREVIEW V2.2 · ยังไม่ใช่เว็บจริง</div>
+<dialog class="lightbox" id="lightbox" aria-label="ดูตัวอย่างผลงานขนาดใหญ่"><div class="lightbox-inner"><img id="largeImage" alt=""><div class="lightbox-bottom"><h3 id="largeTitle"></h3><button class="close-lightbox" aria-label="ปิดภาพ" id="closeLightbox" type="button">×</button></div></div></dialog>
+<div id="toast" class="toast" role="status"></div>
+<script>
+(()=>{
+ const menu=document.getElementById('menuToggle'), links=document.getElementById('navLinks');
+ menu.addEventListener('click',()=>{const isOpen=links.classList.toggle('open');menu.setAttribute('aria-expanded',String(isOpen));menu.textContent=isOpen?'×':'☰';});
+ links.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{links.classList.remove('open');menu.setAttribute('aria-expanded','false');menu.textContent='☰';}));
+ document.querySelectorAll('[data-service]').forEach(b=>b.addEventListener('click',()=>{document.getElementById('qType').value=b.dataset.service;document.getElementById('quote').scrollIntoView({behavior:'smooth'});}));
+ document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-filter]').forEach(f=>{f.classList.toggle('active',f===b);f.setAttribute('aria-pressed',String(f===b));});document.querySelectorAll('.work').forEach(w=>w.hidden=b.dataset.filter!=='all'&&w.dataset.cat!==b.dataset.filter);}));
+ const projects=[["ไข่แดง หัวยอด","ไดคัท","logo"],["แดกดื่น ของดีหมู่ 6","ลายการ์ตูน","diecut"],["Chiang Miang / Suriyo Story","โลโก้วงกลม","logo"],["อาหารปลา กระสอบขาว","ฉลากสินค้า","label"],["ขอมาจัดให้ ไม่เคยขัด","สติ๊กเกอร์ไดคัท","diecut"],["NHT Audio","โลโก้ร้านเครื่องเสียง","logo"],["KAKA ตอนเดียว","งานรถยนต์","diecut"],["Rabbit Adventure Trip","ไดคัทตามรูป","diecut"],["LEO รถพยาบาล","โลโก้ธุรกิจ","logo"],["BANK EV","สติ๊กเกอร์ร้านค้า","label"],["Sure Auto Tire","ร้านยางรถยนต์","logo"],["อาร์ท บ้านสวน","ไดคัท 2 แบบ","diecut"]];
+ const dlg=document.getElementById('lightbox');
+ document.querySelectorAll('.work').forEach(b=>b.addEventListener('click',()=>{const i=Number(b.dataset.index);document.getElementById('largeImage').src='https://www.ballsticker.co.th/w'+String(i+1).padStart(2,'0')+'.webp';document.getElementById('largeImage').alt='ผลงานจริง '+projects[i][0];document.getElementById('largeTitle').textContent=projects[i][0];dlg.showModal();}));
+ document.getElementById('closeLightbox').addEventListener('click',()=>dlg.close());
+ dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close()});
+ let toastHandle;
+ function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastHandle);toastHandle=setTimeout(()=>el.classList.remove('show'),4200)}
+ async function copyMessage(text){if(navigator.clipboard&&window.isSecureContext){try{await navigator.clipboard.writeText(text);return true}catch(e){}}const t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.append(t);t.select();let ok=false;try{ok=document.execCommand('copy')}catch(e){}t.remove();return ok;}
+ let message='';
+ const get=id=>document.getElementById(id).value.trim();
+ document.getElementById('quoteForm').addEventListener('submit',async e=>{e.preventDefault();
+   message='สวัสดีครับ/ค่ะ ขอสอบถามราคาสติกเกอร์ BALL STICKER\\nประเภท: '+get('qType')+'\\nขนาด: '+(get('qW')||'ยังไม่ระบุ')+' × '+(get('qH')||'ยังไม่ระบุ')+' ซม.\\nจำนวน: '+(get('qQty')||'ยังไม่ระบุ')+(get('qNote')?'\\nรายละเอียด: '+get('qNote'):'');
+   document.getElementById('quoteText').textContent=message;document.getElementById('quoteResult').classList.add('show');
+   window.open('https://lin.ee/5WdXssc','_blank','noopener');
+   const ok=await copyMessage(message);toast(ok?'คัดลอกข้อความแล้ว กรุณาวางใน LINE ร้าน':'เปิด LINE แล้ว กรุณากดคัดลอกข้อความด้านล่างเพื่อส่งร้าน');
+ });
+ document.getElementById('copyQuote').addEventListener('click',async()=>{const ok=await copyMessage(message);toast(ok?'คัดลอกข้อความแล้ว':'กรุณาเลือกคัดลอกข้อความจากช่องด้านบน')});
+})();
+</script>
+</body></html>
