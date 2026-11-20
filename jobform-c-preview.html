@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex">
+<title>ฟอร์มใบคอนเฟิร์มงาน แบบ C ฉบับใหม่</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* tokens */
+:root{
+  --bg:#f4f5f8;--card:#fff;--ink:#0F1B3D;--ink2:#47506a;--mute:#6B7794;--line:#E3E9F6;--field:#D5DDF0;
+  --navy:#0E1E5B;--navy-t:#E5ECFF;--gold:#F5B301;--gold-t:#FFF4CC;--ok:#17804a;--ok-t:#e3f5ea;--bad:#b3261e;--bad-t:#fdeceb;
+  --r-card:18px;--r-field:12px;--font:"Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:16px;line-height:1.5;padding-bottom:40px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+/* หัวหน้าพรีวิว */
+.top{position:sticky;top:0;z-index:20;background:rgba(244,245,248,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 16px}
+.top h1{font-size:15px;font-weight:600;margin-bottom:8px}
+.tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;min-height:44px;padding:0 16px;border-radius:999px;border:1.5px solid var(--field);background:#fff;font-weight:500;font-size:15px}
+.tabs button[aria-pressed=true]{background:var(--navy);border-color:var(--navy);color:#fff}
+.devs{margin-left:auto;display:flex;gap:6px}
+.devs button{min-height:44px;padding:0 14px;border-radius:12px;border:1.5px solid var(--field);background:#fff;font-size:14px}
+.devs button[aria-pressed=true]{background:var(--navy-t);border-color:var(--navy);color:var(--navy);font-weight:600}
+.about{max-width:1100px;margin:14px auto 0;padding:0 16px;color:var(--ink2);font-size:14px}
+.stage{display:flex;justify-content:center;padding:14px 12px}
+.dev{container-type:inline-size;width:100%;max-width:1120px}
+.dev.phone{max-width:392px;border:10px solid #151a2e;border-radius:38px;overflow:hidden;background:var(--bg)}
+.dev>.inner{padding:14px}
+@container (min-width:760px){.dev>.inner{padding:22px}}
+
+/* การ์ดและฟิลด์ */
+.blk{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:16px;margin-bottom:12px}
+.blk h3{font-size:17px;font-weight:600;display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.blk h3 .num{width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-size:14px;font-weight:600}
+.blk h3 small{font-weight:400;font-size:13px;color:var(--mute);margin-left:auto}
+.lbl{display:block;font-size:13.5px;font-weight:500;color:var(--ink2);margin-bottom:6px}
+.in{width:100%;min-height:48px;border:1.5px solid var(--field);border-radius:var(--r-field);padding:10px 14px;background:#fff;font-size:16px}
+textarea.in{min-height:76px;resize:vertical}
+.in:focus,select:focus,button:focus-visible{outline:3px solid rgba(14,30,91,.28);outline-offset:1px;border-color:var(--navy)}
+.hlp{display:block;font-size:13px;color:var(--mute);margin:6px 0 0}
+.btn{min-height:48px;border-radius:var(--r-field);border:1.5px solid var(--field);background:#fff;padding:0 18px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.pri{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:600}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#241a00;font-weight:600}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--navy);text-decoration:underline;min-height:44px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.wide{width:100%}
+.chip{min-height:44px;padding:0 14px;border-radius:999px;border:1.5px solid var(--field);background:#fff;font-size:15px}
+.chip[aria-pressed=true]{background:var(--navy-t);border-color:var(--navy);color:var(--navy);font-weight:600}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.mt{margin-top:12px}
+
+/* ฉลากอัตโนมัติ (ชื่อ เบอร์ ที่อยู่) */
+.parsed{display:grid;gap:8px;margin-top:12px}
+.pr{display:grid;grid-template-columns:78px 1fr;gap:10px;align-items:start}
+.tag{display:inline-flex;align-items:center;justify-content:center;min-height:36px;border-radius:10px;font-size:13.5px;font-weight:600;padding:0 8px;margin-top:6px}
+.t-name{background:#e5ecff;color:#0E1E5B}.t-tel{background:#e3f5ea;color:#17804a}.t-addr{background:#fff4cc;color:#7a5600}
+.pr[data-ok="0"] .tag{background:#f0f1f5;color:var(--mute)}
+.pr .in{min-height:44px}
+.pr textarea.in{min-height:64px}
+
+/* รายการงาน */
+.it{display:grid;grid-template-columns:1fr 92px 120px 40px;gap:8px;align-items:end;margin-bottom:10px}
+.it .lbl{margin-bottom:4px}
+.it .del{width:40px;height:48px;border:0;background:transparent;color:var(--mute)}
+@container (max-width:560px){
+  .it{grid-template-columns:1fr 1fr 40px}
+  .it .d{grid-column:1/-1}
+}
+.sum{display:flex;justify-content:space-between;align-items:baseline;border-top:1px dashed var(--field);padding-top:10px;margin-top:4px;font-weight:600}
+.sum b{font-size:20px}
+.req{font-size:12.5px;color:var(--bad);font-weight:500}
+
+/* รูป */
+.photo{display:grid;place-items:center;gap:4px;text-align:center;min-height:104px;border:2px dashed var(--navy);border-radius:var(--r-card);background:var(--navy-t);color:var(--navy);font-weight:600;cursor:pointer;padding:12px}
+.photo svg{width:30px;height:30px}
+.photo small{font-weight:400;color:var(--ink2)}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.thumbs img{width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+
+/* เงิน */
+.mstat{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.mbox{flex:1 1 90px;background:var(--bg);border-radius:12px;padding:8px 12px}
+.mbox span{display:block;font-size:12.5px;color:var(--mute)}
+.mbox b{font-size:18px}
+.mbox.left b{color:var(--bad)}.mbox.left.zero b{color:var(--ok)}
+.state{display:inline-flex;align-items:center;gap:6px;min-height:32px;border-radius:999px;padding:0 12px;font-weight:600;font-size:14px;background:#f0f1f5;color:var(--ink2)}
+.state[data-s=dep]{background:var(--gold-t);color:#7a5600}.state[data-s=full]{background:var(--ok-t);color:var(--ok)}
+.pay{display:grid;grid-template-columns:120px 1fr 40px;gap:8px;align-items:end;margin-bottom:10px}
+@container (max-width:560px){.pay{grid-template-columns:1fr 40px}.pay .b{grid-column:1/-1;order:3}.pay .del{order:2}}
+.bklist{display:grid;gap:8px}
+.bk{display:flex;gap:12px;align-items:center;min-height:56px;border:1.5px solid var(--field);border-radius:var(--r-field);padding:8px 12px;background:#fff;cursor:pointer}
+.bk input{width:22px;height:22px;accent-color:var(--navy)}
+.bk small{display:block;font-size:13px;color:var(--mute)}
+.bk:has(input:checked){border-color:var(--navy);background:var(--navy-t)}
+.pay.bad select{border-color:var(--bad);background:var(--bad-t)}
+.pay .del{width:40px;height:48px;border:0;background:transparent;color:var(--mute)}
+.pay select{min-height:48px;border:1.5px solid var(--field);border-radius:var(--r-field);padding:0 10px;width:100%;background:#fff}
+.warn{background:var(--bad-t);color:var(--bad);border-radius:12px;padding:10px 12px;font-size:14px;margin-top:8px}
+.okmsg{background:var(--ok-t);color:var(--ok);border-radius:12px;padding:10px 12px;font-size:14px;margin-top:8px}
+
+/* ข้อความที่ลูกค้าได้ */
+.msg{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;font-size:14.5px;white-space:pre-line}
+.msg .t{font-weight:600;margin-bottom:4px;display:block}
+.no{display:inline-flex;align-items:center;gap:8px;background:var(--bg);border-radius:10px;padding:6px 10px;font-size:13.5px;color:var(--ink2)}
+.no b{color:var(--ink);font-size:15px}
+
+/* สถานะงาน + ปุ่มหลังบันทึก */
+.st{display:flex;gap:6px;flex-wrap:wrap}
+.st button{min-height:44px;padding:0 12px;border-radius:10px;border:1.5px solid var(--field);background:#fff;font-size:14.5px}
+.st button[aria-pressed=true]{background:var(--navy);border-color:var(--navy);color:#fff}
+.after{display:grid;gap:8px}
+.bar{position:sticky;bottom:0;z-index:5;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);border-top:1px solid var(--line);margin:0 -14px -14px;padding:10px 14px;display:flex;gap:10px;align-items:center}
+.bar .tot{flex:1;min-width:0}.bar .tot span{display:block;font-size:12.5px;color:var(--mute)}.bar .tot b{font-size:20px}
+@container (min-width:760px){.bar{margin:0 -22px -22px;padding:12px 22px}}
+
+/* เค้าโครง */
+.g2{display:block}
+@container (min-width:820px){.g2{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px;align-items:start}.g2>.side{position:sticky;top:76px}}
+
+/* ตัวนำทางขั้น (B) */
+.steps{display:flex;gap:6px;margin-bottom:12px}
+.steps button{flex:1;min-height:56px;border-radius:14px;border:1.5px solid var(--line);background:#fff;display:grid;gap:0;place-items:center;padding:4px;font-size:13px;color:var(--mute)}
+.steps button b{font-size:15px;color:var(--ink)}
+.steps button[aria-current=step]{border-color:var(--navy);background:var(--navy-t);color:var(--navy)}
+.steps button.done b::after{content:" ✓";color:var(--ok)}
+.nav{display:flex;gap:10px;margin-top:6px}
+.nav .btn{flex:1}
+@container (min-width:820px){
+  .bwrap{display:grid;grid-template-columns:200px minmax(0,1fr) 300px;gap:18px;align-items:start}
+  .bwrap .steps{flex-direction:column;position:sticky;top:76px}
+  .bwrap .steps button{min-height:64px;text-align:left;justify-items:start;padding:8px 14px}
+}
+
+/* ใบบนจอ (C) */
+.doc{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 2px 12px rgba(15,27,61,.06);padding:18px}
+.doc h2{font-size:19px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.doc hr{border:0;border-top:1px solid var(--line);margin:12px 0}
+.doc .k{font-size:13px;color:var(--mute)}
+.ghostin{width:100%;border:0;border-bottom:1.5px dashed var(--field);background:transparent;padding:8px 2px;min-height:44px;font-size:16px;border-radius:0}
+.ghostin:focus{outline:none;border-bottom-color:var(--navy);background:var(--navy-t)}
+.owner{background:#fffaf0;border:1.5px solid var(--gold);border-radius:var(--r-card);padding:16px;margin-top:12px}
+.owner h3{font-size:16px;margin-bottom:4px}
+.owner .priv{font-size:13px;color:var(--ink2);margin-bottom:10px}
+.note-box{margin:10px 18px 0;color:var(--ink2);font-size:13.5px}
+
+.hero{border:2.5px solid var(--navy);background:#fff;border-radius:20px;overflow:hidden;margin-bottom:14px}
+.hero .hd{background:var(--navy);color:#fff;padding:14px 16px}
+.hero .hd h3{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:600;margin:0}
+.hero .hd p{font-size:14px;opacity:.85;margin-top:4px}
+.hero .bd{padding:14px 16px 16px}
+.hero textarea.big{width:100%;min-height:132px;font-size:17px;line-height:1.55;border:2px solid var(--navy);border-radius:14px;background:var(--navy-t);padding:14px;resize:vertical}
+.hero textarea.big::placeholder{color:#5b6a9a}
+.got{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;border-radius:999px;padding:4px 12px;margin:10px 0 2px;background:var(--ok-t);color:var(--ok)}
+.got[data-n="0"],.got[data-n="1"],.got[data-n="2"]{background:var(--gold-t);color:#7a5600}
+.opt{display:grid;gap:10px}
+.op{display:flex;align-items:center;gap:14px;min-height:64px;border:2px solid var(--line);border-left-width:8px;border-radius:14px;background:#fff;padding:8px 14px;text-align:left;width:100%}
+.op b{display:block;font-size:16.5px}.op small{display:block;font-size:13.5px;color:var(--ink2)}
+.op.c0{border-left-color:#3d63d6}.op.c1{border-left-color:var(--gold)}.op.c2{border-left-color:var(--bad)}
+.op[aria-pressed=true].c0{background:#e5ecff;border-color:#3d63d6}
+.op[aria-pressed=true].c1{background:var(--gold-t);border-color:var(--gold)}
+.op[aria-pressed=true].c2{background:var(--bad-t);border-color:var(--bad)}
+.op .ck{margin-left:auto;width:26px;height:26px;border-radius:50%;border:2px solid var(--field);display:grid;place-items:center;flex:none}
+.op[aria-pressed=true] .ck{background:var(--navy);border-color:var(--navy);color:#fff}
+.op .ck svg{width:16px;height:16px;opacity:0}.op[aria-pressed=true] .ck svg{opacity:1}
+.dq{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.dq button{min-height:52px;border-radius:14px;border:2px solid var(--navy);background:#fff;color:var(--navy);font-weight:600;font-size:16px}
+.dq button[aria-pressed=true]{background:var(--navy);color:#fff}
+.duein{width:100%;min-height:56px;font-size:17px;border:2px solid var(--field);border-radius:14px;padding:0 14px;background:#fff}
+.duechip{display:flex;align-items:center;gap:8px;margin-top:10px;background:var(--navy-t);color:var(--navy);border-radius:12px;padding:10px 14px;font-weight:600}
+.notebox{border:2.5px solid var(--gold);background:var(--gold-t);border-radius:20px;padding:14px 16px 16px;margin-bottom:14px}
+.notebox h3{font-size:19px;font-weight:600;margin-bottom:2px}
+.notebox p{font-size:14px;color:#6b4f00;margin-bottom:10px}
+.notebox textarea{width:100%;min-height:120px;font-size:17px;line-height:1.55;border:2px solid #d9a200;border-radius:14px;background:#fff;padding:14px;resize:vertical}
+.notebox textarea:focus{outline:3px solid rgba(245,179,1,.45);border-color:#b98600}
+.hd2{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.hd2 h1{font-size:20px;font-weight:600}
+</style></head><body>
+<div class="top"><h1>ฟอร์มใบคอนเฟิร์มงาน แบบ C ฉบับใหม่ (ข้อมูลสมมติ ยังไม่ใช่ของจริง)</h1>
+<div class="row"><div class="devs" style="margin-left:0" id="devs"><button data-d="auto" aria-pressed="true">ตามจอ</button><button data-d="phone" aria-pressed="false">มือถือ</button><button data-d="pc" aria-pressed="false">PC</button></div></div></div>
+<div class="stage"><div class="dev" id="dev"><div class="inner" id="app"></div></div></div>
+<script>
+(function(){
+var $=function(s){return document.querySelector(s)},$$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
+var IC={cam:'<svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',ck:'<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',cal:'<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>'};
+var PRIO=[['ปกติตามคิว','ผลิตตามลำดับงานในร้าน'],['ด่วนไม่เกิน 2 วัน','แทรกคิว ให้ฝ่ายผลิตรู้ว่าต้องรีบ'],['ด่วนวันนี้','ต้องเสร็จภายในวันนี้']];
+var S={d:'auto',prio:0,due:'',paste:'คุณสมชาย ใจดี 081-234-5678 12/3 ม.4 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140',name:'',phone:'',addr:'',items:[{d:'สติ๊กเกอร์ 9 ซม.',q:'100',p:'999'}],recv:'',method:'โอน',note:'',photos:[],jobNo:'JB261120-004'};
+function num(v){var n=parseFloat(String(v).replace(/,/g,''));return isFinite(n)?n:0}
+function money(n){return n.toLocaleString('th-TH',{minimumFractionDigits:(n%1?2:0),maximumFractionDigits:2})}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]})}
+function total(){return S.items.reduce(function(s,i){return s+num(i.p)},0)}
+function paid(){return num(S.recv)}
+function parse(t){var ph=/(0\d{1,2}[-\s]?\d{3}[-\s]?\d{4})/.exec(t),phone=ph?ph[1].trim():'',rest=ph?t.replace(ph[1],'¦'):t,parts=rest.split('¦'),before=(parts[0]||'').trim(),after=(parts[1]||'').trim(),name='',addr='';
+ if(ph){if(/^\d/.test(before)&&after&&!/\d/.test(after)){name=after;addr=before}else{name=before;addr=after}}
+ else{var m=/^(\D{2,30}?)\s+(\d.*)$/.exec(t.trim());if(m){name=m[1].trim();addr=m[2].trim()}else{name=t.trim()}}
+ if(ph&&!name&&after){var m2=/^(\D{2,30}?)\s+(\d.*)$/.exec(after);if(m2){name=m2[1];addr=m2[2]}}
+ return{name:name,phone:phone,addr:addr}}
+function applyParse(){var r=parse(S.paste);S.name=r.name;S.phone=r.phone;S.addr=r.addr}
+function problems(){var p=[];if(!S.name.trim())p.push('ชื่อลูกค้า');
+ if(!S.items.length||S.items.some(function(i){return !i.d.trim()||!num(i.q)||!num(i.p)}))p.push('รายละเอียด จำนวน และราคารวมให้ครบทุกบรรทัด');
+ if(paid()>total()+0.005)p.push('ยอดที่รับเกินราคางาน');return p}
+function itemsHtml(){return S.items.map(function(it,i){return '<div class="it" data-i="'+i+'"><div class="d"><label class="lbl">รายละเอียดงาน</label><input class="in" data-it="d" value="'+esc(it.d)+'" placeholder="เช่น สติ๊กเกอร์ 9 ซม."></div><div><label class="lbl">จำนวน (ชิ้น)</label><input class="in" data-it="q" inputmode="numeric" value="'+esc(it.q)+'" placeholder="100"></div><div><label class="lbl">ราคารวม (บาท)</label><input class="in" data-it="p" inputmode="decimal" value="'+esc(it.p)+'" placeholder="999"></div><button class="del" type="button" data-delit="'+i+'" aria-label="ลบบรรทัดนี้">'+IC.x+'</button></div>'}).join('')}
+function view(){
+ var cust='<section class="hero"><div class="hd"><h3><span class="num" style="background:#fff;color:var(--navy)">1</span>ลูกค้า</h3><p>วางข้อความจากแชตทั้งก้อนตรงนี้ ระบบแยกชื่อ เบอร์โทร ที่อยู่ ให้เอง</p></div><div class="bd">'+
+  '<label class="sr" for="paste">ข้อความลูกค้า</label><textarea class="big" id="paste" placeholder="วางที่นี่ เช่น คุณสมชาย 0812345678 12/3 ม.4 ต.บางระกำ จ.พิษณุโลก 65140"></textarea>'+
+  '<div class="got" id="got"></div>'+
+  '<div class="parsed"><div class="pr" data-k="name"><span class="tag t-name">ชื่อ</span><input class="in" data-f="name"></div><div class="pr" data-k="phone"><span class="tag t-tel">เบอร์โทร</span><input class="in" data-f="phone" inputmode="tel"></div><div class="pr" data-k="addr"><span class="tag t-addr">ที่อยู่</span><textarea class="in" data-f="addr" rows="2"></textarea></div></div></div></section>';
+ var work='<div class="blk"><h3><span class="num">2</span>สั่งทำอะไร<small>ต้องใส่ราคาทุกบรรทัด</small></h3><div id="items">'+itemsHtml()+'</div><button class="btn" type="button" id="addit">'+IC.plus+'เพิ่มอีกแบบ</button><div class="sum mt"><span>รวมทั้งงาน</span><b class="o-total"></b></div>'+
+  '<div class="mt"><label class="photo"><input class="sr" id="photoIn" type="file" accept="image/*" multiple>'+IC.cam+'<span>แนบรูปงาน / แบบที่ลูกค้าส่งมา</span><small>แตะเพื่อถ่ายรูปหรือเลือกรูป เลือกได้หลายรูป</small></label><div class="thumbs" id="thumbs"></div></div></div>';
+ var when='<div class="blk"><h3><span class="num">3</span>ต้องการเมื่อไหร่</h3><span class="lbl">ความเร่งด่วน</span><div class="opt" id="prio">'+PRIO.map(function(p,i){return '<button type="button" class="op c'+i+'" data-p="'+i+'" aria-pressed="'+(S.prio===i)+'"><span><b>'+p[0]+'</b><small>'+p[1]+'</small></span><span class="ck">'+IC.ck+'</span></button>'}).join('')+'</div>'+
+  '<label class="lbl mt" for="due" style="font-size:15px">วันที่ต้องส่ง (ไม่บังคับ)</label><input class="duein" id="due" type="date"><div class="dq"><button type="button" data-dd="0">วันนี้</button><button type="button" data-dd="1">พรุ่งนี้</button><button type="button" data-dd="3">อีก 3 วัน</button></div><div id="duechip"></div></div>';
+ var note='<section class="notebox"><h3>ฝากบอกฝ่ายผลิต</h3><p>ฝ่ายผลิตจะเห็นข้อความนี้บนใบงาน เช่น สีต้องตรงปก ไดคัทตามขอบภาพ (ไม่บังคับ)</p><label class="sr" for="note">ข้อความถึงฝ่ายผลิต</label><textarea id="note" placeholder="พิมพ์สิ่งที่ฝ่ายผลิตต้องรู้ตรงนี้"></textarea></section>';
+ var owner='<div class="owner"><h3>เฉพาะเจ้าของ: เก็บเงิน</h3><p class="priv">ไม่พิมพ์ลงใบ ฝ่ายผลิตไม่เห็น แอดมินคีย์ยอดตามจริงได้เลย เจ้าของตรวจกับเงินเข้าทีหลัง</p>'+
+  '<div class="mstat"><div class="mbox"><span>ราคางาน</span><b class="o-total"></b></div><div class="mbox"><span>รับแล้ว</span><b class="o-paid"></b></div><div class="mbox left"><span>เหลือ</span><b class="o-left"></b></div></div><div style="margin-bottom:10px">สถานะเงิน: <span class="state o-state"></span></div>'+
+  '<label class="lbl" for="recv">ยอดที่ลูกค้าจ่ายมา (บาท)</label><input class="in" id="recv" inputmode="decimal" placeholder="ยังไม่รับเงินให้เว้นว่าง"><span class="lbl mt">จ่ายด้วย</span><div class="row" id="method">'+['โอน','เงินสด'].map(function(t){return '<button type="button" class="chip" data-m="'+t+'" aria-pressed="'+(S.method===t)+'">'+t+'</button>'}).join('')+'</div></div>';
+ return '<div class="hd2"><h1>ใบคอนเฟิร์มงาน</h1><span class="no">เลขที่ใบงาน <b>'+S.jobNo+'</b></span></div><div class="g2"><div>'+cust+work+when+note+'</div><div class="side">'+owner+'<p class="hlp" style="margin-top:10px">เลขที่ใบงานจะยืนยันอีกครั้งตอนกดบันทึก จากข้อมูลกลางของทุกเครื่อง ไม่ซ้ำ</p></div></div>'+
+  '<div class="bar"><div class="tot"><span>ราคางานรวม</span><b class="o-total"></b></div><button class="btn pri" type="button" data-act="save" style="min-width:150px">บันทึกใบงาน</button></div>'}
+function sync(){var t=total(),p=paid(),l=Math.max(0,t-p),st=p<=0?['none','ยังไม่รับเงิน']:(p+0.005>=t?['full','จ่ายครบแล้ว']:['dep','รับมัดจำแล้ว']);
+ $$('.o-total').forEach(function(e){e.textContent=money(t)+' บาท'});$$('.o-paid').forEach(function(e){e.textContent=money(p)+' บาท'});
+ $$('.o-left').forEach(function(e){e.textContent=money(l)+' บาท';e.parentNode.classList.toggle('zero',l<=0.005&&p>0)});
+ $$('.o-state').forEach(function(e){e.textContent=st[1];e.setAttribute('data-s',st[0])});
+ var n=['name','phone','addr'].filter(function(k){return S[k]&&S[k].trim()}).length;var g=$('#got');g.setAttribute('data-n',n);g.textContent=n===3?'แยกได้ครบ 3 อย่าง: ชื่อ เบอร์โทร ที่อยู่':'แยกได้ '+n+' จาก 3 อย่าง ตรวจและเติมช่องด้านล่าง';
+ $$('.pr').forEach(function(r){r.setAttribute('data-ok',S[r.getAttribute('data-k')]&&S[r.getAttribute('data-k')].trim()?'1':'0')});
+ var dc=$('#duechip');if(dc){dc.innerHTML=S.due?'<div class="duechip">'+IC.cal+'ต้องการภายใน '+new Date(S.due+'T00:00:00').toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div>':''}
+ $$('.dq button').forEach(function(b){var d=new Date();d.setDate(d.getDate()+(+b.getAttribute('data-dd')));b.setAttribute('aria-pressed',S.due===d.toISOString().slice(0,10))})}
+function fill(){$('#paste').value=S.paste;$$('[data-f]').forEach(function(e){e.value=S[e.getAttribute('data-f')]||''});$('#note').value=S.note;$('#due').value=S.due;$('#recv').value=S.recv;thumbs()}
+function thumbs(){$('#thumbs').innerHTML=S.photos.map(function(u){return '<img src="'+u+'" alt="รูปงานที่แนบ">'}).join('')}
+function toast(t){var e=document.createElement('div');e.textContent=t;e.setAttribute('role','status');e.style.cssText='position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#0F1B3D;color:#fff;border-radius:12px;padding:12px 16px;z-index:50;font-size:14.5px;max-width:88vw';document.body.appendChild(e);setTimeout(function(){e.remove()},2600)}
+function fit(){var dev=$('#dev');dev.classList.toggle('phone',S.d==='phone');dev.style.zoom='';if(S.d==='pc'){dev.style.width='1120px';var s=Math.min(1,(document.documentElement.clientWidth-24)/1120);dev.style.zoom=s<1?String(s):''}else dev.style.width='100%'}
+function render(){$('#app').innerHTML=view();$$('#devs button').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-d')===S.d)});fill();sync();fit()}
+function lists(){$('#items').innerHTML=itemsHtml();sync()}
+document.addEventListener('input',function(e){var t=e.target;
+ if(t.id==='paste'){S.paste=t.value;applyParse();$$('[data-f]').forEach(function(x){x.value=S[x.getAttribute('data-f')]||''});sync();return}
+ if(t.hasAttribute('data-f')){S[t.getAttribute('data-f')]=t.value;sync();return}
+ if(t.id==='note'){S.note=t.value;return}if(t.id==='due'){S.due=t.value;sync();return}if(t.id==='recv'){S.recv=t.value;sync();return}
+ var it=t.closest('.it');if(it&&t.hasAttribute('data-it')){S.items[+it.getAttribute('data-i')][t.getAttribute('data-it')]=t.value;sync()}});
+document.addEventListener('change',function(e){var t=e.target;if(t.id==='photoIn'){S.photos=S.photos.concat(Array.prototype.slice.call(t.files).map(function(f){return URL.createObjectURL(f)}));thumbs();toast('แนบรูปแล้ว '+S.photos.length+' รูป')}});
+document.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
+ if(b.closest('#devs')){S.d=b.getAttribute('data-d');fit();$$('#devs button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});return}
+ if(b.id==='addit'){S.items.push({d:'',q:'',p:''});lists();return}
+ if(b.hasAttribute('data-delit')){if(S.items.length>1)S.items.splice(+b.getAttribute('data-delit'),1);lists();return}
+ if(b.hasAttribute('data-m')){S.method=b.getAttribute('data-m');$$('#method button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});return}
+ if(b.hasAttribute('data-p')){S.prio=+b.getAttribute('data-p');$$('#prio button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});return}
+ if(b.hasAttribute('data-dd')){var d=new Date();d.setDate(d.getDate()+(+b.getAttribute('data-dd')));S.due=d.toISOString().slice(0,10);$('#due').value=S.due;sync();return}
+ if(b.getAttribute('data-act')==='save'){var pr=problems();toast(pr.length?'ยังขาด: '+pr[0]:'บันทึกแล้ว (ตัวอย่าง) เลขที่ '+S.jobNo)}});
+window.addEventListener('resize',fit);applyParse();render();
+})();
+</script></body></html>
