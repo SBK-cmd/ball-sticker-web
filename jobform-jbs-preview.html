@@ -231,9 +231,20 @@ textarea.in{min-height:76px;resize:vertical}
 .priceopt{font-size:13px;font-weight:400;color:var(--ink2)}
 .nopr{background:var(--gold-t);color:#7a5600;border-radius:10px;padding:6px 10px;font-size:13.5px;margin-top:8px;font-weight:500}
 .it3{display:grid;grid-template-columns:1fr 84px 92px 128px 44px;gap:8px;align-items:end;margin-bottom:10px}
-@container (max-width:560px){.it3{grid-template-columns:1fr 1fr 44px}.it3 .d{grid-column:1/-1}.it3 .q{grid-column:1}.it3 .u{grid-column:2}.it3 .p{grid-column:1/3}.it3 .del{grid-column:3;grid-row:3}}
+@container (max-width:560px){.it3{grid-template-columns:1fr 1fr 44px}.it3 .top{grid-column:1/-1}.it3 .q{grid-column:1}.it3 .u{grid-column:2}.it3 .p{grid-column:1/3}.it3 .del{grid-column:3;grid-row:3}}
 .it3 .lbl{margin-bottom:4px}.it3 .del{width:44px;height:48px;border:0;background:transparent;color:var(--mute)}
 .hero .hd h3 .num.v{background:#fff}
+.it3 .top{display:flex;gap:10px;align-items:flex-end}.it3 .top .d{flex:1;min-width:0}
+.iph{position:relative;flex:none;width:64px;height:48px;border:2px dashed var(--vio);border-radius:12px;background:var(--vio-t);color:var(--vio-d);display:grid;place-items:center;align-content:center;font-size:11.5px;font-weight:600;cursor:pointer;overflow:visible}
+.iph svg{width:20px;height:20px}.iph span{line-height:1}
+.iph.has{border-style:solid;padding:0;cursor:default}.iph img{width:100%;height:100%;object-fit:cover;border-radius:10px}
+.iphx{position:absolute;top:-8px;right:-8px;width:28px;height:28px;border-radius:50%;border:0;background:var(--ink);color:#fff;display:grid;place-items:center}
+.iphx svg{width:14px;height:14px}
+.back{border:0;background:none;color:var(--vio);font-weight:600;font-size:15.5px;min-height:44px;padding:0;margin-bottom:4px}
+.big2{min-height:56px;font-size:17px;background:var(--vio)!important;border-color:var(--vio)!important}
+.wc{padding:14px}.wch{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}
+.wch b{display:block;font-size:17px}.wch small{display:block;font-size:13.5px;color:var(--ink2)}
+.wch .debt{text-align:right;flex:none;font-weight:600}.wch .debt small{font-weight:400}
 </style></head><body>
 <div class="top"><h1>ฟอร์มใบงานส่ง JBS ราคาส่ง (ข้อมูลสมมติ ยังไม่ใช่ของจริง)</h1>
 <div class="row"><div class="devs" style="margin-left:0" id="devs"><button data-d="auto" aria-pressed="true">ตามจอ</button><button data-d="phone" aria-pressed="false">มือถือ</button><button data-d="pc" aria-pressed="false">PC</button></div></div></div>
@@ -244,7 +255,7 @@ var $=function(s){return document.querySelector(s)},$$=function(s){return Array.
 var IC={cam:'<svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',ck:'<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg>'};
 var CUST=[{"n": "ร้านเอบีซีสติ๊กเกอร์", "p": "081-111-2222", "a": "45 ถ.อินทรวิชิต ต.ในเมือง อ.เมือง จ.พิษณุโลก 65000", "debt": 4250, "jobs": 3}, {"n": "คุณวิชัย ปริ้นท์", "p": "089-333-4444", "a": "7/2 ม.3 ต.วังทอง อ.วังทอง จ.พิษณุโลก 65130", "debt": 0, "jobs": 0}, {"n": "ร้านดอกไม้สายฝน", "p": "086-555-6666", "a": "12 ถ.สิงหวัฒน์ ต.ในเมือง อ.เมือง จ.พิษณุโลก 65000", "debt": 1890, "jobs": 1}];
 var PRIO=['ปกติ','งานด่วน ต้องจบวันนี้'];
-var S={d:'auto',cust:-1,q:'',ship:0,paste:'',recv:[],prio:0,due:'',items:[{d:'สติ๊กเกอร์ PVC 5 ซม.',q:'500',u:'ชิ้น',p:''}],note:'',photos:[]};
+var S={view:'list',d:'auto',cust:-1,q:'',ship:0,paste:'',recv:[],prio:0,due:'',items:[{d:'สติ๊กเกอร์ PVC 5 ซม.',q:'500',u:'ชิ้น',p:'',img:''}],note:'',photos:[]};
 function num(v){var n=parseFloat(String(v).replace(/,/g,''));return isFinite(n)?n:0}
 function money(n){return n.toLocaleString('th-TH',{minimumFractionDigits:(n%1?2:0),maximumFractionDigits:2})}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]})}
@@ -265,28 +276,34 @@ function custHtml(){
  return '<label class="lbl" for="cq">พิมพ์ชื่อร้าน หรือเลือกจากรายชื่อลูกค้าราคาส่ง</label><input class="in" id="cq" autocomplete="off" placeholder="พิมพ์ชื่อร้าน" value="'+esc(S.q)+'" style="margin-bottom:10px"><div class="cs">'+
   (list.length?list.map(function(o){return '<button type="button" class="cb" data-c="'+o.i+'"><span><b>'+esc(o.c.n)+'</b><small>'+o.c.p+'</small></span><span class="debt">'+(o.c.debt?money(o.c.debt)+' บาท<small>ค้าง '+o.c.jobs+' งาน</small>':'<small>ไม่มียอดค้าง</small>')+'</span></button>'}).join(''):'<div class="nopr">ไม่พบร้านนี้ในรายชื่อราคาส่ง</div>')+'</div>'}
 var UNITS=['ชิ้น','ใบ','แผ่น','ดวง','ชุด','เซ็ต','ม้วน','แพ็ค','เมตร'];
-function itemsHtml(){return S.items.map(function(it,i){return '<div class="it3" data-i="'+i+'"><div class="d"><label class="lbl">ชื่องาน / สเปก</label><input class="in" data-it="d" value="'+esc(it.d)+'" placeholder="เช่น สติ๊กเกอร์ PVC 5 ซม."></div><div class="q"><label class="lbl">จำนวน</label><input class="in" data-it="q" inputmode="numeric" value="'+esc(it.q)+'" placeholder="100"></div><div class="u"><label class="lbl">หน่วย</label><select class="in" data-it="u" aria-label="หน่วย">'+UNITS.map(function(u){return '<option'+(it.u===u?' selected':'')+'>'+u+'</option>'}).join('')+'</select></div><div class="p"><label class="lbl">ราคา (บาท) <span class="priceopt">ใส่ทีหลังได้</span></label><input class="in" data-it="p" inputmode="decimal" value="'+esc(it.p)+'" placeholder="ราคารวมของรายการนี้"></div><button class="del" type="button" data-delit="'+i+'" aria-label="ลบบรรทัดนี้">'+IC.x+'</button></div>'}).join('')}
+function itemsHtml(){return S.items.map(function(it,i){
+ var ph=it.img?'<div class="iph has"><img src="'+it.img+'" alt="รูปงานบรรทัดที่ '+(i+1)+'"><button type="button" class="iphx" data-iphx="'+i+'" aria-label="ลบรูปบรรทัดนี้">'+IC.x+'</button></div>':'<label class="iph" aria-label="แนบรูปงานบรรทัดที่ '+(i+1)+'"><input class="sr" type="file" accept="image/*" data-iph="'+i+'">'+IC.cam+'<span>รูป</span></label>';
+ return '<div class="it3" data-i="'+i+'"><div class="top">'+ph+'<div class="d"><label class="lbl">ชื่องาน / สเปก</label><input class="in" data-it="d" value="'+esc(it.d)+'" placeholder="เช่น สติ๊กเกอร์ PVC 5 ซม."></div></div><div class="q"><label class="lbl">จำนวน</label><input class="in" data-it="q" inputmode="numeric" value="'+esc(it.q)+'" placeholder="100"></div><div class="u"><label class="lbl">หน่วย</label><select class="in" data-it="u" aria-label="หน่วย">'+UNITS.map(function(u){return '<option'+(it.u===u?' selected':'')+'>'+u+'</option>'}).join('')+'</select></div><div class="p"><label class="lbl">ราคา (บาท) <span class="priceopt">ใส่ทีหลังได้</span></label><input class="in" data-it="p" inputmode="decimal" value="'+esc(it.p)+'" placeholder="ราคารวมของรายการนี้"></div><button class="del" type="button" data-delit="'+i+'" aria-label="ลบบรรทัดนี้">'+IC.x+'</button></div>'}).join('')}
 function recvHtml(){
  var seg='<div class="seg" id="ship"><button type="button" data-s="0" aria-pressed="'+(S.ship===0)+'">ส่งให้ลูกค้าตามที่อยู่เดิม</button><button type="button" data-s="1" aria-pressed="'+(S.ship===1)+'">ฝากส่งให้ผู้รับปลายทาง</button></div>';
  if(S.ship===0){var c=S.cust>=0?CUST[S.cust]:null;return seg+'<div class="hlp" style="margin-top:10px">'+(c?'ส่งไปที่ '+esc(c.n)+' · '+esc(c.a):'เลือกลูกค้าก่อน ระบบจะใช้ที่อยู่ของร้านนี้')+'</div>'}
  return seg+'<label class="lbl mt" for="rpaste">วางข้อความ “ผู้ส่ง… ผู้รับ…” จากแชต ระบบแยกผู้รับให้ (หลายคนก็ได้)</label><textarea class="big" id="rpaste" style="width:100%;min-height:104px;font-size:16.5px;border:2px solid var(--vio);border-radius:14px;background:var(--vio-t);padding:12px;resize:vertical" placeholder="วางที่นี่ เช่น ผู้รับ คุณมะลิ 0891112222 99/1 ต.ในเมือง จ.พิษณุโลก 65000"></textarea><div id="rlist">'+recList()+'</div>'}
 function recList(){if(!S.recv.length)return '<div class="nopr">ยังไม่มีผู้รับ วางข้อความด้านบน หรือกดเพิ่มผู้รับเอง</div><button class="btn mt" type="button" data-radd="1">'+IC.plus+'เพิ่มผู้รับเอง</button>';
  return S.recv.map(function(r,i){return '<div class="rc" data-r="'+i+'"><div class="rh"><span>ผู้รับคนที่ '+(i+1)+'</span><button type="button" data-rdel="'+i+'" aria-label="ลบผู้รับ">'+IC.x+'</button></div><div class="pr"><span class="tag t-name">ชื่อ</span><input class="in" data-rf="name" value="'+esc(r.name)+'"></div><div class="pr"><span class="tag t-tel">เบอร์โทร</span><input class="in" data-rf="phone" inputmode="tel" value="'+esc(r.phone)+'"></div><div class="pr"><span class="tag t-addr">ที่อยู่</span><textarea class="in" data-rf="addr" rows="3">'+esc(r.addr)+'</textarea></div></div>'}).join('')+'<button class="btn mt" type="button" data-radd="1">'+IC.plus+'เพิ่มผู้รับอีกคน (ส่งหลายที่อยู่)</button>'}
-function view(){
+function formView(){
  var c1='<section class="hero v"><div class="hd"><h3><span class="num">1</span>ลูกค้าราคาส่ง</h3><p>เลือกร้านประจำ ระบบใส่เบอร์ ที่อยู่ และยอดค้างให้เอง งานนี้เข้าบิลค้างของร้านนี้</p></div><div class="bd" id="c1">'+custHtml()+'</div></section>';
- var c2='<section class="hero v"><div class="hd"><h3><span class="num">2</span>สั่งทำอะไร</h3><p>ใส่ชื่องาน จำนวน หน่วย และราคาเป็นจำนวนเงินของรายการนั้น ราคาใส่ทีหลังได้</p></div><div class="bd"><div id="items">'+itemsHtml()+'</div><button class="btn" type="button" id="addit">'+IC.plus+'เพิ่มอีกแบบ</button><div id="sumbox"></div><div class="mt"><label class="photo"><input class="sr" id="photoIn" type="file" accept="image/*" multiple>'+IC.cam+'<span>แนบรูปงาน / แบบที่ลูกค้าส่งมา</span><small>แตะเพื่อถ่ายรูปหรือเลือกรูป เลือกได้หลายรูป</small></label><div class="thumbs" id="thumbs"></div></div></div></section>';
+ var c2='<section class="hero v"><div class="hd"><h3><span class="num">2</span>สั่งทำอะไร</h3><p>แต่ละแบบแนบรูปเล็กๆ หน้าชื่องานได้ ใส่ราคาเป็นจำนวนเงินของรายการนั้น ราคาใส่ทีหลังได้</p></div><div class="bd"><div id="items">'+itemsHtml()+'</div><button class="btn" type="button" id="addit">'+IC.plus+'เพิ่มอีกแบบ</button><div id="sumbox"></div></div></section>';
  var c3='<section class="hero v"><div class="hd"><h3><span class="num">3</span>ส่งไปที่ไหน</h3><p>ระบบสร้างลิงก์ติดตามพัสดุให้หลังบันทึก</p></div><div class="bd" id="c3">'+recvHtml()+'</div></section>';
  var c4='<section class="hero v"><div class="hd"><h3><span class="num">4</span>ต้องการเมื่อไหร่</h3></div><div class="bd"><div class="two" id="prio">'+PRIO.map(function(p,i){return '<button type="button" class="op2 c'+i+'" data-p="'+i+'" aria-pressed="'+(S.prio===i)+'"><span class="ck">'+IC.ck+'</span><b>'+p+'</b></button>'}).join('')+'</div><div class="duebox"><label class="lbl" for="due">ต้องการวันที่ (ไม่บังคับ)</label><div class="duewrap"><input class="duein2" id="due" type="date"><button type="button" class="duex" data-clr="1" aria-label="ล้างวันที่">'+IC.x+'</button></div><div id="duetxt" class="duetxt"></div></div></div></section>';
  var note='<section class="notebox"><h3>ฝากบอกฝ่ายผลิต</h3><p>ฝ่ายผลิตจะเห็นข้อความนี้บนใบงาน เช่น สีต้องตรงปก ไดคัทตามขอบภาพ (ไม่บังคับ)</p><label class="sr" for="note">ข้อความถึงฝ่ายผลิต</label><textarea id="note" placeholder="พิมพ์สิ่งที่ฝ่ายผลิตต้องรู้ตรงนี้"></textarea></section>';
- return '<div class="hd2"><h1>ใบงานส่ง ราคาส่ง</h1><span class="tagv">JBS · ออกเลขตอนกดบันทึก</span></div><div class="one">'+c1+c2+c3+c4+note+'</div><div class="bar"><div class="tot"><span>ยอดงานนี้</span><b id="tot"></b></div><button class="btn pri" type="button" data-act="save" style="min-width:150px;background:var(--vio);border-color:var(--vio)">บันทึกใบงานส่ง</button></div>'}
+ return '<button type="button" class="back" data-back="1">← กลับหน้าใบราคาส่ง</button><div class="hd2"><h1>เพิ่มใบงานราคาส่ง</h1><span class="tagv">JBS · ออกเลขตอนกดบันทึก</span></div><div class="one">'+c1+c2+c3+c4+note+'</div><div class="bar"><div class="tot"><span>ยอดงานนี้</span><b id="tot"></b></div><button class="btn pri" type="button" data-act="save" style="min-width:150px;background:var(--vio);border-color:var(--vio)">บันทึกใบงานส่ง</button></div>'}
+function listView(){
+ return '<div class="hd2"><h1>ใบราคาส่ง</h1></div><div class="one"><button type="button" class="btn pri wide big2" data-open="-1">'+IC.plus+'เพิ่มใบงานราคาส่ง</button><p class="hlp" style="margin:8px 0 14px">กดปุ่มนี้แล้วเลือกร้าน หรือกด "เพิ่มงาน" ในการ์ดร้านที่ต้องการ</p>'+
+ CUST.map(function(c,i){return '<section class="blk wc"><div class="wch"><span><b>'+esc(c.n)+'</b><small>โทร '+c.p+'</small></span><span class="debt">'+(c.debt?money(c.debt)+' บาท<small>ค้าง '+c.jobs+' งาน</small>':'<small>ไม่มียอดค้าง</small>')+'</span></div><button type="button" class="btn wide" data-open="'+i+'">'+IC.plus+'เพิ่มงานให้ร้านนี้</button></section>'}).join('')+'<p class="hlp">หน้านี้เป็นตัวอย่างหน้าใบราคาส่ง (ข้อมูลสมมติ) หน้าจริงยังมีประวัติใบราคาส่งและยอดค้างของแต่ละร้าน</p></div>'}
+function view(){return S.view==='list'?listView():formView()}
 function sync(){var t=total(),n=noPrice();var tt=$('#tot');tt.textContent=t>0?money(t)+' บาท'+(n?' (ยังไม่ครบราคา)':''):'ยังไม่ใส่ราคา';
  var sb=$('#sumbox');if(sb)sb.innerHTML=(t>0?'<div class="sum mt"><span>รวมที่ใส่ราคาแล้ว</span><b>'+money(t)+' บาท</b></div>':'')+(n?'<div class="nopr">'+n+' บรรทัดยังไม่ใส่ราคา ไปใส่ทีหลังในบิลค้างของลูกค้าได้</div>':'');
  var dt=$('#duetxt');dt.textContent=S.due?'ต้องการภายใน '+new Date(S.due+'T00:00:00').toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'';dt.style.display=S.due?'':'none'}
 function fill(){var n=$('#note');n.value=S.note;$('#due').value=S.due;var rp=$('#rpaste');if(rp)rp.value=S.paste;thumbs()}
-function thumbs(){$('#thumbs').innerHTML=S.photos.map(function(u){return '<img src="'+u+'" alt="รูปงานที่แนบ">'}).join('')}
+function thumbs(){}
 function toast(t){var e=document.createElement('div');e.textContent=t;e.setAttribute('role','status');e.style.cssText='position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#0F1B3D;color:#fff;border-radius:12px;padding:12px 16px;z-index:50;font-size:14.5px;max-width:88vw';document.body.appendChild(e);setTimeout(function(){e.remove()},2600)}
 function fit(){var dev=$('#dev');dev.classList.toggle('phone',S.d==='phone');dev.style.zoom='';if(S.d==='pc'){dev.style.width='1120px';var s=Math.min(1,(document.documentElement.clientWidth-24)/1120);dev.style.zoom=s<1?String(s):''}else dev.style.width='100%'}
-function render(){$('#app').innerHTML=view();$$('#devs button').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-d')===S.d)});fill();sync();fit()}
+function render(){$('#app').innerHTML=view();$$('#devs button').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-d')===S.d)});if(S.view==='form'){fill();sync()}fit()}
 function re(id,html){$(id).innerHTML=html}
 document.addEventListener('input',function(e){var t=e.target;
  if(t.id==='cq'){S.q=t.value;var pos=t.selectionStart;re('#c1',custHtml());var n=$('#cq');n.focus();n.setSelectionRange(pos,pos);return}
@@ -294,19 +311,22 @@ document.addEventListener('input',function(e){var t=e.target;
  if(t.hasAttribute('data-rf')){S.recv[+t.closest('.rc').getAttribute('data-r')][t.getAttribute('data-rf')]=t.value;return}
  if(t.id==='note'){S.note=t.value;return}if(t.id==='due'){S.due=t.value;sync();return}
  var it=t.closest('.it3');if(it&&t.hasAttribute('data-it')){S.items[+it.getAttribute('data-i')][t.getAttribute('data-it')]=t.value;sync()}});
-document.addEventListener('change',function(e){var t=e.target;if(t.id==='photoIn'){S.photos=S.photos.concat(Array.prototype.slice.call(t.files).map(function(f){return URL.createObjectURL(f)}));thumbs();toast('แนบรูปแล้ว '+S.photos.length+' รูป')}});
+document.addEventListener('change',function(e){var t=e.target;if(t.hasAttribute('data-iph')&&t.files[0]){S.items[+t.getAttribute('data-iph')].img=URL.createObjectURL(t.files[0]);re('#items',itemsHtml());toast('แนบรูปแล้ว')}});
 document.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
  if(b.closest('#devs')){S.d=b.getAttribute('data-d');fit();$$('#devs button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});return}
+ if(b.hasAttribute('data-open')){S.cust=+b.getAttribute('data-open');S.q='';S.view='form';render();window.scrollTo({top:0});return}
+ if(b.hasAttribute('data-back')){S.view='list';render();window.scrollTo({top:0});return}
+ if(b.hasAttribute('data-iphx')){S.items[+b.getAttribute('data-iphx')].img='';re('#items',itemsHtml());return}
  if(b.hasAttribute('data-c')){S.cust=+b.getAttribute('data-c');re('#c1',custHtml());re('#c3',recvHtml());return}
  if(b.hasAttribute('data-chg')){S.cust=-1;S.q='';re('#c1',custHtml());re('#c3',recvHtml());return}
  if(b.hasAttribute('data-s')){S.ship=+b.getAttribute('data-s');re('#c3',recvHtml());fill();return}
  if(b.hasAttribute('data-radd')){S.recv.push({name:'',phone:'',addr:''});re('#rlist',recList());return}
  if(b.hasAttribute('data-rdel')){S.recv.splice(+b.getAttribute('data-rdel'),1);re('#rlist',recList());return}
- if(b.id==='addit'){S.items.push({d:'',q:'',u:'ชิ้น',p:''});re('#items',itemsHtml());sync();return}
+ if(b.id==='addit'){S.items.push({d:'',q:'',u:'ชิ้น',p:'',img:''});re('#items',itemsHtml());sync();return}
  if(b.hasAttribute('data-delit')){if(S.items.length>1)S.items.splice(+b.getAttribute('data-delit'),1);re('#items',itemsHtml());sync();return}
  if(b.hasAttribute('data-clr')){S.due='';$('#due').value='';sync();return}
  if(b.hasAttribute('data-p')){S.prio=+b.getAttribute('data-p');$$('#prio button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});return}
- if(b.getAttribute('data-act')==='save'){var pr=problems();toast(pr.length?'ยังขาด: '+pr[0]:'บันทึกแล้ว (ตัวอย่าง) เลขที่จะได้ JBS261120-0xx · เข้าบิลค้างของ '+CUST[S.cust].n)}});
+ if(b.getAttribute('data-act')==='save'){var pr=problems();if(pr.length){toast('ยังขาด: '+pr[0]);return}var nm=CUST[S.cust].n;S.view='list';S.items=[{d:'',q:'',u:'ชิ้น',p:'',img:''}];S.recv=[];S.paste='';S.cust=-1;render();window.scrollTo({top:0});toast('บันทึกแล้ว (ตัวอย่าง) เลขที่จะได้ JBS261120-0xx · เข้าบิลค้างของ '+nm)}});
 window.addEventListener('resize',fit);render();
 })();
 </script></body></html>
