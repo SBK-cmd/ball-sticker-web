@@ -3859,6 +3859,32 @@ function bahtText(value) {
     Object.assign(x, patch); renderBillBox();
     try { if (cloudDb) cloudDb.collection('billInbox').doc(id).set(patch, {merge: true}); } catch (e) { console.warn(e); }
   }
+  // ---------- ร่างจาก AI (MCP) ----------
+  // Worker mcp-shop เขียนร่างลงคอลเลกชัน mcpDrafts (status 'draft') · แอปแก้ได้เฉพาะ status/decidedAt · ยอมรับ = คัดลอกข้อความไปใช้เอง (v1 ยังไม่สร้างใบเสนอราคา/ใบงานจริงให้อัตโนมัติ)
+  let mcpDrafts = [], mcpDraftUnsub = null;
+  const MCP_KIND_TH = {quote: 'ใบเสนอราคา', job: 'ใบงาน', reply: 'ตอบลูกค้า', note: 'บันทึก'};
+  function watchMcpDrafts() {
+    if (!cloudDb || mcpDraftUnsub || !isSuper) return;
+    try {
+      mcpDraftUnsub = cloudDb.collection('mcpDrafts').orderBy('createdAt', 'desc').limit(30).onSnapshot(snap => { countReads('mcpDrafts', snap);
+        const l = []; snap.forEach(d => l.push(Object.assign({id: d.id}, d.data()))); mcpDrafts = l; renderMcpDrafts();
+      }, e => { console.warn('mcpDrafts', e); });
+    } catch (e) { console.warn(e); }
+  }
+  function renderMcpDrafts() {
+    const card = $('mcpDraftCard'), box = $('mcpDraftList'); if (!card || !box) return;
+    const list = mcpDrafts.filter(x => x.status === 'draft');
+    card.hidden = !isSuper || !list.length;
+    $('mcpDraftN').textContent = list.length ? '(' + list.length + ' ร่างรอตัดสินใจ)' : '';
+    box.innerHTML = list.map(x => '<div class="md-it"><div><span class="md-k">' + esc(MCP_KIND_TH[x.kind] || x.kind || '') + '</span><b>' + esc(x.title || '') + '</b></div><pre>' + esc(x.body || '') + '</pre>' +
+      '<div class="md-t">' + esc(new Date(x.createdAt || 0).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})) + '</div>' +
+      '<div class="md-act"><button type="button" class="btn small good" data-mdok="' + esc(x.id) + '">ยอมรับ + คัดลอกข้อความ</button><button type="button" class="btn small" data-mdno="' + esc(x.id) + '">ทิ้ง</button></div></div>').join('');
+  }
+  function decideMcpDraft(id, status) {
+    const x = mcpDrafts.find(d => d.id === id); if (!x) return;
+    x.status = status; renderMcpDrafts();
+    try { if (cloudDb) cloudDb.collection('mcpDrafts').doc(id).set({status, decidedAt: Date.now()}, {merge: true}); } catch (e) { console.warn(e); }
+  }
   // ---------- ออเดอร์จากเว็บ shop.ballsticker.co.th (หน้าเว็บเขียน Firestore 'webOrders' เอง ด้วยบัญชีไม่ระบุตัวตน) ----------
   let webOrd = [], webOrdTab = 'new', webOrdUnsub = null;
   function watchWebOrders() {
@@ -4263,7 +4289,7 @@ function bahtText(value) {
     $('stmtOverlay').hidden = false; document.body.style.overflow = 'hidden';
     $('stmtStep1').hidden = false; $('stmtStep2').hidden = true;
     stmtSetStatus(''); $('stmtFile').value = ''; $('stmtPass').value = '';
-    stmtRows = [];
+    stmtRows = []; stmtShowSeen = false; stmtState = {};
   }
   function closeStmtOverlay() { $('stmtOverlay').hidden = true; document.body.style.overflow = ''; }
 
@@ -4340,6 +4366,22 @@ function bahtText(value) {
   const STMT_ITEM_NAME = 'สติ๊กเกอร์พิมพ์ + ไดคัท';
   const STMT_DEFAULT_NAME = 'เงินสด';
 
+  /* ---- กันนำเข้าซ้ำ: จำ "ลายนิ้วมือ" ของรายการสเตทเม้นแยกจากตัวบิล (ลบ/แก้บิลทีหลังไม่กระทบ) ---- */
+  let stmtShowSeen = false, stmtState = {};
+  // ลายนิ้วมือ = วันที่|ยอด|ยอดคงเหลือหลังรายการ (ไม่ซ้ำแม้โอนยอดเท่ากันวันเดียวกัน) · ไม่มียอดคงเหลือ = วันที่|ยอด|ลำดับที่ของยอดนั้นในไฟล์
+  function stmtRowKey(r, nth) {
+    const a = round2(num(r.amount)).toFixed(2);
+    if (r.bal != null) return r.date + '|' + a + '|' + round2(num(r.bal)).toFixed(2);
+    const k = r.date + '|' + a; nth[k] = (nth[k] || 0) + 1; return k + '|#' + nth[k];
+  }
+  // รายการที่เคยเห็นแล้ว = ที่จดไว้ในเครื่องนี้ (เปิดบิล/ข้าม) + ลายนิ้วมือที่ติดอยู่กับบิล (ซิงก์ข้ามเครื่องไปกับบิล)
+  function stmtSeenMap() {
+    const m = {}, led = store.get('bs_stmtSeen', {}) || {};
+    Object.keys(led).forEach(k => { m[k] = {s: led[k] && led[k].s === 'skip' ? 'skip' : 'bill'}; });
+    store.get('bs_bills', []).forEach(b => { if (b.stmtKey && !m[b.stmtKey]) m[b.stmtKey] = {s: 'bill'}; });
+    return m;
+  }
+
   function renderStmtTable() {
     const inRows = stmtRows.map((r, i) => ({...r, idx: i})).filter(r => r.type === 'in');
     $('stmtCount').textContent = inRows.length
@@ -4347,29 +4389,47 @@ function bahtText(value) {
       : 'ไม่พบรายการเงินเข้าที่มั่นใจพอในสเตทเม้นนี้ (อ่านข้อความได้ ' + stmtRows.length + ' รายการ) กรุณาตรวจสอบไฟล์หรือกรอกบิลด้วยตนเอง';
     // เลขที่บิลที่เสนอให้ล่วงหน้า (ไล่ตามลำดับที่แสดงในตาราง) — ผู้ใช้แก้ไขเองทีละรายการได้ก่อนกดเปิดบิลจริง
     const previewCounters = {};
-    const have = {};   // บิลจากสเตทเม้นที่มีอยู่แล้ว นับตาม วันที่|ยอด — รายการที่ตรงจะไม่ถูกติ๊กไว้ กันนำเข้าซ้ำ
-    store.get('bs_bills', []).filter(isStmtBill).forEach(b => { const k = b.date + '|' + round2(num(b.total)); have[k] = (have[k] || 0) + 1; });
-    const dupIdx = new Set();
-    inRows.forEach(r => { const k = r.date + '|' + round2(num(r.amount)); if (have[k] > 0) { have[k]--; dupIdx.add(r.idx); } });
+    // กันซ้ำด้วย "ลายนิ้วมือรายการ" (วันที่|ยอด|ยอดคงเหลือ) ที่จำไว้แยกจากบิล: เคยเปิดบิล / เคยข้าม / บิลเก่าที่ยังไม่มีลายนิ้วมือ (เทียบ วันที่+ยอด ทีละใบ)
+    const seen = stmtSeenMap(), nth = {}, legacy = {};
+    store.get('bs_bills', []).filter(b => isStmtBill(b) && !b.stmtKey).forEach(b => { const k = b.date + '|' + round2(num(b.total)); legacy[k] = (legacy[k] || 0) + 1; });
+    stmtState = {};
+    let nNew = 0, nBill = 0, nSkip = 0;
+    inRows.forEach(r => {
+      const k = stmtRowKey(r, nth); r.key = k; stmtRows[r.idx].key = k;
+      const lk = r.date + '|' + round2(num(r.amount));
+      let st = seen[k] ? seen[k].s : '';
+      if (!st && legacy[lk] > 0) { legacy[lk]--; st = 'legacy'; }
+      stmtState[r.idx] = st;
+      if (!st) nNew++; else if (st === 'skip') nSkip++; else nBill++;
+    });
+    const nSeen = nBill + nSkip;
+    const shown = inRows.filter(r => stmtShowSeen || !stmtState[r.idx]);
+    $('stmtCount').textContent = inRows.length
+      ? 'พบรายการเงินเข้า ' + inRows.length + ' รายการ · ใหม่ ' + nNew + ' · เคยเปิดบิลแล้ว ' + nBill + ' · เคยข้าม ' + nSkip + ' — เลือกรายการที่ต้องการแล้วกด “เปิดบิลที่เลือก”'
+      : 'ไม่พบรายการเงินเข้าที่มั่นใจพอในสเตทเม้นนี้ (อ่านข้อความได้ ' + stmtRows.length + ' รายการ) กรุณาตรวจสอบไฟล์หรือกรอกบิลด้วยตนเอง';
+    const sb = $('stmtSeenBtn');
+    sb.hidden = !nSeen; sb.textContent = stmtShowSeen ? 'ซ่อนรายการที่เคยเห็นแล้ว' : 'แสดงรายการที่เคยเห็นแล้ว (' + nSeen + ')';
     $('stmtTable').innerHTML = !inRows.length ? '' :
       '<thead><tr><th><input type="checkbox" class="stmt-chk" id="stmtChkAll" checked aria-label="เลือกทั้งหมด"></th>' +
       '<th class="stmt-n">#</th><th>วันที่</th><th class="r">จำนวนเงิน</th><th>รายละเอียดจากสเตทเม้น</th><th class="r">คงเหลือ</th><th>เลขที่ใบกำกับ (แก้ไขได้)</th><th>ชื่อลูกค้า (แก้ไขได้)</th></tr></thead><tbody>' +
-      inRows.map((r, k) => {
+      (shown.length ? shown : []).map(r => {
+        const k = inRows.indexOf(r);
         const suggestedNo = billNoForDateBatch(r.date, previewCounters);
-        // ลำดับ 1..n ตรงกับใบสรุปที่พิมพ์ · ใต้วันที่โชว์ "จากใคร" ย่อๆ จะได้รู้ว่าเป็นเงินโอนจากบัญชีตัวเองหรือไม่
         const who = String(r.desc || '').replace(/[\d,]+\.\d{2}/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
-        const dup = dupIdx.has(r.idx);
+        const st = stmtState[r.idx], dup = !!st;
+        const tag = st === 'skip' ? 'เคยกดข้ามไว้' : st ? 'เคยเปิดบิลจากสเตทเม้นแล้ว' : '';
         return '<tr' + (dup ? ' class="stmt-dup"' : '') + '><td><input type="checkbox" class="stmt-chk" data-idx="' + r.idx + '" data-amt="' + r.amount + '"' + (dup ? '' : ' checked') + ' aria-label="เลือกรายการลำดับ ' + (k + 1) + '"></td>' +
         '<td class="stmt-n">' + (k + 1) + '</td>' +
-        '<td>' + esc(thDate(r.date)) + (dup ? '<small class="stmt-who" style="color:var(--magenta)">มีบิลจากสเตทเม้นแล้ว (วันที่+ยอดตรงกัน)</small>' : '') + '</td>' +
+        '<td>' + esc(thDate(r.date)) + (dup ? '<small class="stmt-who" style="color:var(--magenta)">' + tag + '</small>' : '') + '</td>' +
         '<td class="r"><b>' + money(r.amount) + '</b></td>' +
         '<td class="stmt-desc">' + esc(String(r.desc || '').replace(/\s+/g, ' ').trim() || '—') + '</td>' +
         '<td class="r">' + (r.bal != null ? money(r.bal) : '—') + '</td>' +
         '<td class="stmt-no-cell"><input class="stmt-no" type="text" data-idx="' + r.idx + '" value="' + esc(suggestedNo) + '" placeholder="เลขที่ใบกำกับ"></td>' +
         '<td class="stmt-name-cell"><input class="stmt-name" type="text" data-idx="' + r.idx + '" value="' + esc(STMT_DEFAULT_NAME) + '" placeholder="ชื่อลูกค้า"></td></tr>';
       }).join('') + '</tbody>';
+    if (inRows.length && !shown.length) $('stmtTable').innerHTML = '<tbody><tr><td style="padding:14px">ไม่มีรายการใหม่ในไฟล์นี้ — ทุกรายการเคยนำเข้าหรือเคยข้ามแล้ว</td></tr></tbody>';
     stmtSyncCount();
-    if (dupIdx.size) { const all = $('stmtChkAll'); if (all) all.checked = false; toast('ไม่ติ๊ก ' + dupIdx.size + ' รายการที่เคยเปิดบิลจากสเตทเม้นไปแล้ว (วันที่และยอดตรงกัน)'); }
+    if (nSeen && !stmtShowSeen) toast('ซ่อน ' + nSeen + ' รายการที่เคยนำเข้า/เคยข้ามแล้ว');
   }
   // ปุ่มบอกจำนวนที่เลือก + ยอดรวม ให้เทียบกับใบสรุปก่อนกด
   function stmtSyncCount() {
@@ -4435,7 +4495,7 @@ function bahtText(value) {
       const r = stmtRows[idx];
       const nameEl = document.querySelector('#stmtTable .stmt-name[data-idx="' + idx + '"]');
       const noEl = document.querySelector('#stmtTable .stmt-no[data-idx="' + idx + '"]');
-      return {date: r.date, amount: r.amount, cName: nameEl ? nameEl.value.trim() : '', no: noEl ? noEl.value.trim() : ''};
+      return {date: r.date, amount: r.amount, key: r.key || '', cName: nameEl ? nameEl.value.trim() : '', no: noEl ? noEl.value.trim() : ''};
     }).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
 
     const list = store.get('bs_bills', []);
@@ -4450,13 +4510,27 @@ function bahtText(value) {
         cName: row.cName, cPhone: '', cAddr: '', cTax: '', docCopy: 'ต้นฉบับ',
         items: [{name: STMT_ITEM_NAME, qty: 1, price: row.amount}],
         discount: 0, deposit: 0, vatMode: 'incl', vatRate: 7, note: '',
-        total: row.amount
+        total: row.amount, stmtKey: row.key
       };
       list.push(rec);
       created.push(rec);
     });
+    // จำรายการ: ที่เปิดบิลแล้ว = bill · ที่ไม่ได้ติ๊ก (และยังไม่เคยเห็น) = skip · บิลสเตทเม้นเก่าที่ยังไม่มีลายนิ้วมือ จับคู่ทีละใบแล้วติดลายนิ้วมือให้ (ย้ายมาใช้ระบบใหม่)
+    const led = store.get('bs_stmtSeen', {}) || {}, now = Date.now(), picked = new Set(idxs), touched = [];
+    created.forEach(rec => { if (rec.stmtKey) led[rec.stmtKey] = {s: 'bill', t: now}; });
+    stmtRows.forEach((r, idx) => {
+      if (r.type !== 'in' || !r.key || picked.has(idx)) return;
+      const st = stmtState[idx];
+      if (st === 'legacy') {
+        const lb = list.find(b => isStmtBill(b) && !b.stmtKey && b.date === r.date && round2(num(b.total)) === round2(num(r.amount)));
+        if (lb) { lb.stmtKey = r.key; touched.push(lb); }
+        led[r.key] = {s: 'bill', t: now};
+      } else if (!st) led[r.key] = {s: 'skip', t: now};
+    });
+    store.set('bs_stmtSeen', led);
     store.set('bs_bills', list);
     created.forEach(rec => cloudSave('bills', rec));
+    touched.forEach(rec => cloudSave('bills', rec));
     closeStmtOverlay();
     showTab('bill');
     renderHistory();
@@ -10769,6 +10843,7 @@ function bahtText(value) {
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('stmtOverlay').hidden) closeStmtOverlay(); });
   $('stmtBack').addEventListener('click', () => { $('stmtStep1').hidden = false; $('stmtStep2').hidden = true; });
   $('stmtParseBtn').addEventListener('click', parseStatement);
+  $('stmtSeenBtn').addEventListener('click', () => { stmtShowSeen = !stmtShowSeen; renderStmtTable(); });
   $('stmtCreateBtn').addEventListener('click', createSelectedBills);
   $('stmtTable').addEventListener('change', e => {
     if (e.target.id === 'stmtChkAll') {
@@ -10850,6 +10925,13 @@ function bahtText(value) {
   ['purchVendorTax', 'purchVat', 'purchAmount', 'purchDate', 'purchVendor', 'purchVendorAddr', 'purchInvoiceNo', 'purchVendorBranch'].forEach(id => { const el = $(id); if (el) { const fn = () => { if (id === 'purchDate') { $('purchClaimMonth').dataset.v = ''; } try { renderPurchTaxBox(); } catch (e) {} checkPurchaseFields(); }; el.addEventListener('input', fn); el.addEventListener('change', fn); } });
   $('purchClaim').addEventListener('change', () => { renderPurchTaxBox(); checkPurchaseFields(); });
   $('purchEvid').addEventListener('change', () => { renderPurchTaxBox(); checkPurchaseFields(); });
+  $('mcpDraftList').addEventListener('click', async e => {
+    const ok = e.target.closest('[data-mdok]'), no = e.target.closest('[data-mdno]');
+    if (ok) { const x = mcpDrafts.find(d => d.id === ok.dataset.mdok); if (!x) return;
+      let copied = false; try { await navigator.clipboard.writeText((x.title ? x.title + '\n' : '') + (x.body || '')); copied = true; } catch (er) {}
+      decideMcpDraft(x.id, 'accepted'); toast(copied ? 'คัดลอกข้อความแล้ว' : 'ยอมรับแล้ว (คัดลอกอัตโนมัติไม่ได้ เปิดดูในประวัติ)'); return; }
+    if (no) { decideMcpDraft(no.dataset.mdno, 'rejected'); toast('ทิ้งร่างแล้ว'); }
+  });
   $('billBox').addEventListener('click', async e => {
     const sb = e.target.closest('[data-bbscan]'), db = e.target.closest('[data-bbdone]');
     if (db) { db.dataset.bbdone.split(',').forEach(id => markBillBox(id, {status: 'done', doneAt: Date.now()})); toast('ย้ายไป “บันทึกแล้ว”'); return; }
@@ -11574,6 +11656,7 @@ function bahtText(value) {
     watchCloud('quotes', 'bs_quotes', renderQuoteHistory);
     watchCloud('purchases', 'bs_purchases', () => { renderPurchHistory(); renderVendorDatalist(); });
     try { watchBillBox(); } catch (e) {}
+    try { watchMcpDrafts(); } catch (e) {}
     try { watchWebOrders(); } catch (e) {}
     try { watchLogoReq(); } catch (e) {}
     watchCloud('customers', 'bs_customers', () => { renderCustomerDatalist(); try { renderWholesaleHistory(); } catch (e) {} });
