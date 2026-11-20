@@ -779,6 +779,43 @@ details.cloud-mini div{margin-top:4px;line-height:1.5}
 .sheet .job-photo-grid img{object-fit:cover;border-radius:10px;border:1px solid #c9d2de;display:block}
 
 /* ---------------- สถานะงาน (ใบคอนเฟิร์มงาน) ---------------- */
+.jbs-add{width:100%;min-height:52px;font-size:17px;font-weight:800;margin:0 0 12px;background:#6D3FD1!important;border-color:#6D3FD1!important;color:#fff!important}
+.jbs-res{display:grid;gap:8px;margin-top:10px}
+.jbs-res button{min-height:52px;text-align:left;padding:10px 14px;border:2px solid #D5DDF0;border-radius:14px;background:#fff;font:inherit;font-weight:700;color:#0F1B3D;cursor:pointer}
+.jbs-res button.new{border-style:dashed;border-color:#6D3FD1;color:#6D3FD1}
+.jbs-res .hint{margin:4px 2px}
+.i-unit{min-height:44px;border:1.5px solid #D5DDF0;border-radius:12px;background:#fff;padding:0 8px;font:inherit}
+/* ===== ฟอร์มใบงาน หน้าตาแบบ C: การ์ดหัวสีกรม ===== */
+html:root body #jobFormTop .card.jf .jf-sec{background:#fff!important;border:2.5px solid #0E1E5B!important;border-radius:20px!important;padding:0 0 16px!important;margin:0 0 14px!important;overflow:hidden}
+html:root body #jobFormTop .card.jf .jf-sec .jf-h{background:#0E1E5B!important;color:#fff!important;margin:0 0 14px!important;padding:14px 16px!important;font-size:19px!important;font-weight:700!important;gap:10px!important}
+html:root body #jobFormTop .card.jf .jf-sec .jf-h i{background:#fff!important;color:#0E1E5B!important;width:30px!important;height:30px!important;font-size:15px!important}
+html:root body #jobFormTop .card.jf .jf-sec .jf-h .jf-hs{color:rgba(255,255,255,.85)!important}
+html:root body #jobFormTop .card.jf .jf-sec>*:not(.jf-h){margin-left:16px!important;margin-right:16px!important}
+html:root body #jobFormTop .card.jf .jf-sec>.fields{padding:0!important;margin-top:0!important}
+html:root body #jobFormTop .card.jf .jf-hero{background:transparent!important;padding:0!important;margin:0 0 4px!important}
+html:root body #jobFormTop .card.jf .jf-hero .f>span{color:#0F1B3D!important}
+html:root body #jobFormTop .card.jf .jf-hero textarea{border:2px solid #0E1E5B!important;background:#E5ECFF!important;color:#0F1B3D!important;min-height:132px!important;font-size:17px!important;line-height:1.55;border-radius:14px!important}
+html:root body #jobFormTop .card.jf .jf-hero .btn{background:#F5B301!important;border-color:#F5B301!important;color:#241a00!important}
+html:root body #jobFormTop .card.jf .prio-chips button{border-width:2px!important;border-radius:14px!important;min-height:56px!important}
+html:root body #jobFormTop .card.jf .prio-chips button[data-p="0"].on{background:#E5ECFF!important;border-color:#3b5bdb!important;color:#0E1E5B!important}
+html:root body #jobFormTop .card.jf .prio-chips button[data-p="0"].on .pc-s{color:#47506a!important}
+html:root body #jobFormTop .card.jf .prio-chips button[data-p="2"]{border-color:#efc2bf!important}
+html:root body #jobFormTop .card.jf .prio-chips button[data-p="2"].on{background:#fdeceb!important;border-color:#b3261e!important;color:#b3261e!important}
+html:root body #jobFormTop .card.jf .prio-chips button[data-p="2"].on .pc-s{color:#b3261e!important}
+html:root body #jobFormTop .card.jf label.f:has(#jobNote){border:2.5px solid #F5B301;background:#FFF4CC;border-radius:20px;padding:14px 16px 16px;margin:14px 0 0}
+html:root body #jobFormTop .card.jf label.f:has(#jobNote)>span{font-size:19px;font-weight:700;color:#0F1B3D}
+html:root body #jobFormTop .card.jf #jobNote{border:2px solid #d9a200!important;background:#fff!important;min-height:120px!important;font-size:17px;border-radius:14px!important}
+html:root body #jobFormTop .card.jf .jf-photo{border:2px dashed #0E1E5B!important;background:#E5ECFF!important;border-radius:18px!important;margin:12px 16px 0!important}
+html:root body #jobFormTop .card.jf .jf-photo>summary{justify-content:center;text-align:center;min-height:96px;color:#0E1E5B;font-weight:700}
+html:root body #jobFormTop .card.jf .jf-photo>summary::after{display:none!important}
+html:root body #jobFormTop .card.jf .jf-actions{position:sticky;bottom:0;z-index:6;display:flex!important;align-items:center;gap:12px;background:rgba(255,255,255,.97);border-top:1px solid #E3E9F6;margin:8px -14px -14px!important;padding:10px 14px calc(10px + env(safe-area-inset-bottom))!important}
+html:root body #jobFormTop .card.jf .jf-actions>#save-job{flex:1;background:#0E1E5B!important;color:#fff!important;border-color:#0E1E5B!important;min-height:52px}
+.jf-bartot{display:flex;flex-direction:column;line-height:1.2;min-width:96px}.jf-bartot span{font-size:12.5px;color:#6B7794}.jf-bartot b{font-size:20px;color:#0F1B3D}
+.jf-noline{margin:0 0 12px;font-size:13.5px;color:#47506a}.jf-noline b{color:#0F1B3D;font-size:15px}
+.jf-duerow{display:flex;gap:8px;align-items:center}.jf-duerow #jobDue{flex:1;max-width:none!important}
+.jf-duerow button{min-height:48px;min-width:48px;border-radius:12px;border:2px solid #F5B301;background:#FFF4CC;font-size:18px;cursor:pointer}
+.jf-deliv-only{display:none}.jf.jf-deliv .jf-deliv-only{display:block}
+body.jm-open #jobFormTop .card.jf .jf-actions>#save-job{position:static!important;transform:none!important;width:auto!important;box-shadow:none!important;flex:1;bottom:auto!important}
 /* ===== ฟอร์ม JB แบบ C (เรียบ: ลูกค้า → งาน → ต้องการเมื่อไหร่) ===== */
 .jf .jf-intro,.jf .job-status-row,.jf #jobMoneyFold,.jf .due-quick,.jf .jf-actions .jf-more,.jf .jf-actions .jf-more-h,.jf .actions-note,.jf-actions~.actions-note,.jf .prio-chips button[data-p="1"],.jf #jobGoWh{display:none!important}
 .jf .jf-hero{background:#0E1E5B;border-radius:16px;padding:14px;margin:0 0 14px;color:#fff}
@@ -4204,7 +4241,7 @@ html:root body #wholesaleHistory .wd-inb>summary{font-size:13px;color:var(--a-mu
   <header class="top no-print">
     <a class="brand" href="#" aria-label="Ball Sticker">
       <img class="mark img" alt="โลโก้บอลสติ๊กเกอร์" src="logo-160-transparent.png" width="90" height="77">
-      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v2.25 · พรีวิว</em></span>
+      <span><b>Ball Sticker</b><small>เครื่องมือสำหรับงานสติ๊กเกอร์</small><em id="buildVer" class="bver">v2.26 · พรีวิว</em></span>
     </a>
     <button type="button" class="top-track no-print" data-tab="track" aria-controls="panel-track">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
@@ -4638,6 +4675,7 @@ html:root body #wholesaleHistory .wd-inb>summary{font-size:13px;color:var(--a-mu
           <div class="card jf">
             <h2>ใบคอนเฟิร์มงาน</h2>
             <p class="edit-state" id="jobEditState"></p>
+            <p class="jf-noline">เลขที่ใบงาน <b id="jobNoShow">ออกเลขตอนกดบันทึก</b></p>
             <div class="job-status-row">
               <span class="hint" style="margin:0">สถานะงาน:</span>
               <span class="status-pill" id="jobStatusBadge"></span>
@@ -4694,7 +4732,7 @@ html:root body #wholesaleHistory .wd-inb>summary{font-size:13px;color:var(--a-mu
                 </div>
                 <select class="txt jf-sr" id="jobPrio" aria-hidden="true" tabindex="-1"><option value="0">🌶 ปกติตามคิว</option><option value="1">🌶 ขอด่วนไม่เกิน 2 วัน</option><option value="2">🌶 ขอด่วนส่งวันนี้</option></select>
               </div>
-              <label class="f"><span>วันที่ต้องส่ง <small class="jf-opt">(ถ้ามี)</small></span><input class="txt" id="jobDue" type="date"></label>
+              <label class="f"><span>ต้องการวันที่ <small class="jf-opt">(ไม่บังคับ)</small></span><div class="jf-duerow"><input class="txt" id="jobDue" type="date"><button type="button" id="jobDueClr" aria-label="ล้างวันที่">✕</button></div></label>
               <div class="due-quick no-print" id="jobDueQuick"><button type="button" data-d="0">วันนี้</button><button type="button" data-d="1">พรุ่งนี้</button><button type="button" data-d="3">อีก 3 วัน</button><button type="button" data-d="">ไม่กำหนด</button></div>
               </div>
             </section>
@@ -4744,12 +4782,13 @@ html:root body #wholesaleHistory .wd-inb>summary{font-size:13px;color:var(--a-mu
                 <label class="f"><span>วันที่สั่งงาน</span><input class="txt" id="jobDate" type="date"></label>
               </div>
               <div class="row2">
-                <label class="f"><span>เพจ</span><select class="txt" id="jobPage"><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop (UV)</option></select></label>
+                <label class="f"><span>เพจ</span><select class="txt" id="jobPage"><option value="ball">บอล สติ๊กเกอร์</option></select></label>
               </div>
               </div>
             </details>
             <div class="jf-actions">
-              <button class="btn good" id="save-job" type="button">💾 บันทึกใบงาน</button>
+              <div class="jf-bartot"><span>ราคางานรวม</span><b id="jobBarTot">0 บาท</b></div>
+              <button class="btn good" id="save-job" type="button">บันทึกใบงาน</button>
               <div class="jf-more-h no-print">หลังบันทึก</div>
               <details class="fold jf-more"><summary>พิมพ์ / ส่งใบให้ลูกค้า</summary>
               <div class="jf-grid">
@@ -4814,7 +4853,7 @@ html:root body #wholesaleHistory .wd-inb>summary{font-size:13px;color:var(--a-mu
                 </label>
               </div>
               <div class="row2">
-                <label class="f"><span>เพจ</span><select id="billPage"><option value="ball">บอล สติ๊กเกอร์</option><option value="roll">Roll shop (UV)</option></select></label>
+                <label class="f"><span>เพจ</span><select id="billPage"><option value="ball">บอล สติ๊กเกอร์</option></select></label>
                 <label class="f"><span>บัญชีรับเงิน</span><select id="billAccount"><option value="">— ไม่ระบุ —</option><option value="กิติพงษ์">กิติพงษ์</option><option value="วันทิม">วันทิม สีทอง</option></select></label>
               </div>
               <p class="hint" style="margin:-6px 0 0">เพจและบัญชีไม่พิมพ์ลงบิล</p>
@@ -4934,6 +4973,7 @@ html:root body #wholesaleHistory .wd-inb>summary{font-size:13px;color:var(--a-mu
         <p>เอกสารราคาขายส่งแยกต่างหาก ไม่ใช่ใบเสร็จ/ใบกำกับภาษี ไม่มี VAT และไม่รันเลขที่เอกสาร ใช้ส่งราคาให้ลูกค้าขายส่งดูก่อนตกลงกัน</p>
       </div>
 
+      <button type="button" class="btn primary jbs-add no-print" id="jbsAddBtn">＋ เพิ่มใบงานราคาส่ง (JBS)</button>
       <button type="button" class="fab-newjob no-print" id="fabNewWh" aria-label="เพิ่มใบราคาส่งใหม่">＋ เพิ่มใบราคาส่ง</button>
       <div class="bill-grid" id="whFormTop">
         <div class="jm-x no-print"><span>แก้ไขใบราคาส่ง</span><button type="button" id="jmClose2">✕ ปิด</button></div>
@@ -5998,6 +6038,13 @@ html:root body #wholesaleHistory .wd-inb>summary{font-size:13px;color:var(--a-mu
     <div id="billEditSlot"></div>
   </div>
 </div>
+<div class="overlay no-print" id="jbsPick" hidden role="dialog" aria-modal="true" aria-labelledby="jbsPickT">
+  <div class="ov-card" style="max-width:520px">
+    <div class="ov-head"><div><h2 id="jbsPickT">เพิ่มใบงานราคาส่ง</h2><p class="ov-file">พิมพ์ชื่อร้านก่อน แล้วเลือกจากรายชื่อที่ขึ้นมา</p></div><button class="btn small" id="jbsPickClose" type="button">ปิด</button></div>
+    <label class="f"><span>ลูกค้าราคาส่ง</span><input class="txt" id="jbsQ" type="text" autocomplete="off" placeholder="พิมพ์ชื่อร้าน เช่น T"></label>
+    <div id="jbsRes" class="jbs-res" role="listbox"></div>
+  </div>
+</div>
 <div class="overlay no-print" id="stmtOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="stmtTitle">
   <div class="ov-card">
     <div class="ov-head">
@@ -6031,7 +6078,7 @@ html:root body #wholesaleHistory .wd-inb>summary{font-size:13px;color:var(--a-mu
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?r=2&v=dba27d7e65",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?r=2&v=a7937a71e3",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

@@ -6665,7 +6665,7 @@ function bahtText(value) {
       if (ship) ship.open = !!($('jobWholesale').checked || hasRecv);
       if (money) money.open = !!(num($('jobSlipAmount').value) > 0 || $('jobAccount').value);
       const d = $('jobDate').value, due = $('jobDue').value, pg = $('jobPage');
-      const sum = $('jobMetaSum'); if (sum) sum.textContent = '· ' + ($('jobNo').value || 'เลขอัตโนมัติ') + (d ? ' · ' + thDate(d) : '') + (due ? ' · ส่ง ' + thDate(due) : '') + (pg && pg.selectedOptions[0] ? ' · ' + pg.selectedOptions[0].text : '');
+      const sum = $('jobMetaSum'); if (sum) sum.textContent = '· ' + ($('jobNo').value || 'ออกเลขตอนบันทึก') + (d ? ' · ' + thDate(d) : '') + (due ? ' · ส่ง ' + thDate(due) : '') + (pg && pg.selectedOptions[0] ? ' · ' + pg.selectedOptions[0].text : '');
     } catch (e) { console.error('syncJobFolds', e); }
   }
   ['jobNo', 'jobDate', 'jobDue', 'jobPage'].forEach(id => { const e = $(id); if (e) { e.addEventListener('input', syncJobFolds); e.addEventListener('change', syncJobFolds); } });
@@ -6780,16 +6780,19 @@ function bahtText(value) {
     const whOn = !!($('jobWholesale') && $('jobWholesale').checked);
     $('jobItems').innerHTML = jobItems.map((it, i) =>
       '<div class="item job jt' + (whOn ? ' wh' : '') + '" data-i="' + i + '">' +
-      '<label class="it-f it-name"><span>รายละเอียดงาน</span><input class="txt i-name" type="text" placeholder="เช่น สติ๊กเกอร์ 9 เซน" aria-label="รายละเอียดงาน" value="' + esc(it.name) + '"></label>' +
+      '<label class="it-f it-name"><span>รายละเอียดงาน</span><input class="txt i-name" type="text" placeholder="เช่น สติ๊กเกอร์ 9 เซน ไดคัท" aria-label="รายละเอียดงาน" value="' + esc(it.name) + '"></label>' +
       '<label class="it-f it-qty"><span>จำนวน</span><input class="num i-qty" type="number" inputmode="decimal" step="any" min="0" placeholder="เช่น 100" aria-label="จำนวน" value="' + esc(it.qty) + '"></label>' +
+      (whOn ? '<label class="it-f it-unit"><span>หน่วย</span><select class="i-unit" aria-label="หน่วย">' + ['ชิ้น', 'ใบ', 'แผ่น', 'ดวง', 'ชุด', 'เซ็ต', 'ม้วน', 'แพ็ค', 'เมตร'].map(u => '<option' + ((it.unit || 'ชิ้น') === u ? ' selected' : '') + '>' + u + '</option>').join('') + '</select></label>' : '') +
       (whOn ? '<label class="it-f it-total"><span>ราคาส่ง/ชิ้น</span><input class="num i-wprice" type="number" inputmode="decimal" step="any" min="0" placeholder="บาท" aria-label="ราคาส่งต่อหน่วย" value="' + esc(it.price == null ? '' : it.price) + '"></label>'
-            : '<label class="it-f it-total"><span>ราคารวม <em>(ไม่ต้องใส่ก็ได้)</em></span><input class="num i-total" type="number" inputmode="decimal" step="any" min="0" placeholder="บาท" aria-label="ราคารวม" value="' + esc(it.total == null ? '' : it.total) + '"></label>') +
+            : '<label class="it-f it-total"><span>ราคา (บาท)</span><input class="num i-total" type="number" inputmode="decimal" step="any" min="0" placeholder="บาท" aria-label="ราคารวม" value="' + esc(it.total == null ? '' : it.total) + '"></label>') +
       (String(it.note || '').trim() ? '<label class="it-f it-note"><span>หมายเหตุ</span><input class="txt i-note" type="text" aria-label="หมายเหตุ" value="' + esc(it.note || '') + '"></label>' : '') +
       '<button class="del" type="button" aria-label="ลบรายการ">✕</button></div>').join('');
+    updJobSum();
     const hd = document.querySelector('.item-head.job'); if (hd) { hd.classList.toggle('wh', whOn); hd.innerHTML = '<span>ชื่องาน / สเปก</span><span>จำนวน</span><span>หมายเหตุ</span>' + (whOn ? '<span>ราคาส่ง/หน่วย</span>' : '') + '<span></span>'; }
   }
 
   function renderJob() {
+    { const ns = $('jobNoShow'); if (ns) ns.textContent = String($('jobNo').value || '').trim() || 'ออกเลขตอนกดบันทึก'; }
     { const q = $('jobQrBtn'); if (q) q.hidden = !/^JBS/i.test(String($('jobNo').value || '').trim()); }   // QR เก็บเงินในใบงาน: เฉพาะ JBS (งานราคาส่ง)
     renderJobHTML();
     fitJob();
@@ -6808,7 +6811,7 @@ function bahtText(value) {
     const dash = v => v && String(v).trim() ? esc(v) : '—';
     const shown = jobItems.filter(i => i.name.trim());
     const rows = shown.length ? shown.map((i, n) =>
-      '<tr><td class="n">' + (n + 1) + '</td><td>' + esc(i.name) + (i.note && i.note.trim() ? '<div style="color:#4a5a72;font-size:12px;margin-top:2px">' + esc(i.note) + '</div>' : '') + '</td><td class="r">' + esc(fmt(num(i.qty))) + '</td></tr>').join('')
+      '<tr><td class="n">' + (n + 1) + '</td><td>' + esc(i.name) + (i.note && i.note.trim() ? '<div style="color:#4a5a72;font-size:12px;margin-top:2px">' + esc(i.note) + '</div>' : '') + '</td><td class="r">' + esc(fmt(num(i.qty))) + (i.unit ? ' ' + esc(i.unit) : '') + '</td></tr>').join('')
       : '<tr><td class="n">—</td><td colspan="2" style="color:#4a5a72">ยังไม่มีรายการ</td></tr>';
     $('jobSheet').innerHTML =
       '<header class="sh-head"><div class="sh-brand">' + logoImg() + '<div><div class="sh-name">' + esc(shop.name) + '</div><div class="sh-lines">' + shopLines() + '</div></div></div>' +
@@ -6885,7 +6888,7 @@ function bahtText(value) {
 
   function collectJob() {
     return {no: $('jobNo').value, date: $('jobDate').value, due: $('jobDue').value, prio: +($('jobPrio') ? $('jobPrio').value : 0) || 0, account: $('jobAccount').value, page: $('jobPage').value, bankInIds: jobBankInIds.slice(), bankInId: jobBankInIds[0] || '', slipAmount: $('jobSlipAmount').value, slipPending: $('jobSlipPending').checked, jName: $('jName').value, jPhone: $('jPhone').value, jAddr: $('jAddr').value,
-      items: jobItems.map(i => { if (!i.uid) i.uid = newItemUid(); const o = {name: i.name, qty: i.qty, note: i.note, uid: i.uid}; if (i.price !== '' && i.price != null) o.price = i.price; if (i.total !== '' && i.total != null) o.total = i.total; return o; }), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus, wholesale: $('jobWholesale').checked,
+      items: jobItems.map(i => { if (!i.uid) i.uid = newItemUid(); const o = {name: i.name, qty: i.qty, note: i.note, uid: i.uid}; if (i.unit) o.unit = i.unit; if (i.price !== '' && i.price != null) o.price = i.price; if (i.total !== '' && i.total != null) o.total = i.total; return o; }), note: $('jobNote').value, photos: jobPhotos.slice(), status: jobStatus, wholesale: $('jobWholesale').checked,
       recvMore: jobRecvMore.filter(r => String((r.name || '') + (r.phone || '') + (r.addr || '') + (r.code || '')).trim()).map(r => Object.assign({}, r)),
       recv: ($('jRName').value.trim() || $('jRPhone').value.trim() || $('jRAddr').value.trim()) ? {name: $('jRName').value.trim(), phone: $('jRPhone').value.trim(), addr: $('jRAddr').value.trim()} : null};
   }
@@ -6896,7 +6899,7 @@ function bahtText(value) {
     $('jobPage').value = PAGE_LABEL[j.page] ? j.page : 'ball';
     jobBankInIds = jobBankIdsOf(j); if ($('jobBankInList')) { $('jobBankInList').hidden = true; $('jobBankInBtn').setAttribute('aria-expanded', 'false'); }
     $('jName').value = j.jName || ''; $('jPhone').value = j.jPhone || ''; $('jAddr').value = j.jAddr || '';
-    jobItems = (j.items && j.items.length) ? j.items.map(i => ({name: i.name || '', qty: i.qty, note: i.note || '', price: i.price, total: i.total, uid: i.uid || newItemUid()})) : [{name: '', qty: 1, note: ''}];
+    jobItems = (j.items && j.items.length) ? j.items.map(i => ({name: i.name || '', qty: i.qty, note: i.note || '', unit: i.unit || '', price: i.price, total: i.total, uid: i.uid || newItemUid()})) : [{name: '', qty: 1, note: ''}];
     $('jobNote').value = j.note || '';
     jobPhotos = (j.photos && j.photos.length) ? j.photos.slice() : [];
     jobStatus = j.status || 'pending';
@@ -6954,10 +6957,10 @@ function bahtText(value) {
     if (!currentJobId && /^JBS?\d{6}-\d{3}$/.test(String($('jobNo').value || '').trim())) { $('jobNo').value = nextJobNo(); syncJbsAccount(); renderJob(); }
   });
   ['jRName', 'jRAddr'].forEach(id => $(id).addEventListener('change', () => { if (!currentJobId && fixDeliveryNo()) renderJob(); }));
-  $('jobToWholesale').addEventListener('click', () => {
+  $('jobToWholesale').addEventListener('click', async () => {
     if (!$('jName').value.trim()) { toast('ใส่ชื่อลูกค้าก่อน'); $('jName').focus(); return; }
     lastWhMerge = null;
-    saveJob(); // บันทึกแล้วรวมเข้าใบราคาส่งตามชื่ออัตโนมัติ
+    await saveJob(); // บันทึกแล้วรวมเข้าใบราคาส่งตามชื่ออัตโนมัติ
     const d = lastWhMerge; lastWhMerge = null;
     if (d) { currentWholesaleId = d.id; applyWholesale(d); renderWholesaleEditState(); showTab('wholesale'); openWhModal(); window.scrollTo({top: 0, behavior: 'smooth'}); }
     else { const rec = store.get('bs_jobs', []).find(x => x.id === currentJobId); if (rec && jobPendingWhItems(rec).length) jobToUnpaid(rec); else toast('งานนี้อยู่ในใบราคาส่งแล้ว'); }
@@ -6965,7 +6968,7 @@ function bahtText(value) {
   function newJob() {
     currentJobId = null;
     applyJob({date: todayISO()});
-    $('jobNo').value = nextJobNo();
+    $('jobNo').value = '';   // ไม่จองเลขตอนเปิดฟอร์ม — ออกเลขตอนกดบันทึก (กันเลขซ้ำ)
     renderJob();
     renderJobEditState();
   }
@@ -6977,7 +6980,7 @@ function bahtText(value) {
     const its = (j.items || []).filter(i => String(i.name || '').trim());
     const note = String(j.note || '').trim().replace(/\s+/g, ' ');
     const f = its[0];
-    const l1 = f ? '<div class="jw-i"><em>1.</em>' + esc(String(f.name).trim()) + (String(f.qty || '').trim() ? ' <b>× ' + esc(String(f.qty).trim()) + '</b>' : '') + (String(f.note || '').trim() ? ' <small>(' + esc(String(f.note).trim()) + ')</small>' : '') + '</div>' : '<div class="jw-i"></div>';
+    const l1 = f ? '<div class="jw-i"><em>1.</em>' + esc(String(f.name).trim()) + (String(f.qty || '').trim() ? ' <b>× ' + esc(String(f.qty).trim()) + (f.unit ? ' ' + esc(f.unit) : '') + '</b>' : '') + (String(f.note || '').trim() ? ' <small>(' + esc(String(f.note).trim()) + ')</small>' : '') + '</div>' : '<div class="jw-i"></div>';
     const l2 = [/^JBS/i.test(String(j.no || '').trim()) ? 'งานส่ง' : '', j.wholesale ? 'ราคาส่ง' : '', its.length > 1 ? 'อีก ' + (its.length - 1) + ' รายการ' : '', note ? 'หมายเหตุ ' + esc(note) : ''].filter(Boolean).join(' · ');
     return '<div class="jc-work">' + l1 + '<div class="jw-2">' + l2 + '</div></div>';
   }
@@ -7281,8 +7284,58 @@ function bahtText(value) {
     setTimeout(() => { if (box.isConnected) box.remove(); }, 25000);
   }
 
-  function saveJob() {
+  // ออกเลขใบงานจากตัวนับกลาง (Firestore counters/job_<prefix>) ในธุรกรรมเดียว — 2 เครื่องกดบันทึกพร้อมกันก็ไม่ได้เลขซ้ำ
+  // ต่อระบบกลางไม่ได้/สิทธิ์ไม่พอ → ใช้เลขจากเครื่องแทน (ยังกันซ้ำกับใบที่เครื่องนี้เห็น) แล้วแจ้งให้รู้
+  async function allocJobNo(prefix) {
+    const local = () => nextJobNoFor(prefix);
+    if (!cloudDb) return {no: local(), central: false};
+    try {
+      await (window.__bsAuthReady || Promise.resolve());
+      const ref = cloudDb.collection('counters').doc('job_' + prefix);
+      const used = {}; let lmax = 0;
+      store.get('bs_jobs', []).forEach(j => { const no = String(j.no || '').trim(); used[no.toUpperCase()] = 1; if (no.indexOf(prefix + '-') === 0) { const m = /-(\d+)$/.exec(no); if (m) lmax = Math.max(lmax, parseInt(m[1], 10)); } });
+      const tx = cloudDb.runTransaction(async t => {
+        const d = await t.get(ref); let n = Math.max(d.exists ? (+d.data().n || 0) : 0, lmax) + 1, out;
+        do { out = prefix + '-' + String(n).padStart(3, '0'); if (used[out.toUpperCase()]) n++; else break; } while (true);
+        t.set(ref, {n, at: Date.now()}); return out;
+      });
+      const no = await Promise.race([tx, new Promise((_, rej) => setTimeout(() => rej(new Error('alloc-timeout')), 7000))]);
+      return {no, central: true};
+    } catch (e) { console.warn('allocJobNo fallback', e); return {no: local(), central: false}; }
+  }
+  // JB: ต้องมีชื่อลูกค้า + ทุกรายการมี ชื่องาน/จำนวน/ราคา
+  function jobFormProblem(data) {
+    if (isDeliveryJob()) return '';
+    if (!String(data.jName || '').trim()) return 'ใส่ชื่อลูกค้าก่อนบันทึก';
+    const its = (data.items || []).filter(i => String(i.name || '').trim() || String(i.qty || '').trim() || String(i.total || '').trim());
+    if (!its.length) return 'ใส่งานที่สั่งอย่างน้อย 1 รายการ';
+    for (let k = 0; k < its.length; k++) {
+      const i = its[k], n = its.length > 1 ? ' (รายการที่ ' + (k + 1) + ')' : '';
+      if (!String(i.name || '').trim()) return 'ใส่ชื่องาน / สเปก' + n;
+      if (!(num(i.qty) > 0)) return 'ใส่จำนวน' + n;
+      if (!(num(i.total) > 0)) return 'ใส่ราคา' + n;
+    }
+    return '';
+  }
+  function updJobSum() {
+    const el = $('jobSum'); if (!el) return;
+    const whOn = !!($('jobWholesale') && $('jobWholesale').checked);
+    const t = round2(jobItems.reduce((a, i) => a + (whOn ? num(i.qty) * num(i.price) : num(i.total)), 0));
+    el.querySelector('b').textContent = money(t) + ' บาท';
+    const bt = $('jobBarTot'); if (bt) bt.textContent = money(t) + ' บาท';
+  }
+  document.addEventListener('click', e => { if (e.target && e.target.id === 'jobDueClr') { const d = $('jobDue'); d.value = ''; d.dispatchEvent(new Event('input', {bubbles: true})); d.dispatchEvent(new Event('change', {bubbles: true})); } });
+  async function saveJob() {
     const list = store.get('bs_jobs', []);
+    { const pb = jobFormProblem(collectJob()); if (pb) { toast(pb); return; } }
+    if (!currentJobId && !String($('jobNo').value || '').trim()) {   // ใบใหม่: ออกเลขตอนกดบันทึก
+      const btn = $('save-job'); if (btn) btn.disabled = true;
+      const d = ($('jobDate').value || todayISO()).replace(/-/g, '').slice(2);
+      const r = await allocJobNo((isDeliveryJob() ? 'JBS' : 'JB') + d);
+      if (btn) btn.disabled = false;
+      $('jobNo').value = r.no; syncJbsAccount();
+      if (!r.central) toast('ออกเลขจากเครื่องนี้ (ต่อตัวนับกลางไม่ได้) — ตรวจเลขซ้ำด้วยนะ');
+    }
     const data = collectJob();
     if (!String(data.no).trim()) { toast('ใส่เลขที่ใบก่อนบันทึก'); $('jobNo').focus(); return; }
     const id = currentJobId || ('j' + Date.now());
@@ -7505,6 +7558,27 @@ function bahtText(value) {
     const shipAmt = round2(ship.reduce((a, i) => a + num(i.qty || 1) * num(i.price), 0));
     return {jobs, shipAmt, hasShip: ship.length > 0, total: wholesaleCalc(w).total, noPrice: its.filter(i => !(num(i.price) > 0)).length};
   }
+  // เปิดฟอร์มงานส่ง (JBS) ให้ร้านที่เลือก — ใช้ร่วมกันระหว่างปุ่มบนการ์ดร้านกับปุ่ม "เพิ่มใบงานราคาส่ง"
+  function openJbsFor(name) {
+    showTab('confirm'); newJob(); jobMode = 'deliv'; $('jName').value = name; $('jobWholesale').checked = true;
+    $('jobNo').value = ''; syncJbsAccount(); syncJobWholesaleBtn(); renderJobItems(); renderJob(); syncJobFolds();
+    openJobModal();
+  }
+  function jbsPickRender() {
+    const q = String($('jbsQ').value || '').trim().toLowerCase(), box = $('jbsRes');
+    if (!q) { box.innerHTML = '<p class="hint">พิมพ์ตัวอักษรแรกของชื่อร้าน ระบบจะแสดงร้านที่ตรงให้เลือก</p>'; return; }
+    const names = whCustomers().map(x => x.name).filter(n => n && n !== 'ไม่ระบุชื่อ');
+    const hits = names.filter(n => n.toLowerCase().indexOf(q) >= 0).sort((a, b) => (b.toLowerCase().indexOf(q) === 0) - (a.toLowerCase().indexOf(q) === 0) || a.localeCompare(b, 'th')).slice(0, 8);
+    const typed = $('jbsQ').value.trim(), exact = names.some(n => n.toLowerCase() === q);
+    box.innerHTML = hits.map(n => '<button type="button" data-n="' + esc(n) + '">' + esc(n) + '</button>').join('') +
+      (!exact ? '<button type="button" class="new" data-n="' + esc(typed) + '">＋ ร้านใหม่: ' + esc(typed) + '</button>' : '') ;
+  }
+  function jbsPickOpen() { $('jbsPick').hidden = false; document.body.style.overflow = 'hidden'; $('jbsQ').value = ''; jbsPickRender(); setTimeout(() => $('jbsQ').focus(), 50); }
+  function jbsPickClose() { $('jbsPick').hidden = true; document.body.style.overflow = ''; }
+  $('jbsAddBtn').addEventListener('click', jbsPickOpen);
+  $('jbsPickClose').addEventListener('click', jbsPickClose);
+  $('jbsQ').addEventListener('input', jbsPickRender);
+  $('jbsRes').addEventListener('click', e => { const b = e.target.closest('button[data-n]'); if (!b) return; const n = b.dataset.n; jbsPickClose(); openJbsFor(n); });
   function whCustomers() {
     const docs = store.get('bs_wholesale', []), map = {};
     const get = nm => { const k = String(nm || '').trim() || 'ไม่ระบุชื่อ'; return map[k] || (map[k] = {name: k, open: [], paid: [], last: 0}); };
@@ -9469,9 +9543,10 @@ function bahtText(value) {
     if (e.target.classList.contains('i-name')) it.name = e.target.value;
     if (e.target.classList.contains('i-qty')) it.qty = e.target.value;
     if (e.target.classList.contains('i-note')) it.note = e.target.value;
+    if (e.target.classList.contains('i-unit')) it.unit = e.target.value;
     if (e.target.classList.contains('i-wprice')) it.price = e.target.value;
     if (e.target.classList.contains('i-total')) it.total = e.target.value;
-    renderJob();
+    renderJob(); updJobSum();
   });
   $('jRecvAdd').addEventListener('click', () => {
     jobRecvMore.push({name: '', phone: '', addr: '', note: '', code: '', carrier: ''}); renderRecvMore();
@@ -10400,12 +10475,7 @@ function bahtText(value) {
       const n = doc ? addJobToWholesaleDoc(btn.dataset.jid, doc.id) : 0;
       renderWholesaleHistory(); toast(n ? 'เพิ่มงานเข้าบิลแล้ว ' + n + ' รายการ ใส่ราคาได้ที่ช่องราคา (ว่างไว้ = รอราคา)' : 'ไม่มีรายการใหม่ให้เพิ่ม'); return;
     }
-    if (act === 'newjobfor') {
-      showTab('confirm'); newJob(); jobMode = 'deliv'; $('jName').value = name; $('jobWholesale').checked = true;
-      $('jobNo').value = nextJobNo(); syncJbsAccount(); syncJobWholesaleBtn(); renderJobItems(); renderJob(); syncJobFolds();
-      openJobModal();
-      return;
-    }
+    if (act === 'newjobfor') { openJbsFor(name); return; }
     if (act === 'charge') {
       const w = wholesaleOpenDocFor(name, false) || {buyerName: name}; openChargeModal(w); return;
     }
