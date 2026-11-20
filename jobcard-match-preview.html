@@ -232,23 +232,25 @@ textarea.in{min-height:76px;resize:vertical}
 (function(){
 var $=function(s){return document.querySelector(s)},$$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
 var J=[
- {no:'JB261120-004',cu:'คุณสมหญิง ใจดี',a:999,m:'โอน',st:'รับงาน',v:false},
- {no:'JB261120-002',cu:'คุณวิชัย ปริ้นท์',a:1200,m:'โอน',st:'กำลังผลิต',v:false},
- {no:'JB261119-007',cu:'ร้านดอกไม้สายฝน',a:350,m:'โอน',st:'ผลิตแล้ว',v:true},
- {no:'JBS261119-001',cu:'ร้านเอบีซีสติ๊กเกอร์',a:2000,m:'โอน',st:'กำลังผลิต',v:false},
- {no:'JB261120-006',cu:'คุณมะลิ',a:300,m:'เงินสด',st:'ผลิตแล้ว',v:true},
- {no:'JB261121-001',cu:'คุณสมศักดิ์',a:850,m:'',st:'รับงาน',v:false,none:true}];
+ {no:'JB261120-004',cu:'คุณสมหญิง ใจดี',a:999,st:'รับงาน',pay:'none'},
+ {no:'JB261120-002',cu:'คุณวิชัย ปริ้นท์',a:1200,st:'กำลังผลิต',pay:'part',got:500},
+ {no:'JB261119-007',cu:'ร้านดอกไม้สายฝน',a:350,st:'ผลิตแล้ว',pay:'full'},
+ {no:'JBS261119-001',cu:'ร้านเอบีซีสติ๊กเกอร์',a:2000,st:'กำลังผลิต',pay:'none'},
+ {no:'JB261120-006',cu:'คุณมะลิ',a:300,st:'ผลิตแล้ว',pay:'cash'}];
 var S={who:'ball',f:'all',d:'auto'};
 function money(n){return n.toLocaleString('th-TH')}
 function card(j){var b=S.who==='ball';
- var chips='<span class="cp">'+j.st+'</span>'+(j.none?'':'<span class="cp">รับ '+money(j.a)+' บาท ('+j.m+')</span>');
- if(b)chips+=j.none?'<span class="cp">ยังไม่รับเงิน</span>':(j.v?'<span class="cp ok">'+(j.m==='เงินสด'?'ยืนยันเงินสดแล้ว':'ตรวจเงินแล้ว (จับคู่ครบ)')+'</span>':'<span class="cp warn">รอจับคู่เงินเข้า</span>');
- return '<section class="jc2'+(b&&j.v?' mt':'')+(b&&j.none?' nn':'')+'"><div class="top2"><span><span class="no">'+j.no+'</span><div class="cu">'+j.cu+'</div></span><span class="am">'+money(j.a)+' บาท<small>ราคางาน</small></span></div><div class="ch">'+chips+'</div></section>'}
-function view(){var b=S.who==='ball',need=J.filter(function(j){return !j.v&&!j.none}).length;
- var list=J.filter(function(j){return S.f==='all'||(b&&S.f==='need'&&!j.v&&!j.none)});
- return '<div class="hd2"><h1>รายการใบงาน</h1></div><div class="who" id="who"><button type="button" data-w="ball" aria-pressed="'+b+'">มุมมองของ ball (เจ้าของ)</button><button type="button" data-w="top" aria-pressed="'+!b+'">มุมมองของ TOP</button></div>'+
- '<div class="fl"><button type="button" data-f="all" aria-pressed="'+(S.f==='all')+'">ทั้งหมด</button>'+(b?'<button type="button" class="need" data-f="need" aria-pressed="'+(S.f==='need')+'">รอจับคู่เงิน ('+need+')</button>':'')+'</div>'+
- '<div class="one">'+(b?'<div class="note2" style="margin-top:0"><b>สถานะเงินบนการ์ด (เห็นเฉพาะ ball)</b><br>เทา = ยังไม่รับเงิน · เหลือง = แอดมินคีย์ยอดแล้ว รอจับคู่กับเงินเข้า · เขียว = จับคู่ครบหรือยืนยันเงินสดแล้ว</div>':'')+list.map(card).join('')+'<p class="note2">'+(b?'เห็นป้ายเหลือง "รอจับคู่เงินเข้า" และแถบสีข้างการ์ด (เหลือง = ยังไม่ตรวจ, เขียว = ตรวจแล้ว) กดตัวกรอง "รอจับคู่เงิน" เพื่อดูเฉพาะที่ค้าง':'TOP เห็นการ์ดปกติ ไม่มีป้ายและตัวกรองเรื่องจับคู่เงิน แถบสีข้างการ์ดเป็นสีเดียวกันทุกใบ')+'</p></div>'}
+ var chips='<span class="cp">'+j.st+'</span>';
+ if(b){if(j.pay==='none')chips+='<span class="cp">ยังไม่จับคู่เงิน</span>';
+  else if(j.pay==='part')chips+='<span class="cp warn">จับคู่แล้ว '+money(j.got)+' · ค้าง '+money(j.a-j.got)+'</span>';
+  else chips+='<span class="cp ok">'+(j.pay==='cash'?'เงินสด ยืนยันแล้ว':'จับคู่ครบ')+'</span>'}
+ var cls=b?(j.pay==='full'||j.pay==='cash'?' mt':(j.pay==='none'?' nn':'')):'';
+ return '<section class="jc2'+cls+'"><div class="top2"><span><span class="no">'+j.no+'</span><div class="cu">'+j.cu+'</div></span><span class="am">'+money(j.a)+' บาท<small>ราคางาน</small></span></div><div class="ch">'+chips+'</div></section>'}
+function view(){var b=S.who==='ball',need=J.filter(function(j){return j.pay==='none'||j.pay==='part'}).length;
+ var list=J.filter(function(j){return S.f==='all'||(b&&S.f==='need'&&(j.pay==='none'||j.pay==='part'))});
+ return '<div class="hd2"><h1>รายการใบงาน</h1></div><div class="who" id="who"><button type="button" data-w="ball" aria-pressed="'+b+'">มุมมองของ K (เจ้าของ)</button><button type="button" data-w="top" aria-pressed="'+!b+'">มุมมองของ TOP</button></div>'+
+ '<div class="fl"><button type="button" data-f="all" aria-pressed="'+(S.f==='all')+'">ทั้งหมด</button>'+(b?'<button type="button" class="need" data-f="need" aria-pressed="'+(S.f==='need')+'">ยังจับคู่ไม่ครบ ('+need+')</button>':'')+'</div>'+
+ '<div class="one">'+(b?'<div class="note2" style="margin-top:0"><b>สถานะเงินบนการ์ด (เห็นเฉพาะ K)</b><br>เทา = ยังไม่มีเงินจับคู่ · เหลือง = จับคู่บางส่วน (มัดจำ) ค้างอีกเท่าไร · เขียว = จับคู่ครบหรือยืนยันเงินสดแล้ว</div>':'')+list.map(card).join('')+'<p class="note2">'+(b?'K เห็นสถานะการเงินทั้งหมดและแถบสีข้างการ์ด กดตัวกรอง "ยังจับคู่ไม่ครบ" เพื่อดูเฉพาะที่ค้าง':'TOP ไม่เห็นสถานะการเงินใดๆ ไม่มีป้ายเงิน ไม่มีตัวกรอง แถบสีข้างการ์ดเป็นสีเดียวกันทุกใบ เห็นเฉพาะชื่อลูกค้า สถานะงาน และราคางานที่ตัวเองคีย์')+'</p></div>'}
 function fit(){var dev=$('#dev');dev.classList.toggle('phone',S.d==='phone');dev.style.zoom='';if(S.d==='pc'){dev.style.width='1120px';var s=Math.min(1,(document.documentElement.clientWidth-24)/1120);dev.style.zoom=s<1?String(s):''}else dev.style.width='100%'}
 function render(){$('#app').innerHTML=view();$$('#devs button').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-d')===S.d)});fit()}
 document.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
