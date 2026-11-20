@@ -98,7 +98,11 @@ textarea.in{min-height:76px;resize:vertical}
 .state[data-s=dep]{background:var(--gold-t);color:#7a5600}.state[data-s=full]{background:var(--ok-t);color:var(--ok)}
 .pay{display:grid;grid-template-columns:120px 1fr 40px;gap:8px;align-items:end;margin-bottom:10px}
 @container (max-width:560px){.pay{grid-template-columns:1fr 40px}.pay .b{grid-column:1/-1;order:3}.pay .del{order:2}}
-.amt{display:flex;align-items:center;background:var(--bg)}
+.bklist{display:grid;gap:8px}
+.bk{display:flex;gap:12px;align-items:center;min-height:56px;border:1.5px solid var(--field);border-radius:var(--r-field);padding:8px 12px;background:#fff;cursor:pointer}
+.bk input{width:22px;height:22px;accent-color:var(--navy)}
+.bk small{display:block;font-size:13px;color:var(--mute)}
+.bk:has(input:checked){border-color:var(--navy);background:var(--navy-t)}
 .pay.bad select{border-color:var(--bad);background:var(--bad-t)}
 .pay .del{width:40px;height:48px;border:0;background:transparent;color:var(--mute)}
 .pay select{min-height:48px;border:1.5px solid var(--field);border-radius:var(--r-field);padding:0 10px;width:100%;background:#fff}
@@ -159,6 +163,7 @@ textarea.in{min-height:76px;resize:vertical}
       <button data-v="A" aria-pressed="true">แบบ A หน้าเดียว</button>
       <button data-v="B" aria-pressed="false">แบบ B ทีละขั้น</button>
       <button data-v="C" aria-pressed="false">แบบ C แก้บนใบ</button>
+      <button data-v="D" aria-pressed="false">หน้าตรวจเงิน (เจ้าของ)</button>
     </div>
     <div class="devs" id="devs" role="group" aria-label="ขนาดจอ">
       <button data-d="auto" aria-pressed="true">ตามจอ</button>
@@ -193,10 +198,11 @@ textarea.in{min-height:76px;resize:vertical}
     paste:'คุณสมชาย ใจดี 081-234-5678 12/3 ม.4 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140',
     name:'',phone:'',addr:'',
     items:[{d:'สติ๊กเกอร์ 9 ซม.',q:'100',p:'999'}],
-    recv:'999', pays:[{a:'',b:'b1'},{a:'',b:'b2'}], note:'', photos:[], jobNo:'JB261120-004', saved:false };
+    recv:'999', method:'โอน', verified:false, chk:[], note:'', photos:[], jobNo:'JB261120-004', saved:false };
   var ABOUT={
     A:'ทุกอย่างอยู่หน้าเดียว แบ่งเป็นการ์ด 1 ถึง 4 มีแถบล่างติดจอแสดงยอดรวมกับปุ่มบันทึก บน PC มีตัวอย่างข้อความที่ลูกค้าจะได้รับอยู่ด้านขวา เหมาะกับคนที่อยากเห็นครบในจอเดียว',
     B:'ถามทีละเรื่อง 4 ขั้น: ลูกค้า → งานและราคา → ส่งเมื่อไหร่ → เงินและส่งยืนยัน แต่ละจอสั้น ไม่ต้องเลื่อนยาว เหมาะกับมือถือและพนักงานใหม่',
+    D:'หน้าที่คุณใช้ตรวจเงินทีหลัง: ติ๊กรายการเงินเข้าให้ยอดรวมเท่ากับที่แอดมินคีย์ ถึงจะยืนยันได้ ลองติ๊ก 500 + 499 กับยอด 999 ดู แล้วกลับไปแท็บ A/B/C ดูปุ่มออกบิล',
     C:'หน้าตาเหมือนใบที่ลูกค้าจะเห็น แตะแก้ได้บนใบเลย ส่วนราคากับเงินอยู่ในกล่องสีเหลือง "เฉพาะเจ้าของ" แยกออกจากใบที่ส่งฝ่ายผลิต เหมาะกับคนที่อยากเห็นผลลัพธ์ตลอด'
   };
 
@@ -205,10 +211,9 @@ textarea.in{min-height:76px;resize:vertical}
   function money(n){return n.toLocaleString('th-TH',{minimumFractionDigits:(n%1?2:0),maximumFractionDigits:2})}
   function total(){return S.items.reduce(function(s,i){return s+num(i.p)},0)}
   function bankAmt(id){var b=BANK.filter(function(x){return x.id===id})[0];return b?b.a:0}
-  function rowAmt(p){return p.b==='cash'?num(p.a):(p.b?bankAmt(p.b):0)}
-  function matched(){return S.pays.reduce(function(s,p){return s+rowAmt(p)},0)}
   function paid(){return num(S.recv)}
-  function mismatch(){var r=paid(),m=matched();return (r>0||m>0)&&Math.abs(m-r)>0.005}
+  function chkSum(){return S.chk.reduce(function(s,id){return s+bankAmt(id)},0)}
+  function chkOk(){return S.chk.length>0&&Math.abs(chkSum()-paid())<0.005}
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]})}
   function parse(t){
     var ph=/(0\d{1,2}[-\s]?\d{3}[-\s]?\d{4})/.exec(t), phone=ph?ph[1].trim():'', rest=t;
@@ -225,7 +230,7 @@ textarea.in{min-height:76px;resize:vertical}
     var p=[];
     if(!S.name.trim())p.push('ชื่อลูกค้า');
     if(!S.items.length||S.items.some(function(i){return !i.d.trim()||!num(i.q)||!num(i.p)}))p.push('รายละเอียด จำนวน และราคารวมของงานให้ครบทุกบรรทัด');
-    if(mismatch())p.push('ยอดที่จับคู่ ('+money(matched())+') ต้องเท่ากับยอดที่รับ ('+money(paid())+')');
+    
     if(paid()>total()+0.005)p.push('ยอดรับเกินราคางาน');
     return p;
   }
@@ -277,20 +282,10 @@ textarea.in{min-height:76px;resize:vertical}
   }
   function moneyBody(){
     return '<div class="mstat"><div class="mbox"><span>ราคางาน</span><b class="o-total"></b></div><div class="mbox"><span>รับแล้ว</span><b class="o-paid"></b></div><div class="mbox left"><span>เหลือ</span><b class="o-left"></b></div></div>'+
-      '<div style="margin-bottom:10px">สถานะเงิน: <span class="state o-state"></span></div>'+
-      '<div class="recv"><label class="lbl" for="recv">ยอดที่ลูกค้าจ่ายมา (บาท)</label><input class="in" id="recv" inputmode="decimal" value="'+esc(S.recv)+'" placeholder="เช่น 1000"><span class="hlp">ใส่ยอดรวมที่รับ แล้วเลือกรายการเงินเข้าให้ครบจนยอดจับคู่เท่ากับยอดนี้ (จะโอนกี่รอบก็ได้)</span></div>'+
-      '<div id="pays">'+paysHtml()+'</div>'+
-      '<div class="row"><button class="btn" type="button" id="addpay">'+IC.plus+'เพิ่มรายการเงินเข้า</button></div>'+
-      '<div class="mchk" id="mchk"></div><div id="mmsg"></div>';
-  }
-  function paysHtml(){
-    var used={};S.pays.forEach(function(p){if(p.b&&p.b!=='cash')used[p.b]=1});
-    return S.pays.map(function(p,i){
-      var opts='<option value="">เลือกรายการเงินเข้า…</option><option value="cash"'+(p.b==='cash'?' selected':'')+'>รับเงินสด (ไม่มีรายการเข้าบัญชี)</option>'+BANK.map(function(b){
-        var dis=used[b.id]&&p.b!==b.id;
-        return '<option value="'+b.id+'"'+(p.b===b.id?' selected':'')+(dis?' disabled':'')+'>'+b.t+' · '+money(b.a)+' บาท · '+b.acc+' · จาก '+b.f+(dis?' (ใช้แล้ว)':'')+'</option>'}).join('');
-      var amt=p.b==='cash'?'<div><label class="lbl">ยอดเงินสด (บาท)</label><input class="in" data-pay="a" inputmode="decimal" value="'+esc(p.a)+'"></div>':'<div><span class="lbl">ยอดจากรายการนี้</span><div class="in amt">'+(p.b?money(bankAmt(p.b))+' บาท':'ยังไม่เลือก')+'</div></div>';
-      return '<div class="pay'+(!p.b?' bad':'')+'" data-i="'+i+'">'+amt+'<div class="b"><label class="lbl">จับคู่กับเงินเข้า</label><select data-pay="b">'+opts+'</select></div><button class="del" type="button" data-delpay="'+i+'" aria-label="ลบรายการนี้">'+IC.x+'</button></div>'}).join('');
+      '<div style="margin-bottom:10px">สถานะเงิน: <span class="state o-state"></span> <span class="state o-ver"></span></div>'+
+      '<label class="lbl" for="recv">ยอดที่ลูกค้าจ่ายมา (บาท)</label><input class="in" id="recv" inputmode="decimal" value="'+esc(S.recv)+'" placeholder="ไม่มีให้เว้นว่าง">'+
+      '<span class="lbl mt">จ่ายด้วย</span><div class="row" id="method">'+['โอน','เงินสด'].map(function(t){return '<button type="button" class="chip" data-m="'+t+'" aria-pressed="'+(S.method===t)+'">'+t+'</button>'}).join('')+'</div>'+
+      '<span class="hlp">แอดมินคีย์ยอดตามจริงได้เลย ไม่ต้องจับคู่เงินเข้า เจ้าของจะตรวจกับรายการเงินเข้าทีหลังในหน้า "ตรวจเงิน"</span>';
   }
   function msgBox(){return '<div class="msg" id="msgbox"></div>'}
   function sendBtns(){
@@ -325,7 +320,7 @@ textarea.in{min-height:76px;resize:vertical}
     if(n===1)return !!S.name.trim();
     if(n===2)return S.items.every(function(i){return i.d.trim()&&num(i.q)&&num(i.p)});
     if(n===3)return true;
-    return !mismatch();
+    return true;
   }
   function vC(){
     var doc='<div class="doc"><h2><span>ใบคอนเฟิร์มงาน</span>'+jobno().split('<span class="hlp">')[0]+'</h2>'+
@@ -345,7 +340,18 @@ textarea.in{min-height:76px;resize:vertical}
     var side='<div class="side"><div class="blk"><h3>ลูกค้าจะได้รับข้อความนี้</h3>'+msgBox()+'</div>'+afterBox()+'</div>';
     return '<div class="g2"><div>'+doc+owner+'</div>'+side+'</div>'+saveBar();
   }
-  var VIEW={A:vA,B:vB,C:vC};
+  function vD(){
+    var r=paid(),m=chkSum(),diff=m-r;
+    var rows=BANK.map(function(b){var on=S.chk.indexOf(b.id)>=0;return '<label class="bk"><input type="checkbox" data-bank="'+b.id+'"'+(on?' checked':'')+'><span><b>'+money(b.a)+' บาท</b><small>'+b.t+' · '+b.acc+' · จาก '+b.f+'</small></span></label>'}).join('');
+    var msg=S.verified?'<div class="okmsg">ตรวจแล้ว ยอดตรงกัน '+money(m)+' บาท</div>':(!S.chk.length?'<div class="warn">ติ๊กรายการเงินเข้าที่ตรงกับยอดที่แอดมินคีย์</div>':(chkOk()?'<div class="okmsg">ตรงกันพอดี '+money(m)+' บาท กดยืนยันได้</div>':'<div class="warn">'+(diff<0?'ยังขาด '+money(-diff):'เกิน '+money(diff))+' บาท จากยอดที่คีย์ '+money(r)+' บาท ยืนยันไม่ได้</div>'));
+    return '<div class="g2"><div><div class="blk"><h3>ตรวจเงิน<small>รอตรวจ '+(S.verified?0:1)+' รายการ</small></h3>'+
+      '<div class="mstat"><div class="mbox"><span>ใบงาน</span><b>'+S.jobNo+'</b></div><div class="mbox"><span>ลูกค้า</span><b style="font-size:15px">'+esc(S.name||'—')+'</b></div><div class="mbox"><span>แอดมินคีย์ว่ารับ ('+S.method+')</span><b>'+money(r)+' บาท</b></div></div>'+
+      '<span class="lbl">ติ๊กรายการเงินเข้าที่เป็นของงานนี้ (เลือกได้หลายรายการ)</span><div class="bklist">'+rows+'</div>'+
+      '<div class="mt">'+msg+'</div><div class="row mt">'+(S.verified?'<button class="btn" type="button" data-act="unverify">ยกเลิกการตรวจ</button>':'<button class="btn pri" type="button" data-act="verify"'+(chkOk()?'':' disabled')+'>ยืนยันตรวจเงินแล้ว</button>')+'</div>'+
+      '<span class="hlp">ยืนยันได้เมื่อยอดที่ติ๊กรวมกันเท่ากับยอดที่แอดมินคีย์ทุกบาท ถ้าลูกค้าจ่ายเงินสดไม่มีรายการเข้าบัญชี ให้กดยืนยันโดยระบุว่าเป็นเงินสด (ยังไม่ได้ทำในพรีวิวนี้)</span></div></div>'+
+      '<div class="side"><div class="blk"><h3>ผลต่อใบงาน</h3><p style="font-size:14.5px">สถานะเงิน: <span class="state o-ver"></span></p><p class="hlp">ปุ่ม "ออกบิล" จะเปิดเมื่อตรวจเงินผ่าน และสถานะงานเป็น "ผลิตแล้ว"</p></div></div></div>';
+  }
+  var VIEW={A:vA,B:vB,C:vC,D:vD};
 
   /* ---------- วาดและผูกเหตุการณ์ ---------- */
   function sync(){
@@ -354,15 +360,11 @@ textarea.in{min-height:76px;resize:vertical}
     $$('.o-paid').forEach(function(e){e.textContent=money(p)+' บาท'});
     $$('.o-left').forEach(function(e){e.textContent=money(l)+' บาท';e.parentNode.classList.toggle('zero',l<=0.005&&p>0)});
     $$('.o-state').forEach(function(e){e.textContent=st[1];e.setAttribute('data-s',st[0])});
-    var mc=$('#mchk');
-    if(mc){var m=matched(),r=paid(),bad=S.pays.filter(function(x){return !x.b}).length;
-      var cls=(r>0&&!bad&&!mismatch())?'okmsg':'warn';
-      mc.innerHTML='<div class="'+cls+'" style="margin-top:10px"><b>จับคู่แล้ว '+money(m)+' จาก '+money(r)+' บาท</b>'+
-        (bad?' · มี '+bad+' แถวที่ยังไม่ได้เลือกรายการเงินเข้า':(r<=0?' · ยังไม่ได้ใส่ยอดที่รับ':(mismatch()?(m<r?' · ยังขาด '+money(r-m)+' บาท บันทึกใบงานไม่ได้':' · เกินยอดที่รับ '+money(m-r)+' บาท บันทึกใบงานไม่ได้'):' · ตรงกันพอดี')))+'</div>'}
+    $$('.o-ver').forEach(function(e){var n=paid()>0;e.textContent=!n?'':(S.verified?'ตรวจเงินแล้ว':'รอเจ้าของตรวจเงิน');e.setAttribute('data-s',S.verified?'full':'dep');e.style.display=n?'':'none'});
     var mb=$('#msgbox');if(mb)mb.textContent=msgText();
     
     $$('.pr').forEach(function(r){var k=r.getAttribute('data-k');r.setAttribute('data-ok',S[k]&&S[k].trim()?'1':'0')});
-    var bb=$('#billBtn');if(bb){var ok=S.status>=2;bb.disabled=!ok;$('#billHlp').textContent=ok?'งานผลิตแล้ว ออกบิลได้ ระบบดึงรายการและเงินที่รับไปให้':'ปุ่มนี้เปิดเมื่อสถานะงานเป็น "ผลิตแล้ว" ขึ้นไป'}
+    var bb=$('#billBtn');if(bb){var ok=S.status>=2&&(S.verified||paid()<=0);bb.disabled=!ok;$('#billHlp').textContent=ok?'งานผลิตแล้วและตรวจเงินแล้ว ออกบิลได้':(S.status<2?'เปิดเมื่อสถานะงานเป็น "ผลิตแล้ว" ขึ้นไป':'ต้องให้เจ้าของตรวจเงินในหน้า "ตรวจเงิน" ก่อน')}
     var pb=$('#pbox');if(pb){var pr=problems();pb.innerHTML=pr.length?'<div class="warn">ยังขาด: '+pr.join(' · ')+'</div>':'<div class="okmsg">ข้อมูลครบ กดบันทึกได้</div>'}
     $$('[data-step]').forEach(function(b){b.classList.toggle('done',stepDone(+b.getAttribute('data-step')))});
   }
@@ -382,7 +384,7 @@ textarea.in{min-height:76px;resize:vertical}
     $$('#devs button').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-d')===S.d)});
     fill();sync();fit();
   }
-  function rerenderLists(){var i=$('#items');if(i)i.innerHTML=itemsHtml();var p=$('#pays');if(p)p.innerHTML=paysHtml();sync()}
+  function rerenderLists(){var i=$('#items');if(i)i.innerHTML=itemsHtml();sync()}
   function fit(){
     var dev=$('#dev');dev.classList.toggle('phone',S.d==='phone');dev.style.zoom='';dev.style.maxWidth='';
     if(S.d==='pc'){dev.style.maxWidth='1120px';dev.style.width='1120px';var s=Math.min(1,(document.documentElement.clientWidth-24)/1120);dev.style.zoom=s<1?String(s):''}
@@ -396,12 +398,11 @@ textarea.in{min-height:76px;resize:vertical}
     if(t.id==='due'){S.due=t.value;sync();return}
     var it=t.closest('.it');if(it&&t.hasAttribute('data-it')){S.items[+it.getAttribute('data-i')][t.getAttribute('data-it')]=t.value;sync();return}
     var py=t.closest('.pay');if(t.id==='recv'){S.recv=t.value;sync();return}
-    if(py&&t.getAttribute('data-pay')==='a'){S.pays[+py.getAttribute('data-i')].a=t.value;sync();return}
   });
   document.addEventListener('change',function(e){
     var t=e.target;
     if(t.id==='photoIn'){S.photos=S.photos.concat(Array.prototype.slice.call(t.files).map(function(f){return URL.createObjectURL(f)}));thumbs();toast('แนบรูปแล้ว '+S.photos.length+' รูป');return}
-    var py=t.closest('.pay');if(py&&t.getAttribute('data-pay')==='b'){S.pays[+py.getAttribute('data-i')].b=t.value;if(t.value==='cash'&&!S.pays[+py.getAttribute('data-i')].a)S.pays[+py.getAttribute('data-i')].a='';rerenderLists()}
+    if(t.hasAttribute('data-bank')){var id=t.getAttribute('data-bank'),k=S.chk.indexOf(id);if(t.checked&&k<0)S.chk.push(id);if(!t.checked&&k>=0)S.chk.splice(k,1);S.verified=false;render();return}
   });
   document.addEventListener('click',function(e){
     var b=e.target.closest('button');if(!b)return;
@@ -409,8 +410,7 @@ textarea.in{min-height:76px;resize:vertical}
     if(b.closest('#devs')){S.d=b.getAttribute('data-d');render();return}
     if(b.id==='addit'){S.items.push({d:'',q:'',p:''});rerenderLists();return}
     if(b.hasAttribute('data-delit')){if(S.items.length>1)S.items.splice(+b.getAttribute('data-delit'),1);rerenderLists();return}
-    if(b.id==='addpay'){S.pays.push({a:'',b:''});rerenderLists();return}
-    if(b.hasAttribute('data-delpay')){S.pays.splice(+b.getAttribute('data-delpay'),1);rerenderLists();return}
+    if(b.hasAttribute('data-m')){S.method=b.getAttribute('data-m');$$('#method button').forEach(function(x){x.setAttribute('aria-pressed',x.getAttribute('data-m')===S.method)});return}
     if(b.hasAttribute('data-p')){S.prio=+b.getAttribute('data-p');$$('#prio button').forEach(function(x){x.setAttribute('aria-pressed',+x.getAttribute('data-p')===S.prio)});return}
     if(b.hasAttribute('data-dd')){var d=new Date();d.setDate(d.getDate()+(+b.getAttribute('data-dd')));S.due=d.toISOString().slice(0,10);$('#due').value=S.due;sync();return}
     if(b.hasAttribute('data-st')){S.status=+b.getAttribute('data-st');$$('#st button').forEach(function(x){x.setAttribute('aria-pressed',+x.getAttribute('data-st')===S.status)});sync();return}
@@ -418,6 +418,8 @@ textarea.in{min-height:76px;resize:vertical}
     if(b.hasAttribute('data-nav')){S.step=Math.max(1,Math.min(4,S.step+(+b.getAttribute('data-nav'))));render();window.scrollTo({top:0});return}
     var a=b.getAttribute('data-act');
     if(a==='save'){var pr=problems();if(pr.length){toast('ยังขาด: '+pr[0]);return}toast('บันทึกแล้ว (ตัวอย่าง) เลขที่ '+S.jobNo);return}
+    if(a==='verify'){S.verified=true;render();toast('ยืนยันตรวจเงินแล้ว ใบงานนี้ออกบิลได้เมื่อผลิตแล้ว');return}
+    if(a==='unverify'){S.verified=false;render();return}
     if(a==='img')toast('ตัวอย่าง: สร้างรูปใบยืนยันไม่มีราคาฝ่ายผลิต ส่งเข้าแชต');
     if(a==='copy')toast('ตัวอย่าง: คัดลอกข้อความแล้ว');
     if(a==='print')toast('ตัวอย่าง: เปิดหน้าพิมพ์ A4');
