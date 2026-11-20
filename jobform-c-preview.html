@@ -181,6 +181,16 @@ textarea.in{min-height:76px;resize:vertical}
 .notebox textarea:focus{outline:3px solid rgba(245,179,1,.45);border-color:#b98600}
 .hd2{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .hd2 h1{font-size:20px;font-weight:600}
+.hero .hd h3 .num{width:30px;height:30px;border-radius:50%;background:#fff!important;color:var(--navy)!important;display:grid;place-items:center;font-size:15px;font-weight:600}
+.one{max-width:720px;margin:0 auto}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.op2{display:flex;align-items:center;justify-content:center;gap:10px;min-height:60px;border-radius:14px;border:2px solid var(--field);background:#fff;padding:6px 10px;text-align:center;font-size:16px}
+.op2 .ck{width:24px;height:24px;border-radius:50%;border:2px solid var(--field);display:grid;place-items:center;flex:none}
+.op2 .ck svg{width:15px;height:15px;opacity:0}
+.op2[aria-pressed=true] .ck svg{opacity:1}
+.op2[aria-pressed=true] .ck{color:#fff}
+.op2.c0[aria-pressed=true]{background:#e5ecff;border-color:#3d63d6}.op2.c0[aria-pressed=true] .ck{background:#3d63d6;border-color:#3d63d6}
+.op2.c1{border-color:#f0c2be}.op2.c1[aria-pressed=true]{background:var(--bad-t);border-color:var(--bad)}.op2.c1[aria-pressed=true] .ck{background:var(--bad);border-color:var(--bad)}
 </style></head><body>
 <div class="top"><h1>ฟอร์มใบคอนเฟิร์มงาน แบบ C ฉบับใหม่ (ข้อมูลสมมติ ยังไม่ใช่ของจริง)</h1>
 <div class="row"><div class="devs" style="margin-left:0" id="devs"><button data-d="auto" aria-pressed="true">ตามจอ</button><button data-d="phone" aria-pressed="false">มือถือ</button><button data-d="pc" aria-pressed="false">PC</button></div></div></div>
@@ -189,13 +199,12 @@ textarea.in{min-height:76px;resize:vertical}
 (function(){
 var $=function(s){return document.querySelector(s)},$$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
 var IC={cam:'<svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',ck:'<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',cal:'<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>'};
-var PRIO=[['ปกติตามคิว','ผลิตตามลำดับงานในร้าน'],['ด่วนไม่เกิน 2 วัน','แทรกคิว ให้ฝ่ายผลิตรู้ว่าต้องรีบ'],['ด่วนวันนี้','ต้องเสร็จภายในวันนี้']];
-var S={d:'auto',prio:0,due:'',paste:'คุณสมชาย ใจดี 081-234-5678 12/3 ม.4 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140',name:'',phone:'',addr:'',items:[{d:'สติ๊กเกอร์ 9 ซม.',q:'100',p:'999'}],recv:'',method:'โอน',note:'',photos:[],jobNo:'JB261120-004'};
+var PRIO=['ปกติ','งานด่วน ต้องจบวันนี้'];
+var S={d:'auto',prio:0,paste:'คุณสมชาย ใจดี 081-234-5678 12/3 ม.4 ต.บางระกำ อ.บางระกำ จ.พิษณุโลก 65140',name:'',phone:'',addr:'',items:[{d:'สติ๊กเกอร์ 9 ซม.',q:'100',p:'999'}],note:'',photos:[],jobNo:'JB261120-004'};
 function num(v){var n=parseFloat(String(v).replace(/,/g,''));return isFinite(n)?n:0}
 function money(n){return n.toLocaleString('th-TH',{minimumFractionDigits:(n%1?2:0),maximumFractionDigits:2})}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]})}
 function total(){return S.items.reduce(function(s,i){return s+num(i.p)},0)}
-function paid(){return num(S.recv)}
 function parse(t){var ph=/(0\d{1,2}[-\s]?\d{3}[-\s]?\d{4})/.exec(t),phone=ph?ph[1].trim():'',rest=ph?t.replace(ph[1],'¦'):t,parts=rest.split('¦'),before=(parts[0]||'').trim(),after=(parts[1]||'').trim(),name='',addr='';
  if(ph){if(/^\d/.test(before)&&after&&!/\d/.test(after)){name=after;addr=before}else{name=before;addr=after}}
  else{var m=/^(\D{2,30}?)\s+(\d.*)$/.exec(t.trim());if(m){name=m[1].trim();addr=m[2].trim()}else{name=t.trim()}}
@@ -204,32 +213,25 @@ function parse(t){var ph=/(0\d{1,2}[-\s]?\d{3}[-\s]?\d{4})/.exec(t),phone=ph?ph[
 function applyParse(){var r=parse(S.paste);S.name=r.name;S.phone=r.phone;S.addr=r.addr}
 function problems(){var p=[];if(!S.name.trim())p.push('ชื่อลูกค้า');
  if(!S.items.length||S.items.some(function(i){return !i.d.trim()||!num(i.q)||!num(i.p)}))p.push('รายละเอียด จำนวน และราคารวมให้ครบทุกบรรทัด');
- if(paid()>total()+0.005)p.push('ยอดที่รับเกินราคางาน');return p}
+ return p}
 function itemsHtml(){return S.items.map(function(it,i){return '<div class="it" data-i="'+i+'"><div class="d"><label class="lbl">รายละเอียดงาน</label><input class="in" data-it="d" value="'+esc(it.d)+'" placeholder="เช่น สติ๊กเกอร์ 9 ซม."></div><div><label class="lbl">จำนวน (ชิ้น)</label><input class="in" data-it="q" inputmode="numeric" value="'+esc(it.q)+'" placeholder="100"></div><div><label class="lbl">ราคารวม (บาท)</label><input class="in" data-it="p" inputmode="decimal" value="'+esc(it.p)+'" placeholder="999"></div><button class="del" type="button" data-delit="'+i+'" aria-label="ลบบรรทัดนี้">'+IC.x+'</button></div>'}).join('')}
 function view(){
  var cust='<section class="hero"><div class="hd"><h3><span class="num" style="background:#fff;color:var(--navy)">1</span>ลูกค้า</h3><p>วางข้อความจากแชตทั้งก้อนตรงนี้ ระบบแยกชื่อ เบอร์โทร ที่อยู่ ให้เอง</p></div><div class="bd">'+
   '<label class="sr" for="paste">ข้อความลูกค้า</label><textarea class="big" id="paste" placeholder="วางที่นี่ เช่น คุณสมชาย 0812345678 12/3 ม.4 ต.บางระกำ จ.พิษณุโลก 65140"></textarea>'+
   '<div class="got" id="got"></div>'+
-  '<div class="parsed"><div class="pr" data-k="name"><span class="tag t-name">ชื่อ</span><input class="in" data-f="name"></div><div class="pr" data-k="phone"><span class="tag t-tel">เบอร์โทร</span><input class="in" data-f="phone" inputmode="tel"></div><div class="pr" data-k="addr"><span class="tag t-addr">ที่อยู่</span><textarea class="in" data-f="addr" rows="2"></textarea></div></div></div></section>';
- var work='<div class="blk"><h3><span class="num">2</span>สั่งทำอะไร<small>ต้องใส่ราคาทุกบรรทัด</small></h3><div id="items">'+itemsHtml()+'</div><button class="btn" type="button" id="addit">'+IC.plus+'เพิ่มอีกแบบ</button><div class="sum mt"><span>รวมทั้งงาน</span><b class="o-total"></b></div>'+
-  '<div class="mt"><label class="photo"><input class="sr" id="photoIn" type="file" accept="image/*" multiple>'+IC.cam+'<span>แนบรูปงาน / แบบที่ลูกค้าส่งมา</span><small>แตะเพื่อถ่ายรูปหรือเลือกรูป เลือกได้หลายรูป</small></label><div class="thumbs" id="thumbs"></div></div></div>';
- var when='<div class="blk"><h3><span class="num">3</span>ต้องการเมื่อไหร่</h3><span class="lbl">ความเร่งด่วน</span><div class="opt" id="prio">'+PRIO.map(function(p,i){return '<button type="button" class="op c'+i+'" data-p="'+i+'" aria-pressed="'+(S.prio===i)+'"><span><b>'+p[0]+'</b><small>'+p[1]+'</small></span><span class="ck">'+IC.ck+'</span></button>'}).join('')+'</div>'+
-  '<label class="lbl mt" for="due" style="font-size:15px">วันที่ต้องส่ง (ไม่บังคับ)</label><input class="duein" id="due" type="date"><div class="dq"><button type="button" data-dd="0">วันนี้</button><button type="button" data-dd="1">พรุ่งนี้</button><button type="button" data-dd="3">อีก 3 วัน</button></div><div id="duechip"></div></div>';
+  '<div class="parsed"><div class="pr" data-k="name"><span class="tag t-name">ชื่อ</span><input class="in" data-f="name"></div><div class="pr" data-k="phone"><span class="tag t-tel">เบอร์โทร</span><input class="in" data-f="phone" inputmode="tel"></div><div class="pr" data-k="addr"><span class="tag t-addr">ที่อยู่</span><textarea class="in" data-f="addr" rows="3"></textarea></div></div></div></section>';
+ var work='<section class="hero"><div class="hd"><h3><span class="num">2</span>สั่งทำอะไร</h3><p>ใส่รายละเอียด จำนวน และราคารวมให้ครบทุกบรรทัด</p></div><div class="bd"><div id="items">'+itemsHtml()+'</div><button class="btn" type="button" id="addit">'+IC.plus+'เพิ่มอีกแบบ</button><div class="sum mt"><span>รวมทั้งงาน</span><b class="o-total"></b></div>'+
+  '<div class="mt"><label class="photo"><input class="sr" id="photoIn" type="file" accept="image/*" multiple>'+IC.cam+'<span>แนบรูปงาน / แบบที่ลูกค้าส่งมา</span><small>แตะเพื่อถ่ายรูปหรือเลือกรูป เลือกได้หลายรูป</small></label><div class="thumbs" id="thumbs"></div></div></div></section>';
+ var when='<section class="hero"><div class="hd"><h3><span class="num">3</span>ต้องการเมื่อไหร่</h3><p>ปกติผลิตตามคิว ถ้าต้องจบภายในวันนี้ให้เลือกงานด่วน</p></div><div class="bd"><div class="two" id="prio">'+PRIO.map(function(p,i){return '<button type="button" class="op2 c'+i+'" data-p="'+i+'" aria-pressed="'+(S.prio===i)+'"><span class="ck">'+IC.ck+'</span><b>'+p+'</b></button>'}).join('')+'</div></div></section>';
  var note='<section class="notebox"><h3>ฝากบอกฝ่ายผลิต</h3><p>ฝ่ายผลิตจะเห็นข้อความนี้บนใบงาน เช่น สีต้องตรงปก ไดคัทตามขอบภาพ (ไม่บังคับ)</p><label class="sr" for="note">ข้อความถึงฝ่ายผลิต</label><textarea id="note" placeholder="พิมพ์สิ่งที่ฝ่ายผลิตต้องรู้ตรงนี้"></textarea></section>';
- var owner='<div class="owner"><h3>เฉพาะเจ้าของ: เก็บเงิน</h3><p class="priv">ไม่พิมพ์ลงใบ ฝ่ายผลิตไม่เห็น แอดมินคีย์ยอดตามจริงได้เลย เจ้าของตรวจกับเงินเข้าทีหลัง</p>'+
-  '<div class="mstat"><div class="mbox"><span>ราคางาน</span><b class="o-total"></b></div><div class="mbox"><span>รับแล้ว</span><b class="o-paid"></b></div><div class="mbox left"><span>เหลือ</span><b class="o-left"></b></div></div><div style="margin-bottom:10px">สถานะเงิน: <span class="state o-state"></span></div>'+
-  '<label class="lbl" for="recv">ยอดที่ลูกค้าจ่ายมา (บาท)</label><input class="in" id="recv" inputmode="decimal" placeholder="ยังไม่รับเงินให้เว้นว่าง"><span class="lbl mt">จ่ายด้วย</span><div class="row" id="method">'+['โอน','เงินสด'].map(function(t){return '<button type="button" class="chip" data-m="'+t+'" aria-pressed="'+(S.method===t)+'">'+t+'</button>'}).join('')+'</div></div>';
- return '<div class="hd2"><h1>ใบคอนเฟิร์มงาน</h1><span class="no">เลขที่ใบงาน <b>'+S.jobNo+'</b></span></div><div class="g2"><div>'+cust+work+when+note+'</div><div class="side">'+owner+'<p class="hlp" style="margin-top:10px">เลขที่ใบงานจะยืนยันอีกครั้งตอนกดบันทึก จากข้อมูลกลางของทุกเครื่อง ไม่ซ้ำ</p></div></div>'+
+ return '<div class="hd2"><h1>ใบคอนเฟิร์มงาน</h1><span class="no">เลขที่ใบงาน <b>'+S.jobNo+'</b></span></div><div class=\"one\">'+cust+work+when+note+'<p class=\"hlp\">เลขที่ใบงานจะยืนยันอีกครั้งตอนกดบันทึก จากข้อมูลกลางของทุกเครื่อง ไม่ซ้ำ</p></div>'+
   '<div class="bar"><div class="tot"><span>ราคางานรวม</span><b class="o-total"></b></div><button class="btn pri" type="button" data-act="save" style="min-width:150px">บันทึกใบงาน</button></div>'}
-function sync(){var t=total(),p=paid(),l=Math.max(0,t-p),st=p<=0?['none','ยังไม่รับเงิน']:(p+0.005>=t?['full','จ่ายครบแล้ว']:['dep','รับมัดจำแล้ว']);
- $$('.o-total').forEach(function(e){e.textContent=money(t)+' บาท'});$$('.o-paid').forEach(function(e){e.textContent=money(p)+' บาท'});
- $$('.o-left').forEach(function(e){e.textContent=money(l)+' บาท';e.parentNode.classList.toggle('zero',l<=0.005&&p>0)});
- $$('.o-state').forEach(function(e){e.textContent=st[1];e.setAttribute('data-s',st[0])});
+function sync(){
+ $$('.o-total').forEach(function(e){e.textContent=money(total())+' บาท'});
  var n=['name','phone','addr'].filter(function(k){return S[k]&&S[k].trim()}).length;var g=$('#got');g.setAttribute('data-n',n);g.textContent=n===3?'แยกได้ครบ 3 อย่าง: ชื่อ เบอร์โทร ที่อยู่':'แยกได้ '+n+' จาก 3 อย่าง ตรวจและเติมช่องด้านล่าง';
  $$('.pr').forEach(function(r){r.setAttribute('data-ok',S[r.getAttribute('data-k')]&&S[r.getAttribute('data-k')].trim()?'1':'0')});
- var dc=$('#duechip');if(dc){dc.innerHTML=S.due?'<div class="duechip">'+IC.cal+'ต้องการภายใน '+new Date(S.due+'T00:00:00').toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div>':''}
- $$('.dq button').forEach(function(b){var d=new Date();d.setDate(d.getDate()+(+b.getAttribute('data-dd')));b.setAttribute('aria-pressed',S.due===d.toISOString().slice(0,10))})}
-function fill(){$('#paste').value=S.paste;$$('[data-f]').forEach(function(e){e.value=S[e.getAttribute('data-f')]||''});$('#note').value=S.note;$('#due').value=S.due;$('#recv').value=S.recv;thumbs()}
+ }
+function fill(){$('#paste').value=S.paste;$$('[data-f]').forEach(function(e){e.value=S[e.getAttribute('data-f')]||''});$('#note').value=S.note;thumbs()}
 function thumbs(){$('#thumbs').innerHTML=S.photos.map(function(u){return '<img src="'+u+'" alt="รูปงานที่แนบ">'}).join('')}
 function toast(t){var e=document.createElement('div');e.textContent=t;e.setAttribute('role','status');e.style.cssText='position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#0F1B3D;color:#fff;border-radius:12px;padding:12px 16px;z-index:50;font-size:14.5px;max-width:88vw';document.body.appendChild(e);setTimeout(function(){e.remove()},2600)}
 function fit(){var dev=$('#dev');dev.classList.toggle('phone',S.d==='phone');dev.style.zoom='';if(S.d==='pc'){dev.style.width='1120px';var s=Math.min(1,(document.documentElement.clientWidth-24)/1120);dev.style.zoom=s<1?String(s):''}else dev.style.width='100%'}
@@ -238,16 +240,14 @@ function lists(){$('#items').innerHTML=itemsHtml();sync()}
 document.addEventListener('input',function(e){var t=e.target;
  if(t.id==='paste'){S.paste=t.value;applyParse();$$('[data-f]').forEach(function(x){x.value=S[x.getAttribute('data-f')]||''});sync();return}
  if(t.hasAttribute('data-f')){S[t.getAttribute('data-f')]=t.value;sync();return}
- if(t.id==='note'){S.note=t.value;return}if(t.id==='due'){S.due=t.value;sync();return}if(t.id==='recv'){S.recv=t.value;sync();return}
+ if(t.id==='note'){S.note=t.value;return}
  var it=t.closest('.it');if(it&&t.hasAttribute('data-it')){S.items[+it.getAttribute('data-i')][t.getAttribute('data-it')]=t.value;sync()}});
 document.addEventListener('change',function(e){var t=e.target;if(t.id==='photoIn'){S.photos=S.photos.concat(Array.prototype.slice.call(t.files).map(function(f){return URL.createObjectURL(f)}));thumbs();toast('แนบรูปแล้ว '+S.photos.length+' รูป')}});
 document.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
  if(b.closest('#devs')){S.d=b.getAttribute('data-d');fit();$$('#devs button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});return}
  if(b.id==='addit'){S.items.push({d:'',q:'',p:''});lists();return}
  if(b.hasAttribute('data-delit')){if(S.items.length>1)S.items.splice(+b.getAttribute('data-delit'),1);lists();return}
- if(b.hasAttribute('data-m')){S.method=b.getAttribute('data-m');$$('#method button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});return}
  if(b.hasAttribute('data-p')){S.prio=+b.getAttribute('data-p');$$('#prio button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});return}
- if(b.hasAttribute('data-dd')){var d=new Date();d.setDate(d.getDate()+(+b.getAttribute('data-dd')));S.due=d.toISOString().slice(0,10);$('#due').value=S.due;sync();return}
  if(b.getAttribute('data-act')==='save'){var pr=problems();toast(pr.length?'ยังขาด: '+pr[0]:'บันทึกแล้ว (ตัวอย่าง) เลขที่ '+S.jobNo)}});
 window.addEventListener('resize',fit);applyParse();render();
 })();
