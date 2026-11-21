@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex">
+<title>แดชบอร์ดหน้าเดียว (พรีวิว)</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* tokens */
+:root{
+  --bg:#f4f5f8;--card:#fff;--ink:#0F1B3D;--ink2:#47506a;--mute:#6B7794;--line:#E3E9F6;--field:#D5DDF0;
+  --navy:#0E1E5B;--navy-t:#E5ECFF;--gold:#F5B301;--gold-t:#FFF4CC;--ok:#17804a;--ok-t:#e3f5ea;--bad:#b3261e;--bad-t:#fdeceb;
+  --r-card:18px;--r-field:12px;--font:"Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:16px;line-height:1.5;padding-bottom:40px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+</style><style>
+body{padding:12px 12px 40px}
+.wrap{max-width:1180px;margin:0 auto}
+.hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 12px}
+.hd h1{font-size:20px;font-weight:600}.hd small{color:var(--mute);margin-left:auto}
+.note{background:var(--gold-t);border-radius:12px;padding:8px 12px;font-size:13px;color:#6b4e00;margin-bottom:12px}
+.strip{background:#1b1f3a;color:#fff;border-radius:18px;padding:14px 18px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.strip div b{font-size:28px;font-weight:600}.strip div span{display:block;font-size:13px;opacity:.75}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0}
+.k{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+.k span{font-size:13px;color:var(--mute)}.k b{display:block;font-size:22px;font-weight:600;margin-top:2px}.k small{font-size:12.5px;color:var(--ink2)}
+.k.hero{background:var(--navy);color:#fff;border-color:var(--navy)}.k.hero span,.k.hero small{color:#cfd8ff}
+.g3{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:10px}
+.cd{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}
+.cd h2{font-size:15px;font-weight:600;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}.cd h2 a{font-size:13px;font-weight:500;color:var(--navy)}
+.acc{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ac{background:var(--bg);border-radius:12px;padding:10px}
+.ac small{color:var(--mute);font-size:12.5px}.ac b{display:block;font-size:19px}.ac div{font-size:13px;margin-top:4px}
+.pos{color:var(--ok);font-weight:600}.neg{color:var(--bad);font-weight:600}
+ul{list-style:none;padding:0}li{display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:14px}li:first-child{border-top:0}
+li .t{color:var(--mute);font-size:12.5px;min-width:58px}li .m{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}li .a{font-weight:600}
+.pill{border-radius:999px;padding:2px 9px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill.o{background:var(--ok-t);color:var(--ok)}.pill.w{background:var(--gold-t);color:#7a5600}.pill.r{background:var(--bad-t);color:var(--bad)}.pill.g{background:#eef0f5;color:#4a5370}
+.bars{display:flex;align-items:flex-end;gap:8px;height:80px;margin-top:6px}.bars i{flex:1;background:#cfd8f5;border-radius:6px 6px 0 0;display:block}.bars i.cur{background:var(--navy)}
+.bl{display:flex;gap:8px;font-size:11.5px;color:var(--mute)}.bl span{flex:1;text-align:center}
+@media(max-width:860px){.strip,.kpis{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr}.strip div b{font-size:24px}}
+</style></head><body><div class="wrap">
+<div class="hd"><h1>สรุปยอดขาย</h1><small>อัปเดต 21 พ.ย. 2569 13:00</small></div>
+<div class="note">พรีวิวหน้าเดียว ไม่ต้องกดสลับ · ตัวเลขทั้งหมดเป็นข้อมูลสมมุติ ยังไม่ใช่ของจริง · ตัวเลขที่เห็นคือสรุปสำคัญ รายละเอียดเต็มยังอยู่ในหน้า "การเงินรายเดือน" และ "ใบเสร็จ/ใบกำกับภาษี" ตามเดิม</div>
+<div class="strip"><div><b>3</b><span>ลูกค้าวันนี้ (ราย)</span></div><div><b>2</b><span>ส่งวันนี้ (กล่อง)</span></div><div><b>4</b><span>งานที่เหลือ</span></div><div><b>1</b><span>งานด่วน</span></div></div>
+<div class="kpis">
+<div class="k hero"><span>ยอดขายวันนี้</span><b>1,250.00</b><small>เทียบเมื่อวาน +300</small></div>
+<div class="k"><span>ยอดขายเดือนนี้</span><b>38,420.00</b><small>ภาษีขาย VAT 2,513.46</small></div>
+<div class="k"><span>เงินเข้า−ออก เดือนนี้</span><b class="pos">+5,392.66</b><small>เข้า 8,672.33 · ออก 3,320.00</small></div>
+<div class="k"><span>ค้างรับ (บิลค้าง + ราคาส่ง)</span><b class="neg">750.00</b><small>1 ราย · เงินเข้าไม่จับคู่ 5 รายการ</small></div>
+</div>
+<div class="g3">
+<div>
+ <div class="cd"><h2>บัญชีธนาคาร</h2><div class="acc">
+  <div class="ac"><small>กิติพงษ์</small><b>18,452.30</b><div><span class="pos">+0.00</span> / <span class="neg">−0.00</span> วันนี้</div></div>
+  <div class="ac"><small>วันทิม สีทอง</small><b>30,678.77</b><div><span class="pos">+91.00</span> / <span class="neg">−0.00</span> วันนี้</div></div></div></div>
+ <div class="cd"><h2>ยอดขาย 6 เดือน</h2><div class="bars"><i style="height:45%"></i><i style="height:60%"></i><i style="height:52%"></i><i style="height:70%"></i><i style="height:64%"></i><i class="cur" style="height:88%"></i></div><div class="bl"><span>มิ.ย.</span><span>ก.ค.</span><span>ส.ค.</span><span>ก.ย.</span><span>ต.ค.</span><span>พ.ย.</span></div></div>
+</div>
+<div>
+ <div class="cd"><h2>คิวงานที่ต้องส่ง <a href="#">ทั้งหมด ›</a></h2><ul>
+  <li><span class="m">JB261102-001 · คุณตัวอย่าง ใจดี</span><span class="pill r">เลย 15 วัน</span></li>
+  <li><span class="m">JB261121-003 · แน็กsg</span><span class="pill w">พรุ่งนี้</span></li>
+  <li><span class="m">JB261121-002 · ร้านเอบีซี</span><span class="pill g">อีก 4 วัน</span></li></ul></div>
+ <div class="cd"><h2>เอกสารล่าสุด <a href="#">ทั้งหมด ›</a></h2><ul>
+  <li><span class="t">31 ต.ค.</span><span class="m">INV2611-003 · ร้านตัวอย่าง</span><span class="a">400</span></li>
+  <li><span class="t">30 ต.ค.</span><span class="m">INV2611-001 · คุณตัวอย่าง</span><span class="a">500</span></li>
+  <li><span class="t">25 ต.ค.</span><span class="m">INV2611-002 · ร้านตัวอย่าง</span><span class="a">400</span></li></ul></div>
+</div>
+<div>
+ <div class="cd"><h2>เงินเข้าล่าสุด <a href="#">ทั้งหมด ›</a></h2><ul>
+  <li><span class="t">11:59</span><span class="m">วันทิม · JB261121-003</span><span class="a pos">+950</span><span class="pill o">จับคู่แล้ว</span></li>
+  <li><span class="t">10:12</span><span class="m">กิติพงษ์ · จาก X-9879</span><span class="a pos">+999</span><span class="pill w">ยังไม่จับคู่</span></li>
+  <li><span class="t">09:40</span><span class="m">กิติพงษ์</span><span class="a pos">+300</span><span class="pill w">ยังไม่จับคู่</span></li>
+  <li><span class="t">00:03</span><span class="m">กิติพงษ์ · ทดสอบ</span><span class="a pos">+2</span><span class="pill g">ทดสอบ</span></li></ul></div>
+ <div class="cd"><h2>ภาษี (เดือนนี้)</h2><ul>
+  <li><span class="m">VAT ขาย</span><span class="a">2,513.46</span></li><li><span class="m">VAT ซื้อ</span><span class="a">1,120.00</span></li><li><span class="m"><b>VAT สุทธิ</b></span><span class="a">1,393.46</span></li></ul></div>
+</div>
+</div></div></body></html>
