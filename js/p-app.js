@@ -1482,8 +1482,36 @@ function bahtText(value) {
     closeBell(); showTab('confirm'); jobOpenIds[jid] = true; renderJobHistory();
     setTimeout(() => { const li = document.querySelector('#jobHistory li[data-id="' + (window.CSS && CSS.escape ? CSS.escape(jid) : jid) + '"]'); if (li) li.scrollIntoView({behavior: 'smooth', block: 'start'}); }, 80);
   }
+  // ---- แดชบอร์ดแบ่งแท็บ ----
+  const DG_TABS = [['today', 'วันนี้'], ['money', 'เงินเข้า-ออก'], ['sales', 'ยอดขาย'], ['docs', 'เอกสาร/ภาษี']];
+  function dashGo(name) {
+    const pn = $('panel-dash'); if (!pn) return;
+    if (!DG_TABS.some(t => t[0] === name)) name = 'today';
+    pn.setAttribute('data-cur', name);
+    [].forEach.call(document.querySelectorAll('#dgSeg button'), b => b.setAttribute('aria-pressed', b.dataset.dg === name ? 'true' : 'false'));
+    try { localStorage.setItem('bs_dashTab', name); } catch (e) {}
+  }
+  (function initDashTabs() {
+    const pn = $('panel-dash'); if (!pn || $('dgSeg')) return;
+    const grp = c => {
+      if (c.classList.contains('page-head')) return '';
+      const id = c.id || '';
+      if (id === 'dashTodayCard' || id === 'dashJobQueueCard' || id === 'dashOwedCard') return 'today';
+      if (id === 'dashAcctCard' || id === 'dashBankInCard') return 'money';
+      if ((c.querySelector && c.querySelector('.dash-filter')) || c.classList.contains('dash-sec-head') || c.classList.contains('dash-stat-grid') || c.classList.contains('dash-mid-row') || id === 'dashSplitCard') return 'sales';
+      return 'docs';
+    };
+    [].forEach.call(pn.children, c => { const g = grp(c); if (g) c.setAttribute('data-dg', g); });
+    const ph = pn.querySelector('.page-head'), seg = document.createElement('div');
+    seg.className = 'dg-seg no-print'; seg.id = 'dgSeg'; seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'หมวดแดชบอร์ด');
+    seg.innerHTML = DG_TABS.map(t => '<button type="button" data-dg="' + t[0] + '" aria-pressed="false">' + t[1] + '</button>').join('');
+    if (ph) ph.insertAdjacentElement('afterend', seg); else pn.insertBefore(seg, pn.firstChild);
+    seg.addEventListener('click', e => { const b = e.target.closest('button[data-dg]'); if (b) dashGo(b.dataset.dg); });
+    let cur = 'today'; try { cur = localStorage.getItem('bs_dashTab') || 'today'; } catch (e) {}
+    dashGo(cur);
+  })();
   function goBankInCard() {
-    closeBell(); $('bankInBanner').hidden = true; showTab('dash');
+    closeBell(); $('bankInBanner').hidden = true; showTab('dash'); dashGo('money');
     setTimeout(() => { const c = $('dashBankInCard'); if (c) c.scrollIntoView({behavior: 'smooth', block: 'start'}); }, 60);
   }
 
