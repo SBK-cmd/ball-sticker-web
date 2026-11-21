@@ -6920,7 +6920,10 @@ function bahtText(value) {
     $('jobNo').value = j.no || ''; $('jobDate').value = j.date || todayISO(); $('jobDue').value = j.due || ''; if ($('jobPrio')) $('jobPrio').value = String(j.prio || 0);
     $('jobAccount').value = j.account || ''; $('jobSlipAmount').value = j.slipAmount || ''; $('jobSlipPending').checked = !!j.slipPending;
     $('jobPage').value = PAGE_LABEL[j.page] ? j.page : 'ball';
-    jobBankInIds = jobBankIdsOf(j); if ($('jobBankInList')) { $('jobBankInList').hidden = true; $('jobBankInBtn').setAttribute('aria-expanded', 'false'); }
+    jobBankInIds = jobBankIdsOf(j).slice();
+    // เงินเข้าที่ถูกจับคู่กับใบนี้จากอีกทาง (จับคู่อัตโนมัติ/หน้าเงินเข้า) แต่ใบยังไม่มี bankInIds → ดึงมาโชว์ในฟอร์มด้วย
+    try { if (j && j.id) bankInAll().forEach(x => { if (x && x.matchedJobId === j.id && num(x.amount) > 0 && jobBankInIds.indexOf(x.id) < 0) jobBankInIds.push(x.id); }); } catch (e) {}
+    if ($('jobBankInList')) { $('jobBankInList').hidden = true; $('jobBankInBtn').setAttribute('aria-expanded', 'false'); }
     $('jName').value = j.jName || ''; $('jPhone').value = j.jPhone || ''; $('jAddr').value = j.jAddr || '';
     jobItems = (j.items && j.items.length) ? j.items.map(i => ({name: i.name || '', qty: i.qty, note: i.note || '', unit: i.unit || '', price: i.price, total: i.total, uid: i.uid || newItemUid()})) : [{name: '', qty: 1, note: ''}];
     $('jobNote').value = j.note || '';
