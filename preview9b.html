@@ -818,7 +818,7 @@ html:root body #jobFormTop .card.jf .jf-actions>#save-job{flex:1;background:#0E1
 body.jm-open #jobFormTop .card.jf .jf-actions>#save-job{position:static!important;transform:none!important;width:auto!important;box-shadow:none!important;flex:1;bottom:auto!important}
 @media(min-width:900px){html:root body.jm-open #jobFormTop#jobFormTop,html:root body.jm-open #whFormTop#whFormTop{width:min(860px,calc(100% - 48px))!important;max-width:860px!important;left:0!important;right:0!important;margin:0 auto!important;top:calc(env(safe-area-inset-top,0px) + 24px)!important;bottom:24px!important;border-radius:20px!important;box-shadow:0 24px 70px rgba(0,0,0,.45)!important}}
 /* ===== ฟอร์ม JB แบบ C (เรียบ: ลูกค้า → งาน → ต้องการเมื่อไหร่) ===== */
-.jf .jf-intro,.jf .job-status-row,.jf #jobMoneyFold,.jf .due-quick,.jf .jf-actions .jf-more,.jf .jf-actions .jf-more-h,.jf .actions-note,.jf-actions~.actions-note,.jf .prio-chips button[data-p="1"],.jf #jobGoWh{display:none!important}
+.jf .jf-intro,.jf .job-status-row,.jf .due-quick,.jf .jf-actions .jf-more,.jf .jf-actions .jf-more-h,.jf .actions-note,.jf-actions~.actions-note,.jf .prio-chips button[data-p="1"],.jf #jobGoWh{display:none!important}
 .jf .jf-hero{background:#0E1E5B;border-radius:16px;padding:14px;margin:0 0 14px;color:#fff}
 .jf .jf-hero .f>span{color:#fff!important;font-weight:700;font-size:15px;opacity:1!important}
 .jf .jf-hero textarea{min-height:130px!important;height:130px;font-size:16px;border:2px solid #F5B301;border-radius:12px;background:#fff;color:#0F1B3D;width:100%;padding:12px}
@@ -829,6 +829,14 @@ body.jm-open #jobFormTop .card.jf .jf-actions>#save-job{position:static!importan
 .jf #jobDue{min-height:48px!important;max-width:240px;background:#FFF4CC!important;border:2px solid #F5B301!important;border-radius:12px;font-weight:700;color:#0F1B3D}
 .jf .jf-sum{display:flex;justify-content:space-between;align-items:center;margin:10px 0 0;padding:12px 14px;border-radius:12px;background:#eef3ff;color:#0F1B3D;font-weight:800;font-size:16px}
 .jf.jf-deliv #jobMoneyFold{display:none!important}
+/* เงินเข้า (เจ้าของเท่านั้น): โชว์เฉพาะสถานะ + ปุ่มเลือกยอดเงินเข้า ซ่อนช่องบัญชี/สลิป/QR */
+.jf #jobMoneyFold .fields>.row2,.jf #jobMoneyFold #jobQrBtn,.jf #jobMoneyFold .chk,.jf #jobMoneyFold .fields>.hint{display:none!important}
+.jf .jm-st{display:flex;align-items:center;gap:10px;border-radius:14px;padding:12px 14px;border:1.5px solid #E3E9F6;background:#fff;margin-bottom:10px;font-size:15px}
+.jf .jm-st i{width:12px;height:12px;border-radius:50%;background:#9aa3b8;flex:none}
+.jf .jm-st small{display:block;font-size:13px;opacity:.8}
+.jf .jm-st.s2{background:#FFF4CC;border-color:#f0d27a}.jf .jm-st.s2 i{background:#F5B301}
+.jf .jm-st.s3{background:#e3f5ea;border-color:#a9dcbd}.jf .jm-st.s3 i{background:#17804a}
+.jf .jm-st.s4{background:#fdeceb;border-color:#f3b8b4}.jf .jm-st.s4 i{background:#b3261e}
 .job-status-row{display:flex;align-items:center;gap:8px;margin:-6px 0 14px}
 .status-pill{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;padding:4px 12px;border-radius:999px}
 button.status-pill{border:0;cursor:pointer;font-family:inherit;transition:filter .15s}
@@ -3622,7 +3630,7 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
               </div>
             </section>
             <section class="jf-sec" id="jobMoneyFold">
-              <div class="jf-h"><i>฿</i>เก็บเงิน<small class="jf-hs">เจ้าของเท่านั้น</small></div>
+              <div class="jf-h"><i>฿</i>เงินเข้า<small class="jf-hs">เจ้าของเท่านั้น</small></div>
               <div class="fields">
               <div class="row2">
                 <label class="f"><span>เลือกบัญชี</span>
@@ -3637,6 +3645,7 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
               <button type="button" class="btn small good" id="jobQrBtn" style="margin:0 0 8px">💳 QR เก็บเงินงานนี้</button>
               <label class="chk" style="display:flex;gap:8px;align-items:center;margin:0 0 6px"><input type="checkbox" id="jobSlipPending"> <span>ยังไม่ได้รับเงินจริง (ลูกค้าราคาส่งจ่ายทีหลัง) — ใส่ยอดไว้ก่อน ไม่นับเป็นเงินเข้า</span></label>
               <p class="hint" style="margin:-8px 0 0">ยอดเงินนี้ไม่พิมพ์ลงใบคอนเฟิร์ม (กันพนักงานเห็น) ดูได้ในรายการประวัติใบงานเท่านั้น</p>
+              <div class="jm-st" id="jobMatchSt"><i></i><div></div></div>
               <div class="bankin-pick" id="jobBankInPick" hidden>
                 <div class="bankin-pick-row">
                   <button class="btn small" id="jobBankInBtn" type="button" aria-expanded="false">💰 เลือกยอดจากเงินเข้า</button>
@@ -4963,7 +4972,7 @@ html body .notice,html body .edit-state,html body .info-pill{background:#fff3c4;
   </div>
 </div>
 
-<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=c35725a400",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
+<script>(function(){var ok=true;try{ok=!!localStorage.getItem("bs_session")}catch(e){}var core=["https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js", "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js", "js/p-lock.js?v=668b584fb5"],app="js/p-app.js?v=05f70c37ce",font="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=optional";if(ok){var h="";core.concat([app]).forEach(function(u){h+='<script defer src="'+u+'"><\/script>'});document.write(h);var l=document.createElement("link");l.rel="stylesheet";l.href=font;document.head.appendChild(l);}else{var st=0,q=[];function go(cb){if(cb)q.push(cb);if(st===2){q.splice(0).forEach(function(f){f()});return}if(st)return;st=1;core.forEach(function(u,i){var e=document.createElement("script");e.src=u;e.async=false;if(i===core.length-1)e.onload=function(){st=2;setTimeout(function(){q.splice(0).forEach(function(f){f()})},0)};document.body.appendChild(e);});}window.bsLockSubmit=function(f){if(st===2)return false;go(function(){f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))});return false};["pointerdown","keydown","focusin","touchstart"].forEach(function(t){addEventListener(t,function(){go()},{once:true,passive:true,capture:true})});addEventListener("load",function(){setTimeout(function(){go()},6000)});}})();</script>
 <datalist id="customerNames"></datalist>
 <datalist id="vendorNames"></datalist>
 <script>(function(){var RE=/[\u{1F300}-\u{1FAFF}\u{2728}\u{2600}-\u{2603}\u{260E}\u{2B50}]\uFE0F?\s*/gu;function clean(n){var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),t,a=[];while(t=w.nextNode()){if(RE.test(t.nodeValue)){RE.lastIndex=0;var p=t.parentNode;if(p&&!/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))a.push(t)}RE.lastIndex=0}a.forEach(function(t){t.nodeValue=t.nodeValue.replace(RE,'')})}

@@ -1229,13 +1229,26 @@ function bahtText(value) {
   }
   function renderJobBankInPick() {
     const box = $('jobBankInPick'); if (!box) return;
-    box.hidden = !canBank || (!cloudDb && !bankInPick().length); if (box.hidden) return;
+    box.hidden = !canBank || (!cloudDb && !bankInPick().length); { const mf = $('jobMoneyFold'); if (mf) mf.hidden = box.hidden; } if (box.hidden) return;
     const all = bankInPick();
     const linked = jobBankInIds.map(id => all.find(x => x.id === id)).filter(Boolean);
     const total = linked.reduce((a, x) => a + num(x.amount), 0);
     $('jobBankInSel').textContent = !linked.length ? '' : linked.length === 1
       ? 'ผูกกับเงินเข้า ' + money(num(linked[0].amount)) + ' บาท · บัญชี' + linked[0].account + ' · ' + bankInWhen(linked[0], true)
       : 'ผูกกับเงินเข้า ' + linked.length + ' ยอด รวม ' + money(total) + ' บาท (' + linked.map(x => money(num(x.amount))).join(' + ') + ')';
+    { const st = $('jobMatchSt');
+      if (st) {
+        const whOn = !!($('jobWholesale') && $('jobWholesale').checked);
+        const jt = round2(jobItems.reduce((a, i) => a + (whOn ? num(i.qty) * num(i.price) : num(i.total)), 0)), diff = round2(jt - total);
+        let c = 1, a = 'ยังไม่ได้ผูกเงินเข้า', b = jt > 0 ? 'ราคางาน ' + money(jt) + ' บาท' : '';
+        if (linked.length) {
+          if (jt > 0 && Math.abs(diff) < 0.005) { c = 3; a = 'ครบแล้ว'; b = 'เงินเข้า ' + money(total) + ' บาท ตรงกับราคางาน'; }
+          else if (diff > 0) { c = 2; a = 'เข้าแล้ว ' + money(total) + ' บาท (มัดจำ)'; b = 'ค้างอีก ' + money(diff) + ' บาท'; }
+          else { c = 4; a = 'เงินเข้าเกินราคางาน ' + money(-diff) + ' บาท'; b = 'เงินเข้า ' + money(total) + ' · ราคางาน ' + money(jt) + ' บาท'; }
+        }
+        st.className = 'jm-st s' + c; st.lastChild.innerHTML = '<b>' + esc(a) + '</b>' + (b ? '<small>' + esc(b) + '</small>' : '');
+      }
+    }
     $('jobBankInBtn').textContent = linked.length ? '💰 เลือก/เพิ่มยอดเงินเข้า' : '💰 เลือกยอดจากเงินเข้า';
     const weekAgo = Date.now() - 30 * 86400000;
     // ยอดที่ผูกกับใบนี้อยู่แล้ว + ยอดที่ยังไม่ผูกใบไหนใน 30 วันล่าสุด (มัดจำอาจโอนมาก่อนหลายวัน)
@@ -7333,6 +7346,7 @@ function bahtText(value) {
     const t = round2(jobItems.reduce((a, i) => a + (whOn ? num(i.qty) * num(i.price) : num(i.total)), 0));
     el.querySelector('b').textContent = money(t) + ' บาท';
     const bt = $('jobBarTot'); if (bt) bt.textContent = money(t) + ' บาท';
+    try { renderJobBankInPick(); } catch (e) {}
   }
   document.addEventListener('click', e => { if (e.target && e.target.id === 'jobDueClr') { const d = $('jobDue'); d.value = ''; d.dispatchEvent(new Event('input', {bubbles: true})); d.dispatchEvent(new Event('change', {bubbles: true})); } });
   async function saveJob() {
