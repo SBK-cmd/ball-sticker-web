@@ -10884,6 +10884,20 @@ function bahtText(value) {
     renderJobHistory();
     toast(n ? 'รวมงานราคาส่ง ' + ids.length + ' ใบ (' + n + ' รายการ) เข้า ' + Object.keys(docs).length + ' ใบราคาส่งตามชื่อแล้ว ไปเช็คราคาที่แท็บใบราคาส่ง' : 'ไม่มีงานราคาส่งที่ค้างรวม');
   }
+  // ทำบิลเงินสด (ไม่มี VAT) จากใบงานนี้ทันที: เปิดบิลใหม่ ใส่ชื่อ/เบอร์/ที่อยู่/รายการ (ราคาต่อชิ้น = ยอดบรรทัด ÷ จำนวน) แล้วตั้งประเภทเป็นบิลเงินสด
+  function jobToCashBill(j) {
+    const rows = (j.items || []).filter(i => (i.name || '').trim()).map(i => {
+      const q = num(i.qty) > 0 ? num(i.qty) : 1, t = num(i.total);
+      return {name: String(i.name).trim() + ((i.note || '').trim() ? ' (' + String(i.note).trim() + ')' : ''), qty: i.qty || 1, price: t > 0 ? round2(t / q) : 0};
+    });
+    if (!rows.length) { toast('ใบนี้ยังไม่มีรายการงาน'); return; }
+    newBill(); $('cName').value = j.jName || ''; $('cPhone').value = j.jPhone || ''; $('cAddr').value = j.jAddr || '';
+    if (PAGE_LABEL[j.page]) $('billPage').value = j.page;
+    $('billDocType').value = 'cash'; try { applyBillDocType(false); } catch (e) {}
+    items = rows; renderItems(); renderBill(); showTab('bill'); openBillEdit(null, 'ทำบิลเงินสดจาก ' + (j.no || 'ใบงาน'));
+    const miss = rows.some(x => !(num(x.price) > 0));
+    toast('เปิดบิลเงินสดจาก ' + (j.no || 'ใบงาน') + ' แล้ว' + (miss ? ' · มีรายการที่ยังไม่มีราคา ใส่ราคาก่อนบันทึก' : ' ตรวจแล้วกดบันทึก'));
+  }
   function addJobToBill(j, bill) {
     const add = (j.items || []).filter(i => (i.name || '').trim()).map(i => ({name: String(i.name).trim() + ((i.note || '').trim() ? ' (' + String(i.note).trim() + ')' : ''), qty: i.qty, price: 0}));
     if (bill) { currentId = bill.id; apply(bill); renderEditState(); }
@@ -11595,6 +11609,7 @@ function bahtText(value) {
       '<div class="jd-man"><input class="txt" type="text" data-mancode placeholder="หรือพิมพ์เลขพัสดุเอง เช่น TH09028M5NDY0F" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="เลขพัสดุ"><button type="button" class="btn small jd-t" data-act="mancode">บันทึกเลข</button></div>' +
       (j.trackCode ? '<div class="jd-trk">📦 เลขพัสดุ' + (Array.isArray(j.recvMore) && j.recvMore.length ? ' (กล่องที่ 1)' : '') + ': <b>' + esc(j.trackCode) + '</b></div>' : '') +
       (Array.isArray(j.recvMore) && j.recvMore.some(r => !String(r.code || '').trim() && String((r.name || '') + (r.addr || '')).trim()) ? '<div class="jd-trk"><small>มีกล่องที่ยังไม่มีเลขพัสดุ — กดสแกนต่อได้เลย ระบบใส่ให้กล่องถัดไป</small></div>' : '') +
+      ((isSuper && (j.items || []).some(i => (i.name || '').trim())) ? '<button class="jd-wide" data-act="cashbill" type="button">💵 ทำบิลเงินสด</button>' : '') +
       ((isSuper && (j.jName || '').trim() && (j.items || []).some(i => (i.name || '').trim())) ? '<button class="jd-wide" data-act="tobill" type="button">🧾 ใส่ใน' + (j.wholesale ? 'ใบราคาส่ง' : 'บิล') + 'ที่ยังไม่จ่าย · ' + esc(String(j.jName).trim()) + '</button>' : '') +
       '</div>';
   }
@@ -14722,6 +14737,11 @@ function bahtText(value) {
           catch (e2) { toast('คัดลอกอัตโนมัติไม่ได้'); }
         }
       })();
+      return;
+    }
+    if (btn.dataset.act === 'cashbill') {
+      const j = list.find(x => x.id === id); if (!j) return;
+      jobToCashBill(j);
       return;
     }
     if (btn.dataset.act === 'tobill') {
