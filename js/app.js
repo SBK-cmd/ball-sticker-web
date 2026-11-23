@@ -7088,7 +7088,7 @@ function bahtText(value) {
       '<div><span class="jd-k">รูปงานเสร็จ</span>' + ((j.donePhotos && j.donePhotos.length) ? '' : '<small style="color:var(--muted,#888)">ยังไม่มี</small>') + '</div>' +
       ((j.donePhotos && j.donePhotos.length) ? '<div class="jd-ph">' + j.donePhotos.map(src => '<img src="' + src + '" alt="รูปงานเสร็จ">').join('') + '</div>' : '') +
       '<div class="jd-add jd-acts">' +
-      '<label class="btn small jd-t">📷 ถ่ายรูปงานเสร็จ<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '"></label>' +
+      '<label class="btn small jd-t">📷 ถ่ายรูปงานเสร็จ<input type="file" accept="image/*" multiple hidden data-addphoto="' + esc(j.id) + '" onchange="if(!this.closest(\'#jobHistory\'))window.bsJobDetachedChange(event)"></label>' +
       ((j.donePhotos && j.donePhotos.length) ? '<button class="btn small jd-t" data-act="savephotos" type="button">💾 บันทึกรูป (' + j.donePhotos.length + ')</button>' : '') +
       '<button class="btn small jd-t" data-act="livescan" type="button">📦 สแกนพัสดุ</button>' +
       (canBank ? '<button class="btn small jd-t" data-act="jobcharge" type="button">💳 เรียกเก็บเงิน</button>' : '') +
@@ -7097,7 +7097,7 @@ function bahtText(value) {
       '<button class="btn small jd-t" data-act="copylinken" type="button">🌐 ข้อความ English (ลูกค้าต่างชาติ)</button>' +
       (j.trackCode && j.status === 'shipped' ? '<button class="btn small jd-t" data-act="sendtrk" type="button">📤 ส่งเลขพัสดุ</button>' : '') +
       '</div>' +
-      '<input type="file" accept="image/*" hidden data-scanjob="' + esc(j.id) + '">' +
+      '<input type="file" accept="image/*" hidden data-scanjob="' + esc(j.id) + '" onchange="if(!this.closest(\'#jobHistory\'))window.bsJobDetachedChange(event)">' +
       '<div class="jd-man"><input class="txt" type="text" data-mancode placeholder="หรือพิมพ์เลขพัสดุเอง เช่น TH09028M5NDY0F" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="เลขพัสดุ"><button type="button" class="btn small jd-t" data-act="mancode">บันทึกเลข</button></div>' +
       (j.trackCode ? '<div class="jd-trk">📦 เลขพัสดุ' + (Array.isArray(j.recvMore) && j.recvMore.length ? ' (กล่องที่ 1)' : '') + ': <b>' + esc(j.trackCode) + '</b></div>' : '') +
       (Array.isArray(j.recvMore) && j.recvMore.some(r => !String(r.code || '').trim() && String((r.name || '') + (r.addr || '')).trim()) ? '<div class="jd-trk"><small>มีกล่องที่ยังไม่มีเลขพัสดุ — กดสแกนต่อได้เลย ระบบใส่ให้กล่องถัดไป</small></div>' : '') +
@@ -10273,7 +10273,7 @@ function bahtText(value) {
       renderJobHistory(); toast('ลบใบแล้ว');
     }
   });
-  $('jobHistory').addEventListener('change', async e => {
+  const jobHistoryChange = async e => {
     const sj = e.target.closest('input[data-scanjob]');
     if (sj) {
       const f = (sj.files || [])[0]; if (!f) return;
@@ -10317,7 +10317,10 @@ function bahtText(value) {
     }
     const sel = e.target.closest('select.job-status-select'); if (!sel) return;
     updateJobStatus(sel.dataset.id, sel.value);
-  });
+  };
+  $('jobHistory').addEventListener('change', jobHistoryChange);
+  // ถ้าซิงก์คลาวด์วาดรายการใหม่ระหว่างที่เปิดกล้อง/เลือกไฟล์ ช่องเดิมจะหลุดจากหน้า → change ไม่ถึงตัวดักกลาง รูป/สแกนจะหายเงียบ จึงให้ช่องเรียกเองเมื่อหลุด
+  window.bsJobDetachedChange = ev => { try { jobHistoryChange(ev); } catch (e) { toast('อัพไม่สำเร็จ: ' + ((e && e.message) || e)); } };
 
   /* ---------------- events: ใบราคาส่ง (แยกต่างหากจากบิล ไม่แตะ items/bs_bills/billCalc ใดๆ) ---------------- */
   ['whDate', 'whName', 'whNo', 'whRef', 'whDiscount', 'whNote'].forEach(id => $(id).addEventListener('input', renderWholesale));
