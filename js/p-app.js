@@ -179,7 +179,7 @@ function bahtText(value) {
       fd.append('file', blob);
       fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
       const res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/image/upload', {method: 'POST', body: fd});
-      if (!res.ok) return null;
+      if (!res.ok) { let m = ''; try { m = ((await res.json()).error || {}).message || ''; } catch (_) {} window.__cldErr = res.status + ' ' + m; return null; }
       const json = await res.json();
       return json.secure_url || null;
     } catch (e) { console.error('cloudinary upload error', e); return null; }
@@ -10291,13 +10291,13 @@ function bahtText(value) {
       const id = fi.dataset.addphoto, files = Array.from(fi.files || []);
       fi.value = '';
       if (!files.length) return;
-      let done = 0, fail = 0, lastErr = '';
+      let done = 0, fail = 0, lastErr = '', upFail = 0, upErr = '';
       // ทีละรูป: ย่อ → อัปขึ้น Cloudinary (ถ้าได้) → บันทึกเข้าใบทันที รูปแรกๆ จึงไม่หายถ้ารูปหลังมีปัญหา
       for (let i = 0; i < files.length; i++) {
         toast('กำลังอัพรูปที่ ' + (i + 1) + '/' + files.length + '…');
         try {
           let url = await fileToJpeg(files[i], 1600, 0.86);   // รูปงานเสร็จ: ขนาดใหญ่ขึ้นให้ชัดตอนโพสต์ (เดิม 900px คุณภาพ 0.72 ทำให้เบลอ)
-          if (cloudDb) { const u = await uploadPhotoToCloudinary(url); if (u) url = u; }
+          if (cloudDb) { window.__cldErr = ''; const u = await uploadPhotoToCloudinary(url); if (u) url = u; else { upFail++; upErr = window.__cldErr || 'เชื่อมต่อไม่ได้'; } }
           const list = store.get('bs_jobs', []), idx = list.findIndex(x => x.id === id);
           if (idx < 0) { fail++; lastErr = 'ไม่พบใบงานนี้'; continue; }
           list[idx].donePhotos = (list[idx].donePhotos || []).concat([url]);
@@ -10311,6 +10311,7 @@ function bahtText(value) {
         } catch (err) { fail++; lastErr = (err && err.message) || String(err); }
       }
       if (done) syncRecordPhotosToCloud('bs_jobs', 'jobs', id, 'donePhotos', renderJobHistory);
+      if (upFail) { setTimeout(() => toast('⚠️ รูป ' + upFail + ' รูปยังไม่ขึ้นที่ฝากรูป (Cloudinary: ' + String(upErr).slice(0, 80) + ') — อยู่แค่ในเครื่องนี้ เครื่องอื่นจะไม่เห็น'), 2600); }
       toast('อัพรูปงานเสร็จสำเร็จ ' + done + ' รูป' + (fail ? ' · ไม่สำเร็จ ' + fail + ' รูป (' + lastErr + ')' : '') + (done ? ' · สถานะ: ผลิตแล้ว' : ''));
       return;
     }
