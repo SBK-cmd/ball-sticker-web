@@ -1769,7 +1769,7 @@ tr{break-inside:avoid}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 <style id="fab-newjob-css">
-#jobHistory li.open::before{content:'';position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1190}
+#jobHistory li.open::before{content:'';position:fixed;inset:0;background:rgba(0,0,0,.4);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);z-index:1190}
 #jobHistory li.open .jd{position:fixed;left:10px;right:10px;top:calc(env(safe-area-inset-top,0px) + 48px);bottom:calc(env(safe-area-inset-bottom,0px) + 10px);max-width:560px;margin:0 auto;overflow:auto;z-index:1200;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:0 16px 16px;box-shadow:0 20px 60px rgba(0,0,0,.35);-webkit-overflow-scrolling:touch;align-content:start;flex:none}
 #jobHistory .jd .jd-head{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:2;background:var(--surface);padding:12px 0 8px;margin-bottom:2px;border-bottom:1px solid var(--line)}
 #jobHistory .jd .jd-head b{font-size:17px}
@@ -2160,7 +2160,7 @@ body:not(.jm-open) #jobFormTop{display:none}
 @media (min-width:900px){.job-launch{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 14px}}
 body.jm-open{overflow:hidden}
 @media print{body.jm-open #whFormTop{position:static!important;box-shadow:none!important;overflow:visible!important;padding:0!important}body.jm-open::before{display:none}}
-body.jm-open::before{content:'';position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1100}
+body.jm-open::before{content:'';position:fixed;inset:0;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);z-index:1100}
 body.jm-open #jobFormTop,body.jm-open #whFormTop{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 10px);left:0;right:0;width:min(780px,calc(100% - 20px));z-index:1110;display:block!important;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--bg,#f4f4f1);border-radius:18px;padding:12px 12px 90px;box-shadow:0 24px 70px rgba(0,0,0,.45);margin:0 auto!important;max-width:none}
 body.jm-open #jobFormTop .stack,body.jm-open #whFormTop .stack{display:block!important}
 body.jm-open #jobFormTop .stack>.card,body.jm-open #jobFormTop .preview-col,body.jm-open #whFormTop .stack>.card,body.jm-open #whFormTop .preview-col{grid-column:auto!important;grid-row:auto!important;margin:0 0 12px!important;position:static!important;width:auto!important;max-width:none!important}
