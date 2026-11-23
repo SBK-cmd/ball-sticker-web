@@ -286,7 +286,16 @@ function bahtText(value) {
     if (hasDataUri(safeRec.donePhotos)) delete safeRec.donePhotos;
     if (hasDataUri(safeRec.boxPhoto)) delete safeRec.boxPhoto;
     (window.__bsAuthReady || Promise.resolve()).then(() => {
-      cloudDb.collection(col).doc(String(rec.id)).set(safeRec, {merge: true}).catch(e => console.error(col + ' save error', e));
+      cloudDb.collection(col).doc(String(rec.id)).set(safeRec, {merge: true}).catch(e => {
+        console.error(col + ' save error', e);
+        // บันทึกขึ้นคลาวด์ไม่สำเร็จ = ข้อมูลจะ "เด้งกลับ" ตอนซิงก์ → บอกเจ้าของทันที พร้อมรหัสสาเหตุ และลองส่งใหม่แบบไม่มีรูป (กันเอกสารใหญ่เกิน)
+        const code = (e && (e.code || e.message)) || 'unknown';
+        try { toast('⚠️ บันทึกขึ้นคลาวด์ไม่สำเร็จ (' + col + ': ' + String(code).slice(0, 60) + ') — ข้อมูลอาจหายเมื่อรีเฟรช บอกทีมไอทีด้วย'); } catch (_) {}
+        if (col === 'jobs' && (safeRec.photos || safeRec.donePhotos)) {
+          const lean = Object.assign({}, safeRec); delete lean.photos; delete lean.donePhotos;
+          cloudDb.collection(col).doc(String(rec.id)).set(lean, {merge: true}).then(() => toast('บันทึกใบงานแบบไม่มีรูปสำเร็จ (รูปใหญ่เกิน)')).catch(e2 => console.error(col + ' lean save error', e2));
+        }
+      });
       if (col === 'jobs') { if (rec.trackToken) publicJobMirror(rec); else refreshSiblingMirrors(rec); }
       if (col === 'wholesale') {   // ราคาในบิลเปลี่ยน → หน้าติดตามของงานในบิลนี้อัปเดตยอดตาม
         const nos = new Set((rec.items || []).map(i => String(i.job || '')).filter(Boolean));
@@ -6396,7 +6405,7 @@ function bahtText(value) {
     toast(bill ? 'เปิดบิล ' + (bill.no || '') + ' (รอชำระ) เพิ่มงาน ' + fresh.length + ' รายการ ใส่ราคาแล้วกด “บันทึกลงประวัติ”' : 'ไม่มีบิลค้างของ ' + String(j.jName || '').trim() + ' เปิดบิลใหม่ให้ ใส่ราคาแล้วกด “บันทึกลงประวัติ”');
   }
   function applyJobScan(id, code, small) {
-    const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === id); if (ji < 0) return;
+    const jl = store.get('bs_jobs', []), ji = jl.findIndex(x => x.id === id); if (ji < 0) { toast('ไม่พบใบงานนี้ในเครื่อง — ลองรีเฟรชหน้า'); return; }
     const it = {code, photo: small};
     let note = '';
     if (!attachBox(it)) {
