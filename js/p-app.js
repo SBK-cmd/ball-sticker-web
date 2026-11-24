@@ -131,17 +131,27 @@ function bahtText(value) {
   const mem = {};
   let storageOK = true;
   try { localStorage.setItem('__t', '1'); localStorage.removeItem('__t'); } catch (e) { storageOK = false; }
+  const memOnly = {};   // คีย์ที่เขียนลงเครื่องไม่ได้ (พื้นที่เต็ม) — เก็บในหน่วยความจำเฉพาะคีย์นั้น ไม่ทำให้ทั้งแอปหยุดจำ
+  let storeWarned = false;
   const store = {
     get(k, d) {
-      if (storageOK) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { storageOK = false; } }
+      if (k in memOnly) return k in mem ? mem[k] : d;
+      if (storageOK) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return k in mem ? mem[k] : d; } }
       return k in mem ? mem[k] : d;
     },
     set(k, v) {
       mem[k] = v;
-      if (storageOK) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { storageOK = false; } }
+      if (storageOK) {
+        try { localStorage.setItem(k, JSON.stringify(v)); delete memOnly[k]; return true; }
+        catch (e) {
+          memOnly[k] = 1;
+          if (!storeWarned) { storeWarned = true; try { toast('⚠️ พื้นที่เก็บในเครื่องเต็ม — ข้อมูลบางส่วนอยู่แค่ชั่วคราว (ข้อมูลที่ซิงก์คลาวด์แล้วไม่หาย) ลองล้างแคชเบราว์เซอร์หรือแจ้งทีมไอที'); } catch (_) {} }
+        }
+      }
       return false;
     }
   };
+
 
   /* ---------------- ซิงก์ข้ามเครื่องผ่าน Firebase (ถ้าตั้งค่าไว้และโหลดได้) ----------------
      เก็บ "ประวัติเอกสาร" (bs_bills) และ "ประวัติใบคอนเฟิร์มงาน" (bs_jobs) ไว้ใน Firestore ด้วย
