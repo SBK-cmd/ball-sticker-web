@@ -2466,7 +2466,8 @@ function bahtText(value) {
   function nextQuoteNo() {
     const d = ($('quoteDate').value || todayISO()).replace(/-/g, '').slice(2);
     const prefix = 'QT' + d;
-    const n = store.get('bs_quotes', []).filter(q => String(q.no).indexOf(prefix) === 0).length + 1;
+    // ใช้เลขสูงสุดของวันนั้น +1 (ไม่นับจำนวนใบ) — ลบใบกลางวันแล้วเลขไม่ซ้ำ และไม่ข้ามเลขเมื่อมีเลขที่พิมพ์เอง
+    const n = store.get('bs_quotes', []).reduce((m, q) => { const no = String(q.no || ''); if (no.indexOf(prefix + '-') !== 0) return m; const x = /-(\d+)$/.exec(no); return x ? Math.max(m, parseInt(x[1], 10)) : m; }, 0) + 1;
     return prefix + '-' + String(n).padStart(3, '0');
   }
 
