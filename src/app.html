@@ -4756,6 +4756,15 @@ function bahtText(value) {
         }
         list.push(rec);
       });
+      {   // รายการที่ยังรอส่งขึ้นคลาวด์ (ไม่อยู่ในสแนปช็อต) → เก็บไว้ในเครื่อง + ส่งใหม่ ไม่ให้หาย
+        const pend = pendGet(), have = {}; list.forEach(r => { have[r.id] = 1; });
+        Object.keys(pend).forEach(k => {
+          if (k.indexOf(col + '/') !== 0) return; const id = k.slice(col.length + 1);
+          if (have[id]) { if (Date.now() - pend[k] > 20000) pendMark(col, id, false); return; }   // ขึ้นคลาวด์แล้ว (ผ่านไป 20 วิ) → เคลียร์
+          const loc = prevById[id]; if (!loc) { pendMark(col, id, false); return; }
+          list.push(loc); setTimeout(() => { try { cloudSave(col, loc); } catch (e) {} }, 800);
+        });
+      }
       store.set(key, list);
       cloudStatus = 'on';
       if (col === 'tracking') autoMergeTrackingOnce();
@@ -4801,8 +4810,14 @@ function bahtText(value) {
     toast('รวมรายการพัสดุที่ซ้ำกันแล้ว ' + removeIds.size + ' แถว (สำรองไว้แล้ว)');
   }
   const PHONE_SHARE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+  // คิวรอส่งขึ้นคลาวด์: จดไว้ก่อนส่ง ลบเมื่อคลาวด์ตอบรับ — ถ้าเน็ตหลุด/ปิดแอปก่อนส่งสำเร็จ รายการยังค้างอยู่ในคิว ไม่ถูกซิงก์ทับหาย และถูกส่งใหม่เอง
+  const pendKey = 'bs_cloud_pending';
+  const pendGet = () => { try { return JSON.parse(localStorage.getItem(pendKey) || '{}') || {}; } catch (e) { return {}; } };
+  const pendSet = o => { try { localStorage.setItem(pendKey, JSON.stringify(o)); } catch (e) {} };
+  const pendMark = (col, id, on) => { const o = pendGet(), k = col + '/' + id; if (on) o[k] = Date.now(); else delete o[k]; pendSet(o); };
   function cloudSave(col, rec) {
     if (!cloudDb) return;
+    pendMark(col, rec.id, true);
     // ถ้า photos/photo ยังเป็น data: URI (รูปที่เพิ่งถ่าย ยังไม่ได้อัปโหลดขึ้น Cloudinary) ให้ตัดออกก่อนส่ง
     // เพื่อไม่ให้ไฟล์รูปขนาดใหญ่ไปชนลิมิตเอกสารของ Firestore — ลิงก์รูปจะถูกเติมกลับเข้ามาทีหลังโดย syncRecordPhotosToCloud
     // ถ้าเป็นลิงก์ Cloudinary อยู่แล้ว (ข้อความสั้นๆ) ส่งไปตามปกติได้เลย ไม่มีปัญหาเรื่องขนาด
@@ -4813,7 +4828,7 @@ function bahtText(value) {
     if (hasDataUri(safeRec.donePhotos)) delete safeRec.donePhotos;
     if (hasDataUri(safeRec.boxPhoto)) delete safeRec.boxPhoto;
     (window.__bsAuthReady || Promise.resolve()).then(() => {
-      cloudDb.collection(col).doc(String(rec.id)).set(safeRec, {merge: true}).catch(e => {
+      cloudDb.collection(col).doc(String(rec.id)).set(safeRec, {merge: true}).then(() => pendMark(col, rec.id, false)).catch(e => {
         console.error(col + ' save error', e);
         // บันทึกขึ้นคลาวด์ไม่สำเร็จ = ข้อมูลจะ "เด้งกลับ" ตอนซิงก์ → บอกเจ้าของทันที พร้อมรหัสสาเหตุ และลองส่งใหม่แบบไม่มีรูป (กันเอกสารใหญ่เกิน)
         const code = (e && (e.code || e.message)) || 'unknown';
