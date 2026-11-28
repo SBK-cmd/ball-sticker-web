@@ -131,17 +131,27 @@ function bahtText(value) {
   const mem = {};
   let storageOK = true;
   try { localStorage.setItem('__t', '1'); localStorage.removeItem('__t'); } catch (e) { storageOK = false; }
+  const memOnly = {};   // คีย์ที่เขียนลงเครื่องไม่ได้ (พื้นที่เต็ม) — เก็บในหน่วยความจำเฉพาะคีย์นั้น ไม่ทำให้ทั้งแอปหยุดจำ
+  let storeWarned = false;
   const store = {
     get(k, d) {
-      if (storageOK) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { storageOK = false; } }
+      if (k in memOnly) return k in mem ? mem[k] : d;
+      if (storageOK) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return k in mem ? mem[k] : d; } }
       return k in mem ? mem[k] : d;
     },
     set(k, v) {
       mem[k] = v;
-      if (storageOK) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { storageOK = false; } }
+      if (storageOK) {
+        try { localStorage.setItem(k, JSON.stringify(v)); delete memOnly[k]; return true; }
+        catch (e) {
+          memOnly[k] = 1;
+          if (!storeWarned) { storeWarned = true; try { toast('⚠️ พื้นที่เก็บในเครื่องเต็ม — ข้อมูลบางส่วนอยู่แค่ชั่วคราว (ข้อมูลที่ซิงก์คลาวด์แล้วไม่หาย) ลองล้างแคชเบราว์เซอร์หรือแจ้งทีมไอที'); } catch (_) {} }
+        }
+      }
       return false;
     }
   };
+
 
   /* ---------------- ซิงก์ข้ามเครื่องผ่าน Firebase (ถ้าตั้งค่าไว้และโหลดได้) ----------------
      เก็บ "ประวัติเอกสาร" (bs_bills) และ "ประวัติใบคอนเฟิร์มงาน" (bs_jobs) ไว้ใน Firestore ด้วย
@@ -2456,7 +2466,8 @@ function bahtText(value) {
   function nextQuoteNo() {
     const d = ($('quoteDate').value || todayISO()).replace(/-/g, '').slice(2);
     const prefix = 'QT' + d;
-    const n = store.get('bs_quotes', []).filter(q => String(q.no).indexOf(prefix) === 0).length + 1;
+    // ใช้เลขสูงสุดของวันนั้น +1 (ไม่นับจำนวนใบ) — ลบใบกลางวันแล้วเลขไม่ซ้ำ และไม่ข้ามเลขเมื่อมีเลขที่พิมพ์เอง
+    const n = store.get('bs_quotes', []).reduce((m, q) => { const no = String(q.no || ''); if (no.indexOf(prefix + '-') !== 0) return m; const x = /-(\d+)$/.exec(no); return x ? Math.max(m, parseInt(x[1], 10)) : m; }, 0) + 1;
     return prefix + '-' + String(n).padStart(3, '0');
   }
 
@@ -6289,7 +6300,9 @@ function bahtText(value) {
         if (String(row.job || '').trim() !== no || row.jtot) return;
         const it = jobItemForBillRow(row, j); if (!it) return;
         const want = jobUnitPrice(j, it); if (want === '' || !(num(want) > 0)) return;
-        if (round2(num(row.price)) !== round2(num(want))) out.push({doc: w.id, k, row, want: round2(num(want))});
+        const wq = it.qty == null || String(it.qty).trim() === '' ? null : num(it.qty);   // จำนวนในใบงานเปลี่ยน (เช่น 100 → 1) ต้องตามไปที่บิลด้วย ไม่งั้นยอด = จำนวนเก่า × ราคา
+        const qDiff = wq != null && wq > 0 && num(row.qty) !== wq;
+        if (qDiff || round2(num(row.price)) !== round2(num(want))) out.push({doc: w.id, k, row, want: round2(num(want)), wantQty: qDiff ? wq : null});
       });
     });
     return out;
@@ -6297,7 +6310,7 @@ function bahtText(value) {
   function syncJobToBills(j) {
     const mm = billJobMismatch(j); if (!mm.length) return 0;
     const wl = store.get('bs_wholesale', []), touched = {};
-    mm.forEach(m => { const wi = wl.findIndex(w => w.id === m.doc); if (wi < 0) return; wl[wi] = Object.assign({}, wl[wi], {items: (wl[wi].items || []).map((r, k) => k === m.k ? Object.assign({}, r, {price: m.want}) : r), savedAt: Date.now()}); touched[wi] = 1; });
+    mm.forEach(m => { const wi = wl.findIndex(w => w.id === m.doc); if (wi < 0) return; wl[wi] = Object.assign({}, wl[wi], {items: (wl[wi].items || []).map((r, k) => k === m.k ? Object.assign({}, r, m.wantQty != null ? {price: m.want, qty: m.wantQty} : {price: m.want}) : r), savedAt: Date.now()}); touched[wi] = 1; });
     store.set('bs_wholesale', wl); Object.keys(touched).forEach(i => cloudSave('wholesale', wl[i]));
     return mm.length;
   }
@@ -7804,7 +7817,7 @@ function bahtText(value) {
         if (!has && j) { const named = (j.items || []).filter(i => String(i.name || '').trim()); b += '<div class="wd-j" style="padding:6px 0"><small>' + (named.length ? named.map(i => esc(String(i.name).trim()) + ' ×' + esc(i.qty || 1)).join(', ') : 'ยังไม่มีรายการสินค้า') + (num(j.slipAmount) > 0 ? ' · ยอด ' + money(num(j.slipAmount)) + ' บาท' : '') + '</small></div>' + (jobPendingWhItems(j).length ? '<div class="wd-jbs"><button class="btn small good" type="button" data-act="addjob" data-jid="' + esc(j.id) + '">＋ เพิ่มเข้าบิล</button></div>' : ''); }
         if (has) b += paidJ ? '<div class="wd-jbs"><button class="btn small wd-jb" type="button" data-act="jobpaid" data-key="' + esc(no) + '" data-paid="1">ยกเลิกจ่าย</button></div>' : '<label class="wd-jk"><input type="checkbox" class="wd-ck" data-key="' + esc(no) + '" data-sub="' + round2(sub) + '"> จ่ายแล้ว (ติ๊กแล้วกดออกใบเสร็จด้านล่าง)</label>';
         const mm = j ? billJobMismatch(j) : [];
-        if (mm.length) b += '<div class="wd-mm" style="margin:8px 0;padding:8px 10px;border-radius:10px;background:#fff4d6;color:#6b4a00;font-size:13px">⚠ ราคาในบิลไม่ตรงใบงาน ' + mm.length + ' รายการ: ' + mm.map(m => esc(String(m.row.name || '').slice(0, 24)) + ' บิล ' + money(m.row.price) + ' → ใบงาน ' + money(m.want)).join(' · ') + '<div style="margin-top:6px"><button class="btn small" type="button" data-act="billsync" data-key="' + esc(no) + '">ปรับราคาในบิลให้ตรงใบงาน</button></div></div>';
+        if (mm.length) b += '<div class="wd-mm" style="margin:8px 0;padding:8px 10px;border-radius:10px;background:#fff4d6;color:#6b4a00;font-size:13px">⚠ ราคา/จำนวนในบิลไม่ตรงใบงาน ' + mm.length + ' รายการ: ' + mm.map(m => esc(String(m.row.name || '').slice(0, 24)) + ' บิล ' + (m.wantQty != null ? esc(m.row.qty) + '×' : '') + money(m.row.price) + ' → ใบงาน ' + (m.wantQty != null ? esc(m.wantQty) + '×' : '') + money(m.want)).join(' · ') + '<div style="margin-top:6px"><button class="btn small" type="button" data-act="billsync" data-key="' + esc(no) + '">ปรับบิลให้ตรงใบงาน</button></div></div>';
         return b + jobPayHistHtml(no);
       };
       const rowOf = j => {
@@ -10528,7 +10541,7 @@ function bahtText(value) {
     if (act === 'billsync') {
       const key = btn.dataset.key || '', jj = store.get('bs_jobs', []).find(x => String(x.no || '').trim() === key); if (!jj) return;
       const mm = billJobMismatch(jj); if (!mm.length) { toast('ราคาตรงกันแล้ว'); renderWholesaleHistory(); return; }
-      appConfirm('ปรับราคาในบิลให้ตรงใบงาน ' + key, mm.map(m => String(m.row.name || '') + ': ' + money(m.row.price) + ' → ' + money(m.want)), 'ปรับราคา').then(ok => { if (!ok) return; const n = syncJobToBills(jj); toast('ปรับราคาในบิล ' + n + ' รายการแล้ว'); renderWholesaleHistory(); try { renderOwedCard(); } catch (e) {} });
+      appConfirm('ปรับราคาในบิลให้ตรงใบงาน ' + key, mm.map(m => String(m.row.name || '') + ': ' + (m.wantQty != null ? m.row.qty + ' → ' + m.wantQty + ' ชิ้น · ' : '') + money(m.row.price) + ' → ' + money(m.want)), 'ปรับราคา').then(ok => { if (!ok) return; const n = syncJobToBills(jj); toast('ปรับราคาในบิล ' + n + ' รายการแล้ว'); renderWholesaleHistory(); try { renderOwedCard(); } catch (e) {} });
       return;
     }
     if (act === 'jobpaid') { const key = btn.dataset.key || ''; if (!key) return; if (btn.dataset.paid) { markJobUnpaid(name, key); toast('ยกเลิกจ่าย ' + key + ' แล้ว'); } else { markJobsPaid(name, [key]); toast('ใบงาน ' + key + ' จ่ายแล้ว ✓'); } renderWholesaleHistory(); return; }
